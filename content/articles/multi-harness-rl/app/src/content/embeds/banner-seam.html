@@ -1,0 +1,570 @@
+<div class="d3-harness-seam" style="width:100%;margin:10px 0;aspect-ratio:3/1;min-height:280px;"></div>
+<style>
+    .d3-harness-seam { position: relative; }
+    .d3-harness-seam canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: crosshair;
+    }
+    .d3-harness-seam .seam-counter {
+        position: absolute;
+        top: 14px;
+        left: 18px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.0px;
+        text-transform: uppercase;
+        color: var(--muted-color);
+        pointer-events: none;
+        z-index: 5;
+        font-variant-numeric: tabular-nums;
+    }
+    .d3-harness-seam .seam-counter strong {
+        color: var(--text-color);
+        font-weight: 800;
+        font-size: 16px;
+        margin-right: 4px;
+        letter-spacing: 0;
+    }
+    .d3-harness-seam .seam-counter .div {
+        opacity: 0.45;
+        margin: 0 7px;
+    }
+    .d3-harness-seam .d3-tooltip {
+        position: absolute;
+        top: 0; left: 0;
+        transform: translate(-9999px, -9999px);
+        pointer-events: none;
+        padding: 10px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        line-height: 1.35;
+        border: 1px solid var(--border-color);
+        background: var(--surface-bg);
+        color: var(--text-color);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.12);
+        opacity: 0;
+        transition: opacity 0.12s ease;
+        backdrop-filter: saturate(1.12) blur(8px);
+        z-index: 20;
+        min-width: 190px;
+    }
+    .d3-harness-seam .d3-tooltip__inner {
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .d3-harness-seam .d3-tooltip .swatch {
+        display: inline-block;
+        width: 8px; height: 8px;
+        border-radius: 2px;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+</style>
+<script>
+    (() => {
+        const ROOT_CLASS = 'd3-harness-seam';
+
+        const bootstrap = () => {
+            const scriptEl = document.currentScript;
+            let container = scriptEl ? scriptEl.previousElementSibling : null;
+            if (!(container && container.classList && container.classList.contains(ROOT_CLASS))) {
+                const cands = Array.from(document.querySelectorAll('.' + ROOT_CLASS))
+                    .filter((el) => !(el.dataset && el.dataset.mounted === 'true'));
+                container = cands[cands.length - 1] || null;
+            }
+            if (!container) return;
+            if (container.dataset) {
+                if (container.dataset.mounted === 'true') return;
+                container.dataset.mounted = 'true';
+            }
+
+            // ─── Palette ──────────────────────────────────────────────────────────
+            // Deliberate exception to "colours from window.ColorPalettes": these are
+            // the same three anchors as the RL-environments guide's own banner
+            // (banner-grid-scaling.html hardcodes them too), so the two articles read
+            // as a series. A generated palette would drift between them.
+            // Hue encodes the wire dialect a harness speaks; the rarer the dialect,
+            // the more vivid, so codex / claude-code / gemini-cli stand out of the
+            // chat-completions field.
+            const DIALECTS = [
+                { id: 'chat',      label: 'chat-completions',       short: 'chat',      rgb: [78, 165, 183] },
+                { id: 'responses', label: 'OpenAI Responses',       short: 'responses', rgb: [146, 176, 234] },
+                { id: 'anthropic', label: 'Anthropic Messages',     short: 'anthropic', rgb: [206, 192, 250] },
+                { id: 'google',    label: 'Google generateContent', short: 'google',    rgb: [232, 137, 171] },
+            ];
+
+            // Whichever harnesses are validated end to end at time of writing.
+            // The count is not load-bearing: the grid, the stagger and the counter
+            // all derive from HARNESSES.length, so rows can be added or removed freely.
+            const HARNESSES = [
+                ['opencode', 0], ['goose', 0], ['qwen-coder', 0], ['swe-agent', 0],
+                ['mini-swe-agent', 0], ['openhands-sdk', 0], ['openclaw', 0], ['hermes', 0],
+                ['kimi-cli', 0], ['pi', 0], ['vibe', 0], ['terminus-2', 0],
+                ['codex', 1], ['trae-agent', 1],
+                ['claude-code', 2],
+                ['gemini-cli', 3],
+            ];
+
+            const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
+            const cssVar = (name, fallback) => {
+                const v = getComputedStyle(container).getPropertyValue(name).trim();
+                return v || fallback;
+            };
+            const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+            const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+
+            const reduceMotion = window.matchMedia
+                && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            container.style.position = container.style.position || 'relative';
+            const canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+
+            const counterEl = document.createElement('div');
+            counterEl.className = 'seam-counter';
+            counterEl.innerHTML =
+                '<strong id="sm-h">0</strong><span style="opacity:.6">harnesses</span>' +
+                '<span class="div">·</span>' +
+                '<strong id="sm-r">0</strong><span style="opacity:.6">rollouts</span>' +
+                '<span class="div">·</span>' +
+                '<strong id="sm-t">0</strong><span style="opacity:.6">tokens captured</span>';
+            container.appendChild(counterEl);
+            const outH = counterEl.querySelector('#sm-h');
+            const outR = counterEl.querySelector('#sm-r');
+            const outT = counterEl.querySelector('#sm-t');
+
+            const tip = document.createElement('div');
+            tip.className = 'd3-tooltip';
+            const tipInner = document.createElement('div');
+            tipInner.className = 'd3-tooltip__inner';
+            tip.appendChild(tipInner);
+            container.appendChild(tip);
+
+            // ─── Layout ───────────────────────────────────────────────────────────
+            const PAD_TOP = 46, PAD_BOTTOM = 30, PAD_X = 22;
+            const SEAM_FRAC = 0.55;      // where the proxy line sits, as a fraction of width
+            const CELL_W = 26, CELL_H = 21;     // target size of one rollout cell
+            const MAX_PULSES = 20;              // concurrent calls drawn crossing the seam
+            const TOK = 5, TOK_GAP = 2;  // token square size and gap in the field
+            let GRID_COLS = 1, GRID_ROWS = 1;   // derived from the available area, see layout()
+
+            let W = 0, H = 0, dpr = 1;
+            let cells = [];
+            let seamX = 0, seamTop = 0, seamBottom = 0;
+            let field = { x: 0, y: 0, w: 0, h: 0, cols: 0, rows: 0, total: 0 };
+            let slots = [];              // one entry per filled slot
+            let nextSlot = 0;
+            let flushT = 0;              // >0 while a captured batch fades out
+            let hover = -1;
+
+            const layout = () => {
+                const rect = container.getBoundingClientRect();
+                W = Math.max(1, Math.round(rect.width));
+                H = Math.max(1, Math.round(rect.height));
+                dpr = Math.max(1, window.devicePixelRatio || 1);
+                canvas.width = Math.round(W * dpr);
+                canvas.height = Math.round(H * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+                seamX = Math.round(W * SEAM_FRAC);
+                seamTop = PAD_TOP - 10;
+                seamBottom = H - PAD_BOTTOM + 6;
+
+                const gx = PAD_X, gy = PAD_TOP;
+                const gw = seamX - 30 - PAD_X;
+                const gh = H - PAD_TOP - PAD_BOTTOM;
+
+                // Density is the point: many concurrent rollouts, not one box per
+                // harness. Cell count follows the available area.
+                GRID_COLS = Math.max(4, Math.floor(gw / CELL_W));
+                GRID_ROWS = Math.max(3, Math.floor(gh / CELL_H));
+                const cw = gw / GRID_COLS, ch = gh / GRID_ROWS;
+                const n = GRID_COLS * GRID_ROWS;
+
+                const prevCells = cells;
+                cells = [];
+                for (let i = 0; i < n; i++) {
+                    const col = i % GRID_COLS, row = Math.floor(i / GRID_COLS);
+                    const h = HARNESSES[(i * 7 + row * 3) % HARNESSES.length];
+                    const prev = prevCells[i];
+                    cells.push({
+                        name: h[0],
+                        dialect: DIALECTS[h[1]],
+                        x: gx + col * cw, y: gy + row * ch, w: cw - 2, h: ch - 2,
+                        // Each harness keeps its own loop shape and cadence, so the
+                        // fleet reads as heterogeneous rather than as one thing tiled.
+                        lobes: 2 + (h[0].length % 4),
+                        speed: 0.020 + ((i * 37) % 11) * 0.0035,
+                        phase: prev ? prev.phase : (i * 1.7) % (Math.PI * 2),
+                        interval: 70 + ((i * 53) % 150),
+                        timer: prev ? prev.timer : ((i * 29) % 160),
+                        activateAt: reduceMotion ? 0 : Math.round((i % 13) * 4 + Math.random() * 420),
+                        calls: prev ? prev.calls : 0,
+                        flash: 0,
+                        trail: prev ? prev.trail : [],
+                    });
+                }
+
+                field.x = seamX + 22;
+                field.y = PAD_TOP;
+                field.w = Math.max(0, W - PAD_X - field.x);
+                field.h = H - PAD_TOP - PAD_BOTTOM;
+                field.cols = Math.max(1, Math.floor(field.w / (TOK + TOK_GAP)));
+                field.rows = Math.max(1, Math.floor(field.h / (TOK + TOK_GAP)));
+                field.total = field.cols * field.rows;
+                if (nextSlot > field.total) nextSlot = field.total;
+                slots = slots.slice(0, field.total);
+            };
+
+            const slotXY = (i) => {
+                // Column-major, so the field grows rightward like accumulating data.
+                const col = Math.floor(i / field.rows), row = i % field.rows;
+                return [field.x + col * (TOK + TOK_GAP), field.y + row * (TOK + TOK_GAP)];
+            };
+
+            // ─── State ────────────────────────────────────────────────────────────
+            let frame = 0;
+            let pulses = [];     // model calls in flight, cell → seam
+            let flying = [];     // token squares in flight, seam → field
+            let ticks = [];      // brief marks on the seam where a pulse landed
+            let tokensSeen = 0;
+            let activeHarnesses = 0;
+            let activeRollouts = 0;
+
+            const emitCall = (c) => {
+                const p = orbitPoint(c, c.phase);
+                const ty = seamTop + 18 + Math.random() * (seamBottom - seamTop - 36);
+                pulses.push({
+                    sx: p[0], sy: p[1],
+                    cx: (p[0] + seamX) / 2, cy: p[1] + (ty - p[1]) * 0.15 - 26,
+                    ty, t: 0, dur: 46 + Math.random() * 26,
+                    rgb: c.dialect.rgb,
+                    // A real turn is thousands of context tokens against tens sampled;
+                    // the burst keeps that ratio without rendering thousands of squares.
+                    ctxN: 5 + Math.floor(Math.random() * 7),
+                    genN: 1 + Math.floor(Math.random() * 3),
+                });
+                c.calls++;
+            };
+
+            const orbitPoint = (c, ang) => {
+                const cx = c.x + c.w / 2, cy = c.y + c.h / 2;
+                const R = Math.min(c.w, c.h) * 0.34;
+                const r = R * (0.70 + 0.30 * Math.cos(c.lobes * ang));
+                return [cx + Math.cos(ang) * r, cy + Math.sin(ang) * r * 0.86];
+            };
+
+            const burst = (p) => {
+                ticks.push({ y: p.ty, t: 0, rgb: p.rgb });
+                const n = p.ctxN + p.genN;
+                for (let k = 0; k < n; k++) {
+                    if (nextSlot >= field.total) break;
+                    const slot = nextSlot++;
+                    const xy = slotXY(slot);
+                    flying.push({
+                        sx: seamX, sy: p.ty,
+                        tx: xy[0], ty: xy[1],
+                        t: 0, dur: 26 + Math.random() * 22,
+                        bright: k >= p.ctxN,          // the sampled tail is the trainable part
+                        rgb: p.rgb, slot,
+                    });
+                    tokensSeen += 180 + Math.floor(Math.random() * 900);
+                }
+            };
+
+            // ─── Update ───────────────────────────────────────────────────────────
+            const update = () => {
+                frame++;
+                activeRollouts = 0;
+                const seen = new Set();
+                for (const c of cells) {
+                    if (frame < c.activateAt) continue;
+                    activeRollouts++;
+                    seen.add(c.name);
+                    c.phase += c.speed;
+                    if (c.flash > 0) c.flash--;
+                    if (frame % 3 === 0) {
+                        c.trail.push(orbitPoint(c, c.phase));
+                        if (c.trail.length > 5) c.trail.shift();
+                    }
+                    if (--c.timer <= 0) {
+                        c.timer = c.interval;
+                        c.calls++;
+                        c.flash = 16;
+                        // Every rollout calls the model, but only a budget of those
+                        // are drawn crossing the seam — otherwise it is noise.
+                        if (pulses.length < MAX_PULSES) emitCall(c);
+                    }
+                }
+                activeHarnesses = seen.size;
+
+                for (let i = pulses.length - 1; i >= 0; i--) {
+                    const p = pulses[i];
+                    if (++p.t >= p.dur) { burst(p); pulses.splice(i, 1); }
+                }
+                for (let i = flying.length - 1; i >= 0; i--) {
+                    const f = flying[i];
+                    if (++f.t >= f.dur) {
+                        slots[f.slot] = { rgb: f.rgb, bright: f.bright, born: frame };
+                        flying.splice(i, 1);
+                    }
+                }
+                for (let i = ticks.length - 1; i >= 0; i--) {
+                    if (++ticks[i].t > 26) ticks.splice(i, 1);
+                }
+
+                // Field full → the batch goes to the trainer and the field clears.
+                if (flushT > 0) {
+                    if (--flushT === 0) { slots = []; nextSlot = 0; }
+                } else if (nextSlot >= field.total && flying.length === 0) {
+                    flushT = 48;
+                }
+            };
+
+            // ─── Draw ─────────────────────────────────────────────────────────────
+            const draw = () => {
+                const border = cssVar('--border-color', 'rgba(128,128,128,0.28)');
+                const muted = cssVar('--muted-color', 'rgba(128,128,128,0.75)');
+                ctx.clearRect(0, 0, W, H);
+
+                // the rollout fleet
+                for (let i = 0; i < cells.length; i++) {
+                    const c = cells[i];
+                    if (frame < c.activateAt) continue;
+                    const woke = Math.min(1, (frame - c.activateAt) / 34);
+                    const a = easeOutCubic(woke);
+
+                    ctx.strokeStyle = border;
+                    ctx.globalAlpha = 0.30 * a;
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(c.x + 0.5, c.y + 0.5, c.w, c.h);
+                    ctx.globalAlpha = 1;
+
+                    if (hover === i) {
+                        ctx.fillStyle = rgba(c.dialect.rgb, 0.20);
+                        ctx.fillRect(c.x, c.y, c.w, c.h);
+                    }
+
+                    if (c.trail.length > 1) {
+                        ctx.strokeStyle = rgba(c.dialect.rgb, 0.26 * a);
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(c.trail[0][0], c.trail[0][1]);
+                        for (let k = 1; k < c.trail.length; k++) ctx.lineTo(c.trail[k][0], c.trail[k][1]);
+                        ctx.stroke();
+                    }
+                    const p = orbitPoint(c, c.phase);
+                    if (c.flash > 0) {
+                        // a model call just left this rollout
+                        const f = c.flash / 16;
+                        ctx.strokeStyle = rgba(c.dialect.rgb, 0.5 * f * a);
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.arc(p[0], p[1], 2.5 + (1 - f) * 5.5, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                    ctx.fillStyle = rgba(c.dialect.rgb, (c.flash > 0 ? 1 : 0.7) * a);
+                    ctx.fillRect(p[0] - 1.4, p[1] - 1.4, 2.8, 2.8);
+                }
+
+                // calls in flight
+                const bez = (p, t) => {
+                    const mt = 1 - t;
+                    return [
+                        mt * mt * p.sx + 2 * mt * t * p.cx + t * t * seamX,
+                        mt * mt * p.sy + 2 * mt * t * p.cy + t * t * p.ty,
+                    ];
+                };
+                for (const p of pulses) {
+                    const t = easeInOutSine(p.t / p.dur);
+                    const head = bez(p, t);
+                    // A short comet tail. Drawing the whole curve from the source cell
+                    // turns twenty concurrent calls into spaghetti.
+                    const SEG = 6;
+                    for (let k = SEG; k > 0; k--) {
+                        const t0 = Math.max(0, t - k * 0.009);
+                        const t1 = Math.max(0, t - (k - 1) * 0.009);
+                        if (t1 <= 0) continue;
+                        const a = (1 - k / SEG) * 0.42;
+                        const p0 = bez(p, t0), p1 = bez(p, t1);
+                        ctx.strokeStyle = rgba(p.rgb, a);
+                        ctx.lineWidth = 1.1;
+                        ctx.beginPath();
+                        ctx.moveTo(p0[0], p0[1]);
+                        ctx.lineTo(p1[0], p1[1]);
+                        ctx.stroke();
+                    }
+                    ctx.fillStyle = rgba(p.rgb, 0.95);
+                    ctx.beginPath();
+                    ctx.arc(head[0], head[1], 1.9, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // the seam — the one place you can stand
+                const grad = ctx.createLinearGradient(0, seamTop, 0, seamBottom);
+                grad.addColorStop(0, 'rgba(140,140,150,0.05)');
+                grad.addColorStop(0.5, 'rgba(140,140,150,0.55)');
+                grad.addColorStop(1, 'rgba(140,140,150,0.05)');
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(seamX, seamTop);
+                ctx.lineTo(seamX, seamBottom);
+                ctx.stroke();
+                for (const tk of ticks) {
+                    const a = 1 - tk.t / 26;
+                    ctx.strokeStyle = rgba(tk.rgb, a * 0.85);
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(seamX, tk.y - 7 * a);
+                    ctx.lineTo(seamX, tk.y + 7 * a);
+                    ctx.stroke();
+                }
+                ctx.save();
+                ctx.translate(seamX - 11, (seamTop + seamBottom) / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillStyle = muted;
+                ctx.globalAlpha = 0.6;
+                ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('CAPTURE PROXY', 0, 0);
+                ctx.restore();
+                ctx.globalAlpha = 1;
+
+                // tokens in flight
+                for (const f of flying) {
+                    const t = easeOutCubic(f.t / f.dur);
+                    const x = f.sx + (f.tx - f.sx) * t;
+                    const y = f.sy + (f.ty - f.sy) * t;
+                    ctx.fillStyle = rgba(f.rgb, f.bright ? 0.95 : 0.4);
+                    ctx.fillRect(x, y, TOK, TOK);
+                }
+
+                // the captured field
+                const fade = flushT > 0 ? flushT / 48 : 1;
+                for (let i = 0; i < slots.length; i++) {
+                    const s = slots[i];
+                    if (!s) continue;
+                    const xy = slotXY(i);
+                    const settle = Math.min(1, (frame - s.born) / 10);
+                    ctx.fillStyle = rgba(s.rgb, (s.bright ? 0.92 : 0.26) * fade * settle);
+                    ctx.fillRect(xy[0], xy[1], TOK, TOK);
+                }
+
+                ctx.fillStyle = muted;
+                ctx.globalAlpha = 0.55;
+                ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
+                ctx.textAlign = 'right';
+                ctx.fillText(
+                    flushT > 0 ? 'batch → trainer' : 'token ids + logprobs',
+                    field.x + field.w, H - PAD_BOTTOM + 16
+                );
+                ctx.globalAlpha = 1;
+
+                // dialect legend, top-right — the only place the colour encoding is
+                // spelled out. The bottom strip belongs to the hero's own caption.
+                ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
+                ctx.textAlign = 'left';
+                const ly = 24;
+                let lw = 0;
+                for (const d of DIALECTS) lw += 10 + ctx.measureText(d.short).width + 14;
+                let lx = Math.max(seamX + 8, W - PAD_X - lw);
+                for (const d of DIALECTS) {
+                    ctx.fillStyle = rgba(d.rgb, 0.95);
+                    ctx.fillRect(lx, ly - 6, 6, 6);
+                    ctx.fillStyle = muted;
+                    ctx.globalAlpha = 0.7;
+                    ctx.fillText(d.short, lx + 10, ly);
+                    ctx.globalAlpha = 1;
+                    lx += 10 + ctx.measureText(d.short).width + 14;
+                }
+
+                outH.textContent = String(activeHarnesses);
+                outR.textContent = activeRollouts.toLocaleString();
+                outT.textContent = tokensSeen.toLocaleString();
+            };
+
+            const roundRect = (x, y, w, h, r) => {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.arcTo(x + w, y, x + w, y + h, r);
+                ctx.arcTo(x + w, y + h, x, y + h, r);
+                ctx.arcTo(x, y + h, x, y, r);
+                ctx.arcTo(x, y, x + w, y, r);
+                ctx.closePath();
+            };
+
+            // ─── Interaction ──────────────────────────────────────────────────────
+            canvas.addEventListener('mousemove', (e) => {
+                const r = canvas.getBoundingClientRect();
+                const x = e.clientX - r.left, y = e.clientY - r.top;
+                hover = -1;
+                for (let i = 0; i < cells.length; i++) {
+                    const c = cells[i];
+                    if (x >= c.x && x <= c.x + c.w + 2 && y >= c.y && y <= c.y + c.h + 2) { hover = i; break; }
+                }
+                if (hover < 0) { tip.style.opacity = '0'; return; }
+                const c = cells[hover];
+                const waking = frame < c.activateAt;
+                tipInner.innerHTML =
+                    '<div style="font-weight:800;">' +
+                        '<span class="swatch" style="background:' + rgba(c.dialect.rgb, 1) + '"></span>' +
+                        c.name +
+                    '</div>' +
+                    '<div style="font-size:11px;color:var(--muted-color);">' +
+                        '<strong>Dialect</strong> ' + c.dialect.label +
+                    '</div>' +
+                    '<div style="padding-top:4px;border-top:1px solid var(--border-color);">' +
+                        (waking
+                            ? '<strong>Status</strong> waiting to start'
+                            : '<strong>Model calls</strong> ' + c.calls + ' this rollout') +
+                    '</div>';
+                tip.style.opacity = '1';
+                let tx = x + 14, ty = y + 16;
+                if (tx + 210 > W) tx = x - 210;
+                if (ty + 92 > H) ty = y - 92;
+                tip.style.transform = 'translate(' + Math.round(tx) + 'px,' + Math.round(ty) + 'px)';
+            });
+            canvas.addEventListener('mouseleave', () => { hover = -1; tip.style.opacity = '0'; });
+
+            // ─── Run ──────────────────────────────────────────────────────────────
+            layout();
+
+            if (reduceMotion) {
+                // Compose one representative still: a partly-filled field, no motion.
+                for (let i = 0; i < 260; i++) {
+                    for (const c of cells) { c.phase += c.speed; }
+                    update();
+                }
+                draw();
+            } else {
+                let visible = true;
+                if ('IntersectionObserver' in window) {
+                    new IntersectionObserver((es) => { visible = es[0].isIntersecting; },
+                        { rootMargin: '120px' }).observe(container);
+                }
+                const loop = () => {
+                    if (visible) { update(); draw(); }
+                    requestAnimationFrame(loop);
+                };
+                requestAnimationFrame(loop);
+            }
+
+            let rt;
+            const onResize = () => { clearTimeout(rt); rt = setTimeout(() => { layout(); draw(); }, 120); };
+            if ('ResizeObserver' in window) new ResizeObserver(onResize).observe(container);
+            else window.addEventListener('resize', onResize);
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootstrap);
+        } else {
+            bootstrap();
+        }
+    })();
+</script>

@@ -50,9 +50,9 @@ const pdfFilename = `${slugify(pdfBase)}.pdf`;
     {/*   banner-grid.html          — B. environment grid (parallel ant farm)   */}
     {/*   banner-streams.html       — C. streaming tool-call lanes              */}
     {/*   banner-tree.html          — D. branching policy tree (radial growth)  */}
-    {/* TODO: design a hero for this article. banner.html (the galaxy) is the stand-in
-        kept by the scaffold; the guide uses banner-grid-scaling.html. */}
-    <HtmlEmbed src="banner.html" frameless />
+    {/* banner-seam.html — the harness fleet, the capture proxy, and the token field.
+        banner.html (the galaxy) is kept as a fallback. */}
+    <HtmlEmbed src="banner-seam.html" frameless />
   </div>
   {description && <p class="hero-desc">{description}</p>}
 </section>
