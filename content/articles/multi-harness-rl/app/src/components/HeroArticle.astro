@@ -54,9 +54,11 @@ const repoName = repo ? String(repo).replace(/\/+$/, "").split("/").pop() : "";
     {/*   banner-grid.html          — B. environment grid (parallel ant farm)   */}
     {/*   banner-streams.html       — C. streaming tool-call lanes              */}
     {/*   banner-tree.html          — D. branching policy tree (radial growth)  */}
-    {/* banner-seam.html — the harness fleet, the capture proxy, and the token field.
-        banner.html (the galaxy) is kept as a fallback. */}
-    <HtmlEmbed src="banner-seam.html" frameless />
+    {/* Two heroes are built for this article. Swap by changing the src below.     */}
+    {/*   banner-seam.html   — dense: the rollout fleet, the seam, the token field  */}
+    {/*   banner-opaque.html — minimal: opaque agents, one wire each, tokens after  */}
+    {/* banner.html (the galaxy) is kept as an inherited fallback.                  */}
+    <HtmlEmbed src="banner-opaque.html" frameless />
   </div>
   {description && <p class="hero-desc">{description}</p>}
 </section>
