@@ -110,6 +110,20 @@
             ];
 
             const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
+
+            // Every harness gets its own hue, walked along the guide banner's ramp
+            // (teal -> lavender -> pink) so the fleet reads as varied without leaving
+            // the palette. Which hue is which is answered by hovering, not a legend:
+            // at this count a legend would cost more room than it returns.
+            const A0 = [78, 165, 183], A1 = [206, 192, 250], A2 = [232, 137, 171];
+            const ramp = (t) => {
+                t = Math.max(0, Math.min(1, t));
+                const [c, d, u] = t <= 0.5 ? [A0, A1, t / 0.5] : [A1, A2, (t - 0.5) / 0.5];
+                return [0, 1, 2].map((k) => Math.round(c[k] + (d[k] - c[k]) * u));
+            };
+            const HUE = HARNESSES.map((_, i) =>
+                ramp(HARNESSES.length > 1 ? i / (HARNESSES.length - 1) : 0.5));
+
             const cssVar = (name, fallback) => {
                 const v = getComputedStyle(container).getPropertyValue(name).trim();
                 return v || fallback;
@@ -150,16 +164,21 @@
             const SEAM_FRAC = 0.55;      // where the proxy line sits, as a fraction of width
             const CELL_W = 26, CELL_H = 21;     // target size of one rollout cell
             const MAX_PULSES = 20;              // concurrent calls drawn crossing the seam
-            const TOK = 5, TOK_GAP = 2;  // token square size and gap in the field
+            // The captured field is packed one block per model call, not as one
+            // undifferentiated mass: a block is a turn, its dim cells the context it
+            // conditioned on and its bright tail the tokens it sampled.
+            const TOK = 4, TOK_GAP = 1;   // token square and gap
+            const STEP = TOK + TOK_GAP;
+            const BLOCK_ROWS = 3;         // cells tall per call block
+            const BLOCK_GAP = 6, ROW_GAP = 7;
             let GRID_COLS = 1, GRID_ROWS = 1;   // derived from the available area, see layout()
 
             let W = 0, H = 0, dpr = 1;
             let cells = [];
             let seamX = 0, seamTop = 0, seamBottom = 0;
-            let field = { x: 0, y: 0, w: 0, h: 0, cols: 0, rows: 0, total: 0 };
-            let slots = [];              // one entry per filled slot
-            let nextSlot = 0;
-            let flushT = 0;              // >0 while a captured batch fades out
+            let field = { x: 0, y: 0, w: 0, h: 0 };
+            let cursor = { x: 0, y: 0 };
+            let landed = [];             // captured tokens, absolute positions
             let hover = -1;
 
             const layout = () => {
@@ -190,11 +209,13 @@
                 cells = [];
                 for (let i = 0; i < n; i++) {
                     const col = i % GRID_COLS, row = Math.floor(i / GRID_COLS);
-                    const h = HARNESSES[(i * 7 + row * 3) % HARNESSES.length];
+                    const hi = (i * 7 + row * 3) % HARNESSES.length;
+                    const h = HARNESSES[hi];
                     const prev = prevCells[i];
                     cells.push({
                         name: h[0],
                         dialect: DIALECTS[h[1]],
+                        rgb: HUE[hi],
                         x: gx + col * cw, y: gy + row * ch, w: cw - 2, h: ch - 2,
                         // Each harness keeps its own loop shape and cadence, so the
                         // fleet reads as heterogeneous rather than as one thing tiled.
@@ -214,17 +235,43 @@
                 field.y = PAD_TOP;
                 field.w = Math.max(0, W - PAD_X - field.x);
                 field.h = H - PAD_TOP - PAD_BOTTOM;
-                field.cols = Math.max(1, Math.floor(field.w / (TOK + TOK_GAP)));
-                field.rows = Math.max(1, Math.floor(field.h / (TOK + TOK_GAP)));
-                field.total = field.cols * field.rows;
-                if (nextSlot > field.total) nextSlot = field.total;
-                slots = slots.slice(0, field.total);
+                cursor.x = field.x;
+                cursor.y = field.y;
+                landed = [];
             };
 
-            const slotXY = (i) => {
-                // Column-major, so the field grows rightward like accumulating data.
-                const col = Math.floor(i / field.rows), row = i % field.rows;
-                return [field.x + col * (TOK + TOK_GAP), field.y + row * (TOK + TOK_GAP)];
+            // Shelf-pack one call's tokens as a block; null when the field is full.
+            const blockH = () => BLOCK_ROWS * STEP - TOK_GAP;
+            const rowH = () => blockH() + ROW_GAP;
+
+            // Retire the oldest row and slide everything up, so the field stays full
+            // and keeps flowing. Clearing it wholesale left the hero half empty for
+            // whoever arrived mid-cycle.
+            const scrollUp = () => {
+                const dy = rowH();
+                for (let i = landed.length - 1; i >= 0; i--) {
+                    landed[i].y -= dy;
+                    if (landed[i].y < field.y) landed.splice(i, 1);
+                }
+                for (const f of flying) f.ty -= dy;
+                cursor.y -= dy;
+            };
+
+            const allocBlock = (n) => {
+                const bw = Math.ceil(n / BLOCK_ROWS);
+                const blockW = bw * STEP - TOK_GAP;
+                if (cursor.x + blockW > field.x + field.w) {
+                    cursor.x = field.x;
+                    cursor.y += rowH();
+                }
+                while (cursor.y + blockH() > field.y + field.h) scrollUp();
+                const out = [];
+                for (let k = 0; k < n; k++) {
+                    const col = Math.floor(k / BLOCK_ROWS), row = k % BLOCK_ROWS;
+                    out.push([cursor.x + col * STEP, cursor.y + row * STEP]);
+                }
+                cursor.x += blockW + BLOCK_GAP;
+                return out;
             };
 
             // ─── State ────────────────────────────────────────────────────────────
@@ -243,7 +290,7 @@
                     sx: p[0], sy: p[1],
                     cx: (p[0] + seamX) / 2, cy: p[1] + (ty - p[1]) * 0.15 - 26,
                     ty, t: 0, dur: 46 + Math.random() * 26,
-                    rgb: c.dialect.rgb,
+                    rgb: c.rgb,
                     // A real turn is thousands of context tokens against tens sampled;
                     // the burst keeps that ratio without rendering thousands of squares.
                     ctxN: 5 + Math.floor(Math.random() * 7),
@@ -262,18 +309,16 @@
             const burst = (p) => {
                 ticks.push({ y: p.ty, t: 0, rgb: p.rgb });
                 const n = p.ctxN + p.genN;
+                const pos = allocBlock(n);
                 for (let k = 0; k < n; k++) {
-                    if (nextSlot >= field.total) break;
-                    const slot = nextSlot++;
-                    const xy = slotXY(slot);
                     flying.push({
                         sx: seamX, sy: p.ty,
-                        tx: xy[0], ty: xy[1],
-                        t: 0, dur: 26 + Math.random() * 22,
+                        tx: pos[k][0], ty: pos[k][1],
+                        t: 0, dur: 24 + Math.random() * 20,
                         bright: k >= p.ctxN,          // the sampled tail is the trainable part
-                        rgb: p.rgb, slot,
+                        rgb: p.rgb,
                     });
-                    tokensSeen += 180 + Math.floor(Math.random() * 900);
+                    tokensSeen += 26 + Math.floor(Math.random() * 90);
                 }
             };
 
@@ -310,7 +355,7 @@
                 for (let i = flying.length - 1; i >= 0; i--) {
                     const f = flying[i];
                     if (++f.t >= f.dur) {
-                        slots[f.slot] = { rgb: f.rgb, bright: f.bright, born: frame };
+                        landed.push({ x: f.tx, y: f.ty, rgb: f.rgb, bright: f.bright, born: frame });
                         flying.splice(i, 1);
                     }
                 }
@@ -319,11 +364,7 @@
                 }
 
                 // Field full → the batch goes to the trainer and the field clears.
-                if (flushT > 0) {
-                    if (--flushT === 0) { slots = []; nextSlot = 0; }
-                } else if (nextSlot >= field.total && flying.length === 0) {
-                    flushT = 48;
-                }
+
             };
 
             // ─── Draw ─────────────────────────────────────────────────────────────
@@ -346,12 +387,12 @@
                     ctx.globalAlpha = 1;
 
                     if (hover === i) {
-                        ctx.fillStyle = rgba(c.dialect.rgb, 0.20);
+                        ctx.fillStyle = rgba(c.rgb, 0.20);
                         ctx.fillRect(c.x, c.y, c.w, c.h);
                     }
 
                     if (c.trail.length > 1) {
-                        ctx.strokeStyle = rgba(c.dialect.rgb, 0.26 * a);
+                        ctx.strokeStyle = rgba(c.rgb, 0.26 * a);
                         ctx.lineWidth = 1;
                         ctx.beginPath();
                         ctx.moveTo(c.trail[0][0], c.trail[0][1]);
@@ -362,13 +403,13 @@
                     if (c.flash > 0) {
                         // a model call just left this rollout
                         const f = c.flash / 16;
-                        ctx.strokeStyle = rgba(c.dialect.rgb, 0.5 * f * a);
+                        ctx.strokeStyle = rgba(c.rgb, 0.5 * f * a);
                         ctx.lineWidth = 1;
                         ctx.beginPath();
                         ctx.arc(p[0], p[1], 2.5 + (1 - f) * 5.5, 0, Math.PI * 2);
                         ctx.stroke();
                     }
-                    ctx.fillStyle = rgba(c.dialect.rgb, (c.flash > 0 ? 1 : 0.7) * a);
+                    ctx.fillStyle = rgba(c.rgb, (c.flash > 0 ? 1 : 0.82) * a);
                     ctx.fillRect(p[0] - 1.4, p[1] - 1.4, 2.8, 2.8);
                 }
 
@@ -441,48 +482,23 @@
                     const t = easeOutCubic(f.t / f.dur);
                     const x = f.sx + (f.tx - f.sx) * t;
                     const y = f.sy + (f.ty - f.sy) * t;
-                    ctx.fillStyle = rgba(f.rgb, f.bright ? 0.95 : 0.4);
+                    ctx.fillStyle = rgba(f.rgb, f.bright ? 1 : 0.5);
                     ctx.fillRect(x, y, TOK, TOK);
                 }
 
                 // the captured field
-                const fade = flushT > 0 ? flushT / 48 : 1;
-                for (let i = 0; i < slots.length; i++) {
-                    const s = slots[i];
-                    if (!s) continue;
-                    const xy = slotXY(i);
-                    const settle = Math.min(1, (frame - s.born) / 10);
-                    ctx.fillStyle = rgba(s.rgb, (s.bright ? 0.92 : 0.26) * fade * settle);
-                    ctx.fillRect(xy[0], xy[1], TOK, TOK);
+                for (const t of landed) {
+                    const settle = Math.min(1, (frame - t.born) / 10);
+                    ctx.fillStyle = rgba(t.rgb, (t.bright ? 1 : 0.42) * settle);
+                    ctx.fillRect(t.x, t.y, TOK, TOK);
                 }
 
                 ctx.fillStyle = muted;
                 ctx.globalAlpha = 0.55;
                 ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
                 ctx.textAlign = 'right';
-                ctx.fillText(
-                    flushT > 0 ? 'batch → trainer' : 'token ids + logprobs',
-                    field.x + field.w, H - PAD_BOTTOM + 16
-                );
+                ctx.fillText('token ids + logprobs → trainer', field.x + field.w, H - PAD_BOTTOM + 16);
                 ctx.globalAlpha = 1;
-
-                // dialect legend, top-right — the only place the colour encoding is
-                // spelled out. The bottom strip belongs to the hero's own caption.
-                ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
-                ctx.textAlign = 'left';
-                const ly = 24;
-                let lw = 0;
-                for (const d of DIALECTS) lw += 10 + ctx.measureText(d.short).width + 14;
-                let lx = Math.max(seamX + 8, W - PAD_X - lw);
-                for (const d of DIALECTS) {
-                    ctx.fillStyle = rgba(d.rgb, 0.95);
-                    ctx.fillRect(lx, ly - 6, 6, 6);
-                    ctx.fillStyle = muted;
-                    ctx.globalAlpha = 0.7;
-                    ctx.fillText(d.short, lx + 10, ly);
-                    ctx.globalAlpha = 1;
-                    lx += 10 + ctx.measureText(d.short).width + 14;
-                }
 
                 outH.textContent = String(activeHarnesses);
                 outR.textContent = activeRollouts.toLocaleString();
@@ -513,7 +529,7 @@
                 const waking = frame < c.activateAt;
                 tipInner.innerHTML =
                     '<div style="font-weight:800;">' +
-                        '<span class="swatch" style="background:' + rgba(c.dialect.rgb, 1) + '"></span>' +
+                        '<span class="swatch" style="background:' + rgba(c.rgb, 1) + '"></span>' +
                         c.name +
                     '</div>' +
                     '<div style="font-size:11px;color:var(--muted-color);">' +
@@ -533,7 +549,28 @@
             canvas.addEventListener('mouseleave', () => { hover = -1; tip.style.opacity = '0'; });
 
             // ─── Run ──────────────────────────────────────────────────────────────
+            // A hero that loads empty wastes its first impression, so start with a
+            // field that already has history in it.
+            const seedField = (fraction) => {
+                const target = field.h * fraction;
+                let guard = 0;
+                while (cursor.y - field.y + blockH() <= target && guard++ < 6000) {
+                    const hi = Math.floor(Math.random() * HARNESSES.length);
+                    const ctxN = 5 + Math.floor(Math.random() * 7);
+                    const genN = 1 + Math.floor(Math.random() * 3);
+                    const pos = allocBlock(ctxN + genN);
+                    for (let k = 0; k < pos.length; k++) {
+                        landed.push({
+                            x: pos[k][0], y: pos[k][1], rgb: HUE[hi],
+                            bright: k >= ctxN, born: -100,
+                        });
+                    }
+                    tokensSeen += (ctxN + genN) * (26 + Math.floor(Math.random() * 90));
+                }
+            };
+
             layout();
+            seedField(1.0);
 
             if (reduceMotion) {
                 // Compose one representative still: a partly-filled field, no motion.
@@ -556,7 +593,7 @@
             }
 
             let rt;
-            const onResize = () => { clearTimeout(rt); rt = setTimeout(() => { layout(); draw(); }, 120); };
+            const onResize = () => { clearTimeout(rt); rt = setTimeout(() => { layout(); seedField(1.0); draw(); }, 120); };
             if ('ResizeObserver' in window) new ResizeObserver(onResize).observe(container);
             else window.addEventListener('resize', onResize);
         };
