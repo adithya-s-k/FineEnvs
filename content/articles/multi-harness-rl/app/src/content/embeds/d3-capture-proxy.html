@@ -1,66 +1,59 @@
 <div class="capture-proxy" style="width:100%;margin:14px 0;"></div>
-
 <style>
-  .capture-proxy {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
-    justify-content: center;
-    min-height: 200px;
-    padding: 28px 26px;
-    border: 1px dashed var(--border-color);
-    border-radius: 10px;
-    background: color-mix(in oklab, var(--primary-color) 4%, transparent);
-  }
-  .capture-proxy .ph-tag {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--primary-color);
-  }
-  .capture-proxy .ph-title {
-    font-size: 17px;
-    font-weight: 650;
-    color: var(--text-color);
-  }
-  .capture-proxy .ph-desc {
-    font-size: 14px;
-    line-height: 1.5;
-    max-width: 62ch;
-    color: var(--muted-color);
-  }
-  .capture-proxy .ph-file {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 12px;
-    color: var(--muted-color);
-    padding: 3px 7px;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    background: var(--surface-bg);
-  }
+  .capture-proxy { position: relative; }
+  .capture-proxy svg { display:block; width:100%; height:auto; overflow:visible; }
+  .capture-proxy .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .capture-proxy .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .capture-proxy .k { display:inline-flex; align-items:center; gap:7px; }
+  .capture-proxy .sw { width:13px; height:3px; border-radius:2px; }
+  .capture-proxy .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); max-width:62ch; }
 </style>
-
 <script>
-  (function () {
-    function bootstrap() {
-      var nodes = document.querySelectorAll('.capture-proxy');
-      for (var i = 0; i < nodes.length; i++) {
-        var root = nodes[i];
-        if (root.getAttribute('data-mounted')) continue;
-        root.setAttribute('data-mounted', '1');
-        root.innerHTML =
-          '<div class="ph-tag">Visualization to build</div>' +
-          '<div class="ph-title">The capture proxy</div>' +
-          '<div class="ph-desc">Agent to proxy to vLLM and back. Outbound: normalise and force token ids on. Return: replay in the agent\'s own dialect. Lifted off the wire: prompt_token_ids, completion_token_ids, per_token_logps.</div>' +
-          '<div class="ph-file">d3-capture-proxy.html</div>';
-      }
-    }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', bootstrap);
-    } else {
-      bootstrap();
-    }
+  (() => {
+    const C = 'capture-proxy';
+    const boot = () => {
+      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const H = Math.max(230, Math.round(W/3.1));
+        const c0 = P(0), cy = H/2 - 6;
+        const bw = Math.min(150, W*0.20), gap = (W - 3*bw - 48)/2;
+        const xs = [24, 24+bw+gap, 24+2*(bw+gap)];
+        const box = (x,t,sub,acc) => `<rect x="${x}" y="${cy-30}" width="${bw}" height="60" rx="9" fill="${sf}" stroke="${acc||bd}" stroke-width="${acc?1.6:1}"/>`
+          + `<text x="${x+bw/2}" y="${cy-4}" text-anchor="middle" font-size="12.5" font-weight="600" fill="${tx}">${t}</text>`
+          + `<text x="${x+bw/2}" y="${cy+14}" text-anchor="middle" font-size="11" fill="${mu}">${sub}</text>`;
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="An agent calls a capture proxy which forwards to vLLM and replays the answer back">`;
+        s += `<defs><marker id="cp" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="${c0}"/></marker></defs>`;
+        s += box(xs[0], 'agent', 'in a sandbox') + box(xs[1], 'capture proxy', 'session id as key', c0) + box(xs[2], 'vLLM', 'your policy');
+        [[0,1],[1,2]].forEach(([a,b2]) => {
+          s += `<line x1="${xs[a]+bw}" y1="${cy-9}" x2="${xs[b2]-6}" y2="${cy-9}" stroke="${c0}" stroke-width="1.5" marker-end="url(#cp)"/>`;
+          s += `<line x1="${xs[b2]}" y1="${cy+11}" x2="${xs[a]+bw+6}" y2="${cy+11}" stroke="${c0}" stroke-opacity=".55" stroke-width="1.5" marker-end="url(#cp)"/>`;
+        });
+        s += `<text x="${(xs[0]+bw+xs[1])/2}" y="${cy-20}" text-anchor="middle" font-size="10.5" fill="${mu}">its own dialect</text>`;
+        s += `<text x="${(xs[1]+bw+xs[2])/2}" y="${cy-20}" text-anchor="middle" font-size="10.5" fill="${mu}">normalised, ids on</text>`;
+        s += `<text x="${(xs[0]+bw+xs[1])/2}" y="${cy+30}" text-anchor="middle" font-size="10.5" fill="${mu}">replayed, SSE if asked</text>`;
+        const ly = cy+62;
+        s += `<line x1="${xs[1]+bw/2}" y1="${cy+30}" x2="${xs[1]+bw/2}" y2="${ly-14}" stroke="${c0}" stroke-dasharray="3 3"/>`;
+        s += `<text x="${xs[1]+bw/2}" y="${ly}" text-anchor="middle" font-size="11" fill="${tx}" font-family="ui-monospace,Menlo,monospace">prompt_token_ids  ·  completion_token_ids  ·  per_token_logps</text>`;
+        s += '</svg>';
+        r.innerHTML = s + `<div class="nt">The agent is unmodified and gets a byte-identical answer back. What the proxy keeps is the part a reward alone cannot give you: the exact tokens sampled and the probability they were sampled with.</div>`;
+      };
+      draw();
+      if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
+      else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   })();
 </script>

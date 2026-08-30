@@ -69,22 +69,18 @@ use tool calling at all, in how they compact context, and in how much of the con
 away from the model. Those are exactly the axes the KAT-Coder team identified as the ones a model
 overfits to.
 
-| Harness | Maker | What makes it distinct | Wire dialect |
-|---|---|---|---|
-| **Claude Code** | Anthropic | The de-facto reference implementation; agent source is not published | Anthropic Messages |
-| **Codex CLI** | OpenAI | The only harness to have deliberately deleted chat-completions support | OpenAI Responses |
-| **opencode** | Anomaly | Headless daemon with a published OpenAPI schema, so the TUI is just one client | All four |
-| **goose** | Agentic AI Foundation | The most MCP-native, and it can treat other harnesses as model providers | Anthropic, chat, Google |
-| **SWE-agent** | Princeton and Stanford | The agent-computer-interface thesis: tools installed into the container as shell scripts | chat-completions |
-| **mini-swe-agent** | Same team | Deliberately minimal, stateless steps, written to avoid scaffold overfitting | chat, Responses, text |
-| **OpenHands** | OpenHands | Event-stream architecture with a sandboxed agent server exposed over REST | chat-completions |
-| **aider** | Aider-AI | The outlier: not a tool-calling agent at all, it parses edit formats out of prose | chat-completions |
-| **Qwen Code** | Alibaba | Forked from Gemini CLI, so its internal canonical form is still Google's shape | multi, Google-shaped |
-| **Kimi CLI** | Moonshot | A coding agent that is also a shell, with the model layer factored out for reuse | chat-completions |
-| **Terminus** | Laude Institute | Uses no tool-calling API at all, parsing plain text instead | chat-completions |
-| **Hermes Agent** | Nous Research | A persistent multi-surface agent with a built-in learning loop | all three, switchable |
+{/* VIZ: harness-ecosystem-matrix: scannable HTML table, not a chart, following the pattern of
+     concept-rosetta in the previous guide. Columns: harness, maker, wire dialect, tool calling
+     yes/no, whether it is drivable from a trainer, whether Harbor ships an adapter. Tint the
+     dialect column so the four families are visible as blocks. */}
+<HtmlEmbed
+  src="harness-ecosystem-matrix.html"
+  title="The harness landscape"
+  desc="Agent harnesses, the API dialect each speaks, and what it targets."
+  frameless
+/>
 
-Two things in that table are worth pulling out. The first is that mini-swe-agent's own README gives
+Two entries in that table are worth pulling out. The first is that mini-swe-agent's own README gives
 scaffold overfitting as a reason to use it, which tells you the problem was understood by harness
 authors before it was named in a tech report. The second is aider, which does not do tool calling at
 all and instead asks the model to emit edit blocks in prose. A model trained to produce structured
@@ -97,16 +93,6 @@ harness has never heard of, or leaking raw markup into a field that was supposed
 the harness returning an error rather than a result. The model is not confused about the task. It is
 confused about the interface, and the interface is the only thing it can see.
 
-{/* VIZ: harness-ecosystem-matrix: scannable HTML table, not a chart, following the pattern of
-     concept-rosetta in the previous guide. Columns: harness, maker, wire dialect, tool calling
-     yes/no, whether it is drivable from a trainer, whether Harbor ships an adapter. Tint the
-     dialect column so the four families are visible as blocks. */}
-<HtmlEmbed
-  src="harness-ecosystem-matrix.html"
-  title="The harness landscape"
-  desc="Agent harnesses, the API dialect each speaks, and what it targets."
-  frameless
-/>
 
 The count keeps moving, which is itself part of the argument. Harbor ships adapters for roughly forty
 harnesses. The OpenEnv integration this article builds on validates sixteen end to end. Any number

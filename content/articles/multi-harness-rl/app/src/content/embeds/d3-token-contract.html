@@ -1,66 +1,66 @@
 <div class="token-contract" style="width:100%;margin:14px 0;"></div>
-
 <style>
-  .token-contract {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
-    justify-content: center;
-    min-height: 200px;
-    padding: 28px 26px;
-    border: 1px dashed var(--border-color);
-    border-radius: 10px;
-    background: color-mix(in oklab, var(--primary-color) 4%, transparent);
-  }
-  .token-contract .ph-tag {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--primary-color);
-  }
-  .token-contract .ph-title {
-    font-size: 17px;
-    font-weight: 650;
-    color: var(--text-color);
-  }
-  .token-contract .ph-desc {
-    font-size: 14px;
-    line-height: 1.5;
-    max-width: 62ch;
-    color: var(--muted-color);
-  }
-  .token-contract .ph-file {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 12px;
-    color: var(--muted-color);
-    padding: 3px 7px;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    background: var(--surface-bg);
-  }
+  .token-contract { position: relative; }
+  .token-contract svg { display:block; width:100%; height:auto; overflow:visible; }
+  .token-contract .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .token-contract .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .token-contract .k { display:inline-flex; align-items:center; gap:7px; }
+  .token-contract .sw { width:13px; height:3px; border-radius:2px; }
+  .token-contract .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); max-width:62ch; }
 </style>
-
 <script>
-  (function () {
-    function bootstrap() {
-      var nodes = document.querySelectorAll('.token-contract');
-      for (var i = 0; i < nodes.length; i++) {
-        var root = nodes[i];
-        if (root.getAttribute('data-mounted')) continue;
-        root.setAttribute('data-mounted', '1');
-        root.innerHTML =
-          '<div class="ph-tag">Visualization to build</div>' +
-          '<div class="ph-title">What a rollout returns</div>' +
-          '<div class="ph-desc">Per-turn bars: context log-scaled, sampled tokens linear and highlighted, discarded branches excluded. Legend explains masking.</div>' +
-          '<div class="ph-file">d3-token-contract.html</div>';
-      }
-    }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', bootstrap);
-    } else {
-      bootstrap();
-    }
+  (() => {
+    const C = 'token-contract';
+    const boot = () => {
+      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const T = [
+          {ctx:7994, gen:79},{ctx:8240, gen:331},{ctx:8760, gen:90},
+          {ctx:9010, gen:0, dead:1},{ctx:9180, gen:396},{ctx:9790, gen:212},
+        ];
+        const H = Math.max(210, Math.round(W/3.2));
+        const c0 = P(0), c3 = P(3);
+        const bw = (W-70)/T.length, base = H-42, top = 30;
+        const maxGen = Math.max(...T.map(t=>t.gen));
+        const lg = v => Math.log10(Math.max(1,v));
+        const maxCtx = Math.max(...T.map(t=>lg(t.ctx)));
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Per turn, context tokens log scaled against sampled tokens">`;
+        T.forEach((t,i) => {
+          const x = 40 + i*bw, w = bw-14;
+          const ch = (lg(t.ctx)/maxCtx)*(base-top)*0.62;
+          const gh = maxGen ? (t.gen/maxGen)*(base-top)*0.34 : 0;
+          s += `<rect x="${x}" y="${base-ch}" width="${w}" height="${ch}" rx="2" fill="${t.dead?c3:c0}" fill-opacity="${t.dead?.16:.22}"/>`;
+          if (gh) s += `<rect x="${x}" y="${base-ch-gh}" width="${w}" height="${gh}" rx="2" fill="${c0}"/>`;
+          if (t.dead) s += `<text x="${x+w/2}" y="${base-ch-8}" text-anchor="middle" font-size="10" fill="${c3}">discarded</text>`;
+          s += `<text x="${x+w/2}" y="${base+15}" text-anchor="middle" font-size="10" fill="${mu}" font-family="ui-monospace,Menlo,monospace">${t.ctx}</text>`;
+          if (t.gen) s += `<text x="${x+w/2}" y="${base+27}" text-anchor="middle" font-size="10" fill="${tx}" font-family="ui-monospace,Menlo,monospace">+${t.gen}</text>`;
+        });
+        s += `<line x1="34" y1="${base}" x2="${W-16}" y2="${base}" stroke="${bd}"/>`;
+        s += '</svg>';
+        r.innerHTML = s +
+          `<div class="lg"><div class="lg-t">Legend</div>` +
+          `<span class="k"><span class="sw" style="background:${c0};opacity:.25"></span>context, conditioned on, masked out of the loss</span>` +
+          `<span class="k"><span class="sw" style="background:${c0}"></span>sampled, trainable, carries a logprob</span>` +
+          `<span class="k"><span class="sw" style="background:${c3};opacity:.3"></span>abandoned branch, excluded</span></div>` +
+          `<div class="nt">Context is drawn on a log scale. A real first turn is roughly eight thousand prompt tokens against eighty sampled, so on one linear scale every completion in this chart would be a single pixel. That ratio is the reason a reward alone is such a thin signal: almost none of what the model saw is what the model chose.</div>`;
+      };
+      draw();
+      if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
+      else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   })();
 </script>
