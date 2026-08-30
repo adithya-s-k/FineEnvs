@@ -2,26 +2,151 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
 
 ## Introduction
 
-Recent frontier models are no longer post-trained inside a single agent loop. They are trained and
-evaluated across *many* harnesses — sometimes on collected traces, increasingly through RL directly
-against the harness the model will actually be used in.
+In August 2025, ByteDance published the model card for Seed-OSS-36B-Instruct. Buried in its
+benchmark table are two rows that should have caused more of a stir than they did. Both report
+SWE-Bench Verified. Both cover the same models. The only thing that changes between them is the
+scaffold the models were run inside, and between those two rows, the ranking flips.
 
-{/* TODO: open with the concrete evidence — which recent models, which harnesses, trained on
-    traces vs RL. Cite with [@key]; add the entries to bibliography.bib. */}
+Under OpenHands, Seed-OSS-36B beats Seed1.6-Thinking by 14.2 points. Under Agentless, it loses to
+the same model. One family down, the same thing happens again: Qwen3-30B-A3B beats Qwen3-32B by 7.6
+points under OpenHands, then loses to it by 6.2 under Agentless. Two independent order reversals,
+one vendor, one table, published without comment [@bytedance2025seedoss].
 
-{/* VIZ: d3-posttraining-timeline — a timeline of recent SOTA releases, each annotated with the
-    harnesses it was post-trained across and whether via traces or RL. The point the reader should
-    take away is that the count goes up and to the right. */}
+{/* VIZ: d3-scaffold-reversal: the two rows as a slope chart, so a rank reversal is
+     literally a crossing line. Data and the best-of-n caveat live in
+     assets/data/scaffold-reversal.json. */}
 <HtmlEmbed
-  src="d3-posttraining-timeline.html"
-  title="Post-training across harnesses"
-  desc="Recent model releases and the agent harnesses each was trained or evaluated against."
+  src="d3-scaffold-reversal.html"
+  title="One benchmark, two scaffolds, two rank reversals"
+  desc="SWE-Bench Verified for four models, run under OpenHands and under Agentless."
   frameless
 />
 
+There is a caveat worth stating immediately, because it is the first thing a careful reader will
+reach for. The Agentless row uses best-of-40 sampling, so part of each gap is test-time compute
+rather than the scaffold itself. That objection kills the raw point gaps, and it does not touch the
+reversals: extra sampling can move a score, but it does not explain why it moves one model past
+another and a second model in the opposite direction. "Model A is better than model B" turns out not
+to be a scaffold-invariant statement.
+
+None of this is new information to the people building these systems. Anthropic wrote it down
+plainly in 2024, in the engineering post accompanying their SWE-bench results
+[@anthropic2024swebench]:
+
+> "The performance of an agent on SWE-bench can vary significantly based on this scaffolding, even
+> when using the same underlying AI model."
+
+What has changed is the size of the effect and how much now depends on it. The SWE-bench team
+publishes every submission's harness and configuration, which makes the comparison reproducible
+rather than anecdotal. Filtering to single-attempt runs of the same weights gives numbers like these
+[@swebench2026experiments]:
+
+| Model | Weakest harness | Strongest harness | Spread |
+|---|---|---|---|
+| **Kimi K2 Instruct** | mini-SWE-agent, 43.8 | OpenHands, 65.4 | **21.6 pp** |
+| **Qwen3-Coder 480B** | mini-SWE-agent, 55.4 | OpenHands, 69.6 | **14.2 pp** |
+| **Claude 4 Sonnet** | mini-SWE-agent, 64.9 | Anthropic Tools, 72.4 | 7.5 pp |
+| **GPT-5** | mini-SWE-agent, 65.0 | OpenHands, 71.8 | 6.8 pp |
+
+Read the column on the right rather than the scores. The spread is widest for open-weight models and
+narrowest for frontier ones, which is the opposite of convenient: the models most people can
+actually train are the ones whose measured ability depends most on the program you run them in.
+Epoch AI, who track this across benchmarks, put it bluntly: "the choice of scaffold has the single
+biggest impact on the overall performance" [@brand2025benchmarking].
+
+Labs have started to say so in their own reports, in the careful way you write something you cannot
+avoid. Kimi K2 lists Terminal-Bench twice, 25.0 under the default Terminus framework and 30.0 inside
+Moonshot's in-house one, as two rows of the same table [@kimi2025k2]. MiniMax M2 names a different
+harness for each benchmark it reports, OpenHands for one, the `claude-code` CLI for the next, a
+pinned commit of Terminal-Bench's own agent for a third [@minimax2025m2card]. DeepSeek-V3.2 goes
+further and runs an explicit robustness check across Claude Code and RooCode, then admits that its
+thinking-mode context management is simply incompatible with Terminus, so one score had to be
+produced somewhere else entirely [@deepseek2025v32].
+
+That last detail is the one to sit with. A frontier lab shipped a model that could not run in a
+major harness, noticed, and reported the number from a different one.
+
 ### Why multi-harness, and why now?
 
-{/* TODO: the motivation, in three or four sentences. A model that is strong in one harness is not
-    automatically strong in another; harnesses differ in prompt format, tool surface and control
-    flow. If you train against one and ship into another, you have a distribution gap you never
-    measured. */}
+*Why has this become urgent in the last year rather than the last five?*
+
+Rewind eighteen months and the concern does not exist. Cohere's Command A report, from April 2025,
+uses the words harness, scaffold, OpenHands, SWE-agent, Agentless and Terminus exactly zero times
+[@cohere2025commanda]. It trains an agentic expert with supervised fine-tuning and offline
+preference tuning, evaluates it on code benchmarks, and never has to name the program the model runs
+inside, because at that point the program barely mattered.
+
+Three things changed. Every vendor started shipping its own CLI, so a model now has a native harness
+and a dozen foreign ones. Benchmarks moved into containers and began publishing model and agent as a
+pair rather than a model alone. And post-training moved to agentic RL, which means the harness is no
+longer just where a model is measured, it is where the model is trained.
+
+That last shift is what turns a measurement problem into a training problem, and it has a name now.
+The KAT-Coder team calls it harness scaling, and their description of the failure is the clearest in
+the literature [@kwaikat2026katcoder]:
+
+> "In agentic RL, if training relies solely on a single fixed harness, the model often learns not
+> 'how to solve the task' but 'how to solve the task under that particular harness's interface
+> conventions.'"
+
+They break it into three failure modes, which are worth keeping in mind for the rest of this
+article. **Format overfitting** anchors the model to one action format, so parse failures spike when
+the tool protocol changes. **Context-structure overfitting** makes it depend on one harness's
+history-concatenation order. **Control-flow overfitting** leaves it relying on someone else's
+reflection timing and stopping conditions, unable to plan on its own when that scaffolding is
+absent. Their prescription is to vary the harness during rollouts, which they describe as domain
+randomization applied at the level of the environment.
+
+The cost of not doing this has been measured, and it is not a gentle degradation. The Orchard team
+trained a software-engineering agent in a single harness and then ran it in others
+[@peng2026orchard]:
+
+| System | OpenHands | mini-swe-agent | Kimi-CLI |
+|---|---|---|---|
+| **OpenSWE-32B**, single-harness | 62.4 | 54.9 | **3.6** |
+| **Orchard-SWE**, multi-harness | 62.1 | 64.3 | **45.0** |
+
+A model that resolves 62.4 percent of SWE-bench Verified in the harness it was trained in resolves
+3.6 percent in one it has never seen. Not a worse score, a broken one. Their conclusion is the
+thesis of this article, stated by someone else first: "no single-harness training corpus can produce
+an agent that generalizes well across the harness ecosystem; multi-harness training is necessary."
+
+The obvious worry is that spreading training across harnesses buys robustness by giving up peak
+performance on the one you care about. The only controlled ablation published so far says otherwise.
+OpenForgeRL trained the same base model on one harness and on three, then evaluated on all of them
+[@yu2026openforgerl]:
+
+| Training | ZeroClaw | OpenClaw | Codex |
+|---|---|---|---|
+| None, base model | 32.5 | 11.4 | 12.2 |
+| ZeroClaw only | 46.0 | 14.7 | 16.8 |
+| ZeroClaw, OpenClaw and Codex | **48.5** | **20.9** | **32.5** |
+
+Training on three harnesses beat training on one, including on that one harness's own turf, 48.5
+against 46.0. The authors attribute it to the diversity of tool calls and control flows the model
+sees. Harness diversity behaved like a regularizer rather than a tax.
+
+So the argument is not speculative. Four labs describe multi-harness post-training in primary
+sources, one of them coins the term harness randomization in an abstract, and the counterfactual has
+been measured. What is missing is stranger: there is no open-source multi-harness training run to
+point at. The abstractions exist, in OpenEnv, in verifiers, in SkyRL, in Harbor, but every published
+result that actually trains across the cross-product comes from a closed or semi-closed lab. Nobody
+has swept how many harnesses you need, or along which axes, before the returns flatten out.
+
+That gap is what this article is for. The rest of it works through what a harness actually is, what
+an RL environment actually is, how to capture trainable tokens from an agent you do not control, and
+then does the thing: trains a small model across many harnesses, evaluates it in all of them, and
+reports what happened, including the parts that did not work.
+
+{/* TODO: once the Data Agent numbers are final, close the introduction with a one-paragraph
+     preview of the headline result so the reader knows what they are reading toward. */}
+
+{/* VIZ: d3-posttraining-timeline: recent model releases on a timeline, each annotated with
+     whether its report names a harness at all, names one per benchmark row, or describes
+     training across several. The Cohere-to-KAT arc should be visible as a slope. */}
+<HtmlEmbed
+  src="d3-posttraining-timeline.html"
+  title="When the harness entered the tech report"
+  desc="Recent releases, and whether each names the harness it was measured or trained in."
+  frameless
+/>
