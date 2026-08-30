@@ -1,5 +1,5 @@
 ---
-title: "The ultimate guide to multi-harness RL: one environment server, many agent harnesses"
+title: "The ultimate guide to multi-harness RL"
 short_description: "Training and evals together across many agent harnesses"
 emoji: 🔀
 colorFrom: green
@@ -21,8 +21,6 @@ thumbnail: >-
 # Multi-Harness RL
 
 A research article built with [research-article-template](https://huggingface.co/spaces/tfrere/research-article-template).
-
-**One environment server, many agent harnesses — training and evals together.**
 
 Source lives in [HuggingEnvs](https://github.com/adithya-s-k/HuggingEnvs) under
 `content/articles/multi-harness-rl/`.
