@@ -2,7 +2,7 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
 
 ## Training and ablations
 
-{/* TODO: the training setup — base models, trainer, hyperparameters, hardware, wall clock and
+{/* TODO: the training setup, base models, trainer, hyperparameters, hardware, wall clock and
     roughly what it cost. State it plainly enough that someone could rerun it.
 
     Runs and checkpoints on the Hub:
@@ -14,7 +14,7 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
     final vs best checkpoints for each.
 */}
 
-{/* VIZ: d3-training-curves — reward over training steps, one line per run, all ablations overlaid
+{/* VIZ: d3-training-curves, reward over training steps, one line per run, all ablations overlaid
     on shared axes so they are actually comparable. Mark where "best" was taken for each run. Include
     the runs that did not work; a plot with only the good curve is not evidence. */}
 <HtmlEmbed
@@ -24,7 +24,7 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
   frameless
 />
 
-{/* VIZ: ablation-matrix — a compact table: rows are runs (2B/4B × normal/curriculum), columns are
+{/* VIZ: ablation-matrix, a compact table: rows are runs (2B/4B × normal/curriculum), columns are
     the eval numbers plus final vs best. This is the table a reader screenshots. */}
 <HtmlEmbed
   src="ablation-matrix.html"
@@ -37,5 +37,5 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
 
 {/* TODO: what the ablations settled and what they did not. Did curriculum ordering help, and at
     which size? Did training in one harness transfer to the others, or did it overfit to the
-    harness it saw? That transfer question is the one this whole article exists to answer — answer
+    harness it saw? That transfer question is the one this whole article exists to answer, answer
     it explicitly, including if the answer is "not much". */}

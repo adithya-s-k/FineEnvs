@@ -1,0 +1,303 @@
+<!-- Carried over from The ultimate guide to RL environments, unchanged, so the two
+     articles share one visual vocabulary. Source: content/articles/rl-environments-guide/
+     app/src/content/embeds/taxonomy-of-environment.html -->
+<div class="env-taxonomy-wrap" style="width:100%;margin:14px 0;"></div>
+<style>
+  .env-taxonomy-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* ─── Toggle ─── */
+  .env-taxonomy__toggle {
+    display: inline-flex;
+    align-self: flex-end;
+    padding: 3px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--surface-bg);
+    gap: 2px;
+  }
+  .env-taxonomy__toggle button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border: 0;
+    background: transparent;
+    color: var(--muted-color);
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .env-taxonomy__toggle button:hover { color: var(--text-color); }
+  .env-taxonomy__toggle button.active {
+    background: color-mix(in oklab, var(--text-color) 10%, transparent);
+    color: var(--text-color);
+  }
+  .env-taxonomy__toggle svg { width: 12px; height: 12px; }
+
+  /* ─── Container variants ─── */
+  .env-taxonomy[data-view="grid"] {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+  }
+  .env-taxonomy[data-view="table"] {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ─── Card (shared base) ─── */
+  .env-taxonomy__card {
+    position: relative;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--surface-bg);
+    padding: 14px 14px 12px 14px;
+    box-sizing: border-box;
+    min-width: 0;
+    overflow: hidden;
+    transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+  }
+  .env-taxonomy__card:hover {
+    border-color: color-mix(in oklab, var(--row-color) 50%, var(--border-color));
+    box-shadow: 0 4px 14px color-mix(in oklab, var(--row-color) 18%, transparent);
+  }
+
+  /* GRID variant: top accent stripe + vertical stacking */
+  .env-taxonomy[data-view="grid"] .env-taxonomy__card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .env-taxonomy[data-view="grid"] .env-taxonomy__card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--row-color);
+  }
+  .env-taxonomy[data-view="grid"] .env-taxonomy__card:hover {
+    transform: translateY(-1px);
+  }
+
+  /* TABLE variant: 2 columns. Left = icon+name+question stacked. Right = example. */
+  .env-taxonomy[data-view="table"] .env-taxonomy__card {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.5fr);
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "head    example"
+      "answer  example";
+    gap: 4px 22px;
+    align-items: start;
+    padding: 14px 14px 14px 18px;
+  }
+  .env-taxonomy[data-view="table"] .env-taxonomy__card::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 3px;
+    background: var(--row-color);
+  }
+  .env-taxonomy[data-view="table"] .env-taxonomy__head    { grid-area: head; }
+  .env-taxonomy[data-view="table"] .env-taxonomy__answer  { grid-area: answer; padding-left: 42px; }
+  .env-taxonomy[data-view="table"] .env-taxonomy__example {
+    grid-area: example;
+    align-self: center;
+    padding-top: 0;
+  }
+  @media (max-width: 640px) {
+    .env-taxonomy[data-view="table"] .env-taxonomy__card {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "head"
+        "answer"
+        "example";
+      gap: 8px;
+    }
+    .env-taxonomy[data-view="table"] .env-taxonomy__answer { padding-left: 42px; }
+  }
+
+  /* ─── Header row (table view only) ─── */
+  .env-taxonomy__header {
+    display: none;
+  }
+  .env-taxonomy[data-view="table"] .env-taxonomy__header {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.5fr);
+    gap: 22px;
+    padding: 6px 14px 8px 21px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.0px;
+    text-transform: uppercase;
+    color: var(--muted-color);
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 4px;
+  }
+  @media (max-width: 640px) {
+    .env-taxonomy[data-view="table"] .env-taxonomy__header { display: none; }
+  }
+
+  /* ─── Cell content ─── */
+  .env-taxonomy__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .env-taxonomy__icon {
+    width: 32px; height: 32px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    background: color-mix(in oklab, var(--row-color) 14%, var(--surface-bg));
+    border: 1px solid color-mix(in oklab, var(--row-color) 35%, var(--border-color));
+    color: var(--row-color);
+    flex-shrink: 0;
+  }
+  .env-taxonomy__icon svg { width: 16px; height: 16px; }
+
+  .env-taxonomy__name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-color);
+    line-height: 1.25;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .env-taxonomy__answer {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted-color);
+    font-style: italic;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .env-taxonomy__example {
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--text-color);
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .env-taxonomy[data-view="grid"] .env-taxonomy__example {
+    margin-top: auto;
+    padding-top: 6px;
+  }
+  .env-taxonomy__example code {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10.5px;
+    padding: 1px 5px;
+    background: color-mix(in oklab, var(--muted-color) 12%, transparent);
+    border: 1px solid color-mix(in oklab, var(--muted-color) 18%, var(--border-color));
+    border-radius: 4px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.4;
+    margin: 1px 0;
+  }
+</style>
+<script>
+  (() => {
+    const bootstrap = () => {
+      const scriptEl = document.currentScript;
+      let container = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(container && container.classList && container.classList.contains('env-taxonomy-wrap'))) {
+        const cands = Array.from(document.querySelectorAll('.env-taxonomy-wrap'))
+          .filter(el => !(el.dataset && el.dataset.mounted === 'true'));
+        container = cands[cands.length - 1] || null;
+      }
+      if (!container || (container.dataset && container.dataset.mounted === 'true')) return;
+      container.dataset.mounted = 'true';
+
+      const ICONS = {
+        database: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>',
+        spark:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3"/></svg>',
+        message:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>',
+        wrench:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+        eye:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+        server:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><line x1="6" y1="7" x2="6.01" y2="7"/><line x1="6" y1="17" x2="6.01" y2="17"/></svg>',
+        memory:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10v4M11 10v4M15 10v4"/><path d="M3 11h18M3 13h18"/></svg>',
+        scales:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 21h14"/><path d="M5 8l-3 6a3 3 0 0 0 6 0l-3-6z"/><path d="M19 8l-3 6a3 3 0 0 0 6 0l-3-6z"/><path d="M5 8l7-3 7 3"/></svg>',
+        flag:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4l8 3 4-2 4 3v9l-4-3-4 2-8-3"/></svg>',
+        baton:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 18 0 9 9 0 0 1-18 0z"/><path d="M12 7v5l3 2"/></svg>',
+        plug:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6"/><path d="M15 2v6"/><path d="M6 8h12v4a6 6 0 0 1-12 0z"/><path d="M12 18v4"/></svg>'
+      };
+
+      const COMPONENTS = [
+        { icon: ICONS.database, color: '#3b82f6', name: 'Tasks / Dataset',          answer: 'What problems should the model solve?',                                              example: 'Coding tasks, math problems, game instances' },
+        { icon: ICONS.spark,    color: '#8b5cf6', name: 'Initial State Management', answer: 'How is per-episode state set up at the start of a rollout?',                          example: '<code>reset()</code> populates state, <code>setup()</code> lifecycle, <code>seed_session</code> endpoint, <code>setup_state</code> hook' },
+        { icon: ICONS.message,  color: '#a855f7', name: 'Prompt Template',          answer: 'How is the task presented to the model?',                                            example: 'System prompt + user instruction + tool descriptions' },
+        { icon: ICONS.wrench,   color: '#ec4899', name: 'Tool Definition',          answer: 'What can the model do in the world?',                                                example: '<code>execute_code()</code>, <code>search()</code>, <code>submit_answer()</code>' },
+        { icon: ICONS.eye,      color: '#f97316', name: 'Observation Format',       answer: 'What does the model see back after an action?',                                      example: 'Raw text, structured <code>ToolOutput</code> with blocks, Gymnasium 5-tuple' },
+        { icon: ICONS.server,   color: '#f59e0b', name: 'Execution Backend',        answer: 'Where do actions actually run?',                                                     example: 'Cloud sandbox, Docker container, Python <code>eval()</code>, game simulator, or none (pure Python)' },
+        { icon: ICONS.memory,   color: '#eab308', name: 'State Management',         answer: 'How is state tracked across turns?',                                                example: 'Session cookies, sandbox persistence, conversation history' },
+        { icon: ICONS.scales,   color: '#22c55e', name: 'Reward / Rubric',          answer: "How do we score the model's behavior?",                                              example: 'String matching, LLM-as-judge, unit tests, <code>verify()</code> endpoint' },
+        { icon: ICONS.flag,     color: '#10b981', name: 'Done / Termination',       answer: 'How does the episode end?',                                                          example: '<code>finished</code> per tool call, <code>terminated</code> / <code>truncated</code>, max turns, <code>verify()</code> decides' },
+        { icon: ICONS.baton,    color: '#14b8a6', name: 'Episode Control',          answer: 'Who drives the multi-turn loop and decides when to stop?',                           example: 'Trainer (TRL), environment (Atropos), or framework (Verifiers)' },
+        { icon: ICONS.plug,     color: '#06b6d4', name: 'Transport / Protocol',     answer: 'How does the model talk to the environment?',                                        example: 'HTTP REST, WebSockets, JSON-RPC (MCP), SSE, in-process Python calls' }
+      ];
+
+      const ICON_GRID = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>';
+      const ICON_TABLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>';
+
+      // Build DOM
+      const cardsHtml = COMPONENTS.map(c => `
+        <article class="env-taxonomy__card" style="--row-color:${c.color};">
+          <header class="env-taxonomy__head">
+            <span class="env-taxonomy__icon">${c.icon}</span>
+            <span class="env-taxonomy__name">${c.name}</span>
+          </header>
+          <div class="env-taxonomy__answer">${c.answer}</div>
+          <div class="env-taxonomy__example">${c.example}</div>
+        </article>
+      `).join('');
+
+      container.innerHTML = `
+        <div class="env-taxonomy__toggle" role="tablist" aria-label="View mode">
+          <button type="button" data-view="grid"  role="tab" aria-selected="false">${ICON_GRID}<span>Grid</span></button>
+          <button type="button" data-view="table" class="active" role="tab" aria-selected="true">${ICON_TABLE}<span>Table</span></button>
+        </div>
+        <div class="env-taxonomy" data-view="table">
+          <div class="env-taxonomy__header" aria-hidden="true">
+            <span>Component &amp; what it answers</span>
+            <span>Example</span>
+          </div>
+          ${cardsHtml}
+        </div>
+      `;
+
+      const taxonomyEl = container.querySelector('.env-taxonomy');
+      const buttons = container.querySelectorAll('.env-taxonomy__toggle button');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const view = btn.getAttribute('data-view');
+          taxonomyEl.setAttribute('data-view', view);
+          buttons.forEach(b => {
+            const active = b.getAttribute('data-view') === view;
+            b.classList.toggle('active', active);
+            b.setAttribute('aria-selected', active ? 'true' : 'false');
+          });
+        });
+      });
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootstrap, { once: true });
+    } else {
+      bootstrap();
+    }
+  })();
+</script>

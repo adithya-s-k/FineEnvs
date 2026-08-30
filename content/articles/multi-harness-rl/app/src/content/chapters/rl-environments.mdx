@@ -10,12 +10,33 @@ tool calls, the observations are tool results, and the reward comes from a grade
 finished trajectory. What separates it from a benchmark is that a benchmark is a fixed task set plus
 a comparison protocol, administered on top of environments.
 
-That is the whole definition this article needs. The previous guide,
-[The ultimate guide to RL environments](https://huggingface.co/spaces/AdithyaSK/rl-environments-guide),
-spends a chapter on the anatomy, walks the five-stage spine from tasks through harness and reward to
-rollout collection and training, and compares how six frameworks slice it. If any of the vocabulary
-below feels thin, that is where the depth is. This chapter only covers what changes once the agent,
-rather than the trainer, is driving.
+Drawn out, the two halves look like this. On one side a training loop that samples, scores and
+updates. On the other an environment made of far more parts than the word suggests.
+
+{/* Carried over from the previous guide so the two articles share one picture of the anatomy.
+     Do not redraw it here; if it changes, it should change in both. */}
+<HtmlEmbed src="d3-anatomy-hero.html" frameless />
+
+The pieces inside that box are worth naming once, because the rest of this article keeps reaching
+for them: a task set, a prompt template, tools, observations, an execution backend, world state, a
+reward rule and a termination condition. Every environment has all of them, whether or not its
+framework gives you a name for each. Note the box labelled tools and harness, which is the previous
+guide's narrower use of the word, meaning the tool surface rather than the agent program.
+
+<HtmlEmbed src="taxonomy-of-environment.html" frameless />
+
+And this is the shape a single rollout takes once the model is a language model and the actions are
+tool calls: write, run, read the result, decide what to try next, and eventually submit something a
+grader can score.
+
+<HtmlEmbed src="d3-llm-rl-coding.html" frameless />
+
+That is the whole definition this article needs, and all three figures are lifted from
+[The ultimate guide to RL environments](https://huggingface.co/spaces/AdithyaSK/rl-environments-guide)
+rather than redrawn, so the vocabulary carries over intact. That guide spends a full chapter on the
+anatomy, walks the five-stage spine from tasks through harness and reward to rollout collection and
+training, and compares how six frameworks slice it. If anything above feels thin, that is where the
+depth is. This chapter only covers what changes once the agent, rather than the trainer, is driving.
 
 ### Why OpenEnv?
 
@@ -71,6 +92,14 @@ outward, harness state and environment state alike, is latent.
 > a harness's internals are inspectable, with mini-swe-agent as white-box and Claude Code as
 > black-box. That is a property of the harness. The sense used here is a property of the training
 > setup, meaning who owns the loop. The two often coincide and they are not the same axis.
+
+The previous guide already drew a version of this split, framed as whether the trainer or the
+environment drives the episode. Every framework it tested sat on the left-hand side.
+
+<HtmlEmbed src="d3-episode-control.html" frameless />
+
+What follows is that same axis pushed one step further out. There, the thing that might own the loop
+was another RL framework. Here it is an agent binary that was never written with training in mind.
 
 {/* VIZ: d3-white-black-box: the two architectures side by side. Left: trainer and environment in
      a closed loop, solid arrows, "you drive it". Right: trainer to sandbox, dashed, the agent loop

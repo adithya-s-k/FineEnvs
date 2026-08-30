@@ -1,0 +1,364 @@
+<!-- Carried over from The ultimate guide to RL environments, unchanged, so the two
+     articles share one visual vocabulary. Source: content/articles/rl-environments-guide/
+     app/src/content/embeds/d3-episode-control.html -->
+<div class="d3-episode-control" style="width:100%;margin:14px 0;"></div>
+<style>
+  .d3-episode-control {
+    position: relative;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--surface-bg);
+    overflow: hidden;
+    color: var(--text-color);
+    --c-trainer: #3b82f6;
+    --c-env: #ec4899;
+  }
+
+  .d3-episode-control__header {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 12px 16px; padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .d3-episode-control__title {
+    font-size: 11px; font-weight: 800; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--muted-color);
+    margin-right: auto;
+  }
+  .d3-episode-control__btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 7px;
+    border: 1px solid var(--border-color);
+    background: var(--surface-bg); color: var(--text-color);
+    font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .d3-episode-control__btn.primary {
+    border-color: var(--primary-color);
+    background: color-mix(in oklab, var(--primary-color) 12%, var(--surface-bg));
+  }
+  .d3-episode-control__btn svg { width: 12px; height: 12px; }
+  .d3-episode-control__speed {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; color: var(--muted-color);
+  }
+  .d3-episode-control__speed input[type=range] { width: 100px; accent-color: var(--primary-color); }
+  .d3-episode-control__speed-val {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--text-color); font-size: 11px;
+    min-width: 36px; text-align: right;
+  }
+
+  .d3-episode-control__body {
+    padding: 18px 16px 14px 16px;
+    display: flex; flex-direction: column; gap: 18px;
+    background: color-mix(in oklab, var(--muted-color) 3%, transparent);
+  }
+
+  /* one swimlane */
+  .swim {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 14px 14px 14px;
+    background: var(--surface-bg);
+    position: relative;
+    --c: var(--c-trainer);
+  }
+  .swim.env { --c: var(--c-env); }
+  .swim__head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .swim__head .swatch {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--c);
+    flex-shrink: 0;
+  }
+  .swim__head .label {
+    font-size: 11.5px; font-weight: 700;
+    color: var(--text-color);
+  }
+  .swim__head .tag {
+    font-size: 9.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: color-mix(in oklab, var(--c) 90%, var(--text-color));
+    background: color-mix(in oklab, var(--c) 12%, transparent);
+    border: 1px solid color-mix(in oklab, var(--c) 30%, var(--border-color));
+  }
+  .swim__head .who {
+    margin-left: auto;
+    font-size: 10.5px;
+    color: var(--muted-color);
+  }
+  .swim__head .who strong { color: var(--text-color); font-weight: 600; }
+
+  /* timeline */
+  .swim__timeline {
+    position: relative;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .swim__timeline svg {
+    display: block;
+    width: 100%;
+    min-width: 580px;
+    height: 80px;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+  }
+  .swim__timeline .baseline {
+    stroke: var(--border-color);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 3;
+    fill: none;
+  }
+  .swim__timeline .step-rect {
+    fill: color-mix(in oklab, var(--c) 12%, var(--surface-bg));
+    stroke: color-mix(in oklab, var(--c) 30%, var(--border-color));
+    stroke-width: 1;
+  }
+  .swim__timeline .step-label {
+    fill: var(--text-color);
+    font-size: 10.5px;
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .swim__timeline .arrow {
+    stroke: var(--muted-color);
+    stroke-width: 1.2;
+    fill: none;
+  }
+  .swim__timeline .packet {
+    fill: var(--c);
+    opacity: 0;
+  }
+
+  /* packet animations: trainer-driven (6 stops) and env-driven (5 stops) */
+  .d3-episode-control.playing .packet { animation-play-state: running; }
+  .d3-episode-control:not(.playing) .packet { animation-play-state: paused; opacity: 0; }
+
+  .swim.trainer .packet {
+    animation: ec-packet-trainer var(--dur, 4.8s) linear infinite;
+  }
+  @keyframes ec-packet-trainer {
+    0%   { opacity: 0; transform: translate(50px, 0); }
+    2%   { opacity: 1; }
+    /* 6 stops over the cycle, evenly spaced */
+    16%  { transform: translate(50px, 0); }
+    18%  { transform: translate(150px, 0); }
+    33%  { transform: translate(150px, 0); }
+    35%  { transform: translate(250px, 0); }
+    50%  { transform: translate(250px, 0); }
+    52%  { transform: translate(350px, 0); }
+    66%  { transform: translate(350px, 0); }
+    68%  { transform: translate(450px, 0); }
+    84%  { transform: translate(450px, 0); }
+    86%  { transform: translate(550px, 0); }
+    98%  { transform: translate(550px, 0); opacity: 1; }
+    100% { transform: translate(550px, 0); opacity: 0; }
+  }
+
+  .swim.env .packet {
+    animation: ec-packet-env var(--dur, 4.8s) linear infinite;
+  }
+  @keyframes ec-packet-env {
+    0%   { opacity: 0; transform: translate(50px, 0); }
+    2%   { opacity: 1; }
+    18%  { transform: translate(50px, 0); }
+    20%  { transform: translate(175px, 0); }
+    38%  { transform: translate(175px, 0); }
+    40%  { transform: translate(300px, 0); }
+    58%  { transform: translate(300px, 0); }
+    60%  { transform: translate(425px, 0); }
+    78%  { transform: translate(425px, 0); }
+    80%  { transform: translate(550px, 0); }
+    98%  { transform: translate(550px, 0); opacity: 1; }
+    100% { transform: translate(550px, 0); opacity: 0; }
+  }
+
+  /* framework chips below each swimlane */
+  .swim__chips {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 10px;
+  }
+  .swim__chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    font-size: 10.5px; font-weight: 600;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--cc, var(--border-color)) 35%, var(--border-color));
+    background: color-mix(in oklab, var(--cc, transparent) 8%, transparent);
+    color: var(--text-color);
+  }
+  .swim__chip .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--cc, var(--muted-color));
+    flex-shrink: 0;
+  }
+  .swim__note {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--muted-color);
+    line-height: 1.5;
+  }
+
+  .d3-episode-control__caption {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border-color);
+    font-size: 11.5px;
+    color: var(--muted-color);
+    font-style: italic;
+    line-height: 1.55;
+  }
+</style>
+<script>
+(() => {
+  const bootstrap = () => {
+    const scriptEl = document.currentScript;
+    let container = scriptEl ? scriptEl.previousElementSibling : null;
+    if (!(container && container.classList && container.classList.contains('d3-episode-control'))) {
+      const cands = Array.from(document.querySelectorAll('.d3-episode-control'))
+        .filter(el => !(el.dataset && el.dataset.mounted === 'true'));
+      container = cands[cands.length - 1] || null;
+    }
+    if (!container || (container.dataset && container.dataset.mounted === 'true')) return;
+    container.dataset.mounted = 'true';
+
+    // trainer-driven: 6 stops at x = 50, 150, 250, 350, 450, 550
+    const trainerStops = [
+      { x: 50,  label: 'generate' },
+      { x: 150, label: 'parse calls' },
+      { x: 250, label: 'env.tool()' },
+      { x: 350, label: 'generate' },
+      { x: 450, label: 'reward fn' },
+      { x: 550, label: 'policy update' },
+    ];
+    // env-driven: 5 stops at x = 50, 175, 300, 425, 550
+    const envStops = [
+      { x: 50,  label: 'env.generate' },
+      { x: 175, label: 'env.score' },
+      { x: 300, label: 'POST batch' },
+      { x: 425, label: 'trainer.GET' },
+      { x: 550, label: 'update weights' },
+    ];
+
+    const renderTimeline = (stops) => {
+      const baseY = 40;
+      const rectW = 86, rectH = 24;
+      let svg = `<svg viewBox="0 0 600 80" preserveAspectRatio="none">`;
+      // baseline arrow
+      svg += `<line class="baseline" x1="20" y1="${baseY}" x2="580" y2="${baseY}"/>`;
+      stops.forEach(s => {
+        svg += `<rect class="step-rect" x="${s.x - rectW/2}" y="${baseY - rectH/2}" width="${rectW}" height="${rectH}" rx="6"/>`;
+        svg += `<text class="step-label" x="${s.x}" y="${baseY + 4}" text-anchor="middle">${s.label}</text>`;
+      });
+      // animated packet (cx=0, translated via transform)
+      svg += `<circle class="packet" cx="0" cy="${baseY}" r="4"/>`;
+      svg += `</svg>`;
+      return svg;
+    };
+
+    container.innerHTML = `
+      <div class="d3-episode-control__header">
+        <div class="d3-episode-control__title">Episode control · who drives the loop?</div>
+        <button type="button" class="d3-episode-control__btn primary" data-act="play">
+          <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg>
+          <span data-label>Play</span>
+        </button>
+        <label class="d3-episode-control__speed">
+          Speed
+          <input type="range" min="0.4" max="2" step="0.1" value="1" data-act="speed">
+          <span class="d3-episode-control__speed-val" data-speed-val>1.0×</span>
+        </label>
+      </div>
+
+      <div class="d3-episode-control__body">
+
+        <div class="swim trainer">
+          <div class="swim__head">
+            <span class="swatch"></span>
+            <span class="label">Trainer-driven</span>
+            <span class="tag">most frameworks</span>
+            <span class="who">trainer owns: <strong>generate · parse · loop · update</strong></span>
+          </div>
+          <div class="swim__timeline">${renderTimeline(trainerStops)}</div>
+          <div class="swim__chips">
+            <span class="swim__chip" style="--cc:#3b82f6;"><span class="dot"></span>OpenEnv</span>
+            <span class="swim__chip" style="--cc:#a855f7;"><span class="dot"></span>ORS</span>
+            <span class="swim__chip" style="--cc:#22c55e;"><span class="dot"></span>NeMo Gym</span>
+            <span class="swim__chip" style="--cc:#f59e0b;"><span class="dot"></span>SkyRL Gym</span>
+            <span class="swim__chip" style="--cc:#14b8a6;"><span class="dot"></span>GEM</span>
+          </div>
+          <div class="swim__note">
+            Trainer generates a turn, parses tool calls out of the model output, hits the env, repeats. Env is passive: it answers tool calls but never initiates anything. Trainer also enforces <code>max_completion_length</code>, retries, and termination.
+          </div>
+        </div>
+
+        <div class="swim env">
+          <div class="swim__head">
+            <span class="swatch"></span>
+            <span class="label">Environment-driven</span>
+            <span class="tag">opt-in modes</span>
+            <span class="who">env owns: <strong>generation + scoring + batch hand-off</strong></span>
+          </div>
+          <div class="swim__timeline">${renderTimeline(envStops)}</div>
+          <div class="swim__chips">
+            <span class="swim__chip" style="--cc:#ec4899;"><span class="dot"></span>Verifiers · <code style="background:transparent;padding:0;">env.evaluate()</code></span>
+            <span class="swim__chip" style="--cc:#9ca3af;"><span class="dot"></span>Atropos (not tested)</span>
+          </div>
+          <div class="swim__note">
+            Env owns its own vLLM (Atropos) or runs the full rollout internally (<code>vf.evaluate()</code>) and pushes finished batches to the trainer. Changes how you think about batching, GPU sharing, and parallelism.
+          </div>
+        </div>
+
+      </div>
+
+      <div class="d3-episode-control__caption">
+        Two ways to drive a multi-turn rollout. The trainer-driven shape is what every framework supports out of the box and what we tested. The env-driven shape is opt-in (Verifiers' evaluate mode, Atropos) and matters when the env wants to own batching or run on its own GPU.
+      </div>
+    `;
+
+    // controls
+    const playBtn = container.querySelector('[data-act="play"]');
+    const playLbl = container.querySelector('[data-label]');
+    const speedInput = container.querySelector('[data-act="speed"]');
+    const speedVal = container.querySelector('[data-speed-val]');
+
+    let playing = false;
+    const setPlaying = (next) => {
+      playing = next;
+      container.classList.toggle('playing', playing);
+      playLbl.textContent = playing ? 'Pause' : 'Play';
+      const icon = playBtn.querySelector('svg');
+      icon.innerHTML = playing
+        ? '<rect x="6" y="5" width="4" height="14" fill="currentColor"/><rect x="14" y="5" width="4" height="14" fill="currentColor"/>'
+        : '<polygon points="6,4 20,12 6,20" fill="currentColor"/>';
+    };
+    playBtn.addEventListener('click', () => setPlaying(!playing));
+
+    const updateSpeed = () => {
+      const s = parseFloat(speedInput.value);
+      const dur = (4.8 / s).toFixed(2) + 's';
+      container.style.setProperty('--dur', dur);
+      speedVal.textContent = s.toFixed(1) + '×';
+    };
+    speedInput.addEventListener('input', updateSpeed);
+    updateSpeed();
+
+    const io = ('IntersectionObserver' in window) ? new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting && !playing) {
+          setPlaying(true);
+          io.disconnect();
+        }
+      });
+    }, { threshold: 0.3 }) : null;
+    if (io) io.observe(container); else setPlaying(true);
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootstrap, { once: true });
+  } else {
+    bootstrap();
+  }
+})();
+</script>

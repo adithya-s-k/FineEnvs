@@ -4,14 +4,14 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
 
 ### What is Harbor?
 
-Harbor decouples the task, the harness and the sandbox behind one interface — which is exactly the
+Harbor decouples the task, the harness and the sandbox behind one interface, which is exactly the
 decoupling a multi-harness training setup needs, already built.
 
 {/* TODO: describe it from the specification's point of view: what it standardises and what it
     supports. Roughly 20+ benchmarks, 37 harnesses, 23 sandbox backends. It is the official harness
     for Terminal-Bench 2.0. Its trace format is ATIF, which matters later for validation. */}
 
-{/* VIZ: harbor-matrix — the three axes multiplied out: benchmarks (Terminal-Bench, SWE-Bench) ×
+{/* VIZ: harbor-matrix, the three axes multiplied out: benchmarks (Terminal-Bench, SWE-Bench) ×
     harnesses (claude-code, codex, …) × sandboxes (docker, e2b, modal). Big numbers with an × between
     them. The size of the product is the argument for integrating rather than reimplementing. */}
 <HtmlEmbed
@@ -21,7 +21,7 @@ decoupling a multi-harness training setup needs, already built.
   frameless
 />
 
-{/* TODO: state the framing question explicitly — how do we integrate this with OpenEnv *without
+{/* TODO: state the framing question explicitly, how do we integrate this with OpenEnv *without
     reimplementing any of it*? Then the division of labour: OpenEnv brings the env server, Task API,
     typed client, sandbox transport and CLI; Harbor brings tasks, verifiers, harnesses, backends and
     trial concurrency; the only new pieces are the capture proxy, the rollout graph and the trainable
@@ -30,18 +30,18 @@ decoupling a multi-harness training setup needs, already built.
 
 ### Serving Harbor through OpenEnv, for evals and for training
 
-Pick a dataset, pick a sandbox, pick a harness, run a rollout — and get back a trainable trajectory,
+Pick a dataset, pick a sandbox, pick a harness, run a rollout, and get back a trainable trajectory,
 or, without token capture, a clean eval.
 
 {/* TODO: the CLI surface, from OpenEnv PR #1036:
-      openenv harbor info     — what this machine can actually run; read-only, boots nothing
-      openenv harbor rollout  — rollouts with no env server; also the debugging path
-      openenv harbor serve    — the env server: Task API, run_rollout MCP tool, web UI
-      openenv harbor push     — deploy the same server to a Space
+      openenv harbor info    , what this machine can actually run; read-only, boots nothing
+      openenv harbor rollout , rollouts with no env server; also the debugging path
+      openenv harbor serve   , the env server: Task API, run_rollout MCP tool, web UI
+      openenv harbor push    , deploy the same server to a Space
     Note that --llm-url is required with no default and no env fallback, because an unset endpoint
     produces rollouts that look completely normal and carry no token ids. */}
 
-{/* VIZ: d3-serve-flow — the six steps from `openenv harbor serve` to a returned rollout, as a
+{/* VIZ: d3-serve-flow, the six steps from `openenv harbor serve` to a returned rollout, as a
     numbered vertical pipeline: 1 certify the endpoint (refuses to start without token ids),
     2 check the sandboxes (credentials and SDK, before anything boots), 3 start the proxy and
     publish it, 4 mint a session whose id becomes the agent's API key, 5 Harbor runs the trial,
@@ -53,5 +53,5 @@ or, without token capture, a clean eval.
   frameless
 />
 
-{/* TODO: emphasise the payoff — harness and sandbox are arguments *per rollout*, not baked into the
+{/* TODO: emphasise the payoff, harness and sandbox are arguments *per rollout*, not baked into the
     deployment, so one server covers the whole matrix. */}

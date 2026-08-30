@@ -4,20 +4,20 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
 
 Everything above assembled into one stack, and the code to run it.
 
-{/* TODO: how the pieces fit — the trainer, the env server, the capture proxy, the sandbox, and what
+{/* TODO: how the pieces fit, the trainer, the env server, the capture proxy, the sandbox, and what
     flows between them. Worth stating the architectural reason the HTTP boundary exists: a failed
     rollout returns a result, never an exception. In the in-process predecessor a rollout exception
     reached the trainer and hung every rank at the NCCL barrier forever. Behind an HTTP boundary that
     failure class cannot occur, and eval and training collapse onto one code path. */}
 
-{/* VIZ: d3-full-stack — the whole system in one diagram: trainer ⇄ env server ⇄ capture proxy ⇄
+{/* VIZ: d3-full-stack, the whole system in one diagram: trainer ⇄ env server ⇄ capture proxy ⇄
     sandbox (agent inside), with vLLM off to the side. Label each edge with what actually crosses it
-    — task spec, session id, model calls, token ids + logprobs, reward. This is the article's summary
+   , task spec, session id, model calls, token ids + logprobs, reward. This is the article's summary
     figure; it should be the one people screenshot. */}
 <HtmlEmbed
   src="d3-full-stack.html"
   title="The full stack"
-  desc="Trainer, environment server, capture proxy and sandbox — and what crosses each boundary."
+  desc="Trainer, environment server, capture proxy and sandbox, and what crosses each boundary."
   frameless
 />
 
@@ -26,7 +26,7 @@ Everything above assembled into one stack, and the code to run it.
 {/* TODO: the runnable path, end to end. Commands, config, and the one-command launcher if there is
     one. Point at the project folder in the repo rather than pasting everything. */}
 
-{/* TODO: the interactive Space where a reader can fire a rollout and inspect the trace themselves —
+{/* TODO: the interactive Space where a reader can fire a rollout and inspect the trace themselves,
     the graph, and the per-turn token ids and logprobs behind an accordion:
       https://huggingface.co/spaces/AdithyaSK/async-grpo-harbor-dataagent-static-b6d9a4
     Being able to click through a real trajectory is what makes the token contract believable. */}
