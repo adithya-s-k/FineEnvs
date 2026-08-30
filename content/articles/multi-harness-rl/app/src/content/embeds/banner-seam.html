@@ -163,7 +163,7 @@
             const PAD_TOP = 46, PAD_BOTTOM = 30, PAD_X = 22;
             const SEAM_FRAC = 0.55;      // where the proxy line sits, as a fraction of width
             const CELL_W = 26, CELL_H = 21;     // target size of one rollout cell
-            const MAX_PULSES = 20;              // concurrent calls drawn crossing the seam
+            const MAX_PULSES = 17;              // concurrent calls drawn crossing the seam
             // The captured field is packed one block per model call, not as one
             // undifferentiated mass: a block is a turn, its dim cells the context it
             // conditioned on and its bright tail the tokens it sampled.
@@ -179,12 +179,31 @@
             let field = { x: 0, y: 0, w: 0, h: 0 };
             let cursor = { x: 0, y: 0 };
             let landed = [];             // captured tokens, absolute positions
+            let fieldFull = false, wipeT = 0;
             let hover = -1;
+
+            // The host can be shorter than we are. The article hero, for one, clips
+            // this embed to a fixed height with overflow:hidden, so drawing to our own
+            // box put the last rows of everything under the cut. Measure the real
+            // visible height instead of trusting our own.
+            const visibleHeight = (rect) => {
+                let h = rect.height;
+                let node = container.parentElement;
+                while (node && node !== document.body) {
+                    const cs = getComputedStyle(node);
+                    if (cs.overflow !== 'visible' || cs.overflowY !== 'visible') {
+                        h = Math.min(h, node.getBoundingClientRect().bottom - rect.top);
+                    }
+                    node = node.parentElement;
+                }
+                return Math.max(140, h);
+            };
 
             const layout = () => {
                 const rect = container.getBoundingClientRect();
                 W = Math.max(1, Math.round(rect.width));
-                H = Math.max(1, Math.round(rect.height));
+                H = Math.max(1, Math.round(visibleHeight(rect)));
+                canvas.style.height = H + 'px';
                 dpr = Math.max(1, window.devicePixelRatio || 1);
                 canvas.width = Math.round(W * dpr);
                 canvas.height = Math.round(H * dpr);
@@ -220,11 +239,11 @@
                         // Each harness keeps its own loop shape and cadence, so the
                         // fleet reads as heterogeneous rather than as one thing tiled.
                         lobes: 2 + (h[0].length % 4),
-                        speed: 0.020 + ((i * 37) % 11) * 0.0035,
+                        speed: 0.011 + ((i * 37) % 11) * 0.0019,
                         phase: prev ? prev.phase : (i * 1.7) % (Math.PI * 2),
-                        interval: 70 + ((i * 53) % 150),
-                        timer: prev ? prev.timer : ((i * 29) % 160),
-                        activateAt: reduceMotion ? 0 : Math.round((i % 13) * 4 + Math.random() * 420),
+                        interval: 135 + ((i * 53) % 265),
+                        timer: prev ? prev.timer : ((i * 29) % 380),
+                        activateAt: reduceMotion ? 0 : Math.round((i % 13) * 6 + Math.random() * 620),
                         calls: prev ? prev.calls : 0,
                         flash: 0,
                         trail: prev ? prev.trail : [],
@@ -244,19 +263,6 @@
             const blockH = () => BLOCK_ROWS * STEP - TOK_GAP;
             const rowH = () => blockH() + ROW_GAP;
 
-            // Retire the oldest row and slide everything up, so the field stays full
-            // and keeps flowing. Clearing it wholesale left the hero half empty for
-            // whoever arrived mid-cycle.
-            const scrollUp = () => {
-                const dy = rowH();
-                for (let i = landed.length - 1; i >= 0; i--) {
-                    landed[i].y -= dy;
-                    if (landed[i].y < field.y) landed.splice(i, 1);
-                }
-                for (const f of flying) f.ty -= dy;
-                cursor.y -= dy;
-            };
-
             const allocBlock = (n) => {
                 const bw = Math.ceil(n / BLOCK_ROWS);
                 const blockW = bw * STEP - TOK_GAP;
@@ -264,7 +270,7 @@
                     cursor.x = field.x;
                     cursor.y += rowH();
                 }
-                while (cursor.y + blockH() > field.y + field.h) scrollUp();
+                if (cursor.y + blockH() > field.y + field.h) return null;   // field is full
                 const out = [];
                 for (let k = 0; k < n; k++) {
                     const col = Math.floor(k / BLOCK_ROWS), row = k % BLOCK_ROWS;
@@ -289,7 +295,7 @@
                 pulses.push({
                     sx: p[0], sy: p[1],
                     cx: (p[0] + seamX) / 2, cy: p[1] + (ty - p[1]) * 0.15 - 26,
-                    ty, t: 0, dur: 46 + Math.random() * 26,
+                    ty, t: 0, dur: 78 + Math.random() * 40,
                     rgb: c.rgb,
                     // A real turn is thousands of context tokens against tens sampled;
                     // the burst keeps that ratio without rendering thousands of squares.
@@ -310,11 +316,12 @@
                 ticks.push({ y: p.ty, t: 0, rgb: p.rgb });
                 const n = p.ctxN + p.genN;
                 const pos = allocBlock(n);
+                if (!pos) { fieldFull = true; return; }
                 for (let k = 0; k < n; k++) {
                     flying.push({
                         sx: seamX, sy: p.ty,
                         tx: pos[k][0], ty: pos[k][1],
-                        t: 0, dur: 24 + Math.random() * 20,
+                        t: 0, dur: 36 + Math.random() * 24,
                         bright: k >= p.ctxN,          // the sampled tail is the trainable part
                         rgb: p.rgb,
                     });
@@ -335,12 +342,12 @@
                     if (c.flash > 0) c.flash--;
                     if (frame % 3 === 0) {
                         c.trail.push(orbitPoint(c, c.phase));
-                        if (c.trail.length > 5) c.trail.shift();
+                        if (c.trail.length > 7) c.trail.shift();
                     }
                     if (--c.timer <= 0) {
                         c.timer = c.interval;
                         c.calls++;
-                        c.flash = 16;
+                        c.flash = 24;
                         // Every rollout calls the model, but only a budget of those
                         // are drawn crossing the seam — otherwise it is noise.
                         if (pulses.length < MAX_PULSES) emitCall(c);
@@ -360,7 +367,16 @@
                     }
                 }
                 for (let i = ticks.length - 1; i >= 0; i--) {
-                    if (++ticks[i].t > 26) ticks.splice(i, 1);
+                    if (++ticks[i].t > 34) ticks.splice(i, 1);
+                }
+
+                // Full field → wipe and start again from the top.
+                if (wipeT > 0) {
+                    if (--wipeT === 0) {
+                        landed = []; cursor.x = field.x; cursor.y = field.y; fieldFull = false;
+                    }
+                } else if (fieldFull && flying.length === 0) {
+                    wipeT = 30;
                 }
 
                 // Field full → the batch goes to the trainer and the field clears.
@@ -402,7 +418,7 @@
                     const p = orbitPoint(c, c.phase);
                     if (c.flash > 0) {
                         // a model call just left this rollout
-                        const f = c.flash / 16;
+                        const f = c.flash / 24;
                         ctx.strokeStyle = rgba(c.rgb, 0.5 * f * a);
                         ctx.lineWidth = 1;
                         ctx.beginPath();
@@ -458,7 +474,7 @@
                 ctx.lineTo(seamX, seamBottom);
                 ctx.stroke();
                 for (const tk of ticks) {
-                    const a = 1 - tk.t / 26;
+                    const a = 1 - tk.t / 34;
                     ctx.strokeStyle = rgba(tk.rgb, a * 0.85);
                     ctx.lineWidth = 2;
                     ctx.beginPath();
@@ -487,9 +503,10 @@
                 }
 
                 // the captured field
+                const wipeFade = wipeT > 0 ? wipeT / 30 : 1;
                 for (const t of landed) {
                     const settle = Math.min(1, (frame - t.born) / 10);
-                    ctx.fillStyle = rgba(t.rgb, (t.bright ? 1 : 0.42) * settle);
+                    ctx.fillStyle = rgba(t.rgb, (t.bright ? 1 : 0.42) * settle * wipeFade);
                     ctx.fillRect(t.x, t.y, TOK, TOK);
                 }
 
@@ -559,6 +576,7 @@
                     const ctxN = 5 + Math.floor(Math.random() * 7);
                     const genN = 1 + Math.floor(Math.random() * 3);
                     const pos = allocBlock(ctxN + genN);
+                    if (!pos) break;
                     for (let k = 0; k < pos.length; k++) {
                         landed.push({
                             x: pos[k][0], y: pos[k][1], rgb: HUE[hi],
@@ -570,7 +588,7 @@
             };
 
             layout();
-            seedField(1.0);
+            seedField(0.3);
 
             if (reduceMotion) {
                 // Compose one representative still: a partly-filled field, no motion.
@@ -593,7 +611,7 @@
             }
 
             let rt;
-            const onResize = () => { clearTimeout(rt); rt = setTimeout(() => { layout(); seedField(1.0); draw(); }, 120); };
+            const onResize = () => { clearTimeout(rt); rt = setTimeout(() => { layout(); seedField(0.3); draw(); }, 120); };
             if ('ResizeObserver' in window) new ResizeObserver(onResize).observe(container);
             else window.addEventListener('resize', onResize);
         };
