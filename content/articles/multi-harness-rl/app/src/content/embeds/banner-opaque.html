@@ -129,6 +129,12 @@
             const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
             const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
             const rnd = (a, b) => a + Math.random() * (b - a);
+            // Cluster rows toward the middle so the stream reads as a current with a
+            // soft edge rather than a filled rectangle of noise.
+            const gaussRow = () => {
+                const u = (Math.random() + Math.random() + Math.random()) / 3;
+                return Math.max(0, Math.min(STREAM_ROWS - 1, Math.floor(u * STREAM_ROWS)));
+            };
 
             const reduceMotion = window.matchMedia
                 && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -159,7 +165,7 @@
             container.appendChild(tip);
 
             // ─── Layout ───────────────────────────────────────────────────────────
-            const PAD_TOP = 50, PAD_BOTTOM = 34, PAD_X = 24;
+            const PAD_TOP = 64, PAD_BOTTOM = 32, PAD_X = 24;
             const GRID_RIGHT_FRAC = 0.52;  // the harness grid ends here
             const BUS_FRAC = 0.645;        // the capture proxy
             const CARD_MIN_W = 118, CARD_MIN_H = 78;
@@ -241,7 +247,7 @@
                     b, t: 0, dur: Math.round(rnd(80, 130)),
                     sx: b.x + b.w, sy: b.y + b.h / 2,
                     ty: streamY0 + rnd(4, STREAM_ROWS * (TOK + TOK_GAP) - 4),
-                    n: Math.round(rnd(9, 30)),
+                    n: Math.round(rnd(16, 34)),
                 });
                 b.calls++; calls++;
             };
@@ -264,19 +270,16 @@
                     const p = pulses[i];
                     if (++p.t >= p.dur) {
                         ticks.push({ y: p.ty, t: 0, rgb: p.b.rgb });
-                        // Only past the proxy does anything become visible, and it
-                        // arrives as one call: a contiguous bar, context then the
-                        // sampled tail. Scattering the cells read as static.
-                        const h = Math.min(STREAM_ROWS, p.n);
-                        const top = Math.floor(rnd(0, STREAM_ROWS - h + 1));
-                        const v = rnd(0.5, 0.85);
-                        for (let k = 0; k < h; k++) {
+                        // Only past the proxy does anything become visible. It flows
+                        // rather than stacking — each token drifts at its own rate, so
+                        // the field reads as a current, not as columns.
+                        for (let k = 0; k < p.n; k++) {
                             stream.push({
-                                x: streamX0,
-                                row: top + k,
+                                x: streamX0 - rnd(0, 26),
+                                row: gaussRow(),
                                 rgb: p.b.rgb,
-                                bright: k >= h - Math.max(2, Math.round(h * 0.22)),
-                                v,
+                                bright: Math.random() < 0.24,
+                                v: rnd(0.28, 0.62),
                             });
                             tokensSeen += 26 + Math.floor(Math.random() * 90);
                         }
@@ -300,6 +303,15 @@
 
                 ctx.clearRect(0, 0, W, H);
 
+                // ── section eyebrows: name the two halves
+                ctx.fillStyle = muted;
+                ctx.globalAlpha = 0.5;
+                ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
+                ctx.textAlign = 'left';
+                drawTracked('AGENT HARNESSES', PAD_X, PAD_TOP - 16, 1.6);
+                drawTracked('TRAINABLE TOKENS', streamX0, PAD_TOP - 16, 1.6);
+                ctx.globalAlpha = 1;
+
                 // ── wires first, so the cards sit over the crossings
                 for (const b of boxes) {
                     const sy = b.y + b.h / 2;
@@ -320,13 +332,13 @@
                     const hot = b.flash / 26;
 
                     ctx.fillStyle = rgba(card, 1);
-                    roundRect(b.x, b.y, b.w, b.h, 8);
+                    roundRect(b.x, b.y, b.w, b.h, 11);
                     ctx.fill();
                     ctx.strokeStyle = hot > 0 || hover === i
                         ? rgba(b.rgb, Math.max(hot, hover === i ? 0.85 : 0))
                         : border;
-                    ctx.lineWidth = hot > 0 || hover === i ? 1.4 : 1;
-                    roundRect(b.x, b.y, b.w, b.h, 8);
+                    ctx.lineWidth = hot > 0 || hover === i ? 1.5 : 1;
+                    roundRect(b.x, b.y, b.w, b.h, 11);
                     ctx.stroke();
 
                     // Every mark gets the same chip: same size, same corner radius,
@@ -356,11 +368,13 @@
                     roundRect(lx + 0.5, ly + 0.5, S - 1, S - 1, 7);
                     ctx.stroke();
 
-                    ctx.fillStyle = muted;
-                    ctx.globalAlpha = hover === i ? 0.95 : 0.72;
+                    ctx.font = '10px ui-monospace, SFMono-Regular, Menlo, monospace';
+                    ctx.fillStyle = hover === i || hot > 0 ? rgba(b.rgb, 1) : muted;
+                    ctx.globalAlpha = hover === i || hot > 0 ? 1 : 0.8;
                     ctx.textAlign = 'center';
-                    ctx.fillText(b.name, b.x + b.w / 2, b.y + b.h - 12);
+                    ctx.fillText(b.name, b.x + b.w / 2, b.y + b.h - 13);
                     ctx.globalAlpha = 1;
+                    ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
                 }
 
                 // ── calls travelling the wire: the first thing that is observable
@@ -384,10 +398,10 @@
                 // ── the proxy
                 const grad = ctx.createLinearGradient(0, PAD_TOP - 10, 0, H - PAD_BOTTOM + 8);
                 grad.addColorStop(0, 'rgba(140,140,150,0.06)');
-                grad.addColorStop(0.5, 'rgba(140,140,150,0.6)');
+                grad.addColorStop(0.5, 'rgba(140,140,150,0.78)');
                 grad.addColorStop(1, 'rgba(140,140,150,0.06)');
                 ctx.strokeStyle = grad;
-                ctx.lineWidth = 1.5;
+                ctx.lineWidth = 1.75;
                 ctx.beginPath();
                 ctx.moveTo(busX, PAD_TOP - 10);
                 ctx.lineTo(busX, H - PAD_BOTTOM + 8);
@@ -414,22 +428,30 @@
                 // ── downstream of the proxy, and only there, the tokens
                 for (const c of stream) {
                     if (c.x < streamX0 - 2) continue;
-                    const edge = Math.min(1, (streamX0 + streamW - c.x) / 60);
-                    ctx.fillStyle = rgba(c.rgb, (c.bright ? 1 : 0.5) * edge);
+                    const outEdge = Math.min(1, (streamX0 + streamW - c.x) / 90);
+                    const inEdge = Math.min(1, (c.x - streamX0) / 26 + 0.25);
+                    const edge = Math.min(outEdge, inEdge);
+                    ctx.fillStyle = rgba(c.rgb, (c.bright ? 1 : 0.46) * edge);
                     ctx.fillRect(c.x, streamY0 + c.row * (TOK + TOK_GAP), TOK, TOK);
                 }
 
                 ctx.fillStyle = muted;
-                ctx.globalAlpha = 0.6;
+                ctx.globalAlpha = 0.55;
                 ctx.textAlign = 'left';
                 ctx.fillText('each drives its own loop — one endpoint out', PAD_X, H - PAD_BOTTOM + 20);
-                ctx.textAlign = 'right';
-                ctx.fillText('token ids + logprobs', W - PAD_X, H - PAD_BOTTOM + 20);
                 ctx.globalAlpha = 1;
 
                 outH.textContent = String(new Set(boxes.map((b) => b.name)).size);
                 outC.textContent = calls.toLocaleString();
                 outT.textContent = tokensSeen.toLocaleString();
+            };
+
+            const drawTracked = (str, x, y, sp) => {
+                let cx = x;
+                for (const ch of str) {
+                    ctx.fillText(ch, cx, y);
+                    cx += ctx.measureText(ch).width + sp;
+                }
             };
 
             const roundRect = (x, y, w, h, r) => {
