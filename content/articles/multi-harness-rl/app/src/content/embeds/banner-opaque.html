@@ -90,11 +90,22 @@
                 return [0, 1, 2].map((k) => Math.round(c[k] + (d[k] - c[k]) * u));
             };
 
+            // Harnesses that ship a recognisable mark. Logos live in
+            // app/public/logos/ and are served from the Space at /logos/<name>.png.
             const HARNESSES = [
-                'opencode', 'goose', 'qwen-coder', 'swe-agent', 'mini-swe-agent',
-                'openhands-sdk', 'openclaw', 'hermes', 'kimi-cli', 'pi', 'vibe',
-                'terminus-2', 'codex', 'trae-agent', 'claude-code', 'gemini-cli',
+                'claude-code', 'codex', 'gemini-cli', 'opencode',
+                'goose', 'qwen-coder', 'swe-agent', 'openhands-sdk',
+                'hermes', 'kimi-cli', 'terminus-2', 'trae-agent',
             ];
+            const LOGOS = {};
+            let logosReady = 0;
+            for (const name of HARNESSES) {
+                const img = new Image();
+                img.decoding = 'async';
+                img.onload = () => { logosReady++; };
+                img.src = '/logos/' + name + '.png';
+                LOGOS[name] = img;
+            }
             const HUE = HARNESSES.map((_, i) =>
                 ramp(HARNESSES.length > 1 ? i / (HARNESSES.length - 1) : 0.5));
 
@@ -149,14 +160,14 @@
 
             // ─── Layout ───────────────────────────────────────────────────────────
             const PAD_TOP = 50, PAD_BOTTOM = 34, PAD_X = 24;
-            const BOX_RIGHT_FRAC = 0.40;   // every slab's right edge lands here
-            const BUS_FRAC = 0.575;        // the capture proxy
-            const SLOT_MIN = 44;
+            const GRID_RIGHT_FRAC = 0.52;  // the harness grid ends here
+            const BUS_FRAC = 0.645;        // the capture proxy
+            const CARD_MIN_W = 118, CARD_MIN_H = 78;
             const TOK = 4, TOK_GAP = 1;
             let STREAM_ROWS = 9;   // set from the available height in layout()
 
             let W = 0, H = 0, dpr = 1;
-            let boxes = [], boxRight = 0, busX = 0;
+            let boxes = [], gridRight = 0, busX = 0, gcols = 0, grows = 0;
             let streamX0 = 0, streamY0 = 0, streamW = 0;
             let hover = -1;
             let frame = 0, calls = 0, tokensSeen = 0;
@@ -187,12 +198,15 @@
                 canvas.height = Math.round(H * dpr);
                 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-                boxRight = Math.round(W * BOX_RIGHT_FRAC);
+                gridRight = Math.round(W * GRID_RIGHT_FRAC);
                 busX = Math.round(W * BUS_FRAC);
 
                 const usable = H - PAD_TOP - PAD_BOTTOM;
-                const n = Math.max(3, Math.floor(usable / SLOT_MIN));
-                const slot = usable / n;
+                const gridW = gridRight - PAD_X;
+                gcols = Math.max(2, Math.min(4, Math.floor(gridW / CARD_MIN_W)));
+                grows = Math.max(2, Math.min(4, Math.floor(usable / CARD_MIN_H)));
+                const n = Math.min(HARNESSES.length, gcols * grows);
+                const cw = gridW / gcols, ch = usable / grows;
 
                 const prev = boxes;
                 const taken = new Set();
@@ -201,18 +215,16 @@
                     const p = prev[i];
                     const hi = p ? p.hi : pickUnused(taken);
                     taken.add(hi);
-                    // Slabs vary in size the way harnesses do. Their right edges align,
-                    // so every wire leaves from the same seam.
-                    const w = Math.round(rnd(0.42, 0.95) * (boxRight - PAD_X - 96));
-                    const h = Math.round(Math.min(slot - 12, rnd(20, 30)));
+                    const col = i % gcols, row = Math.floor(i / gcols);
                     boxes.push({
                         hi, name: HARNESSES[hi], rgb: HUE[hi],
-                        x: boxRight - w, y: Math.round(PAD_TOP + i * slot + (slot - h) / 2),
-                        w, h,
+                        x: PAD_X + col * cw + 4, y: PAD_TOP + row * ch + 4,
+                        w: cw - 12, h: ch - 12,
                         interval: p ? p.interval : Math.round(rnd(90, 220)),
                         timer: p ? p.timer : Math.round(rnd(0, 200)),
                         calls: p ? p.calls : 0,
-                        swap: p ? p.swap : Math.round(rnd(600, 1800)),
+                        flash: 0,
+                        swap: p ? p.swap : Math.round(rnd(900, 2600)),
                     });
                 }
 
@@ -227,7 +239,7 @@
             const emit = (b) => {
                 pulses.push({
                     b, t: 0, dur: Math.round(rnd(80, 130)),
-                    sx: boxRight, sy: b.y + b.h / 2,
+                    sx: b.x + b.w, sy: b.y + b.h / 2,
                     ty: streamY0 + rnd(4, STREAM_ROWS * (TOK + TOK_GAP) - 4),
                     n: Math.round(rnd(9, 30)),
                 });
@@ -238,6 +250,7 @@
                 frame++;
                 for (const b of boxes) {
                     if (--b.timer <= 0) { b.timer = b.interval; emit(b); }
+                    if (b.flash > 0) b.flash--;
                     // the set is larger than what fits, so slabs hand over occasionally
                     if (--b.swap <= 0) {
                         b.swap = Math.round(rnd(900, 2400));
@@ -283,57 +296,69 @@
                 const border = cssVar('--border-color', 'rgba(128,128,128,0.28)');
                 const txt = parseRGB(cssVar('--text-color', 'rgb(20,22,28)')) || [20, 22, 28];
                 const darkTheme = (txt[0] + txt[1] + txt[2]) / 3 > 140;
-                const slab = darkTheme ? [38, 43, 55] : [23, 26, 33];
-                const hatch = darkTheme ? 'rgba(255,255,255,0.055)' : 'rgba(255,255,255,0.10)';
+                const card = darkTheme ? [30, 34, 44] : [249, 250, 252];
 
                 ctx.clearRect(0, 0, W, H);
 
-                // ── the agents: opaque, nothing rendered inside, on purpose
-                ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
-                for (let i = 0; i < boxes.length; i++) {
-                    const b = boxes[i];
-                    ctx.fillStyle = rgba(slab, hover === i ? 1 : 0.93);
-                    roundRect(b.x, b.y, b.w, b.h, 4);
-                    ctx.fill();
-
-                    ctx.save();
-                    ctx.clip();
-                    ctx.strokeStyle = hatch;
+                // ── wires first, so the cards sit over the crossings
+                for (const b of boxes) {
+                    const sy = b.y + b.h / 2;
+                    ctx.strokeStyle = border;
+                    ctx.globalAlpha = 0.7;
                     ctx.lineWidth = 1;
-                    for (let x = b.x - b.h; x < b.x + b.w; x += 7) {
-                        ctx.beginPath();
-                        ctx.moveTo(x, b.y + b.h);
-                        ctx.lineTo(x + b.h, b.y);
-                        ctx.stroke();
-                    }
-                    ctx.restore();
-
-                    ctx.fillStyle = muted;
-                    ctx.globalAlpha = hover === i ? 0.95 : 0.62;
-                    ctx.textAlign = 'right';
-                    ctx.fillText(b.name, b.x - 10, b.y + b.h / 2 + 3);
+                    ctx.beginPath();
+                    ctx.moveTo(b.x + b.w, sy);
+                    ctx.bezierCurveTo((gridRight + busX) / 2, sy, (gridRight + busX) / 2, H / 2, busX, H / 2);
+                    ctx.stroke();
                     ctx.globalAlpha = 1;
                 }
 
-                // ── one wire out of each, all converging on the proxy
+                // ── the harnesses: who they are is on the card, what they do is not
+                ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
                 for (let i = 0; i < boxes.length; i++) {
                     const b = boxes[i];
-                    const sy = b.y + b.h / 2;
-                    ctx.strokeStyle = border;
-                    ctx.globalAlpha = 0.85;
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(boxRight, sy);
-                    ctx.bezierCurveTo((boxRight + busX) / 2, sy, (boxRight + busX) / 2, H / 2, busX, H / 2);
+                    const hot = b.flash / 26;
+
+                    ctx.fillStyle = rgba(card, 1);
+                    roundRect(b.x, b.y, b.w, b.h, 8);
+                    ctx.fill();
+                    ctx.strokeStyle = hot > 0 || hover === i
+                        ? rgba(b.rgb, Math.max(hot, hover === i ? 0.85 : 0))
+                        : border;
+                    ctx.lineWidth = hot > 0 || hover === i ? 1.4 : 1;
+                    roundRect(b.x, b.y, b.w, b.h, 8);
                     ctx.stroke();
+
+                    const img = LOGOS[b.name];
+                    const S = Math.min(30, b.h * 0.42);
+                    const lx = b.x + b.w / 2 - S / 2;
+                    const ly = b.y + b.h * 0.28 - S / 2 + 4;
+                    if (img && img.complete && img.naturalWidth) {
+                        ctx.save();
+                        roundRect(lx, ly, S, S, 6);
+                        ctx.clip();
+                        ctx.globalAlpha = 0.96;
+                        ctx.drawImage(img, lx, ly, S, S);
+                        ctx.restore();
+                        ctx.globalAlpha = 1;
+                    } else {
+                        ctx.fillStyle = rgba(b.rgb, 0.35);
+                        roundRect(lx, ly, S, S, 6);
+                        ctx.fill();
+                    }
+
+                    ctx.fillStyle = muted;
+                    ctx.globalAlpha = hover === i ? 0.95 : 0.72;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(b.name, b.x + b.w / 2, b.y + b.h - 12);
                     ctx.globalAlpha = 1;
                 }
 
                 // ── calls travelling the wire: the first thing that is observable
                 for (const p of pulses) {
                     const t = easeInOutSine(p.t / p.dur);
-                    const x0 = boxRight, y0 = p.sy;
-                    const c1x = (boxRight + busX) / 2, c2x = (boxRight + busX) / 2;
+                    const x0 = p.sx, y0 = p.sy;
+                    const c1x = (gridRight + busX) / 2, c2x = (gridRight + busX) / 2;
                     const mt = 1 - t;
                     const x = mt * mt * mt * x0 + 3 * mt * mt * t * c1x + 3 * mt * t * t * c2x + t * t * t * busX;
                     const y = mt * mt * mt * y0 + 3 * mt * mt * t * y0 + 3 * mt * t * t * (H / 2) + t * t * t * (H / 2);
@@ -388,7 +413,7 @@
                 ctx.fillStyle = muted;
                 ctx.globalAlpha = 0.6;
                 ctx.textAlign = 'left';
-                ctx.fillText('no internals, no trajectory — one endpoint', PAD_X, H - PAD_BOTTOM + 20);
+                ctx.fillText('each drives its own loop — one endpoint out', PAD_X, H - PAD_BOTTOM + 20);
                 ctx.textAlign = 'right';
                 ctx.fillText('token ids + logprobs', W - PAD_X, H - PAD_BOTTOM + 20);
                 ctx.globalAlpha = 1;
@@ -415,7 +440,7 @@
                 hover = -1;
                 for (let i = 0; i < boxes.length; i++) {
                     const b = boxes[i];
-                    if (x >= b.x - 90 && x <= b.x + b.w && y >= b.y - 6 && y <= b.y + b.h + 6) { hover = i; break; }
+                    if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { hover = i; break; }
                 }
                 if (hover < 0) { tip.style.opacity = '0'; return; }
                 const b = boxes[hover];
