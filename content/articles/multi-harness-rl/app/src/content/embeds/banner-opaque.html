@@ -97,13 +97,15 @@
                 'goose', 'qwen-coder', 'swe-agent', 'openhands-sdk',
                 'hermes', 'kimi-cli', 'terminus-2', 'trae-agent',
             ];
+            // Where the project publishes a real vector mark on its own site we use
+            // that; the rest fall back to the organisation avatar. Format makes no
+            // difference to the layout — every mark is drawn into the same chip.
+            const SVG_MARKS = new Set(['opencode', 'openhands-sdk', 'swe-agent', 'claude-code']);
             const LOGOS = {};
-            let logosReady = 0;
             for (const name of HARNESSES) {
                 const img = new Image();
                 img.decoding = 'async';
-                img.onload = () => { logosReady++; };
-                img.src = '/logos/' + name + '.png';
+                img.src = '/logos/' + name + (SVG_MARKS.has(name) ? '.svg' : '.png');
                 LOGOS[name] = img;
             }
             const HUE = HARNESSES.map((_, i) =>
@@ -128,6 +130,10 @@
             };
             const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
             const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+            const easeOutBack = (t) => {
+                const c1 = 1.70158, c3 = c1 + 1;
+                return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+            };
             const rnd = (a, b) => a + Math.random() * (b - a);
             // Cluster rows toward the middle so the stream reads as a current with a
             // soft edge rather than a filled rectangle of noise.
@@ -168,7 +174,9 @@
             const PAD_TOP = 64, PAD_BOTTOM = 32, PAD_X = 24;
             const GRID_RIGHT_FRAC = 0.52;  // the harness grid ends here
             const BUS_FRAC = 0.645;        // the capture proxy
-            const CARD_MIN_W = 118, CARD_MIN_H = 78;
+            const CARD_MIN_W = 122, CARD_MIN_H = 92;
+            const TRACE_STEP = 3;   // px per sample in a card's activity trace
+            const STOP_D = 52, BOOT_D = 74;   // teardown and boot, in frames
             const TOK = 4, TOK_GAP = 1;
             let STREAM_ROWS = 9;   // set from the available height in layout()
 
@@ -226,11 +234,17 @@
                         hi, name: HARNESSES[hi], rgb: HUE[hi],
                         x: PAD_X + col * cw + 4, y: PAD_TOP + row * ch + 4,
                         w: cw - 12, h: ch - 12,
-                        interval: p ? p.interval : Math.round(rnd(90, 220)),
-                        timer: p ? p.timer : Math.round(rnd(0, 200)),
+                        interval: p ? p.interval : Math.round(rnd(170, 420)),
+                        timer: p ? p.timer : Math.round(rnd(0, 400)),
                         calls: p ? p.calls : 0,
                         flash: 0,
-                        swap: p ? p.swap : Math.round(rnd(900, 2600)),
+                        // a decaying spike train: one spike per model call, scrolling
+                        // left, so each harness's cadence is visible at a glance
+                        trace: new Array(Math.max(8, Math.floor((cw - 32) / TRACE_STEP))).fill(0),
+                        spike: 0,
+                        idle: rnd(0, Math.PI * 2),
+                        phase: 'run', pt: 0,
+                        swap: p ? p.swap : Math.round(rnd(1500, 3800)),
                     });
                 }
 
@@ -244,19 +258,57 @@
             // ─── Update ───────────────────────────────────────────────────────────
             const emit = (b) => {
                 pulses.push({
-                    b, t: 0, dur: Math.round(rnd(80, 130)),
+                    b, t: 0, dur: Math.round(rnd(120, 200)),
                     sx: b.x + b.w, sy: b.y + b.h / 2,
                     ty: streamY0 + rnd(4, STREAM_ROWS * (TOK + TOK_GAP) - 4),
-                    n: Math.round(rnd(16, 34)),
+                    n: Math.round(rnd(20, 40)),
                 });
                 b.calls++; calls++;
+                b.flash = 38;   // drives the ring on the logo and the label hue
+                b.spike = 1;    // and the peak in the card's activity trace
             };
 
             const update = () => {
                 frame++;
                 for (const b of boxes) {
-                    if (--b.timer <= 0) { b.timer = b.interval; emit(b); }
                     if (b.flash > 0) b.flash--;
+                    b.idle += 0.028;
+
+                    if (b.phase === 'run') {
+                        if (--b.timer <= 0) { b.timer = b.interval; emit(b); }
+                        // the sandbox is recycled and another harness takes the slot
+                        if (--b.swap <= 0) { b.phase = 'stop'; b.pt = STOP_D; b.spike = 0; }
+                    } else if (b.phase === 'stop') {
+                        if (--b.pt <= 0) {
+                            const taken = new Set(boxes.filter((o) => o !== b).map((o) => o.hi));
+                            b.hi = pickUnused(taken);
+                            b.name = HARNESSES[b.hi];
+                            b.rgb = HUE[b.hi];
+                            b.calls = 0;
+                            b.trace.fill(0);
+                            b.phase = 'boot'; b.pt = BOOT_D;
+                        }
+                    } else if (--b.pt <= 0) {
+                        b.phase = 'run';
+                        b.swap = Math.round(rnd(1500, 3800));
+                        b.timer = Math.round(rnd(60, 200));
+                    }
+                    // Sample slowly: a card holds roughly four seconds of history, so a
+                    // call's peak is still on screen when the next one lands. At two
+                    // frames per sample the peak scrolled off before you could see it.
+                    if (frame % 8 === 0 && b.phase !== 'run') {
+                        b.trace.push(b.phase === 'boot' ? Math.random() * 0.05 : 0);
+                        b.trace.shift();
+                    } else if (frame % 8 === 0) {
+                        // A sandbox is busy between model calls too — running tools,
+                        // reading files. The floor is that work; the peaks are the
+                        // calls the proxy actually sees.
+                        const floor = 0.09 + 0.06 * Math.sin(b.idle * 1.7 + b.hi)
+                            + Math.random() * 0.05;
+                        b.trace.push(Math.min(1, b.spike + floor));
+                        b.trace.shift();
+                        b.spike *= 0.84;
+                    }
                     // the set is larger than what fits, so slabs hand over occasionally
                     if (--b.swap <= 0) {
                         b.swap = Math.round(rnd(900, 2400));
@@ -279,14 +331,14 @@
                                 row: gaussRow(),
                                 rgb: p.b.rgb,
                                 bright: Math.random() < 0.24,
-                                v: rnd(0.28, 0.62),
+                                v: rnd(0.18, 0.42),
                             });
                             tokensSeen += 26 + Math.floor(Math.random() * 90);
                         }
                         pulses.splice(i, 1);
                     }
                 }
-                for (let i = ticks.length - 1; i >= 0; i--) if (++ticks[i].t > 32) ticks.splice(i, 1);
+                for (let i = ticks.length - 1; i >= 0; i--) if (++ticks[i].t > 44) ticks.splice(i, 1);
                 for (let i = stream.length - 1; i >= 0; i--) {
                     stream[i].x += stream[i].v;
                     if (stream[i].x > streamX0 + streamW) stream.splice(i, 1);
@@ -329,7 +381,33 @@
                 ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
                 for (let i = 0; i < boxes.length; i++) {
                     const b = boxes[i];
-                    const hot = b.flash / 26;
+                    const hot = b.flash / 38;
+
+                    // A swap is a container going down and another coming up. The box
+                    // itself carries it: it collapses toward its centre and dims, then
+                    // springs back as the next harness boots.
+                    let dy = 0, ca = 1, bootK = 1, cScale = 1, cAlpha = 1;
+                    if (b.phase === 'stop') {
+                        const k = 1 - b.pt / STOP_D;
+                        dy = easeInOutSine(k) * 18;
+                        ca = 1 - k;
+                        bootK = 0;
+                        cScale = 1 - 0.13 * easeInOutSine(k);
+                        cAlpha = 1 - 0.55 * k;
+                    } else if (b.phase === 'boot') {
+                        const k = 1 - b.pt / BOOT_D;
+                        dy = (1 - easeOutCubic(k)) * -18;
+                        ca = k;
+                        bootK = k;
+                        cScale = 0.87 + 0.13 * easeOutBack(k);
+                        cAlpha = 0.45 + 0.55 * k;
+                    }
+
+                    ctx.save();
+                    ctx.translate(b.x + b.w / 2, b.y + b.h / 2);
+                    ctx.scale(cScale, cScale);
+                    ctx.translate(-(b.x + b.w / 2), -(b.y + b.h / 2));
+                    ctx.globalAlpha = cAlpha;
 
                     ctx.fillStyle = rgba(card, 1);
                     roundRect(b.x, b.y, b.w, b.h, 11);
@@ -346,12 +424,24 @@
                     // some are dark filled squares, some are transparent line art — and
                     // without a common chip the grid reads as a scrapbook. Drawing each
                     // one edge to edge inside the chip makes both kinds land identically.
+                    // a running light, so a card is never fully still
+                    const breathe = 0.5 + 0.5 * Math.sin(b.idle * (b.phase === 'boot' ? 4 : 1));
+                    ctx.fillStyle = b.phase === 'run'
+                        ? rgba(b.rgb, 0.30 + 0.55 * breathe)
+                        : b.phase === 'boot'
+                            ? rgba(b.rgb, 0.35 + 0.6 * breathe)
+                            : rgba([150, 150, 158], 0.35);
+                    ctx.beginPath();
+                    ctx.arc(b.x + 13, b.y + 13, 2.4, 0, Math.PI * 2);
+                    ctx.fill();
+
                     const img = LOGOS[b.name];
-                    const S = Math.min(34, b.h * 0.46);
+                    const S = Math.min(32, b.h * 0.36);
                     const lx = Math.round(b.x + b.w / 2 - S / 2);
-                    const ly = Math.round(b.y + b.h * 0.30 - S / 2 + 4);
+                    const ly = Math.round(b.y + b.h * 0.30 - S / 2 + 2 + dy);
 
                     ctx.save();
+                    ctx.globalAlpha = ca;
                     roundRect(lx, ly, S, S, 7);
                     ctx.clip();
                     ctx.fillStyle = 'rgb(252,252,253)';
@@ -363,18 +453,54 @@
                         ctx.fillRect(lx, ly, S, S);
                     }
                     ctx.restore();
+                    ctx.globalAlpha = ca;
                     ctx.strokeStyle = darkTheme ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)';
                     ctx.lineWidth = 1;
                     roundRect(lx + 0.5, ly + 0.5, S - 1, S - 1, 7);
                     ctx.stroke();
+                    ctx.globalAlpha = 1;
+
+                    if (hot > 0 && b.phase === 'run') {
+                        ctx.strokeStyle = rgba(b.rgb, 0.55 * hot);
+                        ctx.lineWidth = 1.2;
+                        const g = (1 - hot) * 9;
+                        roundRect(lx - g, ly - g, S + g * 2, S + g * 2, 7 + g);
+                        ctx.stroke();
+                    }
 
                     ctx.font = '10px ui-monospace, SFMono-Regular, Menlo, monospace';
                     ctx.fillStyle = hover === i || hot > 0 ? rgba(b.rgb, 1) : muted;
-                    ctx.globalAlpha = hover === i || hot > 0 ? 1 : 0.8;
+                    ctx.globalAlpha = (hover === i || hot > 0 ? 1 : 0.8) * ca;
                     ctx.textAlign = 'center';
-                    ctx.fillText(b.name, b.x + b.w / 2, b.y + b.h - 13);
+                    ctx.fillText(b.name, b.x + b.w / 2, b.y + b.h - 26 + dy);
                     ctx.globalAlpha = 1;
                     ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
+
+                    // live activity: one decaying spike per model call, scrolling left.
+                    // Cadences differ per harness, so no two cards move alike.
+                    const tx = b.x + 16, tw = b.trace.length * TRACE_STEP;
+                    const tb = b.y + b.h - 11, th = 14;
+                    ctx.strokeStyle = border;
+                    ctx.globalAlpha = 0.5;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(tx, tb + 0.5);
+                    ctx.lineTo(tx + tw, tb + 0.5);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                    if (b.phase === 'boot') {
+                        ctx.fillStyle = rgba(b.rgb, 0.75);
+                        ctx.fillRect(tx, tb - 2, tw * bootK, 2);
+                    } else if (b.phase === 'run') {
+                        for (let k = 0; k < b.trace.length; k++) {
+                            const v = b.trace[k];
+                            if (v < 0.015) continue;
+                            const bh = Math.max(1, v * th);
+                            ctx.fillStyle = rgba(b.rgb, 0.30 + 0.6 * v);
+                            ctx.fillRect(tx + k * TRACE_STEP, tb - bh, 2, bh);
+                        }
+                    }
+                    ctx.restore();
                 }
 
                 // ── calls travelling the wire: the first thing that is observable
@@ -407,7 +533,7 @@
                 ctx.lineTo(busX, H - PAD_BOTTOM + 8);
                 ctx.stroke();
                 for (const tk of ticks) {
-                    const a = 1 - tk.t / 32;
+                    const a = 1 - tk.t / 44;
                     ctx.strokeStyle = rgba(tk.rgb, a * 0.9);
                     ctx.lineWidth = 2;
                     ctx.beginPath();
