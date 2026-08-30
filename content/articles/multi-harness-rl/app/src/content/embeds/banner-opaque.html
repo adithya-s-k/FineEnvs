@@ -329,23 +329,32 @@
                     roundRect(b.x, b.y, b.w, b.h, 8);
                     ctx.stroke();
 
+                    // Every mark gets the same chip: same size, same corner radius,
+                    // same backing. The projects' own marks are wildly inconsistent —
+                    // some are dark filled squares, some are transparent line art — and
+                    // without a common chip the grid reads as a scrapbook. Drawing each
+                    // one edge to edge inside the chip makes both kinds land identically.
                     const img = LOGOS[b.name];
-                    const S = Math.min(30, b.h * 0.42);
-                    const lx = b.x + b.w / 2 - S / 2;
-                    const ly = b.y + b.h * 0.28 - S / 2 + 4;
+                    const S = Math.min(34, b.h * 0.46);
+                    const lx = Math.round(b.x + b.w / 2 - S / 2);
+                    const ly = Math.round(b.y + b.h * 0.30 - S / 2 + 4);
+
+                    ctx.save();
+                    roundRect(lx, ly, S, S, 7);
+                    ctx.clip();
+                    ctx.fillStyle = 'rgb(252,252,253)';
+                    ctx.fillRect(lx, ly, S, S);
                     if (img && img.complete && img.naturalWidth) {
-                        ctx.save();
-                        roundRect(lx, ly, S, S, 6);
-                        ctx.clip();
-                        ctx.globalAlpha = 0.96;
                         ctx.drawImage(img, lx, ly, S, S);
-                        ctx.restore();
-                        ctx.globalAlpha = 1;
                     } else {
-                        ctx.fillStyle = rgba(b.rgb, 0.35);
-                        roundRect(lx, ly, S, S, 6);
-                        ctx.fill();
+                        ctx.fillStyle = rgba(b.rgb, 0.45);
+                        ctx.fillRect(lx, ly, S, S);
                     }
+                    ctx.restore();
+                    ctx.strokeStyle = darkTheme ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)';
+                    ctx.lineWidth = 1;
+                    roundRect(lx + 0.5, ly + 0.5, S - 1, S - 1, 7);
+                    ctx.stroke();
 
                     ctx.fillStyle = muted;
                     ctx.globalAlpha = hover === i ? 0.95 : 0.72;
