@@ -124,6 +124,13 @@ What it does not return is anything trainable, so every row rebuilt downstream i
 silently does nothing, and the first symptom is a loss curve that never moved, noticed days later.
 That failure has no loud edge, so the check has to be at the front.
 
+<HtmlEmbed
+  src="d3-capture-levels.html"
+  title="Three levels of capture"
+  desc="Only one of them can be trained against."
+  frameless
+/>
+
 {/* VIZ: d3-serve-flow: the six steps from serve to a returned rollout, as a numbered vertical
      pipeline, marking which happen once at start-up and which happen per rollout. */}
 <HtmlEmbed

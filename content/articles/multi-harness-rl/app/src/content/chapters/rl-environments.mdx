@@ -166,6 +166,13 @@ trainer gives you the current policy's numbers but not the sampler's, so the imp
 silently defaults to one when it is not one, and an estimator you believe is on-policy is a biased
 off-policy estimator instead.
 
+<HtmlEmbed
+  src="d3-token-drift.html"
+  title="Why re-tokenising is a guess"
+  desc="The same string, tokenised once by the engine and once by re-encoding the text."
+  frameless
+/>
+
 Fixing either requires the sampler to hand back token ids and per-token log probabilities. That is
 the real reason every serious multi-harness system intercepts at the model endpoint rather than at
 the text boundary.

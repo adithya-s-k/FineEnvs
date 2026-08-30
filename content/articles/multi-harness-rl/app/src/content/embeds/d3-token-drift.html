@@ -1,0 +1,57 @@
+<div class="token-drift" style="width:100%;margin:14px 0;"></div>
+<style>
+  .token-drift { position: relative; }
+  .token-drift svg { display:block; width:100%; height:auto; overflow:visible; }
+  .token-drift .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .token-drift .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .token-drift .k { display:inline-flex; align-items:center; gap:7px; }
+  .token-drift .sw { width:13px; height:3px; border-radius:2px; }
+  .token-drift .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); max-width:62ch; }
+</style>
+<script>
+  (() => {
+    const C = 'token-drift';
+    const boot = () => {
+      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const H = 206;   // content ends at y3+14; do not scale with width
+        const c0 = P(0), c3 = P(3);
+        const cell = (x,y,w,t,c,fill) =>
+          `<rect x="${x}" y="${y}" width="${w}" height="30" rx="5" fill="${c}" fill-opacity="${fill}" stroke="${c}" stroke-opacity=".6"/>` +
+          `<text x="${x+w/2}" y="${y+20}" text-anchor="middle" font-size="12.5" fill="${tx}" font-family="ui-monospace,Menlo,monospace">${t}</text>`;
+        const x0 = Math.min(190, W*0.24);
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="The same string tokenising two different ways, once as sampled and once as re-encoded from text">`;
+        s += `<text x="${x0}" y="18" font-size="10" fill="${mu}" font-family="ui-monospace,Menlo,monospace" letter-spacing="1">THE SAME STRING: "HAVING"</text>`;
+        const y1 = 38, y2 = 106, y3 = 174;
+        s += `<text x="${x0-14}" y="${y1+20}" text-anchor="end" font-size="11.5" font-weight="600" fill="${tx}">what was sampled</text>`;
+        s += cell(x0, y1, 60, 'H', c0, .22) + cell(x0+66, y1, 96, 'AVING', c0, .22);
+        s += `<text x="${x0+176}" y="${y1+20}" font-size="11" fill="${mu}" font-family="ui-monospace,Menlo,monospace">ids 39, 40719</text>`;
+        s += `<text x="${x0-14}" y="${y2+20}" text-anchor="end" font-size="11.5" font-weight="600" fill="${tx}">re-encoded from text</text>`;
+        s += cell(x0, y2, 82, 'HAV', c3, .22) + cell(x0+88, y2, 74, 'ING', c3, .22);
+        s += `<text x="${x0+176}" y="${y2+20}" font-size="11" fill="${mu}" font-family="ui-monospace,Menlo,monospace">ids 65420, 1753</text>`;
+        s += `<line x1="${x0}" y1="${y2+44}" x2="${W-20}" y2="${y2+44}" stroke="${bd}" stroke-dasharray="3 3"/>`;
+        s += `<text x="${x0-14}" y="${y3+14}" text-anchor="end" font-size="11.5" font-weight="600" fill="${c3}">what you train on</text>`;
+        s += `<text x="${x0}" y="${y3+14}" font-size="12" fill="${tx}">tokens the policy never emitted, with logprobs that belong to something else</text>`;
+        s += '</svg>';
+        r.innerHTML = s + `<div class="nt">Decoding is not injective, so a string can round-trip to a different token sequence than the one that produced it. Illustrative ids, real mechanism. This is why capture has to record what the engine returned rather than re-tokenising text afterwards, and why a harness that hands back only text and a reward cannot be trained against.</div>`;
+      };
+      draw();
+      if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
+      else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

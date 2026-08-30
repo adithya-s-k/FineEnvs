@@ -97,6 +97,13 @@ reflection timing and stopping conditions, unable to plan on its own when that s
 absent. Their prescription is to vary the harness during rollouts, which they describe as domain
 randomization applied at the level of the environment.
 
+<HtmlEmbed
+  src="d3-overfit-modes.html"
+  title="Three ways a model overfits to its harness"
+  desc="What the model anchored to, and what breaks when that changes."
+  frameless
+/>
+
 The cost of not doing this has been measured, and it is not a gentle degradation. The Orchard team
 trained a software-engineering agent in a single harness and then ran it in others
 [@peng2026orchard]:
@@ -105,6 +112,13 @@ trained a software-engineering agent in a single harness and then ran it in othe
 |---|---|---|---|
 | **OpenSWE-32B**, single-harness | 62.4 | 54.9 | **3.6** |
 | **Orchard-SWE**, multi-harness | 62.1 | 64.3 | **45.0** |
+
+<HtmlEmbed
+  src="d3-harness-lockin.html"
+  title="What single-harness training costs"
+  desc="The same two systems across three harnesses, one collapsing and one holding a band."
+  frameless
+/>
 
 A model that resolves 62.4 percent of SWE-bench Verified in the harness it was trained in resolves
 3.6 percent in one it has never seen. Not a worse score, a broken one. Their conclusion is the
