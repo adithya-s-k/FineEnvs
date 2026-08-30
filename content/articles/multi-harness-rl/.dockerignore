@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# IDE / editor
+.cursor
+.ai
+.vscode
+*.swp
+*.swo
+
+# Documentation (not needed in image)
+*.md
+!README.md
+LICENSE
+CONTRIBUTING.md
+
+# Screenshots (dev-only, large)
+app/screenshots
+
+# Node modules (reinstalled in Docker)
+app/node_modules
+app/scripts/notion-importer/node_modules
+app/scripts/latex-importer/node_modules
+
+# Build artifacts
+app/dist
+app/.astro
+
+# PDF exports (generated at build time)
+app/public/*.pdf
+
+# Dev / local files
+prototype-project-page.html
+scripts/
+app/yarn.lock

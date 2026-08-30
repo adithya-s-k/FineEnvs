@@ -24,6 +24,16 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
+# Never ship build artifacts to a Space. The Dockerfile installs and builds there,
+# and node_modules alone is ~350MB.
+EXCLUDE = [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.astro/**",
+    "**/.git/**",
+    "**/.DS_Store",
+]
+
 
 def card_path(src: Path) -> Path:
     p = src / "space.md"
@@ -87,7 +97,10 @@ def main() -> None:
         run(["hf", "upload", args.space, str(card), "README.md", "--repo-type", "space"],
             dry_run=args.dry_run)
     else:
-        run(["hf", "upload", args.space, str(src), ".", "--repo-type", "space"], dry_run=args.dry_run)
+        cmd = ["hf", "upload", args.space, str(src), ".", "--repo-type", "space"]
+        for pattern in EXCLUDE:
+            cmd += ["--exclude", pattern]
+        run(cmd, dry_run=args.dry_run)
 
     print(f"✓ https://huggingface.co/spaces/{args.space}")
 

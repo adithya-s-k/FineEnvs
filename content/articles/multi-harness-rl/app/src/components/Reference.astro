@@ -1,0 +1,74 @@
+---
+interface Props {
+    /** ID unique pour la référence */
+    id: string;
+    /** Légende HTML pour la référence */
+    caption: string;
+}
+
+const { id, caption } = Astro.props as Props;
+---
+
+<div class="reference-wrapper" id={id}>
+    <figure class="reference">
+        <div class="reference__content">
+            <slot />
+        </div>
+        <figcaption class="reference__caption" set:html={caption} />
+    </figure>
+</div>
+
+<style>
+    .reference-wrapper {
+        margin: 0;
+        margin-bottom: var(--spacing-4);
+    }
+
+    .reference {
+        margin: 0;
+    }
+
+    .reference__content {
+        /* Le contenu peut être n'importe quoi */
+    }
+
+    .reference__content :global(*) {
+        margin-bottom: 0;
+    }
+
+    .reference__content :global(img) {
+        margin-bottom: 0;
+    }
+
+    .reference__content :global(.image-wrapper) {
+        margin-bottom: 0;
+    }
+
+    .reference__content :global(.image-wrapper) :global(.reference__caption) {
+        margin-top: 0;
+    }
+
+    .reference__content :global(.table-scroll) {
+        margin-bottom: 0;
+    }
+
+    .reference__content :global(pre) {
+        margin-bottom: 0;
+    }
+
+    .reference__content :global(.astro-code) {
+        margin-bottom: 0;
+    }
+
+    .reference__caption {
+        text-align: left;
+        font-size: 0.9rem;
+        color: var(--muted-color);
+        margin-top: 6px;
+        background: var(--page-bg);
+        position: relative;
+        z-index: var(--z-elevated);
+        display: block;
+        width: 100%;
+    }
+</style>

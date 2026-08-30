@@ -1,0 +1,81 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+  authors?: string[];
+  published?: string;
+  modified?: string;
+  tags?: string[];
+  image?: string; // Preferred absolute URL
+}
+
+const {
+  title,
+  description = "",
+  authors = [],
+  published,
+  modified,
+  tags = [],
+  image,
+} = Astro.props as Props;
+
+const url = Astro.url?.toString?.() ?? "";
+const site = (Astro.site ? String(Astro.site) : "") as string;
+
+// Build base URL: prefer Astro.site, fallback to origin from Astro.url
+const baseUrl = site || (Astro.url ? `${Astro.url.protocol}//${Astro.url.host}` : "");
+
+const ogImage =
+  image && image.length > 0
+    ? image.startsWith("http")
+      ? image
+      : baseUrl
+        ? new URL(image, baseUrl).toString()
+        : image
+    : undefined;
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: title,
+  description: description || undefined,
+  datePublished: published || undefined,
+  dateModified: modified || published || undefined,
+  author: authors.map((name) => ({ "@type": "Person", name })),
+  publisher: {
+    "@type": "Organization",
+    name: "Hugging Face",
+    url: "https://huggingface.co",
+  },
+  keywords: tags.length ? tags.join(", ") : undefined,
+  mainEntityOfPage: url || undefined,
+  image: ogImage ? [ogImage] : undefined,
+};
+---
+
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={url} />
+
+<meta property="og:type" content="article" />
+<meta property="og:title" content={title} />
+{description && <meta property="og:description" content={description} />}
+<meta property="og:url" content={url} />
+<meta property="og:locale" content="en_US" />
+{baseUrl && <meta property="og:site_name" content={title} />}
+{ogImage && <meta property="og:image" content={ogImage} />}
+{ogImage && <meta property="og:image:alt" content={title} />}
+{published && <meta property="article:published_time" content={published} />}
+{modified && <meta property="article:modified_time" content={modified} />}
+{authors.map((a) => <meta property="article:author" content={a} />)}
+
+<meta
+  name="twitter:card"
+  content={ogImage ? "summary_large_image" : "summary"}
+/>
+<meta name="twitter:title" content={title} />
+{description && <meta name="twitter:description" content={description} />}
+{ogImage && <meta name="twitter:image" content={ogImage} />}
+{ogImage && <meta name="twitter:image:alt" content={title} />}
+
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />

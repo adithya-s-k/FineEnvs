@@ -1,0 +1,41 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## Training and ablations
+
+{/* TODO: the training setup — base models, trainer, hyperparameters, hardware, wall clock and
+    roughly what it cost. State it plainly enough that someone could rerun it.
+
+    Runs and checkpoints on the Hub:
+      dashboard   https://huggingface.co/spaces/AdithyaSK/harbor-dataagent-trackio
+      2B normal   https://huggingface.co/AdithyaSK/data-agent-2b-normal-final    (+ -best)
+      2B curric.  https://huggingface.co/AdithyaSK/data-agent-2b-curriculum-final (+ -best)
+      4B normal   https://huggingface.co/AdithyaSK/data-agent-4b-normal-final    (+ -best)
+    The ablation axes are model size (2B / 4B) and curriculum (normal / difficulty-ranked), with
+    final vs best checkpoints for each.
+*/}
+
+{/* VIZ: d3-training-curves — reward over training steps, one line per run, all ablations overlaid
+    on shared axes so they are actually comparable. Mark where "best" was taken for each run. Include
+    the runs that did not work; a plot with only the good curve is not evidence. */}
+<HtmlEmbed
+  src="d3-training-curves.html"
+  title="Reward over training"
+  desc="Every run on shared axes, with the best checkpoint marked."
+  frameless
+/>
+
+{/* VIZ: ablation-matrix — a compact table: rows are runs (2B/4B × normal/curriculum), columns are
+    the eval numbers plus final vs best. This is the table a reader screenshots. */}
+<HtmlEmbed
+  src="ablation-matrix.html"
+  title="Ablations"
+  desc="Model size and curriculum, scored at final and best checkpoints."
+  frameless
+/>
+
+### Observations
+
+{/* TODO: what the ablations settled and what they did not. Did curriculum ordering help, and at
+    which size? Did training in one harness transfer to the others, or did it overfit to the
+    harness it saw? That transfer question is the one this whole article exists to answer — answer
+    it explicitly, including if the answer is "not much". */}

@@ -1,0 +1,128 @@
+/* ============================================================================ */
+/* Print styles */
+/* ========================================================================= */
+@media print {
+
+  html,
+  body {
+    background: #fff;
+  }
+
+  /* Margins handled by Playwright; avoid extra global margins */
+  body {
+    margin: 0;
+  }
+
+  /* Keep the banner (hero), hide non-essential UI elements */
+  #theme-toggle {
+    display: none !important;
+  }
+
+  /* Links: remove underline and background */
+  .content-grid main a {
+    text-decoration: none;
+    background: none;
+    border-bottom: 1px solid rgba(0, 0, 0, .2);
+  }
+
+  /* Avoid breaks inside complex blocks */
+  .content-grid main pre,
+  .content-grid main blockquote,
+  .content-grid main table,
+  .content-grid main figure {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Soft page breaks around main headings */
+  .content-grid main h2 {
+    page-break-before: auto;
+    page-break-after: avoid;
+    break-after: avoid-page;
+  }
+
+  /* Small icon labels not needed when printing */
+  .code-lang-chip {
+    display: none !important;
+  }
+
+  /* Adjust more contrasty colors for print */
+  :root {
+    --surface-bg: #fff;
+    --border-color: rgba(0, 0, 0, .2);
+    --link-underline: rgba(0, 0, 0, .3);
+    --link-underline-hover: rgba(0, 0, 0, .4);
+  }
+
+  /* Force single column to reduce widows/orphans and awkward breaks */
+  .content-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .table-of-contents,
+  .right-aside,
+  .toc-mobile-toggle,
+  .toc-mobile-backdrop,
+  .toc-mobile-sidebar {
+    display: none !important;
+  }
+
+  main>nav:first-of-type {
+    display: none !important;
+  }
+
+  /* Avoid page breaks inside complex visual blocks */
+  .hero,
+  .hero-banner,
+  .html-embed__card,
+  .js-plotly-plot,
+  figure,
+  pre,
+  table,
+  blockquote,
+  .wide,
+  .full-width,
+  .stack > *,
+  .card,
+  .palettes,
+  .palette-card,
+  .color-picker,
+  .note {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Prefer keeping header+lead together */
+  .hero {
+    page-break-after: avoid;
+  }
+
+  /* Center the hero banner and constrain all its children generically */
+  .hero-banner {
+    width: 100% !important;
+    max-width: 980px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    overflow: hidden;
+  }
+
+  .hero-banner > *,
+  .hero-banner svg,
+  .hero-banner canvas,
+  .hero-banner img,
+  .hero-banner video {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    display: block;
+  }
+}
+
+
+@media print {
+  .meta-container-cell--pdf {
+    display: none !important;
+  }
+}

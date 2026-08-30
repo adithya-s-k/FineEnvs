@@ -1,0 +1,30 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## Evals
+
+The same server that trains a model scores one. Before any training, the question worth answering is
+how much the harness itself moves the number.
+
+{/* TODO: describe the eval setup — which models, which harnesses, which tasks, how many rollouts,
+    and what counts as success.
+
+    Artifacts:
+      https://huggingface.co/spaces/AdithyaSK/DataAgent-evals
+      https://huggingface.co/spaces/AdithyaSK/dataagent-phase0-evals
+*/}
+
+{/* VIZ: d3-eval-comparison — grouped bars or a heatmap of score by (model × harness) on the same
+    task set. The reader should be able to see at a glance where two harnesses disagree about the
+    same model, which is the finding that motivates training across more than one. */}
+<HtmlEmbed
+  src="d3-eval-comparison.html"
+  title="The same model, different harnesses"
+  desc="Scores by model and harness on one task set."
+  frameless
+/>
+
+### Observations
+
+{/* TODO: what the numbers actually showed. Be specific and include the results that were
+    inconvenient — where a harness helped a weak model, where scaffolding masked a capability gap,
+    where the ranking flipped between harnesses. */}

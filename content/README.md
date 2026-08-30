@@ -8,6 +8,7 @@ Each item ships to the Hub as a Space; the source of truth is here.
 | Article | Source | Live |
 |---|---|---|
 | **The ultimate guide to RL environments** | [`articles/rl-environments-guide/`](./articles/rl-environments-guide/) | [▶️ Space](https://huggingface.co/spaces/AdithyaSK/rl-environments-guide) |
+| **The ultimate guide to multi-harness RL** | [`articles/multi-harness-rl/`](./articles/multi-harness-rl/) | 🚧 drafting |
 
 Built with [research-article-template](https://huggingface.co/spaces/tfrere/research-article-template)
 (Astro), served as a Docker Space.

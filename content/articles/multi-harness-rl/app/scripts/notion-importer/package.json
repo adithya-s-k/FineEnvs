@@ -1,0 +1,38 @@
+{
+    "name": "notion-to-mdx-toolkit",
+    "version": "1.0.0",
+    "description": "Complete Notion to MDX conversion toolkit with advanced media handling, interactive components, and Astro integration",
+    "type": "module",
+    "scripts": {
+        "convert": "node index.mjs",
+        "convert:clean": "node index.mjs --clean",
+        "convert:mdx": "node mdx-converter.mjs",
+        "notion-to-md": "node notion-converter.mjs",
+        "postprocess": "node post-processor.mjs",
+        "postprocess:verbose": "node post-processor.mjs --verbose"
+    },
+    "dependencies": {
+        "@notionhq/client": "^2.2.15",
+        "dotenv": "^17.2.2",
+        "gray-matter": "^4.0.3",
+        "mime-types": "^2.1.35",
+        "node-fetch": "^3.3.2",
+        "notion-to-md": "^4.0.0-alpha",
+        "remark-mdx": "^3.0.0",
+        "remark-parse": "^11.0.0",
+        "remark-stringify": "^11.0.0",
+        "unified": "^11.0.4"
+    },
+    "keywords": [
+        "notion",
+        "mdx",
+        "astro",
+        "markdown",
+        "conversion",
+        "notion-api",
+        "scientific-writing",
+        "content-management"
+    ],
+    "author": "Notion-to-MDX Toolkit",
+    "license": "MIT"
+}

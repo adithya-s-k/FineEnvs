@@ -1,0 +1,27 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## Introduction
+
+Recent frontier models are no longer post-trained inside a single agent loop. They are trained and
+evaluated across *many* harnesses — sometimes on collected traces, increasingly through RL directly
+against the harness the model will actually be used in.
+
+{/* TODO: open with the concrete evidence — which recent models, which harnesses, trained on
+    traces vs RL. Cite with [@key]; add the entries to bibliography.bib. */}
+
+{/* VIZ: d3-posttraining-timeline — a timeline of recent SOTA releases, each annotated with the
+    harnesses it was post-trained across and whether via traces or RL. The point the reader should
+    take away is that the count goes up and to the right. */}
+<HtmlEmbed
+  src="d3-posttraining-timeline.html"
+  title="Post-training across harnesses"
+  desc="Recent model releases and the agent harnesses each was trained or evaluated against."
+  frameless
+/>
+
+### Why multi-harness, and why now?
+
+{/* TODO: the motivation, in three or four sentences. A model that is strong in one harness is not
+    automatically strong in another; harnesses differ in prompt format, tool surface and control
+    flow. If you train against one and ship into another, you have a distribution gap you never
+    measured. */}

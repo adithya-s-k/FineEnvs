@@ -1,0 +1,168 @@
+@import "https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,200..900;1,200..900&display=swap";
+
+html {
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: var(--page-bg);
+  overflow-x: hidden;
+}
+
+.content-grid main {
+  color: var(--text-color);
+}
+
+.content-grid main p {
+  margin: 0 0 var(--spacing-3);
+}
+
+.content-grid main h2 {
+  font-weight: 600;
+  font-size: clamp(22px, 2.6vw, 32px);
+  line-height: 1.2;
+  margin: var(--spacing-10) 0 var(--spacing-5);
+  padding-bottom: var(--spacing-2);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.content-grid main h3 {
+  font-weight: 700;
+  font-size: clamp(18px, 2.1vw, 22px);
+  line-height: 1.25;
+  margin: var(--spacing-8) 0 var(--spacing-4);
+}
+
+.content-grid main h4 {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 16px;
+  line-height: 1.2;
+  margin: var(--spacing-6) 0 var(--spacing-4);
+}
+
+.content-grid main a {
+  color: var(--primary-color);
+  text-decoration: none;
+  background: var(--surface-bg);
+  border-bottom: 1px solid color-mix(in srgb, var(--primary-color, #007AFF) 40%, transparent);
+}
+
+.content-grid main a:hover {
+  color: var(--primary-color-hover);
+  border-bottom: 1px solid color-mix(in srgb, var(--primary-color, #007AFF) 40%, transparent);
+}
+
+/* Do not underline heading links inside the article (not the TOC) */
+.content-grid main h2 a,
+.content-grid main h3 a,
+.content-grid main h4 a,
+.content-grid main h5 a,
+.content-grid main h6 a {
+  color: inherit;
+  background: none;
+  border-bottom: none;
+  text-decoration: none;
+}
+
+.content-grid main h2 a:hover,
+.content-grid main h3 a:hover,
+.content-grid main h4 a:hover,
+.content-grid main h5 a:hover,
+.content-grid main h6 a:hover {
+  color: inherit;
+  border-bottom: none;
+  text-decoration: none;
+}
+
+.content-grid main ul,
+.content-grid main ol {
+  padding-left: 24px;
+  margin: 0 0 var(--spacing-3);
+}
+
+.content-grid main li {
+  margin-bottom: var(--spacing-2);
+}
+
+.content-grid main li:last-child {
+  margin-bottom: 0;
+}
+
+.content-grid main blockquote {
+  border-left: 2px solid var(--border-color);
+  padding-left: var(--spacing-4);
+  font-style: italic;
+  color: var(--muted-color);
+  margin: var(--spacing-4) 0;
+}
+
+.content-grid main hr {
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  margin: var(--spacing-5) 0;
+}
+
+.muted {
+  color: var(--muted-color);
+}
+
+[data-footnote-ref] {
+  margin-left: 4px;
+}
+
+.content-grid main mark {
+  background-color: color-mix(in srgb, var(--primary-color, #007AFF) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 18%, transparent);
+  color: inherit;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 46px 0;
+}
+
+.feature-card {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 40%, transparent);
+  ;
+  background: color-mix(in srgb, var(--primary-color, #007AFF) 05%, transparent) !important;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.feature-card strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  color: var(--primary-color) !important;
+  margin-bottom: 0px !important;
+}
+
+.feature-card span {
+  font-size: 12px;
+  color: var(--muted-color);
+  color: var(--primary-color) !important;
+  margin-bottom: 0px !important;
+  opacity: 1;
+}
+
+.katex .tag {
+  background: none;
+  border: none;
+  opacity: 0.4;
+}

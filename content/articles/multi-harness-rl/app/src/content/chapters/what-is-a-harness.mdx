@@ -1,0 +1,38 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## What is a harness?
+
+An agent harness is the program that actually runs the agent: it owns the loop, decides what tools
+exist, renders the prompt, and calls the model. From the model's side, the harness is the whole
+world. From the trainer's side, it is a binary you do not control.
+
+{/* TODO: define it crisply and distinguish it from an RL environment, which is the next chapter.
+    Deck slide 06_BlackBox.tsx has the framing: "its own loop, its own tools", with a single
+    endpoint out. */}
+
+{/* VIZ: d3-harness-anatomy — one harness opened up: its own loop, its own tool surface, its own
+    sandbox, and exactly one wire leaving it toward an OpenAI-compatible model endpoint. That
+    single wire is the thing the rest of the article stands on. */}
+<HtmlEmbed
+  src="d3-harness-anatomy.html"
+  title="Inside a harness"
+  desc="The loop, the tools, the sandbox, and the one model endpoint that leaves it."
+  frameless
+/>
+
+### The harness ecosystem today
+
+{/* TODO: a short tour. Harbor reaches ~37; OpenEnv PR #1036 validates 16 end to end, grouped by
+    the wire dialect they speak — chat-completions (opencode, goose, qwen-coder, swe-agent,
+    mini-swe-agent, openhands-sdk, openclaw, hermes, kimi-cli, pi, vibe, terminus-2),
+    OpenAI Responses (codex, trae-agent), Anthropic Messages (claude-code),
+    Google generateContent (gemini-cli). */}
+
+{/* VIZ: harness-ecosystem-matrix — a scannable table of harnesses: name, wire dialect it speaks,
+    what it targets, whether it is validated end to end. HTML table, not a chart. */}
+<HtmlEmbed
+  src="harness-ecosystem-matrix.html"
+  title="The harness landscape"
+  desc="Agent harnesses, the API dialect each speaks, and what it targets."
+  frameless
+/>

@@ -1,0 +1,243 @@
+/* ============================================================================ */
+/* Form Elements - Modern Minimal Design */
+/* ============================================================================ */
+
+/* Select styling with modern chevron */
+select {
+  background-color: var(--page-bg);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 50%, var(--border-color));
+  border-radius: var(--button-radius);
+  padding: var(--button-padding-y) calc(var(--button-padding-x)*2) var(--button-padding-y) var(--button-padding-x);
+  font-family: var(--default-font-family);
+  font-size: var(--button-font-size);
+  color: var(--text-color);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8.825L1.175 4 2.35 2.825 6 6.475 9.65 2.825 10.825 4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right calc(var(--button-padding-x) + 2px) center;
+  background-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+select:hover,
+select:focus,
+select:active {
+  border-color: var(--primary-color);
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(from var(--primary-color) r g b / 0.1);
+}
+
+select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--surface-bg);
+}
+
+/* Dark theme select chevron */
+[data-theme="dark"] select {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23bbb' d='M6 8.825L1.175 4 2.35 2.825 6 6.475 9.65 2.825 10.825 4z'/%3E%3C/svg%3E");
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 3px;
+  background-color: var(--page-bg);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  margin-right: var(--spacing-2);
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--primary-color);
+}
+
+input[type="checkbox"]:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(from var(--primary-color) r g b / 0.1);
+}
+
+input[type="checkbox"]:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+input[type="checkbox"]:checked::before {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--on-primary);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+input[type="checkbox"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Radio button styling */
+input[type="radio"] {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
+  background-color: var(--page-bg);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  margin-right: var(--spacing-2);
+}
+
+input[type="radio"]:hover {
+  border-color: var(--primary-color);
+}
+
+input[type="radio"]:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(from var(--primary-color) r g b / 0.1);
+}
+
+input[type="radio"]:checked {
+  border-color: var(--primary-color);
+}
+
+input[type="radio"]:checked::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+}
+
+input[type="radio"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Input text styling for consistency */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="url"],
+input[type="search"],
+textarea {
+  appearance: none;
+  background-color: var(--page-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--button-radius);
+  padding: var(--button-padding-y) var(--button-padding-x);
+  font-family: var(--default-font-family);
+  font-size: var(--button-font-size);
+  color: var(--text-color);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+}
+
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
+input[type="number"]:hover,
+input[type="url"]:hover,
+input[type="search"]:hover,
+textarea:hover {
+  border-color: var(--primary-color);
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="url"]:focus,
+input[type="search"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(from var(--primary-color) r g b / 0.1);
+}
+
+input[type="text"]:disabled,
+input[type="email"]:disabled,
+input[type="password"]:disabled,
+input[type="number"]:disabled,
+input[type="url"]:disabled,
+input[type="search"]:disabled,
+textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--surface-bg);
+}
+
+/* Label styling */
+label {
+  display: flex;
+  align-items: center;
+  font-size: var(--button-font-size);
+  color: var(--text-color);
+  cursor: pointer;
+  margin-bottom: 0;
+  line-height: 1.4;
+  user-select: none;
+}
+
+/* Form group spacing */
+.form-group {
+  margin-bottom: var(--spacing-4);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.form-group label {
+  margin-bottom: 0;
+}
+
+/* Alternative: for vertical form groups */
+.form-group.vertical {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.form-group.vertical label {
+  margin-bottom: var(--spacing-1);
+}
+
+/* For inline form elements */
+.form-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+}
+
+.form-inline label {
+  margin-bottom: 0;
+}
+
+/* Ensure labels in flex containers don't break alignment */
+div[style*="display: flex"] label,
+div[class*="flex"] label {
+  margin-bottom: 0 !important;
+  align-self: center;
+}

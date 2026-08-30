@@ -1,0 +1,30 @@
+## Small models across many harnesses
+
+{/* TODO: set up the experiment. The problem statement: can a small open model be made competent at
+    a real agentic task, and does training it inside one harness transfer to the others? */}
+
+### The Data Agent dataset
+
+{/* TODO: overview of the dataset, the tasks, and how success is scored.
+
+    Artifacts on the Hub — link these inline rather than describing them:
+      train      https://huggingface.co/datasets/AdithyaSK/data_agent_rl_environment_train
+      eval       https://huggingface.co/datasets/AdithyaSK/data_agent_rl_environment_eval
+      subset     https://huggingface.co/datasets/AdithyaSK/data_agent_rl_environment_train_subset_100
+      multi-rwd  https://huggingface.co/datasets/AdithyaSK/data_agent_rl_environment_train_multireward
+      difficulty https://huggingface.co/datasets/AdithyaSK/data_agent_rl_environment_train_difficulty_ranked
+      harbor     https://huggingface.co/datasets/AdithyaSK/dabstep-harbor
+    Env Space:   https://huggingface.co/spaces/AdithyaSK/harbor-data-agent-env
+*/}
+
+{/* TODO: a table of the task types and counts, and one worked example task with its verifier —
+    readers trust a dataset they have seen one row of. */}
+
+### Synchronous runs: a small model improving
+
+{/* TODO: the first result. Show that the signal exists before introducing any of the async
+    machinery — a synchronous GRPO run on the subset, and the curve moving. */}
+
+{/* TODO: the notebook. Add it at 02-multi-harness-rl/notebooks/ so a reader can run the synchronous
+    GRPO experiment against this dataset in one command, the way 01-latex-ocr does. Link it here
+    and from the project README. */}

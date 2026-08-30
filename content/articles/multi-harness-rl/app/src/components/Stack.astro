@@ -1,0 +1,141 @@
+---
+interface Props {
+    /** Layout mode: number of columns or 'auto' for responsive */
+    layout?: "2-column" | "3-column" | "4-column" | "auto";
+    /** Gap between items - can be a predefined size or custom value (e.g., "2rem", "20px", "1.5em") */
+    gap?: "small" | "medium" | "large" | string;
+    /** Optional class to apply on the wrapper */
+    class?: string;
+    /** Optional ID for the stack */
+    id?: string;
+}
+
+const {
+    layout = "2-column",
+    gap = "medium",
+    class: className,
+    id,
+} = Astro.props as Props;
+
+const getGapSize = () => {
+    switch (gap) {
+        case "small":
+            return "0.5rem";
+        case "medium":
+            return "1rem";
+        case "large":
+            return "1.5rem";
+        default:
+            return gap;
+    }
+};
+
+const gapSize = getGapSize();
+---
+
+<div
+    class={`stack ${className || ""}`}
+    data-layout={layout}
+    data-gap={gap}
+    id={id}
+    style={`gap: ${gapSize}`}
+>
+    <slot />
+</div>
+
+<style>
+    .stack {
+        display: grid;
+        gap: 1rem;
+        margin: var(--block-spacing-y) 0;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Layout configurations */
+    .stack[data-layout="2-column"] {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stack[data-layout="3-column"] {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .stack[data-layout="4-column"] {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .stack[data-layout="auto"] {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+
+    /* Default layout (2-column) */
+    .stack:not([data-layout]) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Ensure child elements don't overflow */
+    .stack :global(> *) {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        overflow: hidden !important;
+    }
+
+    /* Handle code blocks inside stack */
+    .stack pre {
+        overflow-x: auto;
+        max-width: 100%;
+        width: 100%;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+        box-sizing: border-box;
+        min-width: 0 !important;
+    }
+
+    .stack code {
+        word-wrap: break-word;
+        white-space: pre-wrap;
+        max-width: 100%;
+        box-sizing: border-box;
+        min-width: 0 !important;
+    }
+
+    /* Override the min-width: 100% from _code.css */
+    .stack pre code {
+        min-width: 0 !important;
+    }
+
+    /* Override section.content-grid pre code min-width rule */
+    .stack section.content-grid pre code {
+        min-width: 0 !important;
+    }
+
+    /* Responsive behavior */
+    @media (max-width: 768px) {
+        .stack[data-layout="3-column"],
+        .stack[data-layout="4-column"],
+        .stack[data-layout="2-column"],
+        .stack[data-layout="auto"],
+        .stack:not([data-layout]) {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
+    @media (min-width: 769px) and (max-width: 1100px) {
+        .stack[data-layout="3-column"],
+        .stack[data-layout="4-column"],
+        .stack[data-layout="auto"] {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
+    }
+
+    @media (min-width: 1101px) and (max-width: 1400px) {
+        .stack[data-layout="4-column"] {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
+    }
+</style>

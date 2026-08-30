@@ -1,0 +1,494 @@
+// rehype plugin to post-process citations and footnotes at build-time
+// - Normalizes the bibliography into <ol class="references"> with <li id="...">
+// - Linkifies DOI/URL occurrences inside references
+// - Appends back-reference links (↩ back: 1, 2, ...) from each reference to in-text citation anchors
+// - Cleans up footnotes block (.footnotes)
+
+export default function rehypeReferencesAndFootnotes() {
+  return (tree) => {
+    const isElement = (n) => n && typeof n === 'object' && n.type === 'element';
+    const getChildren = (n) => (Array.isArray(n?.children) ? n.children : []);
+
+    const walk = (node, parent, fn) => {
+      if (!node || typeof node !== 'object') return;
+      fn && fn(node, parent);
+      const kids = getChildren(node);
+      for (const child of kids) walk(child, node, fn);
+    };
+
+    const ensureArray = (v) => (Array.isArray(v) ? v : v != null ? [v] : []);
+
+    const hasClass = (el, name) => {
+      const cn = ensureArray(el?.properties?.className).map(String);
+      return cn.includes(name);
+    };
+
+    const setAttr = (el, key, val) => {
+      el.properties = el.properties || {};
+      if (val == null) delete el.properties[key];
+      else el.properties[key] = val;
+    };
+
+    const getAttr = (el, key) => (el?.properties ? el.properties[key] : undefined);
+
+    // Shared helpers for backlinks + backrefs block
+    const collectBacklinksForIdSet = (idSet, anchorPrefix) => {
+      const idToBacklinks = new Map();
+      const idToAnchorNodes = new Map();
+      if (!idSet || idSet.size === 0) return { idToBacklinks, idToAnchorNodes };
+      walk(tree, null, (node) => {
+        if (!isElement(node) || node.tagName !== 'a') return;
+        const href = String(getAttr(node, 'href') || '');
+        if (!href.startsWith('#')) return;
+        const id = href.slice(1);
+        if (!idSet.has(id)) return;
+        // Ensure a stable id
+        let anchorId = String(getAttr(node, 'id') || '');
+        if (!anchorId) {
+          const list = idToBacklinks.get(id) || [];
+          anchorId = `${anchorPrefix}-${id}-${list.length + 1}`;
+          setAttr(node, 'id', anchorId);
+        }
+        const list = idToBacklinks.get(id) || [];
+        list.push(anchorId);
+        idToBacklinks.set(id, list);
+        const nodes = idToAnchorNodes.get(id) || [];
+        nodes.push(node);
+        idToAnchorNodes.set(id, nodes);
+      });
+      return { idToBacklinks, idToAnchorNodes };
+    };
+
+    const createBackIcon = () => ({
+      type: 'element',
+      tagName: 'svg',
+      properties: {
+        className: ['back-icon'],
+        width: 12,
+        height: 12,
+        viewBox: '0 0 24 24',
+        fill: 'none',
+        stroke: 'currentColor',
+        'stroke-width': 2,
+        'stroke-linecap': 'round',
+        'stroke-linejoin': 'round',
+        'aria-hidden': 'true',
+        focusable: 'false'
+      },
+      children: [
+        { type: 'element', tagName: 'line', properties: { x1: 12, y1: 19, x2: 12, y2: 5 }, children: [] },
+        { type: 'element', tagName: 'polyline', properties: { points: '5 12 12 5 19 12' }, children: [] }
+      ]
+    });
+
+    const appendBackrefsBlock = (listElement, idToBacklinks, ariaLabel) => {
+      if (!listElement || !idToBacklinks || idToBacklinks.size === 0) return;
+      for (const li of getChildren(listElement)) {
+        if (!isElement(li) || li.tagName !== 'li') continue;
+        const id = String(getAttr(li, 'id') || '');
+        if (!id) continue;
+        const keys = idToBacklinks.get(id);
+        if (!keys || !keys.length) continue;
+        // Remove pre-existing .backrefs in this li to avoid duplicates
+        li.children = getChildren(li).filter((n) => !(isElement(n) && n.tagName === 'small' && hasClass(n, 'backrefs')));
+        const small = {
+          type: 'element',
+          tagName: 'small',
+          properties: { className: ['backrefs'] },
+          children: []
+        };
+        if (keys.length === 1) {
+          // Single backlink: just the icon wrapped in the anchor
+          const a = {
+            type: 'element',
+            tagName: 'a',
+            properties: { href: `#${keys[0]}`, 'aria-label': ariaLabel },
+            children: [createBackIcon()]
+          };
+          small.children.push(a);
+        } else {
+          // Multiple backlinks: icon + label + numbered links
+          small.children.push(createBackIcon());
+          small.children.push({ type: 'text', value: ' back: ' });
+          keys.forEach((backId, idx) => {
+            small.children.push({
+              type: 'element',
+              tagName: 'a',
+              properties: { href: `#${backId}`, 'aria-label': ariaLabel },
+              children: [{ type: 'text', value: String(idx + 1) }]
+            });
+            if (idx < keys.length - 1) small.children.push({ type: 'text', value: ', ' });
+          });
+        }
+        li.children.push(small);
+      }
+    };
+    // Remove default back-reference anchors generated by remark-footnotes inside a footnote item
+    const getTextContent = (el) => {
+      if (!el) return '';
+      const stack = [el];
+      let out = '';
+      while (stack.length) {
+        const cur = stack.pop();
+        if (!cur) continue;
+        if (cur.type === 'text') out += String(cur.value || '');
+        const kids = getChildren(cur);
+        for (let i = kids.length - 1; i >= 0; i--) stack.push(kids[i]);
+      }
+      return out;
+    };
+
+    // Check if an element is part of KaTeX structure
+    const isKaTeXElement = (el) => {
+      if (!isElement(el)) return false;
+      const className = ensureArray(getAttr(el, 'className') || []).map(String);
+      // Check for KaTeX classes
+      if (className.some(c => c.includes('katex') || c.includes('math'))) return true;
+      // Check parent chain for KaTeX
+      let current = el;
+      for (let depth = 0; depth < 10; depth++) {
+        // We need to walk up, but we don't have parent references in rehype AST
+        // So check by tagName and common KaTeX patterns
+        const tag = String(current.tagName || '').toLowerCase();
+        if (tag === 'math' || className.some(c => c.includes('katex'))) return true;
+        break; // Can't walk up in AST, just check current element
+      }
+      return false;
+    };
+
+    const removeFootnoteBackrefAnchors = (el) => {
+      if (!isElement(el)) return;
+      // Never modify KaTeX elements or their contents
+      if (isKaTeXElement(el)) return;
+
+      const kids = getChildren(el);
+      for (let i = kids.length - 1; i >= 0; i--) {
+        const child = kids[i];
+        if (isElement(child)) {
+          // Never touch KaTeX elements
+          if (isKaTeXElement(child)) continue;
+
+          if (
+            child.tagName === 'a' && (
+              getAttr(child, 'data-footnote-backref') != null ||
+              hasClass(child, 'footnote-backref') ||
+              String(getAttr(child, 'role') || '').toLowerCase() === 'doc-backlink' ||
+              String(getAttr(child, 'aria-label') || '').toLowerCase().includes('back to content') ||
+              String(getAttr(child, 'href') || '').startsWith('#fnref') ||
+              // Fallback: text-based detection like "↩" or "↩2"
+              /^\s*↩\s*\d*\s*$/u.test(getTextContent(child))
+            )
+          ) {
+            // Remove the anchor
+            el.children.splice(i, 1);
+            continue;
+          }
+          // Recurse into element (but not if it's KaTeX)
+          removeFootnoteBackrefAnchors(child);
+          // If a wrapper like <sup> or <span> became empty, remove it
+          // BUT only if it's not part of KaTeX
+          const becameKids = getChildren(child);
+          if ((child.tagName === 'sup' || child.tagName === 'span') &&
+            (!becameKids || becameKids.length === 0) &&
+            !isKaTeXElement(child)) {
+            el.children.splice(i, 1);
+          }
+        }
+      }
+    };
+
+
+    const normDoiHref = (href) => {
+      if (!href) return href;
+      const DUP = /https?:\/\/(?:dx\.)?doi\.org\/(?:https?:\/\/(?:dx\.)?doi\.org\/)+/gi;
+      const ONE = /https?:\/\/(?:dx\.)?doi\.org\/(10\.[^\s<>"']+)/i;
+      href = String(href).replace(DUP, 'https://doi.org/');
+      const m = href.match(ONE);
+      return m ? `https://doi.org/${m[1]}` : href;
+    };
+
+    const DOI_BARE = /\b10\.[0-9]{4,9}\/[\-._;()\/:A-Z0-9]+\b/gi;
+    const URL_GEN = /\bhttps?:\/\/[^\s<>()"']+/gi;
+
+    const linkifyTextNode = (textNode) => {
+      const text = String(textNode.value || '');
+      let last = 0;
+      const parts = [];
+      const pushText = (s) => { if (s) parts.push({ type: 'text', value: s }); };
+
+      const matches = [];
+      // Collect URL matches
+      let m;
+      URL_GEN.lastIndex = 0;
+      while ((m = URL_GEN.exec(text)) !== null) {
+        matches.push({ type: 'url', start: m.index, end: URL_GEN.lastIndex, raw: m[0] });
+      }
+      // Collect DOI matches
+      DOI_BARE.lastIndex = 0;
+      while ((m = DOI_BARE.exec(text)) !== null) {
+        matches.push({ type: 'doi', start: m.index, end: DOI_BARE.lastIndex, raw: m[0] });
+      }
+      matches.sort((a, b) => a.start - b.start);
+
+      for (const match of matches) {
+        if (match.start < last) continue; // overlapping
+        pushText(text.slice(last, match.start));
+        if (match.type === 'url') {
+          const href = normDoiHref(match.raw);
+          const doiOne = href.match(/https?:\/\/(?:dx\.)?doi\.org\/(10\.[^\s<>"']+)/i);
+          const a = {
+            type: 'element',
+            tagName: 'a',
+            properties: { href, target: '_blank', rel: 'noopener noreferrer' },
+            children: [{ type: 'text', value: doiOne ? doiOne[1] : href }]
+          };
+          parts.push(a);
+        } else {
+          const href = `https://doi.org/${match.raw}`;
+          const a = {
+            type: 'element',
+            tagName: 'a',
+            properties: { href, target: '_blank', rel: 'noopener noreferrer' },
+            children: [{ type: 'text', value: match.raw }]
+          };
+          parts.push(a);
+        }
+        last = match.end;
+      }
+
+      pushText(text.slice(last));
+      return parts;
+    };
+
+    const linkifyInElement = (el) => {
+      const kids = getChildren(el);
+      for (let i = 0; i < kids.length; i++) {
+        const child = kids[i];
+        if (!child) continue;
+        if (child.type === 'text') {
+          const replacement = linkifyTextNode(child);
+          if (replacement.length === 1 && replacement[0].type === 'text') continue;
+          // Replace the single text node with multiple nodes
+          el.children.splice(i, 1, ...replacement);
+          i += replacement.length - 1;
+        } else if (isElement(child)) {
+          if (child.tagName === 'a') {
+            const href = normDoiHref(getAttr(child, 'href'));
+            setAttr(child, 'href', href);
+            const m = String(href || '').match(/https?:\/\/(?:dx\.)?doi\.org\/(10\.[^\s<>"']+)/i);
+            if (m && (!child.children || child.children.length === 0)) {
+              child.children = [{ type: 'text', value: m[1] }];
+            }
+            continue;
+          }
+          linkifyInElement(child);
+        }
+      }
+      // Deduplicate adjacent identical anchors
+      for (let i = 1; i < el.children.length; i++) {
+        const prev = el.children[i - 1];
+        const curr = el.children[i];
+        if (isElement(prev) && isElement(curr) && prev.tagName === 'a' && curr.tagName === 'a') {
+          const key = `${getAttr(prev, 'href') || ''}|${(prev.children?.[0]?.value) || ''}`;
+          const key2 = `${getAttr(curr, 'href') || ''}|${(curr.children?.[0]?.value) || ''}`;
+          if (key === key2) {
+            el.children.splice(i, 1);
+            i--;
+          }
+        }
+      }
+    };
+
+    // Find references container and normalize its list
+    const findReferencesRoot = () => {
+      let found = null;
+      walk(tree, null, (node) => {
+        if (found) return;
+        if (!isElement(node)) return;
+        const id = getAttr(node, 'id');
+        // Support both 'references' (manual) and 'refs' (rehype-citation default)
+        if (id === 'references' || id === 'refs' || hasClass(node, 'references') || hasClass(node, 'bibliography') || hasClass(node, 'csl-bib-body')) {
+          found = node;
+        }
+      });
+      return found;
+    };
+
+    const toOrderedList = (container) => {
+      // If there is already an <ol>, use it; otherwise convert common structures
+      let ol = getChildren(container).find((c) => isElement(c) && c.tagName === 'ol');
+      if (!ol) {
+        ol = { type: 'element', tagName: 'ol', properties: { className: ['references'] }, children: [] };
+        const candidates = getChildren(container).filter((n) => isElement(n));
+        if (candidates.length) {
+          for (const node of candidates) {
+            if (hasClass(node, 'csl-entry') || node.tagName === 'li' || node.tagName === 'p' || node.tagName === 'div') {
+              const li = { type: 'element', tagName: 'li', properties: {}, children: getChildren(node) };
+              if (getAttr(node, 'id')) setAttr(li, 'id', getAttr(node, 'id'));
+              ol.children.push(li);
+            }
+          }
+        }
+        // Replace container children by the new ol
+        container.children = [ol];
+      }
+      if (!hasClass(ol, 'references')) {
+        const cls = ensureArray(ol.properties?.className).map(String);
+        if (!cls.includes('references')) cls.push('references');
+        ol.properties = ol.properties || {};
+        ol.properties.className = cls;
+      }
+      return ol;
+    };
+
+    const refsRoot = findReferencesRoot();
+    let refsOl = null;
+    const refIdSet = new Set();
+    const refIdToExternalHref = new Map();
+
+    if (refsRoot) {
+      refsOl = toOrderedList(refsRoot);
+      // Collect item ids and linkify their content
+      for (const li of getChildren(refsOl)) {
+        if (!isElement(li) || li.tagName !== 'li') continue;
+        if (!getAttr(li, 'id')) {
+          // Try to find a nested element with id to promote
+          const nestedWithId = getChildren(li).find((n) => isElement(n) && getAttr(n, 'id'));
+          if (nestedWithId) setAttr(li, 'id', getAttr(nestedWithId, 'id'));
+        }
+        const id = getAttr(li, 'id');
+        if (id) refIdSet.add(String(id));
+        linkifyInElement(li);
+        // Record first external link href (e.g., DOI/URL) if present
+        if (id) {
+          let externalHref = null;
+          const stack = [li];
+          while (stack.length) {
+            const cur = stack.pop();
+            const kids = getChildren(cur);
+            for (const k of kids) {
+              if (isElement(k) && k.tagName === 'a') {
+                const href = String(getAttr(k, 'href') || '');
+                if (/^https?:\/\//i.test(href)) {
+                  externalHref = href;
+                  break;
+                }
+              }
+              if (isElement(k)) stack.push(k);
+            }
+            if (externalHref) break;
+          }
+          if (externalHref) refIdToExternalHref.set(String(id), externalHref);
+        }
+      }
+      setAttr(refsRoot, 'data-built-refs', '1');
+    }
+
+    // Collect in-text anchors that point to references ids
+    const { idToBacklinks: refIdToBacklinks, idToAnchorNodes: refIdToCitationAnchors } = collectBacklinksForIdSet(refIdSet, 'refctx');
+
+    // Append backlinks into references list items
+    appendBackrefsBlock(refsOl, refIdToBacklinks, 'Back to citation');
+
+    // Rewrite in-text citation anchors to external link when available
+    if (refIdToCitationAnchors.size > 0) {
+      for (const [id, anchors] of refIdToCitationAnchors.entries()) {
+        const ext = refIdToExternalHref.get(id);
+        if (!ext) continue;
+        for (const a of anchors) {
+          setAttr(a, 'data-ref-id', id);
+          setAttr(a, 'href', ext);
+          const existingTarget = getAttr(a, 'target');
+          if (!existingTarget) setAttr(a, 'target', '_blank');
+          const rel = String(getAttr(a, 'rel') || '');
+          const relSet = new Set(rel ? rel.split(/\s+/) : []);
+          relSet.add('noopener');
+          relSet.add('noreferrer');
+          setAttr(a, 'rel', Array.from(relSet).join(' '));
+        }
+      }
+    }
+
+    // Deep clone a node and all its children (preserve KaTeX structure)
+    const deepCloneNode = (node) => {
+      if (!node || typeof node !== 'object') return node;
+      if (node.type === 'text') {
+        return { type: 'text', value: node.value };
+      }
+      if (node.type === 'element') {
+        const cloned = {
+          type: 'element',
+          tagName: node.tagName,
+          properties: node.properties ? JSON.parse(JSON.stringify(node.properties)) : {},
+          children: []
+        };
+        const kids = getChildren(node);
+        for (const child of kids) {
+          cloned.children.push(deepCloneNode(child));
+        }
+        return cloned;
+      }
+      return node;
+    };
+
+    // Footnotes cleanup + backrefs harmonized with references
+    const cleanupFootnotes = () => {
+      let root = null;
+      walk(tree, null, (node) => {
+        if (!isElement(node)) return;
+        if (hasClass(node, 'footnotes')) root = node;
+      });
+      if (!root) return { root: null, ol: null, idSet: new Set() };
+      // Remove <hr> direct children
+      root.children = getChildren(root).filter((n) => !(isElement(n) && n.tagName === 'hr'));
+      // Ensure an <ol>
+      let ol = getChildren(root).find((c) => isElement(c) && c.tagName === 'ol');
+      if (!ol) {
+        ol = { type: 'element', tagName: 'ol', properties: {}, children: [] };
+        const items = getChildren(root).filter((n) => isElement(n) && (n.tagName === 'li' || hasClass(n, 'footnote') || n.tagName === 'p' || n.tagName === 'div'));
+        if (items.length) {
+          for (const it of items) {
+            // Deep clone to preserve all properties including KaTeX structure
+            const clonedChildren = getChildren(it).map(deepCloneNode);
+            const li = { type: 'element', tagName: 'li', properties: {}, children: clonedChildren };
+            // Promote nested id if present (e.g., <p id="fn-1">)
+            const nestedWithId = getChildren(it).find((n) => isElement(n) && getAttr(n, 'id'));
+            if (nestedWithId) setAttr(li, 'id', getAttr(nestedWithId, 'id'));
+            ol.children.push(li);
+          }
+        }
+        root.children = [ol];
+      }
+      // For existing structures, try to promote ids from children when missing
+      for (const li of getChildren(ol)) {
+        if (!isElement(li) || li.tagName !== 'li') continue;
+        if (!getAttr(li, 'id')) {
+          const nestedWithId = getChildren(li).find((n) => isElement(n) && getAttr(n, 'id'));
+          if (nestedWithId) setAttr(li, 'id', getAttr(nestedWithId, 'id'));
+        }
+        // Remove default footnote backrefs anywhere inside (to avoid duplication)
+        // But preserve KaTeX elements
+        removeFootnoteBackrefAnchors(li);
+      }
+      setAttr(root, 'data-built-footnotes', '1');
+      // Collect id set
+      const idSet = new Set();
+      for (const li of getChildren(ol)) {
+        if (!isElement(li) || li.tagName !== 'li') continue;
+        const id = getAttr(li, 'id');
+        if (id) idSet.add(String(id));
+      }
+      return { root, ol, idSet };
+    };
+
+    const { root: footRoot, ol: footOl, idSet: footIdSet } = cleanupFootnotes();
+
+    // Collect in-text anchors pointing to footnotes
+    const { idToBacklinks: footIdToBacklinks } = collectBacklinksForIdSet(footIdSet, 'footctx');
+
+    // Append backlinks into footnote list items (identical pattern to references)
+    appendBackrefsBlock(footOl, footIdToBacklinks, 'Back to footnote call');
+  };
+}
+
+
