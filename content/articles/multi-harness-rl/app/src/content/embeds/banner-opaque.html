@@ -181,6 +181,7 @@
             let STREAM_ROWS = 9;   // set from the available height in layout()
 
             let W = 0, H = 0, dpr = 1;
+            let lastBoxH = -1;   // the container height layout() last measured
             let boxes = [], gridRight = 0, busX = 0, gcols = 0, grows = 0;
             let streamX0 = 0, streamY0 = 0, streamW = 0;
             let hover = -1;
@@ -206,7 +207,25 @@
                 const rect = container.getBoundingClientRect();
                 W = Math.max(1, Math.round(rect.width));
                 H = Math.max(1, Math.round(visibleHeight(rect)));
+
+                // Break a circular dependency. In the hero this container's own
+                // aspect-ratio and min-height do not apply, so it is content-sized: it
+                // takes its height from the canvas, and the canvas takes its height
+                // from the container. Mount once while hidden and the pair latch at the
+                // clamped floor and never recover. So when our own box looks collapsed,
+                // adopt the nearest ancestor that has a real one, and pin our height to
+                // it so the collapse cannot come back.
+                if (H < 200) {
+                    let n = container.parentElement, best = 0;
+                    while (n && n !== document.body && best < 200) {
+                        best = Math.max(best, Math.round(n.getBoundingClientRect().height));
+                        n = n.parentElement;
+                    }
+                    if (best > H) H = Math.min(best, 560);
+                }
+                container.style.height = H + 'px';
                 canvas.style.height = H + 'px';
+                lastBoxH = Math.round(container.getBoundingClientRect().height);
                 dpr = Math.max(1, window.devicePixelRatio || 1);
                 canvas.width = Math.round(W * dpr);
                 canvas.height = Math.round(H * dpr);
@@ -620,6 +639,17 @@
             canvas.addEventListener('mouseleave', () => { hover = -1; tip.style.opacity = '0'; });
 
             // ─── Run ──────────────────────────────────────────────────────────────
+            // Re-measure and re-prime. Needed because this banner can mount while it is
+            // display:none (behind the hero's visualisation toggle), where its box is
+            // zero and visibleHeight clamps to its floor. A ResizeObserver on the
+            // container does not save us: the height that changes on becoming visible
+            // belongs to an ancestor, so the container's own box never moves.
+            const relayout = () => {
+                layout();
+                for (let i = 0; i < 900; i++) update();
+                draw();
+            };
+
             layout();
             // Run in so the stream is already flowing when the hero first paints.
             for (let i = 0; i < 900; i++) update();
@@ -629,10 +659,27 @@
             } else {
                 let visible = true;
                 if ('IntersectionObserver' in window) {
-                    new IntersectionObserver((es) => { visible = es[0].isIntersecting; },
-                        { rootMargin: '120px' }).observe(container);
+                    new IntersectionObserver((es) => {
+                        const was = visible;
+                        visible = es[0].isIntersecting;
+                        if (visible && !was) relayout();
+                    }, { rootMargin: '120px' }).observe(container);
                 }
+                let tick = 0;
                 const loop = () => {
+                    // Cheap self-heal. This banner can mount while display:none behind
+                    // the hero toggle, measure a zero box, and clamp to its floor. Neither
+                    // a ResizeObserver on the container nor an IntersectionObserver is
+                    // dependable there, because the height that changes belongs to an
+                    // ancestor. So check the box against what layout() last saw.
+                    // Deliberately NOT gated on `visible`: the whole failure mode is that
+                    // the observers do not fire when an ancestor flips display, so `visible`
+                    // is exactly the flag we cannot trust here. The box read is cheap and a
+                    // zero height means hidden, which we skip anyway.
+                    if (tick++ % 15 === 0) {
+                        const h = Math.round(container.getBoundingClientRect().height);
+                        if (h > 0 && Math.abs(h - lastBoxH) > 2) { visible = true; relayout(); }
+                    }
                     if (visible) { update(); draw(); }
                     requestAnimationFrame(loop);
                 };
@@ -640,10 +687,7 @@
             }
 
             let rt;
-            const onResize = () => {
-                clearTimeout(rt);
-                rt = setTimeout(() => { layout(); for (let i = 0; i < 600; i++) update(); draw(); }, 120);
-            };
+            const onResize = () => { clearTimeout(rt); rt = setTimeout(relayout, 120); };
             if ('ResizeObserver' in window) new ResizeObserver(onResize).observe(container);
             else window.addEventListener('resize', onResize);
         };

@@ -47,11 +47,13 @@ const repoName = repo ? String(repo).replace(/\/+$/, "").split("/").pop() : "";
 
 <section class="hero">
   <h1 class="hero-title" set:html={title} />
-  {/* Three heroes are built for this article and the reader picks. Each panel is
-      lazily mounted, so a hidden one costs nothing until it is shown:
-        banner-opaque.html — the harness grid, one wire each, tokens after
-        banner-seam.html   — the rollout fleet, the seam, the token field
-        banner.html        — the galaxy, inherited from the template  */}
+  {/* Two heroes are built for this article and the reader picks. Each panel is
+      lazily mounted and re-measures on becoming visible, so a hidden one costs
+      nothing until it is shown:
+        banner-opaque.html, the harness grid, one wire each, tokens after
+        banner-seam.html, the rollout fleet, the seam, the token field
+      banner.html, the galaxy inherited from the template, is still in the repo
+      but no longer offered. */}
   <div class="hero-banner" data-banner-stage>
     <div class="hero-banner__panel" data-banner="opaque" data-active>
       <HtmlEmbed src="banner-opaque.html" frameless />
@@ -59,14 +61,10 @@ const repoName = repo ? String(repo).replace(/\/+$/, "").split("/").pop() : "";
     <div class="hero-banner__panel" data-banner="seam">
       <HtmlEmbed src="banner-seam.html" frameless />
     </div>
-    <div class="hero-banner__panel" data-banner="galaxy">
-      <HtmlEmbed src="banner.html" frameless />
-    </div>
   </div>
   <div class="hero-banner-pick" role="group" aria-label="Choose the hero visualisation">
     <button type="button" data-pick="opaque" aria-pressed="true">Harnesses</button>
     <button type="button" data-pick="seam" aria-pressed="false">Rollouts</button>
-    <button type="button" data-pick="galaxy" aria-pressed="false">Galaxy</button>
   </div>
   {description && <p class="hero-desc">{description}</p>}
 </section>
