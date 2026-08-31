@@ -101,6 +101,20 @@ confused about the interface, and the interface is the only thing it can see.
 />
 
 
+The fact that this table needs to exist at all is recent. Eighteen months ago a model report
+could omit the word harness entirely and lose nothing; today the harness is named per benchmark row,
+and in some cases trained against.
+
+{/* Moved here from the introduction, which now makes the same point with paper excerpts.
+     VIZ: recent releases on a timeline, each annotated with whether its report names a harness
+     at all, names one per benchmark row, or describes training across several. */}
+<HtmlEmbed
+  src="d3-posttraining-timeline.html"
+  title="When the harness entered the tech report"
+  desc="Recent releases, and whether each names the harness it was measured or trained in."
+  frameless
+/>
+
 The count keeps moving, which is itself part of the argument. Harbor ships adapters for roughly forty
 harnesses. The OpenEnv integration this article builds on validates sixteen end to end. Any number
 printed here will be wrong within a quarter, and a model trained against one of them will still be
