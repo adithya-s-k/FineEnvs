@@ -102,11 +102,40 @@
             // difference to the layout — every mark is drawn into the same chip.
             const SVG_MARKS = new Set(['opencode', 'openhands-sdk', 'swe-agent', 'claude-code']);
             const LOGOS = {};
+            // A dozen brands means a dozen brand colours, which fight each other
+            // and the palette. Desaturate each mark once on load into an offscreen
+            // canvas and draw that instead. Doing it here rather than with a CSS
+            // filter is necessary because these are painted onto a canvas, and
+            // doing it per mark rather than with ctx.filter keeps it working in
+            // browsers that do not implement canvas filters. Source files are left
+            // untouched, so app/public/logos/README.md stays accurate.
+            const desaturate = (img) => {
+                const N = 128;
+                const off = document.createElement('canvas');
+                off.width = off.height = N;
+                const c = off.getContext('2d', { willReadFrequently: true });
+                try {
+                    c.drawImage(img, 0, 0, N, N);
+                    const d = c.getImageData(0, 0, N, N), px = d.data;
+                    for (let i = 0; i < px.length; i += 4) {
+                        // Rec.709 luma. Alpha is untouched, so marks with
+                        // transparent grounds stay transparent.
+                        const y = 0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2];
+                        px[i] = px[i + 1] = px[i + 2] = y;
+                    }
+                    c.putImageData(d, 0, 0);
+                    return off;
+                } catch (e) {
+                    return img;   // a colour mark beats no mark
+                }
+            };
+            const ready = (m) => !!m && (m.tagName === 'CANVAS' || (m.complete && m.naturalWidth));
             for (const name of HARNESSES) {
                 const img = new Image();
                 img.decoding = 'async';
+                img.onload = () => { LOGOS[name] = desaturate(img); };
                 img.src = '/logos/' + name + (SVG_MARKS.has(name) ? '.svg' : '.png');
-                LOGOS[name] = img;
+                LOGOS[name] = img;   // colour original until the grey copy exists
             }
             const HUE = HARNESSES.map((_, i) =>
                 ramp(HARNESSES.length > 1 ? i / (HARNESSES.length - 1) : 0.5));
@@ -465,7 +494,7 @@
                     ctx.clip();
                     ctx.fillStyle = 'rgb(252,252,253)';
                     ctx.fillRect(lx, ly, S, S);
-                    if (img && img.complete && img.naturalWidth) {
+                    if (ready(img)) {
                         ctx.drawImage(img, lx, ly, S, S);
                     } else {
                         ctx.fillStyle = rgba(b.rgb, 0.45);
