@@ -3,14 +3,31 @@
 /* ============================================================================ */
 
 .content-grid {
-  max-width: 1280px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 var(--content-padding-x);
   margin-top: 40px;
   display: grid;
-  grid-template-columns: 260px minmax(0, 680px) 260px;
+  grid-template-columns: 240px minmax(0, 880px) 180px;
   gap: 32px;
   align-items: start;
+}
+
+/* The column is sized for figures, not for prose. Charts, diagrams and tables
+   use its full 880px; running text is capped near a readable measure so the
+   wider column does not turn every paragraph into a 120-character line.
+   Note this is a cap, not a centred breakout: translating figures outward
+   instead would overlap the table of contents in the left column. */
+.content-grid > main > :is(p, ul, ol, dl, blockquote, h2, h3, h4, h5, h6, hr) {
+  max-width: 760px;
+}
+
+.content-grid > main > figure.html-embed,
+.content-grid > main > .html-embed,
+.content-grid > main > .table-wrapper,
+.content-grid > main > .wide,
+.content-grid > main > figure {
+  max-width: 100%;
 }
 
 .content-grid>main {
@@ -169,28 +186,32 @@
 
 /* ------------------------------------------------------------------------- */
 /* Hero meta bar responsiveness                                               */
-/* Two columns at collapse breakpoint, then one column below small screens    */
+/* One cell per row on phones. The previous two-up layout put author beside   */
+/* affiliation and published beside the PDF button, which on a narrow screen  */
+/* read as two ragged columns and truncated the longer values.                */
 /* ------------------------------------------------------------------------- */
 @media (--bp-md) {
   header.meta .meta-container {
     display: flex;
     flex-wrap: wrap;
-    row-gap: 12px;
+    row-gap: 14px;
     column-gap: 8px;
     max-width: 100%;
     padding: 0 var(--spacing-4);
   }
 
   header.meta .meta-container .meta-container-cell {
-    flex: 1 1 calc(50% - 8px);
+    flex: 1 1 100%;
     min-width: 0;
+    max-width: none;
+    text-align: left;
   }
 }
 
 @media (--bp-xxs) {
   header.meta .meta-container .meta-container-cell {
     flex-basis: 100%;
-    text-align: center;
+    text-align: left;
   }
 
   /* Center ordered list numbers within meta (e.g., affiliations) */

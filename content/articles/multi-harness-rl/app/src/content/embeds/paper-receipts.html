@@ -1,28 +1,28 @@
 <div class="paper-receipts" style="width:100%;margin:14px 0;"></div>
 <style>
   .paper-receipts { position: relative; }
-  .paper-receipts .tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
-  .paper-receipts .tab { appearance:none; cursor:pointer; font:inherit; font-size:12px; line-height:1;
+  .paper-receipts .pr-tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+  .paper-receipts .pr-tab { appearance:none; cursor:pointer; font:inherit; font-size:12px; line-height:1;
     padding:7px 12px; border-radius:999px; border:1px solid var(--border-color);
     background:transparent; color:var(--muted-color); transition:color .15s, border-color .15s, background .15s; }
-  .paper-receipts .tab:hover { color:var(--text-color); }
-  .paper-receipts .tab[aria-pressed="true"] { color:var(--text-color); border-color:var(--text-color); font-weight:600; }
-  .paper-receipts .tab:focus-visible { outline:2px solid var(--text-color); outline-offset:2px; }
-  .paper-receipts .card { border:1px solid var(--border-color); border-radius:10px; overflow:hidden; }
-  .paper-receipts .meta { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px;
+  .paper-receipts .pr-tab:hover { color:var(--text-color); }
+  .paper-receipts .pr-tab[aria-pressed="true"] { color:var(--text-color); border-color:var(--text-color); font-weight:600; }
+  .paper-receipts .pr-tab:focus-visible { outline:2px solid var(--text-color); outline-offset:2px; }
+  .paper-receipts .pr-card { border:1px solid var(--border-color); border-radius:10px; overflow:hidden; }
+  .paper-receipts .pr-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px;
     padding:11px 14px; border-bottom:1px solid var(--border-color); }
-  .paper-receipts .lab { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-color); }
-  .paper-receipts .ttl { font-size:13.5px; font-weight:600; color:var(--text-color); }
-  .paper-receipts .loc { font-size:12px; color:var(--muted-color); margin-left:auto; white-space:nowrap; }
-  .paper-receipts .loc a { color:inherit; }
+  .paper-receipts .pr-lab { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-color); }
+  .paper-receipts .pr-ttl { font-size:13.5px; font-weight:600; color:var(--text-color); }
+  .paper-receipts .pr-loc { font-size:12px; color:var(--muted-color); margin-left:auto; white-space:nowrap; }
+  .paper-receipts .pr-loc a { color:inherit; }
   /* The crop is a photograph of a white page, so the plate stays light in both
      themes rather than inverting type that belongs to someone else's document. */
-  .paper-receipts .plate { background:#fff; padding:10px 12px; overflow-x:auto; }
-  .paper-receipts .plate img { display:block; width:100%; min-width:520px; height:auto; }
-  .paper-receipts .says { padding:11px 14px; border-top:1px solid var(--border-color);
+  .paper-receipts .pr-plate { background:#fff; padding:10px 12px; overflow-x:auto; }
+  .paper-receipts .pr-plate img { display:block; width:100%; min-width:520px; height:auto; }
+  .paper-receipts .pr-says { padding:11px 14px; border-top:1px solid var(--border-color);
     font-size:12.5px; line-height:1.55; color:var(--text-color); }
-  .paper-receipts .says b { font-weight:600; }
-  .paper-receipts .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); max-width:64ch; }
+  .paper-receipts .pr-says b { font-weight:600; }
+  .paper-receipts .pr-nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); max-width:64ch; }
 </style>
 <script>
   (() => {
@@ -51,17 +51,17 @@
       const render = () => {
         const d = D[cur];
         r.innerHTML =
-          '<div class="tabs" role="group" aria-label="Choose a paper">' +
-          D.map((x,i) => `<button type="button" class="tab" data-i="${i}" aria-pressed="${i===cur}">${x.lab}</button>`).join('') +
+          '<div class="pr-tabs" role="group" aria-label="Choose a paper">' +
+          D.map((x,i) => `<button type="button" class="pr-tab" data-i="${i}" aria-pressed="${i===cur}">${x.lab}</button>`).join('') +
           '</div>' +
-          '<div class="card"><div class="meta">' +
-          `<span class="lab">${d.lab}</span><span class="ttl">${d.ttl}</span>` +
-          `<span class="loc">${d.loc} · <a href="https://arxiv.org/abs/${d.id}" target="_blank" rel="noopener">arXiv:${d.id}</a></span>` +
+          '<div class="pr-card"><div class="pr-head">' +
+          `<span class="pr-lab">${d.lab}</span><span class="pr-ttl">${d.ttl}</span>` +
+          `<span class="pr-loc">${d.loc} · <a href="https://arxiv.org/abs/${d.id}" target="_blank" rel="noopener">arXiv:${d.id}</a></span>` +
           '</div>' +
-          `<div class="plate"><img src="/papers/${d.img}" alt="Excerpt from ${d.ttl}, ${d.loc}" loading="lazy"></div>` +
-          `<div class="says">${d.says}</div></div>` +
-          '<div class="nt">Crops rendered from the official arXiv PDFs. Nothing is retouched or recomposed; the only edit is the crop rectangle. Follow any link to read the passage in context.</div>';
-        r.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
+          `<div class="pr-plate"><img src="/papers/${d.img}" alt="Excerpt from ${d.ttl}, ${d.loc}" loading="lazy"></div>` +
+          `<div class="pr-says">${d.says}</div></div>` +
+          '<div class="pr-nt">Crops rendered from the official arXiv PDFs. Nothing is retouched or recomposed; the only edit is the crop rectangle. Follow any link to read the passage in context.</div>';
+        r.querySelectorAll('.pr-tab').forEach(b => b.addEventListener('click', () => {
           cur = +b.dataset.i; render();
         }));
       };
