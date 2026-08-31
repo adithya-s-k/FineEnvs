@@ -48,7 +48,7 @@
         D.rows.forEach(row => {
           h += '<tr>' + row.map((c,i) => {
             if (i === 0) return `<td><code>${c}</code></td>`;
-            if (i === 2) return `<td><span class="dl" style="background:${P(fam[c])}1f;border-color:${P(fam[c])}">${c}</span></td>`;
+            if (i === 2) return `<td><span class="dl" style="background:color-mix(in srgb, ${P(fam[c])} 12%, transparent);border-color:${P(fam[c])}">${c}</span></td>`;
             return `<td>${c}</td>`;
           }).join('') + '</tr>';
         });
