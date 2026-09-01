@@ -15,13 +15,6 @@
   .capture-proxy .cp-dot { width:7px; height:7px; border-radius:50%; border:0; padding:0; cursor:pointer;
     background:var(--border-color); transition:background .15s; }
   .capture-proxy .cp-dot[data-on="1"] { background:var(--text-color); }
-  .capture-proxy .cp-lg { display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:12px; font-size:12px; color:var(--muted-color); }
-  .capture-proxy .cp-lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
-  .capture-proxy .cp-k { display:inline-flex; align-items:center; gap:7px; }
-  .capture-proxy .cp-sw { width:13px; height:11px; border-radius:3px; }
-  .capture-proxy .cp-hatch { background-image: repeating-linear-gradient(45deg,
-    var(--muted-color) 0 1.5px, transparent 1.5px 5px); opacity:.6; }
-  .capture-proxy .cp-nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); max-width:64ch; }
 </style>
 <script>
   (() => {
@@ -73,7 +66,6 @@
       };
 
       const els = (() => {
-        const cKeep = P(1);
         r.innerHTML =
           `<div class="cp-bar">`
         +   `<button type="button" class="cp-btn" data-act="play">Pause</button>`
@@ -82,12 +74,7 @@
               `<button class="cp-dot" data-i="${i}" data-on="0" aria-label="step ${i+1}"></button>`).join('')
         +   `</span>`
         + `</div>`
-        + `<div data-svg></div>`
-        + `<div class="cp-lg"><span class="cp-lg-t">In the capture store</span>`
-        +   `<span class="cp-k"><span class="cp-sw cp-hatch"></span>prompt tokens, masked out of the loss</span>`
-        +   `<span class="cp-k"><span class="cp-sw" style="background:${cKeep}"></span>sampled tokens, with a logprob each</span>`
-        + `</div>`
-        + `<div class="cp-nt">Nothing here tokenises anything. The engine has to tokenise the prompt in order to serve it, so it already knows the ids and simply hands them back, which is why turn two's prompt is by construction the canonical tokenisation of everything before it, tool results included. The agent is untouched and gets a byte-identical answer in the dialect it asked in. What the proxy keeps is the part a reward alone can never give you: which token was sampled, and the probability it was sampled with.</div>`;
+        + `<div data-svg></div>`;
         return {
           svg:  r.querySelector('[data-svg]'),
           step: r.querySelector('.cp-step'),
@@ -118,7 +105,7 @@
         const narrow = W < 640;
         const padX = 4;
         const boxW = narrow ? (W - 8) : Math.min(210, (W - 8) * 0.24);
-        const rowY = 28, boxH = narrow ? 94 : 104;
+        const rowY = 28, boxH = narrow ? 94 : 90;
         const xA = padX;
         const xP = narrow ? padX : Math.round((W - boxW) / 2);
         const xE = narrow ? padX : W - padX - boxW;
@@ -137,6 +124,11 @@
         </defs>`;
 
         // ── the three boxes
+        const chip = (x, y, t, col) => {
+          const w = t.length*5.9 + 16;
+          return `<rect x="${x}" y="${y}" width="${w}" height="19" rx="9.5" fill="${col}" fill-opacity=".12" stroke="${col}" stroke-opacity=".45"/>`
+               + `<text x="${x+w/2}" y="${y+13}" text-anchor="middle" font-size="9.5" fill="${col}" font-family="${mono}">${esc(t)}</text>`;
+        };
         const boxHead = (x,y,label,sub,lit,accent) => {
           let g = `<rect x="${x}" y="${y}" width="${boxW}" height="${boxH}" rx="10" fill="${sf}"
                     stroke="${lit ? accent : bd}" stroke-width="${lit ? 1.7 : 1}"/>`;
@@ -148,15 +140,15 @@
         // sandbox + agent
         const agentBusy = si === IDX['tool'];
         s += boxHead(xA, yA, 'SANDBOX', 'the agent', si===IDX['boot']||si===IDX['request']||agentBusy, cReq);
-        s += `<text x="${xA+12}" y="${yA+54}" font-size="9.5" fill="${mu}" font-family="${mono}">OPENAI_BASE_URL=proxy</text>`;
-        s += `<text x="${xA+12}" y="${yA+68}" font-size="9.5" fill="${after('boot')?cReq:mu}" font-family="${mono}">OPENAI_API_KEY=sess_7f3a</text>`;
-        if (!narrow) s += `<text x="${xA+12}" y="${yA+88}" font-size="9.5" fill="${mu}" font-family="${mono}">${agentBusy ? 'running a tool…' : 'unmodified'}</text>`;
+        s += chip(xA+12, yA+44, 'key = sess_7f3a', after('boot') ? cReq : mu);
+        s += `<text x="${xA+12}" y="${yA+76}" font-size="9.5" fill="${mu}" font-family="${mono}">${agentBusy ? 'running a tool' : 'unmodified'}</text>`;
 
         // proxy, with its three internal stages
         s += boxHead(xP, yP, 'CAPTURE PROXY', 'the only new part', si>=IDX['detect']&&si<=IDX['record'], cReq);
         const stages = [['detect dialect','detect'],['normalise, ids on','normalise'],['record','record']];
+        // stages sit lower in the shorter box
         stages.forEach((sg, k) => {
-          const y = yP + 46 + k*17;
+          const y = yP + 44 + k*15;
           const on = si === IDX[sg[1]];
           const done = after(sg[1]);
           s += `<circle cx="${xP+17}" cy="${y-3.5}" r="3.4" fill="${on||done ? cReq : bd}" fill-opacity="${on?1:(done?.5:1)}"/>`;
@@ -166,9 +158,8 @@
 
         // engine
         s += boxHead(xE, yE, 'INFERENCE ENGINE', 'the policy', si===IDX['sample'], cRes);
-        s += `<text x="${xE+12}" y="${yE+54}" font-size="9.5" fill="${mu}" font-family="${mono}">--return-tokens-as-token-ids</text>`;
-        s += `<text x="${xE+12}" y="${yE+68}" font-size="9.5" fill="${mu}" font-family="${mono}">--logprobs-mode processed</text>`;
-        if (!narrow) s += `<text x="${xE+12}" y="${yE+88}" font-size="9.5" fill="${si===IDX['sample']?cRes:mu}" font-family="${mono}">${si===IDX['sample'] ? 'sampling…' : 'tokenises to serve'}</text>`;
+        s += chip(xE+12, yE+44, 'ids + logprobs on', si===IDX['sample'] ? cRes : mu);
+        s += `<text x="${xE+12}" y="${yE+76}" font-size="9.5" fill="${si===IDX['sample']?cRes:mu}" font-family="${mono}">${si===IDX['sample'] ? 'sampling' : 'tokenises to serve'}</text>`;
 
         // ── wires
         const midA = narrow ? [xA+boxW/2, yA+boxH] : [xA+boxW, yA+boxH/2];
@@ -197,7 +188,14 @@
 
         // ── the capture store
         s += `<rect x="${padX}" y="${storeY}" width="${W-padX*2}" height="${storeH}" rx="10" fill="none" stroke="${bd}" stroke-dasharray="3 3"/>`;
-        s += `<text x="${padX+12}" y="${storeY+17}" font-size="10.5" fill="${mu}" font-family="${mono}" letter-spacing=".5">CAPTURE STORE · sess_7f3a</text>`;
+        s += `<text x="${padX+12}" y="${storeY+17}" font-size="10.5" fill="${mu}" font-family="${mono}" letter-spacing=".5">CAPTURE STORE</text>`;
+        if (!narrow) {
+          const kx = padX + 118;
+          s += `<rect x="${kx}" y="${storeY+8}" width="11" height="10" rx="2" fill="url(#cp-h)" stroke="${mu}" stroke-opacity=".3"/>`;
+          s += `<text x="${kx+16}" y="${storeY+17}" font-size="9.5" fill="${mu}">prompt, masked</text>`;
+          s += `<rect x="${kx+108}" y="${storeY+8}" width="11" height="10" rx="2" fill="${cKeep}"/>`;
+          s += `<text x="${kx+124}" y="${storeY+17}" font-size="9.5" fill="${mu}">sampled, one logprob each</text>`;
+        }
 
         const recorded = after('record');
         const cellW = narrow ? 9 : 12, cellH = 13, gapc = 2.5;

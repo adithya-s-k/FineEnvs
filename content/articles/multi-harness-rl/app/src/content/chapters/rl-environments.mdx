@@ -110,7 +110,7 @@ arrows rather than the boxes.
 <HtmlEmbed
   src="d3-who-drives.html"
   title="Who makes the call"
-  desc="The same task under both architectures, message by message, coloured by who initiated it."
+  desc="Who initiates each call, under both architectures."
   frameless
 />
 
@@ -145,7 +145,7 @@ port each.
 Two properties make this general rather than a per-agent hack. Nothing is tokenised locally: the
 inference engine tokenises each prompt in order to serve it and hands back the token ids, so turn
 *k+1*'s prompt is by construction the canonical tokenisation of everything before it, tool results
-included. And four wire dialects are supported, because coding agents never converged on one.
+included. And four wire dialects are supported, because coding agents never converged on one. That is not completeness for its own sake: a capture layer that speaks only chat-completions cannot see codex, claude-code or gemini-cli at all, so the other three dialects are exactly what buys those agents.
 
 {/* VIZ: d3-capture-proxy: agent in a sandbox, to the capture proxy, to vLLM, and back. Annotate
      outbound with "detect dialect, normalise to chat, force token ids and logprobs on" and the
@@ -155,7 +155,7 @@ included. And four wire dialects are supported, because coding agents never conv
 <HtmlEmbed
   src="d3-capture-proxy.html"
   title="The capture proxy"
-  desc="Where the tokens and logprobs come off the wire, without modifying the agent."
+  desc="One rollout, step by step, through the capture layer."
   frameless
 />
 
@@ -165,7 +165,7 @@ included. And four wire dialects are supported, because coding agents never conv
 <HtmlEmbed
   src="d3-dialects-funnel.html"
   title="Four wire dialects, one shape"
-  desc="Normalised on the way in, replayed in the agent's own dialect on the way out."
+  desc="The same request in four dialects, and one shape in the middle."
   frameless
 />
 
@@ -193,7 +193,7 @@ estimator you believe is on-policy is a biased off-policy estimator instead.
 <HtmlEmbed
   src="d3-token-drift.html"
   title="Why re-tokenising is a guess"
-  desc="The same string, tokenised once by the engine and once by re-encoding the text."
+  desc="The same characters, tokenised two different ways."
   frameless
 />
 
@@ -212,7 +212,7 @@ the model endpoint rather than at the text boundary.
 <HtmlEmbed
   src="d3-rollout-graph.html"
   title="The rollout graph"
-  desc="Turns link by exact token prefix; forks are retries, extra roots are subagents."
+  desc="A trace as a graph of messages, and its trainable branches."
   frameless
 />
 
@@ -222,7 +222,7 @@ the model endpoint rather than at the text boundary.
 <HtmlEmbed
   src="d3-token-contract.html"
   title="What a rollout returns"
-  desc="Per turn: context masked out, sampled tokens with their logprobs, discarded branches excluded."
+  desc="What one rollout hands back, turn by turn."
   frameless
 />
 
