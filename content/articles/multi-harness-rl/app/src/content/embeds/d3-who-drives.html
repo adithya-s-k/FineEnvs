@@ -45,17 +45,17 @@
           label: 'White box',
           tag: 'THE TRAINER DRIVES IT',
           actors: [
+            { id:'model',   label:'model', short:'model' },
             { id:'trainer', label:'trainer', short:'trainer' },
-            { id:'policy',  label:'policy', short:'policy' },
             { id:'env',     label:'environment', short:'env' },
           ],
           msgs: [
-            { from:'trainer', to:'policy',  text:'sample(prompt)',        by:'trainer', sees:true,  init:true },
-            { from:'policy',  to:'trainer', text:'tokens + logprobs',     by:'policy',  sees:true },
+            { from:'trainer', to:'model',   text:'sample(prompt)',        by:'trainer', sees:true,  init:true },
+            { from:'model',   to:'trainer', text:'tokens + logprobs',     by:'model',   sees:true },
             { from:'trainer', to:'env',     text:'step(action)',          by:'trainer', sees:true,  init:true },
             { from:'env',     to:'trainer', text:'observation',           by:'env',     sees:true },
-            { from:'trainer', to:'policy',  text:'sample(prompt + obs)',  by:'trainer', sees:true,  init:true },
-            { from:'policy',  to:'trainer', text:'tokens + logprobs',     by:'policy',  sees:true },
+            { from:'trainer', to:'model',   text:'sample(prompt + obs)',  by:'trainer', sees:true,  init:true },
+            { from:'model',   to:'trainer', text:'tokens + logprobs',     by:'model',   sees:true },
             { from:'trainer', to:'env',     text:'step(action)',          by:'trainer', sees:true,  init:true },
             { from:'env',     to:'trainer', text:'observation + reward',  by:'env',     sees:true },
           ],
@@ -64,7 +64,8 @@
           label: 'Black box',
           tag: 'THE AGENT DRIVES IT',
           actors: [
-            { id:'trainer', label:'trainer', short:'trainer' },
+            { id:'model',   label:'model', short:'model' },
+            { id:'trainer', label:'trainer + proxy', short:'trainer' },
             { id:'harness', label:'harness', short:'harness' },
             { id:'sandbox', label:'sandbox', short:'sandbox' },
           ],
@@ -73,11 +74,15 @@
             { from:'sandbox', to:'harness', text:'stdout',                by:'sandbox', sees:false },
             { from:'harness', to:'harness', text:'build context',         by:'harness', sees:false, init:true },
             { from:'harness', to:'trainer', text:'POST /chat/completions',by:'harness', sees:true,  init:true },
+            { from:'trainer', to:'model',   text:'forward, ids on',       by:'trainer', sees:true  },
+            { from:'model',   to:'trainer', text:'tokens + logprobs',     by:'model',   sees:true  },
             { from:'trainer', to:'harness', text:'completion',            by:'trainer', sees:true  },
             { from:'harness', to:'sandbox', text:'run tool',              by:'harness', sees:false, init:true },
             { from:'sandbox', to:'harness', text:'stdout',                by:'sandbox', sees:false },
             { from:'harness', to:'harness', text:'compact history',       by:'harness', sees:false, init:true },
             { from:'harness', to:'trainer', text:'POST /chat/completions',by:'harness', sees:true,  init:true },
+            { from:'trainer', to:'model',   text:'forward, ids on',       by:'trainer', sees:true  },
+            { from:'model',   to:'trainer', text:'tokens + logprobs',     by:'model',   sees:true  },
             { from:'trainer', to:'harness', text:'completion',            by:'trainer', sees:true  },
             { from:'harness', to:'harness', text:'decide: stop',          by:'harness', sees:false, init:true },
           ],
@@ -89,7 +94,7 @@
 
       const actorColor = (m, id) => {
         const i = MODES[m].actors.findIndex(a => a.id === id);
-        return P(i === 0 ? 0 : (i === 1 ? 3 : 1));
+        return [P(1), P(0), P(3), P(2)][i] || P(0);
       };
 
       const draw = () => {
@@ -114,7 +119,7 @@
           return Math.round(laneL + colGap*(i + 0.5));
         };
 
-        const headY = 30, rowH = 34, top = headY + 26;
+        const headY = 30, rowH = M.msgs.length > 12 ? 29 : 34, top = headY + 26;
         const H = top + M.msgs.length*rowH + 26;
 
         let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${mode === 'white'
@@ -202,8 +207,8 @@
           `<span class="wd-k"><span class="wd-sw wd-dash" style="color:${mu}"></span>dashed: the trainer is not there</span></div>`;
 
         const note = mode === 'white'
-          ? `<div class="wd-nt">Every arrow starts or ends at the trainer, because the trainer is the one calling. It asks the policy for an action, hands that action to the environment, reads the observation back, and decides whether to go again. Nothing happens that it did not ask for, so the full episode is in its hands by construction.</div>`
-          : `<div class="wd-nt">Now read the tails of the arrows. Not one exchange begins at the trainer. The harness runs tools, assembles context and decides when to stop, entirely on its own, and the trainer is woken only when a completion is needed. It is a service being called, not a driver, and most of the episode happens while it is not looking.</div>`;
+          ? `<div class="wd-nt">Every arrow starts or ends at the trainer, because the trainer is the one calling. It asks the model for an action, hands that action to the environment, reads the observation back, and decides whether to go again. Nothing happens that it did not ask for, so the full episode is in its hands by construction.</div>`
+          : `<div class="wd-nt">Now read the tails of the arrows. Not one exchange begins at the trainer. The harness runs tools, assembles context and decides when to stop, entirely on its own, and the trainer is woken only when a completion is needed. Note where the trainer now sits: in the wire between the harness and the model, which is the only reason it can see token ids at all. It is a service being called, not a driver, and most of the episode happens while it is not looking.</div>`;
 
         r.innerHTML =
           `<div class="wd-pick" role="group" aria-label="Choose an architecture">` +
