@@ -7,7 +7,7 @@
   .harness-anatomy .k { display:inline-flex; align-items:center; gap:7px; }
   .harness-anatomy .sw { width:13px; height:3px; border-radius:2px; }
   .harness-anatomy .sw.dash { background:none; border-top:2px dashed currentColor; height:0; }
-  .harness-anatomy .nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); max-width:64ch; }
+  .harness-anatomy .nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); }
 </style>
 <script>
   (() => {
@@ -184,7 +184,7 @@
           `<span class="k" style="color:${mu}"><span class="sw dash"></span>opaque to the trainer</span>` +
           `</div>`;
       };
-      const note = `<div class="nt">Everything inside the box is the harness's business, and none of it reaches a trainer: not the loop's decisions, not the tool results, not what got compacted away. The only surface anything outside can stand on is the single wire, which is why the trainer's whole view of a rollout is the strip along the bottom. That strip is what the capture layer records.</div>`;
+      const note = `<div class="nt">None of what happens inside the box reaches a trainer: not the loop's decisions, not the tool results, not what was compacted away. The strip along the bottom is its whole view.</div>`;
 
       const paint = () => { r.innerHTML = svg() + legend() + note; };
 

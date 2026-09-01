@@ -11,7 +11,7 @@
   .trainer-record .tr-tally { display:flex; flex-direction:column; gap:3px; margin-top:9px;
     font-size:11px; color:var(--muted-color); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
   .trainer-record .tr-tally b { color:var(--text-color); font-weight:600; }
-  .trainer-record .tr-nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); max-width:64ch; }
+  .trainer-record .tr-nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); }
 </style>
 <script>
   (() => {
@@ -144,7 +144,7 @@
           + `<span class="tr-k"><span class="tr-sw tr-hatch" style="border:1px solid ${bd}"></span>never reaches the trainer</span>`
           + `</div>`;
 
-        const note = `<div class="tr-nt">Same task, run both ways. The white-box trainer holds the episode entire, because it produced every part of it. The black-box trainer holds three model turns and a reward, and the rest either never arrives or arrives already flattened into text: a tool result is not an observation it recorded, it is a string inside the next prompt. The retry is the one to notice. The model emitted a malformed call, the harness quietly repaired it, and the record the trainer keeps has no idea that happened.</div>`;
+        const note = `<div class="tr-nt">The retry is the row to notice. The model emitted a malformed call, the harness quietly repaired it, and the black-box record has no idea it happened.</div>`;
 
         const tallyHtml = narrow
           ? `<div class="tr-tally">` + tallies.map(t =>

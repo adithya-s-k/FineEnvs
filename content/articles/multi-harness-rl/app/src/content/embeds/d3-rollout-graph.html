@@ -18,7 +18,7 @@
   .rollout-graph .rg-lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
   .rollout-graph .rg-k { display:inline-flex; align-items:center; gap:7px; }
   .rollout-graph .rg-sw { width:11px; height:11px; }
-  .rollout-graph .rg-nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); max-width:64ch; }
+  .rollout-graph .rg-nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); }
 </style>
 <script>
   (() => {
@@ -157,7 +157,7 @@
           + `<span class="rg-k"><span class="rg-sw" style="background:${KC.tool};transform:rotate(45deg)"></span>tool result</span>`
           + `</div>`;
 
-        const note = `<div class="rg-nt">Turns are linked by exact token prefix, not by request id or timestamp: a call whose prompt tokens begin with an existing node's full sequence becomes that node's child. Ids and timestamps are per-harness, the prefix is not. Storing each message once rather than re-storing the whole prompt on every turn is what keeps a long rollout linear in size instead of quadratic, which is the difference between ${N.length} and ${copies} here and grows much wider over a hundred turns.</div>`;
+        const note = `<div class="rg-nt">Turns link by exact token prefix, not by request id: ids are per-harness, the prefix is not. Storing each message once instead of re-storing the whole prompt keeps a long rollout linear rather than quadratic.</div>`;
 
         r.innerHTML =
           `<div class="rg-pick" role="group" aria-label="Highlight one branch">`

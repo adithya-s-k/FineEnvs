@@ -6,7 +6,7 @@
   .capture-levels .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
   .capture-levels .k { display:inline-flex; align-items:center; gap:7px; }
   .capture-levels .sw { width:13px; height:3px; border-radius:2px; }
-  .capture-levels .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); max-width:62ch; }
+  .capture-levels .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
 </style>
 <script>
   (() => {
@@ -43,7 +43,7 @@
           s += `<text x="${rx}" y="${y+2}" text-anchor="end" font-size="11.5" font-weight="600" fill="${c}">${l[2]}</text>`;
         });
         s += '</svg>';
-        r.innerHTML = s + `<div class="nt">An endpoint missing the token-id flags still answers every request perfectly well. It returns text, a 200, and plausible usage numbers. What it does not return is anything trainable, so every row rebuilt downstream is empty and the first symptom is a loss curve that never moved, noticed days later. That failure has no loud edge, which is why the server refuses to start rather than degrading quietly.</div>`;
+        r.innerHTML = s + `<div class="nt">An endpoint missing the token-id flags still returns text, a 200 and plausible usage numbers. It just returns nothing trainable, so the first symptom is a loss curve that never moved, noticed days later. That is why the server refuses to start instead of degrading quietly.</div>`;
       };
       draw();
       if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }

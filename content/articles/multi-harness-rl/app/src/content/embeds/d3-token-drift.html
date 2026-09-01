@@ -6,7 +6,7 @@
   .token-drift .td-lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
   .token-drift .td-k { display:inline-flex; align-items:center; gap:7px; }
   .token-drift .td-sw { width:13px; height:11px; border-radius:3px; }
-  .token-drift .td-nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); max-width:64ch; }
+  .token-drift .td-nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); }
 </style>
 <script>
   (() => {
@@ -130,7 +130,7 @@
           + `<span class="td-k"><span class="td-sw" style="background:${cBad};opacity:.45;border:1.5px dashed ${cBad}"></span>tokens the model never produced</span>`
           + `</div>`;
 
-        const note = `<div class="td-nt">Decoding a sequence and encoding the text again does not have to give you back the sequence you started with, and the seam between a turn and whatever the template appends next is where it usually goes wrong. Here the newline is absorbed into the following special token, which changes nothing about the string and everything about the ids. Train on the lower row and the gradient lands on tokens the model never sampled. The fix is not a better tokeniser, it is not decoding in the first place: keep the sampled ids as the source of truth and append the template's suffix by id, which works as long as the chat template extends token for token when a tool message is added.</div>`;
+        const note = `<div class="td-nt">The string is identical either way; only the boundaries move. Train on the lower row and the gradient lands on tokens the model never sampled. The fix is not a better tokeniser, it is not decoding in the first place.</div>`;
 
         r.innerHTML = s + legend + note;
       };
