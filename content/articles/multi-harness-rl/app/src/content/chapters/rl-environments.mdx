@@ -101,14 +101,33 @@ environment drives the episode. Every framework it tested sat on the left-hand s
 What follows is that same axis pushed one step further out. There, the thing that might own the loop
 was another RL framework. Here it is an agent binary that was never written with training in mind.
 
-{/* VIZ: d3-white-black-box: the two architectures side by side. Left: trainer and environment in
-     a closed loop, solid arrows, "you drive it". Right: trainer to sandbox, dashed, the agent loop
-     drawn as opaque, "the agent drives it". The asymmetry is the point. Worth echoing the visual
-     language of d3-episode-control in the previous guide so readers who know it recognise it. */}
+Two things change when the loop moves, and they are worth separating because they have different
+consequences. The first is control: who makes each call, and in what order. Watch the tails of the
+arrows rather than the boxes.
+
+{/* VIZ: d3-who-drives: sequence diagram, toggled between the two architectures. Arrow colour is
+     the initiating actor and the right rail marks whether the trainer observes each event, so the
+     asymmetry shows up as a count rather than as an assertion. */}
 <HtmlEmbed
-  src="d3-white-black-box.html"
-  title="Who drives the rollout"
-  desc="White-box: the trainer owns the loop. Black-box: the agent does, inside a sandbox."
+  src="d3-who-drives.html"
+  title="Who makes the call"
+  desc="The same task under both architectures, message by message, coloured by who initiated it."
+  frameless
+/>
+
+The second is what the trainer is left holding afterwards. Control and visibility are not the same
+problem: a trainer could in principle be told about events it did not cause, and the reason it is
+not is that the harness has no obligation to report them. Here is one rollout written out three
+times, once as it happened and once as each architecture records it.
+
+{/* VIZ: d3-trainer-record: the same episode as three columns, ground truth against the record
+     each architecture leaves. Hatched rows never reach the trainer; dashed rows survive only as
+     text echoed into the next prompt. The repaired malformed call is the detail worth pausing on,
+     because it is invisible in the black-box record and it is exactly what reward should punish. */}
+<HtmlEmbed
+  src="d3-trainer-record.html"
+  title="What the trainer is left holding"
+  desc="One rollout, as it happened and as each architecture records it."
   frameless
 />
 
