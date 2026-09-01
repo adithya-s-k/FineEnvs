@@ -61,7 +61,7 @@ Two details in that layout matter later.
 The first is `environment/pull_bucket.py`, wired in through the container's healthcheck. Harbor runs
 it after the container starts and before the agent begins, which is how each task pulls its own
 Kaggle dataset instead of baking gigabytes into an image. Small plumbing, and it is the difference
-between a suite of 2,238 tasks being buildable and not.
+between a suite of five thousand tasks being buildable and not.
 
 The second is the failure branch in the verifier. If the agent never wrote an answer, `test.sh`
 writes `0.0` and exits **cleanly** rather than erroring. That looks pedantic until you are holding a

@@ -94,9 +94,8 @@ outward, harness state and environment state alike, is latent.
 > setup, meaning who owns the loop. The two often coincide and they are not the same axis.
 
 The previous guide already drew a version of this split, framed as whether the trainer or the
-environment drives the episode. Every framework it tested sat on the left-hand side.
-
-<HtmlEmbed src="d3-episode-control.html" frameless />
+environment drives the episode, and it worked through where each of six frameworks sits on it. Every
+one of them sat on the left-hand side.
 
 What follows is that same axis pushed one step further out. There, the thing that might own the loop
 was another RL framework. Here it is an agent binary that was never written with training in mind.
@@ -178,12 +177,18 @@ token was sampled, and the probability it was sampled with. A harness that hands
 score gives you neither.
 
 Re-tokenising the text guesses at the first, and it can guess wrong, because decoding is not
-injective. A word sampled as two tokens can re-encode as two different ones, tool-call
-serialisation changes whitespace on the way through, and some harnesses quietly repair malformed
-JSON, which hides the model's actual mistake from the reward. Recomputing log probabilities in the
-trainer gives you the current policy's numbers but not the sampler's, so the importance ratio
-silently defaults to one when it is not one, and an estimator you believe is on-policy is a biased
-off-policy estimator instead.
+injective. TRL's write-up on getting this right states the rule plainly: "in RL, you optimize on the
+exact tokens the model produced," and the failure is that "decode a sequence, re-encode the text,
+and you can land on different tokens," after which "the gradient ends up on a sequence the model
+never sampled" [@gallouedec2026tito]. Nothing errors. The loss just spikes now and then for no
+reason you can see.
+
+The seam between turns is where this usually bites, because that is where a template appends
+something to what the model wrote. Tool-call serialisation changes whitespace on the way through,
+and some harnesses quietly repair malformed JSON, which hides the model's actual mistake from the
+reward. Recomputing log probabilities in the trainer gives you the current policy's numbers but not
+the sampler's, so the importance ratio silently defaults to one when it is not one, and an
+estimator you believe is on-policy is a biased off-policy estimator instead.
 
 <HtmlEmbed
   src="d3-token-drift.html"
@@ -192,9 +197,13 @@ off-policy estimator instead.
   frameless
 />
 
-Fixing either requires the sampler to hand back token ids and per-token log probabilities. That is
-the real reason every serious multi-harness system intercepts at the model endpoint rather than at
-the text boundary.
+Fixing either requires the sampler to hand back token ids and per-token log probabilities, and then
+never letting go of them: the rule is not to re-encode anything you decoded, but to keep the sampled
+ids and append the template's suffix by id concatenation. That is workable because the property it
+depends on, a chat template that extends token for token when a tool message is appended, is
+common rather than rare: eighteen of nineteen models tested satisfy it unmodified
+[@gallouedec2026tito]. It is also the real reason every serious multi-harness system intercepts at
+the model endpoint rather than at the text boundary.
 
 {/* VIZ: d3-rollout-graph: turns linked by exact token prefix, not by request id or timestamp.
      A root, a chain, one abandoned retry branch, and a second root for a subagent with its own

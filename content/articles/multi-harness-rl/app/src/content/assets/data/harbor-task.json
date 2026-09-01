@@ -1,41 +1,98 @@
 {
-  "source": "AdithyaSK/data_agent_rl_environment_train",
-  "url": "https://huggingface.co/datasets/AdithyaSK/data_agent_rl_environment_train",
+  "source": "HuggingEnvs/data-agent-harbor-train",
+  "url": "https://huggingface.co/datasets/HuggingEnvs/data-agent-harbor-train",
   "visualiser": "https://huggingface.co/spaces/AdithyaSK/harbor-visualiser",
   "example": "tasks/0000_324_324947_qa_1",
   "suite": {
-    "tasks": 2238,
-    "schema_version": "1.2",
+    "tasks": 5000,
+    "schema_version": "2.0",
+    "splits": [
+      {
+        "name": "train",
+        "repo": "HuggingEnvs/data-agent-harbor-train",
+        "tasks": 5000,
+        "what": "training"
+      },
+      {
+        "name": "test",
+        "repo": "HuggingEnvs/data-agent-harbor-test",
+        "tasks": 250,
+        "what": "held out, skewed harder"
+      },
+      {
+        "name": "eval",
+        "repo": "HuggingEnvs/data-agent-harbor-eval",
+        "tasks": 144,
+        "what": "validation during training"
+      }
+    ],
     "difficulty": [
       {
         "level": "L1",
-        "count": 544,
-        "pct": 24,
+        "count": 1433,
+        "pct": 29,
+        "tier": "easy",
         "what": "one-line filter or aggregation"
       },
       {
         "level": "L2",
-        "count": 989,
-        "pct": 44,
-        "what": "filter, groupby, aggregate, two to four turns"
+        "count": 2256,
+        "pct": 45,
+        "tier": "medium",
+        "what": "filter, groupby, aggregate, a few turns"
       },
       {
         "level": "L3",
-        "count": 335,
-        "pct": 14,
+        "count": 589,
+        "pct": 12,
+        "tier": "medium",
         "what": "multi-step pandas, joins, light feature work"
       },
       {
         "level": "L4",
-        "count": 358,
-        "pct": 15,
+        "count": 722,
+        "pct": 14,
+        "tier": "hard",
         "what": "ML training, complex stats, non-trivial pipelines"
       },
       {
         "level": "L5",
-        "count": 11,
+        "count": 0,
         "pct": 0,
-        "what": "extreme complexity, rare"
+        "tier": "hard",
+        "what": "held back entirely for the test split"
+      }
+    ],
+    "reward_modes": [
+      {
+        "mode": "numeric",
+        "count": 2906,
+        "what": "compared with atol and rtol"
+      },
+      {
+        "mode": "exact_short",
+        "count": 1409,
+        "what": "one short string, matched exactly"
+      },
+      {
+        "mode": "list",
+        "count": 367,
+        "what": "normalised for order and spacing"
+      },
+      {
+        "mode": "flexible",
+        "count": 152,
+        "what": "normalised free-ish text"
+      },
+      {
+        "mode": "exact_bool",
+        "count": 127,
+        "what": "yes or no"
+      },
+      {
+        "mode": "list_csv",
+        "count": 39,
+        "what": "comma separated list"
       }
     ]
   },
@@ -68,7 +125,7 @@
     {
       "path": "tests/grader.py",
       "role": "the reward",
-      "detail": "exact match, numeric tolerance, or an LLM judge, printing a single float"
+      "detail": "exact match, then numeric tolerance, then list and percent normalisation, then symbolic comparison, printing a single float. No LLM judge anywhere in it"
     }
   ],
   "reward_path": [
@@ -77,5 +134,7 @@
     "grader.py prints one float",
     "the float lands in /logs/verifier/reward.txt",
     "Harbor reads that file and returns it with the trial"
-  ]
+  ],
+  "flat": "https://huggingface.co/datasets/HuggingEnvs/data-agent",
+  "collection": "https://huggingface.co/collections/HuggingEnvs/data-agent"
 }
