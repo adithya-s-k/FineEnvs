@@ -149,7 +149,7 @@ def run_rollout(
         )
         timed_out = exit_code != 0
 
-        turns = fetch_turns(server, session_id)
+        turns, capture_findings = fetch_turns(server, session_id)
         n_tool_calls = sum(len(t.tool_calls) for t in turns)
         final = turns[-1].text if turns else None
 
@@ -172,6 +172,10 @@ def run_rollout(
                 "rollout_id": rollout_id,
                 "session_id": session_id,
                 "sandbox": config.sandbox,
+                # Surfaced rather than swallowed: `per_turn_capture_only` means the turns are exact
+                # but became one graph root each, so a consumer expecting multi-turn credit
+                # assignment is not getting it. That is invisible in the turn list itself.
+                "capture_findings": capture_findings,
             },
         )
     except Exception as exc:  # noqa: BLE001 -- a flaky sandbox must not take the server down

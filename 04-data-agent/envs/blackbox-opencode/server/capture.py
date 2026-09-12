@@ -59,17 +59,24 @@ logger = logging.getLogger(__name__)
 # deployment behind a tunnel sets CAPTURE_PUBLIC_URL to the outside address of this same port.
 CAPTURE_PORT = int(os.environ.get("DATA_AGENT_CAPTURE_PORT", "8300"))
 
+# How the SANDBOX reaches the proxy: `gradio`, `cloudflare` or `direct`. Not how the trainer reaches
+# the env server -- those are different hosts with different reachability. `direct` only works when
+# this machine is already routable from the sandbox, which on a cluster node it is not.
+CAPTURE_EXPOSE = os.environ.get("DATA_AGENT_CAPTURE_EXPOSE", "direct")
+
 _LOCK = threading.Lock()
 _SERVER: CaptureServer | None = None
+_FORWARDER: Any = None
+_PUBLIC_URL: str = ""
 # Measured tier per (llm_url, model). Deciding it means sending real completions, so it is measured
 # once per engine and shared, never per rollout.
 _TIERS: dict[tuple[str, str], str] = {}
 
 
 def capture_server(
-    llm_url: str, model: str, *, port: int = CAPTURE_PORT
+    llm_url: str, model: str, *, port: int = CAPTURE_PORT, expose: str = ""
 ) -> CaptureServer:
-    """The one proxy this process runs, started on first use.
+    """The one proxy this process runs, started on first use, and exposed once.
 
     Args:
         llm_url (`str`):
@@ -80,11 +87,13 @@ def capture_server(
             Port to bind. `start()` verifies that the server answering on it is *this* one rather
             than merely that something answers -- reachability is not identity, and a stale process
             holding this port answers every probe while capturing nothing.
+        expose (`str`, *optional*):
+            `"gradio"`, `"cloudflare"` or `"direct"`. Defaults to `DATA_AGENT_CAPTURE_EXPOSE`.
 
     Returns:
         `CaptureServer`: running, with a live `SessionRegistry`.
     """
-    global _SERVER
+    global _SERVER, _FORWARDER, _PUBLIC_URL
     with _LOCK:
         if _SERVER is None:
             server = CaptureServer(llm_url=llm_url, model=model, port=port)
@@ -95,6 +104,21 @@ def capture_server(
                 llm_url,
                 model,
             )
+            # Exposed ONCE, here, rather than per rollout: a forwarder mints a tunnel process and a
+            # public hostname, and one per rollout would be both slow and a leak. An explicit
+            # CAPTURE_PUBLIC_URL wins -- a deployment that is already published (a Space, a reverse
+            # proxy) must not have a second tunnel stood up in front of it.
+            _PUBLIC_URL = (os.environ.get("CAPTURE_PUBLIC_URL") or "").rstrip("/")
+            kind = expose or CAPTURE_EXPOSE
+            if not _PUBLIC_URL and kind != "direct":
+                from openenv.core.harness.capture.forwarding import make_forwarder
+
+                # gradio rather than cloudflare by default where a tunnel is wanted at all:
+                # cloudflared wedged for 32 minutes on this cluster, and a forwarder that hangs is
+                # worse than one that fails, because the rollouts queue behind it looking healthy.
+                _FORWARDER = make_forwarder(kind)
+                _PUBLIC_URL = _FORWARDER.start(port).rstrip("/")
+                logger.info("capture proxy published at %s (%s)", _PUBLIC_URL, kind)
             _SERVER = server
         return _SERVER
 
@@ -103,12 +127,15 @@ def agent_base_url(server: CaptureServer) -> str:
     """The address the agent inside the sandbox should call.
 
     NOT necessarily where we bound. The agent runs on another machine, so a deployment behind a
-    tunnel or a reverse proxy has to advertise its outside address -- `CAPTURE_PUBLIC_URL`. Getting
-    this wrong is quiet: opencode starts, cannot reach the engine, makes zero model calls, and the
-    rollout comes back with a flat zero that reads exactly like a policy that cannot do the task.
+    tunnel or a reverse proxy has to advertise its outside address. `capture_server()` resolves that
+    once at startup -- from `CAPTURE_PUBLIC_URL` if set, otherwise from the forwarder it started --
+    and this returns it.
+
+    Getting it wrong is quiet: opencode starts, cannot reach the engine, makes zero model calls, and
+    the rollout comes back with a flat zero that reads exactly like a policy that cannot do the task.
+    Falling back to loopback is therefore deliberate and only correct for a sandbox on this host.
     """
-    public = os.environ.get("CAPTURE_PUBLIC_URL")
-    return public.rstrip("/") if public else f"http://127.0.0.1:{server.port}"
+    return _PUBLIC_URL or f"http://127.0.0.1:{server.port}"
 
 
 def engine_tier(llm_url: str, model: str, *, require_tokens: bool) -> str:
@@ -180,20 +207,33 @@ def mint_session(
     return session.session_id, ("train" if level == "tokens" else "eval")
 
 
-def fetch_turns(server: CaptureServer, session_id: str) -> list[DataAgentTurn]:
-    """Read the session's turns back, with the engine's own tokenization.
+def fetch_turns(
+    server: CaptureServer, session_id: str
+) -> tuple[list[DataAgentTurn], list[str]]:
+    """Read the session's turns back, with the engine's own tokenization, and what capture saw.
 
     `to_trace_entries` puts `prompt_token_ids` and `loss_mask` on every entry, so nothing downstream
     re-renders a prompt. Before that field existed a consumer had to rebuild each prompt with
     `apply_chat_template`, which matched the engine on 0 of 28 measured turns on Qwen3.5-4B and
     collapsed a run at its first weight update.
+
+    Findings are RETURNED, not just logged. Capture knows things about a rollout that cannot be
+    re-derived from the turns alone -- `per_turn_capture_only` in particular, which says every
+    turn became its own graph root because the harness re-renders its prompt instead of
+    appending. Tokens and logprobs are still exact when it fires; what is lost is multi-turn
+    credit assignment. A caller holding only the turn list would have to infer this from token
+    drift and would infer it wrongly, since that drift is small and legitimate for such a
+    harness.
+
+    Returns:
+        `tuple[list[DataAgentTurn], list[str]]`: the turns, and any non-INFO capture findings.
     """
     from .rollout import turns_from_capture
 
     session = server.registry.get(session_id)
     if session is None:
         logger.warning("capture session %s is gone; no turns to read", session_id)
-        return []
+        return [], []
     level = session.capture_level or server.capture_level
     document = export_session(session, include_messages=True, capture_level=level)
     findings = [f for f in document.get("validation", []) if not f.startswith("[INFO]")]
@@ -201,7 +241,7 @@ def fetch_turns(server: CaptureServer, session_id: str) -> list[DataAgentTurn]:
         logger.warning(
             "capture findings for %s: %s", session_id, "; ".join(findings[:5])
         )
-    return turns_from_capture(to_trace_entries(session.graph, document))
+    return turns_from_capture(to_trace_entries(session.graph, document)), findings
 
 
 def release_session(server: CaptureServer, session_id: str | None) -> None:
@@ -222,9 +262,19 @@ def release_session(server: CaptureServer, session_id: str | None) -> None:
 
 
 def shutdown() -> None:
-    """Stop the proxy. For tests and for a clean server exit; a rollout never calls this."""
-    global _SERVER
+    """Stop the proxy and its forwarder. For tests and a clean exit; a rollout never calls this."""
+    global _SERVER, _FORWARDER, _PUBLIC_URL
     with _LOCK:
+        # Forwarder first: it is a child process holding a public hostname, and stopping the server
+        # underneath it leaves a live tunnel pointing at a closed port -- which from outside is
+        # indistinguishable from a healthy server, and is how a stale URL outlives its service.
+        if _FORWARDER is not None:
+            try:
+                _FORWARDER.stop()
+            except Exception:
+                logger.warning("capture forwarder did not stop cleanly", exc_info=True)
+            _FORWARDER = None
+        _PUBLIC_URL = ""
         if _SERVER is not None:
             _SERVER.stop()
             _SERVER = None

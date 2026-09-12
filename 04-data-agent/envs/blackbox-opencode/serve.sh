@@ -8,6 +8,7 @@
 # Usage:
 #   ./serve.sh
 #   PORT=8200 SPLITS=train:medium SANDBOX=e2b ./serve.sh
+#   EXPOSE=gradio ./serve.sh        # publish the capture port for a remote sandbox
 #
 # The engine is OPTIONAL. With none named the server still comes up serving its splits, and each
 # rollout names the engine it wants. That is the useful way round: the dataset and its prebuilt
@@ -60,6 +61,14 @@ export MAX_CONCURRENT_ENVS="${MAX_CONCURRENT_ENVS:-128}"
 # Getting this wrong is quiet: opencode starts, cannot reach the engine, makes zero model calls, and
 # the rollout returns a flat zero that reads exactly like a policy that cannot do the task.
 export DATA_AGENT_CAPTURE_PORT="${CAPTURE_PORT:-8300}"
+
+# How the sandbox reaches that port. `direct` is right only when this host is already routable from
+# the sandbox -- on a cluster node it is not, and the symptom is the quiet one above. `gradio` mints
+# a public URL; prefer it over `cloudflare`, which wedged for 32 minutes on this cluster, and a
+# forwarder that hangs is worse than one that fails because rollouts queue behind it looking healthy.
+export DATA_AGENT_CAPTURE_EXPOSE="${EXPOSE:-direct}"
+
+# An already-published deployment (a Space, a reverse proxy) sets this and no tunnel is started.
 [ -n "${CAPTURE_PUBLIC_URL:-}" ] && export CAPTURE_PUBLIC_URL
 
 export OPENENV_LLM_URL="${LLM_URL:-}"
@@ -71,6 +80,7 @@ echo "  splits      $DATA_AGENT_SPLITS"
 echo "  sandbox     $DATA_AGENT_SANDBOX"
 echo "  concurrency $DATA_AGENT_MAX_CONCURRENT executing / $MAX_CONCURRENT_ENVS sessions"
 echo "  engine      ${OPENENV_LLM_URL:-none (each rollout names its own)}"
+echo "  capture     :$DATA_AGENT_CAPTURE_PORT expose=$DATA_AGENT_CAPTURE_EXPOSE${CAPTURE_PUBLIC_URL:+ public=$CAPTURE_PUBLIC_URL}"
 echo
 
 exec "$PYTHON" -m uvicorn data_agent_env.server.app:app --host "$HOST" --port "$PORT"
