@@ -1,0 +1,32 @@
+# Project manifest. `tools/build_index.py` renders the root README table and the per-project status
+# matrix from this file; `tools/deploy.py` reads the `hub` keys.
+name: data-agent
+title: "Data Agent"
+tagline: "Give an agent a question and a directory of real tables, and train it on what it actually did — the engine's own token ids, not a re-rendered guess at them."
+order: 4
+status: wip   # environments landing; training runs are local and not yet published here
+
+hub:
+  org: HuggingEnvs
+  datasets:
+    - HuggingEnvs/data-agent                 # flat, one row per task — the blackbox-opencode env
+    - HuggingEnvs/data-agent-harbor-train    # Harbor task catalog, ~2.5k task dirs
+    - HuggingEnvs/data-agent-harbor-test
+    - HuggingEnvs/data-agent-harbor-eval
+
+envs:
+  # Two ports of the same domain. Both are BLACK BOX: the agent owns its own loop inside a sandbox
+  # and the trainer never drives a turn, so everything trainable has to be recovered by observing
+  # the model calls rather than by making them.
+  - name: blackbox-opencode
+    summary: "Multi-turn data analysis. opencode works in an E2B or Hugging Face sandbox and files its answer to a file; a capture proxy records the engine's own prompt token ids, per-token logprobs and loss mask for every model call."
+    backend: e2b | hf
+    tools: agent-owned   # bash, read, edit, grep — inside the sandbox, not on the wire
+    frameworks:
+      openenv: {transport: http-mcp, verified: false}
+  - name: blackbox-harbor
+    summary: "The same tasks as a Harbor catalog: each task ships its own Dockerfile, healthcheck and grader, and any of Harbor's harnesses can drive it. Served by OpenEnv's harbor_env through the CLI."
+    backend: harbor
+    tools: agent-owned
+    frameworks:
+      openenv: {transport: http-mcp, verified: false}

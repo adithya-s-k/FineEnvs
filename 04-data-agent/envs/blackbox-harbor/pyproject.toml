@@ -1,0 +1,25 @@
+# Copyright 2026 The HuggingFace Team. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# NOT AN ENVIRONMENT PACKAGE, and deliberately so. There is no server and no environment code here:
+# OpenEnv's `harbor_env` already serves this task shape, so this variant is a dataset plus a recipe.
+# All this file does is pin what `rollout.py` needs to talk to a running one.
+
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "data-agent-blackbox-harbor"
+version = "0.1.0"
+description = "Data-agent tasks as a Harbor catalog, served through OpenEnv's harbor_env"
+requires-python = ">=3.12"
+dependencies = [
+    # Brings `openenv harbor` (the CLI that serves this), `harbor_env` and the capture stack.
+    "openenv>=0.3.1",
+    # The sandbox backends Harbor will drive. Listed individually rather than via `harbor[cloud]`,
+    # which cannot be installed at all: it pulls `langsmith[sandbox]` (websockets>=15) and
+    # `tensorlake` (websockets>=13,<14) together, and uv reports the pair as unsatisfiable.
+    "harbor[e2b,modal,daytona]>=0.20.0",
+    "huggingface_hub>=1.12",
+]
