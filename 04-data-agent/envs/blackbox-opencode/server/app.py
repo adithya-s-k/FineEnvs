@@ -88,6 +88,29 @@ DataAgentEnvironment.configure(
 # surfaces as a rollout that fails after paying for a sandbox that could never have started.
 logger.info("data_agent_env: splits=%s sandboxes: %s", _SPLITS, describe())
 
+# WARM THE CAPTURE PROXY when a default engine is configured.
+#
+# It is lazy by default, which is right for a deployment whose engine arrives per rollout. But when
+# the engine is known at boot, starting it here moves two slow, failure-prone steps off the first
+# rollout: binding the port and minting the public tunnel. Under a trainer that opens `num_generations`
+# rollouts at once, all of them would otherwise queue on the one holding the lock -- and a tunnel that
+# fails to mint would surface as a rollout timeout rather than as a boot error.
+#
+# Never fatal. A server that cannot publish its proxy can still serve the Task API, and saying so at
+# boot beats refusing to start.
+if os.environ.get("OPENENV_LLM_URL"):
+    try:
+        from .capture import agent_base_url, capture_server
+
+        _srv = capture_server(
+            os.environ["OPENENV_LLM_URL"], os.environ.get("OPENENV_MODEL", "")
+        )
+        logger.info("capture proxy ready; agents will be pointed at %s", agent_base_url(_srv))
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "could not warm the capture proxy; the first rollout will try again", exc_info=True
+        )
+
 os.environ.setdefault("ENABLE_WEB_INTERFACE", "true")
 
 # TWO DIFFERENT CONCURRENCY LIMITS, AND THEY ARE NOT THE SAME NUMBER.

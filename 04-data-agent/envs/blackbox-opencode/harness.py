@@ -35,6 +35,7 @@ from openenv.core.harness import (
 )
 
 from .models import DataAgentRolloutResult
+from .task import instruction_id
 from .tasks import index_of_instruction
 
 
@@ -198,6 +199,11 @@ class DataAgentSessionFactory(ResourceSessionFactory[DataAgentSession]):
             Served model id.
         sandbox (`str`, *optional*, defaults to `"e2b"`):
             Backend name; `"e2b"` or `"hf"`.
+        curriculum (`str`, *optional*):
+            Order the prompts by difficulty instead of shuffling: `"sprinkle"` or `"warmup:<n>"`.
+            Empty keeps the split's own order. See `curriculum.py`.
+        seed (`int`, *optional*, defaults to `0`):
+            Makes the curriculum reproducible.
     """
 
     def __init__(
@@ -210,9 +216,13 @@ class DataAgentSessionFactory(ResourceSessionFactory[DataAgentSession]):
         sandbox: str = "e2b",
         agent_step_limit: int = 10,
         agent_timeout_s: float = 600.0,
+        curriculum: str = "",
+        seed: int = 0,
     ):
         self._server = server.rstrip("/")
         self._split = split
+        self._curriculum = curriculum
+        self._seed = seed
         self._rollout_kwargs = {
             "llm_url": llm_url,
             "model": model,
@@ -238,15 +248,62 @@ class DataAgentSessionFactory(ResourceSessionFactory[DataAgentSession]):
 
         The trainer forwards only the prompt, so `create()` recovers the index by hashing the
         instruction back. That round trip is why this returns instructions rather than indices.
+
+        ORDER IS PART OF THE RECIPE, not a detail. The trainer walks this list in order, so the
+        curriculum has to be applied HERE -- once, where the tiers are still known. Requesting
+        `curriculum="warmup:125"` puts 125 easy prompts first and then sprinkles hard through medium;
+        without it the run sees a shuffled mix from step 0, and a group whose `num_generations`
+        rollouts all score zero contributes exactly zero gradient. On the harder tiers, early on, that
+        is the likely outcome.
         """
         client = self._new_client()
         try:
             tasks = client.get_task_range(self._split)
         finally:
             client.close()
-        return [
-            {"prompt": [{"role": "user", "content": t["instruction"]}]} for t in tasks
-        ]
+        # DEDUPLICATED BY INSTRUCTION, and this is a correctness fix rather than tidying.
+        #
+        # The trainer forwards only the prompt, so `create()` resolves an instruction back to ONE task
+        # index. When two tasks share an instruction, every rollout for it is graded against whichever
+        # gold that lookup returns. Measured on `train`: 5000 tasks carry 4940 distinct instructions,
+        # 48 instructions are shared by 108 tasks, and 15 of those 48 have CONFLICTING gold answers --
+        # so without this, a slice of the run is scored against an answer to a different question and
+        # nothing anywhere says so.
+        #
+        # Keeping the first occurrence also reproduces the pool the published +0.2028 run used, which
+        # was 4940 prompts: its dataset builder deduplicated the same way.
+        seen: set[str] = set()
+        rows, kept_tasks = [], []
+        for task in tasks:
+            instruction = task["instruction"]
+            key = instruction_id(instruction)
+            if key in seen:
+                continue
+            seen.add(key)
+            rows.append({"prompt": [{"role": "user", "content": instruction}]})
+            kept_tasks.append(task)
+        if len(kept_tasks) != len(tasks):
+            logger.warning(
+                "%d of %d tasks in %s share an instruction with an earlier one and were dropped; "
+                "the prompt cannot distinguish them, so a rollout could only be graded against one "
+                "of their golds",
+                len(tasks) - len(kept_tasks),
+                len(tasks),
+                self._split,
+            )
+        tasks = kept_tasks
+        if not self._curriculum:
+            return rows
+
+        from .curriculum import apply_curriculum
+
+        # Keyed by id(row), so the tier travels with the row rather than being re-derived from the
+        # instruction later. Deriving it from the raw instruction string is how the original version
+        # of this silently degraded to a plain shuffle: the task index is keyed by a HASH of the
+        # instruction, so a raw-string lookup returns None for every row and the curriculum reports
+        # success while doing nothing.
+        tier_of = {id(row): task.get("difficulty_tier") for row, task in zip(rows, tasks)}
+        return apply_curriculum(rows, tier_of, self._curriculum, self._seed)
 
     def create(
         self, task: Any, seed: int | None = None, episode_id: str | None = None
