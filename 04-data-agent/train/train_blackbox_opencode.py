@@ -55,7 +55,25 @@ def main() -> None:
     p.add_argument("--max-steps", type=int, default=400)
     p.add_argument("--temperature", type=float, default=0.8)
     p.add_argument("--max-staleness", type=int, default=4)
-    p.add_argument("--agent-step-limit", type=int, default=10)
+    # 25, not 10. The reward penalises tool calls beyond step_budget=30, and the cap must sit AT OR
+    # BELOW that: above it there is a band where the agent is allowed to act and punished for acting,
+    # and the policy escapes by not acting at all -- which under train_turn_fn=has_tool_call produces
+    # no rows, hence no gradient, and cannot recover. Measured at cap 10, 197 of 224 eval rollouts
+    # (88%) were cut off mid-task.
+    p.add_argument("--agent-step-limit", type=int, default=25)
+    # PINNED, and not optional. Unset, token_budget defaults to the vLLM server's max_model_len --
+    # 131072 here -- which tripled the trained row and killed job 69906 with torch.OutOfMemoryError in
+    # fla/ops/gated_delta_rule/chunk.py before step 1. At 40960 the rows already reach 40,870 (99.8%),
+    # so this is the measured ceiling for a 4B-class model on one 80 GB card, not a safety margin.
+    p.add_argument("--token-budget", type=int, default=40960)
+    # 900, against agent_timeout_s=600. The default 300 killed job 69319 with "heartbeat stale: 302s >
+    # 300s; child is hung" on a worker that was not hung but BUSY: the worker ticks its heartbeat at
+    # the top of the dispatch loop, which does not re-iterate while every max_inflight slot is full.
+    p.add_argument("--heartbeat-stale-after-s", type=float, default=900.0)
+    # opencode asks for 32,000 output tokens and capture clamps it to 8192; the TRL default is 2048.
+    p.add_argument("--max-completion-length", type=int, default=16384)
+    p.add_argument("--per-device-batch-size", type=int, default=4)
+    p.add_argument("--optim", default="paged_adamw_8bit")
     p.add_argument("--save-steps", type=int, default=200)
     p.add_argument("--output-dir", default="")
     p.add_argument("--run-name", default="")
@@ -89,6 +107,8 @@ def main() -> None:
     print(f"vllm      {args.vllm_url}   model {args.model}")
     print(f"tasks     {len(dataset)} from {args.split} [{args.curriculum or 'shuffled'}], sandbox {args.sandbox}")
     print(f"run       {run_name} -> {output_dir}")
+    print(f"budgets   token_budget={args.token_budget} max_completion={args.max_completion_length} "
+          f"heartbeat={args.heartbeat_stale_after_s:g}s agent_steps={args.agent_step_limit}")
 
     worker = HarnessRolloutWorker(
         harness_session_factory=factory,
@@ -107,6 +127,7 @@ def main() -> None:
         num_generations=args.num_generations,
         max_inflight_tasks=args.max_inflight,
         vllm_server_url=args.vllm_url,
+        max_tokens=args.max_completion_length,
         temperature=args.temperature,
         log_completions=True,
         num_completions_to_print=2,
@@ -122,8 +143,13 @@ def main() -> None:
             # save_total_limit would delete one out from under a queued evaluation.
             save_total_limit=None,
             num_generations=args.num_generations,
+            per_device_train_batch_size=args.per_device_batch_size,
             gradient_accumulation_steps=args.grad_accum,
             max_steps=args.max_steps,
+            max_completion_length=args.max_completion_length,
+            token_budget=args.token_budget,
+            heartbeat_stale_after_s=args.heartbeat_stale_after_s,
+            optim=args.optim,
             learning_rate=args.learning_rate,
             temperature=args.temperature,
             max_staleness=args.max_staleness,
