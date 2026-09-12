@@ -74,6 +74,21 @@ def main() -> None:
     p.add_argument("--max-completion-length", type=int, default=16384)
     p.add_argument("--per-device-batch-size", type=int, default=4)
     p.add_argument("--optim", default="paged_adamw_8bit")
+    # bfloat16, to MATCH THE SERVER. AsyncGRPOConfig defaults dtype="float32" deliberately -- TRL
+    # prefers fp32 on the trainer because the training-inference mismatch is sensitive to it -- but its
+    # own docstring adds that closing that gap end to end "also requires serving the vLLM server in the
+    # same dtype", and a precision GAP BIASES THE IMPORTANCE RATIO
+    # (https://huggingface.co/papers/2510.26788).
+    #
+    # TRL's preferred direction, serving fp32, is impossible here and that was measured rather than
+    # assumed: Qwen3.5 is hybrid Gated-DeltaNet and vLLM asserts
+    #     ChunkGatedDeltaRuleFunction does not support float32. Please use bfloat16.
+    # (qwen_gdn_linear_attn.py:1165, job 72978). So the match is made on the trainer's side.
+    #
+    # Left at the default, job 72939 warned "serves in bfloat16 but the weights sent to it are
+    # float32" with embed_tokens.weight at 2.54 GB against a 1 GB transfer buffer. Halving the
+    # optimizer state is a side benefit on a card this work has already OOMed.
+    p.add_argument("--dtype", default="bfloat16")
     p.add_argument("--save-steps", type=int, default=200)
     p.add_argument("--output-dir", default="")
     p.add_argument("--run-name", default="")
@@ -108,7 +123,8 @@ def main() -> None:
     print(f"tasks     {len(dataset)} from {args.split} [{args.curriculum or 'shuffled'}], sandbox {args.sandbox}")
     print(f"run       {run_name} -> {output_dir}")
     print(f"budgets   token_budget={args.token_budget} max_completion={args.max_completion_length} "
-          f"heartbeat={args.heartbeat_stale_after_s:g}s agent_steps={args.agent_step_limit}")
+          f"heartbeat={args.heartbeat_stale_after_s:g}s agent_steps={args.agent_step_limit} "
+          f"dtype={args.dtype}")
 
     worker = HarnessRolloutWorker(
         harness_session_factory=factory,
@@ -150,6 +166,7 @@ def main() -> None:
             token_budget=args.token_budget,
             heartbeat_stale_after_s=args.heartbeat_stale_after_s,
             optim=args.optim,
+            dtype=args.dtype,
             learning_rate=args.learning_rate,
             temperature=args.temperature,
             max_staleness=args.max_staleness,

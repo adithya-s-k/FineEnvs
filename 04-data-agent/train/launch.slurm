@@ -154,5 +154,6 @@ CUDA_VISIBLE_DEVICES=1 TRACKIO_STORAGE_MODE=sqlite \
   --token-budget "${TOKEN_BUDGET:-40960}" \
   --max-completion-length "${MAX_COMPLETION_LENGTH:-16384}" \
   --heartbeat-stale-after-s "${HEARTBEAT_STALE_AFTER_S:-900}" \
+  --dtype "${TRAIN_DTYPE:-bfloat16}" \
   --max-steps "${MAX_STEPS:-400}" \
   --output-dir "$LOGS/run"
