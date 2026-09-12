@@ -45,7 +45,20 @@ ENV_PORT="${ENV_PORT:-18200}"
 CAP_PORT="${CAP_PORT:-18300}"
 VLLM_URL="http://127.0.0.1:$VLLM_PORT"
 LOGS="$ENVDIR/logs/job-${SLURM_JOB_ID:-local}"
-mkdir -p "$LOGS"
+mkdir -p "$LOGS/run"
+
+# BRIDGE THE CHECKPOINTS TO THE EVAL WATCHER.
+#
+# eval_watcher.py polls experiments/temp_asyncgrpo_code/logs/ckpt-<train_job>/checkpoint-* . Without
+# this link it never sees a checkpoint from this run, and the 400-step job would finish with nothing
+# evaluated -- silently, because "no checkpoints yet" and "wrong directory" look identical to a poller.
+#
+# The link, rather than writing there directly: the run's artifacts belong with the environment, and
+# the eval stack is the one that produced the +0.2028 reference, so reusing it keeps the comparison
+# apples-to-apples instead of introducing a second evaluator.
+WATCHDIR=/fsx/$USER/projects/trl_prod/experiments/temp_asyncgrpo_code/logs/ckpt-${SLURM_JOB_ID:-local}
+ln -sfn "$LOGS/run" "$WATCHDIR"
+echo "checkpoints visible to eval_watcher at $WATCHDIR -> $LOGS/run"
 
 set -a; . "$REPO/experiments/.env"; set +a
 . "$ENVDIR/../blackbox-harbor/logs/hf_token.sh"
