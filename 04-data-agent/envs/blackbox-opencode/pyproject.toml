@@ -23,8 +23,8 @@ description = "Data-analysis agent tasks: an agent reads real tables in a sandbo
 # 3.12, not 3.10: the capture stack and `openenv.core.sandbox` both require it.
 requires-python = ">=3.12"
 dependencies = [
-    # Brings the capture proxy, the harness contract and the shared sandbox backends. This env
-    # implements none of those; see sandbox/__init__.py for why it no longer vendors them.
+    # Brings the capture proxy and the harness contract. The sandbox backends are vendored into
+    # sandbox/ rather than imported, because openenv-opencode-env is not published to PyPI.
     "openenv>=0.3.1",
     "datasets>=2.19",
     "huggingface_hub>=1.12",
@@ -35,8 +35,9 @@ dependencies = [
     "uvicorn[standard]>=0.24",
 ]
 
-# Sandbox backends are OPTIONAL and independent: a deployment installs only the one it will use, and
-# `openenv.core.sandbox` imports each lazily, so a missing SDK for one never breaks the other.
+# Sandbox backends are OPTIONAL and independent: a deployment installs only the one it will use,
+# and `sandbox/__init__.py` imports each lazily, so a missing SDK for one never breaks the other.
+# The backend code itself is VENDORED into sandbox/ (see its docstring) -- these are just its SDKs.
 [project.optional-dependencies]
 e2b = ["e2b>=1.0.0"]
 # `huggingface_hub.Sandbox` ships in 1.22; there is no `[sandbox]` extra, and asking for one makes

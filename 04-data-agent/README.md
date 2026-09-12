@@ -113,6 +113,6 @@ runaway rollout holds its whole GRPO group hostage.
 The environments are landing; nothing here is verified end to end yet, and no training results are
 published in this project. Both depend on core changes still in review upstream:
 
-- **OpenEnv** — `TraceEntry` carrying `prompt_token_ids` and `loss_mask`, `CaptureServer` and the
-  sandbox backends promoted into `openenv.core`, and a per-session model-call budget in the proxy.
+- **OpenEnv** — `TraceEntry` carrying `prompt_token_ids` and `loss_mask`, `CaptureServer` promoted
+  into `openenv.core.harness.capture`, and a per-session model-call budget in the proxy.
 - **TRL** — `async_grpo` consuming those ids instead of re-rendering, and `TurnRecord.output_mask`.
