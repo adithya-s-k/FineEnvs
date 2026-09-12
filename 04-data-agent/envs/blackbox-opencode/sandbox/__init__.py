@@ -36,9 +36,26 @@ BACKENDS = ("e2b", "hf")
 # Per-backend home directory. See the module docstring for what a wrong value costs.
 _HOMES = {"e2b": "/home/user", "hf": "/root"}
 
-# pandas / numpy / scipy and friends. A task's instruction names them, so a bare image turns every
-# rollout into a package-install exercise the reward does not pay for.
-DEFAULT_IMAGE = "docker.io/savatar101/env-data-agent-train:base"
+# THE TWO PROVIDERS TAKE DIFFERENT THINGS, AND THAT IS NOT A DETAIL TO PAPER OVER.
+#
+# E2B takes a prebuilt TEMPLATE, with the data-science stack and opencode already baked in -- which is
+# also what lets the harness's "is opencode already installed" check short-circuit instead of curling
+# an installer into every sandbox. It has no `image` parameter at all.
+#
+# HF takes an IMAGE, and installs opencode at runtime.
+#
+# Sizing is baked into the E2B template at BUILD time and cannot be set per sandbox: `Sandbox.create`
+# has no cpu/memory parameters. That matters here because the defaults are too small -- pandas wants
+# roughly 3-5x a CSV's size in RAM and these tables reach 2.7 GB, so a 1 GB sandbox is OOM-killed, and
+# an OOM-killed rollout files no answer, which is identical in the reward to a model that could not do
+# the task. The template is built at cpu=2, mem=4096; to change it, rebuild the template.
+E2B_TEMPLATE = os.environ.get("E2B_TEMPLATE", "data-agent-opencode")
+HF_FLAVOR = os.environ.get("HF_SANDBOX_FLAVOR", "cpu-basic")
+
+# Used by the HF backend only; E2B carries the equivalent inside its template.
+DEFAULT_IMAGE = os.environ.get(
+    "DATA_AGENT_IMAGE", "docker.io/savatar101/env-data-agent-train:base"
+)
 
 
 def sandbox_home(backend: str) -> str:
@@ -52,17 +69,29 @@ def sandbox_home(backend: str) -> str:
 def build_backend(backend: str, *, image: str = DEFAULT_IMAGE, **kwargs: Any) -> SandboxBackend:
     """Construct a sandbox backend by name.
 
-    Imported lazily so a machine with only one provider's SDK installed can still serve the other --
-    an unconditional import at module scope would make a missing `e2b` package break the HF path too.
+    Args:
+        backend (`str`):
+            `"e2b"` or `"hf"`.
+        image (`str`, *optional*):
+            Container image. Used by the HF backend ONLY -- E2B carries the equivalent inside
+            `E2B_TEMPLATE`, and its constructor has no `image` parameter.
+
+    Returns:
+        A sandbox backend.
     """
     if backend == "e2b":
         from .e2b import E2BSandboxBackend
 
-        return E2BSandboxBackend(image=image, **kwargs)
+        return E2BSandboxBackend(
+            template=E2B_TEMPLATE,
+            # The agent pulls its task's tables from a Hugging Face bucket, so it needs the network.
+            sandbox_kwargs={"allow_internet_access": True},
+            **kwargs,
+        )
     if backend == "hf":
         from .hf import HFSandboxBackend
 
-        return HFSandboxBackend(image=image, **kwargs)
+        return HFSandboxBackend(image=image, flavor=HF_FLAVOR, **kwargs)
     raise ValueError(f"unknown sandbox backend {backend!r}; expected one of {BACKENDS}")
 
 
@@ -89,13 +118,19 @@ def available() -> dict[str, bool]:
 
 
 def describe() -> str:
-    """One line for the startup log: which backends are usable here."""
-    return ", ".join(f"{name}={'ready' if ok else 'unavailable'}" for name, ok in available().items())
+    """One line for the startup log: which backends are usable, and how each is configured."""
+    got = available()
+    return (
+        f"e2b={'ready' if got.get('e2b') else 'unavailable'} (template={E2B_TEMPLATE}), "
+        f"hf={'ready' if got.get('hf') else 'unavailable'} (flavor={HF_FLAVOR})"
+    )
 
 
 __all__ = [
     "BACKENDS",
     "DEFAULT_IMAGE",
+    "E2B_TEMPLATE",
+    "HF_FLAVOR",
     "SandboxBackend",
     "available",
     "build_backend",

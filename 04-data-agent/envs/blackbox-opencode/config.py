@@ -29,11 +29,17 @@ class DataAgentConfig:
         sandbox (`str`, *optional*, defaults to `"e2b"`):
             Backend name. `"e2b"` or `"hf"`; see `sandbox/__init__.py`.
         image (`str`, *optional*):
-            Container image carrying pandas/numpy/scipy and friends, which the instruction promises.
+            Container image carrying pandas/numpy/scipy and friends, which the instruction
+            promises. USED BY THE `hf` BACKEND ONLY -- E2B has no image parameter; it carries the
+            equivalent inside its prebuilt template (see `sandbox/__init__.py`).
         agent_timeout_s (`float`, *optional*, defaults to `600.0`):
             Wall clock for one rollout before it is abandoned and scored on whatever it filed.
         agent_step_limit (`int`, *optional*, defaults to `10`):
             Hard cap on MODEL CALLS, enforced host-side in the capture proxy.
+        setup_timeout_s (`float`, *optional*, defaults to `600.0`):
+            Wall clock for staging the task's tables, separate from the agent's own budget.
+        install_timeout_s (`float`, *optional*, defaults to `300.0`):
+            Wall clock for installing opencode when the image does not ship it (`hf`).
         disabled_tools (`list[str]`, *optional*):
             Tools removed from the agent. Web access and sub-agents make a rollout unreproducible
             and are off by default.
@@ -43,6 +49,11 @@ class DataAgentConfig:
     image: str = DEFAULT_IMAGE
     agent_timeout_s: float = 600.0
     agent_step_limit: int = 10
+    # Staging pulls a bucket that can reach gigabytes; the agent's own budget is a different
+    # clock and must not be spent on it.
+    setup_timeout_s: float = 600.0
+    # nvm + a ~50 MB Node tarball + `npm i -g`. Only the E2B template skips it.
+    install_timeout_s: float = 300.0
     disabled_tools: list[str] = field(
         default_factory=lambda: ["webfetch", "question", "task"]
     )

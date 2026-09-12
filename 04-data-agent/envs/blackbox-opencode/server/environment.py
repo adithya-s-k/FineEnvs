@@ -40,7 +40,6 @@ from openenv.core.env_server.types import Observation
 
 from ..config import DataAgentConfig
 from ..models import DataAgentState
-from ..task import DataAgentTask
 from ..tasks import DataAgentTaskProvider
 
 
@@ -252,10 +251,13 @@ class DataAgentEnvironment(MCPEnvironment):
         agent_timeout_s: float,
         require_tokens: bool,
     ) -> str:
+        from ..tasks import task_at
         from .rollout import run_rollout
 
-        row = self._provider.get_task(split, index)
-        task = DataAgentTask.from_row(row)
+        # `task_at`, NOT `provider.get_task`. The latter returns the PUBLIC projection, which omits
+        # the gold answer on purpose -- a task spec travels to whoever asks, including the agent's
+        # own side of the wire. Grading needs the gold, so the rollout path takes the full task.
+        task = task_at(split, index)
         config = DataAgentConfig(
             sandbox=sandbox or self._sandbox,
             agent_step_limit=agent_step_limit,

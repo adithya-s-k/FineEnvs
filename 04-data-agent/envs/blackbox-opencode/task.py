@@ -70,7 +70,7 @@ class DataAgentTask(BaseModel):
             File names staged into `INPUT_DIR`, used only to name them in the prompt.
         difficulty_tier (`str`):
             easy, medium or hard.
-        difficulty_level (`str`):
+        difficulty_level (`int`, *optional*):
             The dataset's finer-grained level, carried through for analysis.
     """
 
@@ -85,7 +85,10 @@ class DataAgentTask(BaseModel):
     bucket_prefix: str
     files: list[str] = Field(default_factory=list)
     difficulty_tier: str | None = None
-    difficulty_level: str | None = None
+    # An INT in the dataset (1/2/3), not a string -- `difficulty_tier` is the word form
+    # ('easy'/'medium'/'hard') and these two are easy to mix up. Declaring this `str` made
+    # every `get_task` 500 with a pydantic error that named the field but not the dataset.
+    difficulty_level: int | None = None
 
     @classmethod
     def from_row(cls, row: dict[str, Any]) -> "DataAgentTask":
@@ -129,30 +132,45 @@ class DataAgentTask(BaseModel):
     def setup_shell(self, token: str | None) -> str:
         """Shell that stages this task's tables into `INPUT_DIR` before the agent starts.
 
-        Credentials are passed by NAME through the environment, never interpolated into the command
-        text, so a token cannot leak into a log line or a trace.
+        HF BUCKETS, NOT A DATASET REPO. `hf_bucket` names a bucket (`hf://buckets/<owner>/<name>`),
+        so it is read with `list_bucket_tree` / `download_bucket_files`. Reaching for
+        `snapshot_download(repo_type="dataset")` instead returns a plain 404 that names the repo and
+        reads exactly like a permissions problem.
+
+        FAILS LOUDLY ON AN EMPTY DIRECTORY, with a distinct exit code per cause. A silent miss hands
+        the agent a task whose data is absent; it then scores 0 for a reason indistinguishable from a
+        wrong answer, which is the most expensive kind of failure to debug because the reward looks
+        entirely plausible.
+
+        Credentials travel by NAME through the environment and are never interpolated into the command
+        text, so a token cannot reach a log line or a trace.
         """
-        parts = [
-            "set -eu",
-            f"mkdir -p {shlex.quote(INPUT_DIR)} /workdir",
-            # hf_hub is already in the base image; the pull is a library call rather than a shelled-out
-            # CLI so a failure surfaces as a traceback instead of a silent empty directory.
-            "python3 - <<'PY'\n"
-            "import os\n"
-            "from huggingface_hub import snapshot_download\n"
-            "dest = os.environ['INPUT_DIR']\n"
-            "snapshot_download(\n"
-            "    repo_id=os.environ['HF_BUCKET'],\n"
-            "    repo_type='dataset',\n"
-            "    allow_patterns=os.environ['BUCKET_PREFIX'].rstrip('/') + '/*',\n"
-            "    local_dir=dest,\n"
-            ")\n"
-            "PY",
-            # Flatten: the instruction promises files directly in INPUT_DIR with no subfolders.
-            f"find {shlex.quote(INPUT_DIR)} -mindepth 2 -type f -exec mv -t {shlex.quote(INPUT_DIR)} {{}} + || true",
-            f"find {shlex.quote(INPUT_DIR)} -mindepth 1 -type d -empty -delete || true",
-        ]
-        return "\n".join(parts)
+        bucket = self.hf_bucket
+        prefix = self.bucket_prefix.rstrip("/")
+        return (
+            "set -e; "
+            f"mkdir -p {shlex.quote(INPUT_DIR)} /workdir; "
+            "python3 - <<'PULL'\n"
+            "import sys\n"
+            "from pathlib import Path\n"
+            "from huggingface_hub import download_bucket_files, list_bucket_tree\n"
+            f"dest = Path({INPUT_DIR!r})\n"
+            "dest.mkdir(parents=True, exist_ok=True)\n"
+            "if [p for p in dest.iterdir() if p.is_file()]:\n"
+            "    print('[pull] already staged'); sys.exit(0)\n"
+            # Flattened AT DOWNLOAD TIME rather than moved afterwards: the instruction promises the
+            # files directly in INPUT_DIR with no subfolders, and a post-hoc `find -exec mv` silently
+            # collides when two prefixes contain the same basename.
+            f"targets = [(it.path, str(dest / Path(it.path).name))\n"
+            f"           for it in list_bucket_tree({bucket!r}, prefix={prefix + '/'!r}, recursive=True)\n"
+            "           if getattr(it, 'type', None) == 'file']\n"
+            "if not targets:\n"
+            f"    print('[pull] FATAL: nothing at hf://buckets/{bucket}/{prefix}'); sys.exit(2)\n"
+            f"download_bucket_files({bucket!r}, files=targets)\n"
+            "print('[pull] staged', len(targets), 'file(s)')\n"
+            "PULL\n"
+            f'[ -n "$(ls -A {shlex.quote(INPUT_DIR)})" ] || {{ echo "[pull] FATAL: {INPUT_DIR} empty"; exit 3; }}'
+        )
 
 
 def resolve_hf_token() -> str | None:

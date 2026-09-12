@@ -137,11 +137,16 @@ def run_rollout(
             sandbox=config.sandbox,
         )
         backend = build_backend(config.sandbox, image=config.image)
+        # `create` takes only timeout/envs/metadata -- there is no setup hook on it. Staging runs as a
+        # separate `exec` below, which is also what `opencode_env`'s harness does.
         sandbox = backend.create(
-            setup_shell=task.setup_shell(hf_token),
-            env=task.env(hf_token),
-            timeout_s=config.agent_timeout_s,
+            timeout_s=int(config.agent_timeout_s),
+            envs=task.env(hf_token),
+            metadata={"rollout_id": rollout_id, "task": task.instruction_id},
         )
+        _wait_ready(sandbox)
+        _ensure_opencode(sandbox, config)
+        _stage_inputs(sandbox, task, hf_token, config)
         # The agent's API KEY is the capture session id. That is how one proxy serves many concurrent
         # rollouts without a port per rollout, and why the sandbox never sees a real credential.
         exit_code = _run_agent(
@@ -152,6 +157,32 @@ def run_rollout(
         turns, capture_findings = fetch_turns(server, session_id)
         n_tool_calls = sum(len(t.tool_calls) for t in turns)
         final = turns[-1].text if turns else None
+
+        # ZERO MODEL CALLS IS AN INFRASTRUCTURE FAILURE, NOT A WRONG ANSWER.
+        #
+        # If capture saw nothing, the agent never reached the proxy -- opencode missing from the
+        # image, a base URL the sandbox cannot route to, auth rejected. Grading that produces
+        # correctness 0.0, which says the POLICY was wrong, and the trainer then counts it in the
+        # group baseline. An ungraded rollout is dropped from the baseline instead, which is the
+        # honest treatment: nothing about the model was measured here.
+        if not turns:
+            logger.warning(
+                "rollout %s produced no model calls; returning ungraded. findings: %s",
+                rollout_id,
+                "; ".join(capture_findings[:3]) or "none",
+            )
+            return DataAgentRolloutResult(
+                rollout_type=rollout_type,
+                turns=[],
+                timed_out=timed_out,
+                metadata={
+                    "error": "the agent made no model calls",
+                    "rollout_id": rollout_id,
+                    "session_id": session_id,
+                    "sandbox": config.sandbox,
+                    "capture_findings": capture_findings,
+                },
+            )
 
         grade = grade_rollout(
             task, sandbox.read_text, answer_paths_for(config.home), final_message=final
@@ -204,6 +235,114 @@ def run_rollout(
         _SLOTS.release()
 
 
+def _stage_inputs(sandbox: Any, task: DataAgentTask, hf_token: str | None, config: DataAgentConfig) -> None:
+    """Pull this task's tables into the sandbox before the agent starts.
+
+    RETRIED ONCE, deliberately. The exec channel is the fragile part of a sandbox, not the registry:
+    across 13,200 trials, 5 of the 6 hard install failures were
+    `Request timed out: the stream didn't open within 'request_timeout' (60.0 s)`, with zero npm/nvm
+    rate-limiting. A single transient exec failure would otherwise cost the whole rollout.
+
+    A staging failure RAISES rather than continuing. An agent that starts with no data files cannot
+    solve the task, and the resulting empty answer scores identically to a model that could not do
+    it -- so this must surface as an ungraded rollout, not as a zero.
+    """
+    setup = task.setup_shell(hf_token)
+    if not setup:
+        return
+    last = None
+    for attempt in (1, 2):
+        result = sandbox.exec(setup, timeout=config.setup_timeout_s)
+        code = _exit_code(result, default=0)
+        if code == 0:
+            return
+        last = getattr(result, "stderr", "") or getattr(result, "stdout", "")
+        logger.warning("staging attempt %d failed (%s): %s", attempt, code, str(last)[:300])
+    raise RuntimeError(f"staging this task's inputs failed: {str(last)[:400]}")
+
+
+# opencode lands here when installed at runtime; the E2B template also puts it on PATH.
+OPENCODE_BIN = "$HOME/.opencode/bin"
+
+
+def _exit_code(result: Any, *, default: int = 1) -> int:
+    """Exit code of an `ExecResult`, treating a MISSING code and a ZERO code as different things.
+
+    `int(getattr(r, "exit_code", 1) or 1)` looks right and is not: `0 or 1` is 1, so every SUCCESSFUL
+    command reads as a failure. That turned "is opencode installed?" into a permanent no, which made
+    every rollout reinstall it, and the installer then exits non-zero on "already installed" -- so a
+    perfectly good sandbox failed with a message saying the thing it needed was already there.
+    """
+    code = getattr(result, "exit_code", None)
+    return default if code is None else int(code)
+
+
+def _wait_ready(sandbox: Any, *, attempts: int = 15, delay_s: float = 1.0) -> None:
+    """Probe until `echo ok` succeeds. A backend returns the handle before the guest is usable.
+
+    Without this, the FIRST command run in the sandbox fails for a reason that has nothing to do with
+    what it was trying to do. Here that surfaced as "opencode is not installed" on an image where it
+    was installed all along -- the probe simply ran too early.
+    """
+    import time
+
+    last = ""
+    for _ in range(attempts):
+        try:
+            r = sandbox.exec("echo ok", timeout=5)
+            if _exit_code(r) == 0 and "ok" in (getattr(r, "stdout", "") or ""):
+                return
+            last = (getattr(r, "stderr", "") or getattr(r, "stdout", "") or "").strip()
+        except Exception as exc:  # noqa: BLE001 -- a not-yet-listening guest raises rather than returns
+            last = f"{type(exc).__name__}: {exc}"
+        time.sleep(delay_s)
+    raise RuntimeError(f"sandbox never became ready: {last[:300]}")
+
+
+def _opencode_present(sandbox: Any) -> bool:
+    """Whether `opencode` runs in this sandbox. The PATH export is load-bearing on a fresh install."""
+    try:
+        r = sandbox.exec(f'export PATH="{OPENCODE_BIN}:$PATH"; opencode --version', timeout=20)
+        return _exit_code(r) == 0
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _ensure_opencode(sandbox: Any, config: DataAgentConfig) -> None:
+    """Install opencode if the image does not already ship it.
+
+    THE TWO BACKENDS DIFFER HERE AND IT IS NOT COSMETIC. The E2B template bakes opencode in, so the
+    probe short-circuits and a rollout starts immediately. The HF image carries the data-science stack
+    only, so opencode is installed at runtime -- roughly 30-50 s of the rollout.
+
+    Skipping it on HF produces no useful error: `opencode run` is simply not found, the agent makes
+    ZERO model calls, and the rollout returns an empty answer. Capture's `no_turns` finding is the
+    only clue.
+
+    SUCCESS IS DECIDED BY RE-PROBING, NOT BY THE INSTALLER'S EXIT CODE. The upstream installer exits
+    non-zero when it finds the version already present ("Version 1.18.30 already installed"), so
+    trusting the code turns a working sandbox into a failed rollout.
+    """
+    if _opencode_present(sandbox):
+        return
+    install = (
+        f"mkdir -p {config.home}/.config/opencode {config.home}/workdir && "
+        "curl -fsSL https://opencode.ai/install | bash"
+    )
+    last = None
+    for attempt in (1, 2, 3):
+        try:
+            result = sandbox.exec(install, timeout=config.install_timeout_s)
+            last = getattr(result, "stderr", "") or getattr(result, "stdout", "")
+        except Exception as exc:  # noqa: BLE001 -- curl | bash is flaky; retry rather than abort
+            last = f"{type(exc).__name__}: {exc}"
+        if _opencode_present(sandbox):
+            logger.info("opencode available after install attempt %d", attempt)
+            return
+        logger.warning("opencode still absent after attempt %d: %s", attempt, str(last)[:300])
+    raise RuntimeError(f"could not install opencode in the sandbox: {str(last)[:400]}")
+
+
 def _run_agent(
     sandbox: Any,
     capture_url: str,
@@ -233,11 +372,14 @@ def _run_agent(
     sandbox.write_text(
         f"{config.home}/.config/opencode/opencode.json", json.dumps(settings, indent=2)
     )
+    # `timeout`, not `timeout_s`: the handle protocol names it `timeout` while the BACKEND's `create`
+    # names its own `timeout_s`. The two differ, and mixing them up raises only at call time.
     result = sandbox.exec(
+        f'export PATH="{OPENCODE_BIN}:$PATH"; '
         f"cd {config.home}/workdir && opencode run --print-logs {json.dumps(instruction)}",
-        timeout_s=config.agent_timeout_s,
+        timeout=config.agent_timeout_s,
     )
-    return int(getattr(result, "exit_code", 0) or 0)
+    return _exit_code(result, default=0)
 
 
 def turns_from_capture(entries: list[dict[str, Any]]) -> list[DataAgentTurn]:

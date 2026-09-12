@@ -175,8 +175,13 @@ class DataAgentTaskProvider:
         mislabelled.
         """
         out: list[dict[str, Any]] = []
-        for base in self._splits:
-            for name in (base, *(f"{base}:{tier}" for tier in TIERS)):
+        for configured in self._splits:
+            # A configured split may ALREADY name a tier (`train:medium`). Appending tiers to it
+            # produces `train:medium:easy`, which is not a split -- it parses as tier `medium:easy`
+            # and every one of them comes back as an error entry, burying the real splits in noise.
+            base = configured.split(":", 1)[0]
+            tiers = () if ":" in configured else TIERS
+            for name in (configured, *(f"{base}:{tier}" for tier in tiers)):
                 entry: dict[str, Any] = {
                     "name": name,
                     "type": "train" if base == "train" else "validation",

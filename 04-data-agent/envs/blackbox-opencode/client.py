@@ -44,6 +44,11 @@ from .models import DataAgentRolloutResult
 
 logger = logging.getLogger(__name__)
 
+# The Task API is registered under the environment name (`/{env_name}/splits`), not at the root.
+# `HarborEnv` hits `/splits` unprefixed and that is what this client was first copied from; here
+# it returns 404 {"detail":"Not Found"}, which reads as a dead server rather than a wrong path.
+ENV_NAME = "data_agent_env"
+
 # A rollout is one long call: sandbox boot, data staging, the agent's own tool loop, then grading.
 # 60-600 s is normal, so the default message timeout would abort healthy rollouts.
 ROLLOUT_TIMEOUT_S = 1800.0
@@ -83,13 +88,13 @@ class DataAgentEnv(MCPToolClient):
     # --- discovery (Task API, plain HTTP routes) -----------------------------------------------
 
     def splits(self) -> list[dict[str, Any]]:
-        return self._http.get("/splits").raise_for_status().json()
+        return self._http.get(f"/{ENV_NAME}/splits").raise_for_status().json()
 
     def num_tasks(self, split: str = "") -> int:
-        return int(self._post("/num_tasks", {"split": split})["num_tasks"])
+        return int(self._post(f"/{ENV_NAME}/num_tasks", {"split": split})["num_tasks"])
 
     def get_task(self, split: str, index: int) -> dict[str, Any]:
-        return self._post("/task", {"split": split, "index": index})["task"]
+        return self._post(f"/{ENV_NAME}/task", {"split": split, "index": index})["task"]
 
     def get_task_range(
         self, split: str, start: int | None = None, stop: int | None = None
@@ -99,7 +104,7 @@ class DataAgentEnv(MCPToolClient):
             body["start"] = start
         if stop is not None:
             body["stop"] = stop
-        return self._post("/task_range", body)["tasks"]
+        return self._post(f"/{ENV_NAME}/task_range", body)["tasks"]
 
     # --- execution (MCP tools) ------------------------------------------------------------------
 
@@ -176,19 +181,37 @@ class DataAgentEnv(MCPToolClient):
 
 
 def _as_json(raw: Any) -> Any:
-    """MCP tool results arrive as text content; these tools return JSON strings."""
-    if isinstance(raw, (dict, list)):
-        return raw
-    if isinstance(raw, str):
-        return json.loads(raw)
-    # A content-block list, e.g. [{"type": "text", "text": "..."}].
-    if isinstance(raw, (tuple, list)) and raw:
-        first = raw[0]
-        text = (
-            first.get("text")
-            if isinstance(first, dict)
-            else getattr(first, "text", None)
-        )
-        if text:
-            return json.loads(text)
+    """Unwrap an MCP tool result into the JSON these tools return.
+
+    Two layers, and both bite. The transport wraps the result as
+    `{"content": [{"type": "text", "text": "..."}]}` (or `structured_content`), and FastMCP wraps a
+    non-object return in `{"result": ...}`. These tools return a JSON *string*, so after unwrapping
+    there is still a string to parse.
+
+    Getting this wrong is quiet: a plain `isinstance(raw, dict) -> return raw` hands back the
+    ENVELOPE, so `capabilities()["sandboxes"]` is simply absent and the caller concludes no sandbox
+    is usable here rather than that the response was never unwrapped.
+    """
+    payload: Any = raw
+    if isinstance(payload, dict):
+        structured = payload.get("structured_content") or payload.get("structuredContent")
+        if isinstance(structured, dict) and structured:
+            payload = structured.get("result", structured)
+        else:
+            content = payload.get("content")
+            if isinstance(content, list) and content:
+                first = content[0]
+                text = first.get("text") if isinstance(first, dict) else getattr(first, "text", None)
+                if text is not None:
+                    payload = text
+    elif isinstance(payload, (tuple, list)) and payload:
+        first = payload[0]
+        text = first.get("text") if isinstance(first, dict) else getattr(first, "text", None)
+        if text is not None:
+            payload = text
+
+    if isinstance(payload, str):
+        return json.loads(payload)
+    if isinstance(payload, (dict, list)):
+        return payload
     raise TypeError(f"cannot read a tool result out of {type(raw).__name__}")
