@@ -83,6 +83,7 @@ class DataAgentEnv(MCPToolClient):
         super().__init__(
             base_url=base_url, message_timeout_s=message_timeout_s, **kwargs
         )
+        self._timeout = message_timeout_s
         self._http = httpx.Client(base_url=base_url.rstrip("/"), timeout=120.0)
 
     # --- discovery (Task API, plain HTTP routes) -----------------------------------------------
@@ -119,14 +120,25 @@ class DataAgentEnv(MCPToolClient):
         agent_step_limit: int = 10,
         agent_timeout_s: float = 600.0,
         require_tokens: bool = True,
+        timeout_s: float | None = None,
     ) -> DataAgentRolloutResult:
         """Run one rollout to completion and return its token-level result.
 
         The ENGINE is chosen per call rather than baked into the deployment, so one server can serve a
         training run and an evaluation run against different engines at the same time.
+
+        `timeout_s` bounds THIS CALL from the client side and is separate from `agent_timeout_s`,
+        which bounds the agent inside the sandbox. `LoopOwningSession.wait_for_completion(timeout_s)`
+        passes it straight through, so dropping it from this signature makes every training rollout
+        die with `run_rollout() got an unexpected keyword argument 'timeout_s'` -- and because the
+        trainer then retries, each retry builds another client and another thread pool, until the
+        process dies with `RuntimeError: can't start new thread`. One missing parameter, two failures,
+        and the thread exhaustion is the one you see first.
         """
+        # The MCP call carries its own deadline; the tool arguments do not include it.
         raw = self._call(
             "run_rollout",
+            _timeout_s=timeout_s,
             split=split,
             index=index,
             llm_url=llm_url,
@@ -148,7 +160,7 @@ class DataAgentEnv(MCPToolClient):
 
     # --- internals ------------------------------------------------------------------------------
 
-    def _call(self, name: str, **kwargs: Any) -> Any:
+    def _call(self, name: str, _timeout_s: float | None = None, **kwargs: Any) -> Any:
         """Call an MCP tool from synchronous code.
 
         `MCPToolClient.call_tool` cannot be used here. It is a coroutine that internally does
@@ -156,7 +168,10 @@ class DataAgentEnv(MCPToolClient):
         concrete `StepResult` in sync mode, so awaiting it raises `TypeError: object StepResult can't
         be used in 'await' expression`. Driving `step` directly works in both modes.
         """
-        result = self.step(CallToolAction(tool_name=name, arguments=kwargs))
+        result = self.step(
+            CallToolAction(tool_name=name, arguments=kwargs),
+            timeout_s=_timeout_s or self._timeout,
+        )
         if inspect.isawaitable(result):  # async mode returns an awaitable instead
             result = run_async_safely(result)
 
