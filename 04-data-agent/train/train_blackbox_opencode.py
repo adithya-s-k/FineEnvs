@@ -55,12 +55,23 @@ def main() -> None:
     p.add_argument("--max-steps", type=int, default=400)
     p.add_argument("--temperature", type=float, default=0.8)
     p.add_argument("--max-staleness", type=int, default=4)
-    # 25, not 10. The reward penalises tool calls beyond step_budget=30, and the cap must sit AT OR
-    # BELOW that: above it there is a band where the agent is allowed to act and punished for acting,
-    # and the policy escapes by not acting at all -- which under train_turn_fn=has_tool_call produces
-    # no rows, hence no gradient, and cannot recover. Measured at cap 10, 197 of 224 eval rollouts
-    # (88%) were cut off mid-task.
-    p.add_argument("--agent-step-limit", type=int, default=25)
+    # 17: the value the reference +0.2028 run used, read off its own launch line --
+    #     STEP_PERSIST_CAP=0 STEP_SOFT_CAP=0 STEP_HARD_CAP=17 STEP_FORCE_TOOL=
+    # -- where the hard cap fired 4,627 times, so it bound constantly rather than sitting unused.
+    #
+    # It has to sit at or below the reward's step_budget of 30: above it there is a band where the
+    # agent is allowed to act and punished for acting, and the policy escapes by not acting at all,
+    # which under train_turn_fn=has_tool_call yields no rows and therefore no gradient.
+    #
+    # 10 was far too tight -- 197 of 224 eval rollouts (88%) cut off mid-task, turns pinned at 9. But
+    # 25 is not the reference either, and the difference shows up in the DYNAMICS rather than as an
+    # error: longer rollouts mean fewer complete per optimizer step, measured at 9.8 samples/step
+    # against the reference's 16.1, which is a different effective batch and a different rate of
+    # consuming the curriculum.
+    #
+    # The reference deliberately ran with BOTH nudges off (SOFT_CAP=0, PERSIST_CAP=0), so the absence
+    # of prompt injection here matches it rather than departing from it.
+    p.add_argument("--agent-step-limit", type=int, default=17)
     # PINNED, and not optional. Unset, token_budget defaults to the vLLM server's max_model_len --
     # 131072 here -- which tripled the trained row and killed job 69906 with torch.OutOfMemoryError in
     # fla/ops/gated_delta_rule/chunk.py before step 1. At 40960 the rows already reach 40,870 (99.8%),

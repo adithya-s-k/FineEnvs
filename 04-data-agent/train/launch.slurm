@@ -177,7 +177,7 @@ CUDA_VISIBLE_DEVICES=1 TRACKIO_STORAGE_MODE=sqlite \
   --max-inflight "${MAX_INFLIGHT:-32}" \
   --grad-accum "${GRAD_ACCUM:-4}" \
   --curriculum "${CURRICULUM:-warmup:125}" \
-  --agent-step-limit "${AGENT_STEP_LIMIT:-25}" \
+  --agent-step-limit "${AGENT_STEP_LIMIT:-17}" \
   --token-budget "${TOKEN_BUDGET:-40960}" \
   --max-completion-length "${MAX_COMPLETION_LENGTH:-16384}" \
   --heartbeat-stale-after-s "${HEARTBEAT_STALE_AFTER_S:-900}" \
