@@ -41,6 +41,11 @@ def main() -> None:
     p.add_argument("--vllm-url", required=True, help="the trainer's OWN vLLM; on-policy depends on it")
     p.add_argument("--model", default="Qwen/Qwen3.5-2B")
     p.add_argument("--split", default="train")
+    # The +0.2028 arm: 125 easy prompts first, then medium with hard sprinkled through. Without
+    # it the run meets the hard tiers at step 0, where a group of all-zero rollouts gives no
+    # gradient at all.
+    p.add_argument("--curriculum", default="warmup:125")
+    p.add_argument("--seed", type=int, default=0)
     p.add_argument("--sandbox", default="e2b", choices=["e2b", "hf"])
     # The arm that produced +0.2028 [+0.146,+0.259] at step 200 and held it at 400.
     p.add_argument("--learning-rate", type=float, default=3e-6)
@@ -71,6 +76,8 @@ def main() -> None:
         model=args.model,
         sandbox=args.sandbox,
         agent_step_limit=args.agent_step_limit,
+        curriculum=args.curriculum,
+        seed=args.seed,
     )
     # Built FROM THE FACTORY so the instruction the trainer sends is one the server can resolve back
     # to a task. All `num_generations` rollouts of a group share a row, so they get the same task and
@@ -80,7 +87,7 @@ def main() -> None:
 
     print(f"server    {args.server}")
     print(f"vllm      {args.vllm_url}   model {args.model}")
-    print(f"tasks     {len(dataset)} from {args.split}, sandbox {args.sandbox}")
+    print(f"tasks     {len(dataset)} from {args.split} [{args.curriculum or 'shuffled'}], sandbox {args.sandbox}")
     print(f"run       {run_name} -> {output_dir}")
 
     worker = HarnessRolloutWorker(

@@ -54,10 +54,34 @@ cleanup() { pkill -P $$ 2>/dev/null || true; }
 trap cleanup EXIT
 
 echo "== vLLM on GPU 0 =="
+# EVERY ONE OF THESE FLAGS IS LOad-BEARING. They are the set the +0.2028 run served with; a
+# hand-rolled `vllm serve` that omits any of them fails silently rather than loudly.
+#
+#   --enable-auto-tool-choice / --tool-call-parser qwen3_xml
+#       Without them vLLM never parses tool calls, so `has_tool_call` is False for EVERY turn and the
+#       whole rollout is discarded with no error anywhere. The agent path is entirely tool calls.
+#   --default-chat-template-kwargs {"enable_thinking": false}
+#       Pins thinking OFF server-side. Qwen3.5-4B's template opens <think> by default and -2B's
+#       closes it -- INVERTED defaults between two models of the same family. Leaving it to the
+#       default is what made a re-rendered prompt match the 2B and diverge on the 4B, forking 100% of
+#       turn transitions. This is what `think_template_patch` used to monkeypatch; it belongs here.
+#   --return-tokens-as-token-ids / --logprobs-mode processed_logprobs
+#       The capture tier. Without them capture degrades to text and every rollout is untrainable --
+#       and looks completely normal while being so.
+#   --gdn-prefill-backend triton
+#       Qwen3.5 is hybrid Gated-DeltaNet; this is the working prefill backend for it.
+#   VLLM_USE_DEEP_GEMM=0 / VLLM_DEEP_GEMM_WARMUP=skip
+#       On Hopper a stale importable deep_gemm kills startup with "DeepGEMM backend is not available
+#       or outdated".
 CUDA_VISIBLE_DEVICES=0 VLLM_USE_DEEP_GEMM=0 VLLM_DEEP_GEMM_WARMUP=skip \
   "$PY312" -m vllm.entrypoints.openai.api_server \
   --model "$MODEL" --port "$VLLM_PORT" --served-model-name "$MODEL" \
-  --max-model-len "${MAX_MODEL_LEN:-131072}" --trust-remote-code \
+  --trust-remote-code \
+  --max-model-len "${MAX_MODEL_LEN:-131072}" \
+  --enable-auto-tool-choice --tool-call-parser qwen3_xml \
+  --reasoning-parser qwen3 \
+  --gdn-prefill-backend triton \
+  --default-chat-template-kwargs '{"enable_thinking": false}' \
   --return-tokens-as-token-ids --logprobs-mode processed_logprobs \
   > "$LOGS/vllm.log" 2>&1 &
 
@@ -105,5 +129,6 @@ CUDA_VISIBLE_DEVICES=1 TRACKIO_STORAGE_MODE=sqlite \
   --num-generations "${NUM_GENERATIONS:-8}" \
   --max-inflight "${MAX_INFLIGHT:-32}" \
   --grad-accum "${GRAD_ACCUM:-4}" \
+  --curriculum "${CURRICULUM:-warmup:125}" \
   --max-steps "${MAX_STEPS:-400}" \
   --output-dir "$LOGS/run"

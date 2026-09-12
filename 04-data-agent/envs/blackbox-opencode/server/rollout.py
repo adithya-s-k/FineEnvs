@@ -372,11 +372,30 @@ def _run_agent(
     sandbox.write_text(
         f"{config.home}/.config/opencode/opencode.json", json.dumps(settings, indent=2)
     )
+    # THE INSTRUCTION GOES THROUGH A FILE, NEVER ONTO THE COMMAND LINE.
+    #
+    # `json.dumps(instruction)` produces a DOUBLE-quoted shell word, and these instructions contain a
+    # backticked example:
+    #
+    #     Write only that value to /workdir/answer.txt (e.g. `echo -n "<value>" > /workdir/answer.txt`)
+    #
+    # Inside double quotes the shell runs backticks as COMMAND SUBSTITUTION. So the shell itself wrote
+    # `<value>` into answer.txt before the agent started, AND deleted the example from the text the
+    # agent got, which arrived as "(e.g. ), then stop.". Measured: 498 of 575 eval rollouts filed the
+    # literal string `<value>`, dragging pass@1 to 0.032 against 0.104 for the same model under an
+    # invocation that used a file. It reads as a model that cannot follow instructions.
+    #
+    # json.dumps also escapes newlines to a literal two-character \n, so a multi-paragraph instruction
+    # reached the agent as one line of backslash-n.
+    #
+    # A file has neither problem, and it is what the working eval harness did.
+    sandbox.write_text(f"{config.home}/workdir/task.md", instruction)
     # `timeout`, not `timeout_s`: the handle protocol names it `timeout` while the BACKEND's `create`
     # names its own `timeout_s`. The two differ, and mixing them up raises only at call time.
     result = sandbox.exec(
         f'export PATH="{OPENCODE_BIN}:$PATH"; '
-        f"cd {config.home}/workdir && opencode run --print-logs {json.dumps(instruction)}",
+        f"cd {config.home}/workdir && "
+        f'opencode run --print-logs "$(cat {config.home}/workdir/task.md)"',
         timeout=config.agent_timeout_s,
     )
     return _exit_code(result, default=0)
