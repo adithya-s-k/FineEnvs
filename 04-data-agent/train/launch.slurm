@@ -73,7 +73,20 @@ echo "== vLLM on GPU 0 =="
 #   VLLM_USE_DEEP_GEMM=0 / VLLM_DEEP_GEMM_WARMUP=skip
 #       On Hopper a stale importable deep_gemm kills startup with "DeepGEMM backend is not available
 #       or outdated".
-CUDA_VISIBLE_DEVICES=0 VLLM_USE_DEEP_GEMM=0 VLLM_DEEP_GEMM_WARMUP=skip \
+#   VLLM_SERVER_DEV_MODE=1
+#       Gates /server_info, /pause and /init_weight_transfer_engine. TRL's weight transfer reads
+#       /server_info for the server's dtype, so WITHOUT this the trainer dies at on_train_begin with
+#       "404 Client Error: Not Found for url: .../server_info?config_format=json" -- after vLLM is
+#       healthy, after the env server is up, after the dataset loads. Job 76488 died exactly there.
+#   VLLM_USE_FLASHINFER_SAMPLER=0
+#       flashinfer JIT-compiles its sampling kernel and needs nvcc; the PyTorch sampler does not.
+#   --weight-transfer-config {"backend":"nccl"}
+#       The trainer syncs weights into this engine over NCCL. Without it there is no transfer engine
+#       to initialise.
+CUDA_VISIBLE_DEVICES=0 \
+  VLLM_SERVER_DEV_MODE=1 \
+  VLLM_USE_FLASHINFER_SAMPLER=0 \
+  VLLM_USE_DEEP_GEMM=0 VLLM_DEEP_GEMM_WARMUP=skip \
   "$PY312" -m vllm.entrypoints.openai.api_server \
   --model "$MODEL" --port "$VLLM_PORT" --served-model-name "$MODEL" \
   --trust-remote-code \
@@ -83,6 +96,7 @@ CUDA_VISIBLE_DEVICES=0 VLLM_USE_DEEP_GEMM=0 VLLM_DEEP_GEMM_WARMUP=skip \
   --gdn-prefill-backend triton \
   --default-chat-template-kwargs '{"enable_thinking": false}' \
   --return-tokens-as-token-ids --logprobs-mode processed_logprobs \
+  --weight-transfer-config '{"backend":"nccl"}' \
   > "$LOGS/vllm.log" 2>&1 &
 
 # vLLM's /health returns 200 with an EMPTY body, so check the STATUS and parse nothing. A probe that
@@ -97,6 +111,12 @@ done
 [ "$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$VLLM_URL/health")" = "200" ] || {
   echo "FATAL: vLLM never became healthy; its log follows"; tail -60 "$LOGS/vllm.log"; exit 1; }
 echo "vLLM healthy"
+# CHECK THE ENDPOINT THE TRAINER ACTUALLY NEEDS, not just /health. /health passing says nothing about
+# whether VLLM_SERVER_DEV_MODE took effect, and the trainer only finds out ~5 minutes later at
+# on_train_begin, after the env server and the whole dataset have loaded.
+si=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$VLLM_URL/server_info?config_format=json" || true)
+[ "$si" = "200" ] || { echo "FATAL: /server_info -> $si; VLLM_SERVER_DEV_MODE=1 did not take effect."; exit 1; }
+echo "vLLM /server_info ok (weight transfer can initialise)"
 
 echo "== env server + capture =="
 PORT="$ENV_PORT" CAPTURE_PORT="$CAP_PORT" EXPOSE=gradio \
