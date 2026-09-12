@@ -30,7 +30,11 @@ from __future__ import annotations
 import argparse
 import sys
 
-from harbor_env import HarborEnv
+# `openenv.harbor.client`, not the `harbor_env` env package. That package lives in OpenEnv's
+# envs/ tree and is not published to PyPI, so it is unreachable from an installed environment --
+# the same reason this project vendors its sandbox backends rather than importing opencode_env's.
+# `harbor_env/__init__.py` only re-exports this class anyway.
+from openenv.harbor.client import HarborEnv
 
 
 def main() -> int:

@@ -87,6 +87,31 @@ factory = HarborSessionFactory(
 each turn re-sends the whole conversation, so packed length grows with the **square** of the turn
 count — an unbounded rollout can OOM the loss step while every rollout log line looks healthy.
 
+## The suite declares too little memory, and it OOM-kills rollouts
+
+**Every task in `HuggingEnvs/data-agent-harbor-{train,test,eval}` declares `cpus = 1` and
+`memory_mb = 1024`.** Harbor passes both straight into `AsyncTemplate.build`
+(`harbor/environments/e2b.py:192`), and `_resource_value` reads them from `task.toml` with no
+environment override (`harbor/environments/base.py:315`) -- so that is the size of the sandbox the
+agent actually gets.
+
+It is not enough. Task 0's bucket is 0.31 GB and pandas wants roughly 3-5x a file's size resident, so
+1 GB is marginal at best. Measured on `0000_324_324276_qa_3` with Qwen3.5-2B:
+
+| | `cpus=1, memory_mb=1024` (as shipped) | `cpus=2, memory_mb=4096` |
+| --- | --- | --- |
+| outcome | `FAILED (NonZeroAgentExitCodeError)`, **exit 137**, 517 s | `ok`, 158 s |
+| capture | 0/1 usable | **1/1 usable** |
+| turns / trainable tokens | 17 / 3252, discarded | 11 / 231 |
+| graded | no -- the verifier never ran | yes |
+
+Exit 137 is SIGKILL, i.e. the OOM killer. The expensive part is that an OOM-killed rollout files no
+answer, which scores **identically to a model that could not do the task** -- so a training run reads
+as a policy that never learns, with nothing in the reward to say otherwise.
+
+**The fix belongs in the dataset**, not here: bump `[environment] cpus` and `memory_mb` in the task
+files. Patching the downloaded cache works for one run and is undone the moment the server refetches.
+
 ## Warm the sandbox templates first
 
 E2B builds one template per `env_hash`, from the task's **own Dockerfile** — `docker_image` in the

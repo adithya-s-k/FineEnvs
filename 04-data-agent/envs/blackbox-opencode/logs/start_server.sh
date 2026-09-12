@@ -3,6 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 set -a; . ../../../../experiments/.env; set +a
+. "$(dirname "$0")/../../blackbox-harbor/logs/hf_token.sh"
 export PORT="${PORT:-8200}"
 export SPLITS="${SPLITS:-train:medium}"
 export SANDBOX="${SANDBOX:-e2b}"
