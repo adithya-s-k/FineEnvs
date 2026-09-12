@@ -85,6 +85,10 @@ def main() -> int:
     return _check(result)
 
 
+# Above this, the capture graph forks instead of realigning; it is its own `fork_threshold_tokens`.
+DRIFT_FORK_THRESHOLD = 1024
+
+
 def _check(result) -> int:
     """The three properties that are silent when wrong. Returns a process exit code."""
     failures: list[str] = []
@@ -109,17 +113,30 @@ def _check(result) -> int:
     if missing:
         failures.append(f"turns {missing[:5]} carried no prompt_token_ids")
 
-    # 3. Turn k+1's prompt IS turn k's prompt plus its completion. This is what lets turns link by
-    #    exact token prefix; when it breaks, one conversation fragments into several short ones and
-    #    every one of them still trains.
+    # 3. CHAINING, measured rather than asserted as byte equality.
+    #
+    # The tempting check is `turn k+1's prompt == turn k's prompt + completion`, exactly. It fails
+    # legitimate rollouts: a harness that re-sends a `messages` list gets the engine's tokenisation
+    # of the RECONSTRUCTED history, and Qwen3.5's template does not round-trip -- it emits
+    # `<think>\n\n</think>\n\n` for the turn being generated and strips it from history. Measured
+    # live, that drifted 6-8 tokens per transition and produced 3 graph roots for 3 turns.
+    #
+    # The size of the drift is what decides realign-versus-fork, and fork is the real failure: one
+    # conversation becoming several short rollouts, each still training. Real opencode rollouts over
+    # 60 steps: drift_tokens_mean 0.26, fork_frac 0.0000, 8.19 turns into 1.00 sample.
+    drifts = []
     for a, b in zip(turns, turns[1:]):
-        expected = list(a.prompt_token_ids) + list(a.completion_token_ids)
-        if list(b.prompt_token_ids)[: len(expected)] != expected:
+        want = list(a.prompt_token_ids) + list(a.completion_token_ids)
+        got = list(b.prompt_token_ids)[: len(want)]
+        common = next((j for j, (x, y) in enumerate(zip(want, got)) if x != y), min(len(want), len(got)))
+        drifts.append(len(want) - common)
+    if drifts:
+        print(f"chaining   drift per transition: mean {sum(drifts)/len(drifts):.2f}, max {max(drifts)}")
+        if max(drifts) > DRIFT_FORK_THRESHOLD:
             failures.append(
-                f"turn {b.turn if hasattr(b, 'turn') else '?'} does not continue the previous turn's "
-                "tokens: the conversation is fragmenting"
+                f"a transition drifted {max(drifts)} tokens (threshold {DRIFT_FORK_THRESHOLD}): the "
+                "capture graph forks rather than realigns, fragmenting one rollout into several"
             )
-            break
 
     if failures:
         print("\nFAIL")
