@@ -40,9 +40,19 @@ export TRL_EXPERIMENTAL_SILENCE=1
 cd "$ENVDIR"
 
 MODEL="${MODEL:-Qwen/Qwen3.5-2B}"
-VLLM_PORT="${VLLM_PORT:-18100}"
-ENV_PORT="${ENV_PORT:-18200}"
-CAP_PORT="${CAP_PORT:-18300}"
+
+# PORTS DERIVED PER JOB. Fixed ports are a trap on a shared node and it is not a theoretical one:
+# two of these jobs landed on ip-10-53-93-25 together, the second one's /server_info probe answered
+# 200 because it was talking to the FIRST job's vLLM, and the NCCL weight-transfer group then tried to
+# attach to another job's engine and died with "NCCL error: unhandled cuda error". Every preflight
+# check passed while pointing at the wrong process.
+#
+# Worse, had the models matched, it would have trained one job against the other's weights and looked
+# perfectly healthy. The reference launcher derives ports the same way and says so.
+_OFF=$(( ${SLURM_JOB_ID:-0} % 200 * 4 ))
+VLLM_PORT="${VLLM_PORT:-$(( 18000 + _OFF ))}"
+ENV_PORT="${ENV_PORT:-$(( 18001 + _OFF ))}"
+CAP_PORT="${CAP_PORT:-$(( 18002 + _OFF ))}"
 VLLM_URL="http://127.0.0.1:$VLLM_PORT"
 LOGS="$ENVDIR/logs/job-${SLURM_JOB_ID:-local}"
 mkdir -p "$LOGS/run"
@@ -66,7 +76,7 @@ set -a; . "$REPO/experiments/.env"; set +a
 cleanup() { pkill -P $$ 2>/dev/null || true; }
 trap cleanup EXIT
 
-echo "== vLLM on GPU 0 =="
+echo "== vLLM on GPU 0 ==  (ports vllm=$VLLM_PORT env=$ENV_PORT capture=$CAP_PORT, derived from job ${SLURM_JOB_ID:-0})"
 # EVERY ONE OF THESE FLAGS IS LOad-BEARING. They are the set the +0.2028 run served with; a
 # hand-rolled `vllm serve` that omits any of them fails silently rather than loudly.
 #
@@ -129,7 +139,11 @@ echo "vLLM healthy"
 # on_train_begin, after the env server and the whole dataset have loaded.
 si=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$VLLM_URL/server_info?config_format=json" || true)
 [ "$si" = "200" ] || { echo "FATAL: /server_info -> $si; VLLM_SERVER_DEV_MODE=1 did not take effect."; exit 1; }
-echo "vLLM /server_info ok (weight transfer can initialise)"
+# Confirm the engine on this port is OURS. Reachability is not identity: a neighbouring job's vLLM
+# answers /health and /server_info exactly the same way, and the first sign of talking to the wrong
+# one is an NCCL failure minutes later -- or, if the models happen to match, no sign at all.
+served=$(curl -s --max-time 10 "$VLLM_URL/v1/models" | tr -d ' \n' | grep -o "\"id\":\"[^\"]*\"" | head -1)
+echo "vLLM /server_info ok; serving $served on :$VLLM_PORT"
 
 echo "== env server + capture =="
 PORT="$ENV_PORT" CAPTURE_PORT="$CAP_PORT" EXPOSE=gradio \
@@ -169,4 +183,5 @@ CUDA_VISIBLE_DEVICES=1 TRACKIO_STORAGE_MODE=sqlite \
   --heartbeat-stale-after-s "${HEARTBEAT_STALE_AFTER_S:-900}" \
   --dtype "${TRAIN_DTYPE:-bfloat16}" \
   --max-steps "${MAX_STEPS:-400}" \
+  --save-steps "${SAVE_STEPS:-100}" \
   --output-dir "$LOGS/run"
