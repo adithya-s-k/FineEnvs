@@ -234,3 +234,7 @@ export/
 # data is the fastest way to make a repo unusable, and none of it is reproducible-by-review anyway.
 # Helper scripts already tracked under logs/ are unaffected -- gitignore does not untrack.
 04-data-agent/**/logs/
+
+# Gradio scratch. `certificate.pem` is the CA bundle gradio writes on first tunnel use and
+# `flagged/` is its UI capture dir -- both generated per machine, neither is source.
+.gradio/
