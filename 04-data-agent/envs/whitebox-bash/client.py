@@ -244,24 +244,7 @@ class _BashTools:
         return self._invoke("bash", command=command)
 
 
-class _JupyterTools:
-    def run_python(self, code: str) -> str:
-        """Run Python in a persistent Jupyter kernel and return its output.
-
-        Variables, imports and function definitions persist between calls, so you can build up state
-        across several steps.
-
-        Args:
-            code: The Python source to execute.
-        """
-        return self._invoke("run_python", code=code)
-
-    def reset_kernel(self) -> str:
-        """Restart the Python kernel, discarding every name defined so far."""
-        return self._invoke("reset_kernel")
-
-
-class _FileTools:
+class _SetaTools:
     def read(self, path: str) -> str:
         """Read a file and return its contents.
 
@@ -318,7 +301,7 @@ class _FileTools:
 
 
 class _SubmitTool:
-    def submit(self, answer: str) -> str:
+    def submit_solution(self, answer: str) -> str:
         """Submit your final answer and end the episode.
 
         Call this once you are confident. The episode is graded on this answer together with what you
@@ -328,13 +311,12 @@ class _SubmitTool:
             answer: The final answer.
         """
         self._submitted = answer
-        return self._invoke("submit", answer=answer)
+        return self._invoke("submit_solution", answer=answer)
 
 
 _MIXINS: dict[str, type] = {
     "bash": _BashTools,
-    "jupyter": _JupyterTools,
-    "files": _FileTools,
+    "seta": _SetaTools,
 }
 
 
@@ -356,8 +338,8 @@ def white_box_bash_env(
         base_url (`str`, *optional*):
             The hosted environment server, e.g. an HF Space URL.
         toolsets (`str` or `list[str]`, *optional*):
-            Any of `"bash"`, `"jupyter"`, `"files"`, a comma-separated string, or `"all"`. `"bash"`
-            is always included. Defaults to `("bash", "files")`.
+            `"bash"`, `"seta"`, a comma-separated string, or `"all"`. `"bash"` is always
+            included. Defaults to `("bash", "seta")` -- full SETA parity.
         step_limit (`int`, *optional*, defaults to `20`):
             Tool calls per episode. Enforced client-side and reported to the model as an error string
             rather than an exception, so the policy can learn to submit before exhausting it.
@@ -375,7 +357,7 @@ def white_box_bash_env(
         model="Qwen/Qwen3.5-2B",
         args=config,
         train_dataset=dataset,
-        environment_factory=white_box_bash_env("https://my-space.hf.space", toolsets="all"),
+        environment_factory=white_box_bash_env("https://my-space.hf.space"),
     )
     ```
     """

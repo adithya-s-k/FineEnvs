@@ -125,7 +125,7 @@ def _run(session_id: str, tool: str, fn, **args: Any) -> dict[str, Any]:
 
 
 class WhiteBoxBashEnvironment(MCPEnvironment):
-    """Bash, a Jupyter kernel and file tools over one sandbox, plus the Task API."""
+    """Bash and the SETA file tools over one sandbox, plus the Task API."""
 
     def __init__(self) -> None:
         mcp = FastMCP("white_box_bash")
@@ -161,11 +161,11 @@ class WhiteBoxBashEnvironment(MCPEnvironment):
                     "task_id": task.task_id, "workdir": WORKDIR}
 
         @mcp.tool
-        def submit(session_id: str, answer: str) -> dict:
+        def submit_solution(session_id: str, answer: str) -> dict:
             """Record the agent's final answer. Does not grade; `grade` does."""
             s = _get(session_id)
             s.submitted = answer
-            s.calls.append({"tool": "submit", "args": {"answer": answer}, "ok": True})
+            s.calls.append({"tool": "submit_solution", "args": {"answer": answer}, "ok": True})
             return {"output": "submitted", "ok": True}
 
         @mcp.tool
@@ -178,8 +178,9 @@ class WhiteBoxBashEnvironment(MCPEnvironment):
             verdict = grader.grade(
                 submitted=s.submitted,
                 gold=s.task.answer,
-                # `submit` is bookkeeping, not work: counting it would charge the agent for finishing.
-                n_tool_calls=sum(1 for c in s.calls if c["tool"] != "submit"),
+                # Submitting is bookkeeping, not work: counting it would charge the agent for
+                # finishing, which is the one thing we want it to do.
+                n_tool_calls=sum(1 for c in s.calls if c["tool"] != "submit_solution"),
                 check_passed=check_passed,
                 sandbox_alive=s.alive,
             )
@@ -192,19 +193,7 @@ class WhiteBoxBashEnvironment(MCPEnvironment):
             """Run a shell command in the working directory."""
             return _run(session_id, "bash", lambda s: s.sandbox.bash(command), command=command)
 
-        # --- jupyter ---------------------------------------------------------------------------
-        @mcp.tool
-        def run_python(session_id: str, code: str) -> dict:
-            """Run Python in the persistent kernel."""
-            return _run(session_id, "run_python", lambda s: s.sandbox.run_code(code), code=code)
-
-        @mcp.tool
-        def reset_kernel(session_id: str) -> dict:
-            """Restart the Python kernel."""
-            return _run(session_id, "reset_kernel",
-                        lambda s: s.sandbox.run_code("get_ipython().kernel.do_shutdown(True)"))
-
-        # --- files -----------------------------------------------------------------------------
+        # --- seta ------------------------------------------------------------------------------
         @mcp.tool
         def read(session_id: str, path: str) -> dict:
             """Read a file."""

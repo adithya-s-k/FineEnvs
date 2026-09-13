@@ -15,20 +15,19 @@
 """One sandbox per episode, shared by every toolset.
 
 WHY ONE SANDBOX AND NOT THREE
-`bash`, the Jupyter kernel and the file tools are three views of the SAME machine, and the agent
-expects them to behave that way: a file written by `write` has to be visible to `bash` in the next
-call and importable from the notebook in the one after. E2B gives all three off a single sandbox --
-`run_code` is a stateful IPython kernel, `commands.run` is a shell, and `files.*` is the filesystem
-they share -- so keeping them together is not a convenience, it is the semantics.
+`bash` and the SETA file tools are two views of the SAME machine, and the agent expects them to
+behave that way: a file written by `write` has to be visible to `bash` in the very next call. E2B
+gives both off a single sandbox -- `commands.run` is a shell and `files.*` is the filesystem it sees
+-- so keeping them together is not a convenience, it is the semantics.
 
 Splitting them across sandboxes (or servers) would mean replicating state between them, and every
 divergence would surface as an agent that wrote a file and then could not find it. That reads as a
 model failure and is not one.
 
-THE KERNEL IS STATEFUL, THE SHELL IS NOT
-`run_code` persists names between calls; each `commands.run` is a fresh process. Both are correct and
-the tool docstrings say so, because an agent that assumes a persistent shell will `cd` and then be
-baffled. Where a durable working directory is wanted, it is carried explicitly in `cwd`.
+THE SHELL IS NOT PERSISTENT
+Each `commands.run` is a fresh process, so `cd` does not carry between calls; the tool docstring says
+so, because an agent that assumes otherwise will `cd` and then be baffled. A durable working
+directory is carried explicitly in `cwd`.
 """
 
 from __future__ import annotations
@@ -147,31 +146,6 @@ class Sandbox:
             stdout=getattr(r, "stdout", "") or "",
             stderr=getattr(r, "stderr", "") or "",
             exit_code=0 if code is None else int(code),
-        )
-
-    def run_code(self, code: str, timeout_s: int = 120) -> ExecResult:
-        """The stateful IPython kernel. Names persist between calls."""
-        try:
-            ex = self.handle.run_code(code, timeout=timeout_s)
-        except Exception as exc:
-            return ExecResult(error=f"{type(exc).__name__}: {exc}", exit_code=1)
-        out = []
-        for log in (getattr(ex, "logs", None) or {}, ):
-            out += list(getattr(log, "stdout", []) or [])
-        stderr = []
-        for log in (getattr(ex, "logs", None) or {}, ):
-            stderr += list(getattr(log, "stderr", []) or [])
-        # `results` carries the value of the last expression and any rich reprs.
-        for res in getattr(ex, "results", []) or []:
-            txt = getattr(res, "text", None)
-            if txt:
-                out.append(str(txt))
-        err = getattr(ex, "error", None)
-        return ExecResult(
-            stdout="\n".join(str(o) for o in out),
-            stderr="\n".join(str(e) for e in stderr),
-            exit_code=1 if err else 0,
-            error=f"{getattr(err, 'name', '')}: {getattr(err, 'value', '')}".strip(": ") if err else "",
         )
 
     def read_file(self, path: str) -> ExecResult:

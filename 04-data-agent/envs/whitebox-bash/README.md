@@ -1,7 +1,7 @@
 # whitebox-bash
 
-A **white-box** agent environment: bash, a persistent Jupyter kernel and the SETA file tools over one
-sandbox, driven by TRL's **synchronous** `GRPOTrainer`.
+A **white-box** agent environment: bash plus the SETA tool surface over one sandbox, driven by
+TRL's **synchronous** `GRPOTrainer`.
 
 ## Which one should I use?
 
@@ -42,7 +42,7 @@ trainer = GRPOTrainer(
     train_dataset=dataset,
     environment_factory=white_box_bash_env(
         "https://your-space.hf.space",
-        toolsets="all",        # "bash" | "jupyter" | "files" | "all"
+        toolsets="bash,seta",   # the default; "bash" alone for a minimal terminal agent
         step_limit=20,
     ),
 )
@@ -62,14 +62,23 @@ E2B_API_KEY=... uv run uvicorn server.app:app --host 0.0.0.0 --port 8000
 | set | tools | notes |
 | --- | --- | --- |
 | `bash` | `bash` | always included |
-| `jupyter` | `run_python`, `reset_kernel` | kernel is **stateful**: names persist |
-| `files` | `read`, `write`, `edit`, `grep`, `glob`, `ls` | the SETA surface, same names |
-| — | `submit` | always present; ends the episode |
+| `seta` | `read`, `write`, `edit`, `grep`, `glob`, `ls` | SETA's surface, same names |
+| — | `submit_solution` | always present; ends the episode |
 
-All of them run on **one sandbox** and share its filesystem. That is the point: a file written by
-`write` must be visible to `bash` and importable from the notebook. Splitting the toolsets across
-servers would mean replicating state between sandboxes, and every divergence would surface as an
-agent that wrote a file and then could not find it — which reads as a model failure and is not one.
+Default is `("bash", "seta")` — full SETA parity.
+
+Both run on **one sandbox** and share its filesystem. That is the point: a file written by `write`
+must be visible to `bash` in the very next call. Splitting the toolsets across servers would mean
+replicating state between sandboxes, and every divergence would surface as an agent that wrote a file
+and then could not find it — which reads as a model failure and is not one.
+
+**There is deliberately no second execution model.** An earlier revision also offered a persistent
+Jupyter kernel; it was dropped because two tools could then do the same job under different state
+semantics (kernel names persist, shell state does not), which is easy for a small model to conflate
+and is one more unvalidated variable in an environment that has not trained yet.
+
+`submit_solution` is always present rather than living in `seta`, so a `bash`-only agent still has a
+way to finish; it takes SETA's name so a task written against SETA reads unchanged here.
 
 ## Why toolset selection varies the class, not a flag
 
@@ -117,7 +126,7 @@ the black-box work, each learned expensively:
 
 ## Not yet done
 
-* **SETA's task suite.** Its *tool surface* is implemented here under the same names, so a task
+* **SETA's task suite.** Its *tool surface* and terminator name are implemented here, so a task
   written against SETA reads the same. Its 1,376-task suite is a different matter: it grades with
   weighted pytest inside its own Ubuntu 24.04 image and speaks ORS. That lands later as a split (if
   its image runs in our sandbox) or as a sibling env — a data and protocol decision, not a tools one.

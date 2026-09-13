@@ -22,13 +22,17 @@ implement, calls it, gets an error, and the run reads as a policy that cannot us
 
 So this module is the single source of truth, and `client.py` asserts against it at import time.
 
-WHY TOOLSETS RATHER THAN ONE FLAT LIST
-`bash` alone is enough for most terminal work. Adding the Jupyter kernel matters when the task is
-analysis and the agent wants names to persist between steps. The file tools (`read`/`write`/`edit`/
-`grep`/`glob`/`ls`) are the SETA surface, and they are worth having as a group because an agent that
-can `grep` a repository behaves very differently from one reduced to `bash` heredocs.
+WHY TWO TOOLSETS
+`bash` alone is a minimal terminal agent: one tool, one way to do anything. `seta` adds the surface
+SETA evaluates against -- `read`/`write`/`edit`/`grep`/`glob`/`ls` -- and an agent that can `grep` a
+repository behaves very differently from one reduced to `bash` heredocs.
 
-They all run on ONE sandbox and share its filesystem, which is why they can be mixed freely -- see
+There is deliberately NO second execution model. An earlier revision also offered a persistent
+Jupyter kernel, which meant two tools could do the same job under different state semantics (kernel
+names persist, shell state does not) -- an easy thing for a small model to conflate, and one more
+unvalidated variable in an environment that has not trained yet.
+
+Both toolsets run on ONE sandbox and share its filesystem, which is why they mix freely -- see
 `server/sandbox.py` for why that is the semantics and not just a convenience.
 """
 
@@ -63,14 +67,9 @@ BASH: tuple[ToolSpec, ...] = (
     ToolSpec("bash", ("command",), "Run a shell command in the working directory."),
 )
 
-JUPYTER: tuple[ToolSpec, ...] = (
-    ToolSpec("run_python", ("code",), "Run Python in a persistent Jupyter kernel; names persist."),
-    ToolSpec("reset_kernel", (), "Restart the Python kernel, discarding all defined names."),
-)
-
 # The SETA surface. Deliberately the same names SETA uses, so a task written against SETA reads the
 # same here -- that is what makes its suite portable later without rewriting every task prompt.
-FILES: tuple[ToolSpec, ...] = (
+SETA: tuple[ToolSpec, ...] = (
     ToolSpec("read", ("path",), "Read a file and return its contents."),
     ToolSpec("write", ("path", "content"), "Write content to a file, creating or overwriting it."),
     ToolSpec("edit", ("path", "old", "new"), "Replace the first exact occurrence of `old` with `new`."),
@@ -79,22 +78,26 @@ FILES: tuple[ToolSpec, ...] = (
     ToolSpec("ls", ("path",), "List a directory."),
 )
 
-# Always present, whatever the toolset: the episode needs a way to end deliberately. Without it the
-# only terminator is the step cap, and a capped episode is indistinguishable from a stuck one.
+# Always present, whatever the toolset, and named as SETA names it.
+#
+# Always present, because the episode needs a way to end deliberately -- without it the only
+# terminator is the step cap, and a capped episode is indistinguishable from a stuck one. It is NOT
+# folded into `seta` for that reason: a `bash`-only agent would otherwise have no way to finish.
+#
+# Named `submit_solution` rather than `submit` for SETA parity, so a task written against SETA reads
+# unchanged here. The alternative -- `submit` for bash-only and `submit_solution` with `seta` -- would
+# make the terminator's NAME depend on the selection, which is worse than either name alone.
 SUBMIT: tuple[ToolSpec, ...] = (
-    ToolSpec("submit", ("answer",), "Submit the final answer and end the episode."),
+    ToolSpec("submit_solution", ("answer",), "Submit the final answer and end the episode."),
 )
 
 TOOLSETS: dict[str, tuple[ToolSpec, ...]] = {
     "bash": BASH,
-    "jupyter": JUPYTER,
-    "files": FILES,
+    "seta": SETA,
 }
 
-# What a caller gets by asking for nothing. `bash` + `files` is the terminal-agent shape SETA
-# evaluates; the Jupyter kernel is opt-in because it only pays off on analysis tasks and it costs a
-# kernel process per sandbox.
-DEFAULT_TOOLSETS: tuple[str, ...] = ("bash", "files")
+# What a caller gets by asking for nothing: full SETA parity.
+DEFAULT_TOOLSETS: tuple[str, ...] = ("bash", "seta")
 
 
 def resolve(toolsets: str | list[str] | None) -> tuple[str, ...]:

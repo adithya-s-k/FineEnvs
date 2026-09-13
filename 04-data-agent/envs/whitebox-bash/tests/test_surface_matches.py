@@ -33,12 +33,12 @@ from whitebox_bash import exposed_tool_names, tool_names
 SERVER_ONLY = {"start_episode", "grade"}
 
 
-@pytest.mark.parametrize("selection", [None, "all", "bash", "bash,jupyter", "bash,files"])
+@pytest.mark.parametrize("selection", [None, "all", "bash", "bash,seta", "seta"])
 def test_client_surface_matches_registry(selection):
     assert exposed_tool_names(selection) == tuple(sorted(tool_names(selection)))
 
 
-@pytest.mark.parametrize("selection", [None, "all", "bash", "bash,jupyter"])
+@pytest.mark.parametrize("selection", [None, "all", "bash", "bash,seta"])
 def test_server_implements_every_client_tool(selection):
     from whitebox_bash.server.environment import WhiteBoxBashEnvironment
 
