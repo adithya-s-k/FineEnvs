@@ -22,6 +22,22 @@ TRL_PROD=/fsx/adithyaskolavi/projects/trl_prod
 cd "$TRL_PROD"
 PY="$TRL_PROD/.venv312/bin/python"
 
+# THE VENV'S bin/ MUST BE ON PATH, not just its python.
+# Qwen3.5 is hybrid Gated-DeltaNet, and vLLM routes its prefill through flashinfer, which JIT-COMPILES
+# a kernel at first generation. That compile shells out to `ninja` and `nvcc`. Calling
+# .venv312/bin/python directly (rather than activating) leaves .venv312/bin off PATH, so `ninja` is
+# not found and the run dies at step 0 with a bare
+#   FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+# thirty frames below flashinfer, naming nothing that suggests PATH. The backend is chosen from vLLM's
+# `additional_config["gdn_prefill_backend"]`, which colocate mode does not expose, so PATH is the fix.
+export PATH="$TRL_PROD/.venv312/bin:$PATH"
+# nvcc for the same JIT. Already present at /usr/local/cuda-12.9/bin on these nodes; the module load
+# is belt-and-braces and must not fail the job when the module system has no such module.
+module load cuda/12.9 2>/dev/null || module load cuda/13.0 2>/dev/null || true
+command -v ninja >/dev/null || { echo "FATAL: ninja not on PATH; flashinfer's JIT will fail at step 0"; exit 1; }
+command -v nvcc  >/dev/null || echo "WARN: nvcc not on PATH; flashinfer's JIT may fail"
+echo "ninja=$(command -v ninja)  nvcc=$(command -v nvcc)"
+
 set -a; source "$TRL_PROD/experiments/.env" 2>/dev/null || true; set +a
 export HF_TOKEN="${HF_TOKEN:-${HF_API_KEY:-}}"
 # Presence only -- never the value.

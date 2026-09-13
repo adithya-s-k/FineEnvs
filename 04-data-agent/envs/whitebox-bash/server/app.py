@@ -31,11 +31,28 @@ except ImportError:  # running as `server.app` rather than as a package
     from server.environment import WhiteBoxBashEnvironment
 
 
+# MAX_CONCURRENT_ENVS IS NOT OPTIONAL FOR TRAINING.
+#
+# `create_app` defaults to ONE concurrent MCP session. TRL builds one environment instance per batch
+# slot, so at `num_generations=4` three of four clients are refused. Over the WebSocket transport that
+# refusal is SILENT -- the server accepts the connection and immediately closes it, and the client
+# dies on its first call with `ConnectionClosedOK: received 1000 (OK)`, which names no cause. It
+# killed the first two smoke runs at step 0. Over HTTP `/mcp` the same condition reports itself
+# properly as `Server at capacity: 1/1 sessions`, which is how it was finally diagnosed.
+#
+# Safe to raise here because this environment does not set `REQUIRES_SINGLE_THREAD_EXECUTOR`: its
+# per-episode state lives in a module-level registry guarded by a lock, not on the instance.
+#
+# Keep this >= the trainer's concurrent rollouts. The real ceiling is the sandbox provider, which the
+# environment bounds separately with WHITE_BOX_BASH_MAX_SESSIONS.
+MAX_CONCURRENT_ENVS = int(os.environ.get("WHITE_BOX_BASH_MAX_CONCURRENT_ENVS", "64"))
+
 app = create_app(
     WhiteBoxBashEnvironment,
     CallToolAction,
     CallToolObservation,
     env_name="white_box_bash",
+    max_concurrent_envs=MAX_CONCURRENT_ENVS,
 )
 
 

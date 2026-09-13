@@ -68,6 +68,24 @@ class _SyncMCP:
     loop. `asyncio.run` would raise in that case, so the loop lives on its own daemon thread and every
     call is handed to it with `run_coroutine_threadsafe`. One loop per instance: instances are pooled
     per rollout and must not share a session.
+
+    TRANSPORT IS HTTP `/mcp`, NOT THE WEBSOCKET -- see `_ensure`. The rest of this note explains why
+    the WebSocket knobs are still set: they apply if that transport is ever re-enabled.
+
+    KEEPALIVE PINGS ARE DISABLED, DELIBERATELY
+    The transport is a WebSocket whose default keepalive is a 20 s ping with a 20 s timeout. That
+    event loop is a Python thread inside the TRAINING process, so it cannot answer a ping while the
+    main thread holds the GIL through CUDA-graph capture, compilation or a long generation -- all of
+    which routinely exceed 20 s. The server then closes the connection cleanly and the next call dies
+    with `ConnectionClosedOK: received 1000 (OK)`, which is what killed the first smoke at step 0.
+
+    Liveness is not lost by turning pings off: every call carries its own timeout, so a genuinely
+    dead server surfaces there instead. What is lost is *early* detection of a dead peer while idle,
+    which is worth trading away -- the alternative is a healthy server being declared dead because the
+    trainer was busy, and this project has already lost a night to exactly that inversion.
+
+    Calls also retry ONCE on a closed connection, because a connection can still be dropped for
+    reasons unrelated to pings and a fresh session is cheap.
     """
 
     def __init__(self, base_url: str, timeout_s: float = 600.0) -> None:
@@ -87,7 +105,22 @@ class _SyncMCP:
         if self._client is None:
             from openenv.core.mcp_client import MCPToolClient
 
-            self._client = MCPToolClient(base_url=self._base_url)
+            client = MCPToolClient(
+                base_url=self._base_url,
+                websocket_ping_interval_s=None,   # see the class docstring
+                websocket_ping_timeout_s=None,
+            )
+            # HTTP `/mcp`, NOT the WebSocket. Measured: the server accepts a second concurrent
+            # WebSocket and then immediately closes it (`ConnectionClosedOK: received 1000 (OK)`),
+            # so the first client keeps working and every later one dies on its first call. TRL
+            # builds one environment instance per batch slot, so with `num_generations=4` that is
+            # three dead clients out of four -- it killed the smoke at step 0, twice.
+            #
+            # HTTP suits this environment better anyway: the episode id already travels in the
+            # payload as `session_id`, so nothing needs a per-connection session, and there is no
+            # long-lived socket for a GIL-blocked event loop to fail to keep alive.
+            client.use_production_mode = True
+            self._client = client
 
     @staticmethod
     def _run_loop(loop: asyncio.AbstractEventLoop) -> None:
@@ -95,11 +128,20 @@ class _SyncMCP:
         loop.run_forever()
 
     def call(self, name: str, **kwargs: Any) -> Any:
-        self._ensure()
-        fut: concurrent.futures.Future = asyncio.run_coroutine_threadsafe(
-            self._client.call_tool(name, **kwargs), self._loop  # type: ignore[arg-type]
-        )
-        return fut.result(timeout=self._timeout_s)
+        for attempt in (0, 1):
+            self._ensure()
+            try:
+                fut: concurrent.futures.Future = asyncio.run_coroutine_threadsafe(
+                    self._client.call_tool(name, **kwargs), self._loop  # type: ignore[arg-type]
+                )
+                return fut.result(timeout=self._timeout_s)
+            except Exception as exc:
+                closed = "ConnectionClosed" in type(exc).__name__ or "closed" in str(exc).lower()
+                if attempt == 0 and closed:
+                    logger.warning("MCP connection closed on %s; reconnecting once", name)
+                    self._client = None      # force a fresh session on the retry
+                    continue
+                raise
 
     def close(self) -> None:
         if self._loop is not None:
@@ -310,15 +352,24 @@ class _SetaTools:
 
 
 class _SubmitTool:
-    def submit_solution(self, answer: str) -> str:
+    # `answer` accepts a number as well as a string, and that is not laziness.
+    # The type hint IS the schema the model sees, and pydantic validates the model's tool call
+    # against it. Many tasks end in "submit just the number", so the model emits a bare `3` -- and an
+    # `answer: str` annotation rejects it with
+    #   Input should be a valid string [input_value=3, input_type=int]
+    # Every numeric answer then fails to submit and the episode scores 0.0, which is indistinguishable
+    # from a model that could not finish. Observed on the very first smoke step. Coerced to `str`
+    # immediately so the grader still sees one type.
+    def submit_solution(self, answer: str | int | float) -> str:
         """Submit your final answer and end the episode.
 
         Call this once you are confident. The episode is graded on this answer together with what you
         did to reach it.
 
         Args:
-            answer: The final answer.
+            answer: The final answer, as a string or a number.
         """
+        answer = str(answer)
         self._submitted = answer
         # Exempt from the budget on purpose -- see `_invoke`.
         return self._invoke("submit_solution", _counts=False, answer=answer)

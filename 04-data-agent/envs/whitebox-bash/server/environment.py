@@ -127,6 +127,17 @@ def _run(session_id: str, tool: str, fn, **args: Any) -> dict[str, Any]:
 class WhiteBoxBashEnvironment(MCPEnvironment):
     """Bash and the SETA file tools over one sandbox, plus the Task API."""
 
+    # The server refuses `max_concurrent_envs > 1` unless an environment asserts this, and the
+    # assertion is true here for a specific reason: NO per-episode state is held on the instance.
+    # Sessions live in the module-level `_SESSIONS` registry behind `_LOCK`, each owning its own
+    # sandbox, and the instance itself is stateless -- which it has to be anyway, because the HTTP
+    # server builds a throwaway instance per request.
+    #
+    # This matters for training: TRL creates one environment client per batch slot, so at
+    # `num_generations=4` a cap of 1 refuses three of four. Do not set this on an environment that
+    # keeps episode state on `self`.
+    SUPPORTS_CONCURRENT_SESSIONS = True
+
     def __init__(self) -> None:
         mcp = FastMCP("white_box_bash")
 
