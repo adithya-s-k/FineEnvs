@@ -62,6 +62,40 @@ def _reword_submission(instruction: str) -> str:
     )
 
 
+# How many times to attempt the per-episode bucket staging, and how long to back off.
+# Every episode lists and downloads from `hf://buckets/AdithyaSK/jupyter-agent-kaggle-all`, so at
+# num_generations=8 that is 8 concurrent tree listings per step and ~800 over a 100-step run against
+# ONE bucket. A single transient 504 from the bucket API killed a whole run at step 6/100:
+#     HfHubHTTPError: Server error '504 Gateway Timeout'
+#     for url 'https://huggingface.co/api/buckets/AdithyaSK/jupyter-agent-kaggle-all/tree...'
+# A transient upstream error should cost ONE episode, not the run. Safe to retry because the staging
+# script short-circuits when the input directory already has files, so a partial success is not
+# repeated -- it is resumed.
+STAGING_ATTEMPTS = int(os.environ.get("WHITE_BOX_BASH_STAGING_ATTEMPTS", "4"))
+STAGING_BACKOFF_S = int(os.environ.get("WHITE_BOX_BASH_STAGING_BACKOFF_S", "5"))
+
+
+def _with_retry(setup: str, attempts: int = STAGING_ATTEMPTS,
+                backoff_s: int = STAGING_BACKOFF_S) -> str:
+    """Wrap the staging shell in a bounded retry with linear backoff.
+
+    The original runs in a SUBSHELL so its `set -e` cannot abort the retry loop, and the loop fails
+    loudly at the end rather than letting the agent start against an empty input directory -- which
+    would score 0 for a reason indistinguishable from a wrong answer.
+    """
+    if not setup.strip():
+        return setup
+    return (
+        "__staged=0\n"
+        f"for __attempt in $(seq 1 {attempts}); do\n"
+        f"  if ( {setup}\n  ); then __staged=1; break; fi\n"
+        f"  echo \"[stage] attempt $__attempt failed; retrying\" >&2\n"
+        f"  sleep $(( __attempt * {backoff_s} ))\n"
+        "done\n"
+        f"[ \"$__staged\" = 1 ] || {{ echo '[stage] FATAL: staging failed after {attempts} attempts' >&2; exit 1; }}\n"
+    )
+
+
 def available() -> bool:
     """Whether the sibling environment is importable. Reported, never silently worked around."""
     try:
@@ -107,7 +141,7 @@ def load(split: str, limit: int = 0) -> tuple[Task, ...]:
                 instruction=_reword_submission(t.instruction),
                 answer=str(t.answer),
                 difficulty=str(getattr(t, "difficulty_tier", "") or "medium"),
-                setup=t.setup_shell(token),
+                setup=_with_retry(t.setup_shell(token)),
                 check="",
                 metadata={
                     "source": "data-agent",

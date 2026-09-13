@@ -45,10 +45,19 @@ logger = logging.getLogger(__name__)
 # cannot take the interpreter with it, and so `glob`/`grep` have a bounded root to walk.
 WORKDIR = "/home/user/work"
 
-# Hard ceiling on any single tool result fed back to the model. Tool output lands in the prompt of
-# the NEXT turn, so an unbounded `cat` of a large file is not merely noisy -- it is quadratic context
-# growth that walks the conversation into the model's window and ends the episode early.
-MAX_OUTPUT_CHARS = 8_000
+# Hard ceiling on any single tool result fed back to the model.
+#
+# 2,000 characters, NOT 8,000, and the difference decided whether the agent could take a second turn
+# at all. Tool-result tokens live in TRL's `completion_ids` (masked out of the loss, and out of the
+# `completions/mean_length` metric, but still occupying the budget), so they are bounded by
+# `max_completion_length`. A `read` of a real data-agent CSV clipped at 8,000 chars is roughly 3,000
+# tokens and exhausted a 1,024-token completion budget on the FIRST tool result -- leaving no room to
+# generate turn two. Measured: `tools/call_frequency` pinned at 1.0 and reward 0 across every step,
+# which reads exactly like a model that will not engage.
+#
+# Dumping raw CSV was never useful anyway: the agent should compute with pandas rather than read a
+# 9.8 MB file into its context, and a tighter clip pushes it that way.
+MAX_OUTPUT_CHARS = int(os.environ.get("WHITE_BOX_BASH_MAX_OUTPUT_CHARS", "1200"))
 
 
 def _clip(text: str, limit: int = MAX_OUTPUT_CHARS) -> str:

@@ -98,10 +98,28 @@ def main() -> None:
     p.add_argument("--num-generations", type=int, default=int(os.environ.get("NUM_GENERATIONS", "4")))
     p.add_argument("--per-device-train-batch-size", type=int,
                    default=int(os.environ.get("PER_DEVICE_BS", "4")))
-    p.add_argument("--learning-rate", type=float, default=float(os.environ.get("LR", "3e-6")))
+    # 1e-6, not 3e-6, and beta 0.04 rather than 0. Both come from a previous SYNC GRPO run on this
+    # same dataset (experiments/rollout_control/harbor_trl, FAILURE_MODES.md §E2): with `beta=0` and
+    # LR 2e-6 BOTH Qwen3.5-2B runs collapsed -- entropy fell 0.4 -> 0.09 by step 40, the policy
+    # degenerated into malformed repetition, and reward went to 0. Nothing anchors a small policy
+    # without a KL term. The 4B tolerated it; the 2B does not.
+    p.add_argument("--learning-rate", type=float, default=float(os.environ.get("LR", "1e-6")))
+    p.add_argument("--kl-beta", type=float, default=float(os.environ.get("KL_BETA", "0.04")))
+    p.add_argument("--warmup-steps", type=int, default=int(os.environ.get("WARMUP_STEPS", "10")))
+    # The LOGITS batch, and the thing that OOMs. The loss materialises
+    # `per_device_batch x seq_len x vocab` in fp32, and Qwen3.5's vocab is ~152k: at batch 8 and a
+    # 4096 completion budget that is ~24 GB and the run dies in `logits / temperature` (job 76717).
+    # Keep this small and recover the effective batch with gradient accumulation -- GRPO only needs
+    # the GROUP intact, and `per_device_bs * grad_accum` still covers `num_generations`.
+    p.add_argument("--gradient-accumulation-steps", type=int,
+                   default=int(os.environ.get("GRAD_ACCUM", "4")))
     p.add_argument("--temperature", type=float, default=float(os.environ.get("TEMPERATURE", "0.8")))
+    # Bounds the WHOLE multi-turn completion, tool-result tokens included -- they sit in
+    # `completion_ids` (masked out of the loss and out of the length metric, but still counted here).
+    # 1024 was too small for real data: one clipped CSV read consumed it and the agent could never
+    # take a second turn.
     p.add_argument("--max-completion-length", type=int,
-                   default=int(os.environ.get("MAX_COMPLETION_LENGTH", "1024")))
+                   default=int(os.environ.get("MAX_COMPLETION_LENGTH", "4096")))
     # The multi-turn cap on the SYNC path. Each iteration is one generate + one tool call, so this is
     # the real bound on episode length; the client's own step_limit backs it up from the other side.
     p.add_argument("--max-tool-calling-iterations", type=int,
@@ -125,9 +143,13 @@ def main() -> None:
     config = GRPOConfig(
         output_dir=args.output_dir,
         learning_rate=args.learning_rate,
+        # KL anchor to the reference model. Costs a second model in memory, which is why
+        # vllm_gpu_memory_utilization is kept low.
+        beta=args.kl_beta,
+        warmup_steps=args.warmup_steps,
         num_generations=args.num_generations,
         per_device_train_batch_size=args.per_device_train_batch_size,
-        gradient_accumulation_steps=1,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
         max_steps=args.max_steps,
         max_completion_length=args.max_completion_length,
         max_tool_calling_iterations=args.max_tool_calling_iterations,
