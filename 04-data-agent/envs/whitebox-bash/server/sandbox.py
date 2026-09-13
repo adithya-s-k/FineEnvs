@@ -111,7 +111,9 @@ class Sandbox:
     # --- lifecycle -----------------------------------------------------------------------------
     @classmethod
     def start(cls, *, timeout_s: int = 900, envs: dict[str, str] | None = None) -> "Sandbox":
-        from e2b_code_interpreter import Sandbox as E2BSandbox
+        # Plain `e2b`, not `e2b_code_interpreter`: with no Jupyter toolset there is no kernel to
+        # drive, so the code-interpreter variant would be a heavier dependency for nothing.
+        from e2b import Sandbox as E2BSandbox
 
         handle = E2BSandbox.create(timeout=timeout_s, envs=envs or {})
         sb = cls(handle=handle)

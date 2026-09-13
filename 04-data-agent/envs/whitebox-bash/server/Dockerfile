@@ -6,7 +6,7 @@ WORKDIR /app
 COPY pyproject.toml ./
 RUN pip install --no-cache-dir \
       "openenv-core>=0.1" "fastmcp>=2.0" "fastapi>=0.110" "uvicorn>=0.27" \
-      "e2b-code-interpreter>=1.0" "datasets>=2.19"
+      "e2b>=1.0" "datasets>=2.19"
 
 COPY . /app/whitebox_bash/
 ENV PYTHONPATH=/app

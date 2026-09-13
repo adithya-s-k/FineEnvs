@@ -176,15 +176,24 @@ class _Base:
         return self._reward
 
     # --- internals (must stay `_`-prefixed or they become tools) -------------------------------
-    def _invoke(self, tool: str, **kwargs: Any) -> str:
+    def _invoke(self, tool: str, _counts: bool = True, **kwargs: Any) -> str:
+        """Call one tool.
+
+        `_counts=False` exempts a tool from the step budget. Only the terminator uses it, and it must:
+        the budget message tells the agent to submit, so if submitting were itself blocked the advice
+        would be impossible to follow and every capped episode would score 0.0 -- indistinguishable
+        from a policy that cannot solve the task. Caught by a live rollout, not by any unit test.
+        """
         if self._session is None:
             return "[error] no episode; the trainer must call reset() first"
-        if self._steps >= self._step_limit:
+        if _counts and self._steps >= self._step_limit:
             # A budget the MODEL can see. Returning an error string rather than raising keeps the
             # rollout alive and lets the policy learn to submit before it runs out, which is the
             # behaviour we actually want to reinforce.
-            return f"[error] step budget of {self._step_limit} exhausted; call submit with your best answer"
-        self._steps += 1
+            return (f"[error] step budget of {self._step_limit} exhausted; "
+                    f"call submit_solution with your best answer")
+        if _counts:
+            self._steps += 1
         try:
             payload = self._mcp.call(tool, session_id=self._session, **kwargs)
         except Exception as exc:  # a dead sandbox must not kill the whole batch
@@ -311,7 +320,8 @@ class _SubmitTool:
             answer: The final answer.
         """
         self._submitted = answer
-        return self._invoke("submit_solution", answer=answer)
+        # Exempt from the budget on purpose -- see `_invoke`.
+        return self._invoke("submit_solution", _counts=False, answer=answer)
 
 
 _MIXINS: dict[str, type] = {

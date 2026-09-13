@@ -19,7 +19,7 @@ server = [
     "fastmcp>=2.0",
     "fastapi>=0.110",
     "uvicorn>=0.27",
-    "e2b-code-interpreter>=1.0",
+    "e2b>=1.0",
     "datasets>=2.19",
 ]
 dev = ["pytest>=8"]
