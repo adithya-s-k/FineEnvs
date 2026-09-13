@@ -362,7 +362,19 @@ def _run_agent(
         "$schema": "https://opencode.ai/config.json",
         "provider": {
             "openai_compatible": {
-                "options": {"baseURL": f"{capture_url}/v1", "apiKey": session_id},
+                # `npm` names the SDK opencode loads for a custom provider; the reference sets it
+                # explicitly rather than relying on the provider key resolving by name.
+                "npm": "@ai-sdk/openai-compatible",
+                "name": "Intercepted",
+                "options": {
+                    "baseURL": f"{capture_url}/v1",
+                    "apiKey": session_id,
+                    # 10 minutes, matching the reference. Qwen3.5 is hybrid linear-attention with NO
+                    # prefix caching, so every turn reprocesses the whole conversation and late turns
+                    # are slow. An undeclared client timeout turns that into a FAILED tool result
+                    # rather than a slow one.
+                    "timeout": 600_000,
+                },
                 "models": {model: {}},
             }
         },

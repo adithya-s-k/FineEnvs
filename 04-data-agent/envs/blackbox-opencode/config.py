@@ -77,6 +77,14 @@ class DataAgentConfig:
         against a fake engine, `steps=3`, `maxSteps=3` and no cap all produced 61 model calls. The
         only component that sees every call is the capture proxy, which is where `agent_step_limit`
         is enforced instead.
+
+        TOOLS ARE DISABLED VIA THE `tools` MAP, NOT A `disabled_tools` LIST. opencode's schema has no
+        `disabled_tools` key, so an earlier revision that emitted one had every tool ENABLED while the
+        config read as if three were off. `task` spawns subagents, and a subagent is a separate
+        conversation: capture flagged `multiple_roots` on 136 of 576 rollouts (24%) naming "subagent"
+        first, which breaks the prefix chain the trainer needs (`rollout/fork_frac` 0.02-0.06 against
+        a reference's flat 0, `drift_tokens_max` 32,770). `webfetch` additionally gives a sandbox with
+        no egress a tool that can only fail, and every failure is error text in a tool result.
         """
         return {
             "permission": {
@@ -84,5 +92,6 @@ class DataAgentConfig:
                 "bash": "allow",
                 "edit": "allow",
             },
-            "disabled_tools": list(self.disabled_tools),
+            # {name: False} is the shape opencode actually reads; see the docstring.
+            "tools": {tool: False for tool in self.disabled_tools},
         }
