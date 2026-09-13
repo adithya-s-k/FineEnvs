@@ -30,3 +30,10 @@ envs:
     tools: agent-owned
     frameworks:
       openenv: {transport: http-mcp, verified: false}
+  - name: whitebox-bash
+    summary: "The WHITE BOX counterpart: bash, a persistent Jupyter kernel and the SETA file tools over one sandbox, with TRL's synchronous GRPOTrainer owning the loop. Every tool call is an individually observable MCP call, so nothing has to be recovered from a capture proxy and no tunnel is needed."
+    backend: e2b
+    tools: "bash, run_python, reset_kernel, read, write, edit, grep, glob, ls, submit"
+    trainer: sync   # GRPOTrainer(environment_factory=...), not AsyncGRPOTrainer
+    frameworks:
+      openenv: {transport: http-mcp, verified: false}
