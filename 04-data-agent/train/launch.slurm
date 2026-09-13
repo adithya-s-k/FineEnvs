@@ -76,6 +76,18 @@ set -a; . "$REPO/experiments/.env"; set +a
 cleanup() { pkill -P $$ 2>/dev/null || true; }
 trap cleanup EXIT
 
+# SAMPLING, FOR THE ENGINE AND THE TRAINER, FROM ONE VARIABLE SO THEY CANNOT DRIFT.
+# opencode sends NO sampling parameters, so whatever the engine defaults to is what actually
+# generated the actions -- and Qwen3.5-2B ships no generation_config.json, so that default is
+# vLLM's own 1.0/1.0, NOT the 0.8 the trainer divides logits by when it recomputes logprobs for
+# the importance ratio. Leaving the engine unpinned means the gradient is computed against a
+# distribution that never produced the samples. Measured, unpinned: entropy climbed 0.229 -> 0.587
+# over 24 steps while reward fell 0.592 -> 0.216, with turns/mean 10.4 against the reference's 6.1
+# (job 76577). The reference pins both from one variable (run_cluster.py:165) and holds entropy
+# flat at 0.17-0.21. top_k=-1 because top_k truncation is likewise unmodelled by the recomputation.
+TEMPERATURE="${TEMPERATURE:-0.8}"
+TOP_P="${TOP_P:-0.95}"
+
 echo "== vLLM on GPU 0 ==  (ports vllm=$VLLM_PORT env=$ENV_PORT capture=$CAP_PORT, derived from job ${SLURM_JOB_ID:-0})"
 # EVERY ONE OF THESE FLAGS IS LOad-BEARING. They are the set the +0.2028 run served with; a
 # hand-rolled `vllm serve` that omits any of them fails silently rather than loudly.
@@ -119,6 +131,7 @@ CUDA_VISIBLE_DEVICES=0 \
   --gdn-prefill-backend triton \
   --default-chat-template-kwargs '{"enable_thinking": false}' \
   --return-tokens-as-token-ids --logprobs-mode processed_logprobs \
+  --override-generation-config "{\"temperature\": $TEMPERATURE, \"top_p\": $TOP_P, \"top_k\": -1}" \
   --weight-transfer-config '{"backend":"nccl"}' \
   > "$LOGS/vllm.log" 2>&1 &
 
@@ -179,6 +192,7 @@ CUDA_VISIBLE_DEVICES=1 TRACKIO_STORAGE_MODE=sqlite \
   --split "${SPLITS:-train}" \
   --sandbox "${SANDBOX:-e2b}" \
   --learning-rate "${LR:-3e-6}" \
+  --temperature "$TEMPERATURE" \
   --num-generations "${NUM_GENERATIONS:-8}" \
   --max-inflight "${MAX_INFLIGHT:-32}" \
   --grad-accum "${GRAD_ACCUM:-4}" \
