@@ -87,6 +87,49 @@ def to_trace_entries(result: DataAgentRolloutResult) -> list[TraceEntry]:
     return entries
 
 
+
+def opencode_agent_turns(trace: list[TraceEntry]) -> list[TraceEntry]:
+    """`agent_turn_fn` for TRL: keep only the REAL agent turns.
+
+    opencode fires extra model calls for its own bookkeeping -- a conversation-title generator and a
+    context summarizer -- either without tools or under a different system prompt. They are a
+    different task from the one being trained, and leaving them in the trace is not a cosmetic
+    problem: measured on a 400-step run against a reference that filtered them,
+
+      * each aux call has its own prompt, so it does not extend the previous turn. The prefix chain
+        breaks -- `rollout/fork_frac` 0.02-0.06 against the reference's flat 0, and
+        `rollout/drift_tokens_max` reached 32,770, a whole rollout's worth;
+      * one rollout therefore stops being one sample (`rollout/samples_per_rollout` 1.04-1.31 vs
+        exactly 1.0), which doubles `sample/forwarded_tokens_mean` and roughly doubles `grad_norm`
+        at an unchanged learning rate;
+      * worst, the aux tokens get TRAINED, carrying the data-analysis task's advantage. The policy is
+        optimised to write titles and summaries. Reward fell 0.46 -> 0.00 while entropy rose
+        0.195 -> 0.708, from a run whose step-0 reward was HIGHER than the reference's;
+      * and the title call fires LAST, so `entries[-1]` is an aux call and every metric read off it
+        -- `tools/failure_frequency` above all -- describes the wrong conversation.
+
+    The agent loop reuses ONE tool-enabled system prompt, so anchor on the first tool-enabled turn's
+    system prompt and keep only the entries that match it.
+    """
+
+    def system_of(messages: list[dict[str, Any]]) -> Any:
+        return next((m.get("content") for m in messages if m.get("role") == "system"), None)
+
+    primary = None
+    for entry in trace:
+        request = entry.get("request") or {}
+        if request.get("messages") and request.get("tools"):
+            primary = system_of(request["messages"])
+            break
+    return [
+        entry
+        for entry in trace
+        if (request := entry.get("request") or {}).get("messages")
+        and request.get("tools")
+        and system_of(request["messages"]) == primary
+    ]
+
+
 class DataAgentSession(ResourceSession):
     """One rollout. The agent owns its loop; this blocks on it and reads back what it did.
 

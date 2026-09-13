@@ -41,7 +41,12 @@ factory = DataAgentSessionFactory(
 
 from .client import DataAgentEnv
 from .config import DataAgentConfig
-from .harness import DataAgentSession, DataAgentSessionFactory, to_trace_entries
+from .harness import (
+    DataAgentSession,
+    DataAgentSessionFactory,
+    opencode_agent_turns,
+    to_trace_entries,
+)
 from .models import DataAgentRolloutResult, DataAgentState, DataAgentTurn
 from .task import DataAgentTask
 
@@ -55,5 +60,6 @@ __all__ = [
     "DataAgentState",
     "DataAgentTask",
     "DataAgentTurn",
+    "opencode_agent_turns",
     "to_trace_entries",
 ]

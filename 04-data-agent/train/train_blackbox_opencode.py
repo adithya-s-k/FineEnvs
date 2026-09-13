@@ -27,7 +27,7 @@ from __future__ import annotations
 import argparse
 import os
 
-from data_agent_env import DataAgentSessionFactory
+from data_agent_env import DataAgentSessionFactory, opencode_agent_turns
 from datasets import Dataset
 from transformers import AutoTokenizer
 
@@ -145,8 +145,13 @@ def main() -> None:
         # nested OpenAI shape; flattened, `has_tool_call` is False for every turn and the whole
         # rollout is silently discarded.
         train_turn_fn=has_tool_call,
-        # No `agent_turn_fn`: capture already dropped auxiliary calls and de-duplicated forked paths
-        # structurally, which a flat trace cannot do.
+        # Drop opencode's own title/summarizer calls. An earlier revision left this out on the theory
+        # that capture removes aux roots structurally -- it does not, and the run that assumed so
+        # collapsed: fork_frac 0.02-0.06 (reference: 0), drift_tokens_max 32,770 (reference: 0),
+        # samples_per_rollout up to 1.31 (reference: exactly 1.0), and the policy trained on title and
+        # summary tokens carrying the task's advantage. See `opencode_agent_turns` for the full
+        # measurement.
+        agent_turn_fn=opencode_agent_turns,
         model_name=args.model,
         dataset=dataset,
         reward_funcs=[],  # the environment's verify() is the reward
