@@ -161,6 +161,12 @@ curl -s -o /dev/null --max-time 5 "http://127.0.0.1:$ENV_PORT/health" || {
 grep -a "capture proxy ready" "$LOGS/env.log" || echo "WARNING: capture did not warm at boot"
 echo "env server healthy"
 
+# max_inflight 32 is the REFERENCE value, and it matters beyond throughput: at 16 this run
+# measured samples/step 7.2 against the reference's 16.1, i.e. less than half the training
+# signal per optimizer step, which over 400 steps is a different experiment rather than a
+# slower one. 16 was chosen after an EVAL collapsed at 64 concurrent MCP clients -- but that
+# eval ran ~16-turn rollouts (64 x 16 = ~1024 concurrent turn-slots) where training runs ~8.5
+# (32 x 8.5 = ~272), about a quarter of the load that broke it.
 echo "== trainer on GPU 1 =="
 # NOT from $REPO: the `trl/` submodule DIRECTORY shadows the `trl` package as a namespace package
 # there, and the import dies with "cannot import name '__version__' from trl (unknown location)".
