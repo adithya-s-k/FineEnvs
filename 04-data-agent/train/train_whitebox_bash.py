@@ -109,6 +109,10 @@ def main() -> None:
     p.add_argument("--step-limit", type=int, default=int(os.environ.get("STEP_LIMIT", "12")))
     p.add_argument("--limit-tasks", type=int, default=int(os.environ.get("LIMIT_TASKS", "0")))
     p.add_argument("--report-to", default=os.environ.get("REPORT_TO", "none"))
+    # Saving is OFF by default because the 4-step smoke has nothing worth keeping; a real run turns
+    # it on. `save_steps` is in TRAINER steps, and with num_generations completions per prompt a step
+    # is one prompt, so 100 steps is one pass over a 100-task split.
+    p.add_argument("--save-steps", type=int, default=int(os.environ.get("SAVE_STEPS", "0")))
     args = p.parse_args()
 
     dataset = build_dataset(args.server, args.split, args.limit_tasks)
@@ -136,7 +140,8 @@ def main() -> None:
         log_completions=True,
         num_completions_to_print=1,
         logging_steps=1,
-        save_strategy="no",
+        save_strategy="steps" if args.save_steps > 0 else "no",
+        **({"save_steps": args.save_steps, "save_total_limit": None} if args.save_steps > 0 else {}),
         report_to=args.report_to,
         # vLLM in-process on the training GPU. 0.3 leaves room for the optimizer states; the default
         # 0.9 would OOM the trainer on the same card.

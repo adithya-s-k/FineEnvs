@@ -109,17 +109,25 @@ class Sandbox:
     submitted: str | None = None
 
     # --- lifecycle -----------------------------------------------------------------------------
+    # The SAME prebuilt E2B template the black-box environment uses. Not optional for data-agent
+    # tasks: the default E2B base has no `huggingface_hub`, so the bucket staging cannot run, and
+    # `/workdir` is not writable by `user`, so the setup dies on `mkdir: Permission denied` before
+    # the agent starts. Both were measured. Sizing (cpu=2, mem=4096) is baked in at BUILD time and
+    # cannot be set per sandbox, which is why this is a template name and not a set of kwargs.
+    TEMPLATE = os.environ.get("E2B_TEMPLATE", "data-agent-opencode")
+
     @classmethod
     def start(cls, *, timeout_s: int = 900, envs: dict[str, str] | None = None) -> "Sandbox":
         # Plain `e2b`, not `e2b_code_interpreter`: with no Jupyter toolset there is no kernel to
         # drive, so the code-interpreter variant would be a heavier dependency for nothing.
         from e2b import Sandbox as E2BSandbox
 
-        handle = E2BSandbox.create(timeout=timeout_s, envs=envs or {})
+        handle = E2BSandbox.create(template=cls.TEMPLATE, timeout=timeout_s, envs=envs or {})
         sb = cls(handle=handle)
         # `-p` so a re-reset against a warm template is not an error.
         sb.handle.commands.run(f"mkdir -p {shlex.quote(WORKDIR)}")
-        logger.info("sandbox %s up, workdir %s", getattr(handle, "sandbox_id", "?"), WORKDIR)
+        logger.info("sandbox %s up (template %s), workdir %s",
+                    getattr(handle, "sandbox_id", "?"), cls.TEMPLATE, WORKDIR)
         return sb
 
     def kill(self) -> None:

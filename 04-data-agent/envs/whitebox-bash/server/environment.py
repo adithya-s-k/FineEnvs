@@ -154,7 +154,12 @@ class WhiteBoxBashEnvironment(MCPEnvironment):
                     )
             idx = 0 if index is None else int(index)
             task = tasks.task_at(split, idx)
-            sb = Sandbox.start(timeout_s=SANDBOX_TIMEOUT_S)
+            # The task's own environment goes into the SANDBOX, not into the setup command text:
+            # data-agent tasks stage their tables from an HF bucket and need HF_TOKEN, HF_BUCKET and
+            # BUCKET_PREFIX there. Credentials travel by name through the process environment and are
+            # never interpolated into a command string, so a token cannot reach a log line or a trace.
+            sb = Sandbox.start(timeout_s=SANDBOX_TIMEOUT_S,
+                               envs=(task.metadata or {}).get("env") or {})
             if task.setup:
                 # Staging failure is fatal to the episode: an agent asked about `data.csv` that was
                 # never written will look like a model that cannot read a file.
@@ -186,9 +191,17 @@ class WhiteBoxBashEnvironment(MCPEnvironment):
             check_passed: bool | None = None
             if s.alive and s.task.check:
                 check_passed = s.sandbox.bash(s.task.check).ok
+            # Correctness comes from the BLACK-BOX environment's grader for data-agent tasks, so
+            # both environments agree on what counts as right; the shaping below stays local.
+            override = None
+            if (s.task.metadata or {}).get("source") == "data-agent" and s.submitted is not None:
+                from .. import dataagent
+
+                override = dataagent.grade_answer(s.task, s.submitted)
             verdict = grader.grade(
                 submitted=s.submitted,
                 gold=s.task.answer,
+                correct_override=override,
                 # Submitting is bookkeeping, not work: counting it would charge the agent for
                 # finishing, which is the one thing we want it to do.
                 n_tool_calls=sum(1 for c in s.calls if c["tool"] != "submit_solution"),

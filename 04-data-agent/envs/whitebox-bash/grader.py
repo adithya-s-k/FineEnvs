@@ -118,6 +118,7 @@ def grade(
     n_tool_calls: int,
     check_passed: bool | None = None,
     sandbox_alive: bool = True,
+    correct_override: bool | None = None,
 ) -> Verdict:
     """Score one episode.
 
@@ -133,6 +134,10 @@ def grade(
             Result of the task's `check` script, or `None` when the task ships none.
         sandbox_alive (`bool`, *optional*, defaults to `True`):
             False when the sandbox died mid-episode, which makes the rollout UNGRADED.
+        correct_override (`bool`, *optional*):
+            Correctness decided elsewhere, used for data-agent tasks so this environment and the
+            black-box one agree on what is right. The shaping below (efficiency, the command-shaped
+            guard) still applies; only the correct/incorrect decision is taken from here.
 
     Returns:
         `Verdict`: with `reward=None` when the episode could not be judged.
@@ -148,7 +153,7 @@ def grade(
         return Verdict(reward=0.0, submitted=submitted, n_tool_calls=n_tool_calls,
                        note="submission is a command, not an answer")
 
-    correct = answers_match(submitted, gold)
+    correct = answers_match(submitted, gold) if correct_override is None else correct_override
     reward = CORRECT_CREDIT if correct else 0.0
     if check_passed:
         reward += CHECK_CREDIT

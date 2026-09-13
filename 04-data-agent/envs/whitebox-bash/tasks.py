@@ -138,16 +138,50 @@ _BUILTIN: tuple[Task, ...] = (
     ),
 )
 
+# How many generated tasks each split holds. `train` and `test` are disjoint by construction -- the
+# split name seeds the generator; see `suite.generate`.
+N_TRAIN = int(os.environ.get("WHITE_BOX_BASH_N_TRAIN", "100"))
+N_TEST = int(os.environ.get("WHITE_BOX_BASH_N_TEST", "30"))
+
+
+def _generated(split: str, n: int) -> tuple[Task, ...]:
+    from .suite import generate
+
+    return generate(split, n)
+
+
 # split name -> tasks. Difficulty is IN the name; see the module docstring.
-_SPLITS: dict[str, tuple[Task, ...]] = {
-    "train": _BUILTIN,
-    "train:easy": tuple(t for t in _BUILTIN if t.difficulty == "easy"),
-    "train:medium": tuple(t for t in _BUILTIN if t.difficulty == "medium"),
-    "train:hard": tuple(t for t in _BUILTIN if t.difficulty == "hard"),
-    "test": _BUILTIN,
-}
+#
+# `demo` is the five hand-written tasks: enough to prove the loop runs, never enough to train on.
+# `train`/`test` are generated and are what a real run uses.
+def _splits() -> dict[str, tuple[Task, ...]]:
+    from .suite import generate, signatures
+
+    train = generate("train", N_TRAIN)
+    # Test EXCLUDES every training instance. Seeding the two differently is not enough -- the
+    # template parameter ranges are small enough to collide, and a test item the policy trained on
+    # inflates the eval with nothing downstream to report it.
+    test = generate("test", N_TEST, exclude=signatures(train))
+    return {
+        "demo": _BUILTIN,
+        "train": train,
+        "train:easy": tuple(t for t in train if t.difficulty == "easy"),
+        "train:medium": tuple(t for t in train if t.difficulty == "medium"),
+        "train:hard": tuple(t for t in train if t.difficulty == "hard"),
+        "test": test,
+    }
+
+
+_SPLITS: dict[str, tuple[Task, ...]] = _splits()
 
 _CACHE: dict[str, tuple[Task, ...]] = {}
+
+
+# Where tasks come from. `data-agent` is the default and is the point of this environment living
+# beside the two black-box ones: SAME tasks, SAME staging, SAME grader, so the only difference left
+# between white box and black box is who owns the agent loop. `synthetic` is the generated suite,
+# useful only for exercising the plumbing without network or HF credentials.
+TASK_SOURCE = os.environ.get("WHITE_BOX_BASH_TASK_SOURCE", "data-agent")
 
 
 def _load(split: str) -> tuple[Task, ...]:
@@ -158,6 +192,12 @@ def _load(split: str) -> tuple[Task, ...]:
     """
     if split in _CACHE:
         return _CACHE[split]
+    if TASK_SOURCE == "data-agent" and split not in ("demo",):
+        from .dataagent import load as _load_data_agent
+
+        tasks = _load_data_agent(split, limit=int(os.environ.get("WHITE_BOX_BASH_LIMIT", "0")))
+        _CACHE[split] = tasks
+        return tasks
     repo = os.environ.get("WHITE_BOX_BASH_DATASET", "").strip()
     if repo:
         from datasets import load_dataset
@@ -187,9 +227,14 @@ def _load(split: str) -> tuple[Task, ...]:
 
 
 # --- the TaskProvider surface, declared structurally on the environment ------------------------
+# Data-agent split names. Tier is part of the NAME, never a filter -- a filter shifts every index
+# after it and the index is the task's identity everywhere downstream.
+_DATA_AGENT_SPLITS = ("train", "train:easy", "train:medium", "train:hard", "test", "eval")
+
+
 def list_splits() -> list[dict[str, Any]]:
-    return [{"name": name, "type": "train" if name.startswith("train") else "test"}
-            for name in sorted(_SPLITS)]
+    names = _DATA_AGENT_SPLITS if TASK_SOURCE == "data-agent" else tuple(sorted(_SPLITS))
+    return [{"name": n, "type": "train" if n.startswith("train") else "test"} for n in names]
 
 
 def num_tasks(split: str) -> int:
