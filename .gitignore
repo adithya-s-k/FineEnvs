@@ -227,3 +227,10 @@ dist/
 .astro/
 # Slide deck exports (PDF/PPTX) — published to the Hub, not tracked here
 export/
+
+# Generated run artifacts: training checkpoints, capture traces, Harbor trial trees, eval records.
+# These reach tens of GB -- 22 GB on disk here, of which 1.2 GB (1,265 files, including a sqlite WAL
+# and a whole git snapshot tree) had actually been committed. Keep them out: committing generated
+# data is the fastest way to make a repo unusable, and none of it is reproducible-by-review anyway.
+# Helper scripts already tracked under logs/ are unaffected -- gitignore does not untrack.
+04-data-agent/**/logs/
