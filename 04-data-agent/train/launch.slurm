@@ -71,7 +71,7 @@ ln -sfn "$LOGS/run" "$WATCHDIR"
 echo "checkpoints visible to eval_watcher at $WATCHDIR -> $LOGS/run"
 
 set -a; . "$REPO/experiments/.env"; set +a
-. "$ENVDIR/../blackbox-harbor/logs/hf_token.sh"
+. "$ENVDIR/../blackbox-harbor/tools/hf_token.sh"
 
 cleanup() { pkill -P $$ 2>/dev/null || true; }
 trap cleanup EXIT
