@@ -36,8 +36,9 @@ to stop calling tools -- and `has_tool_call` then yields NO trainable turns, so 
 and the run starves while the logs keep moving.
 
 The first leg is absent here: the `_train` suite emits a single float from `grader.py` with no
-efficiency term at all (verified: zero occurrences across all 2,238 task graders), so `reward_funcs=[]`
-means pure correctness. The SECOND leg is still present. A model that makes no tool calls for any
+efficiency term at all (verified: zero occurrences across all 2,238 task graders). `--reward efficiency`
+(the default) adds one back TRAINER-side, from the trace, in a form that closes the first leg
+STRUCTURALLY rather than by a gate -- see `harbor_reward.py`. The SECOND leg is still present. A model that makes no tool calls for any
 reason -- including simply being too weak for the task -- still produces empty groups. That is what
 banded tasks are for: pick indices the model can SOMETIMES solve, so reward_std > 0 and the group
 carries gradient. Watch `reward_std` and the empty-group count from step 1.
@@ -54,6 +55,9 @@ from transformers import AutoTokenizer
 
 from trl.experimental.async_grpo import AsyncGRPOConfig, AsyncGRPOTrainer
 from trl.experimental.async_grpo.openenv_harness import HarnessRolloutWorker, has_tool_call
+
+# Module-level import, not a lambda: the reward crosses the spawn boundary and must pickle.
+from harbor_reward import TOOL_BUDGET, W_EFF, data_agent_reward
 
 TRAIN_SPLIT = "AdithyaSK/data_agent_rl_environment_train"
 
@@ -84,6 +88,10 @@ def build(argv=None):
     p.add_argument("--n-tasks", type=int, default=0, help="0 = the whole split")
     p.add_argument("--agent-turn-filter", default="none", choices=["none", "tools"],
                    help="'tools' keeps only turns with n_tools>0; use ONLY if fork_frac != 0 at step 1")
+    p.add_argument("--reward", choices=["efficiency", "correctness"], default="efficiency",
+                   help="efficiency: correctness x (1 + W_EFF*B/(B+tool_calls)), tuned by "
+                        "$REWARD_W_TOOL_EFFICIENCY and $TOOL_BUDGET. correctness: the verifier's "
+                        "float untouched, which is the pure-correctness arm runs 76585/77284 used.")
 
     # ---- the reference's values, unchanged ---------------------------------------------------
     p.add_argument("--learning-rate", type=float, default=3e-6)
@@ -190,6 +198,14 @@ def main() -> None:
           f"server-side; check rollout/fork_frac at STEP 1)")
     print(f"output    {out_dir}")
 
+    reward_fn = data_agent_reward if args.reward == "efficiency" else None
+    if reward_fn is None:
+        print("reward    correctness only (the verifier's float, untouched)")
+    else:
+        print(f"reward    correctness x (1 + {W_EFF:g} * {TOOL_BUDGET:g}/({TOOL_BUDGET:g} + tool_calls))"
+              f"   max {1 + W_EFF:.3f} | {1 + W_EFF * 0.5:.3f} at {TOOL_BUDGET:g} calls | ->1.0 unbounded")
+        print("          watch train/tools/call_frequency -- that IS the penalised quantity")
+
     worker = HarnessRolloutWorker(
         harness_session_factory=factory,
         harness_adapter=None,  # loop-owning: the agent drives itself; we read what it did
@@ -201,6 +217,8 @@ def main() -> None:
         model_name=args.model,
         dataset=dataset,
         reward_funcs=[],  # the environment's verify() IS the reward; None means UNSCORED, never 0.0
+        # Replaces env_reward with correctness x efficiency. Returning None still means UNSCORED.
+        rollout_reward_fn=reward_fn,
         processing_class=tokenizer,
         num_generations=args.num_generations,
         max_inflight_tasks=args.max_inflight,

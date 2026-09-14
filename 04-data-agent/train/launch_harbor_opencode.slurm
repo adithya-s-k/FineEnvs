@@ -33,6 +33,10 @@ TRAINDIR=$REPO/HuggingEnvs/04-data-agent/train
 # because install.sh owns what is in .venv312 and an ad hoc install there stops being reproducible.
 # `data_agent_env` needs the symlink in _pypath/: the directory is named `blackbox-opencode`, which is
 # not a legal Python identifier, so PYTHONPATH alone cannot reach it.
+# `harbor_reward` is symlinked there too. The trainer imports it fine (Python puts the SCRIPT's dir on
+# sys.path[0], whatever the cwd), but `rollout_reward_fn` is pickled into the SPAWNED rollout child,
+# which must import it by name. Resting that on spawn's sys.path propagation would fail in the child
+# only -- after the sandboxes are already paid for. PYTHONPATH is inherited by any child either way.
 PY312=$REPO/.venv312/bin/python
 # `harbor_env` lives under OpenEnv/envs, not OpenEnv/src -- the blackbox launcher never needed it.
 export PYTHONPATH="$TRAINDIR/_pypath:$REPO/OpenEnv/src:$REPO/OpenEnv/envs${PYTHONPATH:+:$PYTHONPATH}"
