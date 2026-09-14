@@ -240,6 +240,7 @@ CUDA_VISIBLE_DEVICES=1 TRACKIO_STORAGE_MODE=sqlite \
   ${REWARD_KEY:+--reward-key "$REWARD_KEY"} \
   ${AGENT_TURN_FILTER:+--agent-turn-filter "$AGENT_TURN_FILTER"} \
   --agent-step-limit "${AGENT_STEP_LIMIT:-17}" \
+  --reward "${REWARD:-efficiency}" \
   --token-budget "${TOKEN_BUDGET:-40960}" \
   --max-completion-length "${MAX_COMPLETION_LENGTH:-16384}" \
   --heartbeat-stale-after-s "${HEARTBEAT_STALE_AFTER_S:-900}" \
