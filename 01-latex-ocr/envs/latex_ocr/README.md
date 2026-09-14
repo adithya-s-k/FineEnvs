@@ -93,8 +93,8 @@ hf upload your-name/latex-ocr-env 01-latex-ocr/envs/latex_ocr . --repo-type spac
   --exclude '.venv/**' '__pycache__/**' '*.egg-info/**' '.pytest_cache/**' '.ruff_cache/**'
 ```
 
-The existing deployment is [AdithyaSK/latex-ocr-env](https://huggingface.co/spaces/AdithyaSK/latex-ocr-env).
-This migration does not redeploy that Space. Set runtime configuration in your Space's Settings.
+The canonical deployment is [HuggingEnvs/latex-ocr-env](https://huggingface.co/spaces/HuggingEnvs/latex-ocr-env).
+Its source is synchronized from this directory. Set runtime configuration in your Space's Settings.
 
 ## Access modes
 
@@ -127,6 +127,12 @@ Task discovery does not advance the cursor; stream task indices describe positio
 
 Swap in any `(image, latex)` dataset by pointing `LATEX_OCR_DATASET` at it (and
 the column vars if they differ).
+
+## Project resources
+
+- [All LaTeX OCR assets](https://huggingface.co/collections/HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c)
+- [Source, notebook, and HF Jobs scripts](https://github.com/adithya-s-k/HuggingEnvs/tree/main/01-latex-ocr)
+- [Training dashboard](https://huggingface.co/spaces/HuggingEnvs/trackio-latex-ocr)
 
 ## Origin and license
 

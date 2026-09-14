@@ -57,13 +57,23 @@ Optional arguments:
 | `--push-repo-id your-name/qwen3-vl-2b-latex-ocr-grpo` | Merge LoRA and publish a standalone model after evaluation |
 | `--max-completion-length` | Generation cap, default 256 |
 
-Hosted example: `--env-url https://adithyask-latex-ocr-env.hf.space`. Set the server's
+Hosted example: `--env-url https://huggingenvs-latex-ocr-env.hf.space`. Set the server's
 `LATEX_OCR_MAX_SESSIONS` to at least `num_generations + 4`. Each rollout owns a session; the runner closes all
 sessions on success or failure. It fails early if indexed reset is unavailable. Stream mode is for sequential
 consumers and cannot supply the same indexed task to every member of a GRPO group.
 
 The recipe uses **one CUDA GPU**, bf16, SDPA, LoRA on `q_proj`/`v_proj`, and TRL 1.12.0. It sends raw completions
 to the rubric so padding cannot evade the length guard. Optional publishing is off by default.
+
+## Published runs
+
+The [LaTeX OCR collection](https://huggingface.co/collections/HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c) groups the environment, published Qwen3.5 GRPO checkpoint,
+seven Trackio dashboards, and nine buckets of preserved experiment data. The current Qwen3-VL-2B recipe is
+separate from that historical checkpoint. The main dashboard is
+[HuggingEnvs/trackio-latex-ocr](https://huggingface.co/spaces/HuggingEnvs/trackio-latex-ocr).
+
+To launch future Jobs under the organization, add `--namespace HuggingEnvs` to `hf jobs uv run`; this requires
+organization compute permissions. Use a new run name when logging to an existing dashboard.
 
 ## Local and notebook
 

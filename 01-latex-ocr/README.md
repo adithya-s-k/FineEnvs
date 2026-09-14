@@ -10,11 +10,16 @@ It continues the environment originally proposed in [OpenEnv #1003](https://gith
 | Interactive recipe | [`notebooks/01_latex_ocr_grpo.ipynb`](./notebooks/01_latex_ocr_grpo.ipynb) |
 | Shared GRPO runner and HF Jobs entry point | [`train/`](./train/) |
 | Verification evidence | [`results/`](./results/) |
-| Existing hosted environment | [AdithyaSK/latex-ocr-env](https://huggingface.co/spaces/AdithyaSK/latex-ocr-env) |
+| Hosted environment | [HuggingEnvs/latex-ocr-env](https://huggingface.co/spaces/HuggingEnvs/latex-ocr-env) |
+| Collection | [LaTeX OCR — all assets](https://huggingface.co/collections/HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c) |
+| Published GRPO checkpoint | [HuggingEnvs/qwen3.5-latex-ocr-grpo](https://huggingface.co/HuggingEnvs/qwen3.5-latex-ocr-grpo) |
+| Training dashboard | [HuggingEnvs/trackio-latex-ocr](https://huggingface.co/spaces/HuggingEnvs/trackio-latex-ocr) |
 | Hub organization | [HuggingEnvs](https://huggingface.co/HuggingEnvs) |
 
-The existing Space is hosted on **AdithyaSK's account**. Source maintenance lives here; the links do not imply
-that a copy has been deployed under the HuggingEnvs organization.
+The environment, published GRPO model, experiment dashboards, and run buckets are owned by **HuggingEnvs**.
+Source, notebooks, and HF Jobs recipes are maintained here. The collection includes seven dashboards and their
+run storage, plus the upstream dataset and the base model used by the notebook. The published Qwen3.5 checkpoint
+is a separate historical run; the current recipe and smoke test use Qwen3-VL-2B.
 
 ## Smoke test
 
@@ -32,7 +37,7 @@ isolated sessions, and server-side rewards. To check the existing Space:
 
 ```bash
 uv run --project 01-latex-ocr/envs/latex_ocr latex-ocr-smoke \
-  --url https://adithyask-latex-ocr-env.hf.space
+  --url https://huggingenvs-latex-ocr-env.hf.space
 ```
 
 ## Train

@@ -79,11 +79,12 @@ them deployed as Spaces you can hit right now.
 all the way to a trained model.
 
 Qwen3-VL-2B learns to read rendered math into LaTeX with GRPO, scored by a reward served from a live
-[OpenEnv Space](https://huggingface.co/spaces/AdithyaSK/latex-ocr-env). The scorer compares normalized
+[OpenEnv Space](https://huggingface.co/spaces/HuggingEnvs/latex-ocr-env). The scorer compares normalized
 LaTeX using edit distance and exact match, with a guard against padded completions. Runs on a
 GPU you spin up in [one command](#quickstart); no cluster, no local GPU. The [environment source](./01-latex-ocr/envs/latex_ocr/),
 [notebook](./01-latex-ocr/notebooks/01_latex_ocr_grpo.ipynb), and
 [HF Jobs scripts](./01-latex-ocr/train/) live together with reproducible smoke tests.
+Browse the [LaTeX OCR collection](https://huggingface.co/collections/HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c) for the environment, model, dashboards, and run data.
 
 ### [02 · Watercolour](./02-watercolour/) &nbsp;<sub>train against an aesthetic reward</sub>
 

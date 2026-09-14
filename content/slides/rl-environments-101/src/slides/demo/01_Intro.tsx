@@ -27,7 +27,7 @@ export function DemoIntroSlide() {
         </motion.div>
         <motion.div variants={fade} transition={{ type: "spring", damping: 20 }} style={{ marginTop: 36, display: "flex", alignItems: "center", gap: 12, fontFamily: MONO, fontSize: 20, color: T.textDim }}>
           <HFMark size={26} />
-          <span>hf.co/spaces/AdithyaSK/latex-ocr-env</span>
+          <span>hf.co/spaces/HuggingEnvs/latex-ocr-env</span>
         </motion.div>
       </motion.div>
     </div>
