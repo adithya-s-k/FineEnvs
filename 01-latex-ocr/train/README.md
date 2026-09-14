@@ -70,12 +70,15 @@ to the rubric so padding cannot evade the length guard. Optional publishing is o
 The [LaTeX OCR collection](https://huggingface.co/collections/HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c)
 contains the environment, published Qwen3.5 GRPO checkpoint, source dataset, and
 [one Trackio dashboard](https://huggingface.co/spaces/HuggingEnvs/trackio-latex-ocr).
-The default `latex-ocr-comparison` project overlays four models' training curves and baseline-to-step-3,500
-evaluation rewards. `latex-ocr-history` retains 13 substantive earlier run segments, including regressions.
+The default `latex-ocr-comparison` project overlays five runs across four models, including unstable and
+stabilized Gemma. Their latest common evaluation is step 1,500; the four longer runs have evaluations through
+step 3,500. `latex-ocr-history` retains 12 other substantive earlier run segments.
 The original `latex-ocr-2b-overnight` and `latex-ocr-eval` projects retain the longer Qwen3.5 run, checkpoint
 comparisons, and restored images. All four views use `HuggingEnvs/latex-ocr-results`; original archives remain
 under `AdithyaSK`. See the [comparison notes](../results/model-comparison.md) for scoring and configuration
 caveats, and [`dashboard/`](../dashboard/) for the reproducible builder.
+[`REPRODUCE.md`](../REPRODUCE.md) records both Gemma configurations, historical provenance and limitations,
+archive reconstruction, and the commands to repeat the maintained notebook/HF Jobs pipeline.
 
 The current Qwen3-VL-2B recipe is separate from the historical Qwen3.5 checkpoint. Send smoke and exploratory
 runs to a personal Trackio Space; keep the org dashboard for curated published results. To launch future Jobs

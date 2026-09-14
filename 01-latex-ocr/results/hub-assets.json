@@ -114,7 +114,7 @@
   "remaining_org_buckets": [
     "HuggingEnvs/latex-ocr-results"
   ],
-  "dashboard_revision": "51a91ab1cb2cdbd5c880a919ab6d256ae3115b36",
+  "dashboard_revision": "58d147981ac25927dd53ac675f6978ace12ab31b",
   "dashboard_data": {
     "size": 231461800,
     "total_files": 24110,
@@ -131,20 +131,29 @@
     "evaluation_image_source": "unsloth/LaTeX_OCR test rows 0-14, matched by exact stored gold text",
     "comparison": {
       "models": 4,
-      "training_records": 15996,
-      "evaluation_points": 32,
-      "last_common_evaluation_step": 3500,
-      "observed_training_steps_per_model": 3999,
+      "training_records": 17995,
+      "evaluation_points": 36,
+      "last_common_evaluation_step": 1500,
       "configured_training_budget": 5000,
-      "evaluation_sample_count": "not recorded in source"
+      "evaluation_sample_count": "not recorded in source",
+      "runs": 5,
+      "longer_runs_last_evaluation_step": 3500,
+      "observed_optimizer_steps_by_run": {
+        "Qwen3-VL-2B / colocated": 3999,
+        "Gemma4-E2B / unstable": 1999,
+        "Qwen3.5-2B / colocated": 3999,
+        "GLM-OCR / colocated": 3999,
+        "Gemma4-E2B / stabilized": 3999
+      }
     },
-    "history_run_segments": 13,
+    "history_run_segments": 12,
     "comparison_summary": "comparison-summary.json",
     "overnight_training_optimizer_steps": 3000,
     "overnight_evaluation_examples_per_checkpoint": 1000,
     "overnight_scalar_records": 21000,
     "overnight_training_scalar_records": 3000,
-    "overnight_database_hashes_match_original": true
+    "overnight_database_hashes_match_original": true,
+    "reproduction_sources": "reproduction-sources.json"
   },
   "collection_contains_buckets": false,
   "dashboard_scalar_regression": "passed",

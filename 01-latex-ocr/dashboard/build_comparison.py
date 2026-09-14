@@ -21,17 +21,39 @@ MODELS = {
     "gemma4-e2b": "Gemma4-E2B",
 }
 SAFE_CONFIG = {
+    "_name_or_path",
     "model_type",
+    "transformers_version",
     "max_steps",
     "learning_rate",
+    "lr_scheduler_type",
+    "warmup_steps",
+    "optim",
+    "weight_decay",
+    "adam_beta1",
+    "adam_beta2",
+    "adam_epsilon",
+    "max_grad_norm",
+    "per_device_train_batch_size",
+    "gradient_accumulation_steps",
+    "bf16",
+    "gradient_checkpointing",
+    "gradient_checkpointing_kwargs",
+    "save_steps",
     "num_generations",
     "temperature",
+    "top_p",
+    "top_k",
     "beta",
+    "epsilon",
     "loss_type",
     "seed",
     "max_completion_length",
     "use_vllm",
     "vllm_mode",
+    "vllm_gpu_memory_utilization",
+    "vllm_max_model_length",
+    "vllm_tensor_parallel_size",
     "mask_truncated_completions",
     "model/num_parameters",
     "scale_rewards",
@@ -101,19 +123,19 @@ def create_database(path, template):
 
 
 def selected_view(project, name, count):
-    if project == "latex-ocr-colocate-5k" and name != "gemma4-e2b":
-        return "latex-ocr-comparison", "colocated"
+    if project == "latex-ocr-colocate-5k":
+        return "latex-ocr-comparison", (
+            "unstable" if name == "gemma4-e2b" else "colocated"
+        )
     if project == "latex-ocr-colocate-5k-stable":
         return "latex-ocr-comparison", "stabilized"
     if count >= 100 and project in {
         "latex-ocr-ablation-scale",
-        "latex-ocr-colocate-5k",
         "latex-ocr-grpo-redhat",
         "latex-ocr-grpo-demo",
     }:
         return "latex-ocr-history", {
             "latex-ocr-ablation-scale": "scale",
-            "latex-ocr-colocate-5k": "original configuration",
             "latex-ocr-grpo-redhat": "Red Hat run",
             "latex-ocr-grpo-demo": "200-step demo",
         }[project]
@@ -264,6 +286,9 @@ def build(source_dir, output_dir):
                         "evaluation": eval_points,
                         "learning_rate": config.get("learning_rate"),
                         "beta": config.get("beta"),
+                        "recorded_config": {
+                            k: v for k, v in original_config.items() if k in SAFE_CONFIG
+                        },
                         "last_window_clipped_ratio": statistics.mean(
                             r["metrics"].get("train/completions/clipped_ratio", 0)
                             for r in training[-window:]

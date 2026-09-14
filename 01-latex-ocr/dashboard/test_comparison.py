@@ -71,13 +71,19 @@ def test_build_keeps_model_identities_and_does_not_mutate_sources(tmp_path):
     """)
     # Full Trackio configs require created_at in the generated view.
     conn.execute("ALTER TABLE configs ADD COLUMN created_at TEXT")
-    for name in ["qwen3-vl-2b", "glm-ocr"]:
+    for name in ["qwen3-vl-2b", "glm-ocr", "gemma4-e2b"]:
         conn.execute(
             "INSERT INTO configs(run_id,run_name,config,created_at) VALUES (?,?,?,?)",
             (
                 name,
                 name,
-                json.dumps({"max_steps": 5000, "hub_token": "private-placeholder"}),
+                json.dumps(
+                    {
+                        "max_steps": 5000,
+                        "max_grad_norm": 1.0,
+                        "hub_token": "private-placeholder",
+                    }
+                ),
                 "2026-07-23",
             ),
         )
@@ -96,8 +102,17 @@ def test_build_keeps_model_identities_and_does_not_mutate_sources(tmp_path):
     before = hashlib.sha256(path.read_bytes()).hexdigest()
     report = build(source_dir, tmp_path / "derived")
     assert hashlib.sha256(path.read_bytes()).hexdigest() == before
-    assert {r["model"] for r in report["runs"]} == {"Qwen3-VL-2B", "GLM-OCR"}
-    assert len({r["run_id"] for r in report["runs"]}) == 2
+    assert {r["model"] for r in report["runs"]} == {
+        "Qwen3-VL-2B",
+        "GLM-OCR",
+        "Gemma4-E2B",
+    }
+    assert len({r["run_id"] for r in report["runs"]}) == 3
+    gemma = next(r for r in report["runs"] if r["model"] == "Gemma4-E2B")
+    assert gemma["project"] == "latex-ocr-comparison"
+    assert gemma["name"] == "Gemma4-E2B / unstable"
+    assert gemma["recorded_config"]["max_grad_norm"] == 1.0
+    assert all("hub_token" not in r["recorded_config"] for r in report["runs"])
     derived = sqlite3.connect(tmp_path / "derived" / "latex-ocr-comparison.db")
     assert derived.execute("SELECT DISTINCT step FROM metrics").fetchall() == [(1,)]
     assert all(

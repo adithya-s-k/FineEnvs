@@ -20,8 +20,8 @@ Recorded on 2026-09-14:
   The two held-out samples scored 0.4859205 both before and after; this is a pipeline check, not a quality gain.
   Raw predictions and references are in [`smoke-gpu.json`](./smoke-gpu.json).
 - Notebook schema and all code cells validate. Its training cell calls the shared Python runner.
-- Dashboard regression passes: all 3,000 reward/loss entries survive interleaved logging. The pinned Trackio
-  wrapper preserves scalar history without changing the stored database; see [`dashboard/`](../dashboard/).
+- Dashboard regression passes on Trackio 0.37.1: native metric-aware sampling retains interleaved reward/loss
+  curves and sparse evaluations without changing stored values; see [`dashboard/`](../dashboard/).
 
 [`verification.json`](./verification.json) records source/deployment revisions and runtime versions.
 The org Space runs the migrated environment source. The original deployment check is preserved in
@@ -42,7 +42,7 @@ For CPU/GPU HF Jobs commands and persistent run output, see [`../train/README.md
 
 The [collection](https://huggingface.co/collections/HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c)
 contains four entries: environment, published model, source dataset, and one Trackio dashboard. The dashboard
-uses a single bucket with a four-model comparison, 13 earlier run segments, and the historical Qwen3.5 run. Six experimental Spaces and
+uses a single bucket with five comparison runs across four models, 12 other earlier run segments, and the historical Qwen3.5 run. Six experimental Spaces and
 nine trial/archive buckets were returned to `AdithyaSK`, preserving their data and Space bucket mounts.
 [`hub-assets.json`](./hub-assets.json) records the curated inventory and transfer checks.
 
@@ -60,8 +60,9 @@ The original bucket remains intact under `AdithyaSK/trackio-latex-ocr-bucket`.
 
 ## Combined model results
 
-[Model comparison](./model-comparison.md) explains the four-model evaluation gains, stabilized Gemma
-configuration, earlier regressions, and snapshot limits. [comparison-summary.json](./comparison-summary.json)
+[Model comparison](./model-comparison.md) includes unstable and stabilized Gemma in the main comparison,
+the measured gains/regression, and snapshot limits. [REPRODUCE.md](../REPRODUCE.md) gives recorded configurations
+and reconstruction/training commands. [comparison-summary.json](./comparison-summary.json)
 records every selected segment and its original scalar values, evaluation points, provenance, and exclusions.
 The builder and dashboard have five passing regression tests covering missing charts, optimizer-step
 alignment, repeated baselines, asynchronous timestamps, restart separation, source preservation, and the hosted landing view.
