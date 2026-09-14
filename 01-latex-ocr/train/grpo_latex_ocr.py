@@ -20,6 +20,8 @@ from latex_ocr_env import LatexOCRAction, LatexOCREnv
 from latex_ocr_env.runtime import local_server
 from PIL import Image
 
+DEFAULT_OUTPUT_DIR = str(Path(__file__).resolve().parents[1] / "results" / "local-run")
+
 
 @dataclass
 class Config:
@@ -34,7 +36,7 @@ class Config:
     image_size: int = 512
     learning_rate: float = 1e-5
     seed: int = 42
-    output_dir: str = "latex_ocr_grpo"
+    output_dir: str = DEFAULT_OUTPUT_DIR
     trackio_space: str = ""
     run_name: str = "latex-ocr-grpo"
     push_repo_id: str = ""
@@ -324,7 +326,7 @@ def main():
     parser.add_argument("--eval-samples", type=int, default=50)
     parser.add_argument("--max-completion-length", type=int, default=256)
     parser.add_argument(
-        "--output-dir", default=os.environ.get("OUTPUT_DIR", "latex_ocr_grpo")
+        "--output-dir", default=os.environ.get("OUTPUT_DIR", DEFAULT_OUTPUT_DIR)
     )
     parser.add_argument("--trackio-space", default="")
     parser.add_argument("--run-name", default="latex-ocr-grpo")
