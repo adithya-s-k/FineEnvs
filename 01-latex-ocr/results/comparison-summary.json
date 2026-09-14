@@ -1,0 +1,689 @@
+{
+  "sources": [
+    {
+      "bucket": "AdithyaSK/latex-ocr-ablation-bucket",
+      "project": "latex-ocr-ablation-smoke",
+      "sha256": "7928c1933e44fddd7cd3596ff5ced61e84bdca9efdeb79113dcfdcf439ccc492"
+    },
+    {
+      "bucket": "AdithyaSK/latex-ocr-ablation-bucket",
+      "project": "latex-ocr-tune-check",
+      "sha256": "5bd3089afa8734a21a37001ce8636401488dee3a5a3482f79f12416202e51fba"
+    },
+    {
+      "bucket": "AdithyaSK/latex-ocr-ablation-scale-bucket",
+      "project": "latex-ocr-ablation-scale",
+      "sha256": "8fc0d1beb192e5d98fec213810be746cf788327a31376337fffbf817ec1a6985"
+    },
+    {
+      "bucket": "AdithyaSK/latex-ocr-colocate-5k-bucket",
+      "project": "latex-ocr-colocate-5k",
+      "sha256": "36384e3f2265de4b9d5903f018fbe4fb5d8ddb078eda744e383b9809e3fd739d"
+    },
+    {
+      "bucket": "AdithyaSK/latex-ocr-colocate-5k-stable-bucket",
+      "project": "latex-ocr-colocate-5k-stable",
+      "sha256": "8d982f203a520541d81243c64f7b1b5e0b34f8c48a661ab9577ab0632c7c60f1"
+    },
+    {
+      "bucket": "AdithyaSK/latex-ocr-grpo-bucket",
+      "project": "latex-ocr-2b-overnight",
+      "sha256": "4ad9b6bbe8162b79b533e7e59adde3aeb2751d12954a8a79a059f584b150ce1c"
+    },
+    {
+      "bucket": "AdithyaSK/trackio-latex-ocr-bucket",
+      "project": "latex-ocr-2b-overnight",
+      "sha256": "729f94a34bcbc74e47282428650e4079ebb699af5b98938e6bab3f064715acdd"
+    },
+    {
+      "bucket": "AdithyaSK/trackio-latex-ocr-bucket",
+      "project": "latex-ocr-eval",
+      "sha256": "c5bb3f6530039ba6af937ce7b580610a248cf453dfad36c07603a7561304c88d"
+    },
+    {
+      "bucket": "AdithyaSK/trackio-latex-ocr-bucket-2",
+      "project": "latex-ocr-grpo",
+      "sha256": "9988cf46b1412fa777c0ea5c0c0a93e163f7f46ae8ffe3168c7e74920953d475"
+    },
+    {
+      "bucket": "AdithyaSK/trackio-latex-ocr-demo-bucket",
+      "project": "latex-ocr-grpo-demo",
+      "sha256": "92f24c994c372050f436978a59ecc7a4da485ca0429889afcce4a48cb84f1aea"
+    },
+    {
+      "bucket": "AdithyaSK/trackio-latex-ocr-redhat-bucket",
+      "project": "latex-ocr-grpo-redhat",
+      "sha256": "6672d53a5c02a6c7a4a33a0bd99f3c102935de4910dc8a82c0e90f5d3c52af0b"
+    }
+  ],
+  "runs": [
+    {
+      "project": "latex-ocr-history",
+      "run_id": "417ff7ad865956b7a3e739dcbc119f0a",
+      "name": "GLM-OCR / scale / attempt 1",
+      "model": "GLM-OCR",
+      "source_project": "latex-ocr-ablation-scale",
+      "source_run_id": "0547f00e5b284629917787b5a8ce7207",
+      "attempt": 1,
+      "training_records": 263,
+      "last_optimizer_step": 263,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.5281793928146362,
+      "last_window_reward": 0.5474646583199501,
+      "evaluation": [],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 1.0
+    },
+    {
+      "project": "latex-ocr-history",
+      "run_id": "2a871ab9bd1257acb87691a8bd0e3051",
+      "name": "GLM-OCR / scale / attempt 2",
+      "model": "GLM-OCR",
+      "source_project": "latex-ocr-ablation-scale",
+      "source_run_id": "0547f00e5b284629917787b5a8ce7207",
+      "attempt": 2,
+      "training_records": 120,
+      "last_optimizer_step": 120,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.6195827597379684,
+      "last_window_reward": 0.7128647667169571,
+      "evaluation": [],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 1.0
+    },
+    {
+      "project": "latex-ocr-history",
+      "run_id": "9dddf677ba665980ba4ee2304a54c251",
+      "name": "GLM-OCR / scale / attempt 3",
+      "model": "GLM-OCR",
+      "source_project": "latex-ocr-ablation-scale",
+      "source_run_id": "0547f00e5b284629917787b5a8ce7207",
+      "attempt": 3,
+      "training_records": 412,
+      "last_optimizer_step": 412,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.607100555896759,
+      "last_window_reward": 0.7491535902023315,
+      "evaluation": [],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 1.0
+    },
+    {
+      "project": "latex-ocr-history",
+      "run_id": "81240a4baf695f289d490125ed91893d",
+      "name": "Qwen3-VL-2B / scale / attempt 1",
+      "model": "Qwen3-VL-2B",
+      "source_project": "latex-ocr-ablation-scale",
+      "source_run_id": "ecfe7aa462d644aba5f91d295c2732c1",
+      "attempt": 1,
+      "training_records": 671,
+      "last_optimizer_step": 671,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.7208437287807464,
+      "last_window_reward": 0.8114551323652267,
+      "evaluation": [],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 0.0025
+    },
+    {
+      "project": "latex-ocr-history",
+      "run_id": "74a2a64f64b05acdbd6742197bec1c72",
+      "name": "Qwen3-VL-2B / scale / attempt 2",
+      "model": "Qwen3-VL-2B",
+      "source_project": "latex-ocr-ablation-scale",
+      "source_run_id": "ecfe7aa462d644aba5f91d295c2732c1",
+      "attempt": 2,
+      "training_records": 297,
+      "last_optimizer_step": 297,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.7258439201116562,
+      "last_window_reward": 0.7566315305233001,
+      "evaluation": [],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 0.0
+    },
+    {
+      "project": "latex-ocr-history",
+      "run_id": "9dc6bbd7dc6f5bf8ba3a7654c5932508",
+      "name": "Qwen3-VL-2B / scale / attempt 3",
+      "model": "Qwen3-VL-2B",
+      "source_project": "latex-ocr-ablation-scale",
+      "source_run_id": "ecfe7aa462d644aba5f91d295c2732c1",
+      "attempt": 3,
+      "training_records": 1080,
+      "last_optimizer_step": 1080,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.7245035678148269,
+      "last_window_reward": 0.8078945016860962,
+      "evaluation": [],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 0.0
+    },
+    {
+      "project": "latex-ocr-history",
+      "run_id": "f50d973d0f7f566299aee72976035c56",
+      "name": "Gemma4-E2B / scale / attempt 2",
+      "model": "Gemma4-E2B",
+      "source_project": "latex-ocr-ablation-scale",
+      "source_run_id": "c196259d5dac4c3abd3c5d96b25e63e2",
+      "attempt": 2,
+      "training_records": 168,
+      "last_optimizer_step": 168,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.550975371543318,
+      "last_window_reward": 0.5839747112989425,
+      "evaluation": [],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 0.0
+    },
+    {
+      "project": "latex-ocr-history",
+      "run_id": "c4b15c23e9af58bb8acefd6d900af8c4",
+      "name": "Gemma4-E2B / scale / attempt 3",
+      "model": "Gemma4-E2B",
+      "source_project": "latex-ocr-ablation-scale",
+      "source_run_id": "c196259d5dac4c3abd3c5d96b25e63e2",
+      "attempt": 3,
+      "training_records": 146,
+      "last_optimizer_step": 146,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.5443194214440882,
+      "last_window_reward": 0.6054758751392364,
+      "evaluation": [],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 1.0
+    },
+    {
+      "project": "latex-ocr-history",
+      "run_id": "55f998c01d8054d7b3c1ea284d2d9119",
+      "name": "Qwen3.5-2B / scale / attempt 1",
+      "model": "Qwen3.5-2B",
+      "source_project": "latex-ocr-ablation-scale",
+      "source_run_id": "500a27dbe82a41bbb90b63af8611ed91",
+      "attempt": 1,
+      "training_records": 552,
+      "last_optimizer_step": 552,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.6765266668796539,
+      "last_window_reward": 0.7454639768600464,
+      "evaluation": [],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 0.0
+    },
+    {
+      "project": "latex-ocr-history",
+      "run_id": "b8ae49b43d29535cbf7c96fd5eaac930",
+      "name": "Qwen3.5-2B / scale / attempt 3",
+      "model": "Qwen3.5-2B",
+      "source_project": "latex-ocr-ablation-scale",
+      "source_run_id": "500a27dbe82a41bbb90b63af8611ed91",
+      "attempt": 3,
+      "training_records": 214,
+      "last_optimizer_step": 214,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.6269019077718258,
+      "last_window_reward": 0.7706244957447052,
+      "evaluation": [],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 1.0
+    },
+    {
+      "project": "latex-ocr-comparison",
+      "run_id": "7f93ed59b9205663b9fadd694096237a",
+      "name": "Qwen3-VL-2B / colocated",
+      "model": "Qwen3-VL-2B",
+      "source_project": "latex-ocr-colocate-5k",
+      "source_run_id": "7e9c3c987ef548c490f63d1434710abc",
+      "attempt": 1,
+      "training_records": 3999,
+      "last_optimizer_step": 3999,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.4206365963816643,
+      "last_window_reward": 0.7272578275203705,
+      "evaluation": [
+        {
+          "step": 0,
+          "reward": 0.61538466
+        },
+        {
+          "step": 500,
+          "reward": 0.656304255
+        },
+        {
+          "step": 1000,
+          "reward": 0.675377675
+        },
+        {
+          "step": 1500,
+          "reward": 0.691302075
+        },
+        {
+          "step": 2000,
+          "reward": 0.713718165
+        },
+        {
+          "step": 2500,
+          "reward": 0.71303821
+        },
+        {
+          "step": 3000,
+          "reward": 0.7194428949999999
+        },
+        {
+          "step": 3500,
+          "reward": 0.72310072
+        }
+      ],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 0.0
+    },
+    {
+      "project": "latex-ocr-history",
+      "run_id": "483a07acded657ce929dccba28f649f5",
+      "name": "Gemma4-E2B / original configuration",
+      "model": "Gemma4-E2B",
+      "source_project": "latex-ocr-colocate-5k",
+      "source_run_id": "caf259bcffb344f8bc2338454f4baacb",
+      "attempt": 1,
+      "training_records": 1999,
+      "last_optimizer_step": 1999,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.404646067917347,
+      "last_window_reward": 0.2595151586830616,
+      "evaluation": [
+        {
+          "step": 0,
+          "reward": 0.39167595499999996
+        },
+        {
+          "step": 500,
+          "reward": 0.346191415
+        },
+        {
+          "step": 1000,
+          "reward": 0.439515155
+        },
+        {
+          "step": 1500,
+          "reward": 0.132202275
+        }
+      ],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 0.9975
+    },
+    {
+      "project": "latex-ocr-comparison",
+      "run_id": "cdf14da0281a5eac81ee2076699c3b04",
+      "name": "Qwen3.5-2B / colocated",
+      "model": "Qwen3.5-2B",
+      "source_project": "latex-ocr-colocate-5k",
+      "source_run_id": "613d17b2ee324f809092cd0679de8346",
+      "attempt": 1,
+      "training_records": 3999,
+      "last_optimizer_step": 3999,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.5378478688001632,
+      "last_window_reward": 0.7056401467323303,
+      "evaluation": [
+        {
+          "step": 0,
+          "reward": 0.687749705
+        },
+        {
+          "step": 500,
+          "reward": 0.6243476050000001
+        },
+        {
+          "step": 1000,
+          "reward": 0.662253665
+        },
+        {
+          "step": 1500,
+          "reward": 0.690989185
+        },
+        {
+          "step": 2000,
+          "reward": 0.7043687350000001
+        },
+        {
+          "step": 2500,
+          "reward": 0.705107005
+        },
+        {
+          "step": 3000,
+          "reward": 0.7106775999999999
+        },
+        {
+          "step": 3500,
+          "reward": 0.7101044550000001
+        }
+      ],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 0.0
+    },
+    {
+      "project": "latex-ocr-comparison",
+      "run_id": "5124ce3fad8e58aba54c5b1fd5126684",
+      "name": "GLM-OCR / colocated",
+      "model": "GLM-OCR",
+      "source_project": "latex-ocr-colocate-5k",
+      "source_run_id": "4d478bee2b6e4a02a7d4fb5840040f8b",
+      "attempt": 1,
+      "training_records": 3999,
+      "last_optimizer_step": 3999,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.5490044990181923,
+      "last_window_reward": 0.6920414888858795,
+      "evaluation": [
+        {
+          "step": 0,
+          "reward": 0.44944827000000004
+        },
+        {
+          "step": 500,
+          "reward": 0.629741395
+        },
+        {
+          "step": 1000,
+          "reward": 0.63720523
+        },
+        {
+          "step": 1500,
+          "reward": 0.65790776
+        },
+        {
+          "step": 2000,
+          "reward": 0.66124438
+        },
+        {
+          "step": 2500,
+          "reward": 0.6579851449999999
+        },
+        {
+          "step": 3000,
+          "reward": 0.66478743
+        },
+        {
+          "step": 3500,
+          "reward": 0.66441399
+        }
+      ],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 1.0
+    },
+    {
+      "project": "latex-ocr-comparison",
+      "run_id": "fedbaf6ecbd8565d91d8d506521b4588",
+      "name": "Gemma4-E2B / stabilized",
+      "model": "Gemma4-E2B",
+      "source_project": "latex-ocr-colocate-5k-stable",
+      "source_run_id": "36948599833f4825a3b4b44e8809bc3f",
+      "attempt": 1,
+      "training_records": 3999,
+      "last_optimizer_step": 3999,
+      "planned_steps": 5000,
+      "window": 50,
+      "first_window_reward": 0.40923789113759995,
+      "last_window_reward": 0.5641600608825683,
+      "evaluation": [
+        {
+          "step": 0,
+          "reward": 0.39167595499999996
+        },
+        {
+          "step": 500,
+          "reward": 0.496046975
+        },
+        {
+          "step": 1000,
+          "reward": 0.528709385
+        },
+        {
+          "step": 1500,
+          "reward": 0.54873448
+        },
+        {
+          "step": 2000,
+          "reward": 0.55972776
+        },
+        {
+          "step": 2500,
+          "reward": 0.565342415
+        },
+        {
+          "step": 3000,
+          "reward": 0.559642545
+        },
+        {
+          "step": 3500,
+          "reward": 0.56970541
+        }
+      ],
+      "learning_rate": 5e-06,
+      "beta": 0.03,
+      "last_window_clipped_ratio": 1.0
+    },
+    {
+      "project": "latex-ocr-history",
+      "run_id": "a37dde450a105f5a8ff413bc7b082bb9",
+      "name": "Qwen3.5-2B / 200-step demo / attempt 1",
+      "model": "Qwen3.5-2B",
+      "source_project": "latex-ocr-grpo-demo",
+      "source_run_id": "3dbc4a22b9ee4dd29100d9a29a83112f",
+      "attempt": 1,
+      "training_records": 200,
+      "last_optimizer_step": 200,
+      "planned_steps": 200,
+      "window": 50,
+      "first_window_reward": 0.7813782167434692,
+      "last_window_reward": 0.7546933555603027,
+      "evaluation": [],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 0.0
+    },
+    {
+      "project": "latex-ocr-history",
+      "run_id": "d6e2aa5faa8554c3a831b4d5594404a1",
+      "name": "Qwen3-VL-2B / Red Hat run",
+      "model": "Qwen3-VL-2B",
+      "source_project": "latex-ocr-grpo-redhat",
+      "source_run_id": "2dc7f9f24c054e3c960cbf6d685ee160",
+      "attempt": 1,
+      "training_records": 2146,
+      "last_optimizer_step": 2146,
+      "planned_steps": 3000,
+      "window": 50,
+      "first_window_reward": 0.6105468970537186,
+      "last_window_reward": 0.6987905049324036,
+      "evaluation": [],
+      "learning_rate": 1e-05,
+      "beta": 0.0,
+      "last_window_clipped_ratio": 0.0
+    }
+  ],
+  "excluded": [
+    {
+      "project": "latex-ocr-ablation-smoke",
+      "run": "glm-ocr",
+      "attempt": 1,
+      "records": 20,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-ablation-smoke",
+      "run": "glm-ocr",
+      "attempt": 2,
+      "records": 20,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-ablation-smoke",
+      "run": "qwen3-vl-2b",
+      "attempt": 1,
+      "records": 20,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-ablation-smoke",
+      "run": "qwen3-vl-2b",
+      "attempt": 2,
+      "records": 20,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-ablation-smoke",
+      "run": "gemma4-e2b",
+      "attempt": 1,
+      "records": 20,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-ablation-smoke",
+      "run": "gemma4-e2b",
+      "attempt": 2,
+      "records": 20,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-ablation-smoke",
+      "run": "gemma3-4b",
+      "attempt": 1,
+      "records": 20,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-ablation-smoke",
+      "run": "qwen3.5-2b",
+      "attempt": 1,
+      "records": 20,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-ablation-smoke",
+      "run": "qwen3.5-2b",
+      "attempt": 2,
+      "records": 20,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-ablation-smoke",
+      "run": "qwen3.5-2b",
+      "attempt": 3,
+      "records": 20,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-tune-check",
+      "run": "qwen3vl-full",
+      "attempt": 1,
+      "records": 10,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-tune-check",
+      "run": "qwen3vl-full-llm",
+      "attempt": 1,
+      "records": 10,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-tune-check",
+      "run": "qwen3vl-full-vision",
+      "attempt": 1,
+      "records": 10,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-tune-check",
+      "run": "qwen3vl-lora-vision",
+      "attempt": 1,
+      "records": 10,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-tune-check",
+      "run": "qwen3vl-lora-llm",
+      "attempt": 1,
+      "records": 10,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-tune-check",
+      "run": "qwen3vl-lora",
+      "attempt": 1,
+      "records": 10,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-ablation-scale",
+      "run": "gemma4-e2b",
+      "attempt": 1,
+      "records": 16,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-ablation-scale",
+      "run": "qwen3.5-2b",
+      "attempt": 2,
+      "records": 68,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-2b-overnight",
+      "run": "grpo_qwen3.5-2b_latex_ocr",
+      "attempt": 1,
+      "records": 3000,
+      "reason": "Preserved overnight view"
+    },
+    {
+      "project": "latex-ocr-2b-overnight",
+      "run": "grpo_qwen3.5-2b_latex_ocr",
+      "attempt": 1,
+      "records": 3000,
+      "reason": "Preserved overnight view"
+    },
+    {
+      "project": "latex-ocr-grpo",
+      "run": "train",
+      "attempt": 1,
+      "records": 30,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    },
+    {
+      "project": "latex-ocr-grpo-demo",
+      "run": "train",
+      "attempt": 2,
+      "records": 6,
+      "reason": "Short preflight or restart (fewer than 100 training records)"
+    }
+  ]
+}

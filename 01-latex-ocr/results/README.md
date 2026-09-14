@@ -42,7 +42,7 @@ For CPU/GPU HF Jobs commands and persistent run output, see [`../train/README.md
 
 The [collection](https://huggingface.co/collections/HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c)
 contains four entries: environment, published model, source dataset, and one Trackio dashboard. The dashboard
-uses a single bucket with the historical Qwen3.5 training run and its evaluations. Six experimental Spaces and
+uses a single bucket with a four-model comparison, 13 earlier run segments, and the historical Qwen3.5 run. Six experimental Spaces and
 nine trial/archive buckets were returned to `AdithyaSK`, preserving their data and Space bucket mounts.
 [`hub-assets.json`](./hub-assets.json) records the curated inventory and transfer checks.
 
@@ -57,3 +57,11 @@ The final `HuggingEnvs/latex-ocr-results` bucket preserves the two historical da
 image files were recovered from the original run archive. The 105 evaluation image references were restored
 from the first 15 `unsloth/LaTeX_OCR` test images, after matching each sample's stored gold text exactly.
 The original bucket remains intact under `AdithyaSK/trackio-latex-ocr-bucket`.
+
+## Combined model results
+
+[Model comparison](./model-comparison.md) explains the four-model evaluation gains, stabilized Gemma
+configuration, earlier regressions, and snapshot limits. [comparison-summary.json](./comparison-summary.json)
+records every selected segment and its original scalar values, evaluation points, provenance, and exclusions.
+The builder and dashboard have four passing regression tests covering missing charts, optimizer-step
+alignment, repeated baselines, asynchronous timestamps, restart separation, and source preservation.

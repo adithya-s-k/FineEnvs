@@ -24,4 +24,4 @@ def fetch_metric_logs(cursor, run_identity, max_points, *, scalar_only=False):
 
 if __name__ == "__main__":
     SQLiteStorage._fetch_metric_logs_with_cursor = staticmethod(fetch_metric_logs)
-    trackio.show(project="latex-ocr-2b-overnight")
+    trackio.show(project="latex-ocr-comparison")

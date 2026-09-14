@@ -114,25 +114,39 @@
   "remaining_org_buckets": [
     "HuggingEnvs/latex-ocr-results"
   ],
-  "dashboard_revision": "76935a9025502a5bdc316620916d0c22d781f6f6",
+  "dashboard_revision": "2b6a36153738ab6e53ba329ee3ec16e068b14070",
   "dashboard_data": {
-    "size": 165635223,
-    "total_files": 24107,
+    "size": 231461800,
+    "total_files": 24110,
     "integrity": "ok",
     "projects": [
+      "latex-ocr-comparison",
+      "latex-ocr-history",
       "latex-ocr-2b-overnight",
       "latex-ocr-eval"
     ],
-    "training_optimizer_steps": 3000,
-    "evaluation_examples_per_checkpoint": 1000,
-    "database_hashes_match_original": true,
     "training_images_hashes_match_original": true,
     "image_references_verified": 24105,
     "evaluation_images_restored": 105,
     "evaluation_image_source": "unsloth/LaTeX_OCR test rows 0-14, matched by exact stored gold text",
-    "scalar_records": 21000,
-    "training_scalar_records": 3000
+    "comparison": {
+      "models": 4,
+      "training_records": 15996,
+      "evaluation_points": 32,
+      "last_common_evaluation_step": 3500,
+      "observed_training_steps_per_model": 3999,
+      "configured_training_budget": 5000,
+      "evaluation_sample_count": "not recorded in source"
+    },
+    "history_run_segments": 13,
+    "comparison_summary": "comparison-summary.json",
+    "overnight_training_optimizer_steps": 3000,
+    "overnight_evaluation_examples_per_checkpoint": 1000,
+    "overnight_scalar_records": 21000,
+    "overnight_training_scalar_records": 3000,
+    "overnight_database_hashes_match_original": true
   },
   "collection_contains_buckets": false,
-  "dashboard_scalar_regression": "passed"
+  "dashboard_scalar_regression": "passed",
+  "dashboard_regression_tests_passed": 4
 }

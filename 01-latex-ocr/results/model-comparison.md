@@ -1,16 +1,3 @@
----
-title: LaTeX OCR Training
-short_description: Cross-model RL training, evaluation, and run history
-emoji: 🎯
-sdk: gradio
-app_file: app.py
-tags:
- - trackio
-hf_oauth: true
-hf_oauth_scopes:
- - write-repos
----
-
 # LaTeX OCR: combined model comparison
 
 This is the single [HuggingEnvs LaTeX OCR results dashboard](https://huggingface.co/spaces/HuggingEnvs/trackio-latex-ocr).
@@ -70,24 +57,3 @@ the selections, exclusions, and recorded values.
 One bucket, `HuggingEnvs/latex-ocr-results`, backs this Space at `/data` with `TRACKIO_DIR=/data/trackio`.
 The experiment Spaces and original buckets remain under `AdithyaSK`. The current Qwen3-VL-2B notebook and
 HF Jobs smoke are separate from these historical runs. Publish new exploratory runs to a personal Space.
-
-## Rebuild and deploy
-
-`archive-sources.json` records the verified source buckets, paths, and hashes. Download each database into
-`<source-dir>/<bucket-name>/<project>.db`, verify its SHA-256 against the manifest, then run:
-
-```bash
-python 01-latex-ocr/dashboard/build_comparison.py \
-  --source-dir /path/to/downloaded-archives --output-dir /tmp/latex-combined
-uv run --with trackio==0.32.2 --with pytest python -m pytest 01-latex-ocr/dashboard/ -q
-```
-
-The builder writes two derived databases and `comparison-summary.json`. It preserves the original scalar
-values, aligns training/evaluation by optimizer step, deduplicates identical repeated baselines, and rejects
-conflicting values. It does not modify the archives. Only the main comparison and unambiguous single-attempt
-history runs include mapped evaluations. The original overnight databases and restored images remain intact.
-
-Upload the two derived databases under the bucket's `trackio/` directory. Deploy `app.py`, `requirements.txt`,
-and this README to the canonical Space. Keep `TRACKIO_BUCKET_ID=HuggingEnvs/latex-ocr-results` and its `/data`
-mount together. The pinned Trackio 0.32.2 compatibility wrapper reads complete scalar history to avoid
-periodic downsampling that otherwise hides reward/loss entries; media reads retain their normal limits.

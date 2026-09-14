@@ -17,13 +17,14 @@ It continues the environment originally proposed in [OpenEnv #1003](https://gith
 | Training dashboard | [HuggingEnvs/trackio-latex-ocr](https://huggingface.co/spaces/HuggingEnvs/trackio-latex-ocr) |
 | Hub organization | [HuggingEnvs](https://huggingface.co/HuggingEnvs) |
 
-The collection contains the final environment, published model, source dataset, and **one training/evaluation
-dashboard**. Its backing bucket, `HuggingEnvs/latex-ocr-results`, holds the Qwen3.5 training history
-through 3,000 optimizer steps, baseline/checkpoint evaluations, and sample predictions. Experiment dashboards
-and trial buckets remain under `AdithyaSK` and are excluded from the collection.
+The collection contains the final environment, published model, source dataset, and **one combined results
+dashboard**. Its main view overlays Qwen3-VL-2B, Qwen3.5-2B, GLM-OCR, and Gemma4-E2B training/evaluation curves.
+The same dashboard includes 13 earlier run segments and the original Qwen3.5 overnight run and sample images.
+All views use the single `HuggingEnvs/latex-ocr-results` bucket. Original experiment assets remain under
+`AdithyaSK`. See [the model comparison](./results/model-comparison.md) for the measured gains and run provenance.
 
 The published Qwen3.5 checkpoint and historical dashboard are separate from the current Qwen3-VL-2B recipe
-and its two-step HF Jobs smoke. See the [results notes](./results/README.md) for provenance and verification.
+and its two-step HF Jobs smoke. See the [results notes](./results/README.md) for pipeline verification.
 
 ## Smoke test
 
