@@ -9,17 +9,21 @@ It continues the environment originally proposed in [OpenEnv #1003](https://gith
 | Environment, client, rubric, Docker Space, tests | [`envs/latex_ocr/`](./envs/latex_ocr/) |
 | Interactive recipe | [`notebooks/01_latex_ocr_grpo.ipynb`](./notebooks/01_latex_ocr_grpo.ipynb) |
 | Shared GRPO runner and HF Jobs entry point | [`train/`](./train/) |
+| Curated Trackio dashboard source | [`dashboard/`](./dashboard/) |
 | Verification evidence | [`results/`](./results/) |
 | Hosted environment | [HuggingEnvs/latex-ocr-env](https://huggingface.co/spaces/HuggingEnvs/latex-ocr-env) |
-| Collection | [LaTeX OCR — all assets](https://huggingface.co/collections/HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c) |
+| Collection | [LaTeX OCR — final assets](https://huggingface.co/collections/HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c) |
 | Published GRPO checkpoint | [HuggingEnvs/qwen3.5-latex-ocr-grpo](https://huggingface.co/HuggingEnvs/qwen3.5-latex-ocr-grpo) |
 | Training dashboard | [HuggingEnvs/trackio-latex-ocr](https://huggingface.co/spaces/HuggingEnvs/trackio-latex-ocr) |
 | Hub organization | [HuggingEnvs](https://huggingface.co/HuggingEnvs) |
 
-The environment, published GRPO model, experiment dashboards, and run buckets are owned by **HuggingEnvs**.
-Source, notebooks, and HF Jobs recipes are maintained here. The collection includes seven dashboards and their
-run storage, plus the upstream dataset and the base model used by the notebook. The published Qwen3.5 checkpoint
-is a separate historical run; the current recipe and smoke test use Qwen3-VL-2B.
+The collection contains the final environment, published model, source dataset, and **one training/evaluation
+dashboard**. Its backing bucket, `HuggingEnvs/latex-ocr-results`, holds the Qwen3.5 training history
+through 3,000 optimizer steps, baseline/checkpoint evaluations, and sample predictions. Experiment dashboards
+and trial buckets remain under `AdithyaSK` and are excluded from the collection.
+
+The published Qwen3.5 checkpoint and historical dashboard are separate from the current Qwen3-VL-2B recipe
+and its two-step HF Jobs smoke. See the [results notes](./results/README.md) for provenance and verification.
 
 ## Smoke test
 

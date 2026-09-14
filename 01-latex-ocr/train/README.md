@@ -67,13 +67,17 @@ to the rubric so padding cannot evade the length guard. Optional publishing is o
 
 ## Published runs
 
-The [LaTeX OCR collection](https://huggingface.co/collections/HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c) groups the environment, published Qwen3.5 GRPO checkpoint,
-seven Trackio dashboards, and nine buckets of preserved experiment data. The current Qwen3-VL-2B recipe is
-separate from that historical checkpoint. The main dashboard is
-[HuggingEnvs/trackio-latex-ocr](https://huggingface.co/spaces/HuggingEnvs/trackio-latex-ocr).
+The [LaTeX OCR collection](https://huggingface.co/collections/HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c)
+contains the environment, published Qwen3.5 GRPO checkpoint, source dataset, and
+[one Trackio dashboard](https://huggingface.co/spaces/HuggingEnvs/trackio-latex-ocr).
+The dashboard contains `latex-ocr-2b-overnight` (training through 3,000 optimizer steps) and `latex-ocr-eval`
+(baseline and checkpoint evaluations on 1,000 test examples, with sample predictions). Its only backing bucket
+is `HuggingEnvs/latex-ocr-results`. Trials and ablations remain under `AdithyaSK`.
 
-To launch future Jobs under the organization, add `--namespace HuggingEnvs` to `hf jobs uv run`; this requires
-organization compute permissions. Use a new run name when logging to an existing dashboard.
+The current Qwen3-VL-2B recipe is separate from the historical Qwen3.5 checkpoint. Send smoke and exploratory
+runs to a personal Trackio Space; keep the org dashboard for curated published results. To launch future Jobs
+under the organization, add `--namespace HuggingEnvs` to `hf jobs uv run`; this requires organization compute
+permissions.
 
 ## Local and notebook
 

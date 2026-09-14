@@ -15,9 +15,11 @@
     "hosted_smoke": "smoke-hosted.json"
   },
   "hosted_space": {
-    "id": "AdithyaSK/latex-ocr-env",
-    "observed_revision": "cce1ee43a48e6720afc7a257674aca5a1609989f",
-    "redeployed": false
+    "id": "HuggingEnvs/latex-ocr-env",
+    "observed_revision": "4a1c2056e881ef9b711dd03964a0584e4c73ec59",
+    "source_revision": "159166328f5ad04af13d426d2a23af45e3103e47",
+    "redeployed": true,
+    "runtime_revision_verified": true
   },
   "docker": {
     "platform": "linux/arm64",
@@ -46,5 +48,11 @@
     "summary": "smoke-gpu.json",
     "steps": 2,
     "adapter_updated": true
+  },
+  "hosted_space_before_transfer": {
+    "id": "AdithyaSK/latex-ocr-env",
+    "observed_revision": "cce1ee43a48e6720afc7a257674aca5a1609989f",
+    "redeployed": false,
+    "smoke": "smoke-hosted-before-transfer.json"
   }
 }

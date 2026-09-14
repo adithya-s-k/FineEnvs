@@ -14,23 +14,9 @@ hub:
   datasets:
     - unsloth/LaTeX_OCR
   trackio:
-    - HuggingEnvs/trackio-latex-ocr-demo
-    - HuggingEnvs/latex-ocr-ablation
-    - HuggingEnvs/latex-ocr-ablation-scale
-    - HuggingEnvs/latex-ocr-colocate-5k
-    - HuggingEnvs/latex-ocr-colocate-5k-stable
     - HuggingEnvs/trackio-latex-ocr
-    - HuggingEnvs/trackio-latex-ocr-redhat
   buckets:
-    - HuggingEnvs/trackio-latex-ocr-redhat-bucket
-    - HuggingEnvs/trackio-latex-ocr-bucket-2
-    - HuggingEnvs/latex-ocr-colocate-5k-stable-bucket
-    - HuggingEnvs/latex-ocr-colocate-5k-bucket
-    - HuggingEnvs/latex-ocr-ablation-scale-bucket
-    - HuggingEnvs/latex-ocr-ablation-bucket
-    - HuggingEnvs/trackio-latex-ocr-demo-bucket
-    - HuggingEnvs/latex-ocr-grpo-bucket
-    - HuggingEnvs/trackio-latex-ocr-bucket
+    - HuggingEnvs/latex-ocr-results
   collection: HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c
 
 envs:

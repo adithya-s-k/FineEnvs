@@ -1,0 +1,138 @@
+{
+  "date": "2026-09-14",
+  "collection": "HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c",
+  "dashboard": "HuggingEnvs/trackio-latex-ocr",
+  "dashboard_bucket": "HuggingEnvs/latex-ocr-results",
+  "returned_spaces": [
+    {
+      "id": "AdithyaSK/trackio-latex-ocr-demo",
+      "revision": "54b47967e45735554df209f4b025ff068e227155",
+      "mount_verified": true
+    },
+    {
+      "id": "AdithyaSK/latex-ocr-ablation",
+      "revision": "e6867a54bf26631de44e7a0a7e2f3e30b903f74d",
+      "mount_verified": true
+    },
+    {
+      "id": "AdithyaSK/latex-ocr-ablation-scale",
+      "revision": "561b0e17aedfd341fdc81ccb71f70a5f3c73c242",
+      "mount_verified": true
+    },
+    {
+      "id": "AdithyaSK/latex-ocr-colocate-5k",
+      "revision": "247a8fca316af4a179270dcfc89243cf54f354f3",
+      "mount_verified": true
+    },
+    {
+      "id": "AdithyaSK/latex-ocr-colocate-5k-stable",
+      "revision": "acd01488fe98b35d95b5e0dde2cad62619df1a01",
+      "mount_verified": true
+    },
+    {
+      "id": "AdithyaSK/trackio-latex-ocr-redhat",
+      "revision": "89e750959c8b8193a3dd49952e9cd8af9bf5a684",
+      "mount_verified": true
+    }
+  ],
+  "returned_buckets": [
+    {
+      "id": "AdithyaSK/trackio-latex-ocr-demo-bucket",
+      "verified": true,
+      "size": 1565336,
+      "total_files": 2,
+      "private": false
+    },
+    {
+      "id": "AdithyaSK/latex-ocr-ablation-bucket",
+      "verified": true,
+      "size": 3413280,
+      "total_files": 4,
+      "private": false
+    },
+    {
+      "id": "AdithyaSK/latex-ocr-ablation-scale-bucket",
+      "verified": true,
+      "size": 28849664,
+      "total_files": 2,
+      "private": false
+    },
+    {
+      "id": "AdithyaSK/latex-ocr-colocate-5k-bucket",
+      "verified": true,
+      "size": 84771600,
+      "total_files": 2,
+      "private": false
+    },
+    {
+      "id": "AdithyaSK/latex-ocr-colocate-5k-stable-bucket",
+      "verified": true,
+      "size": 31134440,
+      "total_files": 2,
+      "private": false
+    },
+    {
+      "id": "AdithyaSK/trackio-latex-ocr-redhat-bucket",
+      "verified": true,
+      "size": 114490456,
+      "total_files": 17170,
+      "private": false
+    },
+    {
+      "id": "AdithyaSK/trackio-latex-ocr-bucket-2",
+      "verified": true,
+      "size": 352872,
+      "total_files": 2,
+      "private": false
+    },
+    {
+      "id": "AdithyaSK/latex-ocr-grpo-bucket",
+      "verified": true,
+      "size": 141522912,
+      "total_files": 24001,
+      "private": false
+    },
+    {
+      "id": "AdithyaSK/trackio-latex-ocr-bucket",
+      "verified": true,
+      "size": 165850566,
+      "total_files": 24109,
+      "private": false
+    }
+  ],
+  "collection_items": [
+    "HuggingEnvs/latex-ocr-env",
+    "HuggingEnvs/qwen3.5-latex-ocr-grpo",
+    "unsloth/LaTeX_OCR",
+    "HuggingEnvs/trackio-latex-ocr"
+  ],
+  "dashboard_mount_verified": true,
+  "remaining_org_spaces": [
+    "HuggingEnvs/latex-ocr-env",
+    "HuggingEnvs/trackio-latex-ocr"
+  ],
+  "remaining_org_buckets": [
+    "HuggingEnvs/latex-ocr-results"
+  ],
+  "dashboard_revision": "76935a9025502a5bdc316620916d0c22d781f6f6",
+  "dashboard_data": {
+    "size": 165635223,
+    "total_files": 24107,
+    "integrity": "ok",
+    "projects": [
+      "latex-ocr-2b-overnight",
+      "latex-ocr-eval"
+    ],
+    "training_optimizer_steps": 3000,
+    "evaluation_examples_per_checkpoint": 1000,
+    "database_hashes_match_original": true,
+    "training_images_hashes_match_original": true,
+    "image_references_verified": 24105,
+    "evaluation_images_restored": 105,
+    "evaluation_image_source": "unsloth/LaTeX_OCR test rows 0-14, matched by exact stored gold text",
+    "scalar_records": 21000,
+    "training_scalar_records": 3000
+  },
+  "collection_contains_buckets": false,
+  "dashboard_scalar_regression": "passed"
+}
