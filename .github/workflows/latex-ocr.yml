@@ -1,0 +1,22 @@
+name: LaTeX OCR
+on:
+  pull_request:
+    paths: ['01-latex-ocr/**', '.github/workflows/latex-ocr.yml']
+  push:
+    branches: [main]
+    paths: ['01-latex-ocr/**', '.github/workflows/latex-ocr.yml']
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.11'
+      - name: Unit and regression tests
+        run: uv run --frozen --project 01-latex-ocr/envs/latex_ocr --extra dev pytest 01-latex-ocr/envs/latex_ocr/tests -q
+      - name: HTTP and WebSocket smoke (offline fixtures)
+        run: uv run --frozen --project 01-latex-ocr/envs/latex_ocr latex-ocr-smoke

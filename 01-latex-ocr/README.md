@@ -1,60 +1,76 @@
 # 01 · LaTeX OCR
 
-**Train Qwen3-VL-2B to read math images into LaTeX — with a reward served by a real environment.**
+Train **Qwen3-VL-2B** to transcribe formula images into LaTeX with GRPO and an OpenEnv reward server.
+This project houses the environment, notebook, training and HF Jobs scripts, and smoke-test results.
+It continues the environment originally proposed in [OpenEnv #1003](https://github.com/huggingface/OpenEnv/pull/1003).
 
-[![Hub](https://img.shields.io/badge/%F0%9F%A4%97%20Hub-HuggingEnvs-yellow)](https://huggingface.co/HuggingEnvs)
-[![Env](https://img.shields.io/badge/Space-latex--ocr--env-blue)](https://huggingface.co/spaces/AdithyaSK/latex-ocr-env)
+| Part | Source |
+|---|---|
+| Environment, client, rubric, Docker Space, tests | [`envs/latex_ocr/`](./envs/latex_ocr/) |
+| Interactive recipe | [`notebooks/01_latex_ocr_grpo.ipynb`](./notebooks/01_latex_ocr_grpo.ipynb) |
+| Shared GRPO runner and HF Jobs entry point | [`train/`](./train/) |
+| Verification evidence | [`results/`](./results/) |
+| Existing hosted environment | [AdithyaSK/latex-ocr-env](https://huggingface.co/spaces/AdithyaSK/latex-ocr-env) |
+| Hub organization | [HuggingEnvs](https://huggingface.co/HuggingEnvs) |
 
-Project 00 shows you what an environment *is*. This one takes a single environment all the way to a
-trained model: a verifiable reward, a GRPO run, and a curve that goes up.
+The existing Space is hosted on **AdithyaSK's account**. Source maintenance lives here; the links do not imply
+that a copy has been deployed under the HuggingEnvs organization.
 
-The task is deliberately clean. A model sees a rendered image of a mathematical expression and must
-emit the LaTeX that produced it. Correctness is checkable — render the prediction, compare — so the
-reward is honest and there's very little room for the model to game it. That makes it the right first
-training run: when the curve moves, you know why.
+## Smoke test
 
-## Status
-
-📓 **Notebook-first.** The full run lives in
-[`notebooks/01_latex_ocr_grpo.ipynb`](./notebooks/01_latex_ocr_grpo.ipynb) and is reproducible today.
-Extracting the environment into `envs/latex_ocr/` and the training config into `train/` is the next
-step for this project — the folders will appear as that lands.
-
-## Run it
-
-No GPU, no cluster, no local setup. One command spins up a GPU with the notebook loaded and prints a
-JupyterLab URL:
+From the repository root, with [uv](https://docs.astral.sh/uv/) installed:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/adithya-s-k/HuggingEnvs/main/tools/jupyter_launch.py | python3 -
+uv run --project 01-latex-ocr/envs/latex_ocr --extra dev pytest 01-latex-ocr/envs/latex_ocr/tests -q
+uv run --project 01-latex-ocr/envs/latex_ocr latex-ocr-smoke
+uv run --project 01-latex-ocr/envs/latex_ocr latex-ocr-smoke --real-data
 ```
 
-<sub>Windows (PowerShell): `irm https://raw.githubusercontent.com/adithya-s-k/HuggingEnvs/main/tools/jupyter_launch.py | python -`. A GPU menu appears — Enter takes the A100 default; `FLAVOR=t4-small` picks a cheaper one (`hf jobs hardware` lists them all). Track and stop jobs at [huggingface.co/settings/jobs](https://huggingface.co/settings/jobs).</sub>
+The default smoke uses tiny offline fixtures. `--real-data` loads two actual dataset rows per split.
+Both start and stop their own server and test materialized and streaming access, task discovery, PNG observations,
+isolated sessions, and server-side rewards. To check the existing Space:
 
-You need a free [Hugging Face token](https://huggingface.co/settings/tokens) (read scope is enough)
-and `pip install -U huggingface_hub`, then `hf auth login`.
+```bash
+uv run --project 01-latex-ocr/envs/latex_ocr latex-ocr-smoke \
+  --url https://adithyask-latex-ocr-env.hf.space
+```
 
-**Your work persists.** The notebooks are the JupyterLab root and live on a personal HF storage
-bucket (`<you>/rl-envs-101-notebooks`, created for you), so edits survive across sessions. Pass
-`--no-bucket` for a throwaway run. The GPU is pay-as-you-go and auto-stops after 4 hours.
+## Train
 
-Prefer your own GPU? Clone and open the notebook directly, or:
+The notebook and Jobs use the same Python runner. On a local CUDA GPU:
+
+```bash
+uv run --project 01-latex-ocr/envs/latex_ocr --extra train \
+  python 01-latex-ocr/train/grpo_latex_ocr.py --smoke
+```
+
+Or on HF Jobs, from a pushed checkout:
+
+```bash
+hf auth login
+hf jobs uv run --flavor a10g-small --timeout 30m --secrets HF_TOKEN \
+  01-latex-ocr/train/hf_job.py --revision "$(git rev-parse HEAD)" --smoke
+```
+
+The GPU smoke performs two optimizer steps with two generations per group, evaluates two held-out images before
+and after, and verifies an adapter weight update. It is a pipeline check, not evidence of quality improvement.
+See [`train/README.md`](./train/README.md) for full runs, persistent output, and hosted environments.
+For an interactive GPU notebook, the repository launcher remains available:
 
 ```bash
 python3 tools/jupyter_launch.py --flavor a100-large
 ```
 
-## The environment
+## Task and reward
 
-The reward comes from [`AdithyaSK/latex-ocr-env`](https://huggingface.co/spaces/AdithyaSK/latex-ocr-env),
-an OpenEnv environment deployed as a Space. The training script calls it per rollout — the same
-pattern as the HTTP environments in [project 00](../00-environments-101/), just pointed at a
-scoring task instead of an agentic one.
+`reset(split, index)` returns a formula image and instruction. `step(latex)` ends the episode, grades against
+the hidden dataset reference, and reveals the reference for logging. The default score is:
 
-This is the part worth internalising: **the environment is a service your trainer talks to.** Once
-that boundary is clean, swapping the task means swapping the URL.
+```text
+reward = [0.6 × (1 − normalized edit distance) + 0.4 × exact match] × length factor
+```
 
-## Read next
-
-- **[00 · RL Environments 101](../00-environments-101/)** — how the six frameworks model this differently
-- **[The guide](https://huggingface.co/spaces/AdithyaSK/rl-environments-guide)** — the long-form write-up
+The scorer strips formatting and whitespace for comparison but measures **raw completion length** to penalize
+padding. This is a string-based OCR reward: it does not render LaTeX or prove mathematical equivalence.
+Training uses indexed materialize mode so every completion in a group receives the same image. Streaming is
+sequential per session; concurrent sessions each begin their own pass.

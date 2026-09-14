@@ -1,0 +1,9 @@
+LaTeX OCR environment
+
+Adapted from huggingface/OpenEnv PR #1003, commit
+9fc674b9922f22d2e62274b09476236bcf7984eb.
+https://github.com/huggingface/OpenEnv/pull/1003
+
+The imported environment and tests retain their BSD-3-Clause copyright
+headers and LICENSE. HuggingEnvs integration and training scripts are
+covered by the repository Apache-2.0 license.
