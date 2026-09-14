@@ -34,3 +34,21 @@ def test_interleaved_training_metrics_survive_dashboard_sampling():
     assert all(row["train/loss"] == -0.01 for row in rewards)
     assert conn.execute("SELECT COUNT(*) FROM metrics").fetchone()[0] == 24000
     conn.close()
+
+
+def test_hosted_landing_view_keeps_comparison_first_without_hiding_other_projects(
+    monkeypatch,
+):
+    import app
+
+    available = [
+        "latex-ocr-2b-overnight",
+        "latex-ocr-eval",
+        "latex-ocr-history",
+        "latex-ocr-comparison",
+        "future-results",
+    ]
+    monkeypatch.setattr(app, "_get_projects", lambda: available)
+    assert app.get_projects()[0] == "latex-ocr-comparison"
+    assert set(app.get_projects()) == set(available)
+    assert available[0] == "latex-ocr-2b-overnight"

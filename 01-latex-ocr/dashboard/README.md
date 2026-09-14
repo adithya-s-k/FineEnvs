@@ -91,3 +91,5 @@ Upload the two derived databases under the bucket's `trackio/` directory. Deploy
 and this README to the canonical Space. Keep `TRACKIO_BUCKET_ID=HuggingEnvs/latex-ocr-results` and its `/data`
 mount together. The pinned Trackio 0.32.2 compatibility wrapper reads complete scalar history to avoid
 periodic downsampling that otherwise hides reward/loss entries; media reads retain their normal limits.
+It puts the combined project first for visitors without a selected project, and orders evaluation reward
+and baseline-relative gain before training diagnostics. All other projects remain selectable.

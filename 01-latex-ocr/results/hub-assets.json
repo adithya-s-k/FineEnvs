@@ -114,7 +114,7 @@
   "remaining_org_buckets": [
     "HuggingEnvs/latex-ocr-results"
   ],
-  "dashboard_revision": "2b6a36153738ab6e53ba329ee3ec16e068b14070",
+  "dashboard_revision": "a9630373e9bb21b7a4e3f8398f3840f59f551742",
   "dashboard_data": {
     "size": 231461800,
     "total_files": 24110,
@@ -148,5 +148,5 @@
   },
   "collection_contains_buckets": false,
   "dashboard_scalar_regression": "passed",
-  "dashboard_regression_tests_passed": 4
+  "dashboard_regression_tests_passed": 5
 }

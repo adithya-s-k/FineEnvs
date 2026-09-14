@@ -1,9 +1,27 @@
 """Serve the curated Trackio archive without dropping interleaved scalars."""
 
+import os
+
 import trackio
 from trackio.sqlite_storage import SQLiteStorage
 
 _fetch_metric_logs = SQLiteStorage._fetch_metric_logs_with_cursor
+_get_projects = SQLiteStorage.get_projects
+PROJECT_ORDER = [
+    "latex-ocr-comparison",
+    "latex-ocr-history",
+    "latex-ocr-2b-overnight",
+    "latex-ocr-eval",
+]
+
+
+def get_projects():
+    # The hosted frontend opens the first project when no URL selection exists.
+    # show(project=...) only changes the URL printed/opened by the Python client.
+    priority = {name: index for index, name in enumerate(PROJECT_ORDER)}
+    return sorted(
+        _get_projects(), key=lambda name: (priority.get(name, len(priority)), name)
+    )
 
 
 def fetch_metric_logs(cursor, run_identity, max_points, *, scalar_only=False):
@@ -24,4 +42,9 @@ def fetch_metric_logs(cursor, run_identity, max_points, *, scalar_only=False):
 
 if __name__ == "__main__":
     SQLiteStorage._fetch_metric_logs_with_cursor = staticmethod(fetch_metric_logs)
-    trackio.show(project="latex-ocr-comparison")
+    SQLiteStorage.get_projects = staticmethod(get_projects)
+    os.environ.setdefault(
+        "TRACKIO_PLOT_ORDER",
+        "eval/test_reward,eval/reward_gain,train/reward,train/loss",
+    )
+    trackio.show(project="latex-ocr-comparison", open_browser=False)

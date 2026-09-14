@@ -63,5 +63,5 @@ The original bucket remains intact under `AdithyaSK/trackio-latex-ocr-bucket`.
 [Model comparison](./model-comparison.md) explains the four-model evaluation gains, stabilized Gemma
 configuration, earlier regressions, and snapshot limits. [comparison-summary.json](./comparison-summary.json)
 records every selected segment and its original scalar values, evaluation points, provenance, and exclusions.
-The builder and dashboard have four passing regression tests covering missing charts, optimizer-step
-alignment, repeated baselines, asynchronous timestamps, restart separation, and source preservation.
+The builder and dashboard have five passing regression tests covering missing charts, optimizer-step
+alignment, repeated baselines, asynchronous timestamps, restart separation, source preservation, and the hosted landing view.
