@@ -12,9 +12,9 @@ import argparse
 import io
 import re
 import subprocess
-import tarfile
 import tempfile
 import urllib.request
+import zipfile
 from pathlib import Path
 
 
@@ -31,12 +31,12 @@ def main():
     if not re.fullmatch(r"[\w.-]+/[\w.-]+", args.repo):
         parser.error("--repo must be owner/repository")
     with tempfile.TemporaryDirectory(prefix="huggingenvs-") as directory:
-        url = f"https://api.github.com/repos/{args.repo}/tarball/{args.revision}"
+        url = f"https://api.github.com/repos/{args.repo}/zipball/{args.revision}"
         with (
             urllib.request.urlopen(url, timeout=120) as response,
-            tarfile.open(fileobj=io.BytesIO(response.read()), mode="r:gz") as archive,
+            zipfile.ZipFile(io.BytesIO(response.read())) as archive,
         ):
-            archive.extractall(directory, filter="data")
+            archive.extractall(directory)
         root = next(Path(directory).iterdir()) / "01-latex-ocr"
         project = root / "envs" / "latex_ocr"
         base = ["uv", "run", "--frozen", "--project", str(project), "--extra"]
