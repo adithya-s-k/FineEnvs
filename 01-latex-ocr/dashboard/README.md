@@ -79,7 +79,8 @@ HF Jobs smoke are separate from these historical runs. Publish new exploratory r
 ```bash
 python 01-latex-ocr/dashboard/build_comparison.py \
   --source-dir /path/to/downloaded-archives --output-dir /tmp/latex-combined
-uv run --with trackio==0.32.2 --with pytest python -m pytest 01-latex-ocr/dashboard/ -q
+uv run --with-requirements 01-latex-ocr/dashboard/requirements.txt --with pytest \
+  python -m pytest 01-latex-ocr/dashboard/ -q
 ```
 
 The builder writes two derived databases and `comparison-summary.json`. It preserves the original scalar
@@ -89,7 +90,9 @@ history runs include mapped evaluations. The original overnight databases and re
 
 Upload the two derived databases under the bucket's `trackio/` directory. Deploy `app.py`, `requirements.txt`,
 and this README to the canonical Space. Keep `TRACKIO_BUCKET_ID=HuggingEnvs/latex-ocr-results` and its `/data`
-mount together. The pinned Trackio 0.32.2 compatibility wrapper reads complete scalar history to avoid
-periodic downsampling that otherwise hides reward/loss entries; media reads retain their normal limits.
-It puts the combined project first for visitors without a selected project, and orders evaluation reward
+mount together. The dashboard pins Trackio **0.37.1**, the latest release verified on 2026-09-14.
+Its native metric-aware sampling preserves interleaved reward/loss and sparse evaluation entries, so the
+older scalar sampling workaround has been removed. CI uses the same requirements as the deployed Space
+and checks that these metrics survive sampling without changing the archived values.
+The app puts the combined project first for visitors without a selected project, and orders evaluation reward
 and baseline-relative gain before training diagnostics. All other projects remain selectable.

@@ -21,4 +21,4 @@ jobs:
       - name: HTTP and WebSocket smoke (offline fixtures)
         run: uv run --frozen --project 01-latex-ocr/envs/latex_ocr latex-ocr-smoke
       - name: Curated dashboard regression
-        run: uv run --with trackio==0.32.2 --with pytest python -m pytest 01-latex-ocr/dashboard/ -q
+        run: uv run --with-requirements 01-latex-ocr/dashboard/requirements.txt --with pytest python -m pytest 01-latex-ocr/dashboard/ -q
