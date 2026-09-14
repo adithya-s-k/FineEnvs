@@ -51,7 +51,7 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | # | Project | What you get | Envs | Frameworks | Deployed | Status |
 |---|---|---|:--:|:--:|:--:|---|
 | **00** | **[RL Environments 101](./00-environments-101/)** | Three environments, six frameworks, side by side. | 3 | 6 | 8 | ✅ stable |
-| **01** | **[LaTeX OCR](./01-latex-ocr/)** | Train Qwen3-VL-2B to read math images into LaTeX, with a verifiable reward. | 1 | 1 | 1 | 📓 notebook |
+| **01** | **[LaTeX OCR](./01-latex-ocr/)** | Train Qwen3-VL-2B to read math images into LaTeX, with a verifiable reward. | 1 | 1 | 1 | ✅ stable |
 | **02** | **[Watercolour](./02-watercolour/)** | Train Qwen3.5-35B-A3B to paint watercolours by writing p5.brush sketches, rewarded by an aesthetic preference model. | 1 | 1 | 0 | ✅ trained |
 | **03** | **[GeoGuesser](./03-geoguesser/)** | Drop a VLM at a random street corner on Earth and score it on kilometres of error. | 1 | 1 | 1 | ✅ stable |
 <!-- END:projects -->
@@ -79,8 +79,8 @@ them deployed as Spaces you can hit right now.
 all the way to a trained model.
 
 Qwen3-VL-2B learns to read rendered math into LaTeX with GRPO, scored by a reward served from a live
-[OpenEnv Space](https://huggingface.co/spaces/AdithyaSK/latex-ocr-env). Correctness is checkable —
-compare normalized LaTeX using edit distance and exact match, with a guard against padded completions. Runs on a
+[OpenEnv Space](https://huggingface.co/spaces/AdithyaSK/latex-ocr-env). The scorer compares normalized
+LaTeX using edit distance and exact match, with a guard against padded completions. Runs on a
 GPU you spin up in [one command](#quickstart); no cluster, no local GPU. The [environment source](./01-latex-ocr/envs/latex_ocr/),
 [notebook](./01-latex-ocr/notebooks/01_latex_ocr_grpo.ipynb), and
 [HF Jobs scripts](./01-latex-ocr/train/) live together with reproducible smoke tests.

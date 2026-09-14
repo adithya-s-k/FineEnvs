@@ -2,7 +2,7 @@ name: latex-ocr
 title: "LaTeX OCR"
 tagline: "Train Qwen3-VL-2B to read math images into LaTeX, with a verifiable reward."
 order: 1
-status: complete   # environment, shared notebook/GRPO runner, HF Jobs, smoke tests
+status: stable   # environment, shared notebook/GRPO runner, HF Jobs, smoke tests
 
 hub:
   org: HuggingEnvs

@@ -1,6 +1,7 @@
 {
   "status": "passed",
   "real_data": false,
+  "source": "offline-fixture",
   "results": [
     {
       "mode": "materialize",

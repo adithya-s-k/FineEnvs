@@ -32,11 +32,11 @@ def main():
         parser.error("--repo must be owner/repository")
     with tempfile.TemporaryDirectory(prefix="huggingenvs-") as directory:
         url = f"https://api.github.com/repos/{args.repo}/tarball/{args.revision}"
-        with urllib.request.urlopen(url, timeout=120) as response:
-            with tarfile.open(
-                fileobj=io.BytesIO(response.read()), mode="r:gz"
-            ) as archive:
-                archive.extractall(directory, filter="data")
+        with (
+            urllib.request.urlopen(url, timeout=120) as response,
+            tarfile.open(fileobj=io.BytesIO(response.read()), mode="r:gz") as archive,
+        ):
+            archive.extractall(directory, filter="data")
         root = next(Path(directory).iterdir()) / "01-latex-ocr"
         project = root / "envs" / "latex_ocr"
         base = ["uv", "run", "--frozen", "--project", str(project), "--extra"]
