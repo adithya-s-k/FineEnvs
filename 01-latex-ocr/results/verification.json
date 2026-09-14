@@ -1,0 +1,58 @@
+{
+  "date": "2026-09-14",
+  "upstream_source_commit": "9fc674b9922f22d2e62274b09476236bcf7984eb",
+  "environment_code_commit": "903a2343af23cb6b796f46f02acd49164634b58c",
+  "local": {
+    "python": "3.12.13",
+    "tests_passed": 37,
+    "packages": {
+      "openenv": "0.4.2",
+      "datasets": "5.0.1",
+      "pillow": "12.3.0"
+    },
+    "fixture_smoke": "smoke-fixture.json",
+    "real_dataset_smoke": "smoke-real-data.json",
+    "hosted_smoke": "smoke-hosted.json"
+  },
+  "hosted_space": {
+    "id": "HuggingEnvs/latex-ocr-env",
+    "observed_revision": "4a1c2056e881ef9b711dd03964a0584e4c73ec59",
+    "source_revision": "159166328f5ad04af13d426d2a23af45e3103e47",
+    "redeployed": true,
+    "runtime_revision_verified": true
+  },
+  "docker": {
+    "platform": "linux/arm64",
+    "fixture_smoke": "passed",
+    "healthz_status": 200,
+    "playground_status": 200
+  },
+  "notebook": {
+    "schema": "valid",
+    "code_cells": "syntax valid",
+    "training": "shared with train/grpo_latex_ocr.py"
+  },
+  "cpu_hf_job": {
+    "id": "6aa7e10321047bf1b0387444",
+    "url": "https://huggingface.co/jobs/AdithyaSK/6aa7e10321047bf1b0387444",
+    "status": "COMPLETED",
+    "source_revision": "f64d444c531ddedb170ee96e62551c58bb75e5b9",
+    "tests_passed": 37,
+    "fixture_smoke": "passed"
+  },
+  "gpu_hf_job": {
+    "id": "6aa7e1145527934177eddb1f",
+    "url": "https://huggingface.co/jobs/AdithyaSK/6aa7e1145527934177eddb1f",
+    "status": "COMPLETED",
+    "source_revision": "e954ec2164899366d7467938b1ac19b07f650ab3",
+    "summary": "smoke-gpu.json",
+    "steps": 2,
+    "adapter_updated": true
+  },
+  "hosted_space_before_transfer": {
+    "id": "AdithyaSK/latex-ocr-env",
+    "observed_revision": "cce1ee43a48e6720afc7a257674aca5a1609989f",
+    "redeployed": false,
+    "smoke": "smoke-hosted-before-transfer.json"
+  }
+}
