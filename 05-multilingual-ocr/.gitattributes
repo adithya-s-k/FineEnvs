@@ -1,2 +1,5 @@
 data/corpus-source.json linguist-generated=true
 data/corpus-manifest.json linguist-generated=true
+results/speed-local-*.json linguist-generated=true
+results/speed-hosted*.json linguist-generated=true
+results/speed-job.json linguist-generated=true
