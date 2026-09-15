@@ -25,6 +25,10 @@ and playground navigation. Local browser inspection covered English and Arabic f
 score/reference reveal, and selection clearing. OCR PNGs preserve dimensions and source pixels
 inside annotated boxes. Geometric order and supplied annotation accuracy still need dataset
 quality audits before using this as a model benchmark.
+The original Arabic JPEG for `document_10026_page_106` visibly contains missing/distorted
+glyphs and replacement boxes, independently of our masking. Its exact asset hash and the
+inspection limit are recorded in [REPRODUCE.md](../REPRODUCE.md). No automatic font-quality
+filter is claimed; the UI flags this known source-rendering caveat for Arabic.
 
 Each service probe scores an empty answer and a known reference in separate episodes, expecting
 0 and 1. Two training adapter instances reset to the same ID and share one fetched image.

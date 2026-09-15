@@ -66,6 +66,11 @@ class Playground:
         progress = f"**Task {index + 1} of {len(candidates)}** · `{task['page_id']}`"
         if family == "section_ocr":
             progress += f" · region {task['unit']}"
+        if language == "ar":
+            progress += (
+                "\n\nSome original Arabic pages contain missing or distorted glyphs. "
+                "This preview retains the source rendering for inspection."
+            )
         return (
             task["task_id"],
             preview,

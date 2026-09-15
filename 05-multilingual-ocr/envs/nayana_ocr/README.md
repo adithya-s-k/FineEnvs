@@ -38,6 +38,9 @@ The Docker image expects a finalized snapshot at `/app/snapshot`, or at `NAYANA_
 The deployment script bundles an explicitly selected window. The environment does not fetch
 the entire corpus or use the Dataset Viewer as a training backend.
 The public preview demonstrates serving and replay. It is not a held-out model benchmark.
+Visual inspection found missing/distorted glyphs in an original Arabic source page
+(`document_10026_page_106`). Those artifacts precede masking and are retained here. The
+playground flags this caveat for Arabic; review source rendering before using it for training.
 
 Source data: [CognitiveLab's NayanaOCR_Corpus_2025](https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025),
 licensed **CC BY-NC 4.0**. Prepared page images, annotations, and OCR crops retain that license

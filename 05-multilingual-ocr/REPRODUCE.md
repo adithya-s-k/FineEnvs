@@ -260,3 +260,11 @@ whether annotation text exactly covers every glyph inside a supplied box. Real m
 annotation quality still needs an audit before claiming a model benchmark. VQA uses the raw
 JPEG; section OCR uses a lossless crop. The 64-page preview excludes six full-page tasks for
 overlapping regions and 11 MCQs with ambiguous answers; descriptive VQA remains deferred.
+
+Visual inspection also found missing/distorted glyphs and replacement boxes in the **original**
+Arabic JPEG for `document_10026_page_106`, before any environment transformation. The original
+asset SHA-256 is `c11acab6056c92836ac8ccd7470b76d04d20441485e9e46c1c3b9b4cb2ad0a62`.
+The preview retains source pixels, and the Arabic UI calls out this rendering caveat. This
+does not establish the prevalence across Arabic or other languages. Audit image/text agreement
+and source rendering before choosing a training subset; mask correctness alone does not make
+the underlying supervision valid.
