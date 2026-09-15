@@ -25,6 +25,9 @@ serving revisions are not commit-pinned; the model/provider and rubric hash are 
 
 | Artifact | Scope |
 |---|---|
+| `smoke-hosted-v2.json` | 20 language/task groups over hosted OpenEnv, media hashes, independent sessions, empty-answer rewards and TRL media reuse |
+| `gradio-hosted-v2.json` | Same 20 language/task UI checks on the final Space build |
+| `notebook-v2.json` | All six notebook CPU cells against the hosted index v2 |
 | `gradio-local-v2.json` | All five families in en/kn/hi/ar, exact/empty scores, navigation, reference clearing and session isolation |
 | `tests-v2.json` | 55 tests with training extras |
 | `layout-local-v2.json` | Exact and empty layout predictions over OpenEnv for all 22 languages |

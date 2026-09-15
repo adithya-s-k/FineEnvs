@@ -279,18 +279,23 @@ All derived tasks are rebuilt, and source identities and database hashes are che
 uv run --frozen --project envs/nayana_ocr --extra dev --extra train pytest envs/nayana_ocr/tests -q
 uv run --frozen --project envs/nayana_ocr nayana-smoke
 uv run --frozen --project envs/nayana_ocr nayana-smoke \
-  --url https://huggingenvs-nayana-ocr-env.hf.space --languages en kn hi ar
+  --url https://huggingenvs-nayana-ocr-env.hf.space --languages en kn hi ar \
+  --output results/smoke-hosted-v2.json
 
 # Metadata addressability, one-block prefetch measurement, and all-language oracle checks.
 uv run --frozen --project envs/nayana_ocr --extra train python train/verify_corpus.py \
   --url https://huggingenvs-nayana-ocr-env.hf.space \
-  --manifest data/corpus-manifest.json --output results/corpus-hosted.json
+  --manifest data/corpus-manifest.json --output results/corpus-hosted-v2.json
 
-# All-language Gradio scoring, indexed navigation, and independent sessions.
+# Gradio scoring across all five families and four languages, matching the recorded v2 smoke.
 uv run --frozen --project envs/nayana_ocr python train/verify_playground.py \
   --url https://huggingenvs-nayana-ocr-env.hf.space \
-  --manifest data/corpus-manifest.json --output results/gradio-corpus-hosted.json
+  --manifest data/corpus-manifest.json --languages en kn hi ar --output results/gradio-hosted-v2.json
 ```
+
+Omit `--languages` from the Gradio verifier to sweep all 22 languages. The v2 deployment
+records 20 language/task UI combinations on each server; all-language layout and 35 judge
+calibration cases are separate reports.
 
 For a local server, replace the URL with its address, for example `http://127.0.0.1:8005`.
 Historical index-v1 [results](results/README.md) record 38 passing tests, all 66 language/task

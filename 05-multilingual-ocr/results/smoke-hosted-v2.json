@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "snapshot_id": "867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a",
+  "coverage": {
+    "ar/section_ocr": 1,
+    "ar/descriptive_vqa": 1,
+    "ar/mcq_vqa": 1,
+    "ar/page_ocr": 1,
+    "ar/layout_detection": 1,
+    "en/section_ocr": 1,
+    "en/descriptive_vqa": 1,
+    "en/mcq_vqa": 1,
+    "en/page_ocr": 1,
+    "en/layout_detection": 1,
+    "hi/section_ocr": 1,
+    "hi/descriptive_vqa": 1,
+    "hi/mcq_vqa": 1,
+    "hi/page_ocr": 1,
+    "hi/layout_detection": 1,
+    "kn/section_ocr": 1,
+    "kn/descriptive_vqa": 1,
+    "kn/mcq_vqa": 1,
+    "kn/page_ocr": 1,
+    "kn/layout_detection": 1
+  },
+  "exact_reference_checked": false,
+  "adapter_media_downloads": 12,
+  "elapsed_seconds": 91.863,
+  "source": "remote"
+}
