@@ -1,0 +1,105 @@
+{
+  "status": "passed",
+  "url": "http://127.0.0.1:8005/web",
+  "snapshot_id": "5f4986cf4c484bdfef97413edbb84b09071c545c2eb32d1e6897c1e57b31c1a7",
+  "coverage": [
+    {
+      "language": "en",
+      "family": "page_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "en",
+      "family": "section_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "en",
+      "family": "mcq_vqa",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "kn",
+      "family": "page_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "kn",
+      "family": "section_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "kn",
+      "family": "mcq_vqa",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "hi",
+      "family": "page_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "hi",
+      "family": "section_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "hi",
+      "family": "mcq_vqa",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "ar",
+      "family": "page_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": true
+    },
+    {
+      "language": "ar",
+      "family": "section_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": true
+    },
+    {
+      "language": "ar",
+      "family": "mcq_vqa",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": true
+    }
+  ],
+  "independent_browser_sessions": 2,
+  "browser_visual_check": "English and Arabic full pages, masked headers, score reveal and cleared reference after language change inspected in the in-app browser"
+}

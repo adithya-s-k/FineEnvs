@@ -11,7 +11,7 @@ def score(family, prediction, reference):
     if family == "mcq_vqa":
         exact = prediction.strip() == reference and not overlong
         return float(exact), {"exact_match": exact, "overlong": overlong}
-    if family != "section_ocr":
+    if family not in {"section_ocr", "page_ocr"}:
         raise ValueError(f"Unsupported task family: {family}")
     predicted, target = normalize_text(prediction), normalize_text(reference)
     if not target:

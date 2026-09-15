@@ -7,11 +7,12 @@ hub:
   org: HuggingEnvs
   datasets:
     - Cognitive-Lab/NayanaOCR_Corpus_2025
-  spaces: []
+  spaces:
+    - HuggingEnvs/nayana-ocr-env
   models: []
 envs:
   - name: nayana_ocr
-    summary: "Section OCR and multiple-choice VQA with document-level splits and shared image storage."
+    summary: "Full-page OCR, section OCR, and multiple-choice VQA with document-level splits and shared image storage."
     backend: http
     frameworks:
-      openenv: {transport: http-websocket, verified: true}
+      openenv: {transport: http-websocket, verified: true, space: HuggingEnvs/nayana-ocr-env}

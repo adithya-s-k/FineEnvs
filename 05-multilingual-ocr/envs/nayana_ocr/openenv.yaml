@@ -4,5 +4,5 @@ type: space
 runtime: fastapi
 app: nayana_ocr.server.app:create_server
 port: 8000
-description: Multilingual section OCR and multiple-choice VQA from a bounded Nayana task window.
-version: "0.1.0"
+description: Multilingual full-page OCR, section OCR, and multiple-choice VQA from a bounded Nayana task window.
+version: "0.2.0"

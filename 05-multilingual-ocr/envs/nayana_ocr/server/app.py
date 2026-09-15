@@ -21,6 +21,8 @@ def create_server():
         gradio_builder=build_ui,
         custom_tab_name="Try it",
         custom_tab_primary=True,
+        show_default_tab=False,
+        title_override="Nayana multilingual OCR",
     )
 
     @app.get("/healthz")

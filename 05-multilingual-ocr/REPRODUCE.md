@@ -25,16 +25,28 @@ multilingual recognition quality.
 
 ```bash
 uv run --frozen --project envs/nayana_ocr nayana-prepare \
-  --output data/snapshots/real-smoke --languages en kn hi ar --pages-per-language 2
+  --output data/snapshots/real-smoke-v2 --languages en kn hi ar --pages-per-language 2
 uv run --frozen --project envs/nayana_ocr nayana-smoke \
-  --snapshot data/snapshots/real-smoke --output results/local-real-smoke/smoke.json
+  --snapshot data/snapshots/real-smoke-v2 --output results/local-real-smoke-v2/smoke.json
 ```
 
-This was executed locally: eight pages, 37 valid tasks, 5,945,947 stored media bytes.
-Preparation took 92.876 seconds on that run. This is one startup observation, not a throughput
-benchmark or the count of bytes transferred over the network. Arrow row-group decoding,
-HTTP caches, and Python allocations are additional to stored media. The first read may fetch
-more than one page's compressed bytes.
+The schema-2 public preview uses 16 pages per language instead of two: **64 pages,
+414 tasks (303 section OCR, 58 full-page OCR, 53 MCQ VQA), 185,369,938 stored media bytes**.
+Preparation took 53.294 seconds on the recorded run. This is one startup observation, not a
+throughput or network-transfer benchmark. Arrow decoding, HTTP caches, and Python allocations
+are additional to stored media. The first read may fetch more than one page's compressed bytes.
+
+To reproduce the deployed window exactly:
+
+```bash
+uv run --frozen --project envs/nayana_ocr nayana-prepare \
+  --output data/snapshots/space-preview-v2 --languages en kn hi ar --pages-per-language 16
+```
+
+Expected snapshot ID: `5f4986cf4c484bdfef97413edbb84b09071c545c2eb32d1e6897c1e57b31c1a7`.
+The two-page command above is a smaller service check and produces a different snapshot.
+Schema-1 windows from the initial milestone must be rebuilt into a new directory; the server
+rejects them. Never mutate an active snapshot in place.
 
 Defaults: 32 pages per language, 1,000,000,000 stored media bytes, 50 million pixels per page,
 split seed 42, no shuffle buffer, one shard partition. Preparation validates the JPEG header
@@ -53,13 +65,13 @@ Do not move individual pages into evaluation to fill a quota: that would leak re
 ## 3. Serve locally or in Docker
 
 ```bash
-NAYANA_SNAPSHOT="$PWD/data/snapshots/real-smoke" \
+NAYANA_SNAPSHOT="$PWD/data/snapshots/real-smoke-v2" \
   uv run --frozen --project envs/nayana_ocr nayana-server
 
 # Alternative: run the same package in a container with a read-only task window.
 docker build -t nayana-ocr:local envs/nayana_ocr
 docker run --rm -p 8000:8000 \
-  -v "$PWD/data/snapshots/real-smoke:/app/snapshot:ro" nayana-ocr:local
+  -v "$PWD/data/snapshots/real-smoke-v2:/app/snapshot:ro" nayana-ocr:local
 ```
 
 Playground: `http://localhost:8000/web`. Discovery endpoints:
@@ -93,7 +105,10 @@ with connect("http://localhost:8000") as env:
 ```
 
 Each session has independent episode state. The catalog is shared and read-only. The Gradio
-playground has a per-user task ID and does not consume a training cursor. Deployments with
+playground has a per-user task ID, next/previous/shuffle navigation, and reveals the reference
+after scoring. Changing a selection clears the prior answer, reference, and score. It does
+not consume a training cursor. Reference exclusion in the OpenEnv API is a training contract,
+not a secrecy guarantee for this public-source dataset and demonstration UI. Deployments with
 multiple replicas must use the exact same immutable snapshot. A live stream allocator,
 cross-replica leases, and continuous window rotation are not implemented here.
 
@@ -104,11 +119,11 @@ benchmark subset; inspect `manifest.json` for document diversity and split cover
 
 ```bash
 uv run --frozen --project envs/nayana_ocr nayana-prepare \
-  --output data/snapshots/train-256 --pages-per-language 256 \
+  --output data/snapshots/train-256-v2 --pages-per-language 256 \
   --max-media-bytes 8000000000
 
 uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana.py \
-  --snapshot data/snapshots/train-256 --smoke --output-dir results/local-gpu-smoke
+  --snapshot data/snapshots/train-256-v2 --smoke --output-dir results/local-gpu-smoke
 ```
 
 The runner checks every requested language/task group in train and test before downloading
@@ -119,20 +134,22 @@ new directory in that case. An externally hosted environment can replace `--snap
 | Setting | Default |
 |---|---|
 | Model | `Qwen/Qwen3-VL-2B-Instruct`; resolved Hub commit saved before training |
-| Languages / tasks | `en kn hi ar` / `section_ocr mcq_vqa` |
+| Languages / tasks | `en kn hi ar` / `section_ocr mcq_vqa page_ocr` |
 | Sampler input | Map Dataset of metadata task IDs; `--task-input iterable` also available |
 | Mixing | Equal language × family groups, downsampled to the smallest group, up to 64 tasks/group |
 | Evaluation | Fixed document-disjoint test IDs, up to 4 tasks/group, greedy decoding |
 | Optimization | One GPU, BF16, SDPA, LoRA rank 16 / alpha 32 / dropout .05, q_proj and v_proj |
 | GRPO | 30 steps, 4 generations, temperature .9, learning rate 1e-5, seed 42 |
-| Completion / image budget | 512 tokens; processor max_pixels 1,048,576 |
+| Completion / image budget | 2,048 tokens; processor max_pixels 1,048,576 |
 | Truncation | Truncated completions masked; failed/zero-update smoke is an error |
 | Checkpoints | Every 25 steps or final short-run step; keep 2 |
 | Smoke override | 2 steps, 2 generations, 1 eval task per group |
 
 There is no server-side thumbnail reduction. The Qwen processor applies the declared image
 budget after task selection; small script details can become harder to read on dense pages.
-Record the budget in comparisons. Cropped OCR and full-page VQA are reported separately.
+Record the budget in comparisons. Section OCR, full-page OCR, and VQA are reported separately. Inspect completion truncation
+per group before choosing a training budget; dense multilingual pages may need more than
+2,048 tokens (`--max-completion-length`). GPU memory use for this default is not yet measured.
 
 `run-metadata.json` records the model revision, snapshot manifest, selected train/test task
 order, and configuration. Outputs include `baseline.json`, `summary.json`, the adapter and
@@ -199,14 +216,17 @@ same revision's output. A prepared dataset is not uploaded by this option.
 
 ```bash
 uv run --frozen --project envs/nayana_ocr python train/deploy_space.py \
-  --space-id YOUR-ACCOUNT/nayana-ocr-env --snapshot data/snapshots/real-smoke
+  --space-id HuggingEnvs/nayana-ocr-env --snapshot data/snapshots/space-preview-v2
 ```
 
 The publisher stages the package and a finalized real-data snapshot in a Docker Space.
 It rejects synthetic fixtures. The Space starts from bundled data without downloading the
 corpus on startup; `/manifest` identifies the exact served window. The example publishes a
 small preview, not a training/evaluation benchmark. Choose a curated final snapshot before
-publishing an organization asset. No multilingual Space or collection has been created yet.
+publishing an organization asset. The final environment Space is
+[HuggingEnvs/nayana-ocr-env](https://huggingface.co/spaces/HuggingEnvs/nayana-ocr-env);
+its served snapshot is recorded in [results](results/README.md). No test bucket or model
+repository is needed for this preview.
 
 ## Scoring policy
 
@@ -222,3 +242,21 @@ MCQ derivation requires 2–26 nonempty, unique normalized options and exactly o
 matching the normalized source answer. Other MCQs are audited and excluded rather than
 guessed. The model must return the uppercase letter; surrounding whitespace is allowed,
 but explanations, multiple letters, lowercase, and option-text answers score zero.
+
+
+### Full-page OCR derivation (schema 2)
+
+`page_ocr` joins every valid text region using `whitespace-columns-v1`: spanning headings
+and footers first, vertical whitespace cuts for columns, horizontal cuts for bands, and
+geometric tie breakers. Arabic reverses column order; it does not reverse text code points.
+This is a deterministic heuristic, not an official Nayana reading-order label. It does not
+reconstruct table formatting. Missing/invalid text or boxes, duplicate region IDs, or any
+positive-area region overlap exclude the page from this family; section/VQA tasks can remain.
+
+Full-page PNGs retain native dimensions and original pixels inside annotated boxes. Everything
+outside those boxes is white. Visual inspection found source headers outside the annotations;
+masking avoids penalizing a correct transcription for unscored visible text. We cannot infer
+whether annotation text exactly covers every glyph inside a supplied box. Real multilingual
+annotation quality still needs an audit before claiming a model benchmark. VQA uses the raw
+JPEG; section OCR uses a lossless crop. The 64-page preview excludes six full-page tasks for
+overlapping regions and 11 MCQs with ambiguous answers; descriptive VQA remains deferred.

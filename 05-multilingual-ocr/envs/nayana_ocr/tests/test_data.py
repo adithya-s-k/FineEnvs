@@ -23,11 +23,14 @@ def test_derivation_uses_language_text_original_coordinates_and_mcq_index():
     row = next(fixture_rows("kn"))
     row["regions.json"][0]["translated_text"] = "ಕನ್ನಡ ಭಾಷೆ"
     tasks, skipped = derive_tasks(row, "kn", REVISION)
-    ocr, vqa = tasks
+    ocr, vqa, page = tasks
     assert ocr["reference"] == "ಕನ್ನಡ ಭಾಷೆ" and ocr["unit"] == "17"
     assert (ocr["width"], ocr["height"]) == (245, 75)
     assert ocr["mime"] == "image/png" and vqa["media"] == row["jpg"]["bytes"]
     assert vqa["reference"] == "B" and not skipped
+    assert page["family"] == "page_ocr" and page["reference"] == ocr["reference"]
+    assert page["mime"] == "image/png" and page["reading_order"] == [17]
+    assert page["annotation_masked"] is True
     other, _ = derive_tasks(row, "en", REVISION)
     assert ocr["task_id"] != other[0]["task_id"] and ocr["split"] == other[0]["split"]
 
@@ -38,7 +41,11 @@ def test_invalid_regions_and_ambiguous_questions_are_audited():
     row["vqa.json"]["questions"][0]["options"] = ["invoice", "invoice"]
     tasks, skipped = derive_tasks(row, "en", REVISION)
     assert tasks == []
-    assert skipped == {"invalid_bbox": 1, "ambiguous_mcq_answer": 1}
+    assert skipped == {
+        "invalid_bbox": 1,
+        "ambiguous_mcq_answer": 1,
+        "page_ocr_incomplete_annotations": 1,
+    }
     with pytest.raises(ValueError, match="max_pixels"):
         derive_tasks(row, "en", REVISION, max_pixels=10)
 
@@ -51,7 +58,7 @@ def test_discovery_never_reads_images_and_does_not_expose_references(
     monkeypatch.setattr(
         "PIL.Image.open", lambda *a, **k: pytest.fail("Image decoded during discovery")
     )
-    assert catalog.count("train") == 16
+    assert catalog.count("train") == 24
     task = catalog.task_range("train", 0, 1)[0]
     assert "reference" not in task and "media" not in task
     assert "invoice" not in json.dumps({k: v for k, v in task.items() if k != "prompt"})
@@ -119,8 +126,9 @@ def test_english_missing_translation_is_valid_non_english_is_not():
     del row["regions.json"][0]["translated_text"]
     english, _ = derive_tasks(row, "en", REVISION)
     kannada, skipped = derive_tasks(row, "kn", REVISION)
-    assert len(english) == 2 and len(kannada) == 1
+    assert len(english) == 3 and len(kannada) == 1
     assert skipped["empty_region_text"] == 1
+    assert skipped["page_ocr_incomplete_annotations"] == 1
 
 
 def test_parquet_checkpoint_replays_exact_next_page(tmp_path):

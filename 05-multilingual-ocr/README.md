@@ -5,19 +5,27 @@ uses [NayanaOCR_Corpus_2025](https://huggingface.co/datasets/Cognitive-Lab/Nayan
 to demonstrate data handling in OpenEnv: bounded preparation, document-level partitions,
 metadata-only discovery, shared images, and reproducible task assignment.
 
-The first milestone is implemented and tested locally. It includes one OpenEnv environment
-with two task families, a Gradio playground, a notebook, a single-GPU TRL recipe, and HF Jobs
-and Space deployment scripts. **GPU training and a public Space have not been run for this
-experiment yet.** There are no multilingual model quality claims.
+One OpenEnv environment includes **full-page OCR, section OCR, and MCQ VQA**, a Gradio
+playground in the style of LaTeX OCR, a notebook, a single-GPU TRL recipe, and HF Jobs scripts.
+The final preview is [HuggingEnvs/nayana-ocr-env](https://huggingface.co/spaces/HuggingEnvs/nayana-ocr-env).
+GPU training has not been run for this experiment; there are no model quality claims.
 
 | Task | Observation | Answer | Reward |
 |---|---|---|---|
-| `section_ocr` | Lossless crop of one annotated region | Transcription in the source language | `0.8 × max(0, 1−CER) + 0.2 × exact_match` |
+| `page_ocr` | Native-size page with unannotated areas masked | All annotated text in geometric reading order | `0.8 × max(0, 1−CER) + 0.2 × exact_match` |
+| `section_ocr` | Lossless crop of one annotated region | Transcription in the source language | Same OCR reward |
 | `mcq_vqa` | Original page JPEG, question, options | One uppercase option letter | Exact letter match |
 
-One shared data layer serves both families. Section OCR uses `english_text` for English and
-`translated_text` for other languages. Missing or ambiguous annotations are counted and
-excluded. References stay server-side, including after grading.
+One shared data layer serves all three families. OCR uses `english_text` for English and
+`translated_text` for other languages. Full-page references join valid regions using a
+versioned geometric reading-order policy (RTL columns for Arabic). Pages with incomplete or
+overlapping annotations are excluded from full-page OCR. Unannotated areas are masked because
+some source pages contain headers without corresponding reference text. This preserves page
+size and layout; it does not provide table-format reconstruction or canonical semantic order.
+
+The playground has language/task filters, previous/next/shuffle navigation, a fullscreen image
+viewer, reward/CER feedback, and reference reveal after scoring. OpenEnv discovery and rollout
+observations exclude references, including after grading. The separate UI's reveal is intentional.
 
 <!-- BEGIN:matrix -->
 | Env | Tools | Backend | `openenv` |
@@ -35,12 +43,12 @@ uv run --frozen --project envs/nayana_ocr nayana-smoke
 
 # Eight real pages: two each from English, Kannada, Hindi, Arabic.
 uv run --frozen --project envs/nayana_ocr nayana-prepare \
-  --output data/snapshots/real-smoke --pages-per-language 2
+  --output data/snapshots/real-smoke-v2 --pages-per-language 2
 uv run --frozen --project envs/nayana_ocr nayana-smoke \
-  --snapshot data/snapshots/real-smoke
+  --snapshot data/snapshots/real-smoke-v2
 
 # Serve that exact window. Open http://localhost:8000/web for the playground.
-NAYANA_SNAPSHOT="$PWD/data/snapshots/real-smoke" \
+NAYANA_SNAPSHOT="$PWD/data/snapshots/real-smoke-v2" \
   uv run --frozen --project envs/nayana_ocr nayana-server
 ```
 
@@ -65,7 +73,7 @@ flowchart LR
     A[Pinned Parquet shards] --> B[Sequential page preparation]
     B --> C[Immutable task window]
     C --> D[Metadata task IDs]
-    C --> E[Shared JPEGs and crops]
+    C --> E[Shared JPEGs and OCR PNGs]
     D --> F[TRL repeats each ID G times]
     F --> G[Independent OpenEnv sessions]
     E --> G
@@ -83,7 +91,7 @@ flowchart LR
 - **Preparation can resume.** Each page's tasks and the unshuffled Datasets iterator state
   commit together. Rerun the same command after interruption. Version and configuration
   mismatches fail explicitly. A finished manifest marks the window ready for serving.
-- **Media are separate from JSON.** VQA preserves embedded JPEG bytes; OCR crops are PNG.
+- **Media are separate from JSON.** VQA preserves embedded JPEG bytes; OCR crops and masked pages are PNG.
   The adapter fetches binary media once per cache entry and supplies PIL images to TRL.
   Nayana's `__url__` records source provenance and is not an image download endpoint.
 
@@ -94,21 +102,24 @@ and [TRL environment interface](https://huggingface.co/docs/trl/grpo_trainer#env
 
 ## Verification and next milestones
 
-The [recorded real-data check](results/smoke-real-data.json) covers section OCR and MCQ VQA
-for English, Kannada, Hindi, and Arabic. Eight pages yielded **37 tasks and 5,945,947 media
-bytes**. Three MCQs had answers that could not be mapped uniquely to an option and were
-excluded. All eight pages belong to the train partition, so this tiny window is suitable
-for transport checks and cannot support a held-out training comparison.
+The current [local service check](results/smoke-page-ocr-local.json) covers all
+**4 languages × 3 task families**. The deployed preview contains **64 pages and 414 tasks**:
+303 section OCR, 58 full-page OCR, and 53 MCQ VQA. It stores 185,369,938 media bytes. Six
+full-page tasks with overlapping regions and 11 ambiguous MCQs were excluded. All preview
+pages belong to train; this window demonstrates serving and cannot support a held-out comparison.
 
-Tests exercise Unicode preservation, crop bounds, hidden references, independent episodes,
-resume, byte limits, balanced task selection, and actual TRL map/iterable group repetition.
-See [results/README.md](results/README.md) for what was measured and what remains untested.
+Tests exercise Unicode preservation, crop and mask bounds, reading order, hidden API references,
+independent episodes, resume, byte limits, balanced task selection, and actual TRL map/iterable
+group repetition. Gradio checks cover scoring, navigation, RTL controls, and separate users.
+See [results/README.md](results/README.md) for recorded verification and deployment details.
 
-Next milestones are a document-diverse training/evaluation window, a GPU optimizer smoke,
-and measured training runs with per-language and per-task results. After that, extend the
-same environment with layout-region detection. Page OCR needs an audited reading-order
-policy; descriptive VQA needs validated answer scoring. They are not enabled in this version.
-These layout annotations do not establish generic object detection or word-level boxes.
+Next steps are a document-diverse training/evaluation window, a GPU optimizer smoke, and
+measured per-language/task training runs. Layout-region detection and descriptive VQA need
+separate scoring validation. Layout boxes do not establish generic object detection or word boxes.
+
+[OPENENV_UPSTREAM.md](OPENENV_UPSTREAM.md) describes reusable contribution candidates:
+a dataset-backed TaskProvider catalog, binary-media references and caching, and replay tests.
+OpenEnv already provides TaskProvider; the proposals build on that existing interface.
 
 ## Files
 
@@ -119,6 +130,7 @@ train/              shared GRPO runner, HF Jobs launcher, explicit Space publish
 notebooks/          local data and environment walkthrough, optional training
 results/            small verification reports; local training outputs are ignored
 REPRODUCE.md        commands, configurations, scoring and replay details
+OPENENV_UPSTREAM.md concrete upstream contribution proposals and boundaries
 ```
 
 Code is Apache-2.0. Nayana data and derived crops retain the dataset's **CC BY-NC 4.0**

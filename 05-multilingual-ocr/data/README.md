@@ -27,7 +27,7 @@ Prepared directories contain:
 
 ```text
 catalog.sqlite    task/reference metadata, asset index, and page-level preparation checkpoints
-assets/<sha256>   original JPEGs or lossless PNG crops, deduplicated by content
+assets/<sha256>   original JPEGs, lossless PNG crops, or masked full-page PNGs, deduplicated by content
 manifest.json    finalized configuration, counts, snapshot ID, source and audit information
 ```
 
@@ -45,3 +45,17 @@ Preparation is sequential without a shuffle buffer. `--num-shards` and `--shard-
 partition physical stream shards for separate preparation jobs; excessive partitions are
 rejected. The first training recipe supports one GPU and does not independently shard TRL's
 rollouts. Combining windows or adding distributed live scheduling is future work.
+
+
+Schema 2 adds `page_ocr`. All supplied regions must have valid, unique IDs, nonempty language
+references, in-bounds boxes, and no positive-area overlap. References concatenate the regions
+using `whitespace-columns-v1` (spanning blocks, then columns and bands; Arabic columns RTL).
+The policy and ordered region IDs are public task metadata. The full canvas is preserved,
+with unannotated areas masked white; `annotation_masked=true` makes this explicit. The page
+image remains suitable for reading-order OCR while preventing unannotated headers from
+entering the visible target. VQA still receives original JPEG bytes. This is a geometric
+annotation-derived task, not official reading-order ground truth or table reconstruction.
+
+Schema-1 snapshots are intentionally rejected by the current catalog. Prepare a fresh output
+directory when upgrading. The current preview manifest is in
+[results/preparation-space-preview.json](../results/preparation-space-preview.json).

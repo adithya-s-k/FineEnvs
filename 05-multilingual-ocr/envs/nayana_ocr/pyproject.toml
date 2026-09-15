@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openenv-nayana-ocr"
-version = "0.1.0"
+version = "0.2.0"
 description = "Replayable multilingual OCR and VQA tasks streamed from Nayana into OpenEnv"
 requires-python = ">=3.11,<3.14"
 license = "Apache-2.0"

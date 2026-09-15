@@ -1,6 +1,7 @@
 """Publish an explicitly selected, prepared window with the OpenEnv Docker Space."""
 
 import argparse
+import json
 import shutil
 import tempfile
 from pathlib import Path
@@ -41,6 +42,23 @@ def main():
             staging / "snapshot",
             ignore=shutil.ignore_patterns(".prepare.lock"),
         )
+        # Keep the Space card tied to the selected window when a different one is published.
+        provenance = {
+            key: catalog.manifest[key]
+            for key in (
+                "snapshot_id",
+                "schema_version",
+                "datasets_version",
+                "config",
+                "source_license",
+                "pages",
+                "counts",
+                "media_bytes",
+            )
+        }
+        with (staging / "README.md").open("a") as card:
+            card.write("\n## Bundled preview\n\n```json\n")
+            card.write(json.dumps(provenance, indent=2) + "\n```\n")
         api = HfApi()
         api.create_repo(
             args.space_id,
@@ -49,13 +67,14 @@ def main():
             private=args.private,
             exist_ok=True,
         )
-        api.upload_folder(
+        commit = api.upload_folder(
             repo_id=args.space_id,
             repo_type="space",
             folder_path=staging,
             commit_message=f"Nayana snapshot {catalog.manifest['snapshot_id'][:12]}",
         )
         print(f"https://huggingface.co/spaces/{args.space_id}")
+        print(f"Space commit: {commit.oid}")
 
 
 if __name__ == "__main__":

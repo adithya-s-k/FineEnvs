@@ -6,6 +6,8 @@ import sqlite3
 from contextlib import closing, contextmanager
 from pathlib import Path
 
+from .schema import SCHEMA_VERSION
+
 SPLITS = ("train", "validation", "test")
 PUBLIC_FIELDS = (
     "task_id",
@@ -32,6 +34,10 @@ class Catalog:
         self.manifest = json.loads((self.directory / "manifest.json").read_text())
         if self.manifest.get("status") != "ready":
             raise ValueError("Snapshot must be finalized before serving")
+        if self.manifest.get("schema_version") != SCHEMA_VERSION:
+            raise ValueError(
+                f"Prepare a new schema-v{SCHEMA_VERSION} window; this snapshot uses an older task contract"
+            )
 
     @contextmanager
     def _connect(self):
@@ -76,11 +82,15 @@ class Catalog:
         return json.loads(row[0])
 
     def public(self, task):
-        return {
+        result = {
             **{key: task[key] for key in PUBLIC_FIELDS},
             "asset_path": f"/assets/{task['asset_sha256']}",
             "snapshot_id": self.manifest["snapshot_id"],
         }
+        for key in ("reading_order_policy", "reading_order", "annotation_masked"):
+            if key in task:
+                result[key] = task[key]
+        return result
 
     def task_range(self, split, start=0, stop=None):
         count = self.count(split)

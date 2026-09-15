@@ -6,7 +6,15 @@ from collections import Counter
 
 from PIL import Image
 
-from .schema import FAMILIES, document_id, normalize_text, split_for_page, task_id
+from .reading_order import ordered_regions, overlapping_regions
+from .schema import (
+    FAMILIES,
+    READING_ORDER,
+    document_id,
+    normalize_text,
+    split_for_page,
+    task_id,
+)
 
 
 def derive_tasks(row, language, revision, split_seed=42, max_pixels=50_000_000):
@@ -21,7 +29,7 @@ def derive_tasks(row, language, revision, split_seed=42, max_pixels=50_000_000):
         raise ValueError(f"{page_id}: {width}x{height} exceeds max_pixels={max_pixels}")
     if image.format != "JPEG":
         raise ValueError(f"{page_id}: expected native JPEG, got {image.format}")
-    tasks, skipped = [], Counter()
+    tasks, skipped, page_regions = [], Counter(), []
 
     def add(family, unit, prompt, reference, media, mime, size, bbox=None):
         tasks.append(
@@ -71,6 +79,7 @@ def derive_tasks(row, language, revision, split_seed=42, max_pixels=50_000_000):
                 skipped["invalid_bbox"] += 1
                 continue
             bbox = [math.floor(x0), math.floor(y0), math.ceil(x1), math.ceil(y1)]
+            page_regions.append({"region_id": unit, "bbox": bbox, "text": reference})
             with image.crop(bbox) as crop:
                 buffer = io.BytesIO()
                 crop.save(buffer, format="PNG")  # lossless crop, no page downscaling
@@ -121,6 +130,42 @@ def derive_tasks(row, language, revision, split_seed=42, max_pixels=50_000_000):
                 "\n\nReturn only the single uppercase letter of the correct option."
             )
             add(FAMILIES[1], index, prompt, label, raw, "image/jpeg", image.size)
+        # Full-page supervision must include every supplied text annotation. Do
+        # not turn a partially valid page into an apparently complete target.
+        if not regions or len(page_regions) != len(regions):
+            skipped["page_ocr_incomplete_annotations"] += 1
+        elif overlapping_regions(page_regions):
+            skipped["page_ocr_overlapping_regions"] += 1
+        else:
+            rtl = language == "ar"
+            ordered = ordered_regions(page_regions, rtl=rtl)
+            direction = "right to left" if rtl else "left to right"
+            # Nayana can retain visible source headers outside its text annotations.
+            # Preserve the full canvas while masking unsupervised areas so a correct
+            # transcription is not penalized for text absent from the reference.
+            with Image.new("RGB", image.size, "white") as masked:
+                for region in page_regions:
+                    with image.crop(region["bbox"]) as crop:
+                        masked.paste(crop, tuple(region["bbox"][:2]))
+                buffer = io.BytesIO()
+                masked.save(buffer, format="PNG")
+            add(
+                "page_ocr",
+                "page",
+                f"Transcribe all visible text on this full document page (language: {language}). "
+                "Unannotated areas have been masked while preserving the page layout. "
+                f"Read separate columns {direction}, and read text within each column from top to bottom. "
+                "Read spanning headings before the body and spanning footers after it. "
+                "Preserve language and punctuation. Separate regions with a blank line. "
+                "Return only the transcription; do not describe images or reconstruct table formatting.",
+                "\n\n".join(region["text"] for region in ordered),
+                buffer.getvalue(),
+                "image/png",
+                image.size,
+            )
+            tasks[-1]["reading_order_policy"] = READING_ORDER
+            tasks[-1]["reading_order"] = [region["region_id"] for region in ordered]
+            tasks[-1]["annotation_masked"] = True
     finally:
         image.close()
     return tasks, skipped

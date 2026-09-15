@@ -19,3 +19,6 @@ class NayanaObservation(Observation):
     width: int = 0
     height: int = 0
     metrics: dict[str, float | bool] = Field(default_factory=dict)
+    reading_order_policy: str = ""
+    reading_order: list[int | str] = Field(default_factory=list)
+    annotation_masked: bool = False

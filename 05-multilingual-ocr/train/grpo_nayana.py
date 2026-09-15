@@ -35,7 +35,7 @@ class Config:
     eval_per_group: int = 4
     max_steps: int = 30
     num_generations: int = 4
-    max_completion_length: int = 512
+    max_completion_length: int = 2048
     max_pixels: int = 1_048_576
     learning_rate: float = 1e-5
     seed: int = 42

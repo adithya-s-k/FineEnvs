@@ -31,8 +31,9 @@ LANGUAGES = (
     "th",
     "zh",
 )
-FAMILIES = ("section_ocr", "mcq_vqa")
-SCHEMA_VERSION = 1
+FAMILIES = ("section_ocr", "mcq_vqa", "page_ocr")
+SCHEMA_VERSION = 2
+READING_ORDER = "whitespace-columns-v1"
 
 
 def canonical_json(value):
