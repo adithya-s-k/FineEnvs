@@ -1,7 +1,7 @@
 # What this experiment could contribute to OpenEnv
 
 The strongest first contribution is a small dataset-serving guide and reference implementation
-using the existing TaskProvider API. Then we can propose reusable helpers with evidence from
+using the existing TaskProvider API, backed by a full corpus and measured cache behavior. Then we can propose reusable helpers with evidence from
 both Nayana and LaTeX OCR. No upstream issue or PR has been opened for these proposals yet.
 
 ## Existing foundation
@@ -20,9 +20,9 @@ These are proposals, not claims that upstream lacks all related work.
 
 ## 1. Dataset catalog and resource lifecycle
 
-Extract a small reference TaskProvider backed by an immutable prepared window: stable task IDs,
+Extract a small reference TaskProvider backed by an immutable full-corpus index: stable task IDs,
 snapshot identity, metadata-only bounded ranges, and a shared read-only resource whose lifetime
-is independent of one episode. The guide should show sequential preparation and stable-ID reset
+is independent of one episode. The guide should show metadata-only indexing, lazy bucket-backed media loading, and stable-ID reset
 with two simultaneous sessions. Keep Datasets and SQLite as optional example dependencies.
 
 Start with documentation and the existing factory closure pattern. If multiple environments
@@ -30,10 +30,10 @@ need it, propose `create_app(..., task_provider=catalog)` as an optional, backwa
 way to serve discovery without constructing an expensive episode environment. Existing factory
 dispatch remains the fallback; define ownership/close behavior explicitly and add lifecycle tests.
 
-Nayana evidence: [catalog.py](envs/nayana_ocr/data/catalog.py),
-[prepare.py](envs/nayana_ocr/data/prepare.py), [app.py](envs/nayana_ocr/server/app.py).
+Nayana evidence: [corpus.py](envs/nayana_ocr/data/corpus.py),
+[index.py](envs/nayana_ocr/data/index.py), [app.py](envs/nayana_ocr/server/app.py).
 Do not standardize Nayana's language fields, document hash split, SQLite schema, or crop policy
-in OpenEnv core. Split counts must describe the prepared window, not a remote corpus estimate.
+in OpenEnv core. Split counts must describe the actual indexed tasks, including exclusions and lazy image-validation limits.
 
 ## 2. Binary media reference and client helper
 
@@ -47,6 +47,11 @@ resolution, authentication, redirects, failures, size limits, cache eviction, an
 with existing inline observations. Never fetch arbitrary references without the caller's
 URL/authentication policy. This experiment supplies image-only evidence, not a completed generic
 media protocol.
+
+The corpus implementation also supplies coalesced row-group prefetch, atomic cache publication,
+reader leases, eviction, bounded lock metadata, source-identity checks, and reconstruction after
+asset eviction. These belong in an optional storage/media helper, not an HF-specific dependency
+of every environment.
 
 Nayana evidence: [observation fields](envs/nayana_ocr/models.py),
 [binary endpoint](envs/nayana_ocr/server/app.py), [AssetCache](envs/nayana_ocr/training.py).
@@ -76,6 +81,8 @@ Nayana evidence: [service smoke](envs/nayana_ocr/smoke.py),
 
 Keep OCR rewards, Unicode normalization, geometric reading order, annotation masks, and the
 document partition policy in HuggingEnvs. A general live stream scheduler with distributed
-leases/eviction is a larger design: this experiment implements immutable windows and page-level
-preparation checkpoints, not that scheduler. Datasets iterator state also does not imply exact
+leases/eviction is a larger design: this experiment implements a complete immutable index, bounded local caches, and a block
+iterator with a replayable consumer cursor. It does not implement cross-host distributed leases
+or claim optimizer checkpoint replay. The source-group prefetch endpoint and cursor are useful
+reference examples before proposing a generic optional scheduling protocol. Datasets iterator state also does not imply exact
 shuffle-buffer or training-checkpoint replay. See [REPRODUCE.md](REPRODUCE.md) for those boundaries.

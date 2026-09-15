@@ -1873,13 +1873,15 @@ wheels = [
 
 [[package]]
 name = "openenv-nayana-ocr"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "datasets" },
     { name = "gradio" },
+    { name = "huggingface-hub" },
     { name = "openenv" },
     { name = "pillow" },
+    { name = "pyarrow" },
     { name = "rapidfuzz" },
     { name = "requests" },
 ]
@@ -1903,9 +1905,11 @@ requires-dist = [
     { name = "accelerate", marker = "extra == 'train'", specifier = ">=1.4,<2" },
     { name = "datasets", specifier = "==5.0.1" },
     { name = "gradio", specifier = ">=6,<7" },
+    { name = "huggingface-hub", specifier = "==1.31.0" },
     { name = "openenv", specifier = "==0.4.2" },
     { name = "peft", marker = "extra == 'train'", specifier = ">=0.18,<1" },
     { name = "pillow", specifier = ">=11,<13" },
+    { name = "pyarrow", specifier = "==25.0.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8,<10" },
     { name = "rapidfuzz", specifier = ">=3.14,<4" },
     { name = "requests", specifier = ">=2.32,<3" },

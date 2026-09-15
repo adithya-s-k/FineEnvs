@@ -2,7 +2,34 @@
 
 These are pipeline checks, not model evaluations or evidence of reward improvement.
 
-## Current preview: schema 2 / package 0.2.0
+## Complete corpus: schema 2 / index 1 / package 0.3.0
+
+The current server uses the complete bucket copy and an immutable full-corpus index. Reports:
+
+| Artifact | Scope |
+|---|---|
+| `corpus-layout.json` | Exact index size, physical block count, source image-column size distribution, task totals and exclusions |
+| `tests-corpus.json` | Full package tests, including HTTP, cache concurrency/eviction, iterator replay, and installed TRL group repetition |
+| `corpus-index.json` | Full source audit, all page sets, all SQLite checksums/integrity checks, derived task totals and exclusions |
+| `corpus-local.json` | First/middle/last metadata lookup across every language/split; prefetched block timings; all 66 language/task transport groups |
+| `corpus-hosted.json` | The same addressability, block reuse, and oracle checks on the Space with its bucket mount |
+| `deployment-corpus.json` | Space commit, exact snapshot, and read-only bucket volume |
+| `notebook-corpus.json` | Execution of the notebook's actual CPU source cells against the complete corpus |
+| `gradio-corpus.json` | Local and hosted UI navigation, indexed jump, full-page rendering, and score/reference behavior |
+
+The index reads only annotations/page IDs. Its task counts precede lazy image-bound validation;
+they are not an image-quality audit. The source has known annotation omissions and Arabic font
+rendering defects. The 66-group smoke loads representative tasks that share source blocks where
+possible. Metadata checks cover first, middle, and last positions in all 22 languages and three
+splits; they do not claim to render every source page.
+
+The one-block timing measurement excludes index construction and model generation. It records
+actual HTTP payload bytes locally; mounted network I/O on the Space is not measured by that
+counter. It demonstrates cache reuse for the measured block, not sustained training throughput.
+All earlier reports below remain historical evidence and do not identify the currently served
+full-corpus snapshot. GPU optimizer steps and held-out model improvement remain unverified.
+
+## Historical preview: schema 2 / package 0.2.0
 
 | Artifact | What it records |
 |---|---|

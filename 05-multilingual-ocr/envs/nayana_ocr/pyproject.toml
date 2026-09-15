@@ -4,13 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openenv-nayana-ocr"
-version = "0.2.0"
+version = "0.3.0"
 description = "Replayable multilingual OCR and VQA tasks streamed from Nayana into OpenEnv"
 requires-python = ">=3.11,<3.14"
 license = "Apache-2.0"
 dependencies = [
   "openenv==0.4.2",
   "datasets==5.0.1",
+  "huggingface-hub==1.31.0",
+  "pyarrow==25.0.1",
   "Pillow>=11,<13",
   "rapidfuzz>=3.14,<4",
   "requests>=2.32,<3",
@@ -29,6 +31,8 @@ train = [
 ]
 
 [project.scripts]
+nayana-mirror = "nayana_ocr.data.mirror:main"
+nayana-index = "nayana_ocr.data.index:main"
 nayana-prepare = "nayana_ocr.data.prepare:main"
 nayana-server = "nayana_ocr.server.app:main"
 nayana-smoke = "nayana_ocr.smoke:main"

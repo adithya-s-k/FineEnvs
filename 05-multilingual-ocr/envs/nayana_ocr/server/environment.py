@@ -13,14 +13,38 @@ from .rewards import score
 
 @lru_cache(maxsize=4)
 def get_catalog(directory):
+    if os.environ.get("NAYANA_CORPUS_MANIFEST"):
+        from ..data.corpus import CorpusCatalog
+
+        return CorpusCatalog(
+            directory,
+            os.environ.get("NAYANA_CACHE_DIR", "/tmp/nayana-cache"),
+            source_root=os.environ.get("NAYANA_SOURCE_ROOT"),
+            local_source=os.environ.get("NAYANA_LOCAL_SOURCE") == "true",
+            index_cache_bytes=int(
+                os.environ.get("NAYANA_INDEX_CACHE_BYTES", "4000000000")
+            ),
+            group_cache_bytes=int(
+                os.environ.get("NAYANA_GROUP_CACHE_BYTES", "4000000000")
+            ),
+            asset_cache_bytes=int(
+                os.environ.get("NAYANA_ASSET_CACHE_BYTES", "512000000")
+            ),
+            max_group_bytes=int(os.environ.get("NAYANA_MAX_GROUP_BYTES", "512000000")),
+            prefetch_workers=int(os.environ.get("NAYANA_PREFETCH_WORKERS", "2")),
+            prefetch_pending=int(os.environ.get("NAYANA_PREFETCH_PENDING", "4")),
+        )
     return Catalog(directory)
 
 
 def configured_catalog():
+    corpus = os.environ.get("NAYANA_CORPUS_MANIFEST")
+    if corpus:
+        return get_catalog(corpus)
     directory = os.environ.get("NAYANA_SNAPSHOT")
     if not directory:
         raise RuntimeError(
-            "Set NAYANA_SNAPSHOT to a finalized nayana-prepare directory"
+            "Set NAYANA_CORPUS_MANIFEST to a ready corpus index or NAYANA_SNAPSHOT to a prepared directory"
         )
     return get_catalog(os.path.realpath(directory))
 
@@ -63,7 +87,7 @@ class NayanaEnvironment(Environment):
             index = random.Random(seed).randrange(count) if index is None else index
             task = self.catalog.at(split, index)
         self._state = State(episode_id=episode_id or str(uuid4()), step_count=0)
-        self._task = task
+        self._task = self.catalog.materialize(task)
         return self._observation()
 
     def _observation(self, **kwargs):

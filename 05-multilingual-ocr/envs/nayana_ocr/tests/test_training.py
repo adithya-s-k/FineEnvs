@@ -33,6 +33,15 @@ def test_reward_rejects_misrouted_group_before_scoring():
 
 @pytest.mark.parametrize("mode", ["map", "iterable"])
 def test_installed_trl_repeats_same_task_within_each_grpo_group(tmp_path, mode):
+    path = Path(__file__).resolve().parents[3] / "train" / "grpo_nayana.py"
+    spec = importlib.util.spec_from_file_location("grpo_nayana_test", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    rows = [{"prompt": "hello", "task_id": str(i)} for i in range(8)]
+    assert_trl_groups(tmp_path, module.build_dataset(rows, mode))
+
+
+def assert_trl_groups(tmp_path, dataset):
     trl = pytest.importorskip(
         "trl", reason="Install --extra train to verify TRL's CPU sampler"
     )
@@ -40,10 +49,6 @@ def test_installed_trl_repeats_same_task_within_each_grpo_group(tmp_path, mode):
     from tokenizers.models import WordLevel
     from transformers import GPT2Config, GPT2LMHeadModel, PreTrainedTokenizerFast
 
-    path = Path(__file__).resolve().parents[3] / "train" / "grpo_nayana.py"
-    spec = importlib.util.spec_from_file_location("grpo_nayana_test", path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
     vocab = {"[PAD]": 0, "[BOS]": 1, "[EOS]": 2, "[UNK]": 3, "hello": 4}
     tokenizer = PreTrainedTokenizerFast(
         tokenizer_object=Tokenizer(WordLevel(vocab, unk_token="[UNK]")),
@@ -52,7 +57,6 @@ def test_installed_trl_repeats_same_task_within_each_grpo_group(tmp_path, mode):
         eos_token="[EOS]",
         unk_token="[UNK]",
     )
-    rows = [{"prompt": "hello", "task_id": str(i)} for i in range(8)]
     model = GPT2LMHeadModel(
         GPT2Config(
             n_layer=1,
@@ -67,7 +71,7 @@ def test_installed_trl_repeats_same_task_within_each_grpo_group(tmp_path, mode):
     trainer = trl.GRPOTrainer(
         model=model,
         processing_class=tokenizer,
-        train_dataset=module.build_dataset(rows, mode),
+        train_dataset=dataset,
         reward_funcs=lambda completions, **kwargs: [0.0] * len(completions),
         args=trl.GRPOConfig(
             output_dir=str(tmp_path),

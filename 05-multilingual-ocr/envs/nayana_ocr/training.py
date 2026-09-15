@@ -35,7 +35,10 @@ class AssetCache:
             if raw is None:
                 # Do not follow an arbitrary observation URL or cache unverified content.
                 with requests.get(
-                    f"{self.url}/assets/{sha}", timeout=120, stream=True
+                    f"{self.url}/assets/{sha}",
+                    params={"task_id": observation.task_id},
+                    timeout=120,
+                    stream=True,
                 ) as response:
                     response.raise_for_status()
                     content = bytearray()

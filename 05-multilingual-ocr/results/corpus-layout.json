@@ -1,0 +1,24 @@
+{
+  "source_revision": "b220b074a8c82bb90427051e856e4c4edc79885b",
+  "snapshot_id": "56b9cb928c0bc050a4d6e67acb12e38718ea66239e5fcae7c0a09299963990eb",
+  "image_group_bytes": {
+    "p50": 75121734,
+    "p95": 115700835,
+    "max": 188043822
+  },
+  "physical_blocks": 11052,
+  "index_bytes": 3747627008,
+  "tasks_by_family": {
+    "mcq_vqa": 872448,
+    "page_ocr": 639448,
+    "section_ocr": 4477445
+  },
+  "skipped": {
+    "descriptive_vqa_deferred": 4024592,
+    "ambiguous_mcq_answer": 133807,
+    "page_ocr_overlapping_regions": 113396,
+    "empty_region_text": 364814,
+    "page_ocr_incomplete_annotations": 253326,
+    "invalid_mcq": 3
+  }
+}

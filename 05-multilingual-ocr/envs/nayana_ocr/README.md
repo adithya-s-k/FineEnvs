@@ -17,34 +17,34 @@ datasets:
 
 # Nayana multilingual OCR environment
 
-One OpenEnv environment serves **full-page OCR**, **section OCR**, and
-**multiple-choice document VQA**. The playground offers language/task selection,
-previous/next/shuffle navigation, a full-size image viewer, and reward/CER feedback.
-It reveals the reference after scoring, like the LaTeX OCR playground.
+One OpenEnv environment serves the **complete 22-language Nayana corpus** for **full-page OCR,
+section OCR, and multiple-choice document VQA**. Open `/web` for language/task selection,
+indexed navigation, a full-size image viewer, and reward/CER feedback. References are revealed
+after scoring in the playground. OpenEnv task discovery and observations exclude references.
 
-Open `/web` to try a task. `/manifest` describes the prepared data window; `/docs` describes
-the API. OpenEnv observations and task discovery contain image paths and instructions,
-never reference answers, including after grading. Episodes accept one answer.
+The source lives in [HuggingEnvs/NayanaOCR_Corpus_2025_bucket](https://huggingface.co/buckets/HuggingEnvs/NayanaOCR_Corpus_2025_bucket),
+attached read-only at `/corpus`. The Docker image bundles code and a small provenance manifest.
+Per-language indexes and source image groups are fetched lazily into bounded local caches.
+`/manifest` identifies the served corpus; `/docs` describes the API; `/data/cache` reports cache
+counters. Training uses shuffled physical blocks with prefetch and task-ID replay.
 
-Full-page OCR preserves the page canvas and layout, masking areas outside valid text-region
-annotations. Some source pages contain unannotated headers; masking keeps visible content
-aligned with the scored transcription. References join regions using the versioned
-`whitespace-columns-v1` geometric reading order, with right-to-left columns for Arabic.
-Pages with missing/invalid annotations or overlapping text boxes are excluded from this task.
-This is annotated full-page transcription; table-format reconstruction and descriptive VQA
-are not scored. VQA retains the original JPEG, and section OCR uses lossless PNG crops.
+Choose any task by its index. The first image from a source block may take longer to load:
+Parquet groups contain roughly 100 pages. Subsequent tasks in that group reuse its cached
+images. Defaults are 4 GB of index files, 4 GB of image groups, and 512 MB of rendered tasks.
+The same package serves locally using HTTP ranges or a mounted/local source directory.
 
-The Docker image expects a finalized snapshot at `/app/snapshot`, or at `NAYANA_SNAPSHOT`.
-The deployment script bundles an explicitly selected window. The environment does not fetch
-the entire corpus or use the Dataset Viewer as a training backend.
-The public preview demonstrates serving and replay. It is not a held-out model benchmark.
+Full-page OCR preserves the canvas and original pixels inside valid text regions, masking
+unannotated areas. References use the geometric `whitespace-columns-v1` reading order, with
+RTL columns for Arabic. Overlapping/incomplete regions are excluded from full-page indexing;
+actual image bounds are checked at load time. VQA receives original JPEGs; sections use PNG
+crops. Descriptive VQA and table reconstruction are not scored.
+
 Visual inspection found missing/distorted glyphs in an original Arabic source page
-(`document_10026_page_106`). Those artifacts precede masking and are retained here. The
-playground flags this caveat for Arabic; review source rendering before using it for training.
+(`document_10026_page_106`), before masking. The playground flags this source caveat.
+The corpus index is not an image-quality audit or evidence of model performance.
 
-Source data: [CognitiveLab's NayanaOCR_Corpus_2025](https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025),
-licensed **CC BY-NC 4.0**. Prepared page images, annotations, and OCR crops retain that license
-and attribution. The environment source code is Apache-2.0; see `LICENSE` and `NOTICE`.
+Source: [CognitiveLab's NayanaOCR_Corpus_2025](https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025),
+**CC BY-NC 4.0**. Copied annotations, page images, and OCR crops retain this license and
+attribution. Environment source is Apache-2.0; see `LICENSE` and `NOTICE`.
 
-Full source, training recipe, notebook, tests, and reproduction guide:
-[HuggingEnvs / 05-multilingual-ocr](https://github.com/adithya-s-k/HuggingEnvs/tree/codex/multilingual-ocr/05-multilingual-ocr).
+[Source, reproduction guide, notebook, training scripts and checks](https://github.com/adithya-s-k/HuggingEnvs/tree/codex/multilingual-ocr/05-multilingual-ocr).

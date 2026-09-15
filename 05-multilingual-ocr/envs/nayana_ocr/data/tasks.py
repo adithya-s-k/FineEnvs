@@ -17,18 +17,39 @@ from .schema import (
 )
 
 
-def derive_tasks(row, language, revision, split_seed=42, max_pixels=50_000_000):
+def derive_tasks(
+    row,
+    language,
+    revision,
+    split_seed=42,
+    max_pixels=50_000_000,
+    *,
+    metadata_only=False,
+    selection=None,
+):
     page_id = row["image_id.txt"]
     doc_id = document_id(page_id)
-    raw = row["jpg"]["bytes"]
-    if not isinstance(raw, bytes) or not raw:
-        raise ValueError("Expected embedded image bytes with Image(decode=False)")
-    image = Image.open(io.BytesIO(raw))
-    width, height = image.size
-    if width * height > max_pixels:
-        raise ValueError(f"{page_id}: {width}x{height} exceeds max_pixels={max_pixels}")
-    if image.format != "JPEG":
-        raise ValueError(f"{page_id}: expected native JPEG, got {image.format}")
+    raw, image, width, height = None, None, None, None
+    if not metadata_only:
+        raw = row["jpg"]["bytes"]
+        if not isinstance(raw, bytes) or not raw:
+            raise ValueError("Expected embedded image bytes with Image(decode=False)")
+        image = Image.open(io.BytesIO(raw))
+        width, height = image.size
+        if width * height > max_pixels:
+            image.close()
+            raise ValueError(
+                f"{page_id}: {width}x{height} exceeds max_pixels={max_pixels}"
+            )
+        if image.format != "JPEG":
+            image.close()
+            raise ValueError(f"{page_id}: expected native JPEG, got {image.format}")
+
+    def render(family, unit):
+        return not metadata_only and (
+            selection is None or selection == (family, str(unit))
+        )
+
     tasks, skipped, page_regions = [], Counter(), []
 
     def add(family, unit, prompt, reference, media, mime, size, bbox=None):
@@ -75,25 +96,30 @@ def derive_tasks(row, language, revision, split_seed=42, max_pixels=50_000_000):
                 skipped["invalid_bbox"] += 1
                 continue
             x0, y0, x1, y1 = coords
-            if not (0 <= x0 < x1 <= width and 0 <= y0 < y1 <= height):
+            if not (0 <= x0 < x1 and 0 <= y0 < y1) or (
+                width is not None and (x1 > width or y1 > height)
+            ):
                 skipped["invalid_bbox"] += 1
                 continue
             bbox = [math.floor(x0), math.floor(y0), math.ceil(x1), math.ceil(y1)]
             page_regions.append({"region_id": unit, "bbox": bbox, "text": reference})
-            with image.crop(bbox) as crop:
-                buffer = io.BytesIO()
-                crop.save(buffer, format="PNG")  # lossless crop, no page downscaling
-                add(
-                    FAMILIES[0],
-                    unit,
-                    f"Transcribe the text in this cropped document region (language: {language}). "
-                    "Return only the text, preserving its language and punctuation.",
-                    reference,
-                    buffer.getvalue(),
-                    "image/png",
-                    crop.size,
-                    bbox,
-                )
+            media = None
+            if render("section_ocr", unit):
+                with image.crop(bbox) as crop:
+                    buffer = io.BytesIO()
+                    crop.save(buffer, format="PNG")
+                    media = buffer.getvalue()
+            add(
+                FAMILIES[0],
+                unit,
+                f"Transcribe the text in this cropped document region (language: {language}). "
+                "Return only the text, preserving its language and punctuation.",
+                reference,
+                media,
+                "image/png",
+                (bbox[2] - bbox[0], bbox[3] - bbox[1]),
+                bbox,
+            )
 
         for index, question in enumerate(row["vqa.json"].get("questions", [])):
             if question.get("type") != "mcq":
@@ -129,7 +155,7 @@ def derive_tasks(row, language, revision, split_seed=42, max_pixels=50_000_000):
             prompt += (
                 "\n\nReturn only the single uppercase letter of the correct option."
             )
-            add(FAMILIES[1], index, prompt, label, raw, "image/jpeg", image.size)
+            add(FAMILIES[1], index, prompt, label, raw, "image/jpeg", (width, height))
         # Full-page supervision must include every supplied text annotation. Do
         # not turn a partially valid page into an apparently complete target.
         if not regions or len(page_regions) != len(regions):
@@ -143,12 +169,15 @@ def derive_tasks(row, language, revision, split_seed=42, max_pixels=50_000_000):
             # Nayana can retain visible source headers outside its text annotations.
             # Preserve the full canvas while masking unsupervised areas so a correct
             # transcription is not penalized for text absent from the reference.
-            with Image.new("RGB", image.size, "white") as masked:
-                for region in page_regions:
-                    with image.crop(region["bbox"]) as crop:
-                        masked.paste(crop, tuple(region["bbox"][:2]))
-                buffer = io.BytesIO()
-                masked.save(buffer, format="PNG")
+            media = None
+            if render("page_ocr", "page"):
+                with Image.new("RGB", image.size, "white") as masked:
+                    for region in page_regions:
+                        with image.crop(region["bbox"]) as crop:
+                            masked.paste(crop, tuple(region["bbox"][:2]))
+                    buffer = io.BytesIO()
+                    masked.save(buffer, format="PNG")
+                    media = buffer.getvalue()
             add(
                 "page_ocr",
                 "page",
@@ -159,13 +188,14 @@ def derive_tasks(row, language, revision, split_seed=42, max_pixels=50_000_000):
                 "Preserve language and punctuation. Separate regions with a blank line. "
                 "Return only the transcription; do not describe images or reconstruct table formatting.",
                 "\n\n".join(region["text"] for region in ordered),
-                buffer.getvalue(),
+                media,
                 "image/png",
-                image.size,
+                (width, height),
             )
             tasks[-1]["reading_order_policy"] = READING_ORDER
             tasks[-1]["reading_order"] = [region["region_id"] for region in ordered]
             tasks[-1]["annotation_masked"] = True
     finally:
-        image.close()
+        if image is not None:
+            image.close()
     return tasks, skipped

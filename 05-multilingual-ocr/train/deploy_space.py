@@ -1,4 +1,4 @@
-"""Publish an explicitly selected, prepared window with the OpenEnv Docker Space."""
+"""Publish the full-corpus server and attach its existing source bucket read-only."""
 
 import argparse
 import json
@@ -6,23 +6,41 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from huggingface_hub import HfApi
-from nayana_ocr.data.catalog import Catalog
+from huggingface_hub import HfApi, Volume
+from nayana_ocr.data.corpus import CorpusCatalog
 from nayana_ocr.data.schema import REPO_ID
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--space-id", required=True)
-    parser.add_argument("--snapshot", type=Path, required=True)
+    parser.add_argument("--corpus-manifest", type=Path, required=True)
     parser.add_argument("--private", action="store_true")
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    catalog = Catalog(args.snapshot)
-    if catalog.manifest["config"]["source"] != REPO_ID:
-        parser.error("Publish a prepared Nayana window, not synthetic fixtures")
+    manifest = json.loads(args.corpus_manifest.read_text())
+    if manifest["config"]["source"] != REPO_ID:
+        parser.error("Publish a finalized Nayana corpus index, not synthetic fixtures")
+    api = HfApi()
+    prefix = f"openenv/indexes/{manifest['snapshot_id']}"
+    expected = {
+        f"{prefix}/{v['path']}": v["size"] for v in manifest["indexes"].values()
+    }
+    expected[f"{prefix}/manifest.json"] = args.corpus_manifest.stat().st_size
+    available = {
+        r.path: r.size
+        for r in api.get_bucket_paths_info(manifest["bucket_id"], list(expected))
+    }
+    if available != expected:
+        raise ValueError(
+            "Publish and verify every index file in the bucket before deploying"
+        )
     project = Path(__file__).resolve().parents[1] / "envs" / "nayana_ocr"
     with tempfile.TemporaryDirectory(prefix="nayana-space-") as directory:
         staging = Path(directory)
+        catalog = CorpusCatalog(args.corpus_manifest, staging / "validation-cache")
+        catalog.close()  # Validate the manifest identity without loading any images/indexes.
+        shutil.rmtree(staging / "validation-cache")
         shutil.copytree(
             project,
             staging,
@@ -37,29 +55,18 @@ def main():
                 "tests",
             ),
         )
-        shutil.copytree(
-            args.snapshot,
-            staging / "snapshot",
-            ignore=shutil.ignore_patterns(".prepare.lock"),
-        )
-        # Keep the Space card tied to the selected window when a different one is published.
-        provenance = {
-            key: catalog.manifest[key]
-            for key in (
-                "snapshot_id",
-                "schema_version",
-                "datasets_version",
-                "config",
-                "source_license",
-                "pages",
-                "counts",
-                "media_bytes",
-            )
-        }
+        shutil.copyfile(args.corpus_manifest, staging / "corpus-manifest.json")
         with (staging / "README.md").open("a") as card:
-            card.write("\n## Bundled preview\n\n```json\n")
-            card.write(json.dumps(provenance, indent=2) + "\n```\n")
-        api = HfApi()
+            card.write("\n## Served corpus\n\n")
+            card.write(
+                f"{sum(manifest['pages'].values()):,} pages across {len(manifest['pages'])} languages; "
+            )
+            card.write(
+                f"{sum(c['tasks'] for c in manifest['counts']):,} indexed tasks.\n\n"
+            )
+            card.write(
+                f"Snapshot: `{manifest['snapshot_id']}`. Image bounds are validated when a task is loaded.\n"
+            )
         api.create_repo(
             args.space_id,
             repo_type="space",
@@ -71,10 +78,39 @@ def main():
             repo_id=args.space_id,
             repo_type="space",
             folder_path=staging,
-            commit_message=f"Nayana snapshot {catalog.manifest['snapshot_id'][:12]}",
+            delete_patterns=["snapshot/*"],
+            commit_message=f"Serve complete Nayana corpus {manifest['snapshot_id'][:12]} from mounted bucket",
         )
-        print(f"https://huggingface.co/spaces/{args.space_id}")
-        print(f"Space commit: {commit.oid}")
+        # Preserve unrelated mounts; this path is owned by the Nayana deployment.
+        runtime = api.space_info(args.space_id).runtime
+        volumes = [v for v in (runtime.volumes or []) if v.mount_path != "/corpus"]
+        volumes.append(
+            Volume(
+                type="bucket",
+                source=manifest["bucket_id"],
+                mount_path="/corpus",
+                read_only=True,
+            )
+        )
+        api.set_space_volumes(args.space_id, volumes=volumes)
+        for key, value in {
+            "NAYANA_CORPUS_MANIFEST": "/app/corpus-manifest.json",
+            "NAYANA_SOURCE_ROOT": "/corpus",
+            "NAYANA_CACHE_DIR": "/tmp/nayana-cache",
+        }.items():
+            api.add_space_variable(args.space_id, key, value)
+        result = {
+            "space_id": args.space_id,
+            "commit": commit.oid,
+            "snapshot_id": manifest["snapshot_id"],
+            "bucket_id": manifest["bucket_id"],
+            "volumes": [v.to_dict() for v in volumes],
+            "bundled": "code and corpus manifest only; indexes and images fetched lazily",
+        }
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(json.dumps(result, indent=2) + "\n")
+        print(json.dumps(result, indent=2))
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from nayana_ocr.client import connect
+from nayana_ocr.corpus_training import BlockTaskStream, CorpusAPI, build_corpus_dataset
 from nayana_ocr.data.schema import FAMILIES
 from nayana_ocr.models import NayanaAction
 from nayana_ocr.runtime import local_server
@@ -26,11 +27,15 @@ from nayana_ocr.training import (
 class Config:
     snapshot: str = ""
     env_url: str = ""
+    source_root: str = ""
+    cache_dir: str = ""
+    local_source: bool = False
     model: str = "Qwen/Qwen3-VL-2B-Instruct"
     model_revision: str = ""
     languages: tuple[str, ...] = ("en", "kn", "hi", "ar")
     families: tuple[str, ...] = FAMILIES
-    task_input: str = "map"
+    task_input: str = "auto"
+    prefetch_blocks: int = 2
     train_per_group: int = 64
     eval_per_group: int = 4
     max_steps: int = 30
@@ -67,7 +72,9 @@ class Config:
             or self.num_generations < 2
         ):
             raise ValueError("Use positive limits and at least two generations")
-        if self.resume and self.task_input == "iterable":
+        if not 0 <= self.prefetch_blocks <= 4:
+            raise ValueError("Use 0 to 4 prefetched source blocks")
+        if self.resume and self.task_input in {"iterable", "corpus"}:
             raise ValueError(
                 "Trainer checkpoint replay is supported for map task input only in this milestone"
             )
@@ -185,25 +192,88 @@ def run(config):
     output.mkdir(parents=True, exist_ok=True)
     with ExitStack() as stack:
         url = config.env_url or stack.enter_context(
-            local_server(config.snapshot, config.num_generations + 4)
+            local_server(
+                config.snapshot,
+                config.num_generations + 4,
+                source_root=config.source_root or None,
+                cache_dir=config.cache_dir or None,
+                local_source=config.local_source,
+            )
         )
         with connect(url) as client:
             manifest = client.manifest()
-        # Fail before downloading weights if the prepared window lacks held-out coverage.
-        train_rows = balanced_rows(
-            task_rows(url, "train", config.languages, config.families),
-            config.languages,
-            config.families,
-            config.seed,
-            config.train_per_group,
-        )
-        eval_rows = balanced_rows(
-            task_rows(url, "test", config.languages, config.families),
-            config.languages,
-            config.families,
-            config.seed,
-            config.eval_per_group,
-        )
+        mode = config.task_input
+        if mode == "auto":
+            mode = "corpus" if manifest.get("storage") == "bucket-parquet" else "map"
+        if config.resume and mode == "corpus":
+            raise ValueError(
+                "TRL optimizer checkpoint replay for full-corpus iterable input is not yet verified"
+            )
+        if manifest.get("storage") == "bucket-parquet":
+            backend = CorpusAPI(url, manifest["snapshot_id"])
+            stack.callback(backend.close)
+            # Indexed selection: never enumerate millions of IDs to choose a small eval set.
+            eval_rows = backend.sample(
+                "test",
+                config.languages,
+                config.families,
+                config.eval_per_group,
+                config.seed,
+            )
+            if mode == "corpus":
+                stream = BlockTaskStream(
+                    backend,
+                    languages=config.languages,
+                    families=config.families,
+                    seed=config.seed,
+                    prefetch_blocks=0,
+                )
+                if not stream.plan:
+                    raise ValueError("No indexed training blocks")
+                train_rows = {
+                    "mode": "full-corpus",
+                    "plan_id": stream.plan_id,
+                    "blocks": len(stream.plan),
+                    "tasks_per_epoch": sum(b["tasks"] for b in stream.plan),
+                    "sampling": "hash-shuffled row groups; chunk shuffle; natural task proportions",
+                }
+                train_dataset = build_corpus_dataset(
+                    url,
+                    manifest["snapshot_id"],
+                    config.languages,
+                    config.families,
+                    config.seed,
+                    config.prefetch_blocks,
+                )
+            else:
+                train_rows = backend.sample(
+                    "train",
+                    config.languages,
+                    config.families,
+                    config.train_per_group,
+                    config.seed,
+                )
+                train_dataset = build_dataset(train_rows, mode)
+        else:
+            if mode == "corpus":
+                raise ValueError(
+                    "Full-corpus mode requires an indexed bucket-backed environment"
+                )
+            train_rows = balanced_rows(
+                task_rows(url, "train", config.languages, config.families),
+                config.languages,
+                config.families,
+                config.seed,
+                config.train_per_group,
+            )
+            eval_rows = balanced_rows(
+                task_rows(url, "test", config.languages, config.families),
+                config.languages,
+                config.families,
+                config.seed,
+                config.eval_per_group,
+            )
+            train_dataset = build_dataset(train_rows, mode)
         revision = model_info(
             config.model, revision=config.model_revision or "main"
         ).sha
@@ -244,7 +314,7 @@ def run(config):
         trainer = GRPOTrainer(
             model=config.model,
             processing_class=processor,
-            train_dataset=build_dataset(train_rows, config.task_input),
+            train_dataset=train_dataset,
             environment_factory=factory,
             reward_funcs=env_reward,
             peft_config=LoraConfig(
@@ -343,19 +413,25 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--snapshot", default="")
     parser.add_argument("--env-url", default="")
+    parser.add_argument("--source-root", default="")
+    parser.add_argument("--cache-dir", default="")
+    parser.add_argument("--local-source", action="store_true")
     parser.add_argument("--model", default=Config.model)
     parser.add_argument("--model-revision", default="")
     parser.add_argument("--languages", nargs="+", default=list(Config.languages))
     parser.add_argument(
         "--families", nargs="+", choices=FAMILIES, default=list(FAMILIES)
     )
-    parser.add_argument("--task-input", choices=("map", "iterable"), default="map")
+    parser.add_argument(
+        "--task-input", choices=("auto", "map", "iterable", "corpus"), default="auto"
+    )
     for name in (
         "train_per_group",
         "eval_per_group",
         "max_steps",
         "num_generations",
         "max_completion_length",
+        "prefetch_blocks",
         "max_pixels",
         "seed",
     ):

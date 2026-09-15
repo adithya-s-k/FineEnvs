@@ -55,6 +55,53 @@ class Catalog:
                 "SELECT COUNT(*) FROM tasks WHERE split=?", (split,)
             ).fetchone()[0]
 
+    def group_count(self, split, language, family):
+        with self._connect() as db:
+            return db.execute(
+                """SELECT COUNT(*) FROM tasks WHERE split=?
+                AND json_extract(payload,'$.language')=? AND json_extract(payload,'$.family')=?""",
+                (split, language, family),
+            ).fetchone()[0]
+
+    def _group_ids(self, split, language, family):
+        with self._connect() as db:
+            rows = db.execute(
+                """SELECT id,json_extract(payload,'$.page_id'),json_extract(payload,'$.unit')
+                FROM tasks WHERE split=? AND json_extract(payload,'$.language')=?
+                AND json_extract(payload,'$.family')=?""",
+                (split, language, family),
+            ).fetchall()
+        return [
+            r[0]
+            for r in sorted(
+                rows,
+                key=lambda r: (
+                    tuple(int(n) for n in re.findall(r"\d+", r[1])),
+                    r[2],
+                    r[0],
+                ),
+            )
+        ]
+
+    def group_at(self, split, language, family, index):
+        ids = self._group_ids(split, language, family)
+        if not 0 <= index < len(ids):
+            raise IndexError("Task index outside group")
+        return self.get(ids[index])
+
+    def group_position(self, task_id, split, language, family):
+        ids = self._group_ids(split, language, family)
+        return ids.index(task_id) if task_id in ids else None
+
+    def materialize(self, task):
+        return task
+
+    def image(self, task):
+        from PIL import Image
+
+        with Image.open(self.asset(task["asset_sha256"])[0]) as image:
+            return image.copy()
+
     @staticmethod
     def _split(split):
         if split not in SPLITS:

@@ -12,6 +12,7 @@ from pathlib import Path
 import requests
 
 from .client import connect
+from .corpus_training import CorpusAPI
 from .data.catalog import SPLITS, Catalog
 from .fixtures import make_fixture
 from .models import NayanaAction
@@ -19,12 +20,19 @@ from .runtime import local_server
 from .training import AssetCache, TrainingEnvironment, env_reward, task_rows
 
 
-def probe(url, catalog=None):
+def probe(url, catalog=None, languages=None):
     started = time.monotonic()
     with ExitStack() as stack:
         first = stack.enter_context(connect(url))
         second = stack.enter_context(connect(url))
         manifest = first.manifest()
+        corpus = (
+            CorpusAPI(url, manifest["snapshot_id"])
+            if manifest.get("storage") == "bucket-parquet"
+            else None
+        )
+        if corpus:
+            stack.callback(corpus.close)
         coverage = Counter()
         cache = AssetCache(url)
         environments = [
@@ -33,8 +41,42 @@ def probe(url, catalog=None):
         for env in environments:
             stack.callback(env._close)
         checked = set()
+        expected = {
+            (r["language"], r["family"])
+            for r in manifest["counts"]
+            if not languages or r["language"] in languages
+        }
         for split in SPLITS:
-            for task in task_rows(url, split):
+            if corpus:
+                # Representatives share physical blocks to keep a corpus smoke bounded.
+                candidates = []
+                for language in sorted({lang for lang, _ in expected - checked}):
+                    needed = {
+                        family
+                        for lang, family in expected - checked
+                        if lang == language
+                        and any(
+                            r["split"] == split
+                            and r["language"] == lang
+                            and r["family"] == family
+                            and r["tasks"]
+                            for r in manifest["counts"]
+                        )
+                    }
+                    if not needed:
+                        continue
+                    for block in corpus.blocks(split, [language], sorted(needed)):
+                        for row in corpus.block_tasks(
+                            block["block_id"], split, sorted(needed), limit=1000
+                        ):
+                            if row["family"] in needed:
+                                candidates.append(row)
+                                needed.remove(row["family"])
+                        if not needed:
+                            break
+            else:
+                candidates = task_rows(url, split, languages)
+            for task in candidates:
                 group = (task["language"], task["family"])
                 if group in checked:
                     continue
@@ -78,7 +120,10 @@ def probe(url, catalog=None):
                 )
                 assert rewards == ([1.0, 0.0] if target else [0.0, 0.0])
                 coverage[f"{group[0]}/{group[1]}"] += 1
+            if checked == expected:
+                break
     assert coverage, "Snapshot has no runnable tasks"
+    assert checked == expected, f"Missing smoke coverage: {expected - checked}"
     return {
         "status": "passed",
         "snapshot_id": manifest["snapshot_id"],
@@ -95,10 +140,11 @@ def main():
     choice.add_argument("--snapshot", type=Path)
     choice.add_argument("--url")
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--languages", nargs="+")
     args = parser.parse_args()
     with ExitStack() as stack:
         if args.url:
-            result = probe(args.url)
+            result = probe(args.url, languages=args.languages)
         else:
             snapshot = args.snapshot
             if snapshot is None:
@@ -109,7 +155,19 @@ def main():
                 )
                 make_fixture(snapshot)
             url = stack.enter_context(local_server(snapshot))
-            result = probe(url, Catalog(snapshot))
+            manifest_path = (
+                snapshot / "manifest.json" if snapshot.is_dir() else snapshot
+            )
+            if json.loads(manifest_path.read_text()).get("storage") == "bucket-parquet":
+                from .data.corpus import CorpusCatalog
+
+                catalog = CorpusCatalog(
+                    snapshot, snapshot.parent / "corpus-cache-smoke"
+                )
+                stack.callback(catalog.close)
+            else:
+                catalog = Catalog(snapshot)
+            result = probe(url, catalog, args.languages)
         result["source"] = (
             "remote"
             if args.url

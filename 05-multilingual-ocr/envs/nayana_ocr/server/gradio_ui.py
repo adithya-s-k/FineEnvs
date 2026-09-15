@@ -1,10 +1,8 @@
 """LaTeX OCR-style playground with independent per-browser task selection."""
 
 import random
-import re
 
 import gradio as gr
-from PIL import Image
 
 from ..data.catalog import SPLITS
 from ..models import NayanaAction
@@ -15,55 +13,56 @@ TASK_LABELS = [
     ("Section OCR", "section_ocr"),
     ("Multiple-choice VQA", "mcq_vqa"),
 ]
-LANGUAGE_NAMES = {"en": "English", "kn": "Kannada", "hi": "Hindi", "ar": "Arabic"}
+LANGUAGE_NAMES = {
+    "ar": "Arabic",
+    "bn": "Bengali",
+    "de": "German",
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "gu": "Gujarati",
+    "hi": "Hindi",
+    "it": "Italian",
+    "ja": "Japanese",
+    "kn": "Kannada",
+    "ko": "Korean",
+    "ml": "Malayalam",
+    "mr": "Marathi",
+    "or": "Odia",
+    "pa": "Punjabi",
+    "ru": "Russian",
+    "sa": "Sanskrit",
+    "ta": "Tamil",
+    "te": "Telugu",
+    "th": "Thai",
+    "zh": "Chinese",
+}
 
 
 class Playground:
     def __init__(self, catalog):
         self.catalog = catalog
 
-    def candidates(self, split, language, family):
-        with self.catalog._connect() as db:
-            rows = db.execute(
-                """SELECT id,json_extract(payload,'$.page_id'),json_extract(payload,'$.unit')
-                FROM tasks WHERE split=? AND json_extract(payload,'$.language')=?
-                AND json_extract(payload,'$.family')=?""",
-                (split, language, family),
-            ).fetchall()
-        return [
-            row[0]
-            for row in sorted(
-                rows,
-                key=lambda row: (
-                    tuple(int(n) for n in re.findall(r"\d+", row[1])),
-                    row[2],
-                    row[0],
-                ),
-            )
-        ]
-
-    def choose(self, split, language, family, current=None, direction=0):
-        candidates = self.candidates(split, language, family)
-        if not candidates:
-            return (
-                "",
-                None,
-                "No tasks in this selection. Try another split or task.",
-                "",
-                "",
-                "",
-                "",
-                None,
-            )
-        index = (
-            (candidates.index(current) + direction) % len(candidates)
-            if current in candidates and direction
-            else random.randrange(len(candidates))
+    def choose(self, split, language, family, current=None, direction=0, index=None):
+        count = self.catalog.group_count(split, language, family)
+        if not count:
+            return ("", None, "No tasks in this selection.", "", "", "", "", None)
+        position = (
+            self.catalog.group_position(current, split, language, family)
+            if current
+            else None
         )
-        task = self.catalog.get(candidates[index])
-        with Image.open(self.catalog.asset(task["asset_sha256"])[0]) as image:
-            preview = image.copy()
-        progress = f"**Task {index + 1} of {len(candidates)}** · `{task['page_id']}`"
+        if index is None:
+            index = (
+                (position + direction) % count
+                if position is not None and direction
+                else random.randrange(count)
+            )
+        if not 0 <= index < count:
+            raise gr.Error(f"Choose a task number from 1 to {count:,}.")
+        task = self.catalog.group_at(split, language, family, index)
+        preview = self.catalog.image(task)
+        progress = f"**Task {index + 1:,} of {count:,}** · `{task['page_id']}`"
         if family == "section_ocr":
             progress += f" · region {task['unit']}"
         if language == "ar":
@@ -71,6 +70,14 @@ class Playground:
                 "\n\nSome original Arabic pages contain missing or distorted glyphs. "
                 "This preview retains the source rendering for inspection."
             )
+        if hasattr(self.catalog, "prefetch"):
+            upcoming = [
+                self.catalog.group_at(
+                    split, language, family, (index + offset) % count
+                )["task_id"]
+                for offset in (1, 2)
+            ]
+            self.catalog.prefetch(task_ids=upcoming)
         return (
             task["task_id"],
             preview,
@@ -127,15 +134,18 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
     def following(split, language, family, current):
         return playground.choose(split, language, family, current, 1)
 
+    def jump(split, language, family, number):
+        return playground.choose(split, language, family, index=int(number) - 1)
+
     def submit(task_id, answer):
         return playground.submit(task_id, answer)
 
-    with gr.Blocks(title="Nayana multilingual OCR") as demo:
+    with gr.Blocks(title="Nayana multilingual OCR", delete_cache=(300, 600)) as demo:
         gr.Markdown(
             "# Nayana multilingual OCR\nRead a whole page, transcribe a region, or answer a question about a document."
         )
         gr.Markdown(
-            f"**{len(languages)} languages · {page_count} pages · {task_count} tasks** in this preview"
+            f"**{len(languages)} languages · {page_count:,} pages · {task_count:,} indexed tasks**"
         )
         task_id = gr.State("")
         with gr.Row():
@@ -144,7 +154,7 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
             )
             language = gr.Dropdown(
                 [(LANGUAGE_NAMES.get(lang, lang), lang) for lang in languages],
-                value=languages[0],
+                value="en" if "en" in languages else languages[0],
                 label="Language",
                 interactive=True,
             )
@@ -157,6 +167,11 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
                     previous_button = gr.Button("← Previous")
                     next_button = gr.Button("Next →")
                     random_button = gr.Button("Shuffle task", variant="primary")
+                with gr.Row():
+                    number = gr.Number(
+                        label="Jump to task (1-based)", value=1, minimum=1, precision=0
+                    )
+                    jump_button = gr.Button("Go to index")
                 progress = gr.Markdown("")
                 image = gr.Image(
                     type="pil",
@@ -185,6 +200,7 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
         inputs = [split, language, family]
         outputs = [task_id, image, progress, prompt, answer, result, reference, metrics]
         random_button.click(choose, inputs, outputs, api_name="choose")
+        jump_button.click(jump, [*inputs, number], outputs, api_name="jump")
         previous_button.click(
             previous, [*inputs, task_id], outputs, api_name="previous"
         )
@@ -195,6 +211,19 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
         score_button.click(
             submit, [task_id, answer], [result, reference, metrics], api_name="submit"
         )
+        if hasattr(catalog, "stats"):
+            with gr.Accordion("Data loading and cache", open=False):
+                gr.Markdown(
+                    "The whole corpus is indexed. Task selection fetches the needed image row group; "
+                    "next tasks are prefetched and cached within byte limits. A cold random jump can "
+                    "load about 100 pages' image bytes; training visits tasks in shuffled row-group blocks "
+                    "to reuse those downloads. Image bounds are checked when a task is loaded."
+                )
+                cache_status = gr.JSON(label="Cache usage")
+                cache_button = gr.Button("Refresh cache stats")
+                cache_button.click(
+                    catalog.stats, outputs=cache_status, api_name="cache_stats"
+                )
         with gr.Accordion("How these tasks are scored", open=False):
             gr.Markdown(
                 "OCR reward combines character similarity (80%) and exact match (20%). "

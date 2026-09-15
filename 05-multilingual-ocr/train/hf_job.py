@@ -23,6 +23,9 @@ def main():
     parser.add_argument(
         "--mode", choices=("env-smoke", "real-smoke", "train"), default="env-smoke"
     )
+    parser.add_argument(
+        "--corpus-manifest", help="Published full-corpus manifest HF URI or local path"
+    )
     parser.add_argument("--prepare-pages", type=int, default=256)
     parser.add_argument(
         "--prepare-languages", nargs="+", default=["en", "kn", "hi", "ar"]
@@ -73,7 +76,13 @@ def main():
                 remote = "--env-url" in extra or any(
                     arg.startswith("--env-url=") for arg in extra
                 )
-                if not remote:
+                if args.corpus_manifest:
+                    if remote or args.mode != "train":
+                        parser.error(
+                            "--corpus-manifest requires local --mode train without --env-url"
+                        )
+                    snapshot = args.corpus_manifest
+                elif not remote:
                     snapshot = directory / "snapshot"
                     subprocess.run(
                         base

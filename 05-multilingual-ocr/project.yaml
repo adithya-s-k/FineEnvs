@@ -1,6 +1,6 @@
 name: multilingual-ocr
 title: "Multilingual OCR"
-tagline: "Stream Nayana document data into replayable OpenEnv OCR and VQA tasks."
+tagline: "Serve the complete Nayana corpus with indexed OpenEnv OCR, VQA, caching, and prefetch."
 order: 5
 status: wip
 hub:
@@ -9,6 +9,8 @@ hub:
     - Cognitive-Lab/NayanaOCR_Corpus_2025
   spaces:
     - HuggingEnvs/nayana-ocr-env
+  buckets:
+    - HuggingEnvs/NayanaOCR_Corpus_2025_bucket
   models: []
 envs:
   - name: nayana_ocr

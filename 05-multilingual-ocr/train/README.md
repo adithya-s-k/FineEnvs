@@ -1,11 +1,14 @@
 # Training and deployment entry points
 
-- `grpo_nayana.py`: one-GPU LoRA GRPO against a local snapshot or an OpenEnv URL.
-  The notebook calls this same runner. It validates held-out coverage before loading weights.
-- `hf_job.py`: fetch a pushed Git commit, prepare a bounded window, run CPU smoke or training
-  with the frozen dependency lock, optionally save results to an explicit personal dataset repo.
-- `deploy_space.py`: stage the environment and a selected real-data snapshot into an explicitly
-  named Docker Space. Does not create a collection, model, or results bucket.
+- `grpo_nayana.py`: one-GPU LoRA GRPO against a local catalog or OpenEnv URL. `--task-input auto`
+  selects the full-corpus block iterator when the server advertises bucket-backed storage.
+  `--task-input corpus` requires it explicitly. The evaluation sample is indexed and balanced;
+  the full training pass keeps natural language/task proportions within the selected groups.
+- `hf_job.py`: fetch a pushed Git commit and use its frozen lockfile. Supports CPU smoke,
+  small-window smoke, and training. Pass the full Space with `--env-url` or a bucket manifest
+  with `--corpus-manifest`; a job can attach the source bucket at `/corpus`.
+- `deploy_space.py`: publish code and a ready full-corpus manifest, remove the old bundled
+  preview, and attach the existing bucket read-only. Indexes must already be published.
 
-See [REPRODUCE.md](../REPRODUCE.md) for commands, defaults, checkpoint boundaries, and status.
-The scripts are implemented; no GPU training or HF Job result has been recorded for 05 yet.
+See [REPRODUCE.md](../REPRODUCE.md) for exact commands, defaults, and replay boundaries.
+The scripts are implemented; no GPU optimizer or HF Jobs result has been recorded for 05 yet.

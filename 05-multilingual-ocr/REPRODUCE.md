@@ -1,270 +1,298 @@
-# Reproduce experiment 05
+# Reproduce the complete-corpus environment
 
-Run commands from `05-multilingual-ocr/`. Python 3.12 and `uv` are the tested local setup.
-The environment lockfile pins OpenEnv 0.4.2, Datasets 5.0.1, and optional TRL 1.13.0.
-Nayana is pinned to `b220b074a8c82bb90427051e856e4c4edc79885b`; a full dataset download is not required.
+Run commands from `05-multilingual-ocr/`. Python 3.12, OpenEnv 0.4.2, PyArrow 25.0.1,
+Hugging Face Hub 1.31.0, Datasets 5.0.1, and TRL 1.13.0 are pinned by the package/lockfile.
+`uv run --frozen` installs the checked-in dependency resolution. The corpus source is
+`Cognitive-Lab/NayanaOCR_Corpus_2025@b220b074a8c82bb90427051e856e4c4edc79885b`.
 
-## 1. Check the implementation on CPU
+## 1. Complete and verify the existing bucket
 
 ```bash
-uv run --frozen --project envs/nayana_ocr --extra dev pytest envs/nayana_ocr/tests -q
-uv run --frozen --project envs/nayana_ocr nayana-smoke
+uv run --frozen --project envs/nayana_ocr nayana-mirror \
+  --bucket HuggingEnvs/NayanaOCR_Corpus_2025_bucket \
+  --output data/corpus-source.json
 
-# Optional training dependencies exercise the actual TRL sampler, still on CPU.
-uv run --frozen --project envs/nayana_ocr --extra dev --extra train \
-  pytest envs/nayana_ocr/tests -q
+# Read-only audit on subsequent runs.
+uv run --frozen --project envs/nayana_ocr nayana-mirror \
+  --bucket HuggingEnvs/NayanaOCR_Corpus_2025_bucket \
+  --output data/corpus-source.json --verify-only
 ```
 
-The ordinary test run skips the two optional TRL sampler cases if TRL is not installed.
-The smoke command starts a real server, uses separate WebSocket sessions, discovers tasks,
-fetches image bytes, checks empty and exact predictions, and drives the training adapter.
-Synthetic fixtures have ASCII transport labels across language configs; they measure no
-multilingual recognition quality.
+The bucket must already exist. The mirror compares every pinned file with the existing copy,
+refuses conflicting files, copies missing Xet objects server-side, and verifies the result.
+It does not create a test bucket, re-upload the corpus through the workstation, or delete
+unrelated bucket objects. The first audit found four missing Chinese shards; copying them
+completed **1,807 source files / 1,784 Parquet files / 813,665,107,295 bytes**.
 
-## 2. Prepare and check real data
+The inventory includes source Xet IDs, sizes, and LFS SHA-256 values. All Parquet Xet identities
+and sizes are verified; small non-Xet repository files are checked by size. Corpus data and
+derived indexes/images retain CognitiveLab attribution and CC BY-NC 4.0.
+
+## 2. Build and publish the full index
 
 ```bash
-uv run --frozen --project envs/nayana_ocr nayana-prepare \
-  --output data/snapshots/real-smoke-v2 --languages en kn hi ar --pages-per-language 2
-uv run --frozen --project envs/nayana_ocr nayana-smoke \
-  --snapshot data/snapshots/real-smoke-v2 --output results/local-real-smoke-v2/smoke.json
+uv run --frozen --project envs/nayana_ocr nayana-index \
+  --inventory data/corpus-source.json --output data/corpus-index-v1 --workers 8
+
+# Re-audit source identities after indexing, before publishing the ready snapshot.
+uv run --frozen --project envs/nayana_ocr nayana-mirror \
+  --output data/corpus-source.json --verify-only
+
+# A completed build is reused; this validates databases and publishes them.
+uv run --frozen --project envs/nayana_ocr nayana-index \
+  --inventory data/corpus-source.json --output data/corpus-index-v1 --workers 8 --publish
+cp data/corpus-index-v1/manifest.json data/corpus-manifest.json
 ```
 
-The schema-2 public preview uses 16 pages per language instead of two: **64 pages,
-414 tasks (303 section OCR, 58 full-page OCR, 53 MCQ VQA), 185,369,938 stored media bytes**.
-Preparation took 53.294 seconds on the recorded run. This is one startup observation, not a
-throughput or network-transfer benchmark. Arrow decoding, HTTP caches, and Python allocations
-are additional to stored media. The first read may fetch more than one page's compressed bytes.
+Indexing reads only annotation and page-ID columns from every source shard. PyArrow retrieves
+Parquet footers and selected column chunks; it does not read/decode JPEGs or construct crops.
+There is one SQLite database per language, with compressed page annotations and task/location
+indexes. Each shard commits transactionally. Rerun the same command after an interrupted build;
+completed shards and finalized languages are reused. A writer lock prevents two builds sharing
+an output. Version/configuration changes require a new output directory.
 
-To reproduce the deployed window exactly:
+The final manifest is written only after every selected language finishes. Verify 22 languages
+and 45,735 pages each for the complete corpus; an explicit `--languages` subset builds only
+that subset. The command prints totals and the snapshot ID. The snapshot combines index version,
+source inventory identity, split seed, and each SQLite SHA-256. Rebuilding with changed index
+code requires an index-version change. Byte-identical SQLite output across unrelated software
+versions/platforms is not promised; replay pins the published databases, not a future rebuild.
 
-```bash
-uv run --frozen --project envs/nayana_ocr nayana-prepare \
-  --output data/snapshots/space-preview-v2 --languages en kn hi ar --pages-per-language 16
-```
+Publication writes all databases under `openenv/indexes/<snapshot_id>/`, then publishes the
+ready manifest last. The root source Parquets remain unchanged. The committed
+`data/corpus-manifest.json` records the published location and per-file checksums. Large source
+and index files are not committed to Git.
 
-Expected snapshot ID: `5f4986cf4c484bdfef97413edbb84b09071c545c2eb32d1e6897c1e57b31c1a7`.
-The two-page command above is a smaller service check and produces a different snapshot.
-Schema-1 windows from the initial milestone must be rebuilt into a new directory; the server
-rejects them. Never mutate an active snapshot in place.
-
-Defaults: 32 pages per language, 1,000,000,000 stored media bytes, 50 million pixels per page,
-split seed 42, no shuffle buffer, one shard partition. Preparation validates the JPEG header
-before loading pixels; media quota checks happen before committing a page. The quota covers
-stored media, not process RSS, SQLite, temporary data, or the Hugging Face cache. Oversize
-pages and exhausted byte budgets fail explicitly; annotation exclusions are reported separately.
-
-Rerun the identical command to resume after interruption. A SQLite transaction stores the
-completed page and Datasets iterator state together. No manifest is published until the
-requested window is ready. Resume validates all settings, source revision, and Datasets
-version. New budgets or page counts require a new output directory.
-
-The corpus is document ordered in places. A short prefix may contain only training documents.
-Do not move individual pages into evaluation to fill a quota: that would leak related content.
-
-## 3. Serve locally or in Docker
+## 3. Serve locally or with a mounted bucket
 
 ```bash
-NAYANA_SNAPSHOT="$PWD/data/snapshots/real-smoke-v2" \
+# HTTP-range source access, indexes fetched from the bucket lazily.
+NAYANA_CORPUS_MANIFEST="$PWD/data/corpus-manifest.json" \
+NAYANA_CACHE_DIR="$PWD/data/corpus-cache-local" \
   uv run --frozen --project envs/nayana_ocr nayana-server
 
-# Alternative: run the same package in a container with a read-only task window.
-docker build -t nayana-ocr:local envs/nayana_ocr
-docker run --rm -p 8000:8000 \
-  -v "$PWD/data/snapshots/real-smoke-v2:/app/snapshot:ro" nayana-ocr:local
+# Or read an existing bucket mount. Open http://localhost:8000/web.
+NAYANA_CORPUS_MANIFEST="$PWD/data/corpus-manifest.json" \
+NAYANA_SOURCE_ROOT=/corpus NAYANA_CACHE_DIR=/tmp/nayana-cache \
+  uv run --frozen --project envs/nayana_ocr nayana-server
 ```
 
-Playground: `http://localhost:8000/web`. Discovery endpoints:
+Without a mount, the server uses the bucket resolve endpoint with validated HTTP Range reads.
+It requires exact `206` and `Content-Range` responses, rejects full-file fallback, checks object
+identity before/after cold reads, and meters received payload bytes. Network/timeouts have
+bounded retries. With a mount, ordinary file reads use the same row-group cache. Network bytes
+inside the mount implementation are not measured by the application counter.
 
-```text
-GET  /healthz
-GET  /manifest
-GET  /nayana_ocr/splits
-POST /nayana_ocr/num_tasks    {"split":"train"}
-POST /nayana_ocr/task         {"split":"train","index":0}
-POST /nayana_ocr/task_range   {"split":"train","start":0,"stop":10}
-GET  /assets/<sha256>
-```
+For a fully downloaded offline copy, set `NAYANA_SOURCE_ROOT` to its directory and
+`NAYANA_LOCAL_SOURCE=true`. That mode checks local size and SHA-256 on first use and whenever
+mtime/size change, without Hub verification calls. Keep all 22 SQLite databases next to
+`manifest.json`, and point `NAYANA_CORPUS_MANIFEST` there, for offline metadata access too.
+`hf buckets cp`/`sync` support local copies; the full source requires over 813 GB of disk.
+Remote or mounted sources do not require that local capacity.
 
-Counts refer to **derived tasks in this prepared window**, not the million-page corpus.
-Empty splits return zero. Ranges contain at most 1,000 records. Task metadata and observations
-exclude references; the binary asset endpoint cannot serve the SQLite catalog. Reset accepts
-either `task_id` or `split`/`index`. Seeded random reset is for manual exploration; training
-always specifies a task ID. Episodes accept one answer and must be reset before another.
+`nayana_ocr.runtime.local_server(manifest, source_root=..., cache_dir=..., local_source=False)`
+starts the same server for a notebook/job and closes it afterward. Each process owns its
+catalog and caches; replicas must serve the same snapshot. Cache directories can be shared
+by same-host processes using POSIX locks, but the initial recipe does not coordinate distributed
+leases across hosts. Use independent local caches for Space replicas.
+
+| Setting | Default | Meaning |
+|---|---:|---|
+| `NAYANA_INDEX_CACHE_BYTES` | 4,000,000,000 | Local copies of language index databases |
+| `NAYANA_GROUP_CACHE_BYTES` | 4,000,000,000 | Decoded JPEG-byte columns in Arrow IPC files |
+| `NAYANA_ASSET_CACHE_BYTES` | 512,000,000 | Rendered task images plus metadata |
+| `NAYANA_MAX_GROUP_BYTES` | 512,000,000 | Maximum source/decoded group entry |
+| `NAYANA_PREFETCH_WORKERS` | 2 | Shared limit for cold foreground and prefetch group loads |
+| `NAYANA_PREFETCH_PENDING` | 4 | Maximum accepted asynchronous group requests |
+| `NAYANA_MAX_SESSIONS` | 16 | Independent OpenEnv sessions |
+
+Gradio preview files use a separate temporary cache, cleaned every five minutes for files
+older than ten minutes. Reloading a task recreates its preview. Training uses the binary
+asset endpoint and does not write Gradio preview files.
+
+These are byte budgets for published cache entries. Downloads use temporary files; group loads
+can temporarily add two entries up to the maximum entry size. Arrow decoding, two concurrent
+image renders, index downloads, response buffers, and Python metadata also need working space.
+Stale temporary files from killed processes are removed on cache startup when their writer lock is free.
+A rendered entry is capped at 64 MB; its metadata header at 2 MB. Cache locks use 4,096 fixed
+stripes per cache instead of retaining a lock file for every task ever seen. Collisions can
+serialize otherwise independent requests. Eviction skips active leases; if all capacity is
+pinned, a load fails explicitly instead of exceeding its budget. Prefetch failures are counted
+and can be retried by normal access. `/data/cache` reports loads, hits, bytes, failures, evictions,
+and pending groups. HTTP received bytes include retries; mounted I/O is identified separately.
+
+The original Parquets have roughly 100 pages per row group and approximately 70–110 MB of
+compressed JPEGs per group. A cold random image lookup fetches its whole projected group.
+This design optimizes reuse and locality; it does not promise page-sized network access. A
+future page-object or smaller-shard repack would trade another full rewrite/storage layout for
+lower random-read amplification. No such repack is claimed here.
+
+## 4. Indexed API, prefetch, and replay
+
+Standard OpenEnv `num_tasks`, `get_task`, and `task_range` operate on the complete index. Ranges
+are bounded at 1,000 records. Global split indices use a language prefix sum; language/family
+indices support the UI's jump control. Unmaterialized task metadata has no image URL/hash yet.
+Reset loads one selected task and returns its hash-addressed binary asset URL. Asset URLs carry
+the pinned task ID so eviction can be followed by deterministic reconstruction.
 
 ```python
-from nayana_ocr.client import connect
-from nayana_ocr.models import NayanaAction
+from nayana_ocr.corpus_training import CorpusAPI, BlockTaskStream
 
-with connect("http://localhost:8000") as env:
-    task = env.get_task_range("train", 0, 1)[0]
-    observation = env.reset(task_id=task["task_id"]).observation
-    print(observation.prompt, observation.asset_path)
-    result = env.step(NayanaAction(answer="your transcription or option letter"))
-    print(result.reward, result.observation.metrics)
+api = CorpusAPI("https://huggingenvs-nayana-ocr-env.hf.space")
+stream = BlockTaskStream(
+    api,
+    languages=["en", "kn", "hi", "ar"],
+    families=["page_ocr", "section_ocr", "mcq_vqa"],
+    seed=42,
+    prefetch_blocks=2,
+)
+task = next(iter(stream))
+state = stream.state_dict()
+replayed = BlockTaskStream(
+    api,
+    languages=["en", "kn", "hi", "ar"],
+    families=["page_ocr", "section_ocr", "mcq_vqa"],
+    seed=42,
+    prefetch_blocks=2,
+)
+replayed.load_state_dict(state)  # next task follows the consumed task
+api.close()
 ```
 
-Each session has independent episode state. The catalog is shared and read-only. The Gradio
-playground has a per-user task ID, next/previous/shuffle navigation, and reveals the reference
-after scoring. Changing a selection clears the prior answer, reference, and score. It does
-not consume a training cursor. Reference exclusion in the OpenEnv API is a training contract,
-not a secrecy guarantee for this public-source dataset and demonstration UI. Deployments with
-multiple replicas must use the exact same immutable snapshot. A live stream allocator,
-cross-replica leases, and continuous window rotation are not implemented here.
+The `/data/blocks`, `/data/block-tasks`, `/data/sample`, and `/data/prefetch` endpoints require
+`snapshot_id`; a changed snapshot returns 409. Block metadata contains no image bytes or labels.
+The iterator hashes `(seed, epoch, block_id)` for the block order, then shuffles chunks of at
+most 128 task records by default. It visits every selected task once per finite epoch. Whole
+blocks can be partitioned by rank/world size for independent consumers. The GRPO recipe is
+single-GPU; do not add a second distributed sharding layer around it.
 
-## 4. Train with TRL
+The iterator cursor includes snapshot, languages/families, seed, epoch, partition, chunk size,
+plan identity, block index, and consumed task offset. Mismatches fail. This is exact **consumer
+iterator** replay, tested across chunk boundaries; it is not an optimizer/checkpoint guarantee.
+Prefetch affects cache timing, not task order. TRL's own iterable loader repeats each task for
+its G completions. Tests exercise this installed loader with a tiny CPU model and real local
+HTTP metadata requests, without downloading model weights.
 
-Prepare a larger window first. This example is a starting configuration, not a verified
-benchmark subset; inspect `manifest.json` for document diversity and split coverage.
+## 5. GRPO and HF Jobs
 
 ```bash
-uv run --frozen --project envs/nayana_ocr nayana-prepare \
-  --output data/snapshots/train-256-v2 --pages-per-language 256 \
-  --max-media-bytes 8000000000
-
 uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana.py \
-  --snapshot data/snapshots/train-256-v2 --smoke --output-dir results/local-gpu-smoke
+  --env-url https://huggingenvs-nayana-ocr-env.hf.space \
+  --task-input corpus --prefetch-blocks 2 --smoke --output-dir results/local-gpu-smoke
+
+# Colocated environment and training with a mounted bucket:
+uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana.py \
+  --snapshot data/corpus-manifest.json --source-root /corpus \
+  --cache-dir /tmp/nayana-cache --task-input corpus --smoke
 ```
 
-The runner checks every requested language/task group in train and test before downloading
-model weights. It stops if the window lacks held-out coverage. Prepare more documents in a
-new directory in that case. An externally hosted environment can replace `--snapshot` with
-`--env-url https://YOUR-SPACE.hf.space`.
+`--task-input auto` selects full-corpus iteration for bucket-backed servers. `map` or `iterable`
+explicitly selects a small indexed balanced sample (`--train-per-group`), useful for controlled
+experiments. In `corpus` mode that sampling cap is unused: max_steps bounds optimization,
+while the dataset can continue through all selected tasks and reshuffle for later epochs.
+The full pass preserves natural task proportions; it is not an equal language/family mixture.
+A short max_steps run may consume only one source block and therefore one language. Use an
+explicit balanced sample for short controlled comparisons, or a sufficiently long full pass
+with per-language exposure counts; the smoke is a pipeline check.
 
-| Setting | Default |
-|---|---|
-| Model | `Qwen/Qwen3-VL-2B-Instruct`; resolved Hub commit saved before training |
-| Languages / tasks | `en kn hi ar` / `section_ocr mcq_vqa page_ocr` |
-| Sampler input | Map Dataset of metadata task IDs; `--task-input iterable` also available |
-| Mixing | Equal language × family groups, downsampled to the smallest group, up to 64 tasks/group |
-| Evaluation | Fixed document-disjoint test IDs, up to 4 tasks/group, greedy decoding |
-| Optimization | One GPU, BF16, SDPA, LoRA rank 16 / alpha 32 / dropout .05, q_proj and v_proj |
-| GRPO | 30 steps, 4 generations, temperature .9, learning rate 1e-5, seed 42 |
-| Completion / image budget | 2,048 tokens; processor max_pixels 1,048,576 |
-| Truncation | Truncated completions masked; failed/zero-update smoke is an error |
-| Checkpoints | Every 25 steps or final short-run step; keep 2 |
-| Smoke override | 2 steps, 2 generations, 1 eval task per group |
+Defaults: Qwen/Qwen3-VL-2B-Instruct, resolved model commit recorded; English/Kannada/Hindi/Arabic;
+all three families; 30 steps; G=4; BF16/SDPA; LoRA rank16/alpha32/dropout.05 on q_proj/v_proj;
+learning rate1e-5; temperature.9; seed42; 2,048 completion tokens; processor max_pixels1,048,576.
+`--smoke` uses two steps, G=2, and one evaluation item per group. `--languages` can select any
+of the 22 indexed languages. There is no server-side image downscaling; processor limits affect
+fine text visibility. Truncated completions are masked. Larger full-page transcriptions may
+need a larger token budget; inspect truncation before claiming improvement.
 
-There is no server-side thumbnail reduction. The Qwen processor applies the declared image
-budget after task selection; small script details can become harder to read on dense pages.
-Record the budget in comparisons. Section OCR, full-page OCR, and VQA are reported separately. Inspect completion truncation
-per group before choosing a training budget; dense multilingual pages may need more than
-2,048 tokens (`--max-completion-length`). GPU memory use for this default is not yet measured.
+Evaluation uses a fixed, balanced indexed sample of document-disjoint test tasks, up to four
+per language/family by default. No full-corpus metadata scan is needed. Run metadata records
+configuration, model commit, full served manifest, block plan identity/task count, and exact
+evaluation IDs. Outputs include baseline, trained metrics, adapter/processor, and checkpoints.
+The runner checks finite loss, expected steps, and changed adapter weights. These do not require
+or establish a reward increase. Metrics separate languages/families; OCR includes code-point CER.
 
-`run-metadata.json` records the model revision, snapshot manifest, selected train/test task
-order, and configuration. Outputs include `baseline.json`, `summary.json`, the adapter and
-processor, and trainer checkpoints. Summary metrics include per-language/task reward and
-exact match, plus CER for OCR. The aggregate is a macro average of those groups.
+Map-input optimizer resume validates configuration, selected IDs, model commit, and manifest.
+Iterable/corpus optimizer resume is rejected until validated. Use a pinned model revision to
+avoid drift in future runs. No GPU optimizer or HF Jobs execution is recorded for experiment05
+at this milestone. Current checks validate the environment and CPU data-loader integration.
 
-The script verifies finite loss, final step count, and changed adapter weights. A smoke can
-complete without an evaluation reward increase; it does not establish model improvement.
-The current recorded results are CPU checks only. GPU optimizer behavior and checkpoint
-replay have yet to be validated for this experiment.
-
-For optional logging, add `--trackio-space YOUR-ACCOUNT/YOUR-EXPERIMENT --run-name NAME`.
-The reward callback logs reward, exact match, CER where applicable, and overlong-answer rate
-under `nayana/<language>/<family>/...` using TRL's scalar metric hook.
-Use personal experimental assets until a final run is ready for the HuggingEnvs collection.
-No Space, bucket, model, or collection is created automatically by preparation or training.
-
-### Replay boundaries
-
-Use the same arguments and output directory, adding `--resume results/local-run/checkpoint-25`
-to resume map-input training. Changes in configuration, selected IDs, model commit, or
-snapshot manifest are rejected. Pin `--model-revision` on the original run if reproducibility
-must survive updates to the model's main branch. The adapter-update check captures weights
-after checkpoint loading.
-
-Iterable input demonstrates TRL's native group repetition over a fixed task manifest. Workers
-are zero, `dispatch_batches=False`, and `max_steps` is explicit. No second sharding or repetition
-layer is inserted. Trainer checkpoint resume for iterable input is deliberately rejected until
-validated. General Datasets shuffle-buffer state is not an exact replay guarantee; the data
-preparer avoids shuffle buffers and batched user transforms entirely. See
-[Datasets iterator state](https://github.com/huggingface/datasets/blob/5.0.1/src/datasets/iterable_dataset.py)
-and [TRL 1.13.0](https://github.com/huggingface/trl/blob/v1.13.0/trl/trainer/grpo_trainer.py).
-
-## 5. Run on HF Jobs
-
-Commit and push the branch first. `--revision` must be a full pushed Git SHA. Jobs fetch that
-exact repository archive and run with its lockfile; local uncommitted changes are not included.
-The launcher was executed locally against pushed commit
-`6393c3785259d902b563439a291daf5d39e0b6ac`: archive download, frozen environment,
-19 CPU tests (2 optional TRL tests skipped), and HTTP/WebSocket smoke passed.
-It has not yet been exercised on HF Jobs.
+Commit and push before using HF Jobs. The launcher fetches an exact 40-character Git revision
+and uses its frozen lock. For a colocated environment, attach the bucket to the job:
 
 ```bash
 SOURCE_REVISION=$(git rev-parse HEAD)
+CORPUS_MANIFEST=$(python -c 'import json; m=json.load(open("data/corpus-manifest.json")); print("hf://buckets/"+m["bucket_id"]+"/openenv/indexes/"+m["snapshot_id"]+"/manifest.json")')
 
 hf jobs uv run --flavor cpu-basic --timeout 20m train/hf_job.py \
   --revision "$SOURCE_REVISION" --mode env-smoke
 
-hf jobs uv run --flavor cpu-basic --timeout 30m train/hf_job.py \
-  --revision "$SOURCE_REVISION" --mode real-smoke
-
-hf jobs uv run --flavor a100-large --timeout 2h --secrets HF_TOKEN train/hf_job.py \
-  --revision "$SOURCE_REVISION" --mode train --prepare-pages 256 --smoke \
+hf jobs uv run --flavor a100-large --timeout 2h --secrets HF_TOKEN \
+  --volume hf://buckets/HuggingEnvs/NayanaOCR_Corpus_2025_bucket:/corpus:ro \
+  train/hf_job.py --revision "$SOURCE_REVISION" --mode train \
+  --corpus-manifest "$CORPUS_MANIFEST" --source-root /corpus --task-input corpus --smoke \
   --artifact-repo YOUR-ACCOUNT/nayana-experiments
 ```
 
-`--artifact-repo` is optional. If provided, the launcher creates a private dataset repository
-if it is absent and uploads run outputs, including partial failure diagnostics, under the
-source revision. Existing repository visibility is preserved. Without it, results live in job
-logs and ephemeral storage. Give each run a distinct artifact repo to avoid overwriting the
-same revision's output. A prepared dataset is not uploaded by this option.
+Alternatively pass `--env-url` to train against the hosted Space, with no job volume. The
+optional artifact repo receives run outputs in a private personal dataset repository; no
+publication occurs if it is omitted. Give separate runs distinct artifact repos. Keep
+experimental outputs personal until a final result is ready for the organization collection.
 
-## 6. Publish an explicitly selected Space
+## 6. Deploy the same environment to the Space
 
 ```bash
 uv run --frozen --project envs/nayana_ocr python train/deploy_space.py \
-  --space-id HuggingEnvs/nayana-ocr-env --snapshot data/snapshots/space-preview-v2
+  --space-id HuggingEnvs/nayana-ocr-env --corpus-manifest data/corpus-manifest.json \
+  --output results/deployment-corpus.json
 ```
 
-The publisher stages the package and a finalized real-data snapshot in a Docker Space.
-It rejects synthetic fixtures. The Space starts from bundled data without downloading the
-corpus on startup; `/manifest` identifies the exact served window. The example publishes a
-small preview, not a training/evaluation benchmark. Choose a curated final snapshot before
-publishing an organization asset. The final environment Space is
-[HuggingEnvs/nayana-ocr-env](https://huggingface.co/spaces/HuggingEnvs/nayana-ocr-env);
-its served snapshot is recorded in [results](results/README.md). No test bucket or model
-repository is needed for this preview.
+The publisher validates a ready real-source manifest and checks that every index file is already
+in the bucket. It uploads code plus the manifest, removes `snapshot/*` from the old preview,
+attaches the existing bucket read-only at `/corpus`, and configures local caching. Unrelated
+volumes are preserved. Bucket source files and indexes are not embedded in the Docker image.
+Space mount configuration uses the official Hub `set_space_volumes` API. The same package works
+with HTTP ranges if no mount is configured. See [Hub volumes](https://huggingface.co/docs/huggingface_hub/guides/manage-spaces)
+and [buckets](https://huggingface.co/docs/huggingface_hub/guides/buckets).
 
-## Scoring policy
+## 7. Checks and task policy
 
-OCR compares Unicode code points after NFC normalization and whitespace collapse. It
-preserves case, diacritics, Indic vowel signs, ZWJ/ZWNJ, punctuation, and RTL logical order.
-This is not grapheme-cluster CER. CER is normalized by reference length; reward clips the
-similarity component at zero. Predictions longer than `max(1024, 4 × raw reference length)`
-score zero before normalization, preventing whitespace-padding bypasses.
-CER is still recorded for overlong predictions; the separate overlong rate explains rejected
-answers even when their normalized transcription matches the reference.
+```bash
+uv run --frozen --project envs/nayana_ocr --extra dev --extra train pytest envs/nayana_ocr/tests -q
+uv run --frozen --project envs/nayana_ocr nayana-smoke
+uv run --frozen --project envs/nayana_ocr nayana-smoke \
+  --url https://huggingenvs-nayana-ocr-env.hf.space --languages en kn hi ar
+```
 
-MCQ derivation requires 2–26 nonempty, unique normalized options and exactly one option
-matching the normalized source answer. Other MCQs are audited and excluded rather than
-guessed. The model must return the uppercase letter; surrounding whitespace is allowed,
-but explanations, multiple letters, lowercase, and option-text answers score zero.
+The remote smoke selects indexed representatives and checks binary hashes, independent
+WebSockets, repeated resets, empty-answer rewards, and client image reuse. Supplying a local
+catalog to `probe` also checks known-reference reward1. It does not enumerate millions of IDs.
+An all-language image sweep can fetch several GB on a cold cache; metadata checks fetch indexes
+only. Recorded results distinguish metadata coverage, image/task samples, and exact oracle checks.
 
+OCR uses NFC and collapsed whitespace while preserving case, diacritics, Indic vowel signs,
+ZWJ/ZWNJ, punctuation, and RTL logical order. CER counts Unicode code points, not grapheme
+clusters. Reward clips similarity at zero. Answers longer than `max(1024, 4 × raw reference
+length)` score zero before normalization. MCQs require 2–26 unique nonempty options and exactly
+one normalized source-answer match; ambiguous items are audited/excluded. Only one uppercase
+option letter is accepted, with surrounding whitespace allowed.
 
-### Full-page OCR derivation (schema 2)
+Full-page OCR uses `whitespace-columns-v1` geometry, with RTL columns for Arabic. It masks
+unannotated pixels and excludes incomplete/overlapping region annotations. It is not table
+reconstruction or official semantic reading order. Because dimensions are absent from source
+annotations, the full index validates metadata and actual image bounds are validated on reset.
+Invalid candidates fail explicitly. Counts are not an audit of all source image quality.
 
-`page_ocr` joins every valid text region using `whitespace-columns-v1`: spanning headings
-and footers first, vertical whitespace cuts for columns, horizontal cuts for bands, and
-geometric tie breakers. Arabic reverses column order; it does not reverse text code points.
-This is a deterministic heuristic, not an official Nayana reading-order label. It does not
-reconstruct table formatting. Missing/invalid text or boxes, duplicate region IDs, or any
-positive-area region overlap exclude the page from this family; section/VQA tasks can remain.
+The original Arabic JPEG for `document_10026_page_106` has missing/distorted glyphs and
+replacement boxes before transformation (SHA-256
+`c11acab6056c92836ac8ccd7470b76d04d20441485e9e46c1c3b9b4cb2ad0a62`).
+This observation does not establish prevalence; the UI flags it and retains source pixels.
 
-Full-page PNGs retain native dimensions and original pixels inside annotated boxes. Everything
-outside those boxes is white. Visual inspection found source headers outside the annotations;
-masking avoids penalizing a correct transcription for unscored visible text. We cannot infer
-whether annotation text exactly covers every glyph inside a supplied box. Real multilingual
-annotation quality still needs an audit before claiming a model benchmark. VQA uses the raw
-JPEG; section OCR uses a lossless crop. The 64-page preview excludes six full-page tasks for
-overlapping regions and 11 MCQs with ambiguous answers; descriptive VQA remains deferred.
+For a small self-contained offline fixture/window, `nayana-prepare` remains available:
 
-Visual inspection also found missing/distorted glyphs and replacement boxes in the **original**
-Arabic JPEG for `document_10026_page_106`, before any environment transformation. The original
-asset SHA-256 is `c11acab6056c92836ac8ccd7470b76d04d20441485e9e46c1c3b9b4cb2ad0a62`.
-The preview retains source pixels, and the Arabic UI calls out this rendering caveat. This
-does not establish the prevalence across Arabic or other languages. Audit image/text agreement
-and source rendering before choosing a training subset; mask correctness alone does not make
-the underlying supervision valid.
+```bash
+uv run --frozen --project envs/nayana_ocr nayana-prepare \
+  --output data/snapshots/real-smoke-v2 --pages-per-language 2
+uv run --frozen --project envs/nayana_ocr nayana-smoke --snapshot data/snapshots/real-smoke-v2
+```
+
+That optional Datasets streaming workflow commits each page and iterator state transactionally;
+its old 64-page deployment is historical evidence in `results/`. It is not the full-corpus path.
