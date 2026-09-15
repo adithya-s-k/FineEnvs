@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+data/snapshots/
+envs/nayana_ocr/snapshot/
+results/local-*/
+results/hf-job-*/
+.ipynb_checkpoints/

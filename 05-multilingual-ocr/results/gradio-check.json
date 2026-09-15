@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "coverage": [
+    "en/section_ocr",
+    "en/mcq_vqa",
+    "kn/section_ocr",
+    "kn/mcq_vqa",
+    "hi/section_ocr",
+    "hi/mcq_vqa",
+    "ar/section_ocr",
+    "ar/mcq_vqa"
+  ],
+  "independent_clients": true
+}

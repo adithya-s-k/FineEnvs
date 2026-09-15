@@ -1,0 +1,17 @@
+name: multilingual-ocr
+title: "Multilingual OCR"
+tagline: "Stream Nayana document data into replayable OpenEnv OCR and VQA tasks."
+order: 5
+status: wip
+hub:
+  org: HuggingEnvs
+  datasets:
+    - Cognitive-Lab/NayanaOCR_Corpus_2025
+  spaces: []
+  models: []
+envs:
+  - name: nayana_ocr
+    summary: "Section OCR and multiple-choice VQA with document-level splits and shared image storage."
+    backend: http
+    frameworks:
+      openenv: {transport: http-websocket, verified: true}

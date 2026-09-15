@@ -1,0 +1,24 @@
+name: Multilingual OCR
+on:
+  pull_request:
+    paths: ['05-multilingual-ocr/**', '.github/workflows/multilingual-ocr.yml']
+  push:
+    branches: [main]
+    paths: ['05-multilingual-ocr/**', '.github/workflows/multilingual-ocr.yml']
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Regression tests
+        run: uv run --frozen --project 05-multilingual-ocr/envs/nayana_ocr --extra dev pytest 05-multilingual-ocr/envs/nayana_ocr/tests -q
+      - name: HTTP, media, WebSocket, and adapter smoke
+        run: uv run --frozen --project 05-multilingual-ocr/envs/nayana_ocr nayana-smoke
+      - name: Validate source formatting
+        run: uv run --frozen --project 05-multilingual-ocr/envs/nayana_ocr --extra dev ruff check 05-multilingual-ocr

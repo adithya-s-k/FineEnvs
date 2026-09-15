@@ -1,0 +1,146 @@
+{
+  "repo_id": "Cognitive-Lab/NayanaOCR_Corpus_2025",
+  "revision": "b220b074a8c82bb90427051e856e4c4edc79885b",
+  "license": "cc-by-nc-4.0",
+  "source_split": "train",
+  "total_pages": 1006170,
+  "parallel_pages_per_language": 45735,
+  "repo_bytes": 813665107295,
+  "languages": [
+    {
+      "language": "ar",
+      "pages": 45735,
+      "parquet_files": 65,
+      "compressed_bytes": 27973653719
+    },
+    {
+      "language": "bn",
+      "pages": 45735,
+      "parquet_files": 81,
+      "compressed_bytes": 37080372202
+    },
+    {
+      "language": "de",
+      "pages": 45735,
+      "parquet_files": 88,
+      "compressed_bytes": 40214753809
+    },
+    {
+      "language": "en",
+      "pages": 45735,
+      "parquet_files": 81,
+      "compressed_bytes": 37492877638
+    },
+    {
+      "language": "es",
+      "pages": 45735,
+      "parquet_files": 83,
+      "compressed_bytes": 37518697055
+    },
+    {
+      "language": "fr",
+      "pages": 45735,
+      "parquet_files": 85,
+      "compressed_bytes": 38585494503
+    },
+    {
+      "language": "gu",
+      "pages": 45735,
+      "parquet_files": 78,
+      "compressed_bytes": 35597322238
+    },
+    {
+      "language": "hi",
+      "pages": 45735,
+      "parquet_files": 82,
+      "compressed_bytes": 37592601136
+    },
+    {
+      "language": "it",
+      "pages": 45735,
+      "parquet_files": 84,
+      "compressed_bytes": 38451788872
+    },
+    {
+      "language": "ja",
+      "pages": 45735,
+      "parquet_files": 73,
+      "compressed_bytes": 32519562806
+    },
+    {
+      "language": "kn",
+      "pages": 45735,
+      "parquet_files": 86,
+      "compressed_bytes": 39726502251
+    },
+    {
+      "language": "ko",
+      "pages": 45735,
+      "parquet_files": 73,
+      "compressed_bytes": 33123200769
+    },
+    {
+      "language": "ml",
+      "pages": 45735,
+      "parquet_files": 89,
+      "compressed_bytes": 41486205192
+    },
+    {
+      "language": "mr",
+      "pages": 45735,
+      "parquet_files": 79,
+      "compressed_bytes": 35882976729
+    },
+    {
+      "language": "or",
+      "pages": 45735,
+      "parquet_files": 83,
+      "compressed_bytes": 38323671608
+    },
+    {
+      "language": "pa",
+      "pages": 45735,
+      "parquet_files": 80,
+      "compressed_bytes": 36707388972
+    },
+    {
+      "language": "ru",
+      "pages": 45735,
+      "parquet_files": 90,
+      "compressed_bytes": 40981126526
+    },
+    {
+      "language": "sa",
+      "pages": 45735,
+      "parquet_files": 82,
+      "compressed_bytes": 37345327352
+    },
+    {
+      "language": "ta",
+      "pages": 45735,
+      "parquet_files": 87,
+      "compressed_bytes": 40161750777
+    },
+    {
+      "language": "te",
+      "pages": 45735,
+      "parquet_files": 82,
+      "compressed_bytes": 37819541209
+    },
+    {
+      "language": "th",
+      "pages": 45735,
+      "parquet_files": 72,
+      "compressed_bytes": 32067484848
+    },
+    {
+      "language": "zh",
+      "pages": 45735,
+      "parquet_files": 81,
+      "compressed_bytes": 36972255157
+    }
+  ],
+  "identity_column": "image_id.txt",
+  "document_split": "sha256([document-split-v1, seed, document_id]) first 64 bits modulo 100; 0-79 train, 80-89 validation, 90-99 test",
+  "media": "embedded JPEG bytes; __url__ is provenance, not a public image URL"
+}

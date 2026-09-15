@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "datasets_version": "5.0.1",
+  "config": {
+    "languages": [
+      "en",
+      "kn",
+      "hi",
+      "ar"
+    ],
+    "revision": "b220b074a8c82bb90427051e856e4c4edc79885b",
+    "pages_per_language": 2,
+    "max_media_bytes": 1000000000,
+    "max_pixels": 50000000,
+    "split_seed": 42,
+    "num_shards": 1,
+    "shard_index": 0,
+    "source": "Cognitive-Lab/NayanaOCR_Corpus_2025"
+  },
+  "status": "ready",
+  "snapshot_id": "2674cc68f6c2bb6423eabc91ebe2f1039db3cb18188c2f4b12feadcf2c0433eb",
+  "source_license": "cc-by-nc-4.0",
+  "media_bytes": 5945947,
+  "counts": [
+    {
+      "split": "train",
+      "language": "ar",
+      "family": "mcq_vqa",
+      "tasks": 2
+    },
+    {
+      "split": "train",
+      "language": "ar",
+      "family": "section_ocr",
+      "tasks": 11
+    },
+    {
+      "split": "train",
+      "language": "en",
+      "family": "mcq_vqa",
+      "tasks": 1
+    },
+    {
+      "split": "train",
+      "language": "en",
+      "family": "section_ocr",
+      "tasks": 7
+    },
+    {
+      "split": "train",
+      "language": "hi",
+      "family": "mcq_vqa",
+      "tasks": 1
+    },
+    {
+      "split": "train",
+      "language": "hi",
+      "family": "section_ocr",
+      "tasks": 7
+    },
+    {
+      "split": "train",
+      "language": "kn",
+      "family": "mcq_vqa",
+      "tasks": 1
+    },
+    {
+      "split": "train",
+      "language": "kn",
+      "family": "section_ocr",
+      "tasks": 7
+    }
+  ],
+  "pages": {
+    "ar": 2,
+    "en": 2,
+    "hi": 2,
+    "kn": 2
+  },
+  "progress": {
+    "en": {
+      "exhausted": false,
+      "pages": 2,
+      "skipped": {
+        "ambiguous_mcq_answer": 1,
+        "descriptive_vqa_deferred": 8
+      }
+    },
+    "kn": {
+      "exhausted": false,
+      "pages": 2,
+      "skipped": {
+        "ambiguous_mcq_answer": 1,
+        "descriptive_vqa_deferred": 8
+      }
+    },
+    "hi": {
+      "exhausted": false,
+      "pages": 2,
+      "skipped": {
+        "ambiguous_mcq_answer": 1,
+        "descriptive_vqa_deferred": 8
+      }
+    },
+    "ar": {
+      "exhausted": false,
+      "pages": 2,
+      "skipped": {
+        "descriptive_vqa_deferred": 8
+      }
+    }
+  },
+  "last_prepare_seconds": 92.876
+}

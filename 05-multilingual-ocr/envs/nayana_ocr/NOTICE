@@ -1,0 +1,11 @@
+Environment code: HuggingEnvs contributors, Apache License 2.0.
+
+Data source: CognitiveLab, Cognitive-Lab/NayanaOCR_Corpus_2025.
+https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025
+Pinned source revision is recorded in each prepared snapshot's manifest.json.
+
+Original images and annotations are licensed CC BY-NC 4.0:
+https://creativecommons.org/licenses/by-nc/4.0/
+Derived section crops retain that license. This code's Apache license does not
+replace the data license. Modifications: section crops, task derivation,
+document-level partitions, and normalization for scoring.
