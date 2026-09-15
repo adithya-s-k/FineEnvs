@@ -102,7 +102,7 @@ uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana
 
 The [notebook](notebooks/05_multilingual_ocr.ipynb) uses the same data and training code.
 The original three-family index passed **38 tests**, all **66 language/task combinations** through
-OpenEnv and Gradio, and six notebook CPU cells. The five-family extension passes **54 tests**;
+OpenEnv and Gradio, and six notebook CPU cells. The five-family extension passes **55 tests**;
 its deployment and live judge checks are recorded separately in [results](results/README.md). Prefetched tasks reused
 one source block; repeated completions required no additional source loads or image renders.
 GPU optimizer training for experiment 05 has not been run; the recorded results are serving,

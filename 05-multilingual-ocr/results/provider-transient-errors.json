@@ -1,0 +1,18 @@
+{
+  "backend": "hf-inference-providers",
+  "model": "google/gemma-4-31B-it",
+  "provider": "deepinfra",
+  "initial_live_gradio_sweeps": [
+    {
+      "server": "local",
+      "error": "HF router read timeout after 120 seconds",
+      "reward_assigned": false
+    },
+    {
+      "server": "hosted",
+      "error": "HF router HTTP 504",
+      "reward_assigned": false
+    }
+  ],
+  "follow_up": "Bounded retry for transient transport failures; 60-second reads, at most two attempts. Valid verdicts are not retried."
+}

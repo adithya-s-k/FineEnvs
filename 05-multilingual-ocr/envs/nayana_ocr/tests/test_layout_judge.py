@@ -2,6 +2,7 @@ import copy
 import json
 
 import pytest
+import requests
 from nayana_ocr.data.schema import REVISION
 from nayana_ocr.data.tasks import derive_tasks
 from nayana_ocr.fixtures import fixture_rows
@@ -153,3 +154,19 @@ def test_judge_requires_explicit_provider_and_uses_only_hf_router():
     for provider in ("auto", "fastest", "https://example.com", "deepinfra:other"):
         with pytest.raises(ValueError):
             GemmaJudge(provider=provider, token="test-secret")
+
+
+def test_transient_provider_timeout_retries_once_but_a_rejection_does_not(monkeypatch):
+    calls = []
+
+    def post(*args, **kwargs):
+        calls.append(kwargs)
+        if len(calls) == 1:
+            raise requests.Timeout("provider timed out")
+        return fake_response({k: False for k in CHECKS})
+
+    monkeypatch.setattr("nayana_ocr.server.judge.requests.post", post)
+    monkeypatch.setattr("nayana_ocr.server.judge.time.sleep", lambda seconds: None)
+    judge = GemmaJudge(token="test-secret")
+    assert judge.score(judge_task(), "$43")[0] == 0
+    assert len(calls) == 2 and calls[0] == calls[1]

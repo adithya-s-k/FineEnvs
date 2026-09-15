@@ -8,6 +8,7 @@ import json
 import os
 import re
 import threading
+import time
 from collections import OrderedDict
 from functools import lru_cache
 
@@ -70,7 +71,7 @@ class GemmaJudge:
         model=MODEL,
         provider=PROVIDER,
         token=None,
-        timeout=120,
+        timeout=60,
         concurrency=2,
         cache_size=4096,
     ):
@@ -109,6 +110,32 @@ class GemmaJudge:
             ]
         )
 
+    def _post(self, payload):
+        # One retry for infrastructure failures only; never rejudge a valid verdict.
+        # Two 60-second reads plus connect/backoff fit the client's 180-second budget.
+        for attempt in range(2):
+            try:
+                response = requests.post(
+                    self.url,
+                    headers={"Authorization": f"Bearer {self.token}"},
+                    json=payload,
+                    timeout=(10, self.timeout),
+                )
+            except requests.RequestException:
+                if attempt:
+                    raise
+            else:
+                if response.status_code not in {429, 500, 502, 503, 504} or attempt:
+                    return response
+                # A longer provider cooldown is reported to the caller, not bypassed.
+                try:
+                    if float(response.headers.get("Retry-After", "0")) > 1:
+                        return response
+                except (ValueError, AttributeError):
+                    return response
+                response.close()
+            time.sleep(1)
+
     def score(self, task, prediction):
         if not normalize_text(prediction) or len(prediction) > 8192:
             return 0.0, {
@@ -131,10 +158,8 @@ class GemmaJudge:
             raise JudgeUnavailable("Judge busy; retry this step without resetting")
         try:
             try:
-                response = requests.post(
-                    self.url,
-                    headers={"Authorization": f"Bearer {self.token}"},
-                    json={
+                response = self._post(
+                    {
                         "model": f"{self.model}:{self.provider}",
                         "messages": [
                             {"role": "system", "content": SYSTEM},
@@ -156,7 +181,6 @@ class GemmaJudge:
                             },
                         },
                     },
-                    timeout=(10, self.timeout),
                 )
                 if response.status_code != 200:
                     raise JudgeUnavailable(

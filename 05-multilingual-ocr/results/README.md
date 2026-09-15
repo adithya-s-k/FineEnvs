@@ -17,7 +17,7 @@ The index contains **11,020,101 candidates**, adding 1,006,168 layout pages and
 4,024,592 descriptive VQA questions. All 22 rebuilt databases passed SHA-256 and
 SQLite integrity checks. Source inventory and source files are unchanged.
 
-**54 local tests pass**. Gemma 4 31B through **HF Inference Providers / DeepInfra**
+**55 local tests pass**. Gemma 4 31B through **HF Inference Providers / DeepInfra**
 passed all **35 fixed calibration cases**: one exact source reference in each of
 22 languages, plus 13 synthetic strictness checks. This is a regression calibration,
 not a model accuracy estimate or proof of prompt-injection resistance. Provider
@@ -25,10 +25,12 @@ serving revisions are not commit-pinned; the model/provider and rubric hash are 
 
 | Artifact | Scope |
 |---|---|
-| `tests-v2.json` | 54 tests with training extras |
+| `gradio-local-v2.json` | All five families in en/kn/hi/ar, exact/empty scores, navigation, reference clearing and session isolation |
+| `tests-v2.json` | 55 tests with training extras |
 | `layout-local-v2.json` | Exact and empty layout predictions over OpenEnv for all 22 languages |
 | `deployment-v2.json` | Published Space commit and mounted-bucket manifest |
 | `corpus-index-v2.json` | All-language index integrity, task counts, exclusions and size |
+| `provider-transient-errors.json` | Initial live-provider timeouts retained; bounded retry added without converting errors to rewards |
 | `judge-calibration.json` | Exact cases, expected/observed verdicts, timings, provider and rubric hash |
 | `smoke-fixture-v2.json` | Synthetic HTTP/WebSocket/media/TRL adapter smoke for deterministic tasks |
 

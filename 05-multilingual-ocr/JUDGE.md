@@ -66,7 +66,9 @@ injection remain possible. The fixed calibration set checks known examples rathe
 than establishing broad accuracy or security.
 
 Decoding requests temperature 0, seed 42, `reasoning_effort="none"`, JSON-schema output,
-and a 512-token response budget. A malformed
+and a 512-token response budget. Requests use a 60-second read timeout and retry once
+after a transient connection error or HTTP 429/500/502/503/504 (honoring longer provider
+cooldowns by returning the error). Valid rejected answers are never retried. A malformed
 or truncated verdict, HTTP error, timeout, or busy judge raises `JudgeUnavailable`;
 the environment assigns **no reward** and does not consume the step. Training stops
 on that error. Retry when service is ready; do not convert infrastructure errors into
