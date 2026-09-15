@@ -217,8 +217,11 @@ or establish a reward increase. Metrics separate languages/families; OCR include
 
 Map-input optimizer resume validates configuration, selected IDs, model commit, and manifest.
 Iterable/corpus optimizer resume is rejected until validated. Use a pinned model revision to
-avoid drift in future runs. No GPU optimizer or HF Jobs execution is recorded for experiment05
-at this milestone. Current checks validate the environment and CPU data-loader integration.
+avoid drift in future runs. GPU optimizer training remains unverified. A CPU-only HF Job
+has executed the complete data-path speed benchmark with a bucket mount; see
+[performance and readiness results](results/SPEED.md). That benchmark found an oversized
+indexed page rejected by the serving limit, so preflight a fixed task set before training
+or evaluation and resolve eligibility before an unattended full-corpus run.
 
 Commit and push before using HF Jobs. The launcher fetches an exact 40-character Git revision
 and uses its frozen lock. For a colocated environment, attach the bucket to the job:
@@ -300,6 +303,10 @@ unannotated pixels and excludes incomplete/overlapping region annotations. It is
 reconstruction or official semantic reading order. Because dimensions are absent from source
 annotations, the full index validates metadata and actual image bounds are validated on reset.
 Invalid candidates fail explicitly. Counts are not an audit of all source image quality.
+The speed test reproduced one such policy rejection: `document_12413_page_0` in Kannada
+is 9,934 × 7,016 pixels, above the 50-million-pixel limit used by both rendering and the
+training adapter. This is a size-policy rejection, not proof of corrupt source data.
+An eventual resize policy must be versioned; evaluation must not silently substitute tasks.
 
 The original Arabic JPEG for `document_10026_page_106` has missing/distorted glyphs and
 replacement boxes before transformation (SHA-256

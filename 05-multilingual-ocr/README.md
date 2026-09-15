@@ -102,6 +102,11 @@ one source block; repeated completions required no additional source loads or im
 GPU optimizer training for experiment 05 has not been run; the recorded results are serving,
 data access, cache, replay, and CPU TRL sampler checks. See [results](results/README.md).
 
+The broader [speed test](results/SPEED.md) compares local HTTP ranges, the Space, and a
+colocated bucket-mounted HF CPU Job. It also found an indexed 69.7-megapixel page rejected
+by the current 50-megapixel limit. Full-corpus unattended runs need an explicit oversized-page
+handling or eligibility policy; the earlier representative smoke did not encounter that page.
+
 ## Task and evaluation limits
 
 Full-page OCR joins annotated regions using `whitespace-columns-v1`, including RTL column

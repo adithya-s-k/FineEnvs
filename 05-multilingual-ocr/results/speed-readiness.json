@@ -1,0 +1,26 @@
+{
+  "readiness": "Do not use unattended unfiltered full-corpus runs until oversized-page handling or an explicit eligibility policy is implemented",
+  "observed_unique_rejected_tasks": 1,
+  "tasks": [
+    {
+      "task_id": "nayana-c1.56b9cb928c0bc050a4d6e67acb12e38718ea66239e5fcae7c0a09299963990eb.kn.test.3480",
+      "page_id": "document_12413_page_0",
+      "language": "kn",
+      "family": "mcq_vqa",
+      "block_id": "kn:50",
+      "_source_path": "kn/train-00008-of-00086.parquet",
+      "_row_group": 1,
+      "_row_in_group": 28
+    }
+  ],
+  "image_dimensions": [
+    9934,
+    7016
+  ],
+  "pixels": 69696944,
+  "current_server_and_adapter_pixel_limit": 50000000,
+  "error": "RuntimeError: Server error: document_12413_page_0: 9934x7016 exceeds max_pixels=50000000 (code: EXECUTION_ERROR)",
+  "sampling_limit": "One observed page does not establish full-corpus prevalence",
+  "speed_fix_applied": false,
+  "source_data_changed": false
+}

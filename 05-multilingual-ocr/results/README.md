@@ -2,6 +2,15 @@
 
 These are pipeline checks, not model evaluations or evidence of reward improvement.
 
+## Speed and full-corpus readiness
+
+[SPEED.md](SPEED.md) compares local HTTP ranges, the mounted Space, and a colocated
+HF CPU Job, including sustained cached requests and eight-block prefetch. The broader
+sample found an indexed 69.7-megapixel page rejected by the current 50-megapixel limit.
+The data path needs an oversized-page policy or explicit eligibility filtering before
+unattended full-corpus runs. Earlier representative checks below remain valid for their
+tested tasks; they did not establish eligibility for every indexed candidate.
+
 ## Complete corpus: schema 2 / index 1 / package 0.3.0
 
 The current server uses the complete bucket copy and an immutable full-corpus index. Reports:
@@ -111,5 +120,5 @@ Schema-1 snapshots are rejected by package 0.2.0; prepare a new directory. In pa
 
 The smoke elapsed times exclude preparation/startup and are individual observations, not p95
 latency, memory, bandwidth, or throughput benchmarks. No GPU optimizer step, held-out model
-comparison, or HF Jobs execution has been recorded for experiment 05. Training checkpoint
-replay is not yet verified.
+comparison, or HF Jobs training execution has been recorded for experiment 05. The later
+CPU-only HF Jobs data benchmark is reported above. Training checkpoint replay is not yet verified.

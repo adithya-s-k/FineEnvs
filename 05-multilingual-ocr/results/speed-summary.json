@@ -1,0 +1,93 @@
+{
+  "scope": "Image/reward data path only; no GPU model, processor tensorization, or optimizer",
+  "selection_seed": 20260915,
+  "platforms": {
+    "local": {
+      "cold_random_serial_p50_seconds": 17.09239733358845,
+      "cold_random_serial_p95_seconds": 30.569328933488574,
+      "cold_random_serial_operations_per_second": 0.052669770652869506,
+      "cold_random_four_workers_successes": 11,
+      "cold_random_four_workers_errors": 1,
+      "prefetch_new_tasks_per_second": 0.9256200337049669,
+      "prefetch_total_seconds_for_96_tasks": 103.71426341729239,
+      "prefetch_task_p50_seconds": 0.08889995864592493,
+      "prefetch_task_p95_seconds": 18.193291530478746,
+      "prefetch_source_loads": 8,
+      "prefetch_errors": 0,
+      "warm_four_workers_requests_per_second": 394.6432805339483,
+      "warm_four_workers_p50_seconds": 0.006354292156174779,
+      "warm_four_workers_p95_seconds": 0.024291632929816842,
+      "warm_measured_seconds": 30.103135124780238,
+      "warm_operations": 11880,
+      "warm_errors": 0,
+      "warm_valid_distinct_tasks": 11,
+      "warm_rejected_priming_tasks": [
+        "nayana-c1.56b9cb928c0bc050a4d6e67acb12e38718ea66239e5fcae7c0a09299963990eb.kn.test.3480"
+      ],
+      "warm_new_source_loads": 0,
+      "warm_new_image_downloads": 0,
+      "health_round_trip_p50_seconds": 0.000674479641020298,
+      "balanced_12_id_sample_p50_seconds": 0.005071353865787387
+    },
+    "space": {
+      "cold_random_serial_p50_seconds": 4.708475062390789,
+      "cold_random_serial_p95_seconds": 6.3937927687540625,
+      "cold_random_serial_operations_per_second": 0.21583883336042375,
+      "cold_random_four_workers_successes": 11,
+      "cold_random_four_workers_errors": 1,
+      "prefetch_new_tasks_per_second": 0.5999634781604665,
+      "prefetch_total_seconds_for_96_tasks": 160.0097397500649,
+      "prefetch_task_p50_seconds": 6.204831187380478,
+      "prefetch_task_p95_seconds": 8.192811759770848,
+      "prefetch_source_loads": 8,
+      "prefetch_errors": 0,
+      "warm_four_workers_requests_per_second": 8.914256928217926,
+      "warm_four_workers_p50_seconds": 0.43739114608615637,
+      "warm_four_workers_p95_seconds": 0.45710789782460776,
+      "warm_measured_seconds": 34.55139362486079,
+      "warm_operations": 308,
+      "warm_errors": 0,
+      "warm_valid_distinct_tasks": 11,
+      "warm_rejected_priming_tasks": [
+        "nayana-c1.56b9cb928c0bc050a4d6e67acb12e38718ea66239e5fcae7c0a09299963990eb.kn.test.3480"
+      ],
+      "warm_new_source_loads": 0,
+      "warm_new_image_downloads": 0,
+      "health_round_trip_p50_seconds": 0.22114002099260688,
+      "balanced_12_id_sample_p50_seconds": 0.2708796460647136
+    },
+    "hf_job": {
+      "cold_random_serial_p50_seconds": 2.437438536551781,
+      "cold_random_serial_p95_seconds": 3.2365870461915613,
+      "cold_random_serial_operations_per_second": 0.41488689262316925,
+      "cold_random_four_workers_successes": 11,
+      "cold_random_four_workers_errors": 1,
+      "prefetch_new_tasks_per_second": 6.7285485010881345,
+      "prefetch_total_seconds_for_96_tasks": 14.267564540030435,
+      "prefetch_task_p50_seconds": 0.25109143543522805,
+      "prefetch_task_p95_seconds": 2.250276992795989,
+      "prefetch_source_loads": 8,
+      "prefetch_errors": 0,
+      "warm_four_workers_requests_per_second": 57.542213951719404,
+      "warm_four_workers_p50_seconds": 0.05030903092119843,
+      "warm_four_workers_p95_seconds": 0.1954815826145932,
+      "warm_measured_seconds": 30.586240589851514,
+      "warm_operations": 1760,
+      "warm_errors": 0,
+      "warm_valid_distinct_tasks": 11,
+      "warm_rejected_priming_tasks": [
+        "nayana-c1.56b9cb928c0bc050a4d6e67acb12e38718ea66239e5fcae7c0a09299963990eb.kn.test.3480"
+      ],
+      "warm_new_source_loads": 0,
+      "warm_new_image_downloads": 0,
+      "health_round_trip_p50_seconds": 0.0008795314934104681,
+      "balanced_12_id_sample_p50_seconds": 0.013262422988191247
+    }
+  },
+  "unique_sampled_tasks": 120,
+  "unique_rejected_task_ids": [
+    "nayana-c1.56b9cb928c0bc050a4d6e67acb12e38718ea66239e5fcae7c0a09299963990eb.kn.test.3480"
+  ],
+  "unique_tasks_served_successfully": 119,
+  "readiness": "Use a vetted task set with a colocated bucket-mounted server; full-corpus unattended training/evaluation needs an oversized-page eligibility policy"
+}

@@ -9,6 +9,11 @@
   with `--corpus-manifest`; a job can attach the source bucket at `/corpus`.
 - `deploy_space.py`: publish code and a ready full-corpus manifest, remove the old bundled
   preview, and attach the existing bucket read-only. Indexes must already be published.
+- `benchmark_corpus.py`: cold random evaluation, warm GRPO-style requests, sustained
+  cached capacity, and multi-block prefetch, using the actual image/reward adapter.
+- `benchmark_job.py`: run that benchmark at a pushed commit on a CPU Job with a bucket
+  mount, returning its complete measured report through the job logs.
 
 See [REPRODUCE.md](../REPRODUCE.md) for exact commands, defaults, and replay boundaries.
-The scripts are implemented; no GPU optimizer or HF Jobs result has been recorded for 05 yet.
+The CPU HF Jobs speed test completed; GPU optimizer training remains unverified.
+See [SPEED.md](../results/SPEED.md) for timings and the oversized-page readiness blocker.
