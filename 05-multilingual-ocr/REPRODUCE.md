@@ -170,7 +170,10 @@ and [TRL 1.13.0](https://github.com/huggingface/trl/blob/v1.13.0/trl/trainer/grp
 
 Commit and push the branch first. `--revision` must be a full pushed Git SHA. Jobs fetch that
 exact repository archive and run with its lockfile; local uncommitted changes are not included.
-The current launcher has not yet been exercised on HF Jobs.
+The launcher was executed locally against pushed commit
+`6393c3785259d902b563439a291daf5d39e0b6ac`: archive download, frozen environment,
+19 CPU tests (2 optional TRL tests skipped), and HTTP/WebSocket smoke passed.
+It has not yet been exercised on HF Jobs.
 
 ```bash
 SOURCE_REVISION=$(git rev-parse HEAD)

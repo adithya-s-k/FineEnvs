@@ -65,5 +65,17 @@
     "verified_min_pixels": 784,
     "verified_max_pixels": 1048576,
     "model_weights_loaded": false
+  },
+  "launcher_local": {
+    "status": "passed",
+    "source_revision": "6393c3785259d902b563439a291daf5d39e0b6ac",
+    "mode": "env-smoke",
+    "downloaded_github_archive": true,
+    "frozen_lockfile": true,
+    "tests_passed": 19,
+    "tests_skipped": 2,
+    "skip_reason": "Optional TRL sampler cases require train extra; separately verified in the full 21-test run",
+    "http_websocket_adapter_smoke": "passed",
+    "hf_job_submitted": false
   }
 }
