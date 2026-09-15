@@ -9,11 +9,16 @@
   with `--corpus-manifest`; a job can attach the source bucket at `/corpus`.
 - `deploy_space.py`: publish code and a ready full-corpus manifest, remove the old bundled
   preview, and attach the existing bucket read-only. Indexes must already be published.
+- `verify_judge.py`: calibrate the configured Gemma model/provider against multilingual
+  references and strictness challenges before deployment.
+- `verify_corpus.py`: check indexed discovery, prefetch, cache reuse, and reference scoring.
+- `verify_playground.py`: check Gradio scoring, indexed navigation, and session isolation.
 - `benchmark_corpus.py`: cold random evaluation, warm GRPO-style requests, sustained
   cached capacity, and multi-block prefetch, using the actual image/reward adapter.
 - `benchmark_job.py`: run that benchmark at a pushed commit on a CPU Job with a bucket
   mount, returning its complete measured report through the job logs.
 
 See [REPRODUCE.md](../REPRODUCE.md) for exact commands, defaults, and replay boundaries.
-The CPU HF Jobs speed test completed; GPU optimizer training remains unverified.
-See [SPEED.md](../results/SPEED.md) for timings and the oversized-page readiness blocker.
+Write generated reports and checkpoints to `artifacts/`, which is ignored by Git. HF Jobs
+can upload training outputs to an explicit artifact repository. GPU optimizer training
+remains unverified; preflight image eligibility before a full-corpus run.

@@ -44,7 +44,7 @@ class Config:
     max_pixels: int = 1_048_576
     learning_rate: float = 1e-5
     seed: int = 42
-    output_dir: str = "results/local-run"
+    output_dir: str = "artifacts/local-run"
     trackio_space: str = ""
     run_name: str = "nayana-ocr-grpo"
     resume: str = ""

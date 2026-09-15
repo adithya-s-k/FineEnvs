@@ -81,7 +81,7 @@ def main():
     parser.add_argument("--model", default=MODEL)
     parser.add_argument("--provider", default=PROVIDER)
     parser.add_argument(
-        "--output", type=Path, default=Path("results/judge-calibration.json")
+        "--output", type=Path, default=Path("artifacts/judge-calibration.json")
     )
     args = parser.parse_args()
     mapping = (

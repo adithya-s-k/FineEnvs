@@ -7,7 +7,9 @@ There are 45,735 pages per language, 22 languages, 1,784 Parquet shards, 1,807 s
 and 813,665,107,295 bytes of pinned files. Sizes include repository metadata; they are not
 image-only byte counts. Historical revisions are excluded.
 
-`corpus-source.json` records every source path, size, Xet identity, and LFS SHA-256 where available.
+`nayana-mirror` generates the ignored `corpus-source.json` inventory with every source path,
+size, Xet identity, and LFS SHA-256 where available. Recreate it from the pinned revision
+when auditing or rebuilding the index.
 The mirror preserves source paths and uses server-side copying for Xet files. It refuses
 conflicting existing objects and verifies every copied Parquet's Xet hash and size. Small
 non-Xet metadata files are size-checked. Existing unrelated bucket objects are preserved.
@@ -23,7 +25,7 @@ SHA-256. The server validates the identity and each fetched index before opening
 | `jpg` | Embedded JPEG bytes; read only when an image group is needed |
 | `image_id.txt` | Canonical page ID; document ID removes `_page_<number>` |
 | `regions.json` | Region IDs, pixel boxes, English and translated text |
-| `vqa.json` | Multiple-choice questions/options/answers; descriptive questions deferred |
+| `vqa.json` | Multiple-choice and descriptive questions with source answers |
 | `font_used.txt` | Source metadata, preserved in the bucket but not used by serving |
 | `__key__`, `__url__` | Original provenance; neither is a global task ID or image endpoint |
 
@@ -83,17 +85,16 @@ lazy image validation. Exclusions and malformed annotations are reported per lan
 manifest. Rendering/font defects require separate quality audits; no automatic audit of all
 one million source images is claimed.
 
-`source-manifest.json` and earlier preparation reports describe the initial preview milestone.
 `nayana-prepare` still builds small offline windows and fixtures using Datasets streaming;
-that path is optional and is not the complete-corpus serving backend. Generated indexes,
-caches, and windows are ignored by Git. The source license also covers derived indexes and crops.
+that path is optional and is not the complete-corpus serving backend. The runtime
+`corpus-manifest.json` is committed because it pins the published source and index identities.
+Generated inventories, indexes, caches, windows, and run reports are ignored by Git.
+The source license also covers derived indexes and crops.
 
 ## Measured layout
 
 The complete index is **4,304,867,328 bytes** across 22 databases and addresses **11,052 physical
 row groups**. Compressed image-column bytes per group have median **75,121,734**, 95th percentile
 **115,700,835**, and maximum **188,043,822**. These are footer sizes, not application network
-measurements. Partial groups at shard ends can contain fewer than 100 pages. See
-[corpus-index-v2.json](../results/corpus-index-v2.json) for current task totals and exclusions.
-The physical source layout is unchanged; [corpus-layout.json](../results/corpus-layout.json)
-records the original index-v1 measurements.
+measurements. Partial groups at shard ends can contain fewer than 100 pages. The committed
+[manifest](corpus-manifest.json) records task totals, exclusions, and per-language index sizes.

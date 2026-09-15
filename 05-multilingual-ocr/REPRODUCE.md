@@ -5,7 +5,12 @@ Hugging Face Hub 1.31.0, Datasets 5.0.1, and TRL 1.13.0 are pinned by the packag
 `uv run --frozen` installs the checked-in dependency resolution. The corpus source is
 `Cognitive-Lab/NayanaOCR_Corpus_2025@b220b074a8c82bb90427051e856e4c4edc79885b`.
 
-## 1. Complete and verify the existing bucket
+The committed `data/corpus-manifest.json` points to the published index. Start at section 3
+to serve it; sections 1–2 are for auditing the mirror or building a new snapshot. Generated
+reports, calibration verdicts, and checkpoints belong in the ignored `artifacts/` directory.
+The source inventory, local index databases, and image caches are also ignored by Git.
+
+## 1. Mirror and verify the source
 
 ```bash
 uv run --frozen --project envs/nayana_ocr nayana-mirror \
@@ -20,9 +25,8 @@ uv run --frozen --project envs/nayana_ocr nayana-mirror \
 
 The bucket must already exist. The mirror compares every pinned file with the existing copy,
 refuses conflicting files, copies missing Xet objects server-side, and verifies the result.
-It does not create a test bucket, re-upload the corpus through the workstation, or delete
-unrelated bucket objects. The first audit found four missing Chinese shards; copying them
-completed **1,807 source files / 1,784 Parquet files / 813,665,107,295 bytes**.
+It preserves unrelated bucket objects. The expected inventory is **1,807 source files /
+1,784 Parquet files / 813,665,107,295 bytes**.
 
 The inventory includes source Xet IDs, sizes, and LFS SHA-256 values. All Parquet Xet identities
 and sizes are verified; small non-Xet repository files are checked by size. Corpus data and
@@ -134,11 +138,10 @@ are bounded at 1,000 records. Global split indices use a language prefix sum; la
 indices support the UI's jump control. Unmaterialized task metadata has no image URL/hash yet.
 Reset loads one selected task and returns its hash-addressed binary asset URL. Asset URLs carry
 the pinned task ID so eviction can be followed by deterministic reconstruction within the
-same rendering runtime. The macOS and Linux check produced identical decoded RGB pixels but
-different PNG byte streams. PNG hashes are verified against the serving endpoint, not compared
-across operating systems. Use the same built container image and codec libraries for replicas
-that share asset URLs/cache state; a Python package lock alone does not freeze system codecs.
-See `results/corpus-cross-runtime.json` for the measured example.
+same rendering runtime. PNG encodings can differ across operating systems despite identical
+decoded pixels. PNG hashes are verified against the serving endpoint. Use the same built
+container image and codec libraries for replicas that share asset URLs/cache state; a Python
+package lock alone does not freeze system codecs.
 
 ```python
 from nayana_ocr.corpus_training import CorpusAPI, BlockTaskStream
@@ -183,7 +186,7 @@ HTTP metadata requests, without downloading model weights.
 ```bash
 uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana.py \
   --env-url https://huggingenvs-nayana-ocr-env.hf.space \
-  --task-input corpus --prefetch-blocks 2 --smoke --output-dir results/local-gpu-smoke
+  --task-input corpus --prefetch-blocks 2 --smoke --output-dir artifacts/local-gpu-smoke
 
 # Colocated environment and training with a mounted bucket:
 uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana.py \
@@ -217,10 +220,8 @@ or establish a reward increase. Metrics separate languages/families; OCR include
 
 Map-input optimizer resume validates configuration, selected IDs, model commit, and manifest.
 Iterable/corpus optimizer resume is rejected until validated. Use a pinned model revision to
-avoid drift in future runs. GPU optimizer training remains unverified. A CPU-only HF Job
-has executed the complete data-path speed benchmark with a bucket mount; see
-[performance and readiness results](results/SPEED.md). That benchmark found an oversized
-indexed page rejected by the serving limit, so preflight a fixed task set before training
+avoid drift in future runs. GPU optimizer training remains unverified. The serving limit
+rejects indexed pages above 50 million pixels, so preflight fixed task sets before training
 or evaluation and resolve eligibility before an unattended full-corpus run.
 
 Commit and push before using HF Jobs. The launcher fetches an exact 40-character Git revision
@@ -256,7 +257,7 @@ judge, explicitly select `--families section_ocr page_ocr mcq_vqa layout_detecti
 ```bash
 uv run --frozen --project envs/nayana_ocr python train/deploy_space.py \
   --space-id HuggingEnvs/nayana-ocr-env --corpus-manifest data/corpus-manifest.json \
-  --judge-config results/judge-calibration.json --output results/deployment-v2.json
+  --judge-config artifacts/judge-calibration.json --output artifacts/deployment.json
 ```
 
 The publisher validates a ready real-source manifest and checks that every index file is already
@@ -267,8 +268,8 @@ Space mount configuration uses the official Hub `set_space_volumes` API. The sam
 with HTTP ranges if no mount is configured. See [Hub volumes](https://huggingface.co/docs/huggingface_hub/guides/manage-spaces)
 and [buckets](https://huggingface.co/docs/huggingface_hub/guides/buckets).
 
-Index v2 extends the corpus to five families and changes task IDs. Keep the old manifest
-and code commit together to reproduce old runs; never mix cursors across snapshots.
+Task IDs and cursors are specific to the index snapshot. Keep the manifest and code commit
+together to reproduce a run; never mix cursors across snapshots.
 A previous complete local index can supply its verified original annotations without source
 Parquet downloads: add `--reuse-index data/corpus-index-v1` when building a fresh v2 directory.
 All derived tasks are rebuilt, and source identities and database hashes are checked.
@@ -280,33 +281,33 @@ uv run --frozen --project envs/nayana_ocr --extra dev --extra train pytest envs/
 uv run --frozen --project envs/nayana_ocr nayana-smoke
 uv run --frozen --project envs/nayana_ocr nayana-smoke \
   --url https://huggingenvs-nayana-ocr-env.hf.space --languages en kn hi ar \
-  --output results/smoke-hosted-v2.json
+  --output artifacts/smoke-hosted.json
 
 # Metadata addressability, one-block prefetch measurement, and all-language oracle checks.
 uv run --frozen --project envs/nayana_ocr --extra train python train/verify_corpus.py \
   --url https://huggingenvs-nayana-ocr-env.hf.space \
-  --manifest data/corpus-manifest.json --output results/corpus-hosted-v2.json
+  --manifest data/corpus-manifest.json --output artifacts/corpus-hosted.json
 
-# Gradio scoring across all five families and four languages, matching the recorded v2 smoke.
+# Gradio scoring across all five families and four languages.
 uv run --frozen --project envs/nayana_ocr python train/verify_playground.py \
   --url https://huggingenvs-nayana-ocr-env.hf.space \
-  --manifest data/corpus-manifest.json --languages en kn hi ar --output results/gradio-hosted-v2.json
+  --manifest data/corpus-manifest.json --languages en kn hi ar --output artifacts/gradio-hosted.json
 ```
 
-Omit `--languages` from the Gradio verifier to sweep all 22 languages. The v2 deployment
-records 20 language/task UI combinations on each server; all-language layout and 35 judge
-calibration cases are separate reports.
+Omit `--languages` from the Gradio verifier to sweep all 22 languages. Descriptive VQA
+checks call the server's configured judge through HF Inference Providers. Run the separate
+calibration command in [JUDGE.md](JUDGE.md) when changing its model, provider, or rubric.
 
 For a local server, replace the URL with its address, for example `http://127.0.0.1:8005`.
-Historical index-v1 [results](results/README.md) record 38 passing tests, all 66 language/task
-combinations through both local and hosted OpenEnv/Gradio, and all six notebook CPU cells.
 The full-corpus verifier uses two independent consumers within the 16-session service limit.
+CI runs offline regression tests and transport smoke checks; its JUnit and JSON reports are
+available as `multilingual-ocr-checks` workflow artifacts for 14 days.
 
 The remote smoke selects indexed representatives and checks binary hashes, independent
 WebSockets, repeated resets, empty-answer rewards, and client image reuse. Supplying a local
 catalog to `probe` also checks known-reference reward1. It does not enumerate millions of IDs.
 An all-language image sweep can fetch several GB on a cold cache; metadata checks fetch indexes
-only. Recorded results distinguish metadata coverage, image/task samples, and exact oracle checks.
+only. Reports distinguish metadata coverage, image/task samples, and exact oracle checks.
 
 OCR uses NFC and collapsed whitespace while preserving case, diacritics, Indic vowel signs,
 ZWJ/ZWNJ, punctuation, and RTL logical order. CER counts Unicode code points, not grapheme
@@ -338,5 +339,44 @@ uv run --frozen --project envs/nayana_ocr nayana-prepare \
 uv run --frozen --project envs/nayana_ocr nayana-smoke --snapshot data/snapshots/real-smoke-v2
 ```
 
-That optional Datasets streaming workflow commits each page and iterator state transactionally;
-its old 64-page deployment is historical evidence in `results/`. It is not the full-corpus path.
+That optional Datasets streaming workflow commits each page and iterator state transactionally
+for a bounded offline window. Use the indexed bucket path for complete-corpus serving.
+
+## 8. Benchmark the data path
+
+The benchmark measures image retrieval, hash checks, RGB decoding, and scoring with source
+references. It records cold access, warm requests, and multi-block prefetch separately. Model
+inference, processor tensorization, optimizer steps, and GPU utilization are outside its scope.
+Each report includes the snapshot, selection seed, exact task IDs, timing distributions,
+cache counters, and failures. Index setup is outside the timed phases.
+
+```bash
+# Isolated local server and empty application cache.
+uv run --frozen --project envs/nayana_ocr --extra train python train/benchmark_corpus.py \
+  --manifest data/corpus-manifest.json --label local-http-range \
+  --output artifacts/speed-local.json
+
+# Same task selection against the Space; its existing cache is retained.
+uv run --frozen --project envs/nayana_ocr --extra train python train/benchmark_corpus.py \
+  --manifest data/corpus-manifest.json --label space-from-workstation \
+  --url https://huggingenvs-nayana-ocr-env.hf.space \
+  --output artifacts/speed-hosted.json
+
+# CPU Job with a colocated server and read-only corpus mount. Push the commit first.
+SOURCE_REVISION=$(git rev-parse HEAD)
+uv run --frozen --project envs/nayana_ocr hf jobs uv run \
+  --flavor cpu-basic --timeout 20m \
+  --volume hf://buckets/HuggingEnvs/NayanaOCR_Corpus_2025_bucket:/corpus:ro \
+  train/benchmark_job.py --revision "$SOURCE_REVISION"
+```
+
+For sustained warm capacity, add `--phases warm --warm-workers 4 --warm-seconds 30`.
+This primes and repeats a small valid working set, so its request rate does not represent
+new examples per second. Run comparisons sequentially to avoid competing for bandwidth.
+For training, colocate the server and trainer, use block prefetch, and measure data stalls
+alongside actual GPU step time. For evaluation, freeze task IDs, validate eligibility, and
+warm the selected blocks before comparing model latency.
+
+The CPU Job returns a compressed JSON report through numbered `NAYANA_SPEED_REPORT_PART`
+log entries. Concatenate payloads in numeric order, base64-decode, zlib-decompress, and check
+the SHA-256 in `NAYANA_SPEED_REPORT_BEGIN`. Archive run reports outside source control.

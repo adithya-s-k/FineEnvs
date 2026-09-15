@@ -97,21 +97,13 @@ uv run --frozen --project envs/nayana_ocr nayana-smoke
 # Single-GPU GRPO; auto selects the full-corpus iterator for this Space.
 uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana.py \
   --env-url https://huggingenvs-nayana-ocr-env.hf.space --smoke \
-  --output-dir results/local-gpu-smoke
+  --output-dir artifacts/local-gpu-smoke
 ```
 
 The [notebook](notebooks/05_multilingual_ocr.ipynb) uses the same data and training code.
-Verification passed: **55 tests**, **35 live Gemma calibration cases**, all **20 language/task
-combinations** for English/Kannada/Hindi/Arabic through Gradio both locally and hosted,
-layout exact/empty-answer checks across all **22 languages**, and all six notebook CPU cells.
-See [results](results/README.md) for current reports and historical full-corpus speed checks.
-GPU optimizer training for experiment 05 has not been run; the recorded results are serving,
-data access, cache, replay, and CPU TRL sampler checks. See [results](results/README.md).
-
-The broader [speed test](results/SPEED.md) compares local HTTP ranges, the Space, and a
-colocated bucket-mounted HF CPU Job. It also found an indexed 69.7-megapixel page rejected
-by the current 50-megapixel limit. Full-corpus unattended runs need an explicit oversized-page
-handling or eligibility policy; the earlier representative smoke did not encounter that page.
+Run outputs and calibration reports go under the ignored `artifacts/` directory. CI runs
+regression and transport checks and retains reports as workflow artifacts. See
+[REPRODUCE.md](REPRODUCE.md#7-checks-and-task-policy) for local verification and benchmarks.
 
 ## Task and evaluation limits
 
@@ -133,6 +125,9 @@ See [JUDGE.md](JUDGE.md) for the rubric, explicit model/provider, calibration, a
 The full index validates annotations without decoding a million images. Actual image bounds
 are validated when a task is loaded; invalid image/annotation pairs fail explicitly. Counts
 therefore describe indexed annotation candidates, not an image-quality-audited benchmark.
+Serving rejects images above 50 million pixels, including a known 69.7-megapixel source page.
+Preflight fixed training/evaluation sets; unattended full-corpus runs need a versioned resize
+or eligibility policy. The GPU optimizer recipe remains unverified.
 An original Arabic page has known missing/distorted glyphs; the UI flags this source caveat.
 Source supervision and language-specific rendering need auditing before making model claims.
 
@@ -143,11 +138,10 @@ catalog, bucket adapter, caching, sampling, and OCR policy around those interfac
 ## Files
 
 ```text
-envs/nayana_ocr/     OpenEnv package, full index, caches, playground, tests, Docker, lockfile
-data/               pinned source inventory and published index manifest; caches ignored
-train/              GRPO runner, HF Jobs launcher, bucket-mounted Space publisher
+envs/nayana_ocr/     OpenEnv package, data adapters, playground, tests, Docker, lockfile
+data/               published index manifest and data contract
+train/              GRPO, HF Jobs, deployment, calibration, and benchmark commands
 notebooks/          full-corpus data handling and optional training walkthrough
-results/            measured verification reports and historical preview evidence
 REPRODUCE.md        exact commands, defaults, provenance, and replay limits
 ```
 

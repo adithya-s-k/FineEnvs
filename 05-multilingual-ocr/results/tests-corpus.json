@@ -1,8 +1,0 @@
-{
-  "status": "passed",
-  "command": "uv run --frozen --extra dev --extra train pytest -q",
-  "stdout": "......................................                                   [100%]\n38 passed in 10.80s\n",
-  "gpu_optimizer_tested": false,
-  "working_directory": "envs/nayana_ocr",
-  "pytest_seconds": 10.8
-}

@@ -1,9 +1,8 @@
 # Layout detection and strict descriptive VQA
 
-Index v2 / schema 3 / package 0.4.0 adds two task families to the same OpenEnv
-environment and bucket data path. Source revision, document splits, byte-limited
-caches, block shuffling, and prefetch are shared with OCR. No image copy is needed.
-The manifest identifies the new index; old task IDs and cursors belong to index v1.
+Layout detection and descriptive VQA share the OpenEnv environment and bucket data path
+with OCR: source revision, document splits, byte-limited caches, block shuffling, and prefetch.
+The manifest pins the index version; task IDs and cursors are specific to that snapshot.
 
 ## Layout detection
 
@@ -98,18 +97,19 @@ and [structured outputs guide](https://huggingface.co/docs/inference-providers/g
 # Use HF_TOKEN, NAYANA_JUDGE_TOKEN, or the locally saved HF token; never commit it.
 uv run --frozen --project envs/nayana_ocr python train/verify_judge.py \
   --index data/corpus-index-v2 \
-  --model google/gemma-4-31B-it --provider deepinfra
+  --model google/gemma-4-31B-it --provider deepinfra \
+  --output artifacts/judge-calibration.json
 
 uv run --frozen --project envs/nayana_ocr python train/deploy_space.py \
   --space-id HuggingEnvs/nayana-ocr-env \
   --corpus-manifest data/corpus-manifest.json \
-  --judge-config results/judge-calibration.json --output results/deployment-v2.json
+  --judge-config artifacts/judge-calibration.json --output artifacts/deployment.json
 ```
 
 The publisher requires a passing calibration report for the exact model/provider/rubric
 hash. It sets `NAYANA_JUDGE_MODEL` and `NAYANA_JUDGE_PROVIDER` as Space variables and
 puts `NAYANA_JUDGE_TOKEN` into a Space secret. The token comes from that local environment
-variable or the logged-in HF token; it is never written to a file. No Space is paused.
+variable or the logged-in HF token; it is never written to a report.
 
 For local serving, the defaults already select Gemma 4 31B via DeepInfra; authenticate
 with `HF_TOKEN`, `NAYANA_JUDGE_TOKEN`, or your saved HF token. There is no endpoint URL
@@ -129,11 +129,13 @@ uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana
   --families section_ocr page_ocr mcq_vqa layout_detection --smoke
 ```
 
-`results/judge-calibration.json` records 22 exact corpus references (one per language)
+The calibration command writes 22 exact corpus references (one per language)
 and 13 synthetic checks for paraphrases, wrong numbers/currency, incompleteness,
 contradictions, unsupported additions, irrelevant answers, and grading manipulation.
-These are calibration examples, separate from model-generated evaluation results.
+These are calibration examples, separate from model-generated evaluation results. The
+report is a deployment input generated under the ignored `artifacts/` directory; regenerate
+it for the exact judge configuration instead of depending on a committed run report.
 
 The existing 50-million-pixel serving limit remains in effect. Metadata indexing
 does not imply every candidate passes image-time validation; see
-[the measured oversized-page limitation](results/SPEED.md).
+[the image eligibility policy](REPRODUCE.md#7-checks-and-task-policy).

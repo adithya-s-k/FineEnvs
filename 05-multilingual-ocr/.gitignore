@@ -5,10 +5,16 @@ __pycache__/
 *.egg-info/
 data/snapshots/
 envs/nayana_ocr/snapshot/
-results/local-*/
-results/hf-job-*/
 .ipynb_checkpoints/
+
+# Generated run outputs, reports, checkpoints, and local credentials.
+artifacts/
+results/
+.env
+.env.*
 
 # Full-corpus indexes and bounded runtime caches live in the bucket / local disk.
 data/corpus-index*/
 data/corpus-cache*/
+data/corpus-source.json
+data/source-manifest.json
