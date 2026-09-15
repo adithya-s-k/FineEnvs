@@ -32,7 +32,7 @@ derived indexes/images retain CognitiveLab attribution and CC BY-NC 4.0.
 
 ```bash
 uv run --frozen --project envs/nayana_ocr nayana-index \
-  --inventory data/corpus-source.json --output data/corpus-index-v1 --workers 8
+  --inventory data/corpus-source.json --output data/corpus-index-v2 --workers 8
 
 # Re-audit source identities after indexing, before publishing the ready snapshot.
 uv run --frozen --project envs/nayana_ocr nayana-mirror \
@@ -40,8 +40,8 @@ uv run --frozen --project envs/nayana_ocr nayana-mirror \
 
 # A completed build is reused; this validates databases and publishes them.
 uv run --frozen --project envs/nayana_ocr nayana-index \
-  --inventory data/corpus-source.json --output data/corpus-index-v1 --workers 8 --publish
-cp data/corpus-index-v1/manifest.json data/corpus-manifest.json
+  --inventory data/corpus-source.json --output data/corpus-index-v2 --workers 8 --publish
+cp data/corpus-index-v2/manifest.json data/corpus-manifest.json
 ```
 
 Indexing reads only annotation and page-ID columns from every source shard. PyArrow retrieves
@@ -147,7 +147,7 @@ api = CorpusAPI("https://huggingenvs-nayana-ocr-env.hf.space")
 stream = BlockTaskStream(
     api,
     languages=["en", "kn", "hi", "ar"],
-    families=["page_ocr", "section_ocr", "mcq_vqa"],
+    families=["page_ocr", "section_ocr", "mcq_vqa", "layout_detection", "descriptive_vqa"],
     seed=42,
     prefetch_blocks=2,
 )
@@ -156,7 +156,7 @@ state = stream.state_dict()
 replayed = BlockTaskStream(
     api,
     languages=["en", "kn", "hi", "ar"],
-    families=["page_ocr", "section_ocr", "mcq_vqa"],
+    families=["page_ocr", "section_ocr", "mcq_vqa", "layout_detection", "descriptive_vqa"],
     seed=42,
     prefetch_blocks=2,
 )
@@ -201,7 +201,7 @@ explicit balanced sample for short controlled comparisons, or a sufficiently lon
 with per-language exposure counts; the smoke is a pipeline check.
 
 Defaults: Qwen/Qwen3-VL-2B-Instruct, resolved model commit recorded; English/Kannada/Hindi/Arabic;
-all three families; 30 steps; G=4; BF16/SDPA; LoRA rank16/alpha32/dropout.05 on q_proj/v_proj;
+all five families (descriptive VQA requires the judge); 30 steps; G=4; BF16/SDPA; LoRA rank16/alpha32/dropout.05 on q_proj/v_proj;
 learning rate1e-5; temperature.9; seed42; 2,048 completion tokens; processor max_pixels1,048,576.
 `--smoke` uses two steps, G=2, and one evaluation item per group. `--languages` can select any
 of the 22 indexed languages. There is no server-side image downscaling; processor limits affect
@@ -247,10 +247,16 @@ experimental outputs personal until a final result is ready for the organization
 
 ## 6. Deploy the same environment to the Space
 
+First calibrate the Gemma judge through HF Inference Providers using [JUDGE.md](JUDGE.md). Its model/provider
+and token are configured by the Space publisher; the token goes into a Space secret.
+For a colocated local/HF Jobs server, pass `HF_TOKEN` or `NAYANA_JUDGE_TOKEN` as a job
+secret with Inference Providers permission. No dedicated endpoint or GPU deployment is needed. Without a
+judge, explicitly select `--families section_ocr page_ocr mcq_vqa layout_detection`.
+
 ```bash
 uv run --frozen --project envs/nayana_ocr python train/deploy_space.py \
   --space-id HuggingEnvs/nayana-ocr-env --corpus-manifest data/corpus-manifest.json \
-  --output results/deployment-corpus.json
+  --judge-config results/judge-calibration.json --output results/deployment-v2.json
 ```
 
 The publisher validates a ready real-source manifest and checks that every index file is already
@@ -260,6 +266,12 @@ volumes are preserved. Bucket source files and indexes are not embedded in the D
 Space mount configuration uses the official Hub `set_space_volumes` API. The same package works
 with HTTP ranges if no mount is configured. See [Hub volumes](https://huggingface.co/docs/huggingface_hub/guides/manage-spaces)
 and [buckets](https://huggingface.co/docs/huggingface_hub/guides/buckets).
+
+Index v2 extends the corpus to five families and changes task IDs. Keep the old manifest
+and code commit together to reproduce old runs; never mix cursors across snapshots.
+A previous complete local index can supply its verified original annotations without source
+Parquet downloads: add `--reuse-index data/corpus-index-v1` when building a fresh v2 directory.
+All derived tasks are rebuilt, and source identities and database hashes are checked.
 
 ## 7. Checks and task policy
 
@@ -281,7 +293,7 @@ uv run --frozen --project envs/nayana_ocr python train/verify_playground.py \
 ```
 
 For a local server, replace the URL with its address, for example `http://127.0.0.1:8005`.
-The committed [results](results/README.md) record 38 passing tests, all 66 language/task
+Historical index-v1 [results](results/README.md) record 38 passing tests, all 66 language/task
 combinations through both local and hosted OpenEnv/Gradio, and all six notebook CPU cells.
 The full-corpus verifier uses two independent consumers within the 16-session service limit.
 

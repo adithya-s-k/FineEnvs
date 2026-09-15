@@ -98,7 +98,10 @@ def probe(url, catalog=None, languages=None):
                     assert (
                         result.done
                         and result.reward == 1.0
-                        and result.observation.metrics["exact_match"]
+                        and (
+                            result.observation.metrics.get("exact_match")
+                            or result.observation.metrics.get("judge_accepted")
+                        )
                     )
                 before = cache.downloads
                 for env in environments:

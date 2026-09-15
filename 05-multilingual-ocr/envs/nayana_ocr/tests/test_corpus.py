@@ -76,11 +76,11 @@ def corpus(tmp_path, monkeypatch):
 def test_complete_index_global_and_group_random_access_without_media(corpus):
     catalog, manifest, _, output, inventory = corpus
     assert sum(manifest["pages"].values()) == 12
-    assert sum(c["tasks"] for c in manifest["counts"]) == 36
-    assert catalog.count("test") == 12
+    assert sum(c["tasks"] for c in manifest["counts"]) == 48
+    assert catalog.count("test") == 16
     for split in ("train", "validation", "test"):
         rows = catalog.task_range(split, 0, catalog.count(split))
-        assert len({r["task_id"] for r in rows}) == 12
+        assert len({r["task_id"] for r in rows}) == 16
         assert all("reference" not in r and r["asset_path"] is None for r in rows)
         last = catalog.at(split, catalog.count(split) - 1)
         assert catalog.get(last["task_id"]) == last
@@ -203,6 +203,21 @@ def test_index_content_change_is_rejected(corpus):
     assert len(manifest["snapshot_id"]) == 64
 
 
+def test_reindex_reuses_verified_annotations_without_source_reads(
+    corpus, tmp_path, monkeypatch
+):
+    catalog, manifest, _, output, inventory = corpus
+    monkeypatch.setattr(
+        "nayana_ocr.data.index._read_metadata",
+        lambda *a, **kw: pytest.fail("Reindex read source Parquet"),
+    )
+    rebuilt = build_index(
+        inventory, tmp_path / "rebuilt", languages=("en", "ar"), reuse_index=output
+    )
+    assert rebuilt["snapshot_id"] == manifest["snapshot_id"]
+    assert rebuilt["counts"] == manifest["counts"]
+
+
 def test_full_epoch_cursor_is_bounded_replayable_and_disjoint_across_ranks(corpus):
     catalog, _, _, _, _ = corpus
     options = dict(
@@ -248,7 +263,7 @@ def test_full_corpus_http_websocket_and_trl_dataloader(corpus, tmp_path):
         api = CorpusAPI(url, manifest["snapshot_id"])
         try:
             rows = list(BlockTaskStream(api, prefetch_blocks=2))
-            assert len(rows) == len({r["task_id"] for r in rows}) == 12
+            assert len(rows) == len({r["task_id"] for r in rows}) == 16
             assert (
                 requests.post(
                     url + "/data/blocks", json={"snapshot_id": "wrong"}
@@ -267,7 +282,7 @@ def test_full_corpus_http_websocket_and_trl_dataloader(corpus, tmp_path):
                 == 422
             )
             result = probe(url, catalog)
-            assert result["exact_reference_checked"] and len(result["coverage"]) == 6
+            assert result["exact_reference_checked"] and len(result["coverage"]) == 8
             dataset = build_corpus_dataset(
                 url,
                 manifest["snapshot_id"],

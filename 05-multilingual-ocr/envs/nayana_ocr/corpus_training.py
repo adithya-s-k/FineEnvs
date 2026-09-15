@@ -6,7 +6,7 @@ from copy import deepcopy
 
 import requests
 
-from .data.schema import canonical_json
+from .data.schema import FAMILIES, canonical_json
 
 
 class CorpusAPI:
@@ -98,7 +98,7 @@ class BlockTaskStream:
             "snapshot_id": backend.manifest["snapshot_id"],
             "split": split,
             "languages": list(languages or backend.manifest["config"]["languages"]),
-            "families": list(families or ("section_ocr", "mcq_vqa", "page_ocr")),
+            "families": list(families or FAMILIES),
             "seed": seed,
             "epoch": epoch,
             "rank": rank,

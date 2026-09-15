@@ -52,11 +52,12 @@ def configured_catalog():
 class NayanaEnvironment(Environment):
     SUPPORTS_CONCURRENT_SESSIONS = True
 
-    def __init__(self, catalog=None):
+    def __init__(self, catalog=None, judge=None):
         super().__init__()
         self.catalog = catalog if catalog is not None else configured_catalog()
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self._task = None
+        self.judge = judge
 
     def list_splits(self):
         return list(SPLITS)
@@ -100,11 +101,30 @@ class NayanaEnvironment(Environment):
     def step(self, action: NayanaAction, timeout_s=None):
         if self._task is None or self._state.step_count:
             raise RuntimeError("Reset before submitting a single answer")
-        reward, metrics = score(
-            self._task["family"], action.answer, self._task["reference"]
-        )
+        family = self._task["family"]
+        policy_id = ""
+        if family == "descriptive_vqa":
+            from .judge import configured_judge
+
+            judge = self.judge or configured_judge()
+            reward, metrics = judge.score(self._task, action.answer)
+            policy_id = judge.policy_id
+        elif family == "layout_detection":
+            from .layout import POLICY, score_layout
+
+            reward, metrics = score_layout(
+                action.answer,
+                self._task["reference"],
+                self._task["width"],
+                self._task["height"],
+            )
+            policy_id = POLICY
+        else:
+            reward, metrics = score(family, action.answer, self._task["reference"])
         self._state.step_count = 1
-        return self._observation(done=True, reward=reward, metrics=metrics)
+        return self._observation(
+            done=True, reward=reward, metrics=metrics, grading_policy_id=policy_id
+        )
 
     @property
     def state(self):

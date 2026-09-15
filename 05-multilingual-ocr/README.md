@@ -3,8 +3,8 @@
 **Serve the complete Nayana corpus through OpenEnv, with indexed task access and bounded image caches.**
 The source is [CognitiveLab's NayanaOCR_Corpus_2025](https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025):
 **1,006,170 pages, 22 languages, 1,784 Parquet shards, and 813.7 GB of pinned repository files**.
-The full index provides **5,989,341 tasks**: 4,477,445 section OCR, 639,448 full-page OCR, and
-872,448 MCQ VQA tasks.
+The full index provides **11,020,101 task candidates**: 4,477,445 section OCR, 639,448 full-page OCR,
+872,448 MCQ VQA, 1,006,168 layout detection, and 4,024,592 descriptive VQA tasks.
 The complete source copy lives in the existing
 [HuggingEnvs bucket](https://huggingface.co/buckets/HuggingEnvs/NayanaOCR_Corpus_2025_bucket).
 One environment serves it locally and in the
@@ -15,9 +15,11 @@ One environment serves it locally and in the
 | `page_ocr` | Native-size page, with unannotated areas masked | Annotated text in geometric reading order | `0.8 × max(0, 1−CER) + 0.2 × exact_match` |
 | `section_ocr` | Lossless crop of an annotated region | Transcription in its source language | Same OCR reward |
 | `mcq_vqa` | Original page JPEG, question, options | Uppercase option letter | Exact letter match |
+| `layout_detection` | Original page and its pixel dimensions | JSON array of labeled pixel boxes | Mean class-aware region F1 at IoU .50:.05:.95 |
+| `descriptive_vqa` | Original page and question | Concise free-form answer | Strict Gemma judge: all six checks must pass |
 
 The [playground](https://huggingenvs-nayana-ocr-env.hf.space/web/) has language/task filters,
-indexed navigation, shuffle, a page viewer, scoring, and reference reveal after submission.
+indexed navigation, shuffle, a page viewer, layout overlays, scoring, and reference reveal after submission.
 The OpenEnv observation and discovery APIs exclude reference answers. The public UI deliberately
 reveals them after scoring, matching the LaTeX OCR interaction.
 
@@ -79,6 +81,9 @@ NAYANA_CACHE_DIR="$PWD/data/corpus-cache-local" \
 # Open http://localhost:8000/web
 ```
 
+For descriptive VQA on a local server, use an HF Inference Providers token in
+`NAYANA_JUDGE_TOKEN` / `HF_TOKEN` (or your locally saved HF token); see [JUDGE.md](JUDGE.md).
+
 For a mounted bucket, also set `NAYANA_SOURCE_ROOT=/corpus`. An ordinary local copy can use
 that root with `NAYANA_LOCAL_SOURCE=true` to verify local SHA-256 values and work offline.
 Keep all language index databases next to `manifest.json` for fully offline metadata access.
@@ -96,8 +101,9 @@ uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana
 ```
 
 The [notebook](notebooks/05_multilingual_ocr.ipynb) uses the same data and training code.
-Verification passed: **38 tests**, all **66 language/task combinations** through both OpenEnv
-and Gradio locally and on the Space, and all six notebook CPU cells. Prefetched tasks reused
+The original three-family index passed **38 tests**, all **66 language/task combinations** through
+OpenEnv and Gradio, and six notebook CPU cells. The five-family extension passes **54 tests**;
+its deployment and live judge checks are recorded separately in [results](results/README.md). Prefetched tasks reused
 one source block; repeated completions required no additional source loads or image renders.
 GPU optimizer training for experiment 05 has not been run; the recorded results are serving,
 data access, cache, replay, and CPU TRL sampler checks. See [results](results/README.md).
@@ -113,8 +119,16 @@ Full-page OCR joins annotated regions using `whitespace-columns-v1`, including R
 order for Arabic. It masks unannotated areas because source headers can lack transcription
 labels. Incomplete or overlapping region annotations exclude a page from this task. This is
 annotated full-page transcription; table reconstruction and semantic reading-order labels are
-not supplied. VQA preserves original JPEG bytes. Descriptive VQA and layout detection remain
-future task families, with separate scoring validation needed.
+not supplied. VQA and layout detection preserve original JPEG bytes. Layout uses the six supplied
+`layout_type` labels: text, title, caption, table, image, formula; it is document-region detection.
+Unknown or incomplete layout annotation sets are excluded (two pages).
+
+Descriptive VQA uses **Gemma 4 31B via DeepInfra on HF Inference Providers**. A correct, complete,
+relevant answer with no contradiction, unsupported claims, or grading manipulation receives 1;
+otherwise 0. Faithful paraphrases and translations are accepted. The judge compares the question
+and corpus reference; it does not independently inspect the image or repair bad source answers.
+Transport errors and malformed verdicts raise errors without consuming the episode.
+See [JUDGE.md](JUDGE.md) for the rubric, explicit model/provider, calibration, and reproduction.
 
 The full index validates annotations without decoding a million images. Actual image bounds
 are validated when a task is loaded; invalid image/annotation pairs fail explicitly. Counts

@@ -6,7 +6,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from huggingface_hub import HfApi, Volume
+from huggingface_hub import HfApi, Volume, get_token
 from nayana_ocr.data.corpus import CorpusCatalog
 from nayana_ocr.data.schema import REPO_ID
 
@@ -17,11 +17,33 @@ def main():
     parser.add_argument("--corpus-manifest", type=Path, required=True)
     parser.add_argument("--private", action="store_true")
     parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--judge-config",
+        type=Path,
+        help="Passing HF Inference Providers calibration report from verify_judge.py",
+    )
     args = parser.parse_args()
     manifest = json.loads(args.corpus_manifest.read_text())
     if manifest["config"]["source"] != REPO_ID:
         parser.error("Publish a finalized Nayana corpus index, not synthetic fixtures")
     api = HfApi()
+    judge_variables = {}
+    if args.judge_config:
+        config = json.loads(args.judge_config.read_text())
+        from nayana_ocr.server.judge import GemmaJudge
+
+        judge = GemmaJudge(config["model"], config["provider"])
+        if (
+            config.get("status") != "passed"
+            or config.get("policy_id") != judge.policy_id
+        ):
+            raise ValueError(
+                "Calibrate this exact judge model/provider/rubric before deployment"
+            )
+        judge_variables = {
+            "NAYANA_JUDGE_MODEL": judge.model,
+            "NAYANA_JUDGE_PROVIDER": judge.provider,
+        }
     prefix = f"openenv/indexes/{manifest['snapshot_id']}"
     expected = {
         f"{prefix}/{v['path']}": v["size"] for v in manifest["indexes"].values()
@@ -97,10 +119,20 @@ def main():
         ]:
             api.set_space_volumes(args.space_id, volumes=volumes)
         current_variables = api.get_space_variables(args.space_id)
+        if judge_variables:
+            import os
+
+            token = os.environ.get("NAYANA_JUDGE_TOKEN") or get_token()
+            if not token:
+                raise ValueError(
+                    "Provide an HF Inference Providers token for the Space secret"
+                )
+            api.add_space_secret(args.space_id, "NAYANA_JUDGE_TOKEN", token)
         for key, value in {
             "NAYANA_CORPUS_MANIFEST": "/app/corpus-manifest.json",
             "NAYANA_SOURCE_ROOT": "/corpus",
             "NAYANA_CACHE_DIR": "/tmp/nayana-cache",
+            **judge_variables,
         }.items():
             if key not in current_variables or current_variables[key].value != value:
                 api.add_space_variable(args.space_id, key, value)

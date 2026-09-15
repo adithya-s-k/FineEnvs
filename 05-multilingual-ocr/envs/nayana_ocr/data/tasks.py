@@ -1,6 +1,7 @@
 """Derive task records; keep references out of every public representation."""
 
 import io
+import json
 import math
 from collections import Counter
 
@@ -9,6 +10,7 @@ from PIL import Image
 from .reading_order import ordered_regions, overlapping_regions
 from .schema import (
     FAMILIES,
+    LAYOUT_LABELS,
     READING_ORDER,
     document_id,
     normalize_text,
@@ -122,8 +124,30 @@ def derive_tasks(
             )
 
         for index, question in enumerate(row["vqa.json"].get("questions", [])):
+            if question.get("type") == "descriptive":
+                answer, query = question.get("answer"), question.get("question")
+                if not all(
+                    isinstance(v, str) and normalize_text(v) for v in (answer, query)
+                ):
+                    skipped["invalid_descriptive_vqa"] += 1
+                    continue
+                # Bound the judge input without truncating the authoritative answer.
+                if len(answer) > 8192 or len(query) > 8192:
+                    skipped["descriptive_vqa_context_limit"] += 1
+                    continue
+                add(
+                    "descriptive_vqa",
+                    index,
+                    query
+                    + f"\n\nAnswer in {language}. Be concise and complete; do not add unsupported claims.",
+                    answer,
+                    raw,
+                    "image/jpeg",
+                    (width, height),
+                )
+                continue
             if question.get("type") != "mcq":
-                skipped["descriptive_vqa_deferred"] += 1
+                skipped["unsupported_vqa_type"] += 1
                 continue
             options = question.get("options")
             answer = question.get("answer")
@@ -195,6 +219,44 @@ def derive_tasks(
             tasks[-1]["reading_order_policy"] = READING_ORDER
             tasks[-1]["reading_order"] = [region["region_id"] for region in ordered]
             tasks[-1]["annotation_masked"] = True
+
+        # Layout supervision includes non-text regions, independently of OCR eligibility.
+        # Require a complete valid annotation set; overlapping regions are allowed.
+        layout = []
+        for region in regions:
+            box = region.get("bbox", {})
+            coords = [box.get(k) for k in ("xmin", "ymin", "xmax", "ymax")]
+            if region.get("layout_type") not in LAYOUT_LABELS or not all(
+                type(v) in (int, float) and math.isfinite(v) for v in coords
+            ):
+                break
+            x0, y0, x1, y1 = coords
+            if not (0 <= x0 < x1 and 0 <= y0 < y1) or (
+                width is not None and (x1 > width or y1 > height)
+            ):
+                break
+            layout.append({"label": region["layout_type"], "bbox": coords})
+        if regions and len(layout) == len(regions) and len(layout) <= 512:
+            add(
+                "layout_detection",
+                "page",
+                "Detect the annotated document layout regions. Return only a JSON array of "
+                '{"label":"text","bbox":[xmin,ymin,xmax,ymax]} objects. '
+                "Use absolute pixel coordinates in the supplied image, with origin at its top left. "
+                f"Allowed labels: {', '.join(LAYOUT_LABELS)}. Include every region once; no extra keys or prose. "
+                "These labels describe document regions, not arbitrary objects."
+                + (
+                    f" Coordinate canvas: width {width} pixels, height {height} pixels."
+                    if width is not None
+                    else ""
+                ),
+                json.dumps(layout, ensure_ascii=False, separators=(",", ":")),
+                raw,
+                "image/jpeg",
+                (width, height),
+            )
+        else:
+            skipped["layout_incomplete_or_invalid_annotations"] += 1
     finally:
         if image is not None:
             image.close()

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from gradio_client import Client
 from nayana_ocr.data.corpus import CorpusCatalog
+from nayana_ocr.data.schema import FAMILIES
 
 
 def value(item):
@@ -26,7 +27,7 @@ def verify(url, manifest, output):
         groups = []
         try:
             for lang in catalog.languages:
-                for family in ("section_ocr", "mcq_vqa", "page_ocr"):
+                for family in FAMILIES:
                     expected = catalog.group_at("train", lang, family, 0)
                     selected = client.predict(
                         "train", lang, family, 1, api_name="/jump"
@@ -38,7 +39,9 @@ def verify(url, manifest, output):
                         "0.000" in empty[0] and value(empty[1]) == expected["reference"]
                     )
                     exact = client.predict(expected["reference"], api_name="/submit")
-                    assert "1.000" in exact[0] and exact[2]["exact_match"]
+                    assert "1.000" in exact[0] and (
+                        exact[2].get("exact_match") or exact[2].get("judge_accepted")
+                    )
                     groups.append(f"{lang}/{family}")
             count = catalog.group_count("train", "zh", "page_ocr")
             last = catalog.group_at("train", "zh", "page_ocr", count - 1)

@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse, Response
 from openenv.core.env_server import create_app
 from pydantic import BaseModel, Field
 
+from ..data.schema import FAMILIES
 from ..models import NayanaAction, NayanaObservation
 from .environment import NayanaEnvironment, configured_catalog
 from .gradio_ui import build_ui
@@ -56,6 +57,9 @@ def create_server():
 
     @app.get("/manifest")
     def manifest():
+        from .judge import judge_info
+        from .layout import POLICY
+
         result = {
             key: catalog.manifest[key]
             for key in (
@@ -79,6 +83,10 @@ def create_server():
         ):
             if key in catalog.manifest:
                 result[key] = catalog.manifest[key]
+        result["grading"] = {
+            "descriptive_vqa": judge_info(),
+            "layout_detection": POLICY,
+        }
         return result
 
     def corpus_query(request, operation):
@@ -132,7 +140,7 @@ def create_server():
                 "tasks": catalog.sample(
                     request.split,
                     request.languages or catalog.languages,
-                    request.families or ["section_ocr", "mcq_vqa", "page_ocr"],
+                    request.families or list(FAMILIES),
                     request.per_group,
                     request.seed,
                 ),

@@ -1,0 +1,8 @@
+{
+  "status": "passed",
+  "package_version": "0.4.0",
+  "command": "uv run --frozen --project envs/nayana_ocr --extra dev --extra train pytest envs/nayana_ocr/tests -q",
+  "passed": 54,
+  "duration_seconds": 9.46,
+  "coverage": "Unit and real local HTTP/WebSocket tests, strict judge mocked failures, layout matching, annotation reindexing and installed TRL CPU loader"
+}

@@ -7,11 +7,15 @@ import gradio as gr
 from ..data.catalog import SPLITS
 from ..models import NayanaAction
 from .environment import NayanaEnvironment
+from .judge import JudgeUnavailable
+from .layout import parse_regions
 
 TASK_LABELS = [
     ("Full-page OCR", "page_ocr"),
     ("Section OCR", "section_ocr"),
     ("Multiple-choice VQA", "mcq_vqa"),
+    ("Layout detection", "layout_detection"),
+    ("Descriptive VQA · Gemma judge", "descriptive_vqa"),
 ]
 LANGUAGE_NAMES = {
     "ar": "Arabic",
@@ -61,6 +65,7 @@ class Playground:
         if not 0 <= index < count:
             raise gr.Error(f"Choose a task number from 1 to {count:,}.")
         task = self.catalog.group_at(split, language, family, index)
+        task = self.catalog.materialize(task)
         preview = self.catalog.image(task)
         progress = f"**Task {index + 1:,} of {count:,}** · `{task['page_id']}`"
         if family == "section_ocr":
@@ -97,24 +102,66 @@ class Playground:
             env.reset(task_id=task_id)
             result = env.step(NayanaAction(answer=answer))
             exact = (
-                "Exact match" if result.metrics["exact_match"] else "Not an exact match"
+                (
+                    "Accepted by Gemma"
+                    if result.metrics["judge_accepted"]
+                    else "Rejected by Gemma"
+                )
+                if "judge_accepted" in result.metrics
+                else (
+                    "Exact match"
+                    if result.metrics.get("exact_match")
+                    else "Not an exact match"
+                )
             )
             summary = f"### Reward: {result.reward:.3f}\n**{exact}**"
             if "char_error_rate" in result.metrics:
                 summary += (
                     f" · Character error rate: {result.metrics['char_error_rate']:.2%}"
                 )
-            if result.metrics["overlong"]:
+            if "mean_f1" in result.metrics:
+                summary += " · Class-aware region F1 averaged over IoU 0.50–0.95"
+            if result.metrics.get("overlong") or result.metrics.get("invalid_answer"):
                 summary += "\nAnswer exceeded the length limit."
             # This demonstration endpoint reveals the reference after grading,
             # like LaTeX OCR. OpenEnv observations/discovery still exclude it.
             return (
                 summary,
                 self.catalog.get(task_id)["reference"],
-                {"reward": result.reward, **result.metrics},
+                {
+                    "reward": result.reward,
+                    **result.metrics,
+                    "grading_policy_id": result.grading_policy_id,
+                },
             )
+        except JudgeUnavailable as error:
+            raise gr.Error(str(error)) from error
         finally:
             env.close()
+
+    def overlays(self, task_id, answer, reference):
+        if not task_id or not reference:
+            return gr.update(value=None, visible=False), gr.update(
+                value=None, visible=False
+            )
+        task = self.catalog.get(task_id)
+        if task["family"] != "layout_detection":
+            return gr.update(value=None, visible=False), gr.update(
+                value=None, visible=False
+            )
+        image = self.catalog.image(task)
+
+        def annotated(text):
+            try:
+                regions = parse_regions(text, image.width, image.height)
+            except (ValueError, TypeError, RecursionError):
+                regions = []
+            return gr.update(
+                value=(image, [(tuple(r["bbox"]), r["label"]) for r in regions]),
+                visible=True,
+            )
+
+        return annotated(answer), annotated(reference)
 
 
 def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_start_md):
@@ -142,7 +189,7 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
 
     with gr.Blocks(title="Nayana multilingual OCR", delete_cache=(300, 600)) as demo:
         gr.Markdown(
-            "# Nayana multilingual OCR\nRead a whole page, transcribe a region, or answer a question about a document."
+            "# Nayana multilingual OCR\nRead a page, transcribe a region, detect its layout, or answer a document question."
         )
         gr.Markdown(
             f"**{len(languages)} languages · {page_count:,} pages · {task_count:,} indexed tasks**"
@@ -184,7 +231,7 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
             with gr.Column(scale=5):
                 answer = gr.Textbox(
                     label="Your answer",
-                    placeholder="Type the transcription, or the option letter for VQA…",
+                    placeholder="Enter text, a VQA answer, or layout regions as a JSON array…",
                     lines=12,
                 )
                 score_button = gr.Button("Score answer", variant="primary")
@@ -197,6 +244,19 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
                 )
                 with gr.Accordion("Scoring details", open=False):
                     metrics = gr.JSON(label="Metrics")
+        with gr.Row():
+            predicted_layout = gr.AnnotatedImage(
+                label="Your layout", visible=False, height=480
+            )
+            reference_layout = gr.AnnotatedImage(
+                label="Reference layout · after scoring", visible=False, height=480
+            )
+        reference.change(
+            playground.overlays,
+            [task_id, answer, reference],
+            [predicted_layout, reference_layout],
+            api_name=False,
+        )
         inputs = [split, language, family]
         outputs = [task_id, image, progress, prompt, answer, result, reference, metrics]
         random_button.click(choose, inputs, outputs, api_name="choose")
@@ -210,6 +270,11 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
         demo.load(choose, inputs, outputs, api_name=False)
         score_button.click(
             submit, [task_id, answer], [result, reference, metrics], api_name="submit"
+        ).then(
+            playground.overlays,
+            [task_id, answer, reference],
+            [predicted_layout, reference_layout],
+            api_name=False,
         )
         if hasattr(catalog, "stats"):
             with gr.Accordion("Data loading and cache", open=False):
@@ -227,7 +292,11 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
         with gr.Accordion("How these tasks are scored", open=False):
             gr.Markdown(
                 "OCR reward combines character similarity (80%) and exact match (20%). "
-                "It preserves each script's characters and normalizes whitespace. VQA requires one uppercase option letter.\n\n"
+                "It preserves each script's characters and normalizes whitespace. Multiple-choice VQA requires one uppercase letter. "
+                "Layout reward is mean class-aware region F1 over IoU thresholds 0.50–0.95; missed and duplicate regions lower it. "
+                "Descriptive VQA uses a strict Gemma judge: all six checks must pass for reward 1. "
+                "The judge compares against the corpus answer and can make mistakes; it does not independently verify the image. "
+                "Judge outages do not assign a reward.\n\n"
                 "Full-page images preserve page size and layout but mask areas without text annotations. "
                 "VQA uses the original page. Full-page references join the corpus's text regions using geometric column and reading order, "
                 "with right-to-left columns for Arabic. This is annotation-based OCR, not table-format reconstruction. "

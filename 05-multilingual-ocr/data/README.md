@@ -68,7 +68,9 @@ contract. The first GPU recipe is single-process/single-GPU and lets TRL repeat 
 
 ## Annotation and image policy
 
-Schema 2 supplies `section_ocr`, `mcq_vqa`, and `page_ocr`. Full-page annotations require unique
+Schema 3 supplies `section_ocr`, `mcq_vqa`, `page_ocr`, `layout_detection`, and
+`descriptive_vqa`. Layout includes all six source classes, including non-text regions;
+descriptive answers use strict Gemma grading through HF Inference Providers. See [JUDGE.md](../JUDGE.md). Full-page annotations require unique
 region IDs, nonempty language references, valid boxes, and no positive-area overlap. Geometric
 reading order uses `whitespace-columns-v1`; Arabic columns run RTL while text code points
 remain in logical order. Outside-region pixels are masked white. Section crops preserve source
@@ -88,8 +90,10 @@ caches, and windows are ignored by Git. The source license also covers derived i
 
 ## Measured layout
 
-The complete index is **3,747,627,008 bytes** across 22 databases and addresses **11,052 physical
+The complete index is **4,304,867,328 bytes** across 22 databases and addresses **11,052 physical
 row groups**. Compressed image-column bytes per group have median **75,121,734**, 95th percentile
 **115,700,835**, and maximum **188,043,822**. These are footer sizes, not application network
 measurements. Partial groups at shard ends can contain fewer than 100 pages. See
-[corpus-layout.json](../results/corpus-layout.json) for task totals and exclusion counts.
+[corpus-index-v2.json](../results/corpus-index-v2.json) for current task totals and exclusions.
+The physical source layout is unchanged; [corpus-layout.json](../results/corpus-layout.json)
+records the original index-v1 measurements.

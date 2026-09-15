@@ -1,0 +1,47 @@
+{
+  "snapshot_id": "867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a",
+  "schema_version": 3,
+  "index_version": 2,
+  "pages": 1006170,
+  "tasks": {
+    "descriptive_vqa": 4024592,
+    "layout_detection": 1006168,
+    "mcq_vqa": 872448,
+    "page_ocr": 639448,
+    "section_ocr": 4477445
+  },
+  "skipped": {
+    "ambiguous_mcq_answer": 133807,
+    "page_ocr_overlapping_regions": 113396,
+    "empty_region_text": 364814,
+    "page_ocr_incomplete_annotations": 253326,
+    "layout_incomplete_or_invalid_annotations": 2,
+    "invalid_mcq": 3
+  },
+  "index_bytes": 4304867328,
+  "verified_languages": [
+    "ar",
+    "bn",
+    "de",
+    "en",
+    "es",
+    "fr",
+    "gu",
+    "hi",
+    "it",
+    "ja",
+    "kn",
+    "ko",
+    "ml",
+    "mr",
+    "or",
+    "pa",
+    "ru",
+    "sa",
+    "ta",
+    "te",
+    "th",
+    "zh"
+  ],
+  "source_inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12"
+}

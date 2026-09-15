@@ -22,3 +22,4 @@ class NayanaObservation(Observation):
     reading_order_policy: str = ""
     reading_order: list[int | str] = Field(default_factory=list)
     annotation_masked: bool = False
+    grading_policy_id: str = ""

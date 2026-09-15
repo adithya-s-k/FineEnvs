@@ -1,9 +1,9 @@
 {
   "status": "ready",
   "storage": "bucket-parquet",
-  "index_version": 1,
-  "schema_version": 2,
-  "snapshot_id": "56b9cb928c0bc050a4d6e67acb12e38718ea66239e5fcae7c0a09299963990eb",
+  "index_version": 2,
+  "schema_version": 3,
+  "snapshot_id": "867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a",
   "pyarrow_version": "25.0.1",
   "datasets_version": "not-used-for-indexing",
   "config": {
@@ -67,6 +67,18 @@
     {
       "split": "test",
       "language": "ar",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "ar",
+      "family": "layout_detection",
+      "tasks": 4418
+    },
+    {
+      "split": "test",
+      "language": "ar",
       "family": "mcq_vqa",
       "tasks": 3824
     },
@@ -81,6 +93,18 @@
       "language": "ar",
       "family": "section_ocr",
       "tasks": 19940
+    },
+    {
+      "split": "train",
+      "language": "ar",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "ar",
+      "family": "layout_detection",
+      "tasks": 37001
     },
     {
       "split": "train",
@@ -103,6 +127,18 @@
     {
       "split": "validation",
       "language": "ar",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "ar",
+      "family": "layout_detection",
+      "tasks": 4316
+    },
+    {
+      "split": "validation",
+      "language": "ar",
       "family": "mcq_vqa",
       "tasks": 3737
     },
@@ -117,6 +153,18 @@
       "language": "ar",
       "family": "section_ocr",
       "tasks": 19216
+    },
+    {
+      "split": "test",
+      "language": "bn",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "bn",
+      "family": "layout_detection",
+      "tasks": 4418
     },
     {
       "split": "test",
@@ -139,6 +187,18 @@
     {
       "split": "train",
       "language": "bn",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "bn",
+      "family": "layout_detection",
+      "tasks": 37001
+    },
+    {
+      "split": "train",
+      "language": "bn",
       "family": "mcq_vqa",
       "tasks": 32005
     },
@@ -153,6 +213,18 @@
       "language": "bn",
       "family": "section_ocr",
       "tasks": 164368
+    },
+    {
+      "split": "validation",
+      "language": "bn",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "bn",
+      "family": "layout_detection",
+      "tasks": 4316
     },
     {
       "split": "validation",
@@ -175,6 +247,18 @@
     {
       "split": "test",
       "language": "de",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "de",
+      "family": "layout_detection",
+      "tasks": 4418
+    },
+    {
+      "split": "test",
+      "language": "de",
       "family": "mcq_vqa",
       "tasks": 3829
     },
@@ -189,6 +273,18 @@
       "language": "de",
       "family": "section_ocr",
       "tasks": 19940
+    },
+    {
+      "split": "train",
+      "language": "de",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "de",
+      "family": "layout_detection",
+      "tasks": 37001
     },
     {
       "split": "train",
@@ -211,6 +307,18 @@
     {
       "split": "validation",
       "language": "de",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "de",
+      "family": "layout_detection",
+      "tasks": 4316
+    },
+    {
+      "split": "validation",
+      "language": "de",
       "family": "mcq_vqa",
       "tasks": 3746
     },
@@ -225,6 +333,18 @@
       "language": "de",
       "family": "section_ocr",
       "tasks": 19216
+    },
+    {
+      "split": "test",
+      "language": "en",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "en",
+      "family": "layout_detection",
+      "tasks": 4418
     },
     {
       "split": "test",
@@ -247,6 +367,18 @@
     {
       "split": "train",
       "language": "en",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "en",
+      "family": "layout_detection",
+      "tasks": 37001
+    },
+    {
+      "split": "train",
+      "language": "en",
       "family": "mcq_vqa",
       "tasks": 32017
     },
@@ -261,6 +393,18 @@
       "language": "en",
       "family": "section_ocr",
       "tasks": 164445
+    },
+    {
+      "split": "validation",
+      "language": "en",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "en",
+      "family": "layout_detection",
+      "tasks": 4316
     },
     {
       "split": "validation",
@@ -283,6 +427,18 @@
     {
       "split": "test",
       "language": "es",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "es",
+      "family": "layout_detection",
+      "tasks": 4418
+    },
+    {
+      "split": "test",
+      "language": "es",
       "family": "mcq_vqa",
       "tasks": 3837
     },
@@ -297,6 +453,18 @@
       "language": "es",
       "family": "section_ocr",
       "tasks": 19940
+    },
+    {
+      "split": "train",
+      "language": "es",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "es",
+      "family": "layout_detection",
+      "tasks": 37001
     },
     {
       "split": "train",
@@ -319,6 +487,18 @@
     {
       "split": "validation",
       "language": "es",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "es",
+      "family": "layout_detection",
+      "tasks": 4316
+    },
+    {
+      "split": "validation",
+      "language": "es",
       "family": "mcq_vqa",
       "tasks": 3748
     },
@@ -337,6 +517,18 @@
     {
       "split": "test",
       "language": "fr",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "fr",
+      "family": "layout_detection",
+      "tasks": 4418
+    },
+    {
+      "split": "test",
+      "language": "fr",
       "family": "mcq_vqa",
       "tasks": 3827
     },
@@ -351,6 +543,18 @@
       "language": "fr",
       "family": "section_ocr",
       "tasks": 19940
+    },
+    {
+      "split": "train",
+      "language": "fr",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "fr",
+      "family": "layout_detection",
+      "tasks": 37001
     },
     {
       "split": "train",
@@ -373,6 +577,18 @@
     {
       "split": "validation",
       "language": "fr",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "fr",
+      "family": "layout_detection",
+      "tasks": 4316
+    },
+    {
+      "split": "validation",
+      "language": "fr",
       "family": "mcq_vqa",
       "tasks": 3737
     },
@@ -387,6 +603,18 @@
       "language": "fr",
       "family": "section_ocr",
       "tasks": 19216
+    },
+    {
+      "split": "test",
+      "language": "gu",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "gu",
+      "family": "layout_detection",
+      "tasks": 4418
     },
     {
       "split": "test",
@@ -409,6 +637,18 @@
     {
       "split": "train",
       "language": "gu",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "gu",
+      "family": "layout_detection",
+      "tasks": 37001
+    },
+    {
+      "split": "train",
+      "language": "gu",
       "family": "mcq_vqa",
       "tasks": 31914
     },
@@ -423,6 +663,18 @@
       "language": "gu",
       "family": "section_ocr",
       "tasks": 164364
+    },
+    {
+      "split": "validation",
+      "language": "gu",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "gu",
+      "family": "layout_detection",
+      "tasks": 4316
     },
     {
       "split": "validation",
@@ -445,6 +697,18 @@
     {
       "split": "test",
       "language": "hi",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "hi",
+      "family": "layout_detection",
+      "tasks": 4418
+    },
+    {
+      "split": "test",
+      "language": "hi",
       "family": "mcq_vqa",
       "tasks": 3825
     },
@@ -459,6 +723,18 @@
       "language": "hi",
       "family": "section_ocr",
       "tasks": 19940
+    },
+    {
+      "split": "train",
+      "language": "hi",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "hi",
+      "family": "layout_detection",
+      "tasks": 37001
     },
     {
       "split": "train",
@@ -481,6 +757,18 @@
     {
       "split": "validation",
       "language": "hi",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "hi",
+      "family": "layout_detection",
+      "tasks": 4316
+    },
+    {
+      "split": "validation",
+      "language": "hi",
       "family": "mcq_vqa",
       "tasks": 3743
     },
@@ -499,6 +787,18 @@
     {
       "split": "test",
       "language": "it",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "it",
+      "family": "layout_detection",
+      "tasks": 4418
+    },
+    {
+      "split": "test",
+      "language": "it",
       "family": "mcq_vqa",
       "tasks": 3826
     },
@@ -513,6 +813,18 @@
       "language": "it",
       "family": "section_ocr",
       "tasks": 19940
+    },
+    {
+      "split": "train",
+      "language": "it",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "it",
+      "family": "layout_detection",
+      "tasks": 37001
     },
     {
       "split": "train",
@@ -535,6 +847,18 @@
     {
       "split": "validation",
       "language": "it",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "it",
+      "family": "layout_detection",
+      "tasks": 4316
+    },
+    {
+      "split": "validation",
+      "language": "it",
       "family": "mcq_vqa",
       "tasks": 3740
     },
@@ -549,6 +873,18 @@
       "language": "it",
       "family": "section_ocr",
       "tasks": 19216
+    },
+    {
+      "split": "test",
+      "language": "ja",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "ja",
+      "family": "layout_detection",
+      "tasks": 4418
     },
     {
       "split": "test",
@@ -571,6 +907,18 @@
     {
       "split": "train",
       "language": "ja",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "ja",
+      "family": "layout_detection",
+      "tasks": 37001
+    },
+    {
+      "split": "train",
+      "language": "ja",
       "family": "mcq_vqa",
       "tasks": 32031
     },
@@ -585,6 +933,18 @@
       "language": "ja",
       "family": "section_ocr",
       "tasks": 164359
+    },
+    {
+      "split": "validation",
+      "language": "ja",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "ja",
+      "family": "layout_detection",
+      "tasks": 4316
     },
     {
       "split": "validation",
@@ -607,6 +967,18 @@
     {
       "split": "test",
       "language": "kn",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "kn",
+      "family": "layout_detection",
+      "tasks": 4418
+    },
+    {
+      "split": "test",
+      "language": "kn",
       "family": "mcq_vqa",
       "tasks": 3824
     },
@@ -621,6 +993,18 @@
       "language": "kn",
       "family": "section_ocr",
       "tasks": 19939
+    },
+    {
+      "split": "train",
+      "language": "kn",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "kn",
+      "family": "layout_detection",
+      "tasks": 37001
     },
     {
       "split": "train",
@@ -643,6 +1027,18 @@
     {
       "split": "validation",
       "language": "kn",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "kn",
+      "family": "layout_detection",
+      "tasks": 4316
+    },
+    {
+      "split": "validation",
+      "language": "kn",
       "family": "mcq_vqa",
       "tasks": 3744
     },
@@ -661,6 +1057,18 @@
     {
       "split": "test",
       "language": "ko",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "ko",
+      "family": "layout_detection",
+      "tasks": 4418
+    },
+    {
+      "split": "test",
+      "language": "ko",
       "family": "mcq_vqa",
       "tasks": 3850
     },
@@ -675,6 +1083,18 @@
       "language": "ko",
       "family": "section_ocr",
       "tasks": 19940
+    },
+    {
+      "split": "train",
+      "language": "ko",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "ko",
+      "family": "layout_detection",
+      "tasks": 37001
     },
     {
       "split": "train",
@@ -697,6 +1117,18 @@
     {
       "split": "validation",
       "language": "ko",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "ko",
+      "family": "layout_detection",
+      "tasks": 4316
+    },
+    {
+      "split": "validation",
+      "language": "ko",
       "family": "mcq_vqa",
       "tasks": 3764
     },
@@ -711,6 +1143,18 @@
       "language": "ko",
       "family": "section_ocr",
       "tasks": 19216
+    },
+    {
+      "split": "test",
+      "language": "ml",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "ml",
+      "family": "layout_detection",
+      "tasks": 4417
     },
     {
       "split": "test",
@@ -733,6 +1177,18 @@
     {
       "split": "train",
       "language": "ml",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "ml",
+      "family": "layout_detection",
+      "tasks": 37001
+    },
+    {
+      "split": "train",
+      "language": "ml",
       "family": "mcq_vqa",
       "tasks": 31995
     },
@@ -751,6 +1207,18 @@
     {
       "split": "validation",
       "language": "ml",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "ml",
+      "family": "layout_detection",
+      "tasks": 4316
+    },
+    {
+      "split": "validation",
+      "language": "ml",
       "family": "mcq_vqa",
       "tasks": 3743
     },
@@ -765,6 +1233,18 @@
       "language": "ml",
       "family": "section_ocr",
       "tasks": 19217
+    },
+    {
+      "split": "test",
+      "language": "mr",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "mr",
+      "family": "layout_detection",
+      "tasks": 4418
     },
     {
       "split": "test",
@@ -787,6 +1267,18 @@
     {
       "split": "train",
       "language": "mr",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "mr",
+      "family": "layout_detection",
+      "tasks": 37001
+    },
+    {
+      "split": "train",
+      "language": "mr",
       "family": "mcq_vqa",
       "tasks": 32007
     },
@@ -801,6 +1293,18 @@
       "language": "mr",
       "family": "section_ocr",
       "tasks": 164364
+    },
+    {
+      "split": "validation",
+      "language": "mr",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "mr",
+      "family": "layout_detection",
+      "tasks": 4316
     },
     {
       "split": "validation",
@@ -823,6 +1327,18 @@
     {
       "split": "test",
       "language": "or",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "or",
+      "family": "layout_detection",
+      "tasks": 4418
+    },
+    {
+      "split": "test",
+      "language": "or",
       "family": "mcq_vqa",
       "tasks": 3881
     },
@@ -837,6 +1353,18 @@
       "language": "or",
       "family": "section_ocr",
       "tasks": 19940
+    },
+    {
+      "split": "train",
+      "language": "or",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "or",
+      "family": "layout_detection",
+      "tasks": 37001
     },
     {
       "split": "train",
@@ -859,6 +1387,18 @@
     {
       "split": "validation",
       "language": "or",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "or",
+      "family": "layout_detection",
+      "tasks": 4316
+    },
+    {
+      "split": "validation",
+      "language": "or",
       "family": "mcq_vqa",
       "tasks": 3797
     },
@@ -877,6 +1417,18 @@
     {
       "split": "test",
       "language": "pa",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "pa",
+      "family": "layout_detection",
+      "tasks": 4418
+    },
+    {
+      "split": "test",
+      "language": "pa",
       "family": "mcq_vqa",
       "tasks": 3825
     },
@@ -891,6 +1443,18 @@
       "language": "pa",
       "family": "section_ocr",
       "tasks": 19940
+    },
+    {
+      "split": "train",
+      "language": "pa",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "pa",
+      "family": "layout_detection",
+      "tasks": 37001
     },
     {
       "split": "train",
@@ -913,6 +1477,18 @@
     {
       "split": "validation",
       "language": "pa",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "pa",
+      "family": "layout_detection",
+      "tasks": 4316
+    },
+    {
+      "split": "validation",
+      "language": "pa",
       "family": "mcq_vqa",
       "tasks": 3740
     },
@@ -927,6 +1503,18 @@
       "language": "pa",
       "family": "section_ocr",
       "tasks": 19215
+    },
+    {
+      "split": "test",
+      "language": "ru",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "ru",
+      "family": "layout_detection",
+      "tasks": 4418
     },
     {
       "split": "test",
@@ -949,6 +1537,18 @@
     {
       "split": "train",
       "language": "ru",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "ru",
+      "family": "layout_detection",
+      "tasks": 37001
+    },
+    {
+      "split": "train",
+      "language": "ru",
       "family": "mcq_vqa",
       "tasks": 32013
     },
@@ -963,6 +1563,18 @@
       "language": "ru",
       "family": "section_ocr",
       "tasks": 164360
+    },
+    {
+      "split": "validation",
+      "language": "ru",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "ru",
+      "family": "layout_detection",
+      "tasks": 4316
     },
     {
       "split": "validation",
@@ -985,6 +1597,18 @@
     {
       "split": "test",
       "language": "sa",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "sa",
+      "family": "layout_detection",
+      "tasks": 4418
+    },
+    {
+      "split": "test",
+      "language": "sa",
       "family": "mcq_vqa",
       "tasks": 3850
     },
@@ -999,6 +1623,18 @@
       "language": "sa",
       "family": "section_ocr",
       "tasks": 19940
+    },
+    {
+      "split": "train",
+      "language": "sa",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "sa",
+      "family": "layout_detection",
+      "tasks": 37001
     },
     {
       "split": "train",
@@ -1021,6 +1657,18 @@
     {
       "split": "validation",
       "language": "sa",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "sa",
+      "family": "layout_detection",
+      "tasks": 4316
+    },
+    {
+      "split": "validation",
+      "language": "sa",
       "family": "mcq_vqa",
       "tasks": 3760
     },
@@ -1039,6 +1687,18 @@
     {
       "split": "test",
       "language": "ta",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "ta",
+      "family": "layout_detection",
+      "tasks": 4418
+    },
+    {
+      "split": "test",
+      "language": "ta",
       "family": "mcq_vqa",
       "tasks": 3825
     },
@@ -1053,6 +1713,18 @@
       "language": "ta",
       "family": "section_ocr",
       "tasks": 19940
+    },
+    {
+      "split": "train",
+      "language": "ta",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "ta",
+      "family": "layout_detection",
+      "tasks": 37001
     },
     {
       "split": "train",
@@ -1075,6 +1747,18 @@
     {
       "split": "validation",
       "language": "ta",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "ta",
+      "family": "layout_detection",
+      "tasks": 4316
+    },
+    {
+      "split": "validation",
+      "language": "ta",
       "family": "mcq_vqa",
       "tasks": 3743
     },
@@ -1089,6 +1773,18 @@
       "language": "ta",
       "family": "section_ocr",
       "tasks": 19217
+    },
+    {
+      "split": "test",
+      "language": "te",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "te",
+      "family": "layout_detection",
+      "tasks": 4418
     },
     {
       "split": "test",
@@ -1111,6 +1807,18 @@
     {
       "split": "train",
       "language": "te",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "te",
+      "family": "layout_detection",
+      "tasks": 37000
+    },
+    {
+      "split": "train",
+      "language": "te",
       "family": "mcq_vqa",
       "tasks": 32012
     },
@@ -1125,6 +1833,18 @@
       "language": "te",
       "family": "section_ocr",
       "tasks": 164349
+    },
+    {
+      "split": "validation",
+      "language": "te",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "te",
+      "family": "layout_detection",
+      "tasks": 4316
     },
     {
       "split": "validation",
@@ -1147,6 +1867,18 @@
     {
       "split": "test",
       "language": "th",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "th",
+      "family": "layout_detection",
+      "tasks": 4418
+    },
+    {
+      "split": "test",
+      "language": "th",
       "family": "mcq_vqa",
       "tasks": 3938
     },
@@ -1161,6 +1893,18 @@
       "language": "th",
       "family": "section_ocr",
       "tasks": 19940
+    },
+    {
+      "split": "train",
+      "language": "th",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "th",
+      "family": "layout_detection",
+      "tasks": 37001
     },
     {
       "split": "train",
@@ -1183,6 +1927,18 @@
     {
       "split": "validation",
       "language": "th",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "th",
+      "family": "layout_detection",
+      "tasks": 4316
+    },
+    {
+      "split": "validation",
+      "language": "th",
       "family": "mcq_vqa",
       "tasks": 3855
     },
@@ -1197,6 +1953,18 @@
       "language": "th",
       "family": "section_ocr",
       "tasks": 19216
+    },
+    {
+      "split": "test",
+      "language": "zh",
+      "family": "descriptive_vqa",
+      "tasks": 17672
+    },
+    {
+      "split": "test",
+      "language": "zh",
+      "family": "layout_detection",
+      "tasks": 4418
     },
     {
       "split": "test",
@@ -1219,6 +1987,18 @@
     {
       "split": "train",
       "language": "zh",
+      "family": "descriptive_vqa",
+      "tasks": 148000
+    },
+    {
+      "split": "train",
+      "language": "zh",
+      "family": "layout_detection",
+      "tasks": 37001
+    },
+    {
+      "split": "train",
+      "language": "zh",
       "family": "mcq_vqa",
       "tasks": 31979
     },
@@ -1233,6 +2013,18 @@
       "language": "zh",
       "family": "section_ocr",
       "tasks": 164360
+    },
+    {
+      "split": "validation",
+      "language": "zh",
+      "family": "descriptive_vqa",
+      "tasks": 17264
+    },
+    {
+      "split": "validation",
+      "language": "zh",
+      "family": "layout_detection",
+      "tasks": 4316
     },
     {
       "split": "validation",
@@ -1256,18 +2048,30 @@
   "indexes": {
     "ar": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "ar",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "ar.sqlite",
-      "size": 166350848,
-      "sha256": "da1ee3eda8f6eb428a886ec3ff758060a1e48b58326c79ec3d20550c7ceffd63",
+      "size": 191684608,
+      "sha256": "be0579a9247aeffd9681957cfddce56ceb4810e2d202b52abda8a97840db963f",
       "pages": 45735,
       "blocks": 520,
       "counts": [
+        {
+          "split": "test",
+          "language": "ar",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "ar",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "ar",
@@ -1285,6 +2089,18 @@
           "language": "ar",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "ar",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "ar",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -1307,6 +2123,18 @@
         {
           "split": "validation",
           "language": "ar",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "ar",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "ar",
           "family": "mcq_vqa",
           "tasks": 3737
         },
@@ -1324,28 +2152,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6260,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 651.952
+      "build_seconds": 49.974
     },
     "bn": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "bn",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "bn.sqlite",
-      "size": 178225152,
-      "sha256": "a5da8103ba55062308db5c2fcfa356c9dd0f9f3538710af624df7e9a7d60d327",
+      "size": 203550720,
+      "sha256": "82e07e4ace1d3bac803859e86da5a66f0d0ff2148f429af478a9fe846bb50e7c",
       "pages": 45735,
       "blocks": 486,
       "counts": [
+        {
+          "split": "test",
+          "language": "bn",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "bn",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "bn",
@@ -1363,6 +2202,18 @@
           "language": "bn",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "bn",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "bn",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -1385,6 +2236,18 @@
         {
           "split": "validation",
           "language": "bn",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "bn",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "bn",
           "family": "mcq_vqa",
           "tasks": 3742
         },
@@ -1402,28 +2265,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6162,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 664.34
+      "build_seconds": 51.419
     },
     "de": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "de",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "de.sqlite",
-      "size": 160231424,
-      "sha256": "19df942dbd2f05da6b69ebbfe57363209f2022d0bb7ca7255dc110a920dbc601",
+      "size": 185569280,
+      "sha256": "6ecc1335dbb95793f8ea21fb496ec70eb9ee101a24892723364626a1ea6c4fa9",
       "pages": 45735,
       "blocks": 528,
       "counts": [
+        {
+          "split": "test",
+          "language": "de",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "de",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "de",
@@ -1441,6 +2315,18 @@
           "language": "de",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "de",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "de",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -1463,6 +2349,18 @@
         {
           "split": "validation",
           "language": "de",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "de",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "de",
           "family": "mcq_vqa",
           "tasks": 3746
         },
@@ -1480,28 +2378,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6156,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 696.101
+      "build_seconds": 49.967
     },
     "en": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "en",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "en.sqlite",
-      "size": 106688512,
-      "sha256": "a61109d254c11e61397a1a5ebe9d5ddb6a7b9777939fb350dc43bc12980b289e",
+      "size": 132009984,
+      "sha256": "2d3abfa070a13d280a80a5d273b1ef581772d5a9777ef65c616790b25dced00b",
       "pages": 45735,
       "blocks": 486,
       "counts": [
+        {
+          "split": "test",
+          "language": "en",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "en",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "en",
@@ -1519,6 +2428,18 @@
           "language": "en",
           "family": "section_ocr",
           "tasks": 19950
+        },
+        {
+          "split": "train",
+          "language": "en",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "en",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -1541,6 +2462,18 @@
         {
           "split": "validation",
           "language": "en",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "en",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "en",
           "family": "mcq_vqa",
           "tasks": 3746
         },
@@ -1558,28 +2491,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6148,
         "page_ocr_overlapping_regions": 5204,
         "empty_region_text": 16694,
         "page_ocr_incomplete_annotations": 11590
       },
-      "build_seconds": 626.098
+      "build_seconds": 40.928
     },
     "es": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "es",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "es.sqlite",
-      "size": 156913664,
-      "sha256": "2acc177360dae1f1d4b28a81a623d3cf1a4e72bfb2d08f95c7c3c7056f65e7a4",
+      "size": 182243328,
+      "sha256": "277a80ca9a9154b106d34fa7cd4ee631115fa0e27a82aafc8b6dc40fdfe61dce",
       "pages": 45735,
       "blocks": 498,
       "counts": [
+        {
+          "split": "test",
+          "language": "es",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "es",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "es",
@@ -1597,6 +2541,18 @@
           "language": "es",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "es",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "es",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -1619,6 +2575,18 @@
         {
           "split": "validation",
           "language": "es",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "es",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "es",
           "family": "mcq_vqa",
           "tasks": 3748
         },
@@ -1636,28 +2604,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6115,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 666.519
+      "build_seconds": 47.481
     },
     "fr": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "fr",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "fr.sqlite",
-      "size": 158175232,
-      "sha256": "1ffddff8f388fb0f99f83cdec39c5175bcea9478e0cc169c91b1e979bc241b1a",
+      "size": 183500800,
+      "sha256": "9d4f6a8b47eb1f2cfa0c588fa29ec835e79bc1437192d4587e70d253777cd8f8",
       "pages": 45735,
       "blocks": 510,
       "counts": [
+        {
+          "split": "test",
+          "language": "fr",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "fr",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "fr",
@@ -1675,6 +2654,18 @@
           "language": "fr",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "fr",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "fr",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -1697,6 +2688,18 @@
         {
           "split": "validation",
           "language": "fr",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "fr",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "fr",
           "family": "mcq_vqa",
           "tasks": 3737
         },
@@ -1714,28 +2717,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6181,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 687.909
+      "build_seconds": 49.118
     },
     "gu": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "gu",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "gu.sqlite",
-      "size": 178089984,
-      "sha256": "7f9c274fa1d8f9ac6ad30df7d92de51e40817776a1d82fe91c41c97a511fce37",
+      "size": 203411456,
+      "sha256": "44f0beb178b225c512ece7fac63de328d0da52ecf99c8372adc7b0610823cf37",
       "pages": 45735,
       "blocks": 468,
       "counts": [
+        {
+          "split": "test",
+          "language": "gu",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "gu",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "gu",
@@ -1753,6 +2767,18 @@
           "language": "gu",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "gu",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "gu",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -1775,6 +2801,18 @@
         {
           "split": "validation",
           "language": "gu",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "gu",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "gu",
           "family": "mcq_vqa",
           "tasks": 3734
         },
@@ -1792,28 +2830,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6264,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 646.454
+      "build_seconds": 52.718
     },
     "hi": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "hi",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "hi.sqlite",
-      "size": 177250304,
-      "sha256": "f1155a844c7dc6379bb146b7bc9ea2b56cad2443cc1fdf451b1e5072e0c69e2b",
+      "size": 202575872,
+      "sha256": "c87bb21644f0d4875a499d9fbefe4d7d9e4f73457d80d2bb8a8d36935e732df4",
       "pages": 45735,
       "blocks": 492,
       "counts": [
+        {
+          "split": "test",
+          "language": "hi",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "hi",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "hi",
@@ -1831,6 +2880,18 @@
           "language": "hi",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "hi",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "hi",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -1853,6 +2914,18 @@
         {
           "split": "validation",
           "language": "hi",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "hi",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "hi",
           "family": "mcq_vqa",
           "tasks": 3743
         },
@@ -1870,28 +2943,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6193,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16579,
         "page_ocr_incomplete_annotations": 11513
       },
-      "build_seconds": 667.04
+      "build_seconds": 52.803
     },
     "it": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "it",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "it.sqlite",
-      "size": 156041216,
-      "sha256": "fbe414e2827253e774be5c5e7717907f19ef63ce3cff90b1a3c9c15abb49220c",
+      "size": 181366784,
+      "sha256": "cb91c7fdfe7a892d78afc8a5b8855b97b73ddda51b3911169aa849c39063f640",
       "pages": 45735,
       "blocks": 504,
       "counts": [
+        {
+          "split": "test",
+          "language": "it",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "it",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "it",
@@ -1909,6 +2993,18 @@
           "language": "it",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "it",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "it",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -1931,6 +3027,18 @@
         {
           "split": "validation",
           "language": "it",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "it",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "it",
           "family": "mcq_vqa",
           "tasks": 3740
         },
@@ -1948,28 +3056,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6174,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 688.538
+      "build_seconds": 54.883
     },
     "ja": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "ja",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "ja.sqlite",
-      "size": 170065920,
-      "sha256": "f05392d1e1507f74cc28b776046ff78ee63e1fd8cf0f7a7b9e90e2231fc78f8c",
+      "size": 195399680,
+      "sha256": "e8c566498dd8cb9412fe3f1aa08cb48296bc707cece710beaf2912781a5769e7",
       "pages": 45735,
       "blocks": 511,
       "counts": [
+        {
+          "split": "test",
+          "language": "ja",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "ja",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "ja",
@@ -1987,6 +3106,18 @@
           "language": "ja",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "ja",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "ja",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -2009,6 +3140,18 @@
         {
           "split": "validation",
           "language": "ja",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "ja",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "ja",
           "family": "mcq_vqa",
           "tasks": 3749
         },
@@ -2026,28 +3169,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6123,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16578,
         "page_ocr_incomplete_annotations": 11512
       },
-      "build_seconds": 666.745
+      "build_seconds": 58.414
     },
     "kn": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "kn",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "kn.sqlite",
-      "size": 180559872,
-      "sha256": "596ac5dcc923e560763c1026901835c0526d7aee1b1c2f636b99da9d5f97c3a4",
+      "size": 205897728,
+      "sha256": "846f99830102a087a22d1ed371876c1a54705beb9d0f94ad0f36f5c5384d1864",
       "pages": 45735,
       "blocks": 516,
       "counts": [
+        {
+          "split": "test",
+          "language": "kn",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "kn",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "kn",
@@ -2065,6 +3219,18 @@
           "language": "kn",
           "family": "section_ocr",
           "tasks": 19939
+        },
+        {
+          "split": "train",
+          "language": "kn",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "kn",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -2087,6 +3253,18 @@
         {
           "split": "validation",
           "language": "kn",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "kn",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "kn",
           "family": "mcq_vqa",
           "tasks": 3744
         },
@@ -2104,28 +3282,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6197,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 718.885
+      "build_seconds": 66.869
     },
     "ko": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "ko",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "ko.sqlite",
-      "size": 164200448,
-      "sha256": "5fffe188ee276233b277934705d97bd25b20a07057b20415401223463c8c2404",
+      "size": 189534208,
+      "sha256": "72df8e0c4998f0a1df49b0e00401fd25021bbb1a63634fb77da85e054542b0ef",
       "pages": 45735,
       "blocks": 511,
       "counts": [
+        {
+          "split": "test",
+          "language": "ko",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "ko",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "ko",
@@ -2143,6 +3332,18 @@
           "language": "ko",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "ko",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "ko",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -2165,6 +3366,18 @@
         {
           "split": "validation",
           "language": "ko",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "ko",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "ko",
           "family": "mcq_vqa",
           "tasks": 3764
         },
@@ -2182,28 +3395,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 5960,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 666.242
+      "build_seconds": 59.018
     },
     "ml": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "ml",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "ml.sqlite",
-      "size": 187961344,
-      "sha256": "c918e65e3db705fd46f7dfba5d868f65c30059dbc752f62da9ae910cba19b592",
+      "size": 213295104,
+      "sha256": "43c323d32f289ff632a5ad728b1ae08a35b80f749df1b69f67f946e577c4986c",
       "pages": 45735,
       "blocks": 534,
       "counts": [
+        {
+          "split": "test",
+          "language": "ml",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "ml",
+          "family": "layout_detection",
+          "tasks": 4417
+        },
         {
           "split": "test",
           "language": "ml",
@@ -2221,6 +3445,18 @@
           "language": "ml",
           "family": "section_ocr",
           "tasks": 19929
+        },
+        {
+          "split": "train",
+          "language": "ml",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "ml",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -2243,6 +3479,18 @@
         {
           "split": "validation",
           "language": "ml",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "ml",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "ml",
           "family": "mcq_vqa",
           "tasks": 3743
         },
@@ -2260,28 +3508,40 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6178,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
-        "page_ocr_incomplete_annotations": 11512
+        "page_ocr_incomplete_annotations": 11512,
+        "layout_incomplete_or_invalid_annotations": 1
       },
-      "build_seconds": 726.255
+      "build_seconds": 95.259
     },
     "mr": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "mr",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "mr.sqlite",
-      "size": 180338688,
-      "sha256": "706e89653ace91ce73edfc638098475b881c72ca9575b83ea7be330be4aa1a6c",
+      "size": 205656064,
+      "sha256": "96f095df2a4630d729fe3884d2ef5fd3139c9cd23978a446f9d79f7853b2054c",
       "pages": 45735,
       "blocks": 474,
       "counts": [
+        {
+          "split": "test",
+          "language": "mr",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "mr",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "mr",
@@ -2299,6 +3559,18 @@
           "language": "mr",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "mr",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "mr",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -2321,6 +3593,18 @@
         {
           "split": "validation",
           "language": "mr",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "mr",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "mr",
           "family": "mcq_vqa",
           "tasks": 3746
         },
@@ -2338,28 +3622,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6158,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 670.923
+      "build_seconds": 95.737
     },
     "or": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "or",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "or.sqlite",
-      "size": 180936704,
-      "sha256": "20379a601abdc1dc98c9ee83548560bd392e0737eec52ea1943f6e20392a0b61",
+      "size": 206266368,
+      "sha256": "86e7b5e300e6da521c8a1732c9eaf61e829a3a4d65f75dbdd90bff4cb5c48e44",
       "pages": 45735,
       "blocks": 498,
       "counts": [
+        {
+          "split": "test",
+          "language": "or",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "or",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "or",
@@ -2377,6 +3672,18 @@
           "language": "or",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "or",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "or",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -2399,6 +3706,18 @@
         {
           "split": "validation",
           "language": "or",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "or",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "or",
           "family": "mcq_vqa",
           "tasks": 3797
         },
@@ -2416,28 +3735,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 5693,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 688.188
+      "build_seconds": 97.521
     },
     "pa": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "pa",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "pa.sqlite",
-      "size": 181211136,
-      "sha256": "f6f083a7db9d2783e61a62c571807f55e8101f97415d4d14904a0c4a90245bb6",
+      "size": 206532608,
+      "sha256": "a2930cfa5b9a0607454498db8f52b89dab934dd98ecb520e600f79cc1bd42bc5",
       "pages": 45735,
       "blocks": 480,
       "counts": [
+        {
+          "split": "test",
+          "language": "pa",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "pa",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "pa",
@@ -2455,6 +3785,18 @@
           "language": "pa",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "pa",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "pa",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -2477,6 +3819,18 @@
         {
           "split": "validation",
           "language": "pa",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "pa",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "pa",
           "family": "mcq_vqa",
           "tasks": 3740
         },
@@ -2494,28 +3848,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6185,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 666.429
+      "build_seconds": 94.477
     },
     "ru": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "ru",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "ru.sqlite",
-      "size": 178618368,
-      "sha256": "554a036d5f71ec4e2ecc65d2fe636a0fb2cab626e22fadcb0e3aec726ae463c9",
+      "size": 203956224,
+      "sha256": "f9e6952ebea5f40963d02f6a8b6f9f0926482a69bab1a46eaadb2c608eaeeda8",
       "pages": 45735,
       "blocks": 540,
       "counts": [
+        {
+          "split": "test",
+          "language": "ru",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "ru",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "ru",
@@ -2533,6 +3898,18 @@
           "language": "ru",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "ru",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "ru",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -2555,6 +3932,18 @@
         {
           "split": "validation",
           "language": "ru",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "ru",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "ru",
           "family": "mcq_vqa",
           "tasks": 3745
         },
@@ -2572,28 +3961,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6152,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 725.341
+      "build_seconds": 83.965
     },
     "sa": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "sa",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "sa.sqlite",
-      "size": 186732544,
-      "sha256": "66b858b8a1de65ebfab75e7d7474728a04672c5e4edbdb7193c937334d58346d",
+      "size": 212062208,
+      "sha256": "a9a92cef78c5c3ebb41ef3718f4422f0de3c2165055f62375661fad0eb29234b",
       "pages": 45735,
       "blocks": 492,
       "counts": [
+        {
+          "split": "test",
+          "language": "sa",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "sa",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "sa",
@@ -2611,6 +4011,18 @@
           "language": "sa",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "sa",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "sa",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -2633,6 +4045,18 @@
         {
           "split": "validation",
           "language": "sa",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "sa",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "sa",
           "family": "mcq_vqa",
           "tasks": 3760
         },
@@ -2650,28 +4074,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 5946,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 692.852
+      "build_seconds": 81.785
     },
     "ta": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "ta",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "ta.sqlite",
-      "size": 181075968,
-      "sha256": "8a0bf849b0f8fb237e6a5a28c29a438b4d20de6a07c76dac44d272646efeecb2",
+      "size": 206413824,
+      "sha256": "7d4943b767fcdaeb2af5fd8712e358a75fc8691cd768ef3e02a913c1a73d8b42",
       "pages": 45735,
       "blocks": 522,
       "counts": [
+        {
+          "split": "test",
+          "language": "ta",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "ta",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "ta",
@@ -2689,6 +4124,18 @@
           "language": "ta",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "ta",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "ta",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -2711,6 +4158,18 @@
         {
           "split": "validation",
           "language": "ta",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "ta",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "ta",
           "family": "mcq_vqa",
           "tasks": 3743
         },
@@ -2728,28 +4187,39 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6178,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 719.278
+      "build_seconds": 80.475
     },
     "te": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "te",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "te.sqlite",
-      "size": 180408320,
-      "sha256": "0731ed3e45442d8b17bc513823f214aa65a65adc5b740dc83e58a05045ec58a7",
+      "size": 205737984,
+      "sha256": "e64d41685320e837abf000f32462f290d3d39ba40708eeaf69f3cd9c327015d4",
       "pages": 45735,
       "blocks": 492,
       "counts": [
+        {
+          "split": "test",
+          "language": "te",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "te",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "te",
@@ -2767,6 +4237,18 @@
           "language": "te",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "te",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "te",
+          "family": "layout_detection",
+          "tasks": 37000
         },
         {
           "split": "train",
@@ -2789,6 +4271,18 @@
         {
           "split": "validation",
           "language": "te",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "te",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "te",
           "family": "mcq_vqa",
           "tasks": 3746
         },
@@ -2806,28 +4300,40 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6155,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
-        "page_ocr_incomplete_annotations": 11512
+        "page_ocr_incomplete_annotations": 11512,
+        "layout_incomplete_or_invalid_annotations": 1
       },
-      "build_seconds": 693.517
+      "build_seconds": 75.845
     },
     "th": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "th",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "th.sqlite",
-      "size": 177442816,
-      "sha256": "ad687a6da47650f867b8804d9ce9dedf6c54c68db3bcea372fec307a505d38de",
+      "size": 202768384,
+      "sha256": "469b47bb84b8a12da9c9de55d693e228b4301d311a912f3a6bbbace5beb1b32f",
       "pages": 45735,
       "blocks": 504,
       "counts": [
+        {
+          "split": "test",
+          "language": "th",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "th",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "th",
@@ -2845,6 +4351,18 @@
           "language": "th",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "th",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "th",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -2867,6 +4385,18 @@
         {
           "split": "validation",
           "language": "th",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "th",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "th",
           "family": "mcq_vqa",
           "tasks": 3855
         },
@@ -2884,29 +4414,40 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 5033,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511,
         "invalid_mcq": 3
       },
-      "build_seconds": 684.115
+      "build_seconds": 42.706
     },
     "zh": {
       "settings": {
-        "index_version": 1,
+        "index_version": 2,
         "inventory_id": "6764684942b0ef41627c862555b6f3f940dfb8ac50314ac59423f576c40f0e12",
         "language": "zh",
         "split_seed": 42,
         "pyarrow": "25.0.1"
       },
       "path": "zh.sqlite",
-      "size": 160108544,
-      "sha256": "362eb04d0603299f133a39233dd21c7153809fb973e29757ac8cdd7a7070038b",
+      "size": 185434112,
+      "sha256": "accf267a178e2fe006329e8f167472127a85db7933b9630a05d25c9918b2c5dc",
       "pages": 45735,
       "blocks": 486,
       "counts": [
+        {
+          "split": "test",
+          "language": "zh",
+          "family": "descriptive_vqa",
+          "tasks": 17672
+        },
+        {
+          "split": "test",
+          "language": "zh",
+          "family": "layout_detection",
+          "tasks": 4418
+        },
         {
           "split": "test",
           "language": "zh",
@@ -2924,6 +4465,18 @@
           "language": "zh",
           "family": "section_ocr",
           "tasks": 19940
+        },
+        {
+          "split": "train",
+          "language": "zh",
+          "family": "descriptive_vqa",
+          "tasks": 148000
+        },
+        {
+          "split": "train",
+          "language": "zh",
+          "family": "layout_detection",
+          "tasks": 37001
         },
         {
           "split": "train",
@@ -2946,6 +4499,18 @@
         {
           "split": "validation",
           "language": "zh",
+          "family": "descriptive_vqa",
+          "tasks": 17264
+        },
+        {
+          "split": "validation",
+          "language": "zh",
+          "family": "layout_detection",
+          "tasks": 4316
+        },
+        {
+          "split": "validation",
+          "language": "zh",
           "family": "mcq_vqa",
           "tasks": 3739
         },
@@ -2963,13 +4528,12 @@
         }
       ],
       "skipped": {
-        "descriptive_vqa_deferred": 182936,
         "ambiguous_mcq_answer": 6196,
         "page_ocr_overlapping_regions": 5152,
         "empty_region_text": 16577,
         "page_ocr_incomplete_annotations": 11511
       },
-      "build_seconds": 659.617
+      "build_seconds": 32.163
     }
   },
   "annotation_validation": "metadata indexed; image bounds validated on reset",

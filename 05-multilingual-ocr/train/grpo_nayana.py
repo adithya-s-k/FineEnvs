@@ -145,6 +145,7 @@ def evaluate(trainer, rows, url, cache, max_tokens):
                     **row,
                     "prediction": prediction,
                     "reward": float(result.reward),
+                    "grading_policy_id": result.observation.grading_policy_id,
                     **result.observation.metrics,
                 }
                 samples.append(sample)
@@ -159,12 +160,19 @@ def evaluate(trainer, rows, url, cache, max_tokens):
         metrics[key] = {
             "samples": len(values),
             "reward": sum(v["reward"] for v in values) / len(values),
-            "exact_match": sum(v["exact_match"] for v in values) / len(values),
-            "overlong_rate": sum(v["overlong"] for v in values) / len(values),
         }
-        cer = [v["char_error_rate"] for v in values if "char_error_rate" in v]
-        if cer:
-            metrics[key]["char_error_rate"] = sum(cer) / len(cer)
+        for metric in (
+            "exact_match",
+            "overlong",
+            "char_error_rate",
+            "mean_f1",
+            "f1_at_50",
+            "f1_at_75",
+            "judge_accepted",
+        ):
+            observed = [v[metric] for v in values if metric in v]
+            if observed:
+                metrics[key][metric] = sum(observed) / len(observed)
     return {
         "macro_reward": sum(v["reward"] for v in metrics.values()) / len(metrics),
         "by_language_task": metrics,
@@ -202,6 +210,12 @@ def run(config):
         )
         with connect(url) as client:
             manifest = client.manifest()
+        if "descriptive_vqa" in config.families and not manifest.get("grading", {}).get(
+            "descriptive_vqa", {}
+        ).get("configured"):
+            raise ValueError(
+                "Configure the Gemma judge before training descriptive_vqa, or select other --families"
+            )
         mode = config.task_input
         if mode == "auto":
             mode = "corpus" if manifest.get("storage") == "bucket-parquet" else "map"

@@ -18,7 +18,7 @@ datasets:
 # Nayana multilingual OCR environment
 
 One OpenEnv environment serves the **complete 22-language Nayana corpus** for **full-page OCR,
-section OCR, and multiple-choice document VQA**. Open `/web` for language/task selection,
+section OCR, layout detection, multiple-choice and descriptive document VQA**. Open `/web` for language/task selection,
 indexed navigation, a full-size image viewer, and reward/CER feedback. References are revealed
 after scoring in the playground. OpenEnv task discovery and observations exclude references.
 
@@ -37,7 +37,15 @@ Full-page OCR preserves the canvas and original pixels inside valid text regions
 unannotated areas. References use the geometric `whitespace-columns-v1` reading order, with
 RTL columns for Arabic. Overlapping/incomplete regions are excluded from full-page indexing;
 actual image bounds are checked at load time. VQA receives original JPEGs; sections use PNG
-crops. Descriptive VQA and table reconstruction are not scored.
+crops. Layout returns JSON boxes labeled text/title/caption/table/image/formula and is scored
+with mean class-aware region F1 at IoU .50:.05:.95. Descriptive VQA uses Gemma 4 31B as a strict
+reference-based judge: all six rubric checks must pass. The playground shows layout overlays
+after scoring. Table reconstruction is not scored.
+
+The judge uses **HF Inference Providers**, explicitly routing Gemma 4 31B through DeepInfra.
+No dedicated GPU endpoint is required. Provider failures return no reward; model/provider
+and rubric identity are available in `/manifest`. Provider serving revisions cannot be
+commit-pinned. This compares against source answers, not independent image verification.
 
 Visual inspection found missing/distorted glyphs in an original Arabic source page
 (`document_10026_page_106`), before masking. The playground flags this source caveat.

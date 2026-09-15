@@ -1,0 +1,15 @@
+{
+  "space_id": "HuggingEnvs/nayana-ocr-env",
+  "commit": "e4278be62de4a57a1d20c55c648e03e2c7471f23",
+  "snapshot_id": "867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a",
+  "bucket_id": "HuggingEnvs/NayanaOCR_Corpus_2025_bucket",
+  "volumes": [
+    {
+      "type": "bucket",
+      "source": "HuggingEnvs/NayanaOCR_Corpus_2025_bucket",
+      "mountPath": "/corpus",
+      "readOnly": true
+    }
+  ],
+  "bundled": "code and corpus manifest only; indexes and images fetched lazily"
+}

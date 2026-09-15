@@ -16,10 +16,10 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from huggingface_hub import HfApi, HfFileSystem
 
-from .schema import LANGUAGES, canonical_json
+from .schema import LANGUAGES, SCHEMA_VERSION, canonical_json
 from .tasks import derive_tasks
 
-INDEX_VERSION = 1
+INDEX_VERSION = 2
 META_COLUMNS = ["image_id.txt", "regions.json", "vqa.json"]
 
 
@@ -72,7 +72,42 @@ def _read_metadata(spec, bucket_id, source_root=None):
         return rows, groups
 
 
-def build_language(inventory, language, output, source_root=None, split_seed=42):
+def _reuse_metadata(directory, language, spec):
+    """Read verified original annotations from an older index, never its derived tasks."""
+    with closing(
+        sqlite3.connect(
+            (Path(directory) / f"{language}.sqlite").resolve().as_uri() + "?mode=ro",
+            uri=True,
+        )
+    ) as db:
+        saved = db.execute(
+            "SELECT id,xet_hash,size,rows FROM files WHERE path=?", (spec["path"],)
+        ).fetchone()
+        if saved is None or saved[1:3] != (spec["xet_hash"], spec["size"]):
+            raise ValueError(f"Reusable index source differs: {spec['path']}")
+        rows, groups = [], []
+        for block, group, count, size in db.execute(
+            "SELECT id,row_group,rows,image_bytes FROM blocks WHERE file_id=? ORDER BY row_group",
+            (saved[0],),
+        ):
+            groups.append(
+                dict(row_group=group, rows=count, row_start=len(rows), image_bytes=size)
+            )
+            payloads = db.execute(
+                "SELECT payload FROM pages WHERE block_id=? ORDER BY row_in_group",
+                (block,),
+            ).fetchall()
+            if len(payloads) != count:
+                raise ValueError("Incomplete reusable annotation block")
+            rows.extend(json.loads(zlib.decompress(p)) for (p,) in payloads)
+        if len(rows) != saved[3]:
+            raise ValueError("Incomplete reusable annotation shard")
+        return rows, groups
+
+
+def build_language(
+    inventory, language, output, source_root=None, split_seed=42, reuse_index=None
+):
     path = output / f"{language}.sqlite"
     marker = output / f"{language}.json"
     settings = {
@@ -94,6 +129,15 @@ def build_language(inventory, language, output, source_root=None, split_seed=42)
     ]
     if not files:
         raise ValueError(f"No source shards for {language}")
+    if reuse_index:
+        previous = json.loads((Path(reuse_index) / "manifest.json").read_text())
+        info = previous["indexes"][language]
+        if (
+            previous["inventory_id"] != inventory["inventory_id"]
+            or info["path"] != f"{language}.sqlite"
+            or sha256_file(Path(reuse_index) / info["path"]) != info["sha256"]
+        ):
+            raise ValueError("Reusable index identity/content differs")
     started = time.monotonic()
     with closing(sqlite3.connect(path)) as db:
         db.execute("PRAGMA journal_mode=WAL")
@@ -136,7 +180,11 @@ def build_language(inventory, language, output, source_root=None, split_seed=42)
         for file_id, spec in enumerate(files):
             if spec["path"] in done:
                 continue
-            rows, groups = _read_metadata(spec, inventory["bucket_id"], source_root)
+            rows, groups = (
+                _reuse_metadata(reuse_index, language, spec)
+                if reuse_index
+                else _read_metadata(spec, inventory["bucket_id"], source_root)
+            )
             with db:  # A complete source shard and its resume cursor commit together.
                 db.execute(
                     "INSERT INTO files VALUES(?,?,?,?,?)",
@@ -235,6 +283,7 @@ def build_index(
     workers=4,
     source_root=None,
     split_seed=42,
+    reuse_index=None,
 ):
     import fcntl
 
@@ -247,7 +296,13 @@ def build_index(
         with ThreadPoolExecutor(max_workers=workers) as executor:
             futures = {
                 lang: executor.submit(
-                    build_language, inventory, lang, output, source_root, split_seed
+                    build_language,
+                    inventory,
+                    lang,
+                    output,
+                    source_root,
+                    split_seed,
+                    reuse_index,
                 )
                 for lang in sorted(languages)
             }
@@ -263,7 +318,7 @@ def build_index(
             "status": "ready",
             "storage": "bucket-parquet",
             "index_version": INDEX_VERSION,
-            "schema_version": 2,
+            "schema_version": SCHEMA_VERSION,
             "snapshot_id": snapshot_id,
             "pyarrow_version": pa.__version__,
             "datasets_version": "not-used-for-indexing",
@@ -326,6 +381,11 @@ def main():
     )
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--source-root", type=Path)
+    parser.add_argument(
+        "--reuse-index",
+        type=Path,
+        help="Reuse hash-verified original annotations from a previous local index",
+    )
     parser.add_argument("--publish", action="store_true")
     args = parser.parse_args()
     manifest = build_index(
@@ -334,6 +394,7 @@ def main():
         languages=args.languages,
         workers=args.workers,
         source_root=args.source_root,
+        reuse_index=args.reuse_index,
     )
     print(
         json.dumps(

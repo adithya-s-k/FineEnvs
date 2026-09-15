@@ -31,8 +31,9 @@ LANGUAGES = (
     "th",
     "zh",
 )
-FAMILIES = ("section_ocr", "mcq_vqa", "page_ocr")
-SCHEMA_VERSION = 2
+FAMILIES = ("section_ocr", "mcq_vqa", "page_ocr", "layout_detection", "descriptive_vqa")
+SCHEMA_VERSION = 3
+LAYOUT_LABELS = ("text", "title", "caption", "table", "image", "formula")
 READING_ORDER = "whitespace-columns-v1"
 
 

@@ -11,9 +11,34 @@ The data path needs an oversized-page policy or explicit eligibility filtering b
 unattended full-corpus runs. Earlier representative checks below remain valid for their
 tested tasks; they did not establish eligibility for every indexed candidate.
 
-## Complete corpus: schema 2 / index 1 / package 0.3.0
+## Five families: schema 3 / index 2 / package 0.4.0
 
-The current server uses the complete bucket copy and an immutable full-corpus index. Reports:
+The index contains **11,020,101 candidates**, adding 1,006,168 layout pages and
+4,024,592 descriptive VQA questions. All 22 rebuilt databases passed SHA-256 and
+SQLite integrity checks. Source inventory and source files are unchanged.
+
+**54 local tests pass**. Gemma 4 31B through **HF Inference Providers / DeepInfra**
+passed all **35 fixed calibration cases**: one exact source reference in each of
+22 languages, plus 13 synthetic strictness checks. This is a regression calibration,
+not a model accuracy estimate or proof of prompt-injection resistance. Provider
+serving revisions are not commit-pinned; the model/provider and rubric hash are recorded.
+
+| Artifact | Scope |
+|---|---|
+| `tests-v2.json` | 54 tests with training extras |
+| `layout-local-v2.json` | Exact and empty layout predictions over OpenEnv for all 22 languages |
+| `deployment-v2.json` | Published Space commit and mounted-bucket manifest |
+| `corpus-index-v2.json` | All-language index integrity, task counts, exclusions and size |
+| `judge-calibration.json` | Exact cases, expected/observed verdicts, timings, provider and rubric hash |
+| `smoke-fixture-v2.json` | Synthetic HTTP/WebSocket/media/TRL adapter smoke for deterministic tasks |
+
+The 50-million-pixel eligibility limit described above still applies. Descriptive
+VQA adds a provider round trip; the historical data-path speed results do not measure
+judge latency. Layout scoring is local. GPU optimizer training remains unverified.
+
+## Historical complete corpus: schema 2 / index 1 / package 0.3.0
+
+The original three-family server used the complete bucket copy and an immutable full-corpus index. Reports:
 
 **38 tests passed**, including the installed TRL CPU loader. Both local and hosted servers
 passed all **66 language/task combinations** through OpenEnv and all 66 through Gradio.
