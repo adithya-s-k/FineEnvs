@@ -1,0 +1,106 @@
+{
+  "status": "passed",
+  "url": "https://huggingenvs-nayana-ocr-env.hf.space/web",
+  "coverage": [
+    {
+      "language": "en",
+      "family": "page_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "en",
+      "family": "section_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "en",
+      "family": "mcq_vqa",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "kn",
+      "family": "page_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "kn",
+      "family": "section_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "kn",
+      "family": "mcq_vqa",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "hi",
+      "family": "page_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "hi",
+      "family": "section_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "hi",
+      "family": "mcq_vqa",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": false
+    },
+    {
+      "language": "ar",
+      "family": "page_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": true
+    },
+    {
+      "language": "ar",
+      "family": "section_ocr",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": true
+    },
+    {
+      "language": "ar",
+      "family": "mcq_vqa",
+      "empty_reward": 0,
+      "exact_reward": 1,
+      "next_clears_reference": true,
+      "rtl": true
+    }
+  ],
+  "independent_gradio_sessions": 2,
+  "lossless_png_previews": true,
+  "arabic_source_caveat_displayed": true,
+  "execution_note": "Initial sweep passed 10 groups before a client read timeout. Remaining two groups and session isolation passed with a 60-second client timeout."
+}

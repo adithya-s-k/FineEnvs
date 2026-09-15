@@ -8,6 +8,9 @@ These are pipeline checks, not model evaluations or evidence of reward improveme
 |---|---|
 | `preparation-space-preview.json` | Source revision, 64-page configuration, counts, exclusions, and snapshot identity |
 | `smoke-page-ocr-local.json` | Real local HTTP, WebSocket, binary media, and TRL adapter checks for all 12 language/task groups |
+| `smoke-page-ocr-hosted.json` | The same 12-group oracle and adapter checks against the deployed Docker Space |
+| `gradio-hosted.json` | Hosted playground checks across all 12 groups and independent sessions |
+| `hosted-manifest.json` | Public manifest checked field-for-field against the local snapshot |
 | `gradio-page-ocr.json` | Empty/exact scoring, navigation, reference clearing, RTL fields, and two independent Gradio sessions |
 | `notebook-preview.json` | Six notebook source code cells executed on CPU with a smaller schema-2 window |
 | `deployment.json` | Final HF Space commit, source commit, runtime and hosted checks |
@@ -35,6 +38,12 @@ Each service probe scores an empty answer and a known reference in separate epis
 Trusted probes read references from a local catalog; OpenEnv observations and discovery do not
 return them. The separate public Gradio playground intentionally reveals a reference after
 scoring, matching the LaTeX OCR interaction.
+
+The [live Space](https://huggingenvs-nayana-ocr-env.hf.space/web/) passed all 12 service groups
+and all 12 Gradio groups, including two independent UI sessions. One Gradio sweep hit a client
+read timeout after ten groups; the remaining cases passed with a 60-second client timeout.
+Later Hub control-plane refreshes hit local DNS errors, while the live app remained reachable.
+`deployment.json` records the last observed Hub stage separately from successful endpoint checks.
 
 ## Historical milestone: schema 1 / package 0.1.0
 
