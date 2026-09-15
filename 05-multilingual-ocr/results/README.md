@@ -6,13 +6,33 @@ These are pipeline checks, not model evaluations or evidence of reward improveme
 
 The current server uses the complete bucket copy and an immutable full-corpus index. Reports:
 
+**38 tests passed**, including the installed TRL CPU loader. Both local and hosted servers
+passed all **66 language/task combinations** through OpenEnv and all 66 through Gradio.
+All six notebook CPU cells ran against the hosted corpus. The final deployment's source
+inventory verification was followed by another 12-group service check.
+
+The source audit covers 1,807 files (813,665,107,295 bytes). All 22 index databases passed
+SHA-256 and SQLite integrity checks: 1,006,170 pages and 5,989,341 candidate tasks.
+
+| Measured operation | Local HTTP ranges | Space bucket mount |
+|---|---:|---:|
+| First/middle/last metadata queries | 198 passed, no image loads | 198 passed, no image loads |
+| Prefetch one 65-page source block | 9.161 s | 1.405 s |
+| Median reset for 16 tasks after prefetch | 18.6 ms | 276.0 ms, including client network |
+| Additional source group loads for those tasks | 0 | 0 |
+| Additional renders for four repeated resets | 0 | 0 |
+| Received HTTP payload for the prefetched block | 30,206,156 bytes | Not measured inside mount |
+
 | Artifact | Scope |
 |---|---|
+| `corpus-cross-runtime.json` | Same pinned task on macOS/Linux: matching decoded pixels, different PNG encodings |
 | `corpus-layout.json` | Exact index size, physical block count, source image-column size distribution, task totals and exclusions |
 | `tests-corpus.json` | Full package tests, including HTTP, cache concurrency/eviction, iterator replay, and installed TRL group repetition |
 | `corpus-index.json` | Full source audit, all page sets, all SQLite checksums/integrity checks, derived task totals and exclusions |
 | `corpus-local.json` | First/middle/last metadata lookup across every language/split; prefetched block timings; all 66 language/task transport groups |
 | `corpus-hosted.json` | The same addressability, block reuse, and oracle checks on the Space with its bucket mount |
+| `corpus-hosted-final.json` | Twelve service groups checked again on the final Space revision after source-inventory verification |
+| `corpus-local-restart.json` | Three service groups after restarting the local server |
 | `deployment-corpus.json` | Space commit, exact snapshot, and read-only bucket volume |
 | `notebook-corpus.json` | Execution of the notebook's actual CPU source cells against the complete corpus |
 | `gradio-corpus.json` | Local and hosted UI navigation, indexed jump, full-page rendering, and score/reference behavior |

@@ -6,6 +6,7 @@ import json
 import statistics
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
 from pathlib import Path
 
@@ -147,7 +148,37 @@ def verify(url, manifest_path, output, *, smoke=True, benchmark=True):
                 "measurement_scope": "one block, serial requests, no model generation; not a throughput benchmark",
             }
         if smoke:
-            result["service_smoke"] = probe(url, catalog)
+            # Two independent consumers use eight WebSocket sessions, within the
+            # default 16-session limit, and exercise concurrent source/cache reads.
+            started = time.monotonic()
+            partitions = [
+                part
+                for part in (catalog.languages[::2], catalog.languages[1::2])
+                if part
+            ]
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                checks = list(
+                    executor.map(
+                        lambda languages: probe(url, catalog, languages),
+                        partitions,
+                    )
+                )
+            coverage = {
+                key: value
+                for check in checks
+                for key, value in check["coverage"].items()
+            }
+            result["service_smoke"] = {
+                "status": "passed",
+                "snapshot_id": catalog.snapshot_id,
+                "coverage": coverage,
+                "exact_reference_checked": True,
+                "adapter_media_downloads": sum(
+                    check["adapter_media_downloads"] for check in checks
+                ),
+                "concurrent_consumers": len(partitions),
+                "elapsed_seconds": round(time.monotonic() - started, 3),
+            }
         result["cache"] = stats()
         result["status"] = "passed"
         output.parent.mkdir(parents=True, exist_ok=True)

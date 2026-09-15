@@ -133,7 +133,12 @@ Standard OpenEnv `num_tasks`, `get_task`, and `task_range` operate on the comple
 are bounded at 1,000 records. Global split indices use a language prefix sum; language/family
 indices support the UI's jump control. Unmaterialized task metadata has no image URL/hash yet.
 Reset loads one selected task and returns its hash-addressed binary asset URL. Asset URLs carry
-the pinned task ID so eviction can be followed by deterministic reconstruction.
+the pinned task ID so eviction can be followed by deterministic reconstruction within the
+same rendering runtime. The macOS and Linux check produced identical decoded RGB pixels but
+different PNG byte streams. PNG hashes are verified against the serving endpoint, not compared
+across operating systems. Use the same built container image and codec libraries for replicas
+that share asset URLs/cache state; a Python package lock alone does not freeze system codecs.
+See `results/corpus-cross-runtime.json` for the measured example.
 
 ```python
 from nayana_ocr.corpus_training import CorpusAPI, BlockTaskStream
@@ -260,7 +265,22 @@ uv run --frozen --project envs/nayana_ocr --extra dev --extra train pytest envs/
 uv run --frozen --project envs/nayana_ocr nayana-smoke
 uv run --frozen --project envs/nayana_ocr nayana-smoke \
   --url https://huggingenvs-nayana-ocr-env.hf.space --languages en kn hi ar
+
+# Metadata addressability, one-block prefetch measurement, and all-language oracle checks.
+uv run --frozen --project envs/nayana_ocr --extra train python train/verify_corpus.py \
+  --url https://huggingenvs-nayana-ocr-env.hf.space \
+  --manifest data/corpus-manifest.json --output results/corpus-hosted.json
+
+# All-language Gradio scoring, indexed navigation, and independent sessions.
+uv run --frozen --project envs/nayana_ocr python train/verify_playground.py \
+  --url https://huggingenvs-nayana-ocr-env.hf.space \
+  --manifest data/corpus-manifest.json --output results/gradio-corpus-hosted.json
 ```
+
+For a local server, replace the URL with its address, for example `http://127.0.0.1:8005`.
+The committed [results](results/README.md) record 38 passing tests, all 66 language/task
+combinations through both local and hosted OpenEnv/Gradio, and all six notebook CPU cells.
+The full-corpus verifier uses two independent consumers within the 16-session service limit.
 
 The remote smoke selects indexed representatives and checks binary hashes, independent
 WebSockets, repeated resets, empty-answer rewards, and client image reuse. Supplying a local

@@ -45,6 +45,7 @@ def corpus(tmp_path, monkeypatch):
         "source_license": "synthetic-fixture",
         "files": files,
         "source_bytes": sum(f["size"] for f in files),
+        "parquet_files": len(files),
     }
     inventory["inventory_id"] = hashlib.sha256(
         canonical_json(inventory).encode()
@@ -387,3 +388,19 @@ def test_cache_restart_cleans_orphans_but_preserves_active_staging(tmp_path):
         assert len(list(tmp_path.glob("*.part"))) == 1
         release.set()
         assert future.result() == b"live"
+
+
+def test_manifest_cannot_change_source_hashes_without_changing_identity(
+    corpus, tmp_path
+):
+    import copy
+    import json
+
+    _, manifest, _, _, _ = corpus
+    for field, value in (("xet_hash", "a" * 64), ("sha256", "b" * 64), ("size", 1)):
+        changed = copy.deepcopy(manifest)
+        changed["source_files"][0][field] = value
+        path = tmp_path / "modified-manifest.json"
+        path.write_text(json.dumps(changed))
+        with pytest.raises(ValueError, match="source inventory identity mismatch"):
+            CorpusCatalog(path, tmp_path / "invalid-cache")

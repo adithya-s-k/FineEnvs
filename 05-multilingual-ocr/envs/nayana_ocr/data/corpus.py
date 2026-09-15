@@ -45,6 +45,22 @@ class CorpusCatalog:
             or self.manifest.get("index_version") != INDEX_VERSION
         ):
             raise ValueError("Use a ready, supported full-corpus index")
+        inventory = {
+            "source": self.manifest["config"]["source"],
+            "revision": self.manifest["config"]["revision"],
+            "bucket_id": self.manifest["bucket_id"],
+            "source_license": self.manifest["source_license"],
+            "files": self.manifest["source_files"],
+            "source_bytes": self.manifest["media_bytes"],
+            "parquet_files": sum(
+                f["path"].endswith(".parquet") for f in self.manifest["source_files"]
+            ),
+        }
+        if (
+            hashlib.sha256(canonical_json(inventory).encode()).hexdigest()
+            != self.manifest["inventory_id"]
+        ):
+            raise ValueError("Corpus source inventory identity mismatch")
         identity = {
             "index_version": INDEX_VERSION,
             "inventory_id": self.manifest["inventory_id"],

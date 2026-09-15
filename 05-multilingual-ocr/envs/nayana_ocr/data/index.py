@@ -281,9 +281,9 @@ def build_index(
             "counts": [row for value in indexes.values() for row in value["counts"]],
             "indexes": indexes,
             "annotation_validation": "metadata indexed; image bounds validated on reset",
-            "source_files": [
-                f for f in inventory["files"] if f["path"].endswith(".parquet")
-            ],
+            # Keep the complete inventory so readers can verify inventory_id,
+            # including offline SHA-256 values and source/bucket provenance.
+            "source_files": inventory["files"],
         }
         write_json(output / "manifest.json", manifest)
         return manifest

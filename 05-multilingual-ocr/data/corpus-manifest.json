@@ -2975,6 +2975,24 @@
   "annotation_validation": "metadata indexed; image bounds validated on reset",
   "source_files": [
     {
+      "path": ".gitattributes",
+      "size": 2461,
+      "xet_hash": "19463de8293cfbe466dc4583dc14df84f96f263bdf21cd76abda5e283c6fb4b5",
+      "sha256": null
+    },
+    {
+      "path": "LICENSE.md",
+      "size": 7673,
+      "xet_hash": "73915c2e17e28cc2e8ac2994e1828eceb84c2da2253dbb61ffcd626d28030ca8",
+      "sha256": null
+    },
+    {
+      "path": "README.md",
+      "size": 55552,
+      "xet_hash": "658d193384f1ea4be6204a770cb8cf1d337009ab984031e632bed5d207b23408",
+      "sha256": null
+    },
+    {
       "path": "ar/train-00000-of-00065.parquet",
       "size": 473274446,
       "xet_hash": "76d9ec95bf0cd06354f8e2db72b78a47e91668d1e1b906df313e42bc83b891bd",
@@ -3363,6 +3381,126 @@
       "size": 460013970,
       "xet_hash": "52b192303a990797dace1e74b23c27f5da5674b93318ed4047cc4e53568bf191",
       "sha256": "dcde2d10321a453712f143692d9fa5c457cf00538299dddcadf88c6e0e1a1120"
+    },
+    {
+      "path": "assets/parallel_demo/ar_document_10009_page_1.jpg",
+      "size": 1719217,
+      "xet_hash": "98ed0363bfc1ae081acae72675a651dede7479fa91b16fe9caf4eb779f8e43bc",
+      "sha256": "7a184f215cff4b41d635a84f461c5c3eef3148c0b95245fbb0ac27d729cfed90"
+    },
+    {
+      "path": "assets/parallel_demo/bn_document_10009_page_1.jpg",
+      "size": 2049893,
+      "xet_hash": "a18620eb4b9898993871230e72a4e4ab81bfa8c5f2cf2ddd695c4f4b927e54ec",
+      "sha256": "c2d6551afb7b9bee0f8d1d7921bc00678722d61242e62eb2cd9787c224210b3d"
+    },
+    {
+      "path": "assets/parallel_demo/de_document_10009_page_1.jpg",
+      "size": 2184540,
+      "xet_hash": "6aca7c3367f89728542adc998005d47ef74234916345017cf390bc48d8b98405",
+      "sha256": "7bfad139f51ba0d07a697aa2c784845f5b7b59bb02ebcfccf3abca0b269df7b3"
+    },
+    {
+      "path": "assets/parallel_demo/en_document_10009_page_1.jpg",
+      "size": 1189494,
+      "xet_hash": "871a24c242205b77759d395dd8d189d0198c5d2c0dbbce2bbf4d993108bb6213",
+      "sha256": "86a57c5d95057fc57a4897dd800ae325b6d2cab6ec9ea31e8cf68347ff28f466"
+    },
+    {
+      "path": "assets/parallel_demo/es_document_10009_page_1.jpg",
+      "size": 2077433,
+      "xet_hash": "3466777c5da9d391056418c64a8b246181375ccf2044b636f4e640da8eb5b454",
+      "sha256": "eb4cc787a9280c1547a23c2466618a3b58ea74c06b623b4dd580fd4e197e45cf"
+    },
+    {
+      "path": "assets/parallel_demo/fr_document_10009_page_1.jpg",
+      "size": 2214224,
+      "xet_hash": "9ce64dbc37b831a8458c878f1f122cfd47053ee71a55018dd0489fb9a304ebfa",
+      "sha256": "ade149edaf74a349d0075206aaaf7c0aab7611a4954036bf1c4874c6ef21febd"
+    },
+    {
+      "path": "assets/parallel_demo/gu_document_10009_page_1.jpg",
+      "size": 2019494,
+      "xet_hash": "d0f5ed5e22f4299a2d4b89a25e31186535482769a0d68c66c27abf04d637038e",
+      "sha256": "c608d65beb226ef52d5280c8b881263b8a7421569da5f6626aa12a83a698402d"
+    },
+    {
+      "path": "assets/parallel_demo/hi_document_10009_page_1.jpg",
+      "size": 2040930,
+      "xet_hash": "649bbfe2dd995691ec74e9de528184211e87208db5a3b0f6787614f3ee6cff75",
+      "sha256": "982bd37b31f45a331381e5ccf6d986d7b823d5ecef7aa65d345a094fc733d7af"
+    },
+    {
+      "path": "assets/parallel_demo/ja_document_10009_page_1.jpg",
+      "size": 1788644,
+      "xet_hash": "ead83b49ce5005e054e2350fded0a0813143f73e52297fc53a1ff365c6a243af",
+      "sha256": "e4d1b9a4a9174c2d4e63e4ad2ef551e3e8ee08e3214f32518ea69fc843a7d2bb"
+    },
+    {
+      "path": "assets/parallel_demo/kn_document_10009_page_1.jpg",
+      "size": 2224491,
+      "xet_hash": "65cb07da01a144f04e442773cb9a7f7fb9081c8bf1ffb24f9a71a92bcd9d7884",
+      "sha256": "e4d0a988d1f898e3b27d8c5de99d70bd780088d6e937bb0850ea2b2715cf5bed"
+    },
+    {
+      "path": "assets/parallel_demo/ko_document_10009_page_1.jpg",
+      "size": 1990703,
+      "xet_hash": "1dbcecd90202922886a19d454213efe1e7895287831572b5590dfc71e92338d1",
+      "sha256": "d1e2d228a4cf9516e558522535bf91ef832ecbfdc9688cb603460154c1fc8764"
+    },
+    {
+      "path": "assets/parallel_demo/ml_document_10009_page_1.jpg",
+      "size": 2279027,
+      "xet_hash": "475b8c8de5efad06e22b6787e4db2379438f71e0223d2e16916b951e104dda80",
+      "sha256": "efd94e439b3863a2bcf1811c57ff4f841c639aa6f957e2a9b8bfa3da0c9696d8"
+    },
+    {
+      "path": "assets/parallel_demo/mr_document_10009_page_1.jpg",
+      "size": 1984069,
+      "xet_hash": "760242596a59f4fea72f6ddaa0b7f890e5549b9f621d1cf4276ec1c69bd4ac3a",
+      "sha256": "7aa0aaacdf68c9b31723a390975a7ee57b10a628006f99c60ab6efd84a6bcab0"
+    },
+    {
+      "path": "assets/parallel_demo/or_document_10009_page_1.jpg",
+      "size": 2132458,
+      "xet_hash": "749b1692416ca894ad317a982872f2a703e4198a3b644afe7368d6b1caf5b3c8",
+      "sha256": "dbec4c3b24fff4dc67cbd30d7e27098b95c1ab6c4b54c6da1658691695d39c54"
+    },
+    {
+      "path": "assets/parallel_demo/pa_document_10009_page_1.jpg",
+      "size": 2054360,
+      "xet_hash": "c0c736f9988c00b0fc32681dd3f512f2f73535a2f1163f5a1f9b78299593f1ae",
+      "sha256": "d392d39b902e857d6a0c7e15aae5dbf75291e9cc832e8448bf80d06e4b3e1d3f"
+    },
+    {
+      "path": "assets/parallel_demo/ru_document_10009_page_1.jpg",
+      "size": 2175303,
+      "xet_hash": "1335408f7622ecb9f5944c6f5c69450d2878bbf2ec56c88c6117bea5a568fdca",
+      "sha256": "a06a3c2d3b14f8a6423e838863f76748a18c7510c4679ad0a763b778fc77aa85"
+    },
+    {
+      "path": "assets/parallel_demo/sa_document_10009_page_1.jpg",
+      "size": 2062575,
+      "xet_hash": "60985f82e5f38feaa80be43c8d9b14dd430134ae48cc431c420a678a782b49ec",
+      "sha256": "ccc6644d67aab9f4eaf8ce68aec49c11d765930c8390a0d7506a66a28b0150c3"
+    },
+    {
+      "path": "assets/parallel_demo/ta_document_10009_page_1.jpg",
+      "size": 2296139,
+      "xet_hash": "21217ec064617ba8a41a260ee29a476d4537e76d2025384e204a718fc650a312",
+      "sha256": "3099ceaf2388708fb8944e29f955c0f8850960d5aa08929575b41264faf76b7c"
+    },
+    {
+      "path": "assets/parallel_demo/te_document_10009_page_1.jpg",
+      "size": 2143409,
+      "xet_hash": "f8006a1a5d9cd0f6ae772f586fc78c6c076af078b947b73304eebdebcc7065bd",
+      "sha256": "e29dd59b421b73695fc186e7742feba7e514a87382a5c6cae2efa4d844a84059"
+    },
+    {
+      "path": "assets/parallel_demo/th_document_10009_page_1.jpg",
+      "size": 1859838,
+      "xet_hash": "760c93127da8d841993ec18b055f4568c1029e0c3e66a60a28e8a00431977189",
+      "sha256": "ac704453e7e1818a8ddf931906d4a6ae45570f58893b81c5383ba02e4dcee7ef"
     },
     {
       "path": "bn/train-00000-of-00081.parquet",

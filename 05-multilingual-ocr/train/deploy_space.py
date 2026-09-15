@@ -92,13 +92,18 @@ def main():
                 read_only=True,
             )
         )
-        api.set_space_volumes(args.space_id, volumes=volumes)
+        if [v.to_dict() for v in volumes] != [
+            v.to_dict() for v in (runtime.volumes or [])
+        ]:
+            api.set_space_volumes(args.space_id, volumes=volumes)
+        current_variables = api.get_space_variables(args.space_id)
         for key, value in {
             "NAYANA_CORPUS_MANIFEST": "/app/corpus-manifest.json",
             "NAYANA_SOURCE_ROOT": "/corpus",
             "NAYANA_CACHE_DIR": "/tmp/nayana-cache",
         }.items():
-            api.add_space_variable(args.space_id, key, value)
+            if key not in current_variables or current_variables[key].value != value:
+                api.add_space_variable(args.space_id, key, value)
         result = {
             "space_id": args.space_id,
             "commit": commit.oid,

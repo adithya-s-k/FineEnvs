@@ -96,6 +96,9 @@ uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana
 ```
 
 The [notebook](notebooks/05_multilingual_ocr.ipynb) uses the same data and training code.
+Verification passed: **38 tests**, all **66 language/task combinations** through both OpenEnv
+and Gradio locally and on the Space, and all six notebook CPU cells. Prefetched tasks reused
+one source block; repeated completions required no additional source loads or image renders.
 GPU optimizer training for experiment 05 has not been run; the recorded results are serving,
 data access, cache, replay, and CPU TRL sampler checks. See [results](results/README.md).
 

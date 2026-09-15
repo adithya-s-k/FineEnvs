@@ -1,0 +1,28 @@
+{
+  "status": "passed",
+  "task_id": "nayana-c1.56b9cb928c0bc050a4d6e67acb12e38718ea66239e5fcae7c0a09299963990eb.en.train.105577",
+  "same_decoded_pixels": true,
+  "same_encoded_png": false,
+  "results": [
+    {
+      "url": "http://127.0.0.1:8005",
+      "asset_sha256": "dcd1cd22732e44070e9f7fc173109420e64cd6edeb646e9e9ea21b8884fc0767",
+      "bytes": 1896619,
+      "dimensions": [
+        2481,
+        3072
+      ],
+      "rgb_pixel_sha256": "a57f5bd1f1713b8b9782a904795f8354ac50d599552f60aa722f11aa3d9cae7c"
+    },
+    {
+      "url": "https://huggingenvs-nayana-ocr-env.hf.space",
+      "asset_sha256": "679737fd2ab73b60ca7ba236ed10d444c3b8cc07c91d0506f707ed7a2bf6a4e8",
+      "bytes": 2001358,
+      "dimensions": [
+        2481,
+        3072
+      ],
+      "rgb_pixel_sha256": "a57f5bd1f1713b8b9782a904795f8354ac50d599552f60aa722f11aa3d9cae7c"
+    }
+  ]
+}

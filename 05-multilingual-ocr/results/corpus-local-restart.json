@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "snapshot_id": "56b9cb928c0bc050a4d6e67acb12e38718ea66239e5fcae7c0a09299963990eb",
+  "coverage": {
+    "en/section_ocr": 1,
+    "en/mcq_vqa": 1,
+    "en/page_ocr": 1
+  },
+  "exact_reference_checked": true,
+  "adapter_media_downloads": 3,
+  "elapsed_seconds": 0.233,
+  "purpose": "Final local code restarted with complete source inventory verification"
+}

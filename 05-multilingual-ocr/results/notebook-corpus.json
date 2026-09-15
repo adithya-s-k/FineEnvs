@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "notebook": "notebooks/05_multilingual_ocr.ipynb",
+  "notebook_sha256": "76d0325be235be31d41f6baaa4cea8462218c7cc48db325058505b4410fdef37",
+  "executed_code_cells": [
+    "nayana-corpus-01",
+    "nayana-corpus-03",
+    "nayana-corpus-05",
+    "nayana-corpus-07",
+    "nayana-corpus-09",
+    "nayana-corpus-11"
+  ],
+  "url": "https://huggingenvs-nayana-ocr-env.hf.space",
+  "snapshot_id": "56b9cb928c0bc050a4d6e67acb12e38718ea66239e5fcae7c0a09299963990eb",
+  "gpu_training": false,
+  "elapsed_seconds": 11.68
+}
