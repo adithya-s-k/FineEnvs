@@ -4,8 +4,8 @@ This records validation of the prepared sources separately from the historical l
 
 | Check | Evidence |
 | --- | --- |
-| HuggingEnvs CPU regression suite | 141 passed, 1 skipped; 24 subtests. Includes real CPU optimizer grouping, save/resume boundaries, capture budgets, task dispatch, HTTP controls, eval recovery and artifact provenance. |
-| Portable archive | 10,604 packaged files hash-verified; source runtime matches the reviewed files; no configured credential values included. No external local experiments checkout required to build. |
+| HuggingEnvs CPU regression suite | 149 passed, 1 skipped; 24 subtests. Includes real CPU optimizer grouping, save/resume boundaries, capture budgets, task dispatch, HTTP controls, eval recovery and artifact provenance. |
+| Portable archive | 10,606 packaged files hash-verified; source runtime matches the reviewed files; no configured credential values included. No external local experiments checkout required to build. |
 | Frozen native grading | 1,250 task configurations verified; all 250 original first-graded baseline answers replayed with identical scores. |
 | Local/Hub commands | CLI help, dry-run commands, Python compilation and fatal-error lint passed; generated project index checked. |
 | OpenEnv | 2,393 CPU tests passed with unrelated QED service tests excluded; 107 additional upstream MCP integration tests and 65 Gradio/MCP/TBench tests passed after the current-main merge; 39 client/TiTO and 59 rollout/session regressions passed for the final fixes; 334 passed and 7 skipped for client cancellation/discovery/Harbor regressions after the last upstream merge. GitHub CI is green on Python 3.11/3.12. Harbor capture/UI checks include concurrent trace isolation, session budgets and browser layout. |
@@ -27,20 +27,24 @@ The clean-Job failure is fixed by creating the endpoint/log parent directories i
 
 Completion requires `training_smoke_verified.json`: exact capture, retained supervision, native optimizer state, remote restoration and changed weights. Pending jobs are not counted as passed.
 
+The v3 Harbor Job later ended with an HF Xet upload `TimeoutError` after completing all four updates. Its final cleanup published both checkpoints. A separate audit reconciled 37/37 completed captures, all 19,880 eligible supervised tokens and 25 optimizer rollout receipts; this does **not** waive the failed integrated qualification. The [failure receipt](qualification/harbor-v3-upload-failure.json) is preserved. The shared publisher now retries transient transport/429/5xx errors up to three attempts, keeps ready markers last, and allows an hour for an already-active full-checkpoint upload during shutdown. Permission and validation errors remain fatal. Fault-injection and full CPU regression tests passed; the v4 Harbor rerun tests completion.
+
 ## Current training qualification
 
 | Implementation | HF Job | Trainer bundle | State |
 | --- | --- | --- | --- |
-| Harbor / OpenCode | [6aaa7b18f76d6a098a71093d](https://huggingface.co/jobs/HuggingEnvs/6aaa7b18f76d6a098a71093d) | v3 | Optimizer updates running; save/restore audit pending |
+| Harbor / OpenCode | [6aaa8a06f76d6a098a710a5e](https://huggingface.co/jobs/HuggingEnvs/6aaa8a06f76d6a098a710a5e) | v4 | Retry-enabled rerun submitted; integrated qualification pending |
 | Native OpenCode | [6aaa7b875527934177ee9d15](https://huggingface.co/jobs/HuggingEnvs/6aaa7b875527934177ee9d15) | v3 | Optimizer updates running; save/restore audit pending |
-| SETA whitebox | [6aaa77a65527934177ee9c34](https://huggingface.co/jobs/HuggingEnvs/6aaa77a65527934177ee9c34) | v2 | **Passed**: four steps, exact-token audit, native optimizer state, remote restore, changed weights; [receipt](qualification/seta-v2.json) |
+| SETA whitebox | [6aaa7f915527934177ee9da4](https://huggingface.co/jobs/HuggingEnvs/6aaa7f915527934177ee9da4) | v3 | **Passed**: four steps, exact-token audit, native optimizer state, remote restore, changed weights; [receipt](qualification/seta-v3.json) |
 
 - **v2**: SHA256 `8b02b40687414905830799a458bf253d3552f9a40860f9980c983fb4ededa45a`, Hub revision `0e59f18b0ddf0df0f46aa8925b4d8bb66aa95bb5`.
 - **v3**: SHA256 `6527c25ae379ab10f055577c5b87374c9018df3c8d28bb983f84fbd1e7f6302e`. Hub revision `599efbda7c93056e9d0a6a2a3324d24ac1ba2f3f`. Uses OpenEnv `b13aeb9f8ecd4817e02d3a37c2a9ae15e41710e3` and TRL `8e87edb45eac7c52d749256379714fa40f0eb746`; 10,604 packaged files. Subsequent OpenEnv PR commits preserve verifier warning diagnostics, clarify timeout scope and merge upstream client cancellation/discovery fixes. The later TRL merge changes only a tiny Gemma2 test-model generator; runtime qualification remains tied to the explicit pins above.
 
+- **v4**: SHA256 `d24c3641bdda424259741e27d451430830df1c54e0a31245ac2c8ae6210a44da`, Hub revision `d7622b44f55c65387778327229543d36446e6597`; 10,606 packaged files. Model, OpenEnv/TRL pins, training code and settings match v3. It adds the shared transfer retry path and host baseline-cohort checks.
+
 Harbor and SETA use their existing separately pinned environments. Native OpenCode uses v3, deployed only after confirming no active Jobs used that Space; CPU Basic and sandbox capacity 100 are retained. The active SETA evaluation and Harbor-only Slurm trainer were not restarted. Every future long run still requires proofs matching its own exact bundle, environment and baseline; these receipts do not waive that gate for another bundle.
 
-SETA is additionally qualifying the final v3 bundle in [Job 6aaa7f915527934177ee9da4](https://huggingface.co/jobs/HuggingEnvs/6aaa7f915527934177ee9da4); the successful v2 receipt above is retained independently.
+The final v3 SETA smoke completed successfully. The earlier successful v2 [Job 6aaa77a65527934177ee9c34](https://huggingface.co/jobs/HuggingEnvs/6aaa77a65527934177ee9c34) and its [receipt](qualification/seta-v2.json) are retained independently. Both have two nonzero-gradient updates and four completed optimizer steps.
 
 The final host-launcher regression suite additionally verifies that native diagnostic and four-harness comparison baselines remain separate, that checkpoint curves receive a matching baseline at step 0, and that changed score files fail validation. These host-only admission/reporting changes do not alter the GPU trainer runtime used by the qualification bundle.
 
