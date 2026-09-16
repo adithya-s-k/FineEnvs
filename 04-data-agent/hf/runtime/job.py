@@ -351,6 +351,9 @@ def main():
             download_json(os.environ["SMOKE_PREFIX"], "training_smoke_verified.json", proof_path)
             os.environ["VERIFIED_SMOKE_MANIFEST"] = str(proof_path)
         server = bridge(output, processes)
+        if args.role == "train" and args.arm in {"blackbox", "opencode"}:
+            from service_contract import check
+            write_json(output / "service_contract.json", check(server, "", args.arm))
         job_id, public = serving(args, output, processes)
         write_json(output / "services.json", {"job_id": job_id, "public_vllm": public, "server": server,
                    "space": os.environ["SPACE_URL"], "tp": 1, "dp": args.dp, "flavor": os.environ["JOB_FLAVOR"]})

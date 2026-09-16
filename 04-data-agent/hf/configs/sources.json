@@ -11,7 +11,7 @@
       "name": "openenv",
       "directory": "OpenEnv",
       "url": "https://github.com/adithya-s-k/OpenEnv.git",
-      "revision": "2ce2fa7b65fb07f260838739e5a0956afc5734cf"
+      "revision": "b13aeb9f8ecd4817e02d3a37c2a9ae15e41710e3"
     },
     {
       "name": "trl",

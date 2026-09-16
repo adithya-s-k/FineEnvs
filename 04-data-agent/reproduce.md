@@ -77,7 +77,7 @@ python reproduce.py smoke --recipe seta --env-file .env --flavor h200x2 \
   --space-bundle-sha EXACT_DEPLOYED_SHA256
 ```
 
-This explicitly records two source identities: the trainer bundle and the existing environment bundle. It does not upgrade the live Space or certify untested server changes. The current PR qualification uses this mode to protect active work.
+This explicitly records two source identities: the trainer bundle and the existing environment bundle. It does not upgrade the live Space or certify untested server changes. Async training checks the advertised rollout API before allocating a Job; an older native OpenCode server without explicit sampling support must be upgraded while idle. The current qualification preserves the active Harbor/SETA deployments and updates the idle native OpenCode Space.
 
 Once both jobs complete and their evidence passes:
 

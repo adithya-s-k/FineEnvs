@@ -35,7 +35,8 @@ class ServiceAuth:
     def __init__(self, app): self.app = app
     async def __call__(self, scope, receive, send):
         path = scope.get("path", "")
-        protected = scope["type"] == "websocket" or path in {"/step", "/reset", "/state"}
+        protected = (scope["type"] == "websocket" or path in {"/step", "/reset", "/state", "/mcp"}
+                     or path.startswith("/mcp/"))
         if protected:
             headers = dict(scope.get("headers", []))
             token = os.environ.get("HF_TOKEN", "")

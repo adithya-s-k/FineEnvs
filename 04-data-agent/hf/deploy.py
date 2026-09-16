@@ -194,6 +194,10 @@ def submit(api, config, secrets, out, args):
             raise ValueError("The four-harness checkpoint evaluator has the wrong task catalog")
         env.update(CHECKPOINT_EVAL_SPACE_URL=url,
                    CHECKPOINT_EVAL_SPACE_SHA256=eval_identity["bundle_sha256"])
+    if role == "train" and args.arm in {"blackbox", "opencode"}:
+        from runtime.service_contract import check
+        save(out / f"service-contract-{args.arm}.json",
+             check(env["SPACE_URL"], secrets["HF_TOKEN"], args.arm))
     if proof and env["SPACE_URL"].rstrip("/") != proof["space_url"].rstrip("/"):
         raise ValueError("Long training must use the environment qualified by its optimizer smoke")
     command = ["python", "/bundle/bootstrap.py", "--role", role, "--arm", args.arm,

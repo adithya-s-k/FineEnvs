@@ -71,3 +71,13 @@ def test_hub_eval_capacity_is_bounded_and_source_pins_are_immutable():
         assert len(source['revision']) == 40
         assert set(source['revision']) <= set('0123456789abcdef')
     assert len(sources['task_bundle']['sha256']) == 64
+
+
+def test_training_preflight_rejects_legacy_server_missing_sampling():
+    from service_contract import validate_tools
+    properties = {key: {} for key in ("llm_url", "model", "require_tokens", "agent_timeout_s")}
+    response = {"data": {"observation": {"tools": [{"name": "run_rollout", "input_schema": {"properties": properties}}]}}}
+    with pytest.raises(ValueError, match="lacks training arguments: sampling"):
+        validate_tools(response, "opencode")
+    properties["sampling"] = {}
+    assert validate_tools(response, "opencode")["passed"]
