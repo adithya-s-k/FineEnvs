@@ -2,6 +2,8 @@
 
 Snapshot: **2026-09-16 UTC**. Metric: **pass@1** on the fixed 250-task test set (33 easy, 118 medium, 99 hard). Each accepted async checkpoint has 250 tasks × four harnesses = **1,000 first-graded cells**. SETA uses its native bash/SETA evaluator, 250 cells.
 
+[Public artifact index](https://huggingface.co/datasets/HuggingEnvs/data-agent-experiment-results): code, environments, dashboards, report downloads, qualification evidence and published checkpoints. Credential-bearing raw evidence stays private; redacted public copies are explicitly marked.
+
 ![Training and evaluation comparison](results/2026-09-16/comparison.png)
 
 The [complete report](results/2026-09-16/REPORT.md) includes training history and **harness × difficulty at every accepted checkpoint**. [CSV](results/2026-09-16/checkpoint_scores.csv) provides the underlying correct/graded counts; [snapshot](results/2026-09-16/snapshot.json.gz) retains audited provenance and training metrics. The [live Trackio dashboard](https://huggingface.co/spaces/HuggingEnvs/data-agent-training-comparison-trackio) may contain newer observations.

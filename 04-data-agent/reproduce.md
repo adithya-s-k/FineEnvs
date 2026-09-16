@@ -4,9 +4,9 @@ Use one recipe at a time initially. A training smoke performs **two optimizer st
 
 ## 1. Requirements and credentials
 
-Use Linux, Python 3.12, Git, [`uv`](https://docs.astral.sh/uv/), and an HF account with access to the frozen task bundle. Local runs need Slurm and two suitable CUDA GPUs on one node; HF Jobs need organization Jobs permissions and GPU quota. The default namespace is `HuggingEnvs`; use `--namespace YOUR_ORG` during preparation to create resources in your own organization.
+Use Linux, Python 3.12, Git, [`uv`](https://docs.astral.sh/uv/), and an HF account. Local runs need Slurm and two suitable CUDA GPUs on one node; HF Jobs need organization Jobs permissions and GPU quota. The default namespace is `HuggingEnvs`; use `--namespace YOUR_ORG` during preparation to create resources in your own organization.
 
-The fixed task archive is private because it includes grading material. Request access to `HuggingEnvs/data-agent-daytona-repro`, or obtain the exact archive named in `hf/configs/sources.json`. `hf/build.py --seed-archive PATH` verifies its SHA-256. It never substitutes today's dataset for the measured train/test split.
+The frozen task/runtime bundle is public at [HuggingEnvs/data-agent-daytona-repro](https://huggingface.co/datasets/HuggingEnvs/data-agent-daytona-repro). Use the exact archive named in `hf/configs/sources.json`; `hf/build.py --seed-archive PATH` verifies its SHA-256. It never substitutes today's dataset for the measured train/test split. [The public artifact index](https://huggingface.co/datasets/HuggingEnvs/data-agent-experiment-results) links environments, dashboards, results and published checkpoints.
 
 ```bash
 cd 04-data-agent
@@ -25,7 +25,7 @@ DAYTONA_API_KEY=your_daytona_key
 # DAYTONA_TARGET=eu
 ```
 
-The HF token needs access to Jobs, the selected Spaces, the model and private task/artifact storage. The launcher sends credentials as secrets; they are excluded from the bundle and launch metadata. The native adapter also supports HF/E2B sandboxes, but these training recipes select Daytona.
+The HF token needs permission to launch Jobs and manage the selected Spaces and run storage. Public bundles and published results can be read without organization membership. The launcher sends credentials as secrets; they are excluded from the bundle and launch metadata. Live raw artifacts remain private: captured tool output can contain credentials. Public releases use audited copies, with redacted files identified in a manifest. The native adapter also supports HF/E2B sandboxes, but these training recipes select Daytona.
 
 ## 2. Select and freeze a recipe
 
