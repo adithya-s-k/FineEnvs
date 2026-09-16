@@ -1,0 +1,56 @@
+{
+  "id": "6aaa7b875527934177ee9d15",
+  "owner": "train-opencode-1789557638",
+  "stage": "COMPLETED",
+  "status.json": {
+    "arm": "opencode",
+    "phase": "smoke",
+    "started_at": 1789557710.0655792,
+    "passed": true,
+    "finished_at": 1789561700.7866313
+  },
+  "services.json": {
+    "job_id": "6aaa7b875527934177ee9d15",
+    "public_vllm": "https://6aaa7b875527934177ee9d15--8000.hf.jobs",
+    "server": "http://127.0.0.1:8100",
+    "space": "https://huggingenvs-data-agent-blackbox-opencode-env.hf.space",
+    "tp": 1,
+    "dp": 1,
+    "flavor": "a100x4"
+  },
+  "training_smoke_verified.json": {
+    "arm": "opencode",
+    "passed": true,
+    "bundle_sha256": "6527c25ae379ab10f055577c5b87374c9018df3c8d28bb983f84fbd1e7f6302e",
+    "optimizer_steps": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "native_optimizer_state_verified": true,
+    "remote_restore_verified": true,
+    "tito_pass": true,
+    "weights_updated": true,
+    "nonzero_gradient_updates": 4
+  },
+  "trackio_verified.json": {
+    "passed": true,
+    "project": "daytona-opencode-qwen35-2b-smoke",
+    "run": "train-opencode-1789557638",
+    "local_database": "/workspace/repro/outputs/train-opencode-1789557638/trackio/daytona-opencode-qwen35-2b-smoke.db",
+    "mode": "offline",
+    "remote_storage": "run artifact bucket",
+    "native_remote_readback": false,
+    "updated_at": 1789561370.6661468,
+    "unique_events": 6
+  },
+  "upload_status.json": {
+    "last_success": 1789561666.6907096,
+    "destination": "hf://buckets/HuggingEnvs/data-agent-daytona-artifacts/data-agent-reproduction-20260916/jobs/train-opencode-1789557638",
+    "published_checkpoints": [
+      "checkpoint-2",
+      "checkpoint-4"
+    ]
+  }
+}

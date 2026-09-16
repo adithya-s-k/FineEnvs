@@ -34,7 +34,7 @@ The v3 Harbor Job later ended with an HF Xet upload `TimeoutError` after complet
 | Implementation | HF Job | Trainer bundle | State |
 | --- | --- | --- | --- |
 | Harbor / OpenCode | [6aaa8a06f76d6a098a710a5e](https://huggingface.co/jobs/HuggingEnvs/6aaa8a06f76d6a098a710a5e) | v4 | Retry-enabled rerun submitted; integrated qualification pending |
-| Native OpenCode | [6aaa7b875527934177ee9d15](https://huggingface.co/jobs/HuggingEnvs/6aaa7b875527934177ee9d15) | v3 | Optimizer updates running; save/restore audit pending |
+| Native OpenCode | [6aaa7b875527934177ee9d15](https://huggingface.co/jobs/HuggingEnvs/6aaa7b875527934177ee9d15) | v3 | **Passed**: four nonzero-gradient updates, exact-token retention, native optimizer state, remote restore, changed weights; [receipt](qualification/opencode-v3.json) |
 | SETA whitebox | [6aaa7f915527934177ee9da4](https://huggingface.co/jobs/HuggingEnvs/6aaa7f915527934177ee9da4) | v3 | **Passed**: four steps, exact-token audit, native optimizer state, remote restore, changed weights; [receipt](qualification/seta-v3.json) |
 
 - **v2**: SHA256 `8b02b40687414905830799a458bf253d3552f9a40860f9980c983fb4ededa45a`, Hub revision `0e59f18b0ddf0df0f46aa8925b4d8bb66aa95bb5`.
