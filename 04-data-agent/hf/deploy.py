@@ -128,12 +128,21 @@ def submit(api, config, secrets, out, args):
     if role == "train" and args.phase == "long":
         from launch_gates import verify
         proof = verify(api, config, uploaded, args.arm, args.baseline_job, args.smoke_job, out)
+        if args.arm == "opencode":
+            from launch_gates import verify_comparison_baseline
+            comparison_id = getattr(args, "comparison_baseline_job", None)
+            proof["native_baseline_prefix"] = proof["baseline_prefix"]
+            proof["native_baseline_job"] = args.baseline_job
+            proof["comparison_baseline_job"] = comparison_id
+            proof["baseline_prefix"] = verify_comparison_baseline(api, config, comparison_id, out)
+            proof["baseline_job"] = comparison_id
         if getattr(args, "checkpoint_eval_job", None):
             from launch_gates import verify_checkpoint_eval
             proof["checkpoint_eval"] = verify_checkpoint_eval(api, config, uploaded, args.arm,
                 args.smoke_job, args.checkpoint_eval_job, out)
         elif getattr(args, "external_checkpoint_coordinator", False):
             raise ValueError("Long training with an external coordinator requires --checkpoint-eval-job")
+        save(out / "launch-proofs" / args.arm / "verified.json", proof)
     if role == "coordinator" and args.phase not in {"setup", "qualify"} and not args.training_job:
         raise ValueError("--training-job is required for the checkpoint coordinator")
     if role == "eval" and args.phase == "checkpoint":
@@ -157,11 +166,13 @@ def submit(api, config, secrets, out, args):
             raise ValueError("An independently pinned Space is currently supported only for training qualification")
         env["SPACE_BUNDLE_SHA256"] = args.space_bundle_sha
     if proof:
-        env.update(SMOKE_PREFIX=proof["smoke_prefix"], BASELINE_JOB=args.baseline_job,
+        env.update(SMOKE_PREFIX=proof["smoke_prefix"], BASELINE_JOB=proof.get("comparison_baseline_job") or args.baseline_job,
                    SPACE_BUNDLE_SHA256=proof["space_bundle_sha256"],
                    BASELINE_PREFIX=proof["baseline_prefix"],
                    COORDINATION_PREFIX="hf://buckets/" + config["resources"]["artifacts_bucket"] + "/" +
                        config["run_id"] + "/coordination/" + identity)
+        if proof.get("native_baseline_prefix"):
+            env["NATIVE_BASELINE_PREFIX"] = proof["native_baseline_prefix"]
     if args.training_job:
         env["TRAINING_JOB"] = args.training_job
     if getattr(args, "baseline_job_map", None):
@@ -275,6 +286,7 @@ def main():
     p.add_argument("--resume-eval-owner", help="Restore the immutable first-graded ledger of a whitebox baseline")
     p.add_argument("--smoke-job", help="Completed optimizer/save/resume HF Job for this arm and bundle")
     p.add_argument("--baseline-job", help="Completed HF baseline with matching task and evaluation protocol")
+    p.add_argument("--comparison-baseline-job", help="For native OpenCode: completed shared four-harness Harbor baseline")
     p.add_argument("--training-job", help="HF training Job followed by a checkpoint coordinator")
     p.add_argument("--baseline-job-map", help="JSON mapping of both baseline Job IDs for --phase setup")
     p.add_argument("--space-bundle-sha", help="Exact already-deployed Space bundle for a training smoke; avoids restarting active eval services")

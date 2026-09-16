@@ -89,10 +89,13 @@ def opencode(args, state):
     plan = read(args.ready / 'plan.json')
     if plan.get('checkpoint_eval_gpu_validation') != 'passed':
         raise ValueError('Native live checkpoint qualification is not complete')
+    if not plan.get('native_baseline_score'):
+        raise ValueError('Prepare a plan with both native diagnostic and four-harness comparison baselines')
     target = args.out / 'run'
     if not target.exists():
         run([sys.executable, HF / 'local_long.py', '--arm', 'opencode',
-             '--smoke-run', plan['smoke_run'], '--baseline-score', plan['baseline_score'],
+             '--smoke-run', plan['smoke_run'], '--baseline-score', plan['native_baseline_score'],
+             '--comparison-baseline-score', plan['baseline_score'],
              '--checkpoint-eval-proof', plan['checkpoint_eval_proof'], '--env-file', args.env_file,
              '--coordination-dir', args.coordination_dir, '--out', target, '--submit'])
     live = read(target / 'plan.json')

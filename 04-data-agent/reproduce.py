@@ -40,9 +40,11 @@ def main():
     p.add_argument("--concurrency", type=int, help="Eval concurrency (Hub default 35; local default 50)")
     p.add_argument("--space-bundle-sha", help="Pin an existing Space for a training smoke without redeploying it")
     p.add_argument("--baseline-job")
+    p.add_argument("--comparison-baseline-job")
     p.add_argument("--smoke-job")
     p.add_argument("--smoke-run", type=Path, help="Local smoke output directory")
     p.add_argument("--baseline-score", type=Path)
+    p.add_argument("--comparison-baseline-score", type=Path)
     p.add_argument("--checkpoint-eval-proof", type=Path)
     p.add_argument("--qualify-checkpoint-eval", action="store_true")
     p.add_argument("--train-venv", type=Path, help="Optional existing local training venv; otherwise create locked venvs")
@@ -108,6 +110,7 @@ def main():
                    "--cpu-partition", a.cpu_partition]
             if a.qualify_checkpoint_eval: cmd += ["--qualify-checkpoint-eval"]
             if a.checkpoint_eval_proof: cmd += ["--checkpoint-eval-proof", a.checkpoint_eval_proof]
+            if a.comparison_baseline_score: cmd += ["--comparison-baseline-score", a.comparison_baseline_score]
         else:
             cmd = [sys.executable, PROJECT / "hf/cluster.py", "--bundle", out / "bundle",
                    "--out", out / ("baseline" if a.action == "eval" else "smoke"),
@@ -125,7 +128,7 @@ def main():
             cmd += ["--role", "eval" if a.action == "eval" else "train", "--phase",
                     {"smoke": "smoke", "eval": "baseline", "train": "long"}[a.action]]
             cmd += ["--timeout", a.timeout or ("24h" if a.action == "train" else "4h" if a.action == "eval" else "2h")]
-            for key in ("flavor", "space_bundle_sha", "baseline_job", "smoke_job"):
+            for key in ("flavor", "space_bundle_sha", "baseline_job", "comparison_baseline_job", "smoke_job"):
                 if getattr(a, key): cmd += ["--" + key.replace("_", "-"), getattr(a, key)]
     run(cmd, a.dry_run)
 

@@ -66,6 +66,17 @@ def prepare(args):
     validate_baseline(args.baseline_score, args.arm)
     grading_proof = validate_native_grading(root, args.baseline_score) if args.arm == "opencode" else None
     config = json.loads((root / "hf/configs/deployment.json").read_text())
+    comparison = args.baseline_score
+    if args.arm == "opencode":
+        from launch_gates import protocol_identity, validate_comparison_baseline
+        comparison = getattr(args, "comparison_baseline_score", None)
+        if comparison is None:
+            raise ValueError("Native training also requires --comparison-baseline-score for the four-harness curve")
+        validate_comparison_baseline(json.loads(comparison.read_text()))
+        baseline_root = comparison.resolve().parents[2]
+        baseline_config = json.loads((baseline_root / "hf/configs/deployment.json").read_text())
+        if protocol_identity(config) != protocol_identity(baseline_config):
+            raise ValueError("Comparison baseline task/model/sampling protocol differs")
     output.mkdir(parents=True, exist_ok=False)
     controller = output / "local_followup.py"
     shutil.copyfile(Path(__file__).with_name("local_followup.py"), controller)
@@ -75,8 +86,11 @@ def prepare(args):
         shutil.copyfile(supervisor_source, supervisor)
     args.coordination_dir.mkdir(parents=True, exist_ok=True)
     plan = {"gpu_partition": getattr(args, "partition", "hopper-prod"),
+        "namespace": config["namespace"],
         "cpu_partition": getattr(args, "cpu_partition", "hopper-cpu"), "root": str(root), "arm": args.arm, "bundle_sha256": identity["sha256"],
-        "env_file": str(args.env_file.resolve()), "baseline_score": str(args.baseline_score.resolve()),
+        "env_file": str(args.env_file.resolve()), "baseline_score": str(comparison.resolve()),
+        "baseline_sha256": hashlib.sha256(comparison.read_bytes()).hexdigest(),
+        "native_baseline_score": str(args.baseline_score.resolve()) if args.arm == "opencode" else None,
         "smoke_run": str(smoke), "controller_sha256": hashlib.sha256(controller.read_bytes()).hexdigest(),
         "grading_verification": grading_proof,
         "coordination_dir": str(args.coordination_dir.resolve()), "training_job": None,
@@ -149,6 +163,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--smoke-run", type=Path, required=True)
     parser.add_argument("--baseline-score", type=Path, required=True)
+    parser.add_argument("--comparison-baseline-score", type=Path)
     parser.add_argument("--arm", choices=["blackbox", "whitebox", "opencode"], required=True)
     parser.add_argument("--env-file", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)

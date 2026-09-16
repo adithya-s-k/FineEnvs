@@ -14,7 +14,7 @@ def admit_with_hf(original, plan, api=None):
     """The caller holds the joint admission lock across inspection/submission."""
     from huggingface_hub import HfApi
     terminal = {"COMPLETED", "ERROR", "CANCELED", "CANCELLED", "DELETED"}
-    jobs = (api or HfApi()).list_jobs(namespace="HuggingEnvs",
+    jobs = (api or HfApi()).list_jobs(namespace=plan.get("namespace", "HuggingEnvs"),
         labels={"experiment": "data-agent-daytona", "role": "eval"})
     if any(job.status.stage not in terminal for job in jobs):
         return False
@@ -42,6 +42,20 @@ def forward_scores(plan_path):
     destination = training / "checkpoint-scores"
     destination.mkdir(parents=True, exist_ok=True)
     changed = False
+    if plan.get("baseline_sha256"):
+        encoded = Path(plan["baseline_score"]).read_bytes()
+        if hashlib.sha256(encoded).hexdigest() != plan["baseline_sha256"]:
+            raise ValueError("Qualified baseline score changed")
+        event = {"step": 0, "scores": json.loads(encoded),
+                 "source": {"baseline_sha256": plan["baseline_sha256"]}}
+        target = destination / "step-000000.json"
+        if target.exists() and json.loads(target.read_text()) != event:
+            raise ValueError("Conflicting baseline for the training curve")
+        if not target.exists():
+            temporary = target.with_suffix(".tmp")
+            temporary.write_text(json.dumps(event, indent=2) + "\n")
+            temporary.replace(target)
+            changed = True
     for path in (plan_path.parent / "checkpoint-evals").glob("scores-*.json"):
         record = json.loads(path.read_text())
         proof, evaluation, scores = record["proof"], record["evaluation"], record["scores"]
@@ -49,7 +63,7 @@ def forward_scores(plan_path):
             continue
         if (not proof.get("passed") or not scores.get("comparison_ready") or
                 proof.get("training_arm") != plan["arm"] or
-                proof.get("graded_cells") != (1000 if plan["arm"] == "opencode" else 250) or
+                proof.get("graded_cells") != (1000 if plan["arm"] in {"opencode", "blackbox"} else 250) or
                 proof["bundle_sha256"] != plan["bundle_sha256"] or
                 proof["manifest_sha256"] != evaluation["manifest_sha256"] or
                 proof["step"] != evaluation["step"]):

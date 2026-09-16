@@ -34,6 +34,44 @@ def validate_proofs(config, uploaded, arm, baseline_config, baseline, smoke):
         raise ValueError("Optimizer/save/resume smoke must pass with this exact runtime bundle")
 
 
+def validate_comparison_baseline(score):
+    expected = {"opencode", "claude-code", "codex", "mini-swe-agent"}
+    harnesses = score.get("harnesses", {})
+    if (not score.get("comparison_ready") or not score.get("tito_pass")
+            or score.get("graded_cells") != 1000 or set(harnesses) != expected
+            or any(value.get("graded") != 250 for value in harnesses.values())):
+        raise ValueError("Checkpoint comparisons require the complete four-harness baseline, not the native diagnostic")
+
+
+def archived_config(api, job):
+    volume = next(v for v in job.volumes if v.mount_path == "/bundle" and v.type == "dataset")
+    from huggingface_hub import hf_hub_download
+    archive = Path(hf_hub_download(volume.source, "bundle.tar.gz", repo_type="dataset",
+                                  revision=volume.revision, token=api.token))
+    if hashlib.sha256(archive.read_bytes()).hexdigest() != job.environment["BUNDLE_SHA256"]:
+        raise ValueError("Baseline's archived runtime checksum differs from the executed bundle")
+    with tarfile.open(archive) as tar:
+        return json.load(tar.extractfile("hf/configs/deployment.json"))
+
+
+def verify_comparison_baseline(api, config, job_id, out):
+    if not job_id:
+        raise ValueError("Native training also needs --comparison-baseline-job from the shared four-harness evaluation")
+    job = api.inspect_job(job_id=job_id, namespace=config["namespace"])
+    if (job.status.stage != "COMPLETED" or job.labels.get("role") != "eval"
+            or job.labels.get("phase") != "baseline" or job.labels.get("arm") != "blackbox"):
+        raise ValueError("Comparison baseline must be a completed Harbor baseline Job")
+    if protocol_identity(config) != protocol_identity(archived_config(api, job)):
+        raise ValueError("Comparison baseline task/model/sampling protocol differs")
+    prefix = job.environment["RUN_ID"] + "/jobs/" + job.environment["RUN_OWNER"]
+    target = Path(out) / "launch-proofs/opencode/comparison-baseline.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    api.download_bucket_files(job.environment["ARTIFACT_BUCKET"],
+        files=[(prefix + "/canonical_scores.json", str(target))], raise_on_missing_files=True)
+    validate_comparison_baseline(json.loads(target.read_text()))
+    return "hf://buckets/" + job.environment["ARTIFACT_BUCKET"] + "/" + prefix
+
+
 def verify(api, config, uploaded, arm, baseline_id, smoke_id, out):
     if not baseline_id or not smoke_id:
         raise ValueError("Long training requires --baseline-job and --smoke-job")
@@ -53,14 +91,7 @@ def verify(api, config, uploaded, arm, baseline_id, smoke_id, out):
             files=[(prefix + "/" + filename, str(out / filename))], raise_on_missing_files=True)
         proofs.append(json.loads((out / filename).read_text()))
         sources.append("hf://buckets/" + j.environment["ARTIFACT_BUCKET"] + "/" + prefix)
-    volume = next(v for v in jobs[0].volumes if v.mount_path == "/bundle" and v.type == "dataset")
-    from huggingface_hub import hf_hub_download
-    archive = Path(hf_hub_download(volume.source, "bundle.tar.gz", repo_type="dataset",
-                                  revision=volume.revision, token=api.token))
-    if hashlib.sha256(archive.read_bytes()).hexdigest() != jobs[0].environment["BUNDLE_SHA256"]:
-        raise ValueError("Baseline's archived runtime checksum differs from the executed bundle")
-    with tarfile.open(archive) as tar:
-        baseline_config = json.load(tar.extractfile("hf/configs/deployment.json"))
+    baseline_config = archived_config(api, jobs[0])
     validate_proofs(config, uploaded, arm, baseline_config, proofs[0], proofs[1])
     smoke_job = jobs[1]
     prefix = smoke_job.environment["RUN_ID"] + "/jobs/" + smoke_job.environment["RUN_OWNER"]

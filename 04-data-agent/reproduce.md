@@ -90,6 +90,16 @@ The launcher submits a separate CPU coordinator. At steps 100, 200, … it waits
 
 Native OpenCode's baseline command measures its **native** 250-task protocol on the configured sandboxes. Its **checkpoint comparisons** use the four-harness Harbor Space. Deploy the Harbor environment as well when reproducing native OpenCode in a new namespace. Keep that Space's task/harness pins fixed. Native and Harbor baseline percentages are different cohorts and must be labelled accordingly.
 
+For native OpenCode, run the shared four-harness baseline with the `harbor-opencode` recipe too (or reuse a completed matching baseline). Long-run admission requires both: the native diagnostic verifies that environment's grading, and the Harbor baseline supplies step 0 of the checkpoint curve.
+
+```bash
+python reproduce.py train --recipe native-opencode --env-file .env \
+  --baseline-job NATIVE_DIAGNOSTIC_JOB --comparison-baseline-job HARBOR_BASELINE_JOB \
+  --smoke-job NATIVE_SMOKE_JOB --flavor a100x4
+```
+
+The launcher checks fixed task/model/sampling identity and 250 results for each of the four harnesses. It never places the native diagnostic percentage on the four-harness curve.
+
 ## 3B. Local / Slurm
 
 Use the same preparation command. The local launcher runs both the environment service and vLLM inside the allocation. Training uses one inference GPU and one optimizer GPU; eval uses TP1/DP2 on two GPUs. Local eval defaults to concurrency 50.
@@ -125,6 +135,8 @@ python reproduce.py train --platform local --recipe harbor-opencode --env-file .
 ```
 
 Use internal arm `opencode` for native OpenCode and `whitebox` for SETA when invoking advanced helpers. Native long-run admission also checks the frozen task grading/tolerance audit; preserve the `verification.json` next to its canonical baseline score. No recipe uses `hopper-extra` or `hopper-atl` by default. Partition names are explicit deployment settings, not source edits.
+
+For local native training, add `--comparison-baseline-score /absolute/path/to/harbor-baseline/repro/outputs/local-eval-blackbox-JOB_ID/canonical_scores.json` to the qualification and long-run commands. Keep that baseline inside its prepared runtime: admission reads the adjacent frozen configuration to verify the comparison protocol. `--baseline-score` remains the separate native diagnostic. The controller records the matching baseline at step 0 and rejects a modified score file.
 
 ## Evaluation protocol and logs
 

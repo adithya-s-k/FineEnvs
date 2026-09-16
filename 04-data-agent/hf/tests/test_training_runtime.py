@@ -71,6 +71,19 @@ class LaunchGateTest(unittest.TestCase):
 
     def test_matching_evidence(self): self.check()
 
+    def test_native_diagnostic_cannot_be_a_four_harness_curve_baseline(self):
+        from launch_gates import validate_comparison_baseline
+        native = {"comparison_ready": True, "graded_cells": 250, "tito_pass": True,
+                  "implementation": "standalone-opencode"}
+        with self.assertRaisesRegex(ValueError, "four-harness"):
+            validate_comparison_baseline(native)
+        matching = {"comparison_ready": True, "graded_cells": 1000, "tito_pass": True,
+                    "harnesses": {name: {"graded": 250} for name in self.config["harness_pins"]}}
+        validate_comparison_baseline(matching)
+        matching["harnesses"]["opencode"]["graded"] = 249
+        with self.assertRaises(ValueError):
+            validate_comparison_baseline(matching)
+
     def test_dataset_change_rejected(self):
         old = copy.deepcopy(self.config)
         old["data"]["manifest_sha256"]["test_manifest.json"] = "different"
@@ -125,6 +138,34 @@ class LaunchGateTest(unittest.TestCase):
             api.run_job.assert_not_called()
             self.assertFalse(preview["submitted"])
             self.assertNotIn("never-record-this", (out / "launch-preview.json").read_text())
+
+    def test_native_launch_logs_comparison_baseline_and_retains_diagnostic(self):
+        from deploy import submit
+        from unittest.mock import Mock
+        with tempfile.TemporaryDirectory() as temporary:
+            out = Path(temporary)
+            (out / "bundle_uploaded.json").write_text(json.dumps({"sha256": "runtime", "repo": "org/repro", "revision": "pin"}))
+            args = SimpleNamespace(role="train", phase="long", arm="opencode", baseline_job="native",
+                comparison_baseline_job="four-harness", smoke_job="smoke", flavor="a100x4",
+                training_job=None, external_checkpoint_coordinator=False, dp=1, limit=0,
+                resume_eval_owner=None, timeout="24h", dry_run=True)
+            api = Mock()
+            api.space_info.return_value = SimpleNamespace(host="https://example.hf.space")
+            proof = {"smoke_prefix": "smoke", "baseline_prefix": "native-prefix", "space_bundle_sha256": "space",
+                     "space_url": "https://example.hf.space"}
+            response = Mock()
+            response.raise_for_status.return_value.json.return_value = {
+                "arm": "blackbox", "test_tasks": 250, "bundle_sha256": "space"}
+            with patch("launch_gates.verify", return_value=proof), \
+                 patch("launch_gates.verify_comparison_baseline", return_value="comparison-prefix") as gate, \
+                 patch("runtime.service_contract.check", return_value={"passed": True}), \
+                 patch("httpx.get", return_value=response), patch("builtins.print"):
+                result = submit(api, self.config, {"HF_TOKEN": "test-only"}, out, args)
+            gate.assert_called_once_with(api, self.config, "four-harness", out)
+            self.assertEqual(result["environment"]["BASELINE_PREFIX"], "comparison-prefix")
+            self.assertEqual(result["environment"]["BASELINE_JOB"], "four-harness")
+            self.assertEqual(result["environment"]["NATIVE_BASELINE_PREFIX"], "native-prefix")
+            api.run_job.assert_not_called()
 
 
 class ModelRestoreTest(unittest.TestCase):
