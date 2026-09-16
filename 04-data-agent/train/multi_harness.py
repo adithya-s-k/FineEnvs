@@ -12,10 +12,9 @@ would have a baseline averaging two competence levels, and the advantage would e
 rather than which action. Constant-within-group makes the spread a BETWEEN-group constant, which
 advantage normalisation removes entirely.
 
-THE DEGENERACY TO AVOID. Group -> row is `group_id % len(dataset)`. If `gcd(len(dataset), H) > 1`,
-`harnesses[group_id % H]` pairs every task with only one harness -- seed routing silently collapses
-into a disjoint partition and you are not running a multi-harness experiment at all. `pair_rows`
-below pads the task list to make them coprime and asserts it.
+Group -> row is `group_id % len(dataset)`. An explicit frozen schedule maps the same group ID
+to both its task and its harness: one harness per task per pass, rotating over later passes.
+The legacy modulo route pads rows to ensure that tasks rotate across harnesses over time.
 """
 
 from __future__ import annotations
@@ -32,11 +31,20 @@ logger = logging.getLogger(__name__)
 class MultiHarborSessionFactory(HarborSessionFactory):
     """A HarborSessionFactory whose harness is chosen per GROUP, from `seed`."""
 
-    def __init__(self, *args: Any, harnesses: list[str], **kw: Any) -> None:
+    def __init__(self, *args: Any, harnesses: list[str], schedule=None, group_offset=0, **kw: Any) -> None:
         super().__init__(*args, **kw)
         if not harnesses:
             raise ValueError("harnesses must be non-empty")
         self.harnesses = list(harnesses)
+        self.schedule = schedule
+        if not isinstance(group_offset, int) or group_offset < 0:
+            raise ValueError('group_offset must be a nonnegative integer')
+        self.group_offset = group_offset
+        if schedule is not None:
+            from harness_schedule import validate_schedule
+            validate_schedule(schedule)
+            if schedule['harnesses'] != self.harnesses:
+                raise ValueError('Schedule harness order differs from the configured harnesses')
         # group_id -> harness, so a violation is detectable rather than merely unlikely.
         self._group_harness: dict[int, str] = {}
 
@@ -48,6 +56,9 @@ class MultiHarborSessionFactory(HarborSessionFactory):
         return state
 
     def harness_for(self, seed: int | None) -> str:
+        seed = (seed or 0) + getattr(self, 'group_offset', 0)
+        if getattr(self, 'schedule', None) is not None:
+            return self.schedule['groups'][(seed or 0) % len(self.schedule['groups'])]['harness']
         return self.harnesses[(seed or 0) % len(self.harnesses)]
 
     def create(self, task: Any, seed: int | None = None, episode_id: str | None = None) -> HarborSession:
@@ -72,6 +83,11 @@ class MultiHarborSessionFactory(HarborSessionFactory):
                 "this prompt does not match any task on the server. Build the dataset from "
                 "`prompt_rows()` so the instruction the trainer sends is the one the server has."
             )
+        if self.schedule is not None:
+            absolute_group = (seed or 0) + self.group_offset
+            expected = self.schedule['groups'][absolute_group % len(self.schedule['groups'])]
+            if index != expected['task_index']:
+                raise ValueError(f'Group {seed} received task {index}, expected {expected["task_index"]}')
         return HarborSession(
             env=self.new_client(),  # one client PER SESSION: a shared MCP socket raises
             owns_env=True,          # ConcurrencyError on concurrent recv, making every rollout unscorable
@@ -82,6 +98,7 @@ class MultiHarborSessionFactory(HarborSessionFactory):
             sandbox=self.sandbox,
             llm_url=self.llm_url,
             model=self.model,
+            sampling=self.sampling,
             reward_key=self.reward_key,
             api_key=self.api_key,
             auth_header=self.auth_header,
@@ -100,14 +117,23 @@ def _instruction_id(text: str) -> str:
     return f(text)
 
 
-def pair_rows(factory: MultiHarborSessionFactory) -> list[dict[str, Any]]:
-    """Dataset rows, padded so `gcd(len(rows), n_harnesses) == 1`.
-
-    Without coprimality, `group_id % len(dataset)` and `group_id % H` stay in lockstep and each task
-    only ever meets one harness -- the run looks multi-harness and is not.
-    """
+def pair_rows(factory: MultiHarborSessionFactory, *, all_pairs: bool = False) -> list[dict[str, Any]]:
+    """Align prompt rows with the explicit schedule, Cartesian mode, or legacy modulo route."""
     rows = list(factory.prompt_rows())
     h = len(factory.harnesses)
+    schedule = getattr(factory, 'schedule', None)
+    if schedule is not None:
+        if all_pairs:
+            raise ValueError('Choose either a rotating schedule or Cartesian scheduling')
+        expected = [(t['name'], t['task_index']) for t in schedule['tasks']]
+        if [(r['task_name'], r['task_index']) for r in rows] != expected:
+            raise ValueError('Server task identities/order differ from the frozen schedule')
+        return [dict(rows[g['task_row']]) for g in schedule['groups']]
+    if all_pairs:
+        # The worker repeats each row num_generations times with a fixed group ID.
+        # H consecutive rows per task align exactly with harness_for(group_id).
+        # This schedule repeats without coprime padding because its length is a multiple of H.
+        return [dict(row) for row in rows for _ in factory.harnesses]
     if h > 1:
         while len(rows) > 1 and gcd(len(rows), h) != 1:
             rows.append(dict(rows[len(rows) % len(rows)]))  # duplicate one row to break the common factor

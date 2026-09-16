@@ -99,6 +99,8 @@ class DataAgentEnvironment(MCPEnvironment):
             agent_step_limit: int = 10,
             agent_timeout_s: float = 600.0,
             require_tokens: bool = True,
+            api_key: str = "",
+            sampling: dict[str, float | int] | None = None,
         ) -> str:
             """Run one data-agent rollout and return a JSON `DataAgentRolloutResult`.
 
@@ -119,6 +121,8 @@ class DataAgentEnvironment(MCPEnvironment):
                 agent_step_limit,
                 agent_timeout_s,
                 require_tokens,
+                api_key,
+                sampling,
             )
 
         @mcp.tool
@@ -250,6 +254,8 @@ class DataAgentEnvironment(MCPEnvironment):
         agent_step_limit: int,
         agent_timeout_s: float,
         require_tokens: bool,
+        api_key: str = "",
+        sampling: dict[str, float | int] | None = None,
     ) -> str:
         from ..tasks import task_at
         from .rollout import run_rollout
@@ -262,6 +268,7 @@ class DataAgentEnvironment(MCPEnvironment):
             sandbox=sandbox or self._sandbox,
             agent_step_limit=agent_step_limit,
             agent_timeout_s=agent_timeout_s,
+            max_output_tokens=4096 if split.partition(":")[0] == "test" else 16384,
         )
         result = run_rollout(
             task,
@@ -270,6 +277,8 @@ class DataAgentEnvironment(MCPEnvironment):
             hf_token=self._hf_token,
             config=config,
             require_tokens=require_tokens,
+            api_key=api_key or None,
+            sampling=sampling,
         )
         self._state.rollout_type = result.rollout_type
         self._state.split = split

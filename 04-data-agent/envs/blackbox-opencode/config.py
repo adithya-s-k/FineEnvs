@@ -27,15 +27,17 @@ class DataAgentConfig:
 
     Attributes:
         sandbox (`str`, *optional*, defaults to `"e2b"`):
-            Backend name. `"e2b"` or `"hf"`; see `sandbox/__init__.py`.
+            Backend name. `"e2b"`, `"hf"` or `"daytona"`; see `sandbox/__init__.py`.
         image (`str`, *optional*):
             Container image carrying pandas/numpy/scipy and friends, which the instruction
-            promises. USED BY THE `hf` BACKEND ONLY -- E2B has no image parameter; it carries the
+            promises. USED BY THE `hf` AND `daytona` BACKENDS -- E2B has no image parameter; it carries the
             equivalent inside its prebuilt template (see `sandbox/__init__.py`).
         agent_timeout_s (`float`, *optional*, defaults to `600.0`):
             Wall clock for one rollout before it is abandoned and scored on whatever it filed.
         agent_step_limit (`int`, *optional*, defaults to `10`):
             Hard cap on MODEL CALLS, enforced host-side in the capture proxy.
+        max_output_tokens (`int`, *optional*, defaults to `4096`):
+            Output cap per model call. The hosted Task API uses4096for test and16384for train.
         setup_timeout_s (`float`, *optional*, defaults to `600.0`):
             Wall clock for staging the task's tables, separate from the agent's own budget.
         install_timeout_s (`float`, *optional*, defaults to `300.0`):
@@ -49,6 +51,7 @@ class DataAgentConfig:
     image: str = DEFAULT_IMAGE
     agent_timeout_s: float = 600.0
     agent_step_limit: int = 10
+    max_output_tokens: int = 4096
     # Staging pulls a bucket that can reach gigabytes; the agent's own budget is a different
     # clock and must not be spent on it.
     setup_timeout_s: float = 600.0

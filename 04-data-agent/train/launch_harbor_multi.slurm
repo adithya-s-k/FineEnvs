@@ -22,8 +22,9 @@ set -euo pipefail
 # empty answer that grades exactly like a model that could not do the task.
 
 REPO=/fsx/$USER/projects/trl_prod
+CODE_ROOT="${CODE_ROOT:-$REPO}"
 ENVDIR=$REPO/HuggingEnvs/04-data-agent/envs/blackbox-opencode
-TRAINDIR=$REPO/HuggingEnvs/04-data-agent/train
+TRAINDIR=$CODE_ROOT/HuggingEnvs/04-data-agent/train
 
 # TWO INTERPRETERS, ON PURPOSE.
 #   .venv312          torch / vLLM / TRL. The heavy stack, shared and reproducible via install.sh.
@@ -35,7 +36,7 @@ TRAINDIR=$REPO/HuggingEnvs/04-data-agent/train
 # not a legal Python identifier, so PYTHONPATH alone cannot reach it.
 PY312=$REPO/.venv312/bin/python
 # `harbor_env` lives under OpenEnv/envs, not OpenEnv/src -- the blackbox launcher never needed it.
-export PYTHONPATH="$TRAINDIR:$TRAINDIR/_pypath:$REPO/OpenEnv/src:$REPO/OpenEnv/envs${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="$TRAINDIR:$TRAINDIR/_pypath:$CODE_ROOT/trl:$CODE_ROOT/OpenEnv/src:$CODE_ROOT/OpenEnv/envs${PYTHONPATH:+:$PYTHONPATH}"
 export TRL_EXPERIMENTAL_SILENCE=1
 
 cd "$ENVDIR"
@@ -55,8 +56,11 @@ VLLM_PORT="${VLLM_PORT:-$(( 18000 + _OFF ))}"
 ENV_PORT="${ENV_PORT:-$(( 18001 + _OFF ))}"
 CAP_PORT="${CAP_PORT:-$(( 18002 + _OFF ))}"
 VLLM_URL="http://127.0.0.1:$VLLM_PORT"
-LOGS="$ENVDIR/logs/job-${SLURM_JOB_ID:-local}"
+LOGS="${TRAIN_LOGS:-$ENVDIR/logs/job-${SLURM_JOB_ID:-local}}"
 mkdir -p "$LOGS/run"
+export OPENENV_HARBOR_TRIALS_DIR="${OPENENV_HARBOR_TRIALS_DIR:-$LOGS/trials}"
+IFS=',' read -ra JOB_GPUS <<< "${CUDA_VISIBLE_DEVICES:-0,1}"
+[ "${#JOB_GPUS[@]}" -ge 2 ] || { echo "FATAL: this launcher needs two allocated GPUs"; exit 1; }
 
 # BRIDGE THE CHECKPOINTS TO THE EVAL WATCHER.
 #
@@ -74,7 +78,12 @@ echo "checkpoints visible to eval_watcher at $WATCHDIR -> $LOGS/run"
 set -a; . "$REPO/experiments/.env"; set +a
 . "$ENVDIR/../blackbox-harbor/tools/hf_token.sh"
 
-cleanup() { pkill -P $$ 2>/dev/null || true; }
+VLLM_PID=""
+HARBOR_PID=""
+cleanup() {
+  [ -z "$HARBOR_PID" ] || kill -TERM -- "-$HARBOR_PID" 2>/dev/null || true
+  [ -z "$VLLM_PID" ] || kill -TERM -- "-$VLLM_PID" 2>/dev/null || true
+}
 trap cleanup EXIT
 
 # SAMPLING, FOR THE ENGINE AND THE TRAINER, FROM ONE VARIABLE SO THEY CANNOT DRIFT.
@@ -126,13 +135,22 @@ echo "== vLLM on GPU 0 ==  (ports vllm=$VLLM_PORT env=$ENV_PORT capture=$CAP_POR
 #   --weight-transfer-config {"backend":"nccl"}
 #       The trainer syncs weights into this engine over NCCL. Without it there is no transfer engine
 #       to initialise.
-CUDA_VISIBLE_DEVICES=0 \
+VLLM_EXECUTION_FLAGS=()
+if [[ "${VLLM_ENFORCE_EAGER:-1}" == 1 ]]; then
+  VLLM_EXECUTION_FLAGS+=(--enforce-eager)
+fi
+CUDA_VISIBLE_DEVICES="${JOB_GPUS[0]}" \
   VLLM_SERVER_DEV_MODE=1 \
   VLLM_USE_FLASHINFER_SAMPLER=0 \
   VLLM_USE_DEEP_GEMM=0 VLLM_DEEP_GEMM_WARMUP=skip \
-  "$PY312" -m vllm.entrypoints.openai.api_server \
+  setsid "$PY312" -m vllm.entrypoints.openai.api_server \
   --model "$MODEL" --port "$VLLM_PORT" --served-model-name "$MODEL" \
+  ${MODEL_REVISION:+--revision "$MODEL_REVISION"} \
   --trust-remote-code \
+  --dtype "${TRAIN_DTYPE:-bfloat16}" --generation-config vllm \
+  --gpu-memory-utilization "${VLLM_GPU_MEMORY_UTILIZATION:-0.9}" \
+  "${VLLM_EXECUTION_FLAGS[@]}" --no-enable-prefix-caching \
+  --limit-mm-per-prompt '{"image":0,"video":0}' \
   --max-model-len "${MAX_MODEL_LEN:-131072}" \
   --enable-auto-tool-choice --tool-call-parser qwen3_xml \
   --reasoning-parser qwen3 \
@@ -142,12 +160,14 @@ CUDA_VISIBLE_DEVICES=0 \
   --override-generation-config "{\"temperature\": $TEMPERATURE, \"top_p\": $TOP_P, \"top_k\": -1}" \
   --weight-transfer-config '{"backend":"nccl"}' \
   > "$LOGS/vllm.log" 2>&1 &
+VLLM_PID=$!
 
 # vLLM's /health returns 200 with an EMPTY body, so check the STATUS and parse nothing. A probe that
 # json.loads() it throws, and a caller treating that as "not ready" waits out the whole budget on a
 # server that came up minutes ago.
 echo "waiting for vLLM (up to 30 min: weights + torch.compile)"
 for _ in $(seq 1 900); do
+  kill -0 "$VLLM_PID" 2>/dev/null || { tail -60 "$LOGS/vllm.log"; exit 1; }
   code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$VLLM_URL/health" || true)
   [ "$code" = "200" ] && break
   sleep 2
@@ -185,6 +205,7 @@ else
       --port "$ENV_PORT" --capture-port "$CAP_PORT" --expose gradio \
       --max-output-tokens "${MAX_OUTPUT_TOKENS:-12288}" \
       > "$LOGS/env.log" 2>&1 &
+  HARBOR_PID=$!
   SERVER="http://$(hostname -s):$ENV_PORT"
   echo "  booting our own on :$ENV_PORT (capture :$CAP_PORT) -> $SERVER"
   for _ in $(seq 1 180); do
@@ -210,6 +231,48 @@ esac
 echo "  engine from server host: $(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "$VLLM_URL/health")"
 echo "harbor server healthy"
 
+# Reachability does not establish identity: gradio has reused a live URL across jobs.
+# Probe only during startup, before any rollouts; a busy /health endpoint is not a watchdog.
+if [ -n "$HARBOR_PID" ]; then
+"$PY312" - "$VLLM_URL" "$MODEL" "$CAP_PORT" "$LOGS/env.log" "$LOGS" <<'PY'
+import json
+import pathlib
+import re
+import sys
+import time
+
+import requests
+
+engine, model, cap_port, env_log, logs = sys.argv[1:]
+models = requests.get(engine + "/v1/models", timeout=15)
+models.raise_for_status()
+assert [entry["id"] for entry in models.json()["data"]] == [model], "wrong inference model"
+local = requests.get(f"http://127.0.0.1:{cap_port}/health", timeout=15)
+local.raise_for_status()
+identity = local.json()["instance"]
+match = re.search(r"^capture\s+:\d+\s+->\s+(https://\S+)", pathlib.Path(env_log).read_text(), re.M)
+if match is None:
+    raise RuntimeError("capture tunnel URL missing from the owned Harbor server log")
+url = match[1]
+for attempt in range(20):
+    try:
+        public = requests.get(url + "/health", timeout=10)
+        public.raise_for_status()
+        public_identity = public.json()["instance"]
+        break
+    except (requests.RequestException, ValueError, KeyError):
+        if attempt == 19:
+            raise
+        time.sleep(2)
+assert public_identity == identity, "capture tunnel points to a different job"
+pathlib.Path(logs, "endpoint_identity.json").write_text(json.dumps({
+    "model": model, "engine": engine, "capture_url": url, "capture_instance": identity,
+    "public_matches_local": True,
+}, indent=2) + "\n")
+print("Capture tunnel identity verified; private and public instance IDs match", flush=True)
+PY
+fi
+
 # max_inflight 32 is the REFERENCE value, and it matters beyond throughput: at 16 this run
 # measured samples/step 7.2 against the reference's 16.1, i.e. less than half the training
 # signal per optimizer step, which over 400 steps is a different experiment rather than a
@@ -220,28 +283,47 @@ echo "== trainer on GPU 1 =="
 # NOT from $REPO: the `trl/` submodule DIRECTORY shadows the `trl` package as a namespace package
 # there, and the import dies with "cannot import name '__version__' from trl (unknown location)".
 cd "$TRAINDIR"
-CUDA_VISIBLE_DEVICES=1 TRACKIO_STORAGE_MODE=sqlite \
+# Keep the trainer independent of Hub/network availability. JSONL fragments are safe on FSx.
+unset TRACKIO_SPACE_ID TRACKIO_SERVER_URL TRACKIO_BUCKET_ID TRACKIO_DATASET_ID TRACKIO_WEBHOOK_URL
+export TRACKIO_DIR="$LOGS/trackio"
+export TRACKIO_STORAGE_MODE=jsonl
+CUDA_VISIBLE_DEVICES="${JOB_GPUS[1]}" \
   "$PY312" -u train_harbor_multi.py \
   --server "${SERVER:?harbor server was neither booted nor supplied}" \
   --vllm-url "$VLLM_URL" \
   --model "$MODEL" \
+  ${MODEL_REVISION:+--model-revision "$MODEL_REVISION"} \
+  ${RESUME_FROM_CHECKPOINT:+--resume-from-checkpoint "$RESUME_FROM_CHECKPOINT"} \
   --split "${SPLIT:-AdithyaSK/data_agent_rl_environment_train}" \
   --harnesses "${HARNESSES:-opencode+mini-swe-agent}" \
+  ${ALL_TASK_HARNESS_PAIRS:+--all-task-harness-pairs} \
+  ${HARNESS_SCHEDULE:+--harness-schedule "$HARNESS_SCHEDULE"} \
   --sandbox "${SANDBOX:-e2b}" \
   --learning-rate "${LR:-3e-6}" \
   --temperature "$TEMPERATURE" \
   --num-generations "${NUM_GENERATIONS:-8}" \
   --max-inflight "${MAX_INFLIGHT:-32}" \
+  --max-staleness "${MAX_STALENESS:-4}" \
   --grad-accum "${GRAD_ACCUM:-4}" \
+  ${ATOMIC_ROLLOUTS:+--atomic-rollouts} \
+  --max-outstanding-rollouts "${MAX_OUTSTANDING_ROLLOUTS:-0}" \
+  --max-row-tokens "${MAX_ROW_TOKENS:-131072}" \
+  --per-device-batch-size "${PER_DEVICE_BATCH_SIZE:-4}" \
   ${TASK_INDICES:+--task-indices "$TASK_INDICES"} \
   ${REWARD_KEY:+--reward-key "$REWARD_KEY"} \
   ${AGENT_TURN_FILTER:+--agent-turn-filter "$AGENT_TURN_FILTER"} \
   --agent-step-limit "${AGENT_STEP_LIMIT:-17}" \
+  --agent-timeout "${AGENT_TIMEOUT:-600}" \
   --token-budget "${TOKEN_BUDGET:-40960}" \
   --max-completion-length "${MAX_COMPLETION_LENGTH:-16384}" \
   --heartbeat-stale-after-s "${HEARTBEAT_STALE_AFTER_S:-900}" \
   --dtype "${TRAIN_DTYPE:-bfloat16}" \
   --top-p "${TOP_P:-1.0}" \
   --max-steps "${MAX_STEPS:-400}" \
+  --max-train-seconds "${MAX_TRAIN_SECONDS:-0}" \
+  --coverage-min-steps "${COVERAGE_MIN_STEPS:-0}" \
+  --audit-dir "$LOGS/audit" \
+  --project "${TRACKIO_PROJECT:-data-agent-harbor-multi}" \
   --save-steps "${SAVE_STEPS:-100}" \
+  --checkpoint-max-seconds "${CHECKPOINT_MAX_SECONDS:-0}" \
   --output-dir "$LOGS/run"

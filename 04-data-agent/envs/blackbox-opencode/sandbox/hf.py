@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import time
+import os
 from pathlib import PurePosixPath
 
 import httpx
@@ -184,6 +185,6 @@ class HFSandboxBackend:
             idle_timeout=timeout_s,
             env=envs,
             forward_hf_token=self._forward_hf_token,
-            **self._sandbox_kwargs,
+            **{"namespace": os.environ.get("HF_SANDBOX_NAMESPACE"), **self._sandbox_kwargs},
         )
         return HFSandboxHandle(sbx)

@@ -58,7 +58,9 @@ class DataAgentTurn(BaseModel):
     prompt_token_ids: list[int] = Field(default_factory=list)
     completion_token_ids: list[int] = Field(default_factory=list)
     per_token_logps: list[float] = Field(default_factory=list)
-    trainable: bool = True
+    loss_mask: list[int] = Field(default_factory=list)
+    capture_metadata: dict[str, Any] = Field(default_factory=dict)
+    trainable: bool = False
     request_messages: list[dict[str, Any]] = Field(default_factory=list)
     request_tools: list[dict[str, Any]] | None = None
     text: str = ""

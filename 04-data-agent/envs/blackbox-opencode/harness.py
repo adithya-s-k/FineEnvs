@@ -57,6 +57,9 @@ def to_trace_entries(result: DataAgentRolloutResult) -> list[TraceEntry]:
     for turn in result.turns:
         if not turn.trainable or not turn.completion_token_ids:
             continue
+        from openenv.core.harness.capture.validate import validate_training_turn
+        validate_training_turn(turn.prompt_token_ids, turn.completion_token_ids,
+                               turn.per_token_logps, turn.loss_mask)
         entries.append(
             {
                 "request": {
@@ -78,10 +81,9 @@ def to_trace_entries(result: DataAgentRolloutResult) -> list[TraceEntry]:
                 "prompt_token_ids": list(turn.prompt_token_ids),
                 "completion_token_ids": list(turn.completion_token_ids),
                 "per_token_logps": list(turn.per_token_logps),
-                "loss_mask": [0] * len(turn.prompt_token_ids)
-                + [1] * len(turn.completion_token_ids),
+                "loss_mask": list(turn.loss_mask),
                 "reward": result.reward,
-                "metadata": dict(result.metadata),
+                "metadata": {**result.metadata, **turn.capture_metadata},
             }
         )
     return entries
@@ -241,7 +243,11 @@ class DataAgentSessionFactory(ResourceSessionFactory[DataAgentSession]):
         model (`str`):
             Served model id.
         sandbox (`str`, *optional*, defaults to `"e2b"`):
-            Backend name; `"e2b"` or `"hf"`.
+            Backend name; `"e2b"`, `"hf"` or `"daytona"`.
+        sampling (`dict`, *optional*):
+            Explicit trainer policy, e.g. `{"temperature": 0.8, "top_p": 1.0, "top_k": 0}`.
+            The existing capture registry enforces full-vocabulary sampling and records the
+            submitted policy on each turn. Pass the same temperature used by the trainer.
         curriculum (`str`, *optional*):
             Order the prompts by difficulty instead of shuffling: `"sprinkle"` or `"warmup:<n>"`.
             Empty keeps the split's own order. See `curriculum.py`.
@@ -257,6 +263,8 @@ class DataAgentSessionFactory(ResourceSessionFactory[DataAgentSession]):
         llm_url: str,
         model: str,
         sandbox: str = "e2b",
+        api_key: str = "",
+        sampling: dict[str, float | int] | None = None,
         agent_step_limit: int = 10,
         agent_timeout_s: float = 600.0,
         curriculum: str = "",
@@ -270,6 +278,8 @@ class DataAgentSessionFactory(ResourceSessionFactory[DataAgentSession]):
             "llm_url": llm_url,
             "model": model,
             "sandbox": sandbox,
+            "api_key": api_key,
+            "sampling": sampling,
             "agent_step_limit": agent_step_limit,
             "agent_timeout_s": agent_timeout_s,
         }

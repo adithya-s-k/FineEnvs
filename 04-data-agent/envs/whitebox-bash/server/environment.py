@@ -51,6 +51,12 @@ from .. import grader, tasks
 from ..tools import resolve
 from .sandbox import WORKDIR, ExecResult, Sandbox
 
+# The reproducible Harbor catalog uses the same native grader on Daytona.
+# Other task sources keep the original E2B backend.
+if os.environ.get("WHITE_BOX_BASH_TASK_SOURCE") == "harbor-frozen":
+    from daytona_whitebox_backend import DaytonaSandbox as Sandbox
+    WORKDIR = "/workdir"
+
 
 logger = logging.getLogger(__name__)
 
@@ -158,8 +164,9 @@ class WhiteBoxBashEnvironment(MCPEnvironment):
             # data-agent tasks stage their tables from an HF bucket and need HF_TOKEN, HF_BUCKET and
             # BUCKET_PREFIX there. Credentials travel by name through the process environment and are
             # never interpolated into a command string, so a token cannot reach a log line or a trace.
+            sandbox_kwargs = {"task": task} if tasks.TASK_SOURCE == "harbor-frozen" else {}
             sb = Sandbox.start(timeout_s=SANDBOX_TIMEOUT_S,
-                               envs=(task.metadata or {}).get("env") or {})
+                               envs=(task.metadata or {}).get("env") or {}, **sandbox_kwargs)
             if task.setup:
                 # Staging failure is fatal to the episode: an agent asked about `data.csv` that was
                 # never written will look like a model that cannot read a file.
@@ -177,6 +184,12 @@ class WhiteBoxBashEnvironment(MCPEnvironment):
                     "task_id": task.task_id, "workdir": WORKDIR}
 
         @mcp.tool
+        def close_episode(session_id: str) -> dict:
+            """Release an abandoned episode without inventing a grade."""
+            _release(session_id)
+            return {"closed": True}
+
+        @mcp.tool
         def submit_solution(session_id: str, answer: str) -> dict:
             """Record the agent's final answer. Does not grade; `grade` does."""
             s = _get(session_id)
@@ -188,6 +201,11 @@ class WhiteBoxBashEnvironment(MCPEnvironment):
         def grade(session_id: str) -> dict:
             """Score the episode and release its sandbox."""
             s = _get(session_id)
+            if (s.task.metadata or {}).get('source') == 'harbor-frozen':
+                try:
+                    return s.sandbox.grade(s.submitted)
+                finally:
+                    _release(session_id)
             check_passed: bool | None = None
             if s.alive and s.task.check:
                 check_passed = s.sandbox.bash(s.task.check).ok

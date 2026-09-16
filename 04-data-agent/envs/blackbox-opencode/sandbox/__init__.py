@@ -31,10 +31,10 @@ from .base import BgJob, ExecResult, SandboxBackend, SandboxHandle  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
-BACKENDS = ("e2b", "hf")
+BACKENDS = ("e2b", "hf", "daytona")
 
 # Per-backend home directory. See the module docstring for what a wrong value costs.
-_HOMES = {"e2b": "/home/user", "hf": "/root"}
+_HOMES = {"e2b": "/home/user", "hf": "/root", "daytona": "/root"}
 
 # THE TWO PROVIDERS TAKE DIFFERENT THINGS, AND THAT IS NOT A DETAIL TO PAPER OVER.
 #
@@ -92,6 +92,9 @@ def build_backend(backend: str, *, image: str = DEFAULT_IMAGE, **kwargs: Any) ->
         from .hf import HFSandboxBackend
 
         return HFSandboxBackend(image=image, flavor=HF_FLAVOR, **kwargs)
+    if backend == "daytona":
+        from .daytona import DaytonaSandboxBackend
+        return DaytonaSandboxBackend(image=image, **kwargs)
     raise ValueError(f"unknown sandbox backend {backend!r}; expected one of {BACKENDS}")
 
 
@@ -114,6 +117,11 @@ def available() -> dict[str, bool]:
         out["hf"] = bool(os.environ.get("HF_TOKEN") or get_token())
     except ImportError:
         out["hf"] = False
+    try:
+        import daytona  # noqa: F401
+        out["daytona"] = bool(os.environ.get("DAYTONA_API_KEY"))
+    except ImportError:
+        out["daytona"] = False
     return out
 
 
@@ -122,7 +130,8 @@ def describe() -> str:
     got = available()
     return (
         f"e2b={'ready' if got.get('e2b') else 'unavailable'} (template={E2B_TEMPLATE}), "
-        f"hf={'ready' if got.get('hf') else 'unavailable'} (flavor={HF_FLAVOR})"
+        f"hf={'ready' if got.get('hf') else 'unavailable'} (flavor={HF_FLAVOR}), "
+        f"daytona={'ready' if got.get('daytona') else 'unavailable'}"
     )
 
 

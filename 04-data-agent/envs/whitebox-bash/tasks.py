@@ -76,6 +76,8 @@ class Task:
         d = asdict(self)
         d.pop("answer", None)
         d.pop("check", None)
+        d.pop("setup", None)
+        d.pop("metadata", None)
         d["task_id"] = self.task_id
         return d
 
@@ -192,6 +194,11 @@ def _load(split: str) -> tuple[Task, ...]:
     """
     if split in _CACHE:
         return _CACHE[split]
+    if TASK_SOURCE == 'harbor-frozen':
+        from daytona_whitebox_backend import load_frozen_tasks
+        tasks = load_frozen_tasks(split)
+        _CACHE[split] = tasks
+        return tasks
     if TASK_SOURCE == "data-agent" and split not in ("demo",):
         from .dataagent import load as _load_data_agent
 
@@ -233,7 +240,7 @@ _DATA_AGENT_SPLITS = ("train", "train:easy", "train:medium", "train:hard", "test
 
 
 def list_splits() -> list[dict[str, Any]]:
-    names = _DATA_AGENT_SPLITS if TASK_SOURCE == "data-agent" else tuple(sorted(_SPLITS))
+    names = ('train', 'test') if TASK_SOURCE == 'harbor-frozen' else (_DATA_AGENT_SPLITS if TASK_SOURCE == 'data-agent' else tuple(sorted(_SPLITS)))
     return [{"name": n, "type": "train" if n.startswith("train") else "test"} for n in names]
 
 

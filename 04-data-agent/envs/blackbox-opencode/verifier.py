@@ -135,8 +135,8 @@ def grade_rollout(
             filed,
             question=task.question,
             reward_mode=task.reward_mode,
-            abs_tol=task.atol or 1e-3,
-            rel_tol=task.rtol or 1e-3,
+            abs_tol=task.atol,
+            rel_tol=task.rtol,
         )
         return Grade(float(result.reward), filed, "file", result.method)
 
@@ -148,8 +148,8 @@ def grade_rollout(
             final_message,
             question=task.question,
             reward_mode=task.reward_mode,
-            abs_tol=task.atol or 1e-3,
-            rel_tol=task.rtol or 1e-3,
+            abs_tol=task.atol,
+            rel_tol=task.rtol,
         )
         if result.reward >= 1.0:
             logger.info(
