@@ -16,11 +16,11 @@
 #   REASONING_PARSER           default qwen3 (empty disables)
 #   EXTRA_VLLM_ARGS            extra args appended verbatim
 #   READY_TIMEOUT_SEC          default 1800 (30 min, larger models need longer)
-#   TRL_PROD                   default /fsx/$USER/projects/trl_prod
+#   TRL_PROD                   default current working directory
 #
 # Outputs:
-#   /fsx/$USER/logs/vllm-tunnel-url-${SHORT_NAME}-${SLURM_JOB_ID}.txt   tunnel URL
-#   /fsx/$USER/logs/vllm-server-${SLURM_JOB_ID}.log                    vllm stdout/stderr
+#   VLLM_URL_FILE (default: $TRL_PROD/temp/vllm-url-<job>.txt)
+#   VLLM_LOG (default: $TRL_PROD/temp/vllm-server-<job>.log)
 
 set -e
 
@@ -95,6 +95,7 @@ if [ "$TUNNEL" = cloudflared ] && [ ! -f "$CLOUDFLARED" ]; then
 fi
 
 VLLM_LOG="${VLLM_LOG:-$TRL_PROD/temp/vllm-server-${SLURM_JOB_ID:-$$}.log}"
+mkdir -p "$(dirname "$VLLM_LOG")"
 : > "$VLLM_LOG"
 echo ">>> vLLM log: $VLLM_LOG"
 
@@ -209,6 +210,7 @@ case "$TUNNEL" in
 esac
 
 URL_FILE="${VLLM_URL_FILE:-$TRL_PROD/temp/vllm-url-${SLURM_JOB_ID:-$$}.txt}"
+mkdir -p "$(dirname "$URL_FILE")"
 echo "$TUNNEL_URL" > "$URL_FILE"
 
 echo ""

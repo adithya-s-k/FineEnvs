@@ -19,9 +19,11 @@ These jobs qualify the new trainer against existing separately pinned Spaces. Th
 
 | Implementation | Job | GPUs | State |
 | --- | --- | --- | --- |
-| Harbor / OpenCode | [6aaa75bb5527934177ee9b8b](https://huggingface.co/jobs/HuggingEnvs/6aaa75bb5527934177ee9b8b) | A100 ×4 allocation; two used | Running |
-| Native OpenCode | [6aaa75bb5527934177ee9b8d](https://huggingface.co/jobs/HuggingEnvs/6aaa75bb5527934177ee9b8d) | A100 ×4 allocation; two used | Running |
-| SETA whitebox | [6aaa75bbf76d6a098a710867](https://huggingface.co/jobs/HuggingEnvs/6aaa75bbf76d6a098a710867) | H200 ×2 | Running |
+| Harbor / OpenCode | [6aaa75bb5527934177ee9b8b](https://huggingface.co/jobs/HuggingEnvs/6aaa75bb5527934177ee9b8b) | A100 ×4 allocation; two used | Failed before optimizer startup: missing endpoint directory |
+| Native OpenCode | [6aaa75bb5527934177ee9b8d](https://huggingface.co/jobs/HuggingEnvs/6aaa75bb5527934177ee9b8d) | A100 ×4 allocation; two used | Failed before optimizer startup: missing endpoint directory |
+| SETA whitebox | [6aaa75bbf76d6a098a710867](https://huggingface.co/jobs/HuggingEnvs/6aaa75bbf76d6a098a710867) | H200 ×2 | Failed before optimizer startup: missing endpoint directory |
+
+The clean-Job failure is fixed by creating the endpoint/log parent directories in `serve/vllm.sh`. Replacement jobs are being qualified; the failed cohort is preserved.
 
 Completion requires `training_smoke_verified.json`: exact capture, retained supervision, native optimizer state, remote restoration and changed weights. Pending jobs are not counted as passed.
 

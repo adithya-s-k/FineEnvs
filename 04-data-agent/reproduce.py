@@ -85,6 +85,18 @@ def main():
         return
     if not (out / "config.json").is_file() and not a.dry_run:
         p.error("Run prepare first, using the same --recipe and --out")
+    if a.platform == "local" and a.action == "status":
+        for path in (out / "baseline/launch.json", out / "smoke/launch.json", out / "long/plan.json"):
+            if not path.exists():
+                continue
+            record = json.loads(path.read_text())
+            jobs = [str(record[k]) for k in ("slurm_job", "training_job", "controller_job") if record.get(k)]
+            print(json.dumps({"record": str(path), "jobs": jobs}))
+            if jobs:
+                if not all(job.isdigit() for job in jobs):
+                    p.error("Stored Slurm job IDs must be numeric")
+                run(["sacct", "-X", "-j", ",".join(jobs), "--format=JobID,State,Elapsed,ExitCode"], a.dry_run)
+        return
     if a.platform == "local" and a.action in {"eval", "smoke", "train"}:
         if a.action == "train":
             required = (a.smoke_run, a.baseline_score)
