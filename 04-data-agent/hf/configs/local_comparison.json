@@ -1,4 +1,6 @@
 {
+  "historical_record": true,
+  "usage": "Dated experiment evidence; active reproduction settings are in deployment.json.",
   "status": "native_explicit_tolerance_correction_requalification_pending",
   "compute": {
     "partition": "hopper-prod",

@@ -1,4 +1,6 @@
 {
+  "historical_record": true,
+  "usage": "Dated experiment evidence; active reproduction settings are in deployment.json.",
   "scope": "Real launcher commands and controller scheduling logic, using synthetic step metadata; no claim of 100 GPU optimizer updates",
   "passed": true,
   "main": {

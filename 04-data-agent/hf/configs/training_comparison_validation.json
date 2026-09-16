@@ -1,4 +1,6 @@
 {
+  "historical_record": true,
+  "usage": "Dated experiment evidence; active reproduction settings are in deployment.json.",
   "passed": true,
   "reference_job": 79083,
   "async_matched": {
