@@ -1,0 +1,79 @@
+[
+  {
+    "bucket": "AdithyaSK/trackio-latex-ocr-redhat-bucket",
+    "path": "trackio/latex-ocr-grpo-redhat.db",
+    "xet_hash": "1ad18ed85b37ec41870d53c413a6efbed3771891a8984ee026ada83d02a0734a",
+    "sha256": "6672d53a5c02a6c7a4a33a0bd99f3c102935de4910dc8a82c0e90f5d3c52af0b",
+    "size": 20254720
+  },
+  {
+    "bucket": "AdithyaSK/trackio-latex-ocr-bucket-2",
+    "path": "trackio/latex-ocr-grpo.db",
+    "xet_hash": "8e9b812aeb967b34ea74be3d7f7a28f0a8fc9bfdbbb9b6e7eda70e55625e52be",
+    "sha256": "9988cf46b1412fa777c0ea5c0c0a93e163f7f46ae8ffe3168c7e74920953d475",
+    "size": 299008
+  },
+  {
+    "bucket": "AdithyaSK/latex-ocr-colocate-5k-stable-bucket",
+    "path": "trackio/latex-ocr-colocate-5k-stable.db",
+    "xet_hash": "2d01eda62ba76ee0c00a9832755111fcc29d1fa2bb5211d66a0236a2726240cc",
+    "sha256": "8d982f203a520541d81243c64f7b1b5e0b34f8c48a661ab9577ab0632c7c60f1",
+    "size": 31014912
+  },
+  {
+    "bucket": "AdithyaSK/latex-ocr-colocate-5k-bucket",
+    "path": "trackio/latex-ocr-colocate-5k.db",
+    "xet_hash": "06cb2556f131681f7a8b9450b6df76f2aea0a575d17b16cb74bc7cb41012f77e",
+    "sha256": "36384e3f2265de4b9d5903f018fbe4fb5d8ddb078eda744e383b9809e3fd739d",
+    "size": 84631552
+  },
+  {
+    "bucket": "AdithyaSK/latex-ocr-ablation-scale-bucket",
+    "path": "trackio/latex-ocr-ablation-scale.db",
+    "xet_hash": "e130ccf7b517d8cda4a5dd345405fc10abaa05ad00bf24c3ad30f864736e8e13",
+    "sha256": "8fc0d1beb192e5d98fec213810be746cf788327a31376337fffbf817ec1a6985",
+    "size": 28323840
+  },
+  {
+    "bucket": "AdithyaSK/latex-ocr-ablation-bucket",
+    "path": "trackio/latex-ocr-ablation-smoke.db",
+    "xet_hash": "909bacf26541d61e3a2d40e588c87377f85df91859c3d9108b400051f37bf01c",
+    "sha256": "7928c1933e44fddd7cd3596ff5ced61e84bdca9efdeb79113dcfdcf439ccc492",
+    "size": 2445312
+  },
+  {
+    "bucket": "AdithyaSK/latex-ocr-ablation-bucket",
+    "path": "trackio/latex-ocr-tune-check.db",
+    "xet_hash": "6b805263a9ad6c3966b0ed4c5b433108149e8cc653739c112aeb8b300cf4f7d8",
+    "sha256": "5bd3089afa8734a21a37001ce8636401488dee3a5a3482f79f12416202e51fba",
+    "size": 819200
+  },
+  {
+    "bucket": "AdithyaSK/trackio-latex-ocr-demo-bucket",
+    "path": "trackio/latex-ocr-grpo-demo.db",
+    "xet_hash": "e7960ba0149b8d342fb82ae6e51c89f151602e3decee8966f9c91d29342d67ff",
+    "sha256": "92f24c994c372050f436978a59ecc7a4da485ca0429889afcce4a48cb84f1aea",
+    "size": 1486848
+  },
+  {
+    "bucket": "AdithyaSK/latex-ocr-grpo-bucket",
+    "path": "trackio/latex-ocr-2b-overnight.db",
+    "xet_hash": "23737faff565bb1e3240144309a30428587d8bd77104bcdc1720807962a17ebe",
+    "sha256": "4ad9b6bbe8162b79b533e7e59adde3aeb2751d12954a8a79a059f584b150ce1c",
+    "size": 9924608
+  },
+  {
+    "bucket": "AdithyaSK/trackio-latex-ocr-bucket",
+    "path": "trackio/latex-ocr-2b-overnight.db",
+    "xet_hash": "7ea3582c7b588035006794f81506920fb66796877202bcbbdf9151daea4f4d70",
+    "sha256": "729f94a34bcbc74e47282428650e4079ebb699af5b98938e6bab3f064715acdd",
+    "size": 33370112
+  },
+  {
+    "bucket": "AdithyaSK/trackio-latex-ocr-bucket",
+    "path": "trackio/latex-ocr-eval.db",
+    "xet_hash": "003070f96f1c2728ed635784fc07fc67cc5ea05c93538200a3b2ce3ca09cf645",
+    "sha256": "c5bb3f6530039ba6af937ce7b580610a248cf453dfad36c07603a7561304c88d",
+    "size": 233472
+  }
+]

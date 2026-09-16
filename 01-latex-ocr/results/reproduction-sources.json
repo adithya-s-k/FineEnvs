@@ -1,0 +1,55 @@
+{
+  "recovered_on": "2026-09-14",
+  "source_repository": "adithya-s-k/trl_prod",
+  "source_revision": "4d82cafc0090d480d856a46bdcca0865434ee932",
+  "source_commit_date": "2026-07-26",
+  "files": [
+    {
+      "path": "train/historical/train_ablation.py",
+      "original_path": "experiments/vlm_ocr/ablation/train_ablation.py",
+      "sha256": "c4a9419a2938931d3dcd0ab2f04316f9b13587d10ae1433e3cc7111bb15b10d5"
+    },
+    {
+      "path": "train/historical/colocate_5k.slurm",
+      "original_path": "experiments/vlm_ocr/ablation/colocate_5k.slurm",
+      "sha256": "26946ccdf913a360007fcb8817e4bfb82b3868138a2c0ca3d7e7dfebc6635eba"
+    },
+    {
+      "path": "train/historical/colocate_5k_stable.slurm",
+      "original_path": "experiments/vlm_ocr/ablation/colocate_5k_stable.slurm",
+      "sha256": "0011f983c227d63678d0c4021ce4934aed24f8149e8d88cbf9558643b906513b"
+    }
+  ],
+  "submodules_at_source_revision": {
+    "trl": {
+      "repository": "adithya-s-k/trl",
+      "revision": "3389ccb27bf9621db31ba3496f006b86ed3bfaaa"
+    },
+    "OpenEnv": {
+      "repository": "adithya-s-k/OpenEnv",
+      "revision": "238b36e082dbefb829f3f6a446dae7ef09df1853"
+    }
+  },
+  "recovered_launcher_protocol": {
+    "mode": "env",
+    "tune": "full",
+    "num_train_samples": 5000,
+    "eval_samples": 200,
+    "eval_interval": 500,
+    "save_steps": 500,
+    "image_max_side": 512,
+    "eval_decoding": "greedy",
+    "eval_indices": "first 200 test rows",
+    "gpus_per_run": 1,
+    "cpus_per_run": 24,
+    "slurm_partition": "hopper-prod",
+    "cuda_module": "13.0"
+  },
+  "limitations": [
+    "Source snapshot is later than the July 23 Trackio runs and includes an evaluation-session cleanup fix.",
+    "Trackio configs do not independently record evaluation sample count or IDs.",
+    "Exact job-time source revision, dependency freeze, model and dataset revisions, and original termination logs were not recovered.",
+    "Recovered Slurm templates include original cluster paths; portable replay commands are in REPRODUCE.md.",
+    "Full historical GPU training was not rerun during source recovery."
+  ]
+}

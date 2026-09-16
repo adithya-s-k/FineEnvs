@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "real_data": false,
+  "source": "offline-fixture",
+  "results": [
+    {
+      "mode": "materialize",
+      "splits": [
+        "train",
+        "test"
+      ],
+      "test_tasks": 2,
+      "scores": {
+        "empty": 0.0,
+        "exact": 1.0,
+        "partial": 0.5,
+        "padded": 0.0
+      }
+    },
+    {
+      "mode": "stream",
+      "splits": [
+        "train",
+        "test"
+      ],
+      "test_tasks": 2,
+      "scores": {
+        "empty": 0.0,
+        "exact": 1.0
+      }
+    }
+  ]
+}

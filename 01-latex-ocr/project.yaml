@@ -2,16 +2,26 @@ name: latex-ocr
 title: "LaTeX OCR"
 tagline: "Train Qwen3-VL-2B to read math images into LaTeX, with a verifiable reward."
 order: 1
-status: notebook-only   # env/ and train/ still to be extracted from the notebook
+status: stable   # environment, shared notebook/GRPO runner, HF Jobs, smoke tests
 
 hub:
   org: HuggingEnvs
   spaces:
-    - AdithyaSK/latex-ocr-env
+    - HuggingEnvs/latex-ocr-env
+
+  models:
+    - HuggingEnvs/qwen3.5-latex-ocr-grpo
+  datasets:
+    - unsloth/LaTeX_OCR
+  trackio:
+    - HuggingEnvs/trackio-latex-ocr
+  buckets:
+    - HuggingEnvs/latex-ocr-results
+  collection: HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c
 
 envs:
   - name: latex_ocr
     summary: "Single-turn image -> LaTeX, reward from an OpenEnv server."
     backend: http
     frameworks:
-      openenv: {transport: http-mcp, space: AdithyaSK/latex-ocr-env, verified: true}
+      openenv: {transport: http-websocket, space: HuggingEnvs/latex-ocr-env, verified: true}

@@ -1,0 +1,46 @@
+{
+  "status": "passed",
+  "smoke": true,
+  "steps": 2,
+  "training_loss": -0.017401469871401787,
+  "adapter_updated": true,
+  "baseline": {
+    "mean_reward": 0.4859205,
+    "samples": [
+      {
+        "index": 0,
+        "reward": 0.518182,
+        "prediction": "$$b _ { 2 } ^ { \\pm } = \\sum _ { \\mu , \\nu \\in \\mathcal { R } } ( L ^ { \\pm } ) _ { \\mu \\nu } ^ { 2 } / ( 4 \\omega C _ { \\mathcal { R } } ) .$$",
+        "target": "b _ { 2 } ^ { \\pm } = \\sum _ { \\mu , \\nu \\in { \\cal R } } ( L ^ { \\pm } ) _ { \\mu \\nu } ^ { 2 } / ( 4 \\omega C _ { \\cal R } ) ."
+      },
+      {
+        "index": 1,
+        "reward": 0.453659,
+        "prediction": "$$\\frac { \\int _ { S } | \\nabla \\phi | ^ { 2 } d V } { \\int _ { S } | \\phi | ^ { 2 } d V } < 1 0 \\lambda .$$",
+        "target": "\\frac { \\int _ { S } \\vert \\nabla \\phi \\vert ^ { 2 } d V } { \\int _ { S } \\vert \\phi \\vert ^ { 2 } d V } < 1 0 \\lambda ."
+      }
+    ]
+  },
+  "trained": {
+    "mean_reward": 0.4859205,
+    "samples": [
+      {
+        "index": 0,
+        "reward": 0.518182,
+        "prediction": "$$b _ { 2 } ^ { \\pm } = \\sum _ { \\mu , \\nu \\in \\mathcal { R } } ( L ^ { \\pm } ) _ { \\mu \\nu } ^ { 2 } / ( 4 \\omega C _ { \\mathcal { R } } ) .$$",
+        "target": "b _ { 2 } ^ { \\pm } = \\sum _ { \\mu , \\nu \\in { \\cal R } } ( L ^ { \\pm } ) _ { \\mu \\nu } ^ { 2 } / ( 4 \\omega C _ { \\cal R } ) ."
+      },
+      {
+        "index": 1,
+        "reward": 0.453659,
+        "prediction": "$$\\frac { \\int _ { S } | \\nabla \\phi | ^ { 2 } d V } { \\int _ { S } | \\phi | ^ { 2 } d V } < 1 0 \\lambda .$$",
+        "target": "\\frac { \\int _ { S } \\vert \\nabla \\phi \\vert ^ { 2 } d V } { \\int _ { S } \\vert \\phi \\vert ^ { 2 } d V } < 1 0 \\lambda ."
+      }
+    ]
+  },
+  "reward_delta": 0.0,
+  "job_url": "https://huggingface.co/jobs/AdithyaSK/6aa7e1145527934177eddb1f",
+  "source_revision": "e954ec2164899366d7467938b1ac19b07f650ab3",
+  "hardware": "a10g-small",
+  "model": "Qwen/Qwen3-VL-2B-Instruct"
+}

@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "real_data": true,
+  "source": "https://huggingenvs-latex-ocr-env.hf.space",
+  "results": [
+    {
+      "mode": "materialize",
+      "splits": [
+        "train",
+        "test"
+      ],
+      "test_tasks": 3000,
+      "scores": {
+        "empty": 0.0,
+        "exact": 1.0,
+        "partial": 0.592405,
+        "padded": 0.0
+      }
+    }
+  ]
+}
