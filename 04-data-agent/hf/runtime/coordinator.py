@@ -42,16 +42,8 @@ def verified_terminal_result(stage, score, evidence, manifest, sha, source, stat
 
 def sync_decisions(api, decisions, destination):
     """Retry transient bucket failures without losing submission intent."""
-    from huggingface_hub.errors import HfHubHTTPError
-    for attempt in range(3):
-        try:
-            api.sync_bucket(str(decisions), destination, quiet=True)
-            return
-        except HfHubHTTPError as exc:
-            code = getattr(exc.response, "status_code", None)
-            if attempt == 2 or code not in {429, 500, 502, 503, 504}:
-                raise
-            time.sleep(30 * (attempt + 1))
+    from bucket_io import sync_with_retry
+    sync_with_retry(api, decisions, destination)
 
 
 def submit_once(state, key, known, persist, launch):
