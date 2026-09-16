@@ -10,6 +10,7 @@ The [complete report](results/2026-09-16/REPORT.md) includes training history an
 | --- | ---: | ---: | ---: |
 | Base | 14.6% | 15.9% | 18.8% |
 | 100 | 24.8% | 19.7% | 34.8% |
+| 150 (final SETA) | — | — | **38.0%** |
 | 200 | 26.3% | 22.1% | — |
 | 300 | 28.6% | 21.6% | — |
 | 400 | 33.3% | 26.4% | — |
@@ -21,7 +22,9 @@ The [complete report](results/2026-09-16/REPORT.md) includes training history an
 | 900 | Incomplete | 25.3% | — |
 | 1000 | Incomplete | **29.8%** | — |
 
-Harbor multi-harness and native OpenCode reached 1,000 training steps. Native OpenCode's final four-harness evaluation is complete at 29.8%; Harbor multi-harness still lacks accepted step-900/1000 scores. SETA was intentionally stopped after a verified checkpoint 150; its final evaluation is pending in this snapshot. Harbor OpenCode-only is a new run in progress; no post-training checkpoint score is claimed here.
+Harbor multi-harness and native OpenCode reached 1,000 training steps. Native OpenCode's final four-harness evaluation is complete at 29.8%; Harbor multi-harness still lacks accepted step-900/1000 scores. SETA was intentionally stopped after a verified checkpoint 150; its final evaluation completed at **38.0%**. Harbor OpenCode-only is a new run in progress; no post-training checkpoint score is claimed here.
+
+The async report/CSV/figure retain their 10:50 UTC snapshot. SETA's later result has a separate [checkpoint-150 receipt](results/2026-09-16/seta-checkpoint-150.json), including the verified model manifest, complete scoring and job identity.
 
 ## Baselines and difficulty
 
@@ -30,6 +33,7 @@ Harbor multi-harness and native OpenCode reached 1,000 training steps. Native Op
 | Harbor multi-harness base (E2B) | 53/132 = 40.2% | 68/472 = 14.4% | 25/396 = 6.3% | 146/1000 = 14.6% |
 | SETA base (HF Job / Daytona) | 14/33 = 42.4% | 27/118 = 22.9% | 6/99 = 6.1% | 47/250 = 18.8% |
 | SETA checkpoint 100 | 23/33 = 69.7% | 45/118 = 38.1% | 19/99 = 19.2% | 87/250 = 34.8% |
+| SETA checkpoint 150 | 28/33 = 84.8% | 49/118 = 41.5% | 18/99 = 18.2% | 95/250 = 38.0% |
 
 Native OpenCode's **standalone** base evaluation scored **21/250 = 8.4%**. That is a different protocol from the **15.9%** four-harness Harbor/Daytona baseline used for its checkpoint comparison. Do not mix these denominators or relabel one cohort as the other. The shared Harbor OpenCode-only run reuses the recorded E2B base cohort and has no new measured gain yet.
 
