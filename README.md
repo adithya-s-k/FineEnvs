@@ -54,6 +54,7 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **01** | **[LaTeX OCR](./01-latex-ocr/)** | Train Qwen3-VL-2B to read math images into LaTeX, with a verifiable reward. | 1 | 1 | 1 | ✅ stable |
 | **02** | **[Watercolour](./02-watercolour/)** | Train Qwen3.5-35B-A3B to paint watercolours by writing p5.brush sketches, rewarded by an aesthetic preference model. | 1 | 1 | 0 | ✅ trained |
 | **03** | **[GeoGuesser](./03-geoguesser/)** | Drop a VLM at a random street corner on Earth and score it on kilometres of error. | 1 | 1 | 1 | ✅ stable |
+| **04** | **[Wordle](./04-wordle/)** | Train against the cheapest multi-turn env in this repo, with a GRPO loop that can tell a failed group from a collapsed one. | 1 | 1 | 0 | ✅ trained |
 <!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
@@ -110,6 +111,19 @@ Mapillary panoramas, scored on kilometres of error. It ends up ahead of `gpt-5.4
 Ten hours on four A100s, or one GPU if you are in no hurry. Three training runs, the reward
 redesigned once, and every measurement bug written down in
 [the article](https://huggingface.co/spaces/HuggingEnvs/geoguesser-article).
+
+### [04 · Wordle](./04-wordle/) &nbsp;<sub>keep the gradient when a GRPO group has no spread</sub>
+
+**Dead groups, named.** GeoGuesser already tells you to watch `frac_reward_zero_std`. If it is near 1,
+the step taught nothing. TRL still trains on those groups. This project splits them into cliffs
+(different trajectories, same reward) and collapse (the same trajectory, G times), densifies Wordle
+with information gain, and measures the difference on CPU.
+
+A 32-d pointer over the 2,309-word answer list: process reward +0.105 solve rate against collapsed
+sparse GRPO, dead groups 0.19 → 0.03. The same classifier, pointed at GeoGuesser's published medians,
+says subtract-and-floor zeros 6.4% of within-task groups of 8 and one resample takes that to 0.4%;
+eight identical city guesses hit the 10,000× group-std ceiling. No GPU in the table. The Qwen recipe
+is in the folder.
 
 > **More coming.** Each new project is another end-to-end recipe: an environment, a training run, and
 > the artifacts on the Hub. [Proposals and contributions welcome →](./CONTRIBUTING.md)
@@ -256,6 +270,9 @@ npx skills add adithya-s-k/HuggingEnvs
 HuggingEnvs/
 ├── 00-environments-101/     3 environments × 6 frameworks
 ├── 01-latex-ocr/            train a VLM against a served reward
+├── 02-watercolour/          train against an aesthetic reward
+├── 03-geoguesser/           train a VLM to place itself on Earth
+├── 04-wordle/               GRPO that can tell a cliff from a collapse
 ├── content/
 │   ├── articles/            long-form sources (Astro → Docker Space)
 │   └── slides/              talk decks (Vite → static Space)
