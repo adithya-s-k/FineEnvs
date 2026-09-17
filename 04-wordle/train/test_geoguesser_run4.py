@@ -9,7 +9,7 @@ _TRAIN = Path(__file__).resolve().parent
 if str(_TRAIN) not in sys.path:
     sys.path.insert(0, str(_TRAIN))
 
-from geoguesser_run4 import inspect_group, run4_env
+from geoguesser_run4 import inspect_group, run4_env, should_stop
 
 
 def test_subtract_floor_group_is_a_cliff():
@@ -40,9 +40,23 @@ def test_live_group_trains():
     assert report.recommendation == "train"
 
 
+def test_collapse_with_many_turns_is_still_not_train():
+    rewards = [0.64] * 8
+    fingerprints = [("look", "guess")] * 8
+    report = inspect_group(rewards, fingerprints=fingerprints, turns=[6] * 8)
+    assert report.kind == "collapse"
+    assert report.skip
+    assert report.recommendation != "train"
+    assert "resampling will not help" in report.recommendation
+
+
 def test_run4_config_does_not_silently_change_run1():
     env = run4_env()
     assert env["SCALE_REWARDS"] == "none"
     assert env["MAX_STEPS"] == "250"
     assert env["COST_SCALE"] == "0.2"
     assert env["ACCUM"] == "2"
+    assert env["ALIVE_SKIP_CLIFF"] == "1"
+    assert env["ALIVE_STOP_COLLAPSE"] == "0.8"
+    assert should_stop(0.9, threshold=float(env["ALIVE_STOP_COLLAPSE"]))
+    assert not should_stop(0.1, threshold=float(env["ALIVE_STOP_COLLAPSE"]))

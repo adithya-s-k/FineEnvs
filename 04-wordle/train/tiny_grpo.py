@@ -50,6 +50,7 @@ from alive import (  # noqa: E402
     ReplayQueue,
     advantages,
     classify_group,
+    drop_zero_advantage_group,
     should_skip,
 )
 
@@ -280,8 +281,10 @@ def train_arm(arm: Arm, cfg: TrainConfig, word_of: list[str]) -> dict:
             if arm.skip_dead and should_skip(kind):
                 continue
             adv = advantages(rewards, kind=arm.advantage)
-            # Skip numerically dead advantages even if classification disagreed.
-            if float(np.max(np.abs(adv))) < 1e-12:
+            # Vanilla GRPO keeps a tied group in the batch mean. Dropping it
+            # here would rescale the live groups that share the step, so the
+            # *-grpo arms would not be the TRL baseline. Alive arms skip it.
+            if drop_zero_advantage_group(arm.skip_dead, adv):
                 stats.skipped += 1
                 continue
             for ep, a in zip(episodes, adv):

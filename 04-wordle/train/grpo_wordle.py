@@ -23,10 +23,16 @@ What this script changes relative to a stock TRL GRPO run, and why:
   almost every group of 8 is eight failures; under a sparse reward that
   is eight zeros and a skipped gradient. The tiny-policy ablation in
   `tiny_grpo.py` is the measurement.
-- `get_reward` records the group, classifies it as live / cliff / collapse,
-  and feeds cliff tasks into a replay map so the next epoch sees them more
-  than once. GeoGuesser's 3,452-task split was visited once and never
-  repeated; the zeros were the episodes that needed the repeats.
+- `get_reward` records the group and classifies it as live / cliff /
+  collapse. Cliff tasks go into a replay queue; `reset` draws from it with
+  probability `REPLAY_MIX` instead of rewriting a random other row (that
+  row may already have been consumed). GeoGuesser's 3,452-task split was
+  visited once and never repeated; the zeros were the episodes that needed
+  the repeats.
+- The training signal is centered ranks over the group of 8, via a
+  `reward_func` that reads `env._raw_reward`. `get_reward` returns 0 in
+  that mode so TRL does not sum the raw scalar on top. `SCALE_REWARDS=none`
+  then leaves the ranks as advantages.
 - Completions are logged. `frac_reward_zero_std` is the number to watch,
   same as GeoGuesser. Collapse (identical guess sequences) is the number
   that says stop.
@@ -62,7 +68,13 @@ _TRAIN = pathlib.Path(__file__).resolve().parent
 if str(_TRAIN) not in sys.path:
     sys.path.insert(0, str(_TRAIN))
 
-from alive import AliveStats, ReplayQueue, classify_group  # noqa: E402
+from alive import (  # noqa: E402
+    AliveStats,
+    ReplayQueue,
+    choose_task,
+    classify_group,
+    group_rank_rewards,
+)
 from envs.wordle.core.game import WordleGame  # noqa: E402
 from envs.wordle.core.rewards import reward_for  # noqa: E402
 from envs.wordle.core.tasks import train_tasks  # noqa: E402
@@ -77,6 +89,11 @@ NUM_GENERATIONS = int(os.getenv("NUM_GENERATIONS", "8"))
 GENERATION_BATCH_SIZE = int(os.getenv("GENERATION_BATCH_SIZE", "8"))
 SEED = int(os.getenv("SEED", "0"))
 REWARD_SHAPE = os.getenv("REWARD_SHAPE", "process")
+# `rank` is the tiny-policy default. `raw` hands TRL the process scalar
+# and lets `SCALE_REWARDS` do GRPO/Dr.GRPO. Rank uses a batch reward_func;
+# get_reward then returns 0 so the two sources do not sum.
+ADVANTAGE = os.getenv("ADVANTAGE", "rank")
+REPLAY_MIX = float(os.getenv("REPLAY_MIX", "0.5"))
 NPROC = int(os.getenv("NPROC", "1"))
 WORLD_SIZE = int(os.getenv("WORLD_SIZE", str(NPROC)))
 
@@ -111,8 +128,8 @@ _TRACE_LOCK = threading.Lock()
 _STATS = AliveStats()
 _REPLAY = ReplayQueue()
 _GROUP_BUFFER: list[tuple[int, float, tuple]] = []
-_REMAP: dict[int, int] = {}
 _ANSWERS = list(train_tasks())
+_TASK_RNG = np.random.default_rng(SEED)
 
 
 class _DeadGroupCallback(TrainerCallback):
@@ -135,10 +152,6 @@ def _flush_group() -> None:
     kind = classify_group(rewards, fingerprints)
     _STATS.record(kind)
     _REPLAY.observe(task_id, kind)
-    if kind == "cliff":
-        # Point a random other index at this task for the rest of the run.
-        donor = random.randrange(len(_ANSWERS))
-        _REMAP[donor] = task_id
 
 
 class WordleTrainingEnv:
@@ -150,10 +163,12 @@ class WordleTrainingEnv:
         self._fingerprint: list[str] = []
 
     def reset(self, index: int = 0, **kwargs):
-        raw = int(index)
-        task_id = int(_REMAP.get(raw, raw)) % len(_ANSWERS)
+        task_id = choose_task(
+            int(index), len(_ANSWERS), _REPLAY, _TASK_RNG, REPLAY_MIX
+        )
         self._task_id = task_id
         self._fingerprint = []
+        self._raw_reward = 0.0
         self._game = WordleGame(answer=_ANSWERS[task_id], max_guesses=MAX_TURNS)
         return [
             {
@@ -178,6 +193,7 @@ class WordleTrainingEnv:
     def get_reward(self) -> float:
         game = self._game
         if game is None:
+            self._raw_reward = 0.0
             return 0.0
         reward = reward_for(
             REWARD_SHAPE,
@@ -188,9 +204,26 @@ class WordleTrainingEnv:
             max_guesses=game.max_guesses,
             invalid_count=game.invalid_count,
         )
+        self._raw_reward = float(reward)
         _GROUP_BUFFER.append((self._task_id, float(reward), tuple(self._fingerprint)))
         _flush_group()
+        # Rank mode: TRL sums get_reward with reward_funcs. Return 0 here
+        # so the centered ranks from `training_rewards` are the signal.
+        if ADVANTAGE == "rank":
+            return 0.0
         return float(reward)
+
+
+def training_rewards(completions, environments, **kwargs):
+    """Batch ranks (or raw scalars) over the GRPO group.
+
+    Reads `env._raw_reward` so a group of 8 can be ranked together. TRL
+    calls this with one environment per completion.
+    """
+    raws = [float(getattr(env, "_raw_reward", 0.0)) for env in environments]
+    if ADVANTAGE != "rank":
+        return raws
+    return group_rank_rewards(raws, NUM_GENERATIONS)
 
 
 def build_dataset(seed: int) -> Dataset:
@@ -215,6 +248,9 @@ def main() -> None:
         path.mkdir(parents=True, exist_ok=True)
         (path / ".keep").write_text("")
 
+    trainer_kwargs = {}
+    if ADVANTAGE == "rank":
+        trainer_kwargs["reward_funcs"] = training_rewards
     trainer = GRPOTrainer(
         model=MODEL,
         train_dataset=build_dataset(SEED),
@@ -253,9 +289,11 @@ def main() -> None:
             report_to=os.getenv("REPORT_TO", "trackio"),
             trackio_space_id=os.getenv("TRACKIO_SPACE", TRACKIO_SPACE),
             trackio_static_space_id=False,
-            # Rank advantages are the tiny-policy default. TRL will still
-            # subtract the group mean; centered ranks are invariant to that.
-            # `group` is run 1's amplifier — leave it available as an env.
+            # Default `none`: training_rewards already returned centered
+            # ranks, which are zero-mean, so subtracting the mean is a no-op
+            # and dividing by std would re-introduce the 60× amplifier.
+            # Set SCALE_REWARDS=group to reproduce run 1 on the raw scalar
+            # (also set ADVANTAGE=raw).
             scale_rewards=os.getenv("SCALE_REWARDS", "none"),
             beta=float(os.getenv("BETA", "0.0")),
             num_iterations=int(os.getenv("NUM_ITERATIONS", "1")),
@@ -265,6 +303,7 @@ def main() -> None:
             hub_model_id=HUB_MODEL_ID,
             hub_private_repo=False,
         ),
+        **trainer_kwargs,
     )
     trainer.add_callback(_DeadGroupCallback())
     trainer.train(resume_from_checkpoint=os.getenv("RESUME") or None)

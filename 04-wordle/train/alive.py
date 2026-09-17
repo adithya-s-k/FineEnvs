@@ -223,3 +223,63 @@ def clamp_grpo_scale(std: float, eps: float = 1e-4, max_scale: float = 10.0) -> 
     it is the cheap version of switching to ranks.
     """
     return min(max_scale, 1.0 / (std + eps))
+
+
+def drop_zero_advantage_group(skip_dead: bool, adv: Sequence[float]) -> bool:
+    """Whether to omit a tied group from the backward pass.
+
+    Vanilla GRPO keeps the zero terms in the batch mean. Dropping them
+    rescales the live groups that share the step. Only the alive arms
+    skip a dead group.
+    """
+    array = np.asarray(list(adv), dtype=np.float64)
+    if float(np.max(np.abs(array))) >= 1e-12:
+        return False
+    return bool(skip_dead)
+
+
+def choose_task(
+    index: int,
+    n_tasks: int,
+    replay: ReplayQueue,
+    rng: np.random.Generator,
+    mix: float,
+) -> int:
+    """Pick a task index, mixing replayed cliffs in with probability `mix`.
+
+    Uniform `index % n` is the TRL dataset order. Replay is sampled from
+    the queue's weights, not by rewriting a random other row — that row
+    may already have been consumed in a one-pass dataset.
+    """
+    if n_tasks <= 0:
+        raise ValueError("n_tasks must be positive")
+    index = int(index) % n_tasks
+    if mix <= 0 or not replay.weights:
+        return index
+    if float(rng.random()) >= mix:
+        return index
+    return replay.sample(range(n_tasks), rng)
+
+
+def group_rank_rewards(raws: Sequence[float], group_size: int) -> list[float]:
+    """Centered ranks, one GRPO group at a time, for a TRL reward_func.
+
+    TRL still subtracts the group mean afterwards; ranks are already
+    zero-mean, so `scale_rewards=none` leaves them as advantages.
+    """
+    if group_size < 2:
+        raise ValueError("group_size must be at least 2")
+    values = [float(x) for x in raws]
+    out: list[float] = []
+    for i in range(0, len(values), group_size):
+        chunk = values[i : i + group_size]
+        if len(chunk) < 2:
+            out.extend(chunk)
+            continue
+        out.extend(advantages(chunk, kind="rank").tolist())
+    return out
+
+
+def collapse_stop(frac_collapse: float, threshold: float) -> bool:
+    """True when a run should halt because most groups are the same trajectory."""
+    return float(frac_collapse) >= float(threshold)

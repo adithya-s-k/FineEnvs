@@ -119,9 +119,9 @@ the step taught nothing. TRL still trains on those groups. This project splits t
 (different trajectories, same reward) and collapse (the same trajectory, G times), densifies Wordle
 with information gain, and measures the difference on CPU.
 
-A 32-d pointer over the 2,309-word answer list: process reward +0.105 solve rate against collapsed
-sparse GRPO, dead groups 0.19 → 0.03. The same classifier, pointed at GeoGuesser's published medians,
-says subtract-and-floor zeros 6.4% of within-task groups of 8 and one resample takes that to 0.4%;
+A 32-d pointer over the 2,309-word answer list: process reward 0.800 against sparse GRPO's 0.745
+at step 200, dead groups 0.20 → 0.03. The same classifier, pointed at GeoGuesser's published medians,
+says subtract-and-floor zeros 6.4% of within-task groups of 8 and one same-task resample takes that to 4.6%;
 eight identical city guesses hit the 10,000× group-std ceiling. No GPU in the table. The Qwen recipe
 is in the folder.
 

@@ -17,7 +17,7 @@ hf jobs uv run --flavor a100-large --timeout 6h --image huggingface/trl \
   train/grpo_wordle.py
 ```
 
-Step 3 has not been run in this contribution. The numbers in the project README are from steps 1 and 2. If you run step 3, the metric to watch is `alive/frac_cliff` against TRL's `frac_reward_zero_std` — they should agree — and `alive/frac_collapse`, which TRL does not report.
+Step 3 has not been run in this contribution. The numbers in the project README are from steps 1 and 2. If you run step 3, the metric to watch is `alive/frac_dead` against TRL's `frac_reward_zero_std` — they should agree; both count every zero-std group — and `alive/frac_collapse`, which TRL does not report.
 
 ## Files
 

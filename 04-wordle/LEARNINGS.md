@@ -8,26 +8,26 @@ Paying for information gain beat paying for a solve. Skipping dead groups did no
 
 | arm | best | at | end | dead at end |
 |---|---:|---:|---:|---:|
-| sparse-grpo | 0.770 | 75 | 0.710 | 0.19 |
+| sparse-grpo | 0.770 | 75 | 0.745 | 0.20 |
 | sparse-alive | 0.790 | 50 | 0.700 | 0.05 |
-| process-grpo | 0.815 | 200 | 0.815 | 0.07 |
+| process-grpo | 0.800 | 200 | 0.800 | 0.11 |
 | process-alive | 0.820 | 175 | 0.760 | 0.03 |
 
 ## 1. Sparse GRPO peaked and then ate itself
 
-Dead groups on sparse-grpo: 0.02 at the peak, 0.19 at step 200. Collapse — identical guess sequences — 0.00 to 0.09. Solve rate dropped 0.060. That is GeoGuesser run 1's 750 wasted steps, compressed into two minutes of CPU.
+Dead groups on sparse-grpo: 0.02 at the peak, 0.20 at step 200. Collapse — identical guess sequences — 0.00 to 0.08. Solve rate dropped off the peak. That is GeoGuesser run 1's 750 wasted steps, compressed into a few minutes of CPU.
 
 Alive on the same reward kept collapse to 0.03 and dead groups to 0.05. It did not keep the solve rate. Filtering a zero-std group removes a wasted backward pass. It does not create a ranking the reward refused to give.
 
 ## 2. Process reward is the ranking the cliff destroyed
 
-Two failed Wordle episodes, one that halved the remaining set and one that guessed `xylyl`, share a sparse reward of 0. They do not share a process reward. Once that ordering exists, ordinary GRPO has something to do, and on this run it used it: process-grpo was still climbing at step 200.
+Two failed Wordle episodes, one that halved the remaining set and one that guessed `xylyl`, share a sparse reward of 0. They do not share a process reward. Once that ordering exists, ordinary GRPO has something to do, and on this run it used it: process-grpo finished at 0.800, above sparse-grpo's 0.745.
 
 This is the same observation as GeoGuesser's mixture curve. `exp(-d/1492.7) − 0.13` floored 6.43% of within-task groups. The mixture they already train with floors 0.01% of them. Densify first, filter second.
 
 ## 3. Population zeros are not group zeros
 
-29.5% of untrained GeoGuesser episodes score zero. If those were independent, P(eight zeros) = 0.295⁸ ≈ 5.7×10⁻⁵. Measured within-task, under the game curve, 6.43% of groups are dead, and 6.42 of those 6.43 points are cliffs (different distances, same zero). One resample of a dead group takes that to 0.39%.
+29.5% of untrained GeoGuesser episodes *never submitted* (`03-geoguesser/LEARNINGS.md` table). If those were independent, P(eight missing) = 0.295⁸ ≈ 5.7×10⁻⁵. Subtract-and-floor zeros more than that — 77/200 in `scoring.py` — because far submitted guesses also floor. Measured within-task, under the game curve, 6.43% of groups are dead, and 6.42 of those 6.43 points are cliffs. One resample of the *same* task takes that to 4.56%: a hard location stays hard. Drawing a fresh location instead was a different experiment, and it is not what DAPO does.
 
 `ACCUM=2` is the setting where this number is the within-task std. `ACCUM=4` mixes two tasks and the between-task variance never collapses, which is why run 2 looked stable and learned less.
 
@@ -39,6 +39,6 @@ Ranks on both of those groups are in [−0.5, 0.5]. On the identical-guess group
 
 ## 5. One seed, a pointer policy, no Qwen
 
-The tiny policy is a 32-d embedding of the answer list, masked to the grey/green tracker a person keeps on paper. It is not an LLM. The 0.02 gaps between arms at a single checkpoint are smaller than eval noise at n = 200. The 0.10 gap between process-grpo at 200 and sparse-grpo at 200 is the one we are willing to talk about, and the dead-group column is the one that transfers to GeoGuesser without a further run.
+The tiny policy is a 32-d embedding of the answer list, masked to the grey/green tracker a person keeps on paper. It is not an LLM. The 0.02 gaps between arms at a single checkpoint are smaller than eval noise at n = 200. The dead-group column (0.20 → 0.03) is the one that transfers to GeoGuesser without a further run.
 
 A Qwen training run is `train/grpo_wordle.py`. It is not in this table.

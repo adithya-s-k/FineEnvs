@@ -16,19 +16,19 @@ A 32-d pointer over the 2,309-word answer list, GRPO with groups of 8, 200 steps
 
 | arm | best solve | at step | final solve | dead groups at end |
 |---|---:|---:|---:|---:|
-| sparse + GRPO | 0.770 | 75 | 0.710 | 0.19 |
+| sparse + GRPO | 0.770 | 75 | 0.745 | 0.20 |
 | sparse + alive | 0.790 | 50 | 0.700 | 0.05 |
-| process + GRPO | 0.815 | 200 | **0.815** | 0.07 |
+| process + GRPO | 0.800 | 200 | **0.800** | 0.11 |
 | process + alive | **0.820** | 175 | 0.760 | **0.03** |
 
 `python train/tiny_grpo.py --steps 200 --seed 0`
 
 Two things happened, and they are not the same thing.
 
-1. **The reward is the gain.** Paying realised information gain instead of win/loss is +0.105 at step 200 against sparse GRPO (0.815 against 0.710), and the curve was still rising. Sparse GRPO peaked at step 75 and gave the points back.
-2. **Sparse GRPO then did what GeoGuesser run 1 did.** Dead groups went 0.02 → 0.19. Collapse — eight identical guess sequences — went 0 → 0.09. Solve rate fell 0.060 off the peak. Alive on the same sparse reward cut the dead fraction to 0.05. It did not save the solve rate by step 200. Skipping a zero-std group is not a substitute for a reward that can see the difference between two failures.
+1. **The reward is the gain.** Paying realised information gain instead of win/loss is +0.055 at step 200 against sparse GRPO (0.800 against 0.745), and process-alive's peak is 0.820. Sparse GRPO peaked at step 75 and gave some of it back.
+2. **Sparse GRPO then did what GeoGuesser run 1 did.** Dead groups went 0.02 → 0.20. Collapse — eight identical guess sequences — went 0 → 0.08. Alive on the same sparse reward cut the dead fraction to 0.05. It did not save the solve rate by step 200. Skipping a zero-std group is not a substitute for a reward that can see the difference between two failures.
 
-Single seed, n = 200. A 0.02 gap is noise. The 0.10 gap between process and collapsed sparse is not, and neither is the dead-group column.
+Single seed, n = 200. A 0.02 gap is noise. The dead-group column (0.20 → 0.03) is the one that transfers.
 
 The Qwen recipe is `train/grpo_wordle.py`. It has not been spent on a GPU in this contribution. That is a gap, not a claim.
 
@@ -51,10 +51,10 @@ A third fact, cheap to miss: 29.5% of untrained GeoGuesser episodes scoring zero
 | regime | dead groups | of which cliff | GRPO scale, median / p95 |
 |---|---:|---:|---:|
 | game curve, subtract-and-floor | 6.43% | 6.42% | 6.5× / 10,000× |
-| after one resample of a dead group | 0.39% | — | — |
+| after one *same-task* resample | 4.56% | — | — |
 | mixture × (1 − cost), the training reward | 0.01% | 0.00% | 4.5× / 15× |
 | run 1, eight identical city guesses | **100%** | 0% (all collapse) | **10,000×** |
-| run 1, 15 km of jitter around 662 km | 0% | 0% | **277× / 463×** |
+| run 1, 15 km of jitter around 662 km | 0% | 0% | **277× / 461×** |
 
 The mixture they already ship fixes the cliff on an untrained policy. It does not fix the amplifier once the policy has made up its mind. Eight identical guesses hit TRL's `1e-4` floor and scale the residual by ten thousand. Fifteen kilometres of jitter around the published ckpt1000 median is enough to keep the group technically live and still divide by ~0.004.
 
@@ -99,7 +99,7 @@ hf jobs uv run --flavor a100-large --timeout 6h --image huggingface/trl \
   train/grpo_wordle.py
 ```
 
-Watch `alive/frac_cliff` against TRL's `frac_reward_zero_std`. They should agree. Watch `alive/frac_collapse`, which TRL does not report. If collapse is high and solve rate has been flat for 50 steps, stop. That is the $70.
+Watch `alive/frac_dead` against TRL's `frac_reward_zero_std`. They should agree — both count every zero-std group. Watch `alive/frac_collapse` separately; TRL does not split cliff from collapse. If collapse is high and solve rate has been flat for 50 steps, stop. That is the $70.
 
 Dynamic sampling — keep drawing until the group is live — lives in `tiny_grpo.py` and not in the TRL script. TRL marks it unsupported. Forking `GRPOTrainer` to add it is a TRL patch.
 

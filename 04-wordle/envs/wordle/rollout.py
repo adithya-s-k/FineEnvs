@@ -1,8 +1,8 @@
 """One Wordle episode a person can read.
 
-Uses the frequency opener CRANE, then picks the remaining answer that keeps
-the most greens. Not a policy — a trajectory, so you can see what the
-environment actually returns before anyone trains against it.
+Uses the frequency opener CRANE, then the first remaining answer in list
+order. Not a policy — a trajectory, so you can see what the environment
+actually returns before anyone trains against it.
 """
 
 from __future__ import annotations

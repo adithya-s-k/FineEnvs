@@ -8,17 +8,19 @@ No checkpoints, no GPU. The numbers in LEARNINGS.md are enough to build a
 within-task rollout model and ask: of 8 samples on the same location, how
 often is the advantage exactly zero?
 
-Two facts from the GeoGuesser write-up:
+Two facts from the GeoGuesser write-up, and they are not the same number:
 
-- Untrained 4B: median error 1,226 km, 29.5% of episodes scoring zero.
-- Subtract-and-floor with mean cost 0.13 zeroed 77 of 200 episodes — a
-  3,324 km miss and an 18,723 km miss both scored 0.0.
+- Untrained 4B: median error 1,226 km, **29.5% never submitted**
+  (`LEARNINGS.md` table). Never-submit scores zero.
+- Subtract-and-floor with mean cost 0.13 zeroed **77 of 200** submitted
+  *and* missing episodes — a 3,324 km miss and an 18,723 km miss both
+  scored 0.0 (`scoring.py`). That is 38.5%, not 29.5%: the extra is
+  guesses past the cliff.
 
-A dead group is a *task* property, not a population property. 29.5% zeros
-drawn independently almost never fill a group of 8 (0.295^8 ≈ 5.7e-5).
-Groups die when the eight rollouts of one location all land on the same
-side of the cliff. That is the regime `classify_group` calls a cliff, and
-it is the regime dynamic sampling and a denser reward are for.
+A dead group is a *task* property, not a population property. 29.5%
+never-submits drawn independently almost never fill a group of 8
+(0.295^8 ≈ 5.7e-5). Groups die when the eight rollouts of one location
+all land on the same side of the cliff.
 """
 
 from __future__ import annotations
@@ -40,8 +42,15 @@ DECAY_KM = 1492.7
 LONG_DECAY_KM = 5000.0
 COST = 0.13
 MAX_COST_FRACTION = 0.2
-NO_GUESS = 0.295
+# Table column in LEARNINGS.md, untrained 4B. Not the zero-scoring rate
+# under subtract-and-floor — that is 77/200 = 0.385, and includes far
+# guesses that still submitted.
+P_NO_SUBMIT = 0.295
 MEDIAN_KM = 1226.0
+# Log-std of the per-task typical error. With P_NO_SUBMIT=0.295 this
+# puts subtract-and-floor episode zeros near the 77/200 measured in
+# scoring.py; mixture zeros stay at the never-submit rate.
+TASK_SIGMA = 0.85
 GROUP = 8
 N_TASKS = 20_000
 
@@ -61,22 +70,36 @@ def mixture_multiply(distance_km: float | None, cost: float = COST) -> float:
     return min(1.0, score) * (1.0 - min(max(cost, 0.0), MAX_COST_FRACTION))
 
 
-def sample_task_distances(rng: np.random.Generator, n_tasks: int, group: int) -> np.ndarray:
+def sample_task_distances(
+    rng: np.random.Generator,
+    n_tasks: int,
+    group: int,
+    task_median: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
     """Within-task distances.
 
     Each task has a typical error drawn log-normal around the published
     median. The eight rollouts jitter that error with a 0.35 log-std — about
     a 1.4× typical ratio between the best and worst of eight, which is in
     the range of an untrained 4B guessing the same city eight different ways.
-    Independently, each rollout fails to submit with probability 0.295.
+    Independently, each rollout fails to submit with probability
+    `P_NO_SUBMIT` (the table's never-submitted rate, not the subtract
+    floor).
+
+    Pass `task_median` to resample the *same* tasks: new jitter and
+    submit/fail draws, same locations. That is what DAPO dynamic sampling
+    does. Drawing a fresh log-normal median would be a different prompt.
     """
-    task_median = rng.lognormal(mean=math.log(MEDIAN_KM), sigma=0.85, size=n_tasks)
+    if task_median is None:
+        task_median = rng.lognormal(
+            mean=math.log(MEDIAN_KM), sigma=TASK_SIGMA, size=n_tasks
+        )
     jitter = rng.normal(0.0, 0.35, size=(n_tasks, group))
     distances = task_median[:, None] * np.exp(jitter)
-    missing = rng.random((n_tasks, group)) < NO_GUESS
+    missing = rng.random((n_tasks, group)) < P_NO_SUBMIT
     distances = distances.astype(np.float64)
     distances[missing] = np.nan
-    return distances
+    return distances, np.asarray(task_median, dtype=np.float64)
 
 
 def rewards_from(distances: np.ndarray, fn) -> np.ndarray:
@@ -150,8 +173,8 @@ def dynamic_sampling_rate(rewards: np.ndarray, extra_draws: np.ndarray) -> dict:
 
 def main() -> None:
     rng = np.random.default_rng(0)
-    distances = sample_task_distances(rng, N_TASKS, GROUP)
-    extra = sample_task_distances(rng, N_TASKS, GROUP)
+    distances, task_median = sample_task_distances(rng, N_TASKS, GROUP)
+    extra, _ = sample_task_distances(rng, N_TASKS, GROUP, task_median=task_median)
     # Converged run-1 policy: one glance at a capital, ~1 turn, tiny jitter.
     # Distances cluster around 662 km (the published median of ckpt1000).
     collapse_d = rng.normal(662.0, 15.0, size=(N_TASKS, GROUP))
@@ -159,11 +182,12 @@ def main() -> None:
     report = {
         "model": {
             "median_km": MEDIAN_KM,
-            "p_no_guess": NO_GUESS,
+            "p_never_submit": P_NO_SUBMIT,
             "mean_cost": COST,
             "group": GROUP,
             "tasks": N_TASKS,
-            "independent_p_all_zero": NO_GUESS**GROUP,
+            "independent_p_all_never_submit": P_NO_SUBMIT**GROUP,
+            "scoring_py_frac_zero_subtract": 77 / 200,
         },
         "game_subtract": summarise(rewards_from(distances, game_subtract), distances),
         "mixture_multiply": summarise(rewards_from(distances, mixture_multiply), distances),
@@ -186,7 +210,9 @@ def main() -> None:
             rewards_from(extra, mixture_multiply),
         ),
     }
-    # Sanity: subtract-and-floor should zero a large minority of *episodes*.
+    # Sanity: mixture zeros should match never-submit; subtract zeros should
+    # sit near scoring.py's 77/200, because far submitted guesses also floor.
+    report["episode_frac_never_submit"] = float(np.mean(np.isnan(distances)))
     flat = rewards_from(distances, game_subtract).ravel()
     report["episode_frac_zero_game_subtract"] = float(np.mean(flat == 0.0))
     mix = rewards_from(distances, mixture_multiply).ravel()

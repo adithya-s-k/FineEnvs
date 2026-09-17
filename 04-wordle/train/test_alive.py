@@ -15,7 +15,10 @@ if str(_TRAIN) not in sys.path:
 from alive import (
     ReplayQueue,
     advantages,
+    choose_task,
     classify_group,
+    drop_zero_advantage_group,
+    group_rank_rewards,
     group_std,
     is_dead,
     should_skip,
@@ -87,6 +90,33 @@ def test_loo_is_zero_sum():
     adv = advantages(rewards, kind="loo")
     assert abs(float(adv.sum())) < 1e-9
     assert adv[-1] > adv[0]
+
+
+def test_vanilla_grpo_keeps_tied_groups_in_the_batch():
+    adv = advantages([0.0] * 8, kind="grpo")
+    assert drop_zero_advantage_group(False, adv) is False
+    assert drop_zero_advantage_group(True, adv) is True
+    live = advantages([0.1, 0.2, 0.3, 0.4], kind="grpo")
+    assert drop_zero_advantage_group(True, live) is False
+
+
+def test_choose_task_replays_cliffs_instead_of_rewriting_a_consumed_row():
+    rng = np.random.default_rng(0)
+    q = ReplayQueue()
+    q.observe(7, "cliff")
+    draws = [choose_task(0, 10, q, rng, mix=1.0) for _ in range(400)]
+    assert draws.count(7) > 2 * draws.count(0)
+    uniform = [choose_task(3, 10, q, rng, mix=0.0) for _ in range(20)]
+    assert uniform == [3] * 20
+
+
+def test_group_rank_rewards_chunk_by_group_size():
+    raws = [0.1, 0.9, 0.2, 0.8]
+    ranked = group_rank_rewards(raws, group_size=2)
+    assert len(ranked) == 4
+    assert ranked[0] < ranked[1]
+    assert ranked[2] < ranked[3]
+    assert abs(ranked[0] + ranked[1]) < 1e-9
 
 
 def test_replay_oversamples_cliff_tasks():
