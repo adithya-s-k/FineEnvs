@@ -1,0 +1,13 @@
+html { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+body { margin: 0; font-family: var(--default-font-family); color: var(--text-color); }
+audio { display: block; width: 100%; }
+
+img,
+picture {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  position: relative;
+  z-index: var(--z-elevated);
+}

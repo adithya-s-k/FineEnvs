@@ -1,0 +1,152 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## Introduction
+
+If you use AI to write code, you have probably run the same model through more than one tool. Claude
+Code in the terminal, Codex or Cursor in the editor, maybe Cline. And you may have noticed something
+that is easy to write off as a bad day: the model that felt sharp in one tool feels clumsy in the
+next. Same model, same task, different tool wrapped around it, and it behaves like a different
+assistant.
+
+That is not your imagination. It is measurable, and it has become one of the central problems in
+training open models.
+
+The tool wrapped around the model is called an **agent harness**. It runs the loop, decides which
+tools the model can use, writes the context the model reads, interprets what comes back, and decides
+when to stop. To the model, the harness is the entire world. And the open model you downloaded was
+almost certainly trained inside exactly one of them.
+
+### The labs already tell you this, in the fine print
+
+Read the release notes of the newest open models and the same admission keeps surfacing in different
+handwriting.
+
+GLM-4.7 promises "significant improvements on complex tasks in mainstream agent frameworks such as
+Claude Code, Kilo Code, Cline, and Roo Code" [@zai2025glm47]. Kimi K2 reports Terminal-Bench twice,
+25.0 under Terminus and 30.0 inside Moonshot's own framework, as two rows of one table
+[@kimi2025k2]. MiniMax M2 names a different harness for almost every benchmark it lists
+[@minimax2025m2card]. DeepSeek-V3.2 checks its scores across Claude Code and RooCode, then admits
+its thinking mode is incompatible with Terminus, so that number had to come from somewhere else
+[@deepseek2025v32].
+
+Sit with that last one. A major lab shipped a model that could not run in a major harness, noticed,
+and reported the score from a different one.
+
+Which harness a model is good in has become a shipping claim, printed beside the benchmark numbers,
+because nobody runs raw weights. They run Claude Code with your model behind it.
+
+It gets worse than uneven scores. Run the same benchmark under two harnesses and the ranking between
+models can flip. ByteDance's Seed-OSS card has two SWE-Bench Verified rows covering the same models,
+and the order reverses twice between them [@bytedance2025seedoss]. Some of that gap is extra
+sampling rather than the harness, and the reversals survive that objection anyway: more sampling can
+raise a score, it cannot explain why one model passes another while a second model moves the
+opposite way.
+
+<HtmlEmbed
+  src="d3-scaffold-reversal.html"
+  title="One benchmark, two scaffolds, two rank reversals"
+  desc="SWE-Bench Verified for four models, run under OpenHands and under Agentless."
+  frameless
+/>
+
+So "model A is better than model B" is not a harness-independent statement. Anthropic said as much
+back in 2024 [@anthropic2024swebench]. What has changed since is how much now rides on it.
+
+### How badly it breaks
+
+Not gently. The Orchard team trained a coding agent in one harness, then ran it in others
+[@peng2026orchard]:
+
+| System | OpenHands | mini-swe-agent | Kimi-CLI (unseen) |
+|---|---|---|---|
+| **OpenSWE-32B**, single-harness | 62.4 | 54.9 | **3.6** |
+| **Orchard-SWE**, multi-harness | 62.1 | 64.3 | **45.0** |
+
+62.4 percent of SWE-bench Verified in the harness it trained in. 3.6 percent in one it had never
+seen. That is not a worse score, it is a broken one. A second system in the same table does not even
+produce valid tool calls outside its own harness, so it has no score at all.
+
+<HtmlEmbed
+  src="d3-harness-lockin.html"
+  title="What single-harness training costs"
+  desc="Two systems, three harnesses, one of them collapsing."
+  frameless
+/>
+
+If you have ever watched a local model call a tool its harness has never heard of, or spill raw
+markup into a field that wanted JSON, you have seen the small version of this. The model is not
+confused about the task. It is confused about the interface, and the interface is the only thing it
+can see.
+
+The KwaiKAT team names the failure, harness scaling, and describes it better than anyone
+[@kwaikat2026katcoder]:
+
+> "In agentic RL, if training relies solely on a single fixed harness, the model often learns not
+> 'how to solve the task' but 'how to solve the task under that particular harness's interface
+> conventions.'"
+
+It shows up three ways, worth keeping for later. **Format overfitting** anchors the model to one
+action format, so parsing breaks when the protocol changes. **Context-structure overfitting** ties
+it to one harness's way of stacking up history. **Control-flow overfitting** leaves it leaning on
+someone else's retry timing and stop conditions, unable to plan for itself once they are gone.
+
+<HtmlEmbed
+  src="d3-overfit-modes.html"
+  title="Three ways a model overfits to its harness"
+  desc="What the model anchored to, and what breaks when that changes."
+  frameless
+/>
+
+### Frontier labs stopped reporting this and started training for it
+
+The fix is to vary the harness during training, which KwaiKAT frames as domain randomization applied
+to the environment. Labs now pay real money for it.
+
+poolside's Laguna report has a section titled Multi-harness Training, and its opening line is this
+article's thesis in someone else's words [@poolside2026laguna]:
+
+> "To encourage generalization across diverse agent harnesses, our training data includes
+> trajectories from external frameworks such as OpenHands, OpenCode, and Mini-SWE-Agent."
+
+That is 1.3 billion tokens of trajectories from three harnesses that are not theirs, each one's
+native behaviour deliberately left intact. Their RL phase then runs through the harness they ship to
+customers, so "any change to the deployed harness is also a change the policy is trained against."
+
+The obvious worry is that spreading training across harnesses trades peak performance for
+robustness. The one controlled ablation published so far says otherwise. OpenForgeRL trained the
+same model on one harness and on three, and the three-harness run won even on the single harness's
+home turf, 48.5 against 46.0, while nearly tripling Codex [@yu2026openforgerl]. Harness variety
+behaved like a regularizer, not a tax.
+
+None of this has to be taken on my word. Here are the passages themselves.
+
+{/* VIZ: paper-receipts: tabbed excerpt viewer. Each tab shows a real crop from the official
+     arXiv PDF of the passage being cited, with page reference and a link. The point is that the
+     claims in this section are checkable in one click. Crops live in app/public/papers/, with
+     provenance in that folder's README. */}
+<HtmlEmbed
+  src="paper-receipts.html"
+  title="The claims, in the papers themselves"
+  desc="Five 2026 reports, at the page cited."
+  frameless
+/>
+
+### What is missing
+
+Not the idea, and not the tooling. Agent Lightning takes Qwen3.5-9B from 41.8 to 56.4 percent on
+SWE-bench Verified using roughly 6,000 training examples and modest compute
+[@he2026agentlightning]. That is not a frontier-scale result and is not meant to be. It shows the
+work now fits inside what a small team, or one person with a rented GPU, can actually run.
+
+What is missing is an open one. Every published result that trains across many harnesses comes from
+a closed or semi-closed lab. Nobody has swept how many harnesses you need, or along which axes,
+before the returns flatten out. The pieces all exist, in OpenEnv, in verifiers, in SkyRL, in Harbor.
+The run does not.
+
+That is what the rest of this article is: what a harness is, what an RL environment is, how to
+capture trainable tokens out of an agent you do not control, and then the thing itself, a small open
+model trained across many harnesses, evaluated in all of them, with the parts that did not work left
+in.
+
+{/* TODO: once the Data Agent numbers are final, close with one sentence naming the headline
+     result, so the reader knows what they are reading toward. */}

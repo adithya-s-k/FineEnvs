@@ -1,0 +1,65 @@
+<div class="full-stack" style="width:100%;margin:14px 0;"></div>
+
+<style>
+  .full-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 200px;
+    padding: 28px 26px;
+    border: 1px dashed var(--border-color);
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--primary-color) 4%, transparent);
+  }
+  .full-stack .ph-tag {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--primary-color);
+  }
+  .full-stack .ph-title {
+    font-size: 17px;
+    font-weight: 650;
+    color: var(--text-color);
+  }
+  .full-stack .ph-desc {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--muted-color);
+  }
+  .full-stack .ph-file {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    color: var(--muted-color);
+    padding: 3px 7px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background: var(--surface-bg);
+  }
+</style>
+
+<script>
+  (function () {
+    function bootstrap() {
+      var nodes = document.querySelectorAll('.full-stack');
+      for (var i = 0; i < nodes.length; i++) {
+        var root = nodes[i];
+        if (root.getAttribute('data-mounted')) continue;
+        root.setAttribute('data-mounted', '1');
+        root.innerHTML =
+          '<div class="ph-tag">Visualization to build</div>' +
+          '<div class="ph-title">The full stack</div>' +
+          '<div class="ph-desc">Trainer, environment server, capture proxy and sandbox, with each edge labelled by what crosses it.</div>' +
+          '<div class="ph-file">d3-full-stack.html</div>';
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootstrap);
+    } else {
+      bootstrap();
+    }
+  })();
+</script>

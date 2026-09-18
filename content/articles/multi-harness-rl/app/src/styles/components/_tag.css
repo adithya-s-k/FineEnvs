@@ -1,0 +1,14 @@
+.tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 16px; }
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1;
+  border-radius: var(--button-radius);
+  background: var(--surface-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+}

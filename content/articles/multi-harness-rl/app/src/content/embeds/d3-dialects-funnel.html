@@ -1,0 +1,184 @@
+<div class="dialects-funnel" style="width:100%;margin:14px 0;"></div>
+<style>
+  .dialects-funnel { position: relative; }
+  .dialects-funnel svg { display:block; width:100%; height:auto; overflow:visible; }
+  .dialects-funnel .df-pick { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .dialects-funnel .df-btn { appearance:none; cursor:pointer; font:inherit; font-size:12px; line-height:1.25;
+    padding:7px 12px; border-radius:999px; border:1px solid var(--border-color);
+    background:transparent; color:var(--muted-color); transition:color .15s, border-color .15s; }
+  .dialects-funnel .df-btn:hover { color:var(--text-color); }
+  .dialects-funnel .df-btn[aria-pressed="true"] { color:var(--text-color); font-weight:600; }
+  .dialects-funnel .df-btn:focus-visible { outline:2px solid var(--text-color); outline-offset:2px; }
+  .dialects-funnel .df-btn small { font-weight:400; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'dialects-funnel';
+    const boot = () => {
+      const nodes = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = nodes[nodes.length-1]; if (!r) return; r.dataset.mounted = 'true';
+
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+      // Four dialects that mean the same thing and spell it differently. The
+      // fields are what actually differs, so the figure shows the fields rather
+      // than four anonymous curves converging on a box.
+      const D = [
+        { id:'chat',  name:'chat-completions',       who:'12 harnesses',
+          path:'POST /v1/chat/completions',
+          req:['messages[]','tools[]'],
+          res:['choices[].message','finish_reason'] },
+        { id:'resp',  name:'OpenAI Responses',       who:'codex, trae-agent',
+          path:'POST /v1/responses',
+          req:['input[]','tools[]'],
+          res:['output[]','status'] },
+        { id:'anth',  name:'Anthropic Messages',     who:'claude-code',
+          path:'POST /v1/messages',
+          req:['system','messages[]','tools[]'],
+          res:['content[] blocks','stop_reason'] },
+        { id:'goog',  name:'Google generateContent', who:'gemini-cli',
+          path:'POST /v1beta/…:generateContent',
+          req:['contents[].parts[]','tools[]'],
+          res:['candidates[].content','finishReason'] },
+      ];
+      const CANON_REQ = ['messages[]','tools[]'];
+      const FORCED    = ['+ logprobs: true','+ return ids'];
+      const CANON_RES = ['choices[0].message'];
+      const EXTRAS    = ['+ prompt_token_ids','+ completion_token_ids','+ per_token_logps'];
+
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let sel = 0, timer = 0, visible = true;
+
+      const els = (() => {
+        r.innerHTML = `<div class="df-pick" role="group" aria-label="Choose a wire dialect">`
+          + D.map((d,i) => `<button type="button" class="df-btn" data-i="${i}" aria-pressed="${i===0}">${esc(d.name)} <small>${esc(d.who)}</small></button>`).join('')
+          + `</div><div data-svg></div>`;
+        return { svg: r.querySelector('[data-svg]'), btns: [...r.querySelectorAll('.df-btn')] };
+      })();
+
+      const draw = () => {
+        const d = D[sel];
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const mono = 'ui-monospace,SFMono-Regular,Menlo,monospace';
+        const cIn = P(sel), cCan = P(0), cKeep = P(1);
+
+        const narrow = W < 660;
+        const pad = 4;
+        const colW = narrow ? (W - 8) : (W - 8 - 2*46) / 3;
+        const x1 = pad, x2 = narrow ? pad : pad + colW + 46, x3 = narrow ? pad : pad + 2*(colW + 46);
+
+        const lineH = 15;
+        const boxOf = (fields, extra) => 34 + fields.length*lineH + (extra ? extra.length*lineH + 8 : 0) + 10;
+        const reqH = Math.max(boxOf(d.req), boxOf(CANON_REQ, FORCED));
+        const resH = Math.max(boxOf(CANON_RES, EXTRAS), boxOf(d.res));
+
+        const yReq = 26;
+        const yRes = yReq + reqH + (narrow ? 0 : 44);
+        const H = narrow ? (yReq + (reqH + 22)*3 + (resH + 22)*3) : (yRes + resH + 74);
+
+        const panel = (x, y, w, h, title, sub, fields, extra, col, bar) => {
+          let g = `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${sf}"
+                    stroke="${bar ? bd : col}" stroke-opacity="${bar ? 1 : .9}" stroke-width="${bar ? 1 : 1.5}"/>`;
+          if (bar) g += `<rect x="${x+1.5}" y="${y+10}" width="3.5" height="${h-20}" rx="1.75" fill="${col}"/>`;
+          g += `<text x="${x+12}" y="${y+17}" font-size="10" fill="${mu}" font-family="${mono}" letter-spacing=".5">${esc(title)}</text>`;
+          if (sub) g += `<text x="${x+w-12}" y="${y+17}" text-anchor="end" font-size="9.5" fill="${mu}" font-family="${mono}">${esc(sub)}</text>`;
+          fields.forEach((f, i) => {
+            g += `<text x="${x+12}" y="${y+34+i*lineH}" font-size="11" fill="${tx}" font-family="${mono}">${esc(f)}</text>`;
+          });
+          if (extra) {
+            const y0 = y + 34 + fields.length*lineH + 2;
+            g += `<line x1="${x+12}" y1="${y0-9}" x2="${x+w-12}" y2="${y0-9}" stroke="${bd}" stroke-dasharray="2 3"/>`;
+            extra.forEach((f, i) => {
+              g += `<text x="${x+12}" y="${y0+6+i*lineH}" font-size="11" fill="${cKeep}" font-family="${mono}">${esc(f)}</text>`;
+            });
+          }
+          return g;
+        };
+
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(d.name)} translated into one normalised shape and back. The fields are renamed; the content is the same. Token ids and logprobs are added on the way to the engine and removed before the agent sees the reply.">`;
+        s += `<defs>
+          <marker id="df-in" markerWidth="8" markerHeight="8" refX="7" refY="3.4" orient="auto"><path d="M0,0 L8,3.4 L0,6.8 z" fill="${cIn}"/></marker>
+          <marker id="df-c" markerWidth="8" markerHeight="8" refX="7" refY="3.4" orient="auto"><path d="M0,0 L8,3.4 L0,6.8 z" fill="${cCan}"/></marker>
+          <marker id="df-k" markerWidth="8" markerHeight="8" refX="7" refY="3.4" orient="auto"><path d="M0,0 L8,3.4 L0,6.8 z" fill="${cKeep}"/></marker>
+        </defs>`;
+
+        if (narrow) {
+          // stacked: in, normalised, forwarded / returned, split, replayed
+          let y = yReq;
+          const seq = [
+            [d.path.toUpperCase(), d.who, d.req, null, cIn, false],
+            ['NORMALISED REQUEST', 'to the engine', CANON_REQ, FORCED, cCan, false],
+            ['NORMALISED RESPONSE', 'from the engine', CANON_RES, EXTRAS, cCan, false],
+            ['REPLAYED', d.name, d.res, null, cIn, false],
+          ];
+          seq.forEach((p, i) => {
+            const h = boxOf(p[2], p[3]);
+            s += panel(x1, y, W-8, h, p[0], p[1], p[2], p[3], p[4], p[5]);
+            y += h + 22;
+            if (i < seq.length-1) s += `<line x1="${W/2}" y1="${y-20}" x2="${W/2}" y2="${y-6}" stroke="${mu}" stroke-width="1.4" marker-end="url(#df-c)"/>`;
+          });
+          s = s.replace(`viewBox="0 0 ${W} ${H}"`, `viewBox="0 0 ${W} ${y}"`);
+        } else {
+          // request row: dialect -> normalised -> engine
+          s += panel(x1, yReq, colW, reqH, 'THE AGENT SENDS', d.who, d.req, null, cIn, true);
+          s += panel(x2, yReq, colW, reqH, 'NORMALISED', 'one shape', CANON_REQ, FORCED, cCan, false);
+          s += `<text x="${x1+12}" y="${yReq-9}" font-size="9.5" fill="${mu}" font-family="${mono}">${esc(d.path)}</text>`;
+          s += `<line x1="${x1+colW}" y1="${yReq+reqH/2}" x2="${x2-9}" y2="${yReq+reqH/2}" stroke="${cIn}" stroke-width="1.6" marker-end="url(#df-in)"/>`;
+          s += `<text x="${(x1+colW+x2)/2}" y="${yReq+reqH/2-8}" text-anchor="middle" font-size="9.5" fill="${mu}" font-family="${mono}">rename</text>`;
+          s += `<rect x="${x3}" y="${yReq+reqH/2-19}" width="${colW}" height="38" rx="9" fill="${sf}" stroke="${bd}"/>`;
+          s += `<text x="${x3+colW/2}" y="${yReq+reqH/2+4}" text-anchor="middle" font-size="12" font-weight="600" fill="${tx}">inference engine</text>`;
+          s += `<line x1="${x2+colW}" y1="${yReq+reqH/2}" x2="${x3-9}" y2="${yReq+reqH/2}" stroke="${cCan}" stroke-width="1.6" marker-end="url(#df-c)"/>`;
+
+          // response row, read right to left
+          s += panel(x2, yRes, colW, resH, 'NORMALISED RESPONSE', 'ids + logprobs', CANON_RES, EXTRAS, cCan, false);
+          s += panel(x1, yRes, colW, resH, 'THE AGENT RECEIVES', 'its own shape', d.res, null, cIn, true);
+          // the reply comes down from the engine, not from the store. Route it
+          // round the right-hand side so nothing crosses a panel.
+          const ex = x3 + colW/2, ey = yReq + reqH/2 + 19;
+          s += `<path d="M ${ex} ${ey} L ${ex} ${yRes+resH/2} L ${x2+colW+9} ${yRes+resH/2}"
+                 fill="none" stroke="${cCan}" stroke-width="1.6" marker-end="url(#df-c)"/>`;
+          s += `<line x1="${x2}" y1="${yRes+resH/2}" x2="${x1+colW+9}" y2="${yRes+resH/2}" stroke="${cIn}" stroke-width="1.6" marker-end="url(#df-in)"/>`;
+          s += `<text x="${(x1+colW+x2)/2}" y="${yRes+resH/2-8}" text-anchor="middle" font-size="9.5" fill="${mu}" font-family="${mono}">re-envelope</text>`;
+          // and the extras drop straight down into the store, below the panel
+          const sy = yRes + resH + 16;
+          s += `<path d="M ${x2+colW/2} ${yRes+resH} L ${x2+colW/2} ${sy-3}" fill="none" stroke="${cKeep}" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#df-k)"/>`;
+          s += `<rect x="${x2}" y="${sy}" width="${colW}" height="30" rx="9" fill="none" stroke="${cKeep}" stroke-dasharray="4 3"/>`;
+          s += `<text x="${x2+colW/2}" y="${sy+19}" text-anchor="middle" font-size="11" fill="${cKeep}" font-family="${mono}">capture store</text>`;
+          s += `<text x="${x2+colW/2}" y="${sy+43}" text-anchor="middle" font-size="9.5" fill="${mu}" font-family="${mono}">never returned to the agent</text>`;
+        }
+
+        s += '</svg>';
+        els.svg.innerHTML = s;
+        els.btns.forEach((b,i) => {
+          b.setAttribute('aria-pressed', i === sel ? 'true' : 'false');
+          b.style.borderColor = i === sel ? P(i) : '';
+        });
+      };
+
+      els.btns.forEach(b => b.addEventListener('click', () => {
+        sel = +b.dataset.i; clearInterval(timer); timer = 0; draw();
+      }));
+
+      draw();
+      if (!reduce) timer = setInterval(() => { if (visible) { sel = (sel+1) % D.length; draw(); } }, 3400);
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver((es) => { visible = es.some(e => e.isIntersecting); }, { rootMargin:'80px' }).observe(r);
+      }
+      if ('ResizeObserver' in window) {
+        let t; new ResizeObserver(() => { clearTimeout(t); t = setTimeout(draw, 120); }).observe(r);
+      } else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

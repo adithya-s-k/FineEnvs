@@ -47,17 +47,65 @@ const repoName = repo ? String(repo).replace(/\/+$/, "").split("/").pop() : "";
 
 <section class="hero">
   <h1 class="hero-title" set:html={title} />
-  <div class="hero-banner">
-    {/* Hero animation. Swap by changing the src below. Available variants: */}
-    {/*   banner.html               — original galaxy spiral (3 arms + bulge)  */}
-    {/*   banner-trajectories.html  — A. trajectory braids (rollouts in flight) */}
-    {/*   banner-grid.html          — B. environment grid (parallel ant farm)   */}
-    {/*   banner-streams.html       — C. streaming tool-call lanes              */}
-    {/*   banner-tree.html          — D. branching policy tree (radial growth)  */}
-    <HtmlEmbed src="banner-grid-scaling.html" frameless />
+  {/* Two heroes are built for this article and the reader picks. Each panel is
+      lazily mounted and re-measures on becoming visible, so a hidden one costs
+      nothing until it is shown:
+        banner-opaque.html, the harness grid, one wire each, tokens after
+        banner-seam.html, the rollout fleet, the seam, the token field
+      banner.html, the galaxy inherited from the template, is still in the repo
+      but no longer offered. */}
+  <div class="hero-banner" data-banner-stage>
+    <div class="hero-banner__panel" data-banner="opaque" data-active>
+      <HtmlEmbed src="banner-opaque.html" frameless />
+    </div>
+    <div class="hero-banner__panel" data-banner="seam">
+      <HtmlEmbed src="banner-seam.html" frameless />
+    </div>
+  </div>
+  <div class="hero-banner-pick" role="group" aria-label="Choose the hero visualisation">
+    <button type="button" data-pick="opaque" aria-pressed="true">Harnesses</button>
+    <button type="button" data-pick="seam" aria-pressed="false">Rollouts</button>
   </div>
   {description && <p class="hero-desc">{description}</p>}
 </section>
+
+<script is:inline>
+  (() => {
+    const stage = document.querySelector("[data-banner-stage]");
+    const pick = document.querySelector(".hero-banner-pick");
+    if (!stage || !pick) return;
+    const KEY = "mhrl:hero-banner";
+
+    const show = (name) => {
+      let found = false;
+      stage.querySelectorAll("[data-banner]").forEach((panel) => {
+        const on = panel.dataset.banner === name;
+        if (on) { panel.setAttribute("data-active", ""); found = true; }
+        else panel.removeAttribute("data-active");
+      });
+      if (!found) return false;
+      pick.querySelectorAll("button").forEach((b) => {
+        b.setAttribute("aria-pressed", String(b.dataset.pick === name));
+      });
+      // A panel that was hidden has never been measured, so nudge the embeds
+      // inside it to re-read their box now that they have one.
+      window.dispatchEvent(new Event("resize"));
+      return true;
+    };
+
+    try {
+      const saved = localStorage.getItem(KEY);
+      if (saved) show(saved);
+    } catch (e) { /* private mode, cleared storage: keep the default */ }
+
+    pick.addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-pick]");
+      if (!b) return;
+      if (!show(b.dataset.pick)) return;
+      try { localStorage.setItem(KEY, b.dataset.pick); } catch (e) { /* not essential */ }
+    });
+  })();
+</script>
 
 <script is:inline>
   (() => {
@@ -406,7 +454,7 @@ const repoName = repo ? String(repo).replace(/\/+$/, "").split("/").pop() : "";
     line-height: 1.12;
     letter-spacing: -0.02em;
     margin: 0 auto 8px;
-    max-width: 960px;
+    max-width: 1060px;
     text-wrap: balance;
   }
   .hero-title[data-title-size="md"] {
@@ -416,10 +464,43 @@ const repoName = repo ? String(repo).replace(/\/+$/, "").split("/").pop() : "";
     font-size: clamp(24px, 3.2vw, 38px);
   }
   .hero-banner {
-    max-width: 980px;
+    position: relative;
+    max-width: 1100px;
     margin: 0 auto;
     aspect-ratio: 5 / 2;
     overflow: hidden;
+  }
+  .hero-banner__panel { display: none; height: 100%; }
+  .hero-banner__panel[data-active] { display: block; }
+
+  .hero-banner-pick {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin: 10px auto 0;
+  }
+  .hero-banner-pick button {
+    appearance: none;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--muted-color);
+    font: inherit;
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    padding: 4px 11px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+  .hero-banner-pick button:hover { color: var(--text-color); }
+  .hero-banner-pick button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+  .hero-banner-pick button[aria-pressed="true"] {
+    color: var(--text-color);
+    border-color: var(--text-color);
+    background: color-mix(in oklab, var(--text-color) 7%, transparent);
   }
   .hero-banner :global(.html-embed) {
     height: 100%;
@@ -430,7 +511,7 @@ const repoName = repo ? String(repo).replace(/\/+$/, "").split("/").pop() : "";
   .hero-desc {
     color: var(--muted-color);
     font-style: italic;
-    margin: 0 auto 16px;
+    margin: 32px auto 16px;
     max-width: 55%;
   }
 
@@ -447,7 +528,7 @@ const repoName = repo ? String(repo).replace(/\/+$/, "").split("/").pop() : "";
     font-size: 0.9rem;
   }
   .meta-container {
-    max-width: 980px;
+    max-width: 1100px;
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
     align-items: start;
@@ -577,8 +658,20 @@ const repoName = repo ? String(repo).replace(/\/+$/, "").split("/").pop() : "";
     margin: 0;
   }
 
+  /* On phones the four meta cells stack top to bottom. The old two-column
+     split pushed every second cell hard right, which read as two ragged
+     columns rather than one list. */
   @media (max-width: 768px) {
-    .meta-container-cell:nth-child(even) { text-align: right; }
+    .meta-container {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .meta-container-cell {
+      max-width: none;
+      text-align: left;
+      gap: 4px;
+    }
+    .meta-container-cell:nth-child(even) { text-align: left; }
   }
 
   @media print {
@@ -742,10 +835,11 @@ const repoName = repo ? String(repo).replace(/\/+$/, "").split("/").pop() : "";
   .locked-title { position: relative; z-index: 1; }
 
   @media (max-width: 768px) {
+    /* Left-aligned with the other three cells now that they stack. */
     .meta-container-cell--pdf {
       display: flex;
       flex-direction: column;
-      align-items: flex-end;
+      align-items: flex-start;
     }
   }
 </style>

@@ -1,0 +1,62 @@
+<div class="serve-flow" style="width:100%;margin:14px 0;"></div>
+<style>
+  .serve-flow { position: relative; }
+  .serve-flow svg { display:block; width:100%; height:auto; overflow:visible; }
+  .serve-flow .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .serve-flow .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .serve-flow .k { display:inline-flex; align-items:center; gap:7px; }
+  .serve-flow .sw { width:13px; height:3px; border-radius:2px; }
+  .serve-flow .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'serve-flow';
+    const boot = () => {
+      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const S = [
+          ['Certify the endpoint','refuses to start if it cannot return token ids','once'],
+          ['Check the sandboxes','credentials and an importable SDK, before anything boots','once'],
+          ['Start the proxy','and publish it so the sandbox can reach it','once'],
+          ['Mint a session','its id becomes the agent\u2019s API key','per rollout'],
+          ['Harbor runs the trial','sandbox, agent install, the agent\u2019s own loop','per rollout'],
+          ['Reconcile and return','graph, token ids, logprobs, reward','per rollout'],
+        ];
+        const rowH = 46, H = 24 + S.length*rowH;
+        const x0 = 34, c0 = P(0), c2 = P(2);
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Six steps from the serve command to a returned rollout">`;
+        s += `<line x1="${x0}" y1="18" x2="${x0}" y2="${H-24}" stroke="${bd}"/>`;
+        S.forEach((st,i) => {
+          const y = 26 + i*rowH, once = st[2] === 'once', c = once ? c0 : c2;
+          s += `<circle cx="${x0}" cy="${y}" r="11" fill="${sf}" stroke="${c}" stroke-width="1.6"/>`;
+          s += `<text x="${x0}" y="${y+4}" text-anchor="middle" font-size="11" font-weight="700" fill="${c}">${i+1}</text>`;
+          s += `<text x="${x0+24}" y="${y-2}" font-size="13" font-weight="600" fill="${tx}">${st[0]}</text>`;
+          s += `<text x="${x0+24}" y="${y+15}" font-size="11.5" fill="${mu}">${st[1]}</text>`;
+          s += `<text x="${W-8}" y="${y+2}" text-anchor="end" font-size="10.5" fill="${c}" font-family="ui-monospace,Menlo,monospace">${st[2]}</text>`;
+        });
+        s += '</svg>';
+        r.innerHTML = s +
+          `<div class="lg"><div class="lg-t">Legend</div>` +
+          `<span class="k"><span class="sw" style="background:${c0}"></span>once, at start-up</span>` +
+          `<span class="k"><span class="sw" style="background:${c2}"></span>per rollout, so harness and sandbox are arguments rather than deployment settings</span></div>`;
+      };
+      draw();
+      if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
+      else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

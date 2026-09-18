@@ -1,0 +1,259 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## Data Agent
+
+Everything so far has been other people's evidence. This is where the article stops citing and starts
+running things.
+
+The goal is narrow and deliberately unglamorous: take a small open model, something under five
+billion parameters that a person with one rented GPU could actually train, and make it competent at
+real data-analysis work. Then use that as an end-to-end recipe other people can rerun.
+
+### Why not Wordle
+
+If you go looking for a worked example of RL on a language model today, you will almost certainly
+find Wordle. It is the house plant of RL environments: easy to keep alive, present in every
+tutorial, and not doing very much. It is a fine way to check that a training loop is wired up
+correctly. It is a poor way to learn whether any of this works, because nobody wants a model that is
+good at Wordle, and the task shares almost nothing with the work people actually hand to an agent.
+
+The gap that leaves is the reason this project exists. There is no shortage of RL environment
+frameworks and no shortage of toy tasks. What is missing is a task that is realistic enough to be
+worth winning, cheap enough to iterate on, and verifiable enough that the reward can be trusted, all
+published together with the code that produced it.
+
+Data analysis fits, and it is worth saying why, because the domain does most of the work in making
+an RL experiment either honest or useless.
+
+It is **multi-turn but bounded**. The model loads a file, looks at the shape of it, tries something,
+reads the result, corrects itself. That is genuinely agentic behaviour, several tool calls deep, and
+it still terminates in a minute or two rather than an hour. Long-horizon software engineering is
+more impressive and far more expensive to iterate on.
+
+It is **verifiable without a judge**. Most questions have exactly one right answer, and it is a
+number or a short string, so a grader can check it without asking a language model for an opinion.
+That matters more than it sounds, and the next section is largely about how much work went into
+keeping it true.
+
+It is **not saturated**. Small models are genuinely bad at this to begin with, which leaves room for
+training to show up as something other than noise.
+
+And the raw material already exists. The [jupyter-agent
+dataset](https://huggingface.co/datasets/jupyter-agent/jupyter-agent-dataset) pairs real Kaggle
+notebooks with the questions they answer, roughly forty thousand of them, each with an answer that a
+human actually computed. That is a large supply of verifiable tasks sitting in a form nobody had
+turned into environments yet.
+
+### Turning notebooks into environments
+
+Everything below is published as the
+[Data Agent collection](https://huggingface.co/collections/HuggingEnvs/data-agent).
+
+Each candidate question goes through the same pipeline. The question becomes the instruction and the
+notebook's own answer becomes the gold. A build-time model canonicalises that gold into a single
+clean value and picks how it should be compared, so an answer recorded in a notebook as "Y=3 with
+95,293 instances" becomes the string `95293` with a numeric reward mode. The Kaggle dataset the
+notebook depended on becomes a container that pulls the data into `/home/user/input/` before the
+agent starts. Then the task is generated as a Harbor task directory.
+
+The step that decides whether the task ships is the last one. An anchor agent runs the finished task
+for real, in a sandbox, with a single bash tool, and writes its answer to `/workdir/answer.txt`. The
+deterministic grader scores that answer against the gold. If the anchor reproduces the gold, the
+task is admitted. If it does not, the task is dropped. DeepSeek-V4-Flash runs first and
+Claude Sonnet 4.6 picks up its failures.
+
+That gate is expensive and it is the reason to trust anything downstream, so the attrition is worth
+stating rather than hiding. Fresh candidates are admitted at roughly 46 percent under the DeepSeek
+anchor and 53 percent under Sonnet. A separate deterministic re-audit of the previous
+2,238-task generation dropped 604 of them, 27 percent, because those tasks had only ever passed
+under an LLM judge. A final recomposition pass dropped another 83 as structurally un-gradable:
+non-comma separators, parenthetical asides, free text. Most raw candidates never become tasks.
+
+{/* VIZ: d3-dataset-pipeline: the funnel from a notebook QA pair to an admitted task. Question and
+     gold out of the notebook, gold canonicalised and a reward mode chosen, Harbor task directory
+     generated, then the anchor-agent verification that either admits or drops. The drop step is
+     the one worth drawing, because it is where the trust comes from. */}
+<HtmlEmbed
+  src="d3-dataset-pipeline.html"
+  title="From a public notebook to a verified task"
+  desc="How each Harbor task is built, and where unverifiable ones get dropped."
+  frameless
+/>
+
+#### No judge anywhere
+
+The single most important property of this suite is that nothing in the reward path asks a language
+model for an opinion. The grader tries exact match, then numeric comparison within `atol` and
+`rtol`, then list and percent normalisation, then a symbolic comparison, and prints one float. The
+earlier generation had a `gpt-4o-mini` judge tier as a fallback, and every task that depended on it
+was dropped rather than carried forward.
+
+This is why the answers are typed. Across the 5,000 training tasks the reward modes fall out as
+numeric 2,906, exact short string 1,409, list 367, flexible 152, boolean 127 and comma-separated
+list 39. Nearly three in five tasks are a number compared within a tolerance, which is about as
+unambiguous as a reward gets, and it is the reason the reward-hacking chapter of the previous guide
+does not need repeating here.
+
+#### What ships
+
+| Suite | Tasks | Purpose |
+|---|---|---|
+| [`data-agent-harbor-train`](https://huggingface.co/datasets/HuggingEnvs/data-agent-harbor-train) | 5,000 | training |
+| [`data-agent-harbor-test`](https://huggingface.co/datasets/HuggingEnvs/data-agent-harbor-test) | 250 | held out, deliberately skewed harder |
+| [`data-agent-harbor-eval`](https://huggingface.co/datasets/HuggingEnvs/data-agent-harbor-eval) | 144 | validation during training |
+| [`data-agent`](https://huggingface.co/datasets/HuggingEnvs/data-agent) | 5,394 rows | the same tasks flat, one row each, `load_dataset`-ready |
+| [`data-agent-sft`](https://huggingface.co/datasets/HuggingEnvs/data-agent-sft) | 4,677 | verified trajectories for supervised fine-tuning |
+
+The first three are Harbor environments, meaning a runnable container per task. The fourth is the
+same content as plain rows, which is what you want for inspection or for a framework that is not
+Harbor. The fifth is different in kind: 4,677 complete agent trajectories that reached the correct
+answer under the deterministic grader, one per task, in TRL's conversational format with the bash
+tool attached. 2,608 of them were produced natively in that format and 2,069 were converted from a
+second agent's format, and the set is contamination-checked against the held-out splits, with no
+leakage.
+
+Two trajectory sources for one dataset is a small version of this article's whole argument, and it
+happened for ordinary engineering reasons rather than principled ones.
+
+#### Difficulty, honestly
+
+Each task carries a level from 1 to 5 and a coarser tier. The distribution is the part of a synthetic
+suite most worth reading sceptically, so here it is in full:
+
+| Split | Easy (L1) | Medium (L2 to L3) | Hard (L4 to L5) | Mean level |
+|---|---|---|---|---|
+| **train**, 5,000 | 1,433 | 2,845 | 722 | 2.12 |
+| **test**, 250 | 33 | 118 | 99 | 3.00 |
+| **eval**, 144 | 16 | 74 | 54 | 2.90 |
+
+Training skews easy, which is what a notebook corpus gives you: 29 percent of training tasks are a
+single line of pandas. The held-out set was rebalanced in the other direction on purpose, so it is
+measurably harder than what the model trains on, and every one of the twenty L5 tasks in the whole
+collection sits in that 250-task test split rather than in training. A model that improves here has
+learned to do short data-analysis tasks reliably. It has not learned to do research, and the test
+split is arranged so that the difference shows up rather than hides.
+
+One caveat to carry forward. The training split draws on 471 distinct Kaggle datasets, so the same
+underlying data appears behind many different questions. Task-level separation between splits is not
+the same as dataset-level separation, and any generalisation claim should say which one it means.
+
+### What ran, and on which suite
+
+Here the article has to be careful, because the published suite and the measured results are not the
+same generation of the work.
+
+Everything measured below ran on **v1**: the earlier 2,238-task training set and 366-task evaluation
+set, built before the LLM judge was removed. The rebuilt judge-free suite described above, the
+5,000/250/144 one under HuggingEnvs, has not been rerun yet. So the numbers are real, they were
+expensive to get, and they are measured against a grader that has since been replaced.
+
+How much does that matter? It is quantifiable, so here is the number rather than a hedge. Re-grading
+all 366 v1 evaluation tasks under the deterministic grader, 262 pass cleanly, 84 would fail because
+they only ever passed through the judge or through the compound-number parsing bug, and 20 were pure
+judge tasks. That is **104 of 366, 28 percent, graded more softly than the current grader would
+allow**. Every v1 pass rate below should therefore be read as optimistic, with the softness
+concentrated on list and free-text answers rather than spread evenly.
+
+### What the evaluations said
+
+Before any training, the suite was used to evaluate a range of models across four harnesses: `bash`,
+`jupyter`, `seta` and `opencode`. All four are code-execution harnesses, differing in whether the
+model runs shell commands, executes notebook cells, or works through a heavier multi-turn agent.
+
+Three findings, and the first one cuts against this article's own thesis, which is exactly why it is
+here.
+
+**Harness choice barely matters once the model is big enough.** From 4B upward, the spread across
+all four harnesses is only two to three points. At 2B it widens to six. That is the opposite of the
+frontier-scale story in the introduction, where harness spread was widest for the open models, and
+it is a useful correction: the sensitivity is not uniform, it concentrates where capability is
+thinnest. Small models are the ones that need harness diversity most, which is convenient, because
+small models are what this project trains.
+
+**The cost difference is enormous even when the score is not.** `opencode` burns 258 to 306 percent
+more tokens per passing task than the `jupyter` harness, which is consistently the cheapest. Two
+harnesses can agree to within a point on accuracy and differ by three to four times on what the run
+costs. Anyone comparing harnesses on score alone is reading one of two columns.
+
+**The task set is not hard enough on its own.** Running the same models on DABstep costs them 40 to
+48 points relative to Data-Agent v1, and the easy-to-hard cliff inside DABstep is about 50 points
+even for a 9B model. Scaling flattens too: 9B beats 4B by 14 points on the harder benchmark while
+costing about half of what 27B or 35B-A3B do, and returns are thin above that. The 250-task test
+split in the rebuilt suite was skewed harder specifically because of this result.
+
+The full sweep, including per-harness token costs, is browsable in the
+[evaluation Space](https://huggingface.co/spaces/AdithyaSK/DataAgent-evals).
+
+{/* TODO: d3-eval-comparison is still a stub. Fill it from the v1 sweep: model size on x, pass@4 on
+     y, one line per harness, so the convergence above 4B and the fan-out at 2B is the shape of the
+     chart. A second panel should carry tokens per passing task, since that is the axis where the
+     harnesses actually differ. */}
+
+### Training a small model
+
+Three GRPO runs, all full-epoch at 1,119 steps over the 2,238 v1 training tasks, using TRL's
+synchronous GRPO with Harbor for the task spec and E2B for the sandboxes. The models are from the
+Qwen 3.5 family.
+
+| Run | Wall clock | pass@4 | pass@1 |
+|---|---|---|---|
+| **2B**, tasks in random order | ~22h | 28% to **60%** | 10% to **41%** |
+| **2B**, difficulty-ranked curriculum | ~22h | 28% to **60%** | 10% to **40%** |
+| **4B**, tasks in random order | ~27h | 74% to **79%** | 60% to **64%** |
+
+The 2B result is the encouraging one: pass@4 roughly doubles and pass@1 goes up about fourfold off a
+weak base. That is what you want from a first run, and it is the answer to whether a model this size
+has anywhere to go on this task.
+
+Two details are more interesting than the headline. The curriculum run and the random-order run
+**land on exactly the same final score**, 0.603 in both cases. Feeding tasks easy-to-hard changed
+the shape of the curve, slower at first and steeper later, and changed nothing about where it ended
+up. Curriculum ordering is the kind of intervention that looks obviously beneficial until it is
+measured against a control.
+
+And the 4B run **plateaued early**, peaking around step 200 at 0.802 and then holding a flat 0.75 to
+0.80 band for the remaining nine hundred steps. It was already solving most of the suite before
+training started, so there was little headroom, and most of the compute bought nothing. That is an
+argument about the task set rather than about the model, and it is the second reason the rebuilt
+test split is weighted harder.
+
+{/* TODO: d3-training-curves and ablation-matrix are still stubs. Curves from the Trackio runs at
+     AdithyaSK/DataAgent_harbor: reward against step for all three, with the 2B pair overlaid to
+     show the identical endpoint from different paths, and a marker on the 4B peak at step 200.
+     Attribute to run logs, not to a repo doc, per the note below. */}
+
+Trackio has the raw logs for these runs, at
+[`AdithyaSK/DataAgent_harbor`](https://huggingface.co/spaces/AdithyaSK/DataAgent_harbor) and
+[`AdithyaSK/harbor-data-agent`](https://huggingface.co/spaces/AdithyaSK/harbor-data-agent).
+
+### The part that was actually hard
+
+None of the above was the difficult bit. The difficult bit was keeping a run alive for twenty-two
+hours. Leaked and ghost sandboxes, session timeouts, and account-wide rate limits between them
+required a lot of custom crash-recovery, retry and cleanup logic that was not in anybody's plan, and
+none of it is specific to this task or this model. It is the tax on every trainer that hand-rolls
+its own sandbox lifecycle, and it is a large part of the argument for putting something like OpenEnv
+in the middle rather than teaching each trainer to manage containers.
+
+### What is not done
+
+Stated plainly, so nothing above is read as more finished than it is.
+
+Nothing has been rerun on the rebuilt judge-free suite: no supervised fine-tuning run on the 4,677
+trajectories, no GRPO run on the 5,000 training tasks, and no cross-model evaluation on the 250-task
+test split. That last one is designed and the models are compatibility-checked, seventeen of
+eighteen returning clean tool calls through the inference router, but sandbox throttling stalled the
+run.
+
+The three training curves above come from the run logs rather than from a committed report, so treat
+them as reported results awaiting a reproducible artifact. The evaluation numbers are from the
+checked-in evaluation reports.
+
+And the multi-harness claim this article is built on has not yet been tested here. The four
+harnesses were used to *evaluate*, not to train across. Training the same task set through several
+harnesses at once, which is the whole point, is the next run rather than a finished one.
+
+{/* TODO: add the notebook at 02-multi-harness-rl/notebooks/ so a reader can reproduce this
+     synchronous run against the published dataset in one command, in the style of
+     01-latex-ocr/notebooks/01_latex_ocr_grpo.ipynb, then link it from here and from the project
+     README. */}

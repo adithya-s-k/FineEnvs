@@ -1,0 +1,6 @@
+---
+const { html, class: className, ariaLabel } = Astro.props;
+---
+<div class={className} role="img" aria-label={ariaLabel} set:html={html} />
+
+

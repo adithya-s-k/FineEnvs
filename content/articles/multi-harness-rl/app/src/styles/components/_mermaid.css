@@ -1,0 +1,250 @@
+.mermaid .nodeLabel p {
+    color: var(--text-color) !important;
+}
+
+.mermaid .cluster-label .nodeLabel {
+    color: var(--text-color) !important;
+}
+
+/* Styles pour le texte des subgraphs/clusters - gérer les foreignObject */
+.mermaid .cluster-label text,
+.mermaid .cluster-label .nodeLabel text,
+.mermaid .cluster-label foreignObject,
+.mermaid .cluster-label foreignObject div,
+.mermaid .cluster-label foreignObject span {
+    color: var(--text-color) !important;
+    fill: var(--text-color) !important;
+}
+
+/* Styles spécifiques pour les clusters/subgraphs */
+.mermaid .cluster rect {
+    fill: transparent !important;
+    stroke: var(--border-color) !important;
+    stroke-width: 1px !important;
+}
+
+.mermaid .cluster-label {
+    color: var(--text-color) !important;
+    fill: var(--text-color) !important;
+}
+
+/* Masquer le flicker pendant la conversion */
+.mermaid-zoom-wrapper.converting {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.mermaid-zoom-wrapper.converting .mermaid {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+/* Assurer que les diagrammes Mermaid prennent toute la largeur */
+.mermaid {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+}
+
+/* Styles pour les SVG Mermaid */
+.mermaid svg {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+/* Styles pour les wrappers de zoom Mermaid */
+.mermaid-zoom-wrapper {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    cursor: zoom-in;
+    position: relative;
+}
+
+.mermaid-zoom-wrapper .mermaid {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+}
+
+.mermaid-zoom-wrapper .mermaid svg {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+}
+
+/* Styles pour les nœuds avec bords arrondis et bordure interne */
+.mermaid rect:not(.flowchart-link),
+.mermaid .node rect,
+.mermaid .nodeLabel rect,
+.mermaid .cluster rect {
+    rx: 8px !important;
+    ry: 8px !important;
+    stroke: color-mix(in srgb, var(--text-color) 20%, transparent) !important;
+    stroke-width: 1px !important;
+    /* Décalage pour créer l'effet de bordure interne */
+}
+
+/* Styles pour les diagrammes Mermaid zoomables */
+.mermaid-zoom-wrapper:hover {
+    opacity: 0.95;
+    transition: opacity 0.2s ease;
+}
+
+/* Appliquer le même style que les images zoomables */
+.mermaid-zoom-wrapper[data-zoomable="1"] {
+    cursor: zoom-in;
+}
+
+/* Styles pour le mode zoom ouvert */
+.medium-zoom--opened .mermaid-zoom-wrapper {
+    cursor: zoom-out;
+}
+
+/* Exclure les images Mermaid du filtre d'inversion en mode sombre */
+/* Le filtre global s'applique à .medium-zoom-image--opened */
+/* Nous devons être plus spécifique pour les images Mermaid */
+
+/* Exception pour les images Mermaid - pas de filtre d'inversion */
+:global([data-theme="dark"]) .mermaid-zoom-wrapper img:global(.medium-zoom-image--opened) {
+    filter: none !important;
+}
+
+/* Alternative: cibler directement l'image dans le wrapper Mermaid */
+:global([data-theme="dark"]) .mermaid-zoom-wrapper :global(.medium-zoom-image--opened) {
+    filter: none !important;
+}
+
+/* Encore plus spécifique: cibler l'image générée par notre script */
+:global([data-theme="dark"]) .mermaid-zoom-wrapper img[data-zoomable="1"]:global(.medium-zoom-image--opened) {
+    filter: none !important;
+}
+
+/* Forcer un z-index très élevé pour medium-zoom (au-dessus de tout) */
+:global(.medium-zoom-overlay) {
+    z-index: 9999999 !important;
+}
+
+:global(.medium-zoom-image--opened) {
+    z-index: 10000000 !important;
+}
+
+/* Cibler la classe spécifique mermaid-zoom-image */
+:global([data-theme="dark"]) .mermaid-zoom-image:global(.medium-zoom-image--opened) {
+    filter: none !important;
+}
+
+/* Overlay medium-zoom avec z-index très élevé pour Mermaid */
+:global(.medium-zoom-overlay):has(.mermaid-zoom-wrapper) {
+    z-index: 9999999 !important;
+}
+
+/* Z-index très élevé pour les images Mermaid */
+:global(.mermaid-zoom-image):global(.medium-zoom-image--opened) {
+    z-index: 10000000 !important;
+}
+
+:global(.mermaid-zoom-wrapper):has(:global(.medium-zoom-image--opened)) {
+    z-index: 10000000 !important;
+}
+
+/* Masquer les autres diagrammes quand un est zoomé */
+:global(.medium-zoom--opened) .mermaid-zoom-wrapper {
+    opacity: 0;
+    z-index: calc(var(--z-base) - 1);
+    transition: opacity 0.3s ease;
+}
+
+/* Le diagramme zoomé reste visible */
+:global(.medium-zoom--opened) .mermaid-zoom-wrapper:has(.medium-zoom--opened) {
+    opacity: 1;
+    z-index: var(--z-overlay);
+}
+
+/* Fallback pour les navigateurs sans support :has() */
+:global(.medium-zoom--opened) .mermaid-zoom-wrapper.zoom-active {
+    opacity: 1 !important;
+    z-index: var(--z-overlay) !important;
+}
+
+/* Styles spécifiques pour différents types de diagrammes */
+
+/* Flowchart/Graph - styles généraux */
+.mermaid .node rect,
+.mermaid .node circle,
+.mermaid .node ellipse,
+.mermaid .label rect {
+    rx: 8px !important;
+    ry: 8px !important;
+}
+
+/* Flowchart - nœuds principaux */
+.mermaid .flowchart-node rect,
+.mermaid .flowchart-label rect {
+    rx: 8px !important;
+    ry: 8px !important;
+}
+
+/* Sequence diagram */
+.mermaid .actor rect,
+.mermaid .participant rect {
+    rx: 8px !important;
+    ry: 8px !important;
+}
+
+/* ER diagram */
+.mermaid .entityBox rect,
+.mermaid .er .entityBox rect {
+    rx: 6px !important;
+    ry: 6px !important;
+}
+
+/* Gantt chart */
+.mermaid .section0 rect,
+.mermaid .section1 rect,
+.mermaid .section2 rect,
+.mermaid .section3 rect {
+    rx: 4px !important;
+    ry: 4px !important;
+}
+
+/* Gitgraph */
+.mermaid .commit rect {
+    rx: 12px !important;
+    ry: 12px !important;
+}
+
+/* Mindmap */
+.mermaid .mindmap-node rect {
+    rx: 10px !important;
+    ry: 10px !important;
+}
+
+/* Sankey */
+.mermaid .sankey .node rect {
+    rx: 4px !important;
+    ry: 4px !important;
+}
+
+/* Timeline */
+.mermaid .timeline rect {
+    rx: 6px !important;
+    ry: 6px !important;
+}
+
+/* Pie chart */
+.mermaid .pieTitleText {
+    rx: 8px !important;
+    ry: 8px !important;
+}
+
+/* Journey */
+.mermaid .journey .section0 rect,
+.mermaid .journey .section1 rect,
+.mermaid .journey .section2 rect,
+.mermaid .journey .section3 rect {
+    rx: 8px !important;
+    ry: 8px !important;
+}

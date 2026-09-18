@@ -1,0 +1,1002 @@
+/* ==========================================================================
+   Book Print Styles — "A Book Apart" inspired
+   
+   Design principles:
+   - Georgia body, Source Sans Pro headings (ABA uses Expo Serif + Titling Gothic)
+   - Single accent color (#E85D3A — warm orange-red, ABA signature)
+   - Generous white space, the page breathes
+   - Chapter openings: large number + title on their own page
+   - Figures numbered and captioned cleanly
+   - Minimal decoration — typography does the work
+   ========================================================================== */
+
+@media print {
+
+  /* PAGE */
+  @page {
+    size: A4;
+    margin: 28mm 24mm 32mm 24mm;
+  }
+
+  /* RESET */
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    font-size: 11.5pt;
+    line-height: 1.65;
+  }
+
+  body {
+    font-family: Georgia, "Palatino Linotype", "Book Antiqua", Palatino, serif;
+    color: #1a1a1a;
+    background: white;
+    margin: 0;
+    padding: 0;
+    font-kerning: normal;
+    font-variant-ligatures: common-ligatures;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* LAYOUT */
+  .content-grid {
+    display: block !important;
+    max-width: none !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  /* ========================================================================
+     HIDDEN ELEMENTS
+     ======================================================================== */
+
+  #theme-toggle,
+  .table-of-contents,
+  .toc-mobile-toggle,
+  .toc-mobile-backdrop,
+  .toc-mobile-sidebar,
+  .right-aside,
+  nav:not(.book-toc),
+  .code-lang-chip,
+  .meta-container-cell--pdf,
+  .interactive-only,
+  .html-embed__download,
+  .accordion__chevron,
+  button,
+  .button,
+  a.button {
+    display: none !important;
+  }
+
+  /* ========================================================================
+     TITLE PAGE
+     ======================================================================== */
+
+  .hero {
+    text-align: left;
+    break-after: page;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 220mm;
+    padding: 0;
+  }
+
+  .hero-title {
+    font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 36pt;
+    font-weight: 800;
+    line-height: 1.08;
+    margin: 0 0 8mm;
+    color: #1a1a1a;
+    letter-spacing: -0.8pt;
+  }
+
+  .hero-banner {
+    width: 100%;
+    max-width: 130mm;
+    margin: 0 auto 15mm;
+    overflow: hidden;
+  }
+
+  .hero-banner svg {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 70mm !important;
+    display: block;
+  }
+
+  .hero-desc {
+    font-size: 13pt;
+    color: #555;
+    font-style: normal;
+    margin: 0 0 0;
+    max-width: 100%;
+    line-height: 1.5;
+    border-top: 0.75pt solid #1a1a1a;
+    padding-top: 4mm;
+  }
+
+  .hero a {
+    border: none;
+    text-decoration: none;
+    font-weight: inherit;
+    color: inherit;
+  }
+
+  /* ========================================================================
+     META (author, date, DOI) — right after title page
+     ======================================================================== */
+
+  .meta {
+    padding: 0;
+    margin: 0;
+    border: none;
+    break-after: page;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 200mm;
+    padding-bottom: 25mm;
+  }
+
+  .meta-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5mm 15mm;
+    font-size: 9.5pt;
+    color: #444;
+    max-width: none;
+    padding: 0;
+  }
+
+  .meta-container-cell {
+    text-align: left;
+    max-width: none;
+  }
+
+  .meta-container-cell h3 {
+    font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 1.5pt;
+    color: #999;
+    margin: 0 0 1.5mm;
+    font-weight: 600;
+  }
+
+  .meta-container-cell p,
+  .meta-container-cell ul {
+    margin: 0;
+  }
+
+  .meta a {
+    color: #1a1a1a !important;
+    text-decoration: none !important;
+    border: none !important;
+  }
+
+  .meta-container-cell p,
+  .meta-container-cell a {
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  .meta h3,
+  .hero h3,
+  header h3 {
+    font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+
+  .authors {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .authors li {
+    display: inline;
+  }
+
+  .authors li::after {
+    content: ", ";
+  }
+
+  .authors li:last-child::after {
+    content: "";
+  }
+
+  .authors li {
+    padding: 0;
+  }
+
+  /* ========================================================================
+     TABLE OF CONTENTS
+     ======================================================================== */
+
+  .book-toc {
+    break-after: page;
+    padding: 0;
+    break-inside: avoid;
+  }
+
+  .book-toc__title {
+    font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 12pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 3pt;
+    text-align: left;
+    margin: 0 0 10mm;
+    color: #1a1a1a;
+    padding: 0;
+    border: none;
+    break-before: auto;
+    counter-increment: none;
+  }
+
+  .book-toc__title::before,
+  .book-toc__title::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  .book-toc__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .book-toc__chapter {
+    padding: 1.5mm 0;
+    border: none;
+    display: grid;
+    grid-template-columns: 10mm 1fr;
+    align-items: baseline;
+    gap: 0;
+  }
+
+  .book-toc__number {
+    font-family: "Source Sans Pro", sans-serif;
+    font-size: 11pt;
+    font-weight: 700;
+    color: #E85D3A;
+    text-align: right;
+    padding-right: 4mm;
+  }
+
+  .book-toc__label {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .book-toc__sections {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 1mm 0;
+    grid-column: 2;
+  }
+
+  .book-toc__section {
+    display: grid;
+    grid-template-columns: 10mm 1fr;
+    align-items: baseline;
+    padding: 0.5mm 0;
+    font-size: 9pt;
+    color: #666;
+  }
+
+  .book-toc__section-number {
+    font-family: "Source Sans Pro", sans-serif;
+    font-size: 8.5pt;
+    font-weight: 600;
+    color: #999;
+    text-align: right;
+    padding-right: 3mm;
+  }
+
+  .book-toc__section-number {
+    font-weight: 400;
+    color: #aaa;
+    min-width: 10mm;
+  }
+
+  /* ========================================================================
+     HEADINGS
+     ======================================================================== */
+
+  /* ── Chapter opener (dedicated page) ── */
+
+  .book-chapter-opener {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 160mm;
+    padding-bottom: 30mm;
+    break-before: page;
+    break-after: page;
+    break-inside: avoid;
+    page-break-before: always;
+    page-break-after: always;
+  }
+
+  h2 {
+    font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 28pt;
+    font-weight: 800;
+    margin: 0;
+    padding: 0;
+    line-height: 1.1;
+    color: #1a1a1a;
+    letter-spacing: -0.5pt;
+    break-after: avoid-page;
+  }
+
+  .book-chapter-opener h2 {
+    break-before: auto;
+    border-bottom: 0.75pt solid #1a1a1a;
+    padding-bottom: 5mm;
+  }
+
+  h2:not(.book-chapter-opener h2) {
+    break-before: page;
+  }
+
+  h2[data-chapter-num]::before {
+    content: attr(data-chapter-num);
+    display: block;
+    font-family: "Source Sans Pro", sans-serif;
+    font-size: 80pt;
+    font-weight: 800;
+    color: #E85D3A;
+    line-height: 1;
+    margin-bottom: 8mm;
+    letter-spacing: -1pt;
+  }
+
+  h2::after {
+    content: none;
+  }
+
+  .hero + section h2:first-child,
+  .hero + div h2:first-child {
+    break-before: auto;
+  }
+
+  .hero + section h2:first-child::before,
+  .hero + div h2:first-child::before,
+  .hero + section h2:first-child::after,
+  .hero + div h2:first-child::after {
+    content: none;
+  }
+
+  h3 {
+    font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14pt;
+    font-weight: 700;
+    margin: 10mm 0 4mm;
+    line-height: 1.3;
+    color: #1a1a1a;
+    break-after: avoid-page;
+  }
+
+  h3[data-section-num]::before {
+    content: attr(data-section-num) "\2003";
+    font-weight: 400;
+    color: #E85D3A;
+    font-size: 12pt;
+  }
+
+  h4 {
+    font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 11pt;
+    font-weight: 700;
+    margin: 7mm 0 3mm;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    letter-spacing: 0.5pt;
+    break-after: avoid-page;
+  }
+
+  h5, h6 {
+    font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 10.5pt;
+    font-weight: 700;
+    margin: 5mm 0 2mm;
+    color: #333;
+  }
+
+  /* ========================================================================
+     BODY TEXT
+     ======================================================================== */
+
+  p {
+    text-align: left;
+    margin: 0 0 3.5mm;
+    line-height: 1.7;
+    text-indent: 0;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    orphans: 3;
+    widows: 3;
+  }
+
+  h2 + p,
+  h3 + p,
+  h4 + p {
+    text-indent: 0;
+  }
+
+  strong { font-weight: 700; }
+  em { font-style: italic; }
+
+  a {
+    color: #E85D3A;
+    text-decoration: none;
+    border: none;
+  }
+
+  a[href^="http"]::after {
+    content: "";
+  }
+
+  /* ========================================================================
+     LISTS
+     ======================================================================== */
+
+  ul, ol {
+    margin: 0 0 4mm 5mm;
+    padding-left: 4mm;
+  }
+
+  li {
+    margin-bottom: 1.5mm;
+    line-height: 1.6;
+  }
+
+  li code,
+  .tag,
+  .badge {
+    background: #f3f3f3;
+    border: 0.5pt solid #ddd;
+    padding: 0.2mm 1.5mm;
+    border-radius: 1pt;
+    font-size: 8pt;
+    color: #444;
+    white-space: nowrap;
+  }
+
+  /* ========================================================================
+     CODE
+     ======================================================================== */
+
+  pre, code {
+    font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Courier New", monospace;
+    font-size: 8pt;
+  }
+
+  pre {
+    background: #f7f7f7;
+    padding: 4mm 5mm;
+    border: none;
+    border-left: 3pt solid #E85D3A;
+    overflow-x: hidden;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 5mm 0;
+    line-height: 1.55;
+  }
+
+  code {
+    background: #f3f3f3;
+    padding: 0.3pt 2pt;
+    border-radius: 1pt;
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  /* ========================================================================
+     FIGURES & IMAGES
+     ======================================================================== */
+
+  figure {
+    margin: 8mm 0;
+    text-align: center;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  figure img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  figcaption {
+    font-family: "Source Sans Pro", sans-serif;
+    font-size: 8.5pt;
+    color: #666;
+    margin-top: 2.5mm;
+    text-align: left;
+    line-height: 1.45;
+  }
+
+  figcaption strong {
+    color: #1a1a1a;
+    font-weight: 700;
+  }
+
+  /* ========================================================================
+     TABLES
+     ======================================================================== */
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 5mm 0;
+    font-size: 9.5pt;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    background: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  thead { display: table-header-group; }
+
+  th,
+  td {
+    background: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+
+  th {
+    font-family: "Source Sans Pro", sans-serif;
+    font-weight: 700;
+    text-align: left;
+    padding: 2mm 2.5mm;
+    border: none;
+    border-bottom: 1.5pt solid #1a1a1a;
+    font-size: 8pt;
+    letter-spacing: 0.3pt;
+    text-transform: uppercase;
+    color: #1a1a1a;
+  }
+
+  td {
+    padding: 2mm 2.5mm;
+    border: none;
+    border-bottom: 0.5pt solid #e0e0e0;
+    vertical-align: top;
+    color: #1a1a1a;
+  }
+
+  tr,
+  tr:nth-child(even),
+  tr:nth-child(odd) {
+    background: none !important;
+    background-color: transparent !important;
+  }
+
+  tr:last-child td {
+    border-bottom: 1pt solid #1a1a1a;
+  }
+
+  td code,
+  th code {
+    background: #f5f5f5 !important;
+    box-shadow: none !important;
+  }
+
+  /* ========================================================================
+     BLOCKQUOTES
+     ======================================================================== */
+
+  blockquote {
+    margin: 6mm 0 6mm 0;
+    padding: 0 0 0 5mm;
+    border-left: 3pt solid #E85D3A;
+    font-style: italic;
+    color: #444;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  blockquote p {
+    text-indent: 0 !important;
+  }
+
+  /* ========================================================================
+     HTML EMBEDS (now replaced by screenshots)
+     ======================================================================== */
+
+  .html-embed {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 6mm 0;
+    width: 100%;
+  }
+
+  .html-embed--wide,
+  .html-embed--full {
+    width: 100% !important;
+    margin-left: 0 !important;
+    transform: none !important;
+    padding: 0 !important;
+    mask: none !important;
+    -webkit-mask: none !important;
+    background: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  /* Strip backgrounds/gradients from wide and full-width wrappers */
+  .wide,
+  .full-width {
+    width: 100% !important;
+    margin-left: 0 !important;
+    transform: none !important;
+    background: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    mask: none !important;
+    -webkit-mask: none !important;
+  }
+
+  .wide > *,
+  .full-width > * {
+    background: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  .html-embed__card {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    background: white !important;
+    border: none !important;
+    border-radius: 0;
+    padding: 0 !important;
+  }
+
+  .html-embed__card.is-frameless {
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .html-embed__card > div[id^="frag-"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .html-embed__card svg {
+    max-width: 100% !important;
+    max-height: 120mm !important;
+    height: auto !important;
+    display: block !important;
+    margin: 0 auto !important;
+  }
+
+  .html-embed__card svg[viewBox] {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .html-embed__card canvas {
+    max-width: 100% !important;
+    max-height: 120mm !important;
+    height: auto !important;
+    display: block !important;
+    margin: 0 auto !important;
+  }
+
+  .html-embed__card img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+  }
+
+  .html-embed__card .chart-card {
+    width: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  .html-embed__title {
+    font-family: "Source Sans Pro", sans-serif;
+    font-size: 8.5pt;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 2mm;
+    text-transform: uppercase;
+    letter-spacing: 0.8pt;
+  }
+
+  .html-embed__desc {
+    font-family: "Source Sans Pro", sans-serif;
+    font-size: 8.5pt;
+    color: #666;
+    font-style: italic;
+    margin-top: 2.5mm;
+    line-height: 1.45;
+  }
+
+  .html-embed__desc strong,
+  figcaption strong {
+    font-style: normal;
+    color: #1a1a1a;
+    font-weight: 700;
+  }
+
+  /* Disable CSS counter-based figure numbering (JS handles it) */
+  .content-grid > main .reference-wrapper .reference__caption::before,
+  .content-grid > main .image-wrapper > figure > figcaption::before,
+  .content-grid > main figure.html-embed > .html-embed__desc::before {
+    content: none !important;
+  }
+
+  .html-embed__card .legend {
+    font-size: 7.5pt !important;
+  }
+
+  .html-embed__card .tooltip,
+  .html-embed__card .d3-tooltip,
+  .html-embed__card [class*="tooltip"] {
+    display: none !important;
+  }
+
+  .html-embed__card input[type="range"],
+  .html-embed__card select,
+  .html-embed__card .controls,
+  .html-embed__card .plotly_controls {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  /* ========================================================================
+     D3/PLOTLY
+     ======================================================================== */
+
+  svg, canvas {
+    max-width: 100%;
+    height: auto;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .js-plotly-plot,
+  .d3-line,
+  .d3-bar {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 5mm 0;
+    background: white !important;
+  }
+
+  /* ========================================================================
+     ACCORDIONS (opened for print)
+     ======================================================================== */
+
+  .accordion,
+  details.accordion,
+  details {
+    margin: 5mm 0;
+    border: none;
+    border-left: 3pt solid #ddd;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .accordion__summary,
+  details.accordion > summary,
+  details > summary {
+    font-family: "Source Sans Pro", sans-serif;
+    font-size: 9.5pt;
+    font-weight: 700;
+    padding: 2mm 4mm !important;
+    background: transparent !important;
+    border: none !important;
+    color: #1a1a1a !important;
+    list-style: none;
+  }
+
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .accordion__content-wrapper {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .accordion__content {
+    padding: 2mm 4mm !important;
+  }
+
+  /* ========================================================================
+     NOTES
+     ======================================================================== */
+
+  .note {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 5mm 0;
+    padding: 4mm 5mm;
+    border: none;
+    border-left: 3pt solid #E85D3A;
+    background: #fdf8f6;
+  }
+
+  .note--warning {
+    border-left-color: #d4a017;
+    background: #fdfaf0;
+  }
+
+  .note--danger {
+    border-left-color: #c62828;
+    background: #fdf2f2;
+  }
+
+  .note--info {
+    border-left-color: #1565c0;
+    background: #f0f5fd;
+  }
+
+  .note--success {
+    border-left-color: #2e7d32;
+    background: #f2faf3;
+  }
+
+  /* ========================================================================
+     STACKS (grid cards)
+     ======================================================================== */
+
+  .stack {
+    display: grid !important;
+    gap: 3mm !important;
+    margin: 5mm 0 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .stack[data-layout="2-column"] { grid-template-columns: repeat(2, 1fr) !important; }
+  .stack[data-layout="3-column"] { grid-template-columns: repeat(3, 1fr) !important; }
+  .stack[data-layout="4-column"] { grid-template-columns: repeat(2, 1fr) !important; }
+
+  .stack > * {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* ========================================================================
+     IMAGE WRAPPER
+     ======================================================================== */
+
+  .image-wrapper {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 5mm 0;
+  }
+
+  .image-wrapper img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+  }
+
+  .image-credit {
+    font-size: 7pt;
+    color: #999;
+    margin-top: 1mm;
+  }
+
+  /* ========================================================================
+     FOOTNOTE MARKS & SUPERSCRIPT
+     ======================================================================== */
+
+  sup a {
+    font-size: 7.5pt;
+    color: #E85D3A;
+    text-decoration: none;
+    border: none;
+  }
+
+  /* ========================================================================
+     HORIZONTAL RULES
+     ======================================================================== */
+
+  hr {
+    border: none;
+    border-top: 0.5pt solid #ddd;
+    margin: 8mm 0;
+  }
+
+  /* ========================================================================
+     CITATIONS & REFERENCES
+     ======================================================================== */
+
+  .citation {
+    font-size: 0.9em;
+    color: #666;
+  }
+
+  .references {
+    break-before: page;
+  }
+
+  .references h2 {
+    font-size: 11pt;
+    text-transform: uppercase;
+    letter-spacing: 3pt;
+    font-weight: 700;
+    break-before: auto;
+  }
+
+  .references h2::before,
+  .references h2::after {
+    content: none !important;
+  }
+
+  .reference-item {
+    margin-bottom: 2.5mm;
+    text-indent: -5mm;
+    margin-left: 5mm;
+    font-size: 9pt;
+    line-height: 1.5;
+  }
+
+  /* ========================================================================
+     ABSTRACT
+     ======================================================================== */
+
+  .hero + section,
+  .hero + div,
+  .abstract {
+    padding: 5mm 0;
+    background: transparent;
+    border: none;
+    border-top: 0.75pt solid #1a1a1a;
+    border-bottom: 0.75pt solid #ddd;
+    margin-bottom: 8mm;
+    break-inside: avoid;
+  }
+
+  .hero + section h2:first-child,
+  .hero + div h2:first-child,
+  .abstract h2 {
+    font-size: 11pt;
+    text-transform: uppercase;
+    letter-spacing: 3pt;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 3mm;
+    padding: 0;
+    border: none;
+    break-before: auto;
+  }
+
+  .hero + section h2:first-child::before,
+  .hero + div h2:first-child::before,
+  .abstract h2::before,
+  .hero + section h2:first-child::after,
+  .hero + div h2:first-child::after,
+  .abstract h2::after {
+    content: none !important;
+  }
+}

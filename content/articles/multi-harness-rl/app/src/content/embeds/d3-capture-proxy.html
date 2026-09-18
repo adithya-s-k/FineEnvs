@@ -1,0 +1,279 @@
+<div class="capture-proxy" style="width:100%;margin:14px 0;"></div>
+<style>
+  .capture-proxy { position: relative; }
+  .capture-proxy svg { display:block; width:100%; height:auto; overflow:visible; }
+  .capture-proxy .cp-bar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:12px; }
+  .capture-proxy .cp-btn { appearance:none; cursor:pointer; font:inherit; font-size:12px; line-height:1;
+    padding:7px 13px; border-radius:999px; border:1px solid var(--border-color);
+    background:transparent; color:var(--muted-color); transition:color .15s, border-color .15s; }
+  .capture-proxy .cp-btn:hover { color:var(--text-color); }
+  .capture-proxy .cp-btn:focus-visible { outline:2px solid var(--text-color); outline-offset:2px; }
+  .capture-proxy .cp-step { font-size:12px; color:var(--muted-color);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .capture-proxy .cp-step b { color:var(--text-color); font-weight:600; }
+  .capture-proxy .cp-dots { display:flex; gap:4px; margin-left:auto; }
+  .capture-proxy .cp-dot { width:7px; height:7px; border-radius:50%; border:0; padding:0; cursor:pointer;
+    background:var(--border-color); transition:background .15s; }
+  .capture-proxy .cp-dot[data-on="1"] { background:var(--text-color); }
+</style>
+<script>
+  (() => {
+    const C = 'capture-proxy';
+    const boot = () => {
+      const nodes = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = nodes[nodes.length-1]; if (!r) return; r.dataset.mounted = 'true';
+
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const ease = (t) => t < .5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2;
+
+      // One rollout, told as the sequence of things that actually happen on the
+      // wire. `lane` says which leg of the journey the packet is on, so the draw
+      // code stays a pure function of (step, progress).
+      const STEPS = [
+        { k:'boot',      t:'the agent is pointed at the proxy, and its API key is the capture session id', ms:2100 },
+        { k:'request',   t:'the harness calls what it thinks is a model endpoint, in its own dialect',      ms:1700 },
+        { k:'detect',    t:'the proxy reads the shape of the request and works out which dialect it is',    ms:1500 },
+        { k:'normalise', t:'normalised to chat, with token ids and logprobs forced on',                     ms:1800 },
+        { k:'forward',   t:'forwarded to the inference engine, which is the policy being trained',          ms:1600 },
+        { k:'sample',    t:'the engine tokenises the prompt to serve it, and samples a completion',         ms:1700 },
+        { k:'return',    t:'it hands back the text, the token ids for both sides, and a logprob per token', ms:1700 },
+        { k:'split',     t:'the proxy keeps a copy and replays the answer in the caller’s own dialect', ms:2000 },
+        { k:'record',    t:'prompt ids, completion ids and logprobs land in the capture store',             ms:1900 },
+        { k:'tool',      t:'the agent runs a tool, decides what to do next, and calls again',               ms:1900 },
+        { k:'prefix',    t:'turn 2’s prompt begins with turn 1 token for token, so they link up',      ms:2400 },
+      ];
+      const IDX = Object.fromEntries(STEPS.map((s,i)=>[s.k,i]));
+      const TOTAL = STEPS.reduce((a,s)=>a+s.ms,0);
+
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let clock = 0, last = 0, raf = 0, playing = !reduce, visible = true, held = null;
+
+      const at = () => {
+        if (held !== null) return { i: held, t: 0.55 };
+        let c = clock % TOTAL;
+        for (let i = 0; i < STEPS.length; i++) {
+          if (c < STEPS[i].ms) return { i, t: c / STEPS[i].ms };
+          c -= STEPS[i].ms;
+        }
+        return { i: STEPS.length-1, t: 1 };
+      };
+
+      const els = (() => {
+        r.innerHTML =
+          `<div class="cp-bar">`
+        +   `<button type="button" class="cp-btn" data-act="play">Pause</button>`
+        +   `<span class="cp-step"></span>`
+        +   `<span class="cp-dots">` + STEPS.map((_,i) =>
+              `<button class="cp-dot" data-i="${i}" data-on="0" aria-label="step ${i+1}"></button>`).join('')
+        +   `</span>`
+        + `</div>`
+        + `<div data-svg></div>`;
+        return {
+          svg:  r.querySelector('[data-svg]'),
+          step: r.querySelector('.cp-step'),
+          play: r.querySelector('[data-act="play"]'),
+          dots: [...r.querySelectorAll('.cp-dot')],
+        };
+      })();
+
+      els.play.addEventListener('click', () => { playing = !playing; held = null; draw(); });
+      els.dots.forEach(d => d.addEventListener('click', () => {
+        held = +d.dataset.i; playing = false; draw();
+      }));
+
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const mono = 'ui-monospace,SFMono-Regular,Menlo,monospace';
+        const cReq = P(0), cRes = P(3), cKeep = P(1), cMask = mu;
+
+        const { i: si, t: st } = at();
+        const step = STEPS[si];
+        const after = (k) => si > IDX[k] || (si === IDX[k] && st > 0.55);
+        const turn2 = si >= IDX['tool'];
+
+        const narrow = W < 640;
+        const padX = 4;
+        const boxW = narrow ? (W - 8) : Math.min(210, (W - 8) * 0.24);
+        const rowY = 28, boxH = narrow ? 94 : 90;
+        const xA = padX;
+        const xP = narrow ? padX : Math.round((W - boxW) / 2);
+        const xE = narrow ? padX : W - padX - boxW;
+        const yA = rowY, yP = narrow ? rowY + boxH + 34 : rowY, yE = narrow ? rowY + (boxH+34)*2 : rowY;
+
+        const storeY = (narrow ? yE + boxH + 30 : rowY + boxH + 42);
+        const storeH = 132;
+        const H = storeY + storeH + 16;
+
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Step ${si+1} of ${STEPS.length}: ${esc(step.t)}">`;
+        s += `<defs>
+          <marker id="cp-a" markerWidth="7" markerHeight="7" refX="6" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="${cReq}"/></marker>
+          <marker id="cp-b" markerWidth="7" markerHeight="7" refX="6" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="${cRes}"/></marker>
+          <pattern id="cp-h" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="6" stroke="${mu}" stroke-opacity=".4" stroke-width="1.6"/></pattern>
+        </defs>`;
+
+        // ── the three boxes
+        const chip = (x, y, t, col) => {
+          const w = t.length*5.9 + 16;
+          return `<rect x="${x}" y="${y}" width="${w}" height="19" rx="9.5" fill="${col}" fill-opacity=".12" stroke="${col}" stroke-opacity=".45"/>`
+               + `<text x="${x+w/2}" y="${y+13}" text-anchor="middle" font-size="9.5" fill="${col}" font-family="${mono}">${esc(t)}</text>`;
+        };
+        const boxHead = (x,y,label,sub,lit,accent) => {
+          let g = `<rect x="${x}" y="${y}" width="${boxW}" height="${boxH}" rx="10" fill="${sf}"
+                    stroke="${lit ? accent : bd}" stroke-width="${lit ? 1.7 : 1}"/>`;
+          g += `<text x="${x+12}" y="${y+18}" font-size="10.5" fill="${mu}" font-family="${mono}" letter-spacing=".5">${esc(label)}</text>`;
+          g += `<text x="${x+12}" y="${y+34}" font-size="12.5" font-weight="600" fill="${tx}">${esc(sub)}</text>`;
+          return g;
+        };
+
+        // sandbox + agent
+        const agentBusy = si === IDX['tool'];
+        s += boxHead(xA, yA, 'SANDBOX', 'the agent', si===IDX['boot']||si===IDX['request']||agentBusy, cReq);
+        s += chip(xA+12, yA+44, 'key = sess_7f3a', after('boot') ? cReq : mu);
+        s += `<text x="${xA+12}" y="${yA+76}" font-size="9.5" fill="${mu}" font-family="${mono}">${agentBusy ? 'running a tool' : 'unmodified'}</text>`;
+
+        // proxy, with its three internal stages
+        s += boxHead(xP, yP, 'CAPTURE PROXY', 'the only new part', si>=IDX['detect']&&si<=IDX['record'], cReq);
+        const stages = [['detect dialect','detect'],['normalise, ids on','normalise'],['record','record']];
+        // stages sit lower in the shorter box
+        stages.forEach((sg, k) => {
+          const y = yP + 44 + k*15;
+          const on = si === IDX[sg[1]];
+          const done = after(sg[1]);
+          s += `<circle cx="${xP+17}" cy="${y-3.5}" r="3.4" fill="${on||done ? cReq : bd}" fill-opacity="${on?1:(done?.5:1)}"/>`;
+          if (on) s += `<circle cx="${xP+17}" cy="${y-3.5}" r="${4+4*ease(st)}" fill="none" stroke="${cReq}" stroke-opacity="${.5*(1-st)}"/>`;
+          s += `<text x="${xP+27}" y="${y}" font-size="9.8" fill="${on ? tx : mu}" font-family="${mono}">${esc(sg[0])}</text>`;
+        });
+
+        // engine
+        s += boxHead(xE, yE, 'INFERENCE ENGINE', 'the policy', si===IDX['sample'], cRes);
+        s += chip(xE+12, yE+44, 'ids + logprobs on', si===IDX['sample'] ? cRes : mu);
+        s += `<text x="${xE+12}" y="${yE+76}" font-size="9.5" fill="${si===IDX['sample']?cRes:mu}" font-family="${mono}">${si===IDX['sample'] ? 'sampling' : 'tokenises to serve'}</text>`;
+
+        // ── wires
+        const midA = narrow ? [xA+boxW/2, yA+boxH] : [xA+boxW, yA+boxH/2];
+        const midP1 = narrow ? [xP+boxW/2, yP] : [xP, yP+boxH/2];
+        const midP2 = narrow ? [xP+boxW/2, yP+boxH] : [xP+boxW, yP+boxH/2];
+        const midE = narrow ? [xE+boxW/2, yE] : [xE, yE+boxH/2];
+        const wire = (a,b,c,op,dash) => `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${c}" stroke-opacity="${op}" stroke-width="1.6" ${dash?'stroke-dasharray="4 3"':''}/>`;
+        s += wire(midA, midP1, bd, 1) + wire(midP2, midE, bd, 1);
+
+        // ── the packet
+        const lerp = (a,b,t) => [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t];
+        const packet = (pos, label, col) => {
+          const w = Math.max(58, label.length*5.6 + 14), h = 19;
+          let g = `<rect x="${pos[0]-w/2}" y="${pos[1]-h/2}" width="${w}" height="${h}" rx="5" fill="${sf}" stroke="${col}" stroke-width="1.5"/>`;
+          g += `<text x="${pos[0]}" y="${pos[1]+3.5}" text-anchor="middle" font-size="9.5" fill="${col}" font-family="${mono}">${esc(label)}</text>`;
+          return g;
+        };
+        if (si === IDX['request'])   s += packet(lerp(midA, midP1, ease(st)), 'POST /v1/messages', cReq);
+        if (si === IDX['forward'])   s += packet(lerp(midP2, midE, ease(st)), 'chat + logprobs', cReq);
+        if (si === IDX['return'])    s += packet(lerp(midE, midP2, ease(st)), 'ids + logprobs', cRes);
+        if (si === IDX['split']) {
+          s += packet(lerp(midP1, midA, ease(st)), 'replayed, same dialect', cRes);
+          const down = [xP + boxW/2, yP + boxH + (storeY - 12 - (yP+boxH))*ease(st)];
+          s += packet(down, 'copy kept', cKeep);
+        }
+
+        // ── the capture store
+        s += `<rect x="${padX}" y="${storeY}" width="${W-padX*2}" height="${storeH}" rx="10" fill="none" stroke="${bd}" stroke-dasharray="3 3"/>`;
+        s += `<text x="${padX+12}" y="${storeY+17}" font-size="10.5" fill="${mu}" font-family="${mono}" letter-spacing=".5">CAPTURE STORE</text>`;
+        if (!narrow) {
+          const kx = padX + 118;
+          s += `<rect x="${kx}" y="${storeY+8}" width="11" height="10" rx="2" fill="url(#cp-h)" stroke="${mu}" stroke-opacity=".3"/>`;
+          s += `<text x="${kx+16}" y="${storeY+17}" font-size="9.5" fill="${mu}">prompt, masked</text>`;
+          s += `<rect x="${kx+108}" y="${storeY+8}" width="11" height="10" rx="2" fill="${cKeep}"/>`;
+          s += `<text x="${kx+124}" y="${storeY+17}" font-size="9.5" fill="${mu}">sampled, one logprob each</text>`;
+        }
+
+        const recorded = after('record');
+        const cellW = narrow ? 9 : 12, cellH = 13, gapc = 2.5;
+        const rowStart = padX + 14;
+        const drawRun = (x, y, n, kind, alpha) => {
+          let g = '';
+          for (let k = 0; k < n; k++) {
+            const cx = x + k*(cellW+gapc);
+            if (kind === 'mask') g += `<rect x="${cx}" y="${y}" width="${cellW}" height="${cellH}" rx="2.5" fill="url(#cp-h)" stroke="${mu}" stroke-opacity=".25"/>`;
+            else {
+              g += `<rect x="${cx}" y="${y}" width="${cellW}" height="${cellH}" rx="2.5" fill="${cKeep}" fill-opacity="${alpha}"/>`;
+              const lp = 3 + ((k*37)%9);          // stable pseudo-random bar
+              g += `<rect x="${cx}" y="${y+cellH+3}" width="${cellW}" height="${lp}" rx="1.5" fill="${cKeep}" fill-opacity="${alpha*.55}"/>`;
+            }
+          }
+          return g;
+        };
+
+        const t1y = storeY + 34;
+        s += `<text x="${rowStart}" y="${t1y+11}" font-size="9.5" fill="${mu}" font-family="${mono}">turn 1</text>`;
+        if (recorded || turn2) {
+          const px = rowStart + 44;
+          s += drawRun(px, t1y, 8, 'mask');
+          const cx0 = px + 8*(cellW+gapc) + 6;
+          const grow = turn2 ? 1 : Math.min(1, si===IDX['record'] ? ease(st) : (after('record')?1:0));
+          s += drawRun(cx0, t1y, Math.round(6*grow), 'keep', 1);
+        } else {
+          s += `<text x="${rowStart+44}" y="${t1y+11}" font-size="10" fill="${mu}" fill-opacity=".6" font-family="${mono}">waiting for the first completion</text>`;
+        }
+
+        const t2y = storeY + 82;
+        if (turn2) {
+          s += `<text x="${rowStart}" y="${t2y+11}" font-size="9.5" fill="${mu}" font-family="${mono}">turn 2</text>`;
+          const px = rowStart + 44;
+          const preN = 14;                                    // 8 prompt + 6 completion from turn 1
+          s += drawRun(px, t2y, preN, 'mask');
+          if (si === IDX['prefix']) {
+            const bw = preN*(cellW+gapc) - gapc;
+            s += `<path d="M ${px} ${t2y+cellH+9} l 0 5 l ${bw} 0 l 0 -5" fill="none" stroke="${cReq}" stroke-opacity=".8"/>`;
+            s += `<text x="${px}" y="${t2y+cellH+26}" font-size="9.5" fill="${cReq}" font-family="${mono}">identical to everything above, so turn 2 is a child of turn 1</text>`;
+          }
+          const cx0 = px + preN*(cellW+gapc) + 6;
+          s += drawRun(cx0, t2y, si===IDX['prefix'] ? 5 : 0, 'keep', 1);
+        }
+
+        // running totals
+        const nTok = (recorded||turn2 ? 6 : 0) + (si===IDX['prefix'] ? 5 : 0);
+        s += `<text x="${W-padX-12}" y="${storeY+17}" text-anchor="end" font-size="10.5" fill="${mu}" font-family="${mono}">${nTok} trainable tokens · turn ${turn2?2:1}</text>`;
+
+        s += '</svg>';
+
+        // Only the SVG is replaced per frame. Rebuilding the whole component at
+        // 60fps detached the controls before a click could land on them, which
+        // made the figure impossible to step through by hand.
+        els.svg.innerHTML = s;
+        els.step.innerHTML = `<b>${si+1}/${STEPS.length}</b> ${esc(step.t)}`;
+        els.dots.forEach((d,i) => { d.dataset.on = i === si ? 1 : 0; });
+        els.play.textContent = playing ? 'Pause' : 'Play';
+      };
+
+      const tick = (ts) => {
+        if (!last) last = ts;
+        const dt = Math.min(64, ts - last); last = ts;
+        if (playing && visible && held === null) { clock += dt; draw(); }
+        raf = requestAnimationFrame(tick);
+      };
+      draw();
+      if (!reduce) raf = requestAnimationFrame(tick);
+      else { held = IDX['split']; draw(); }
+
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver((es) => { visible = es.some(e => e.isIntersecting); },
+          { rootMargin:'80px' }).observe(r);
+      }
+      if ('ResizeObserver' in window) {
+        let t; new ResizeObserver(() => { clearTimeout(t); t = setTimeout(draw, 120); }).observe(r);
+      } else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

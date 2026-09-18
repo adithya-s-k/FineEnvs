@@ -1,0 +1,64 @@
+<div class="dataset-pipeline" style="width:100%;margin:14px 0;"></div>
+<style>
+  .dataset-pipeline { position: relative; }
+  .dataset-pipeline svg { display:block; width:100%; height:auto; overflow:visible; }
+  .dataset-pipeline .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .dataset-pipeline .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .dataset-pipeline .k { display:inline-flex; align-items:center; gap:7px; }
+  .dataset-pipeline .sw { width:13px; height:3px; border-radius:2px; }
+  .dataset-pipeline .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'dataset-pipeline';
+    const boot = () => {
+      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const H = Math.max(210, Math.round(W/3.6));
+        const St = [
+          ['public notebook','a Kaggle notebook and the question it answers'],
+          ['task spec','question becomes the instruction, its answer the gold'],
+          ['container','a Dockerfile plus a hook that pulls the Kaggle data'],
+          ['grader','generated, then run against the known answer'],
+        ];
+        const c0 = P(0), c3 = P(3);
+        const bw = (W - 40 - 26*(St.length-1))/St.length, cy = H*0.42;
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="A public notebook becomes a verified Harbor task, and unverifiable ones are dropped">`;
+        s += `<defs><marker id="dp" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="${mu}"/></marker></defs>`;
+        St.forEach((st,i) => {
+          const x = 20 + i*(bw+26);
+          s += `<rect x="${x}" y="${cy-30}" width="${bw}" height="60" rx="9" fill="${sf}" stroke="${bd}"/>`;
+          s += `<text x="${x+bw/2}" y="${cy-8}" text-anchor="middle" font-size="12.5" font-weight="600" fill="${tx}">${st[0]}</text>`;
+          const w = st[1].split(' '); const l1 = w.slice(0, Math.ceil(w.length/2)).join(' '), l2 = w.slice(Math.ceil(w.length/2)).join(' ');
+          s += `<text x="${x+bw/2}" y="${cy+8}" text-anchor="middle" font-size="10.5" fill="${mu}">${l1}</text>`;
+          s += `<text x="${x+bw/2}" y="${cy+21}" text-anchor="middle" font-size="10.5" fill="${mu}">${l2}</text>`;
+          if (i < St.length-1) s += `<line x1="${x+bw+4}" y1="${cy}" x2="${x+bw+20}" y2="${cy}" stroke="${mu}" stroke-width="1.3" marker-end="url(#dp)"/>`;
+        });
+        const lx = 20 + (St.length-1)*(bw+26) + bw/2;
+        s += `<line x1="${lx}" y1="${cy+30}" x2="${lx}" y2="${cy+56}" stroke="${c3}" stroke-dasharray="4 3"/>`;
+        s += `<text x="${lx+10}" y="${cy+60}" font-size="11.5" fill="${c3}">grader does not fire on the known answer, task dropped</text>`;
+        s += `<line x1="${lx}" y1="${cy}" x2="${W-14}" y2="${cy}" stroke="${c0}" stroke-width="1.6" marker-end="url(#dp)"/>`;
+        s += `<text x="${W-14}" y="${cy-10}" text-anchor="end" font-size="11.5" font-weight="600" fill="${c0}">kept</text>`;
+        s += '</svg>';
+        r.innerHTML = s + `<div class="nt">The drop step is where the trust comes from. A question is only useful for training if its grader demonstrably fires on the answer the notebook already gave, so anything that fails that check never reaches the suite.</div>`;
+      };
+      draw();
+      if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
+      else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

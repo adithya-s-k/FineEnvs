@@ -1,0 +1,52 @@
+# Python
+__pycache__
+*.py[cod]
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+*.egg
+.idea/
+.vscode/
+.astro/
+.claude/
+*.swp
+.DS_Store
+# Node
+node_modules/
+*.log
+*.env
+*.cache
+.notion-to-md
+.playwright-mcp/
+
+app/scripts/latex-to-mdx/output/
+app/scripts/notion-importer/output/**/*
+app/src/content/embeds/typography/generated
+
+# PDF export
+app/public/*.pdf
+app/public/*.png
+app/public/*.jpg
+app/public/data/**/*
+
+.astro/
+
+# Template sync temporary directories
+.template-sync/
+.temp-*/
+.backup-*/
+
+# IDE / agent
+.cursor/*
+!.cursor/skills
+
+# Temporary screenshots & exports at root
+/*.png
+/*.zip
+/rephrasing_metadata.json
+/RAPPORT-ARBRE-COMPETENCES-AUTONOMIE.md
+
