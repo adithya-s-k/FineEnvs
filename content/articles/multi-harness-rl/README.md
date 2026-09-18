@@ -20,6 +20,8 @@ thumbnail: >-
 
 # Multi-Harness RL
 
+[Read the article](https://huggingface.co/spaces/HuggingEnvs/multi-harness-rl).
+
 A research article built with [research-article-template](https://huggingface.co/spaces/tfrere/research-article-template).
 
 Source lives in [HuggingEnvs](https://github.com/adithya-s-k/HuggingEnvs) under
@@ -49,7 +51,7 @@ npm run dev           # http://localhost:4321
 From the repo root, over the Hub HTTP endpoint (no git remote, no nested repo):
 
 ```bash
-python3 tools/deploy.py content/articles/multi-harness-rl AdithyaSK/multi-harness-rl
+python3 tools/deploy.py content/articles/multi-harness-rl HuggingEnvs/multi-harness-rl
 ```
 
 The Dockerfile and nginx config are included; this README is the Space card.
