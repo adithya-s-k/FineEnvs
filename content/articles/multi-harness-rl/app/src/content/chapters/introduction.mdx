@@ -2,14 +2,14 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
 
 ## Introduction
 
-If you use AI to write code, you have probably run the same model through more than one tool. Claude
-Code in the terminal, Codex or Cursor in the editor, maybe Cline. And you may have noticed something
-that is easy to write off as a bad day: the model that felt sharp in one tool feels clumsy in the
-next. Same model, same task, different tool wrapped around it, and it behaves like a different
-assistant.
+If you write code with AI, you have almost certainly used the same model in more than one place.
+Claude Code in the terminal, Codex or Cursor in the editor, maybe Cline or Pi. And you have probably
+noticed the thing nobody quite says out loud: the same model is better in some of them than in
+others. It feels sharp in one, and oddly clumsy in the next.
 
-That is not your imagination. It is measurable, and it has become one of the central problems in
-training open models.
+It is easy to write that off as a bad day. It is not. The effect is real, it is measurable, it is
+bigger than most people expect, and it has quietly become one of the central problems in training
+open models.
 
 The tool wrapped around the model is called an **agent harness**. It runs the loop, decides which
 tools the model can use, writes the context the model reads, interprets what comes back, and decides
@@ -49,8 +49,18 @@ opposite way.
   frameless
 />
 
-So "model A is better than model B" is not a harness-independent statement. Anthropic said as much
-back in 2024 [@anthropic2024swebench]. What has changed since is how much now rides on it.
+So "model A is better than model B" is not a harness-independent statement.
+
+Anthropic is the clearest case of a lab that knows this, because it owns both ends. It ships Claude
+and it ships Claude Code, and it trains one to use the other. The OpenEnv team put the mechanism
+plainly: agent harnesses keep getting better partly because "models like GPT-5.5 and Opus 4.8 are
+trained to use their respective harnesses" [@openenv2026]. Anthropic also said the quiet part early.
+Its own 2024 SWE-bench write-up noted that "the performance of an agent on SWE-bench can vary
+significantly based on this scaffolding, even when using the same underlying AI model"
+[@anthropic2024swebench], and then went on building the scaffolding it measures against.
+
+That is the asymmetry this article is about. When you own the model and the harness, the variance is
+something you tune away. When all you have is the weights, it is something that happens to you.
 
 ### How badly it breaks
 
@@ -144,9 +154,9 @@ before the returns flatten out. The pieces all exist, in OpenEnv, in verifiers, 
 The run does not.
 
 That is what the rest of this article is: what a harness is, what an RL environment is, how to
-capture trainable tokens out of an agent you do not control, and then the thing itself, a small open
-model trained across many harnesses, evaluated in all of them, with the parts that did not work left
-in.
+capture trainable tokens out of an agent you do not control, and then the thing itself. A small open
+model trained inside real agent harnesses and evaluated under four of them, Claude Code, Codex,
+OpenCode and Mini-SWE-Agent, with the parts that did not work left in.
 
 {/* TODO: once the Data Agent numbers are final, close with one sentence naming the headline
      result, so the reader knows what they are reading toward. */}
