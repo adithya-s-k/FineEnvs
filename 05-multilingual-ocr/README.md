@@ -8,7 +8,7 @@ The full index provides **11,020,101 task candidates**: 4,477,445 section OCR, 6
 The complete source copy lives in the existing
 [HuggingEnvs bucket](https://huggingface.co/buckets/HuggingEnvs/NayanaOCR_Corpus_2025_bucket).
 One environment serves it locally and in the
-[OpenEnv Space](https://huggingface.co/spaces/HuggingEnvs/nayana-ocr-env).
+[OpenEnv Space](https://huggingface.co/spaces/FineEnvs/nayana-ocr-env).
 
 | Task | Observation | Answer | Reward |
 |---|---|---|---|
@@ -18,7 +18,7 @@ One environment serves it locally and in the
 | `layout_detection` | Original page and its pixel dimensions | JSON array of labeled pixel boxes | Mean class-aware region F1 at IoU .50:.05:.95 |
 | `descriptive_vqa` | Original page and question | Concise free-form answer | Strict Gemma judge: all six checks must pass |
 
-The [playground](https://huggingenvs-nayana-ocr-env.hf.space/web/) has language/task filters,
+The [playground](https://fineenvs-nayana-ocr-env.hf.space/web/) has language/task filters,
 indexed navigation, shuffle, a page viewer, layout overlays, scoring, and reference reveal after submission.
 The OpenEnv observation and discovery APIs exclude reference answers. The public UI deliberately
 reveals them after scoring, matching the LaTeX OCR interaction.
@@ -54,10 +54,11 @@ flowchart LR
   attaches the same bucket at `/corpus`, read-only. Its image contains code and the manifest.
 - **Training uses physical locality.** A seeded block order visits every selected task once per
   epoch, shuffling bounded metadata chunks within each block. Prefetch overlaps upcoming reads;
-  GRPO owns repetition of each task ID. This is a natural-proportion full pass. A balanced,
-  indexed sample is used for the fixed evaluation set.
-- **Caches have explicit budgets.** Defaults: 4 GB index files, 4 GB row groups, 512 MB rendered
-  tasks; at most two concurrent cold group loads and four pending prefetches. Reader leases
+  GRPO owns repetition of each task ID. This is a natural-proportion full pass. Evaluation uses
+  a frozen, block-local 500-task set: 100 per family, 22-23 per language, every task load-checked
+  and pinned. See [REPRODUCE.md](REPRODUCE.md#8-fixed-evaluation-set).
+- **Caches have explicit budgets.** Defaults: 6 GB index files (the published 22-language
+  set is 4.30 GB), 4 GB row groups, 512 MB rendered tasks; at most two concurrent cold group loads and four pending prefetches. Reader leases
   protect active files from eviction. Concurrent requests share loads and renders. An evicted
   asset can be reconstructed from its pinned task ID and verified hash.
 - **Replay follows source identity.** IDs include the immutable index snapshot. Document-based
@@ -96,7 +97,7 @@ uv run --frozen --project envs/nayana_ocr nayana-smoke
 
 # Single-GPU GRPO; auto selects the full-corpus iterator for this Space.
 uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana.py \
-  --env-url https://huggingenvs-nayana-ocr-env.hf.space --smoke \
+  --env-url https://fineenvs-nayana-ocr-env.hf.space --smoke \
   --output-dir artifacts/local-gpu-smoke
 ```
 
