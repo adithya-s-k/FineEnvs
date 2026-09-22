@@ -6,13 +6,14 @@ import math
 import random
 import re
 import threading
+import time
 from collections import OrderedDict, defaultdict
 
 import requests
 from PIL import Image
 
 from .client import connect
-from .models import NayanaAction
+from .models import RETRYABLE_GRADING_SIGNALS, NayanaAction
 
 
 class AssetCache:
@@ -99,6 +100,36 @@ def completion_text(completion):
     )
 
 
+# The environment raises on a judge transport failure or a malformed verdict *without
+# consuming the episode*, and asks the caller to retry the step without resetting. Measured
+# at 16 concurrent sessions, 9 of 100 descriptive-VQA gradings failed this way and all 9
+# passed on a serial retry. Unretried, the same failure inside env_reward aborts a GRPO
+# step rather than degrading a metric, so every grading path goes through this helper.
+JUDGE_ATTEMPTS = 4
+JUDGE_BACKOFF = 2.0
+
+
+def transient_judge_failure(error):
+    text = str(error)
+    return any(signal in text for signal in RETRYABLE_GRADING_SIGNALS)
+
+
+def step_with_judge_retry(
+    client, answer, *, attempts=JUDGE_ATTEMPTS, backoff=JUDGE_BACKOFF, sleep=time.sleep
+):
+    """Step, retrying only gradings the environment marked retryable."""
+    if attempts < 1:
+        raise ValueError("Use at least one grading attempt")
+    for attempt in range(attempts):
+        try:
+            return client.step(NayanaAction(answer=answer))
+        except Exception as error:
+            if not transient_judge_failure(error) or attempt == attempts - 1:
+                raise
+            sleep(backoff * (2**attempt))
+    raise AssertionError("unreachable")
+
+
 def env_reward(completions, environments, task_id, **kwargs):
     scores = []
     metrics = defaultdict(list)
@@ -107,9 +138,7 @@ def env_reward(completions, environments, task_id, **kwargs):
     ):
         if environment.task_id != expected:
             raise RuntimeError("Reward was routed to the wrong rollout task")
-        result = environment.client.step(
-            NayanaAction(answer=completion_text(completion))
-        )
+        result = step_with_judge_retry(environment.client, completion_text(completion))
         if (
             not result.done
             or result.reward is None
