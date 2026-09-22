@@ -1,16 +1,16 @@
 <div align="center">
 
-<img src="./assets/banner.png" alt="HuggingEnvs — open source RL environments for training LLM agents" width="100%">
+<img src="./assets/banner.png" alt="FineEnvs — open source RL environments for training LLM agents" width="100%">
 
-<h1>HuggingEnvs</h1>
+<h1>FineEnvs</h1>
 
 <h3>Open source RL environments for LLM agents</h3>
 
 <p><b>Build&nbsp; ·&nbsp; Deploy&nbsp; ·&nbsp; Train&nbsp; ·&nbsp; Eval&nbsp; — end to end, reproducible, in the open.</b></p>
 
-<a href="https://huggingface.co/HuggingEnvs"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-HuggingEnvs-FFD21E?style=for-the-badge&labelColor=1a1a1a" alt="HuggingEnvs on Hugging Face" height="32"></a>
+<a href="https://huggingface.co/FineEnvs"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-FineEnvs-FFD21E?style=for-the-badge&labelColor=1a1a1a" alt="FineEnvs on Hugging Face" height="32"></a>
 <a href="https://huggingface.co/spaces/AdithyaSK/rl-environments-guide"><img src="https://img.shields.io/badge/%F0%9F%93%96-Read%20the%20Guide-4F46E5?style=for-the-badge&labelColor=1a1a1a" alt="The ultimate guide to RL environments" height="32"></a>
-<a href="https://github.com/adithya-s-k/HuggingEnvs/stargazers"><img src="https://img.shields.io/github/stars/adithya-s-k/HuggingEnvs?style=for-the-badge&labelColor=1a1a1a&color=FFD21E" alt="GitHub stars" height="32"></a>
+<a href="https://github.com/adithya-s-k/FineEnvs/stargazers"><img src="https://img.shields.io/github/stars/adithya-s-k/FineEnvs?style=for-the-badge&labelColor=1a1a1a&color=FFD21E" alt="GitHub stars" height="32"></a>
 <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="Apache 2.0 license" height="32"></a>
 
 </div>
@@ -38,7 +38,7 @@ can launch yourself, in one command, without a GPU of your own.
 </div>
 
 **Where things live:** source, recipes and notebooks in this repo · environments, datasets, models and
-demos on **[🤗 huggingface.co/HuggingEnvs](https://huggingface.co/HuggingEnvs)**.
+demos on **[🤗 huggingface.co/FineEnvs](https://huggingface.co/FineEnvs)**.
 
 ---
 
@@ -80,12 +80,12 @@ them deployed as Spaces you can hit right now.
 all the way to a trained model.
 
 Qwen3-VL-2B learns to read rendered math into LaTeX with GRPO, scored by a reward served from a live
-[OpenEnv Space](https://huggingface.co/spaces/HuggingEnvs/latex-ocr-env). The scorer compares normalized
+[OpenEnv Space](https://huggingface.co/spaces/FineEnvs/latex-ocr-env). The scorer compares normalized
 LaTeX using edit distance and exact match, with a guard against padded completions. Runs on a
 GPU you spin up in [one command](#quickstart); no cluster, no local GPU. The [environment source](./01-latex-ocr/envs/latex_ocr/),
 [notebook](./01-latex-ocr/notebooks/01_latex_ocr_grpo.ipynb), and
 [HF Jobs scripts](./01-latex-ocr/train/) live together with reproducible smoke tests.
-Browse the [LaTeX OCR collection](https://huggingface.co/collections/HuggingEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c) for the environment, model, dashboards, and run data.
+Browse the [LaTeX OCR collection](https://huggingface.co/collections/FineEnvs/latex-ocr-6aa7ed8498b3ffd222ad1c8c) for the environment, model, dashboards, and run data.
 
 ### [02 · Watercolour](./02-watercolour/) &nbsp;<sub>train against an aesthetic reward</sub>
 
@@ -105,12 +105,12 @@ compared, every artifact published, and the full story in
 looks around, walks down the road, zooms on a sign, pins a candidate, and commits.
 
 Qwen3.5-4B learns visual geolocation with GRPO against a
-[playable OpenEnv Space](https://huggingface.co/spaces/HuggingEnvs/geoguesser-env) serving real
+[playable OpenEnv Space](https://huggingface.co/spaces/FineEnvs/geoguesser-env) serving real
 Mapillary panoramas, scored on kilometres of error. It ends up ahead of `gpt-5.4-mini` and
 `claude-haiku-4.5` on a 200-task held-out split and behind only `claude-sonnet-5`, for about $100.
 Ten hours on four A100s, or one GPU if you are in no hurry. Three training runs, the reward
 redesigned once, and every measurement bug written down in
-[the article](https://huggingface.co/spaces/HuggingEnvs/geoguesser-article).
+[the article](https://huggingface.co/spaces/FineEnvs/geoguesser-article).
 
 > **More coming.** Each new project is another end-to-end recipe: an environment, a training run, and
 > the artifacts on the Hub. [Proposals and contributions welcome →](./CONTRIBUTING.md)
@@ -126,9 +126,9 @@ Hub as a Space.
 <tr>
 <td width="33%" valign="top">
 
-<a href="https://huggingface.co/spaces/HuggingEnvs/geoguesser-article"><img src="./assets/content/geoguesser.png" alt="How to turn a game into an RL environment: the technical intuition"></a>
+<a href="https://huggingface.co/spaces/FineEnvs/geoguesser-article"><img src="./assets/content/geoguesser.png" alt="How to turn a game into an RL environment: the technical intuition"></a>
 
-#### [How to turn a game into an RL environment](https://huggingface.co/spaces/HuggingEnvs/geoguesser-article)
+#### [How to turn a game into an RL environment](https://huggingface.co/spaces/FineEnvs/geoguesser-article)
 
 ![Article](https://img.shields.io/badge/-article-4F46E5) ![Live](https://img.shields.io/badge/-live%20space-FFD21E)
 
@@ -210,8 +210,8 @@ in-process agent loops vs. an HTTP boundary, and what it takes to capture traina
 **Run an environment.** Wordle is pure Python with no external backend — the fastest full rollout:
 
 ```bash
-git clone https://github.com/adithya-s-k/HuggingEnvs
-cd HuggingEnvs
+git clone https://github.com/adithya-s-k/FineEnvs
+cd FineEnvs
 cp .env.example .env          # HF_TOKEN, plus E2B_API_KEY for sandbox-backed envs
 
 cd 00-environments-101/envs/wordle/verifiers
@@ -222,10 +222,10 @@ uv sync && uv run python rollout.py
 notebooks loaded and prints a JupyterLab URL:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/adithya-s-k/HuggingEnvs/main/tools/jupyter_launch.py | python3 -
+curl -sSL https://raw.githubusercontent.com/adithya-s-k/FineEnvs/main/tools/jupyter_launch.py | python3 -
 ```
 
-<sub>Windows (PowerShell): `irm https://raw.githubusercontent.com/adithya-s-k/HuggingEnvs/main/tools/jupyter_launch.py | python -`. Set `FLAVOR=t4-small` for a cheaper GPU. Track jobs at [huggingface.co/settings/jobs](https://huggingface.co/settings/jobs).</sub>
+<sub>Windows (PowerShell): `irm https://raw.githubusercontent.com/adithya-s-k/FineEnvs/main/tools/jupyter_launch.py | python -`. Set `FLAVOR=t4-small` for a cheaper GPU. Track jobs at [huggingface.co/settings/jobs](https://huggingface.co/settings/jobs).</sub>
 
 ---
 
@@ -236,7 +236,7 @@ into a runnable RL environment across four frameworks. They work in **any** proj
 Cursor, Codex, OpenCode, Gemini CLI and others.
 
 ```bash
-npx skills add adithya-s-k/HuggingEnvs
+npx skills add adithya-s-k/FineEnvs
 ```
 
 | Skill | What it builds |
@@ -254,7 +254,7 @@ npx skills add adithya-s-k/HuggingEnvs
 ## Repository layout
 
 ```
-HuggingEnvs/
+FineEnvs/
 ├── 00-environments-101/     3 environments × 6 frameworks
 ├── 01-latex-ocr/            train a VLM against a served reward
 ├── content/
@@ -286,11 +286,11 @@ See **[CONTRIBUTING.md](./CONTRIBUTING.md)**. The fastest path to a new environm
 ## Citation
 
 ```bibtex
-@misc{huggingenvs,
+@misc{fineenvs,
   author = {Kolavi, Adithya S},
-  title  = {HuggingEnvs: Open Source RL Environments for LLM Agents},
+  title  = {FineEnvs: Open Source RL Environments for LLM Agents},
   year   = {2026},
-  url    = {https://github.com/adithya-s-k/HuggingEnvs}
+  url    = {https://github.com/adithya-s-k/FineEnvs}
 }
 ```
 
@@ -299,5 +299,5 @@ See **[CONTRIBUTING.md](./CONTRIBUTING.md)**. The fastest path to a new environm
 [Apache 2.0](./LICENSE)
 
 <div align="center">
-<sub>Built in the open · <a href="https://huggingface.co/HuggingEnvs">🤗 HuggingEnvs</a> · <a href="https://huggingface.co/AdithyaSK">@AdithyaSK</a></sub>
+<sub>Built in the open · <a href="https://huggingface.co/FineEnvs">🤗 FineEnvs</a> · <a href="https://huggingface.co/AdithyaSK">@AdithyaSK</a></sub>
 </div>
