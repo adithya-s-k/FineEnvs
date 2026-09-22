@@ -19,6 +19,8 @@ dependencies = [
   "rapidfuzz>=3.14,<4",
   "requests>=2.32,<3",
   "numpy>=1.26",
+  # FLEURS publishes IEEE float WAV, which the standard library cannot read.
+  "soundfile>=0.12,<1",
 ]
 
 [project.optional-dependencies]
@@ -33,6 +35,8 @@ train = [
   "torch>=2.7,<3",
   "accelerate>=1.4,<2",
   "numpy>=1.26",
+  # FLEURS publishes IEEE float WAV, which the standard library cannot read.
+  "soundfile>=0.12,<1",
 ]
 
 [project.scripts]

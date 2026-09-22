@@ -1,9 +1,6 @@
 """Synthetic speech-shaped fixtures. Transport and scoring only; never an ASR benchmark."""
 
 import io
-import math
-import struct
-import wave
 
 from .data.schema import SPLITS
 
@@ -18,17 +15,15 @@ FIXTURE_LANGUAGES = {
 }
 
 
-def tone(seconds, frequency):
-    frames = bytearray()
-    for index in range(int(seconds * SAMPLING_RATE)):
-        value = int(12000 * math.sin(2 * math.pi * frequency * index / SAMPLING_RATE))
-        frames += struct.pack("<h", value)
+def tone(seconds, frequency, subtype="FLOAT"):
+    """Write a WAV in the same encoding FLEURS publishes (16 kHz mono IEEE float)."""
+    import numpy
+    import soundfile
+
+    samples = numpy.arange(int(seconds * SAMPLING_RATE), dtype="float32")
+    wave_data = 0.35 * numpy.sin(2 * numpy.pi * frequency * samples / SAMPLING_RATE)
     buffer = io.BytesIO()
-    with wave.open(buffer, "wb") as handle:
-        handle.setnchannels(1)
-        handle.setsampwidth(2)
-        handle.setframerate(SAMPLING_RATE)
-        handle.writeframes(bytes(frames))
+    soundfile.write(buffer, wave_data, SAMPLING_RATE, format="WAV", subtype=subtype)
     return buffer.getvalue()
 
 
