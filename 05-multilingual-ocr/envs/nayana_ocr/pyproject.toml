@@ -36,6 +36,7 @@ nayana-index = "nayana_ocr.data.index:main"
 nayana-prepare = "nayana_ocr.data.prepare:main"
 nayana-server = "nayana_ocr.server.app:main"
 nayana-smoke = "nayana_ocr.smoke:main"
+nayana-evalset = "nayana_ocr.data.evalset:main"
 
 [tool.setuptools]
 packages = ["nayana_ocr", "nayana_ocr.data", "nayana_ocr.server"]

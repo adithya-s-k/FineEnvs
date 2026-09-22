@@ -11,14 +11,16 @@ from pathlib import Path
 
 from nayana_ocr.client import connect
 from nayana_ocr.corpus_training import BlockTaskStream, CorpusAPI, build_corpus_dataset
+from nayana_ocr.data.evalset import load as load_evalset
+from nayana_ocr.data.evalset import subsample as subsample_evalset
 from nayana_ocr.data.schema import FAMILIES
-from nayana_ocr.models import NayanaAction
 from nayana_ocr.runtime import local_server
 from nayana_ocr.training import (
     AssetCache,
     TrainingEnvironment,
     balanced_rows,
     env_reward,
+    step_with_judge_retry,
     task_rows,
 )
 
@@ -27,6 +29,8 @@ from nayana_ocr.training import (
 class Config:
     snapshot: str = ""
     env_url: str = ""
+    evalset: str = ""
+    eval_limit: int = 0
     source_root: str = ""
     cache_dir: str = ""
     local_source: bool = False
@@ -140,7 +144,7 @@ def evaluate(trainer, rows, url, cache, max_tokens):
             for row in rows:
                 observation = client.reset(task_id=row["task_id"]).observation
                 prediction = generate(model, processor, observation, cache, max_tokens)
-                result = client.step(NayanaAction(answer=prediction))
+                result = step_with_judge_retry(client, prediction)
                 sample = {
                     **row,
                     "prediction": prediction,
@@ -226,14 +230,33 @@ def run(config):
         if manifest.get("storage") == "bucket-parquet":
             backend = CorpusAPI(url, manifest["snapshot_id"])
             stack.callback(backend.close)
-            # Indexed selection: never enumerate millions of IDs to choose a small eval set.
-            eval_rows = backend.sample(
-                "test",
-                config.languages,
-                config.families,
-                config.eval_per_group,
-                config.seed,
-            )
+            if config.evalset:
+                # A frozen set is used whole: filtering it would break comparability
+                # with every score already reported against this evalset_id.
+                frozen = load_evalset(config.evalset, manifest["snapshot_id"])
+                selected = (
+                    subsample_evalset(frozen, config.eval_limit, config.seed)
+                    if config.eval_limit
+                    else frozen["tasks"]
+                )
+                eval_rows = [
+                    {
+                        key: entry[key]
+                        for key in ("task_id", "language", "family", "block_id")
+                    }
+                    for entry in selected
+                ]
+                evalset_id = frozen["evalset_id"]
+            else:
+                # Indexed selection: never enumerate millions of IDs to choose a small eval set.
+                eval_rows = backend.sample(
+                    "test",
+                    config.languages,
+                    config.families,
+                    config.eval_per_group,
+                    config.seed,
+                )
+                evalset_id = None
             if mode == "corpus":
                 stream = BlockTaskStream(
                     backend,
@@ -273,6 +296,12 @@ def run(config):
                 raise ValueError(
                     "Full-corpus mode requires an indexed bucket-backed environment"
                 )
+            if config.evalset:
+                raise ValueError(
+                    "A frozen evaluation set is pinned to a corpus snapshot; "
+                    "serve the indexed bucket corpus to use it"
+                )
+            evalset_id = None
             train_rows = balanced_rows(
                 task_rows(url, "train", config.languages, config.families),
                 config.languages,
@@ -297,6 +326,9 @@ def run(config):
             "manifest": manifest,
             "train_tasks": train_rows,
             "eval_tasks": eval_rows,
+            "evalset_id": evalset_id,
+            # A limited run is a smoke check, not a score comparable with the full set.
+            "eval_limit": config.eval_limit or None,
         }
         metadata_path = output / "run-metadata.json"
         if config.resume:
@@ -427,6 +459,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--snapshot", default="")
     parser.add_argument("--env-url", default="")
+    parser.add_argument(
+        "--evalset",
+        default="",
+        help="Frozen evaluation set JSON; used whole, in place of ad-hoc sampling",
+    )
     parser.add_argument("--source-root", default="")
     parser.add_argument("--cache-dir", default="")
     parser.add_argument("--local-source", action="store_true")
@@ -447,6 +484,7 @@ def main():
         "max_completion_length",
         "prefetch_blocks",
         "max_pixels",
+        "eval_limit",
         "seed",
     ):
         parser.add_argument(
@@ -467,6 +505,8 @@ def main():
     args = vars(parser.parse_args())
     if args["smoke"]:
         args.update(max_steps=2, num_generations=2, eval_per_group=1)
+        # A frozen set is used whole unless the caller limits it explicitly.
+        args["eval_limit"] = args["eval_limit"] or 10
     run(Config(**args))
 
 

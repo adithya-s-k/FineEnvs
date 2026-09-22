@@ -18,3 +18,7 @@ data/corpus-index*/
 data/corpus-cache*/
 data/corpus-source.json
 data/source-manifest.json
+
+# The frozen evaluation set (data/eval-*.json) IS tracked. Exported packs carry
+# rendered CC BY-NC images and stay out of source control.
+data/eval-pack*/
