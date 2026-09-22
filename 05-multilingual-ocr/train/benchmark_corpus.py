@@ -16,6 +16,7 @@ from pathlib import Path
 import requests
 from nayana_ocr.corpus_training import CorpusAPI
 from nayana_ocr.data.corpus import CorpusCatalog
+from nayana_ocr.data.evalset import load as load_evalset
 from nayana_ocr.runtime import local_server
 from nayana_ocr.training import AssetCache, TrainingEnvironment, env_reward
 
@@ -43,11 +44,22 @@ def distribution(values):
     }
 
 
-def build_plan(catalog, seed):
+def build_plan(catalog, seed, evalset=None):
     rng = random.Random(seed)
     used = set()
     plan = {}
+    if evalset is not None:
+        # Measure the workload training will actually run, so a local server and the
+        # Space are compared on identical tasks rather than two random selections.
+        rows = [catalog.get(entry["task_id"]) for entry in evalset["tasks"]]
+        used.update(row["block_id"] for row in rows)
+        for name in ("random_eval_serial", "random_eval_concurrent"):
+            shuffled = list(rows)
+            rng.shuffle(shuffled)
+            plan[name] = shuffled
     for name in ("random_eval_serial", "random_eval_concurrent"):
+        if name in plan:
+            continue
         rows = []
         for language in LANGUAGES:
             for family in FAMILIES:
@@ -428,6 +440,11 @@ def main():
     )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--label", required=True)
+    parser.add_argument(
+        "--evalset",
+        type=Path,
+        help="Benchmark the frozen evaluation set instead of a fresh random selection",
+    )
     parser.add_argument("--seed", type=int, default=20260915)
     parser.add_argument("--warm-seconds", type=float, default=0)
     parser.add_argument(
@@ -450,7 +467,10 @@ def main():
             args.manifest, directory / "oracle", source_root=args.source_root
         )
         stack.callback(catalog.close)
-        plan = build_plan(catalog, args.seed)
+        evalset = (
+            load_evalset(args.evalset, catalog.snapshot_id) if args.evalset else None
+        )
+        plan = build_plan(catalog, args.seed, evalset)
         url = args.url or stack.enter_context(
             local_server(
                 args.manifest,
