@@ -198,7 +198,14 @@ def evaluate(trainer, rows, url, cache, max_tokens):
     }
 
 
-def lora_target_modules(model_id, revision, wanted=("q_proj", "v_proj")):
+# This environment sends an image and text and never audio, so an omni checkpoint's
+# audio tower cannot run and adapters attached to it can never receive a gradient.
+UNUSED_SUBTREES = ("audio_tower",)
+
+
+def lora_target_modules(
+    model_id, revision, wanted=("q_proj", "v_proj"), skip=UNUSED_SUBTREES
+):
     """Resolve LoRA targets to full, unambiguous module names.
 
     PEFT adapts genuine leaves, and it matches a short target against every module whose
@@ -231,6 +238,7 @@ def lora_target_modules(model_id, revision, wanted=("q_proj", "v_proj")):
         for name, module in model.named_modules()
         if isinstance(module, adaptable)
         and any(part in wanted for part in name.split("."))
+        and not any(part in skip for part in name.split("."))
     ]
     return sorted(targets) or list(wanted)
 
