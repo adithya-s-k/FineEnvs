@@ -229,15 +229,12 @@ def run(config):
 
         processor = AutoProcessor.from_pretrained(config.model, revision=revision)
         cache = AssetCache(url)
-        environments = [
-            TrainingEnvironment(url, cache, manifest["snapshot_id"])
-            for _ in range(config.num_generations)
-        ]
-        for environment in environments:
-            stack.callback(environment._close)
-
+        # TRL calls the factory once per parallel environment and owns the pool, so
+        # this returns a single session rather than a list of them.
         def factory():
-            return environments
+            environment = TrainingEnvironment(url, cache, manifest["snapshot_id"])
+            stack.callback(environment._close)
+            return environment
 
         trainer = GRPOTrainer(
             model=config.model,
