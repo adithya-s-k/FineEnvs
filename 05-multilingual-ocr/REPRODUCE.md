@@ -276,6 +276,74 @@ optional artifact repo receives run outputs in a private personal dataset reposi
 publication occurs if it is omitted. Give separate runs distinct artifact repos. Keep
 experimental outputs personal until a final result is ready for the organization collection.
 
+### Verified single-GPU smoke
+
+Both Gemma 4 sizes were run end to end on one A100, colocated with the corpus mounted
+read only, evaluating the frozen set. Summaries are committed under `results/`.
+
+```bash
+REV=$(git rev-parse HEAD)          # must be pushed: the job fetches this exact commit
+uv run --frozen --project envs/nayana_ocr hf jobs uv run \
+  --flavor a100-large --timeout 2h --secrets HF_TOKEN \
+  --volume hf://buckets/FineEnvs/NayanaOCR_Corpus_2025_bucket:/corpus:ro \
+  train/hf_job.py --revision "$REV" --mode train \
+  --corpus-manifest repo --source-root /corpus --evalset eval-500.json \
+  --task-input corpus --smoke --model google/gemma-4-E2B-it \
+  --languages en hi --families layout_detection page_ocr section_ocr \
+  --num-generations 4 --max-steps 4 --eval-limit 10
+```
+
+| | E2B | E4B |
+|---|---|---|
+| Status | passed | passed |
+| Optimizer steps | 4 | 4 |
+| Training loss | 0.27432 | -0.01726 |
+| Adapter weights changed | yes | yes |
+| LoRA target modules | 82 | 98 |
+| Macro reward, before -> after | 0.2877 -> 0.2875 | 0.4083 -> 0.4083 |
+
+**This verifies execution, not quality.** Four steps over ten evaluation tasks cannot move
+a score, and the before/after values are expected to be near-identical. A GRPO loss may be
+negative: it is a policy-gradient surrogate, not a likelihood.
+
+Three things the smoke settled that reading the code did not:
+
+- **LoRA targets must be resolved, not named.** Gemma 4's audio tower wraps its projections
+  in `Gemma4ClippableLinear`, and PEFT adapts only genuine leaves, so `["q_proj","v_proj"]`
+  failed injection outright. Targets are now resolved from the module tree to full names,
+  with the audio tower skipped because this environment never sends audio.
+- **A smoke needs reward variance.** GRPO scales by `(reward - group mean) / group std`, so
+  a group whose completions all score the same contributes exactly zero advantage. At G=2
+  on `section_ocr` both completions were identical, the loss was 0, and no adapter could
+  change. Use G>=4 and include families the model does not already solve exactly.
+- **Base-model behaviour worth knowing before spending GPU hours.** On the ten-task slice,
+  both models transcribe well (`ru/section_ocr` CER 0.003, `ko/page_ocr` CER 0.031-0.033,
+  `zh/page_ocr` CER 0.052-0.060) and both score **0 on every `layout_detection` task**,
+  emitting no valid JSON array. E4B is much stronger on Telugu section OCR (CER 0.053
+  against 0.316) and answered one MCQ that E2B missed.
+
+### Scaling past the smoke
+
+The smoke configuration is deliberately degenerate. For a real run:
+
+- Drop `--smoke`, set `--max-steps` explicitly, and leave `--eval-limit` unset so the whole
+  frozen 500-task set is evaluated and the score is comparable against its `evalset_id`.
+- Keep `--task-input corpus` for a natural-proportion full pass, and widen `--languages`
+  and `--families`. A short run may consume only one source block and therefore one
+  language; per-language exposure counts matter before comparing.
+- Give each run `--artifact-repo` and a distinct `--trackio-space`, and pin
+  `--model-revision` so a later run is not silently a different checkpoint.
+- Size from the weights: E2B is ~5.1B raw parameters and E4B ~8.0B, so `a100-large` fits
+  both with LoRA at G=4 and 2,048 completion tokens. Raise the job `--timeout` well past
+  the smoke's 2h.
+- **Single GPU only.** The runner rejects `WORLD_SIZE != 1`; multi-GPU is not yet verified
+  and `torchrun` is refused rather than silently mis-sharded.
+- **Optimizer resume is map-input only.** Corpus-mode resume is rejected until validated,
+  so a long corpus run cannot currently be checkpoint-resumed; budget the job accordingly.
+- Evaluation cost is dominated by the judge, not the model: 100 descriptive-VQA tasks at
+  ~4s each. Keep `NAYANA_JUDGE_CONCURRENCY` at the worker count and remember throughput
+  peaks at 16.
+
 ## 6. Deploy the same environment to the Space
 
 > **A bucket mount does not follow an organization rename.** `manifest.json` records
