@@ -24,7 +24,14 @@ def main():
         "--mode", choices=("env-smoke", "real-smoke", "train"), default="env-smoke"
     )
     parser.add_argument(
-        "--corpus-manifest", help="Published full-corpus manifest HF URI or local path"
+        "--corpus-manifest",
+        help="Published full-corpus manifest HF URI, local path, or 'repo' for the "
+        "manifest committed at 05-multilingual-ocr/data/",
+    )
+    parser.add_argument(
+        "--evalset",
+        help="Frozen evaluation set committed under 05-multilingual-ocr/data/, by file "
+        "name; the job resolves it inside its own checkout",
     )
     parser.add_argument("--prepare-pages", type=int, default=256)
     parser.add_argument(
@@ -51,6 +58,15 @@ def main():
                         raise ValueError("Unsafe path in source archive")
                 archive.extractall(source)
         root = next(source.iterdir()) / "05-multilingual-ocr"
+        # Paths inside the job's checkout are not knowable when the job is submitted,
+        # so repo-relative data is named by file and resolved here.
+        if args.corpus_manifest == "repo":
+            args.corpus_manifest = str(root / "data" / "corpus-manifest.json")
+        if args.evalset:
+            evalset_path = root / "data" / args.evalset
+            if not evalset_path.is_file():
+                parser.error(f"No evaluation set {args.evalset!r} in this revision")
+            extra += ["--evalset", str(evalset_path)]
         project = root / "envs" / "nayana_ocr"
         run = directory / "run"
         run.mkdir()
