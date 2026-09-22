@@ -146,7 +146,7 @@ package lock alone does not freeze system codecs.
 ```python
 from nayana_ocr.corpus_training import CorpusAPI, BlockTaskStream
 
-api = CorpusAPI("https://huggingenvs-nayana-ocr-env.hf.space")
+api = CorpusAPI("https://fineenvs-nayana-ocr-env.hf.space")
 stream = BlockTaskStream(
     api,
     languages=["en", "kn", "hi", "ar"],
@@ -185,7 +185,7 @@ HTTP metadata requests, without downloading model weights.
 
 ```bash
 uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana.py \
-  --env-url https://huggingenvs-nayana-ocr-env.hf.space \
+  --env-url https://fineenvs-nayana-ocr-env.hf.space \
   --task-input corpus --prefetch-blocks 2 --smoke --output-dir artifacts/local-gpu-smoke
 
 # Colocated environment and training with a mounted bucket:
@@ -203,6 +203,32 @@ A short max_steps run may consume only one source block and therefore one langua
 explicit balanced sample for short controlled comparisons, or a sufficiently long full pass
 with per-language exposure counts; the smoke is a pipeline check.
 
+### Gemma 4
+
+```bash
+uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana.py \
+  --env-url https://fineenvs-nayana-ocr-env.hf.space \
+  --model google/gemma-4-E2B-it --task-input corpus \
+  --evalset data/eval-500.json --output-dir artifacts/gemma4-e2b
+```
+
+`google/gemma-4-E2B-it` (10.25 GB bf16, 35 text layers) and `google/gemma-4-E4B-it`
+(15.99 GB bf16, 42 layers) are `model_type: gemma4`, which the locked transformers 5.17.0
+supports; the checkpoints landed in 5.5.0.dev0. Their chat template accepts the
+`add_generation_prompt` and `enable_thinking` arguments this runner already passes, so the
+generation path needs no change. Both are omni checkpoints and carry an `audio_config`,
+which is why the same family is a candidate for the planned ASR environment.
+
+Size the GPU from the weights, not the "E" name: E2B is ~5.1B raw parameters and E4B ~8.0B.
+With LoRA, G=4, and 2,048 completion tokens, start E2B on a single 40 GB card and E4B on
+80 GB; a 24 GB card is not a safe starting point for either.
+
+**Gemma 4 pools every image to at most 280 soft tokens** (`image_seq_length: 280`,
+`patch_size: 16`, `pooling_kernel_size: 3`), so its effective page resolution is roughly
+800x800 regardless of `--max-pixels`. That budget suits `section_ocr` crops far better than
+dense full-page `page_ocr`; expect the page transcription families to be resolution-limited
+and read per-family metrics before concluding anything about the recipe.
+
 Defaults: Qwen/Qwen3-VL-2B-Instruct, resolved model commit recorded; English/Kannada/Hindi/Arabic;
 all five families (descriptive VQA requires the judge); 30 steps; G=4; BF16/SDPA; LoRA rank16/alpha32/dropout.05 on q_proj/v_proj;
 learning rate1e-5; temperature.9; seed42; 2,048 completion tokens; processor max_pixels1,048,576.
@@ -211,10 +237,14 @@ of the 22 indexed languages. There is no server-side image downscaling; processo
 fine text visibility. Truncated completions are masked. Larger full-page transcriptions may
 need a larger token budget; inspect truncation before claiming improvement.
 
-Evaluation uses a fixed, balanced indexed sample of document-disjoint test tasks, up to four
-per language/family by default. No full-corpus metadata scan is needed. Run metadata records
-configuration, model commit, full served manifest, block plan identity/task count, and exact
-evaluation IDs. Outputs include baseline, trained metrics, adapter/processor, and checkpoints.
+Evaluation uses the frozen 500-task set from [section 8](#8-fixed-evaluation-set) when
+`--evalset` is given: 100 per family, 22-23 per language, document-disjoint, every task
+load-checked and pinned. It is used whole, because filtering it would break comparability
+with earlier scores for the same `evalset_id`. Without `--evalset`, the runner falls back to
+an ad-hoc balanced indexed sample of up to four per language/family, which is re-drawn each
+run and therefore not comparable across runs. No full-corpus metadata scan is needed either
+way. Run metadata records configuration, model commit, full served manifest, block plan
+identity/task count, the `evalset_id`, and exact evaluation IDs. Outputs include baseline, trained metrics, adapter/processor, and checkpoints.
 The runner checks finite loss, expected steps, and changed adapter weights. These do not require
 or establish a reward increase. Metrics separate languages/families; OCR includes code-point CER.
 
@@ -235,7 +265,7 @@ hf jobs uv run --flavor cpu-basic --timeout 20m train/hf_job.py \
   --revision "$SOURCE_REVISION" --mode env-smoke
 
 hf jobs uv run --flavor a100-large --timeout 2h --secrets HF_TOKEN \
-  --volume hf://buckets/HuggingEnvs/NayanaOCR_Corpus_2025_bucket:/corpus:ro \
+  --volume hf://buckets/FineEnvs/NayanaOCR_Corpus_2025_bucket:/corpus:ro \
   train/hf_job.py --revision "$SOURCE_REVISION" --mode train \
   --corpus-manifest "$CORPUS_MANIFEST" --source-root /corpus --task-input corpus --smoke \
   --artifact-repo YOUR-ACCOUNT/nayana-experiments
@@ -248,6 +278,19 @@ experimental outputs personal until a final result is ready for the organization
 
 ## 6. Deploy the same environment to the Space
 
+> **A bucket mount does not follow an organization rename.** `manifest.json` records
+> `bucket_id` as published and that value is hashed into `inventory_id` and then
+> `snapshot_id`, so it must never be rewritten. After the `HuggingEnvs` -> `FineEnvs`
+> rename, HTTP reads kept working through a 307 redirect while the Space's volume kept
+> mounting the old name: `/healthz` and `/manifest` stayed green, the index path stayed
+> green, and **every** task load failed in about 0.2 s with
+> `[Errno 5] Input/output error: '/corpus/<lang>/train-*.parquet'`. `deploy_space.py` now
+> resolves the bucket's current name for the mount (override with `--bucket-id`) and
+> leaves the recorded provenance alone. The same hazard applies to the `--volume` argument
+> of an HF Job and to any `*.hf.space` URL, which does **not** redirect after a rename.
+> Check a deployment by loading a task, not by checking health.
+
+
 First calibrate the Gemma judge through HF Inference Providers using [JUDGE.md](JUDGE.md). Its model/provider
 and token are configured by the Space publisher; the token goes into a Space secret.
 For a colocated local/HF Jobs server, pass `HF_TOKEN` or `NAYANA_JUDGE_TOKEN` as a job
@@ -256,7 +299,7 @@ judge, explicitly select `--families section_ocr page_ocr mcq_vqa layout_detecti
 
 ```bash
 uv run --frozen --project envs/nayana_ocr python train/deploy_space.py \
-  --space-id HuggingEnvs/nayana-ocr-env --corpus-manifest data/corpus-manifest.json \
+  --space-id FineEnvs/nayana-ocr-env --corpus-manifest data/corpus-manifest.json \
   --judge-config artifacts/judge-calibration.json --output artifacts/deployment.json
 ```
 
@@ -280,17 +323,17 @@ All derived tasks are rebuilt, and source identities and database hashes are che
 uv run --frozen --project envs/nayana_ocr --extra dev --extra train pytest envs/nayana_ocr/tests -q
 uv run --frozen --project envs/nayana_ocr nayana-smoke
 uv run --frozen --project envs/nayana_ocr nayana-smoke \
-  --url https://huggingenvs-nayana-ocr-env.hf.space --languages en kn hi ar \
+  --url https://fineenvs-nayana-ocr-env.hf.space --languages en kn hi ar \
   --output artifacts/smoke-hosted.json
 
 # Metadata addressability, one-block prefetch measurement, and all-language oracle checks.
 uv run --frozen --project envs/nayana_ocr --extra train python train/verify_corpus.py \
-  --url https://huggingenvs-nayana-ocr-env.hf.space \
+  --url https://fineenvs-nayana-ocr-env.hf.space \
   --manifest data/corpus-manifest.json --output artifacts/corpus-hosted.json
 
 # Gradio scoring across all five families and four languages.
 uv run --frozen --project envs/nayana_ocr python train/verify_playground.py \
-  --url https://huggingenvs-nayana-ocr-env.hf.space \
+  --url https://fineenvs-nayana-ocr-env.hf.space \
   --manifest data/corpus-manifest.json --languages en kn hi ar --output artifacts/gradio-hosted.json
 ```
 
@@ -342,7 +385,147 @@ uv run --frozen --project envs/nayana_ocr nayana-smoke --snapshot data/snapshots
 That optional Datasets streaming workflow commits each page and iterator state transactionally
 for a bounded offline window. Use the indexed bucket path for complete-corpus serving.
 
-## 8. Benchmark the data path
+## 8. Fixed evaluation set
+
+Training needs one evaluation set that does not move between runs. `nayana-evalset`
+freezes 500 test-split tasks: exactly 100 per task family, and 22 or 23 per language
+across all 22 languages, so per-family means carry equal sample sizes and no language is
+systematically short.
+
+Selection balances **document diversity against cold read cost**, and diversity wins.
+A source block is ~100 consecutive pages and in practice a single document. Filling a
+language from the single densest block is the cheapest possible build and produces a set
+that scores each language on one document: measured on this corpus, that gave exactly one
+document for English and one for Hindi. `per_block_per_family` (default 1) caps how many
+tasks of a family may come from one block, which forces the walk on to further blocks and
+therefore further documents.
+
+Candidate blocks are walked in **hash order, not density order**. Taking one task per
+family means a block only has to contain the families still needed, so its density buys
+nothing -- and preferring dense blocks actively hurts, because the corpus is parallel
+translations of the same sources: the densest blocks are the same documents in every
+language, so all 22 languages converge on them. Measured over the 500-task set, density
+order covered **28** unique documents and hash order covered **181**, while reading *less*
+data (9.06 GB against 10.92 GB).
+
+Measured for the default 500-task set: **116 distinct source blocks, ~9.1 GB of cold image
+reads, 181 unique source documents, 5-15 documents per language.** A cold block costs ~31 s
+over HTTP range; the tasks drawn from it are then served from cache in well under a second
+each. A mounted bucket is far cheaper per cold block (~4.4 s measured on the Space), so
+prefer a mount when building or evaluating at scale.
+
+```bash
+# Build and freeze. Each task is loaded once; image bounds and annotation validity are
+# checked at load time, so this proves the set is usable, not merely indexed.
+uv run --frozen --project envs/nayana_ocr nayana-evalset build \
+  --manifest data/corpus-manifest.json --cache-dir data/corpus-cache-local \
+  --output data/eval-500.json --size 500 --seed 42
+
+# Re-check a frozen set against the corpus a server is actually serving.
+uv run --frozen --project envs/nayana_ocr nayana-evalset verify \
+  --evalset data/eval-500.json
+```
+
+The record pins, per task, the immutable task ID, its language, family, source block,
+document, page and unit, the SHA-256 of the **served** reference, and the served asset hash
+and pixel size. `documents` and `tasks_per_document` in the summary make the diversity of a
+built set checkable without re-reading it.
+An `evalset_id` hashes the corpus snapshot together with the ordered task IDs. `load()`
+refuses a set whose snapshot differs, whose task list was edited, or that recorded any load
+failure. A task that fails to load is **recorded, never replaced**: silently substituting a
+task would change what a reported score means.
+
+Set the index cache to hold every selected language index at once. The published
+22-language set is 4.30 GB, so the previous 4 GB default evicted and re-fetched ~200 MB
+databases as a sweep rotated languages; the default is now 6 GB
+(`NAYANA_INDEX_CACHE_BYTES`). The builder refuses to start if the budget cannot hold the
+selected indexes.
+
+Training uses the frozen set whole. Filtering it to a subset of languages would break
+comparability with every score already reported against that `evalset_id`:
+
+```bash
+uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana.py \
+  --env-url https://fineenvs-nayana-ocr-env.hf.space \
+  --evalset data/eval-500.json --output-dir artifacts/run
+```
+
+### Rendered assets are not byte-reproducible across deployments
+
+`section_ocr` and `page_ocr` are re-encoded as PNG by the server; the other three families
+serve untouched source JPEG. PNG encoding is not byte-stable across zlib/libpng builds, so
+`asset_sha256` for the two rendered families is the identity of **one deployment**, not a
+portable identity. Verifying the frozen set against the Space initially reported 40 of 100
+failures -- exactly `page_ocr` 20/20 and `section_ocr` 20/20, while the three JPEG
+passthrough families passed 60/60. For one task the Space returned 40,280 bytes where this
+machine produced 38,482, at identical dimensions and **identical decoded pixels**.
+
+The model sees pixels, so rewards and training are unaffected; only the byte-level pin is
+environment-specific. `verify_evalset.py` therefore compares the encoded hash first and,
+when it differs, decodes both and compares pixels, reporting the count under
+`reencoded_pixel_identical` instead of failing. It still fails if a server's bytes disagree
+with the hash that same server reported, and if the decoded pixels differ.
+
+Do not "fix" this by pinning PNG encoder settings without rebuilding the evaluation set:
+changing the encoder changes every rendered `asset_sha256`, including the ones already
+frozen. A future schema revision should pin a pixel digest alongside the encoded hash.
+
+### Evaluation concurrency and the judge
+
+Evaluate locally. Measured on the same 20-task warm set, a local server serves ~436 ops/s
+at one worker (p50 2 ms) against the Space's 0.77 ops/s (p50 1300 ms): the hosted path is
+round-trip bound, scales near-linearly only to 4 workers, and its p95 reaches 3.0 s at 8.
+Cold reads invert -- a mounted bucket costs ~4.4 s per block against ~31 s over HTTP range
+-- so colocate the server with the trainer and get both.
+
+`verify_evalset.py --workers N` opens N sessions. The server needs
+`NAYANA_MAX_SESSIONS >= N`, and for descriptive VQA `NAYANA_JUDGE_CONCURRENCY >= N`, or the
+surplus callers queue against the judge semaphore and fail.
+
+**Do not raise judge concurrency to 32.** Measured against `google/gemma-4-31B-it` on
+DeepInfra, 32 distinct calls each:
+
+| judge concurrency | calls/s | p50 | p95 | errors |
+|---|---|---|---|---|
+| 4 | 0.47 | 5.9 s | 16.3 s | 0 |
+| 16 | 1.60 | 8.4 s | 11.6 s | 0 |
+| 32 | 0.64 | 3.8 s | 42.0 s | 0 |
+
+Nothing rate-limits, but throughput peaks at 16 and collapses at 32: the provider accepts
+every request and queues it, so p50 improves while p95 reaches 42 s against a 60 s request
+timeout. Single-run figures with real variance; the tail behaviour is the reliable signal.
+
+Transient judge failures are still expected under concurrency. A full 500-task run at 16
+workers failed 9 of 100 descriptive-VQA gradings, all in non-Latin scripts, and **all 9
+passed on a serial retry**. The environment raises these without consuming the episode
+precisely so the caller can retry; `verify_evalset.py` now does, with bounded exponential
+backoff, and the same run then passed 500/500 in 87 s. Any evaluation or training loop
+grading descriptive VQA concurrently must retry the same way, or it will report failures
+its data does not have.
+
+### Optional offline evaluation pack
+
+The frozen set needs no new serving path: it is pinned task IDs against the corpus the
+bucket already serves, so a local server and the Space evaluate the same 500 tasks with no
+extra publication step. Use the pack only when a machine must evaluate with no bucket
+access at all. `export` writes the 500 tasks and their rendered images into the same
+on-disk shape `nayana-prepare` produces:
+
+```bash
+uv run --frozen --project envs/nayana_ocr nayana-evalset export \
+  --evalset data/eval-500.json --manifest data/corpus-manifest.json \
+  --cache-dir data/corpus-cache-local --output data/eval-pack-500
+
+NAYANA_SNAPSHOT="$PWD/data/eval-pack-500" \
+  uv run --frozen --project envs/nayana_ocr nayana-server
+```
+
+The pack carries its own `manifest.json`, `catalog.sqlite`, `assets/`, and a re-keyed
+`evalset.json`, and records the `corpus_snapshot_id` and `evalset_id` it came from. It is
+an evaluation-only snapshot: it holds the `test` split alone, and a `train` reset against it
+fails explicitly. Source data stays CC BY-NC 4.0; redistribute the pack accordingly.
+
+## 9. Benchmark the data path
 
 The benchmark measures image retrieval, hash checks, RGB decoding, and scoring with source
 references. It records cold access, warm requests, and multi-block prefetch separately. Model
@@ -359,14 +542,14 @@ uv run --frozen --project envs/nayana_ocr --extra train python train/benchmark_c
 # Same task selection against the Space; its existing cache is retained.
 uv run --frozen --project envs/nayana_ocr --extra train python train/benchmark_corpus.py \
   --manifest data/corpus-manifest.json --label space-from-workstation \
-  --url https://huggingenvs-nayana-ocr-env.hf.space \
+  --url https://fineenvs-nayana-ocr-env.hf.space \
   --output artifacts/speed-hosted.json
 
 # CPU Job with a colocated server and read-only corpus mount. Push the commit first.
 SOURCE_REVISION=$(git rev-parse HEAD)
 uv run --frozen --project envs/nayana_ocr hf jobs uv run \
   --flavor cpu-basic --timeout 20m \
-  --volume hf://buckets/HuggingEnvs/NayanaOCR_Corpus_2025_bucket:/corpus:ro \
+  --volume hf://buckets/FineEnvs/NayanaOCR_Corpus_2025_bucket:/corpus:ro \
   train/benchmark_job.py --revision "$SOURCE_REVISION"
 ```
 
