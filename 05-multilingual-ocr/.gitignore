@@ -7,9 +7,9 @@ data/snapshots/
 envs/nayana_ocr/snapshot/
 .ipynb_checkpoints/
 
-# Generated run outputs, reports, checkpoints, and local credentials.
+# Generated run outputs, checkpoints, and local credentials. Committed verification
+# summaries live in results/, matching 01-latex-ocr.
 artifacts/
-results/
 .env
 .env.*
 
