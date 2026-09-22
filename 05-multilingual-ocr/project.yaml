@@ -4,11 +4,11 @@ tagline: "Serve the complete Nayana corpus with indexed OpenEnv OCR, layout dete
 order: 5
 status: wip
 hub:
-  org: HuggingEnvs
+  org: FineEnvs
   datasets:
     - Cognitive-Lab/NayanaOCR_Corpus_2025
   spaces:
-    - HuggingEnvs/nayana-ocr-env
+    - FineEnvs/nayana-ocr-env
   buckets:
     - HuggingEnvs/NayanaOCR_Corpus_2025_bucket
   models: []
@@ -17,4 +17,4 @@ envs:
     summary: "Full-page and section OCR, six-class layout detection, MCQ and Gemma-judged descriptive VQA with indexed bucket access."
     backend: http
     frameworks:
-      openenv: {transport: http-websocket, verified: true, space: HuggingEnvs/nayana-ocr-env}
+      openenv: {transport: http-websocket, verified: true, space: FineEnvs/nayana-ocr-env}

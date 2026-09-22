@@ -8,7 +8,31 @@ from pathlib import Path
 
 from huggingface_hub import HfApi, Volume, get_token
 from nayana_ocr.data.corpus import CorpusCatalog
+from nayana_ocr.data.evalset import INDEX_CACHE_BYTES
 from nayana_ocr.data.schema import REPO_ID
+
+
+def resolve_bucket_id(bucket_id):
+    """Return the bucket's current canonical id.
+
+    A manifest records the bucket name as published, and that name is hashed into the
+    snapshot identity, so it must never be rewritten. An organization rename leaves HTTP
+    requests working through a 307 redirect but does **not** move a Space's volume mount:
+    the mount keeps the old source and every read fails with EIO. Resolve the live name
+    for the mount while leaving the recorded provenance untouched.
+    """
+    import requests
+
+    response = requests.get(
+        f"https://huggingface.co/api/buckets/{bucket_id}",
+        headers={"Authorization": f"Bearer {get_token()}"} if get_token() else {},
+        timeout=60,
+    )
+    response.raise_for_status()
+    current = response.json().get("id")
+    if not current:
+        raise ValueError(f"Could not resolve the current name of bucket {bucket_id!r}")
+    return current
 
 
 def main():
@@ -16,6 +40,10 @@ def main():
     parser.add_argument("--space-id", required=True)
     parser.add_argument("--corpus-manifest", type=Path, required=True)
     parser.add_argument("--private", action="store_true")
+    parser.add_argument(
+        "--bucket-id",
+        help="Mount source override; defaults to the manifest bucket resolved to its current name",
+    )
     parser.add_argument("--output", type=Path)
     parser.add_argument(
         "--judge-config",
@@ -27,6 +55,7 @@ def main():
     if manifest["config"]["source"] != REPO_ID:
         parser.error("Publish a finalized Nayana corpus index, not synthetic fixtures")
     api = HfApi()
+    mount_bucket = args.bucket_id or resolve_bucket_id(manifest["bucket_id"])
     judge_variables = {}
     if args.judge_config:
         config = json.loads(args.judge_config.read_text())
@@ -50,8 +79,7 @@ def main():
     }
     expected[f"{prefix}/manifest.json"] = args.corpus_manifest.stat().st_size
     available = {
-        r.path: r.size
-        for r in api.get_bucket_paths_info(manifest["bucket_id"], list(expected))
+        r.path: r.size for r in api.get_bucket_paths_info(mount_bucket, list(expected))
     }
     if available != expected:
         raise ValueError(
@@ -109,7 +137,7 @@ def main():
         volumes.append(
             Volume(
                 type="bucket",
-                source=manifest["bucket_id"],
+                source=mount_bucket,
                 mount_path="/corpus",
                 read_only=True,
             )
@@ -128,10 +156,17 @@ def main():
                     "Provide an HF Inference Providers token for the Space secret"
                 )
             api.add_space_secret(args.space_id, "NAYANA_JUDGE_TOKEN", token)
+        # State the index budget explicitly: it must hold every published language index
+        # at once, or a multi-language sweep re-copies ~200 MB databases as it rotates.
+        index_bytes = max(
+            INDEX_CACHE_BYTES,
+            int(sum(info["size"] for info in manifest["indexes"].values()) * 1.2),
+        )
         for key, value in {
             "NAYANA_CORPUS_MANIFEST": "/app/corpus-manifest.json",
             "NAYANA_SOURCE_ROOT": "/corpus",
             "NAYANA_CACHE_DIR": "/tmp/nayana-cache",
+            "NAYANA_INDEX_CACHE_BYTES": str(index_bytes),
             **judge_variables,
         }.items():
             if key not in current_variables or current_variables[key].value != value:
@@ -141,8 +176,10 @@ def main():
             "commit": commit.oid,
             "snapshot_id": manifest["snapshot_id"],
             "bucket_id": manifest["bucket_id"],
+            "mount_bucket": mount_bucket,
             "volumes": [v.to_dict() for v in volumes],
             "bundled": "code and corpus manifest only; indexes and images fetched lazily",
+            "index_cache_bytes": index_bytes,
         }
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -1,6 +1,7 @@
 """Fetch bucket row groups into a byte-bounded local Arrow cache."""
 
 import json
+import os
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
@@ -13,6 +14,18 @@ from huggingface_hub import HfApi, get_token
 
 from .cache import DiskCache, RangeReader
 from .index import sha256_file
+
+
+def runtime_bucket_id(manifest):
+    """Where to read the bucket right now, which is not necessarily its recorded name.
+
+    ``manifest["bucket_id"]`` is provenance: it is hashed into ``inventory_id`` and then
+    ``snapshot_id``, so renaming the organization must not rewrite it. HTTP reads survive a
+    rename through a redirect, but that is not a guarantee to rely on, and a mount does not
+    survive one at all. ``NAYANA_BUCKET_ID`` addresses the live bucket without disturbing
+    the recorded identity or the snapshot it belongs to.
+    """
+    return os.environ.get("NAYANA_BUCKET_ID") or manifest["bucket_id"]
 
 
 class CorpusStorage:
@@ -68,7 +81,7 @@ class CorpusStorage:
         else:
             rows = list(
                 self.api.get_bucket_paths_info(
-                    self.manifest["bucket_id"], [spec["path"]]
+                    runtime_bucket_id(self.manifest), [spec["path"]]
                 )
             )
             if (
@@ -87,7 +100,10 @@ class CorpusStorage:
                 yield source
         else:
             # The documented bucket resolve endpoint supports HTTP Range.
-            url = f"https://huggingface.co/buckets/{self.manifest['bucket_id']}/resolve/{quote(spec['path'])}"
+            url = (
+                f"https://huggingface.co/buckets/{runtime_bucket_id(self.manifest)}"
+                f"/resolve/{quote(spec['path'])}"
+            )
             with RangeReader(
                 url,
                 spec["size"],
@@ -205,5 +221,8 @@ def load_manifest(value):
     if manifest.get("storage") == "bucket-parquet" and not all(
         (path.parent / info["path"]).is_file() for info in manifest["indexes"].values()
     ):
-        directory = f"hf://buckets/{manifest['bucket_id']}/openenv/indexes/{manifest['snapshot_id']}"
+        directory = (
+            f"hf://buckets/{runtime_bucket_id(manifest)}"
+            f"/openenv/indexes/{manifest['snapshot_id']}"
+        )
     return manifest, directory
