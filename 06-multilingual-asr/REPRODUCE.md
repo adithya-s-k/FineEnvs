@@ -76,6 +76,61 @@ Character-scored languages: `cmn_hans_cn`, `yue_hant_hk`, `ja_jp`, `th_th`, `lo_
 one unit scores 0.73–0.78, dropping half scores 0.38–0.40, and an empty or wrong-language
 answer scores 0.000 in both units.
 
+## 6. Verified single-GPU smoke
+
+Both Gemma 4 sizes run end to end on one A100: the job builds its snapshot from the
+attached bucket mount, serves it locally, evaluates, trains, and evaluates again.
+Summaries are committed under `results/`.
+
+```bash
+REV=$(git rev-parse HEAD)          # must be pushed: the job fetches this exact commit
+uv run --frozen --project envs/multilingual_asr hf jobs uv run \
+  --flavor a100-large --timeout 2h --secrets HF_TOKEN \
+  --volume hf://buckets/FineEnvs/fleurs-bucket:/fleurs:ro \
+  train/hf_job.py --revision "$REV" --mode train --source-root /fleurs \
+  --languages en_us hi_in --splits train test --per-split 8 \
+  --model google/gemma-4-E2B-it --smoke --families transcription
+```
+
+A CPU job runs the tests and the fixture smoke without a GPU:
+
+```bash
+uv run --frozen --project envs/multilingual_asr hf jobs uv run \
+  --flavor cpu-basic --timeout 30m --secrets HF_TOKEN \
+  train/hf_job.py --revision "$REV" --mode env-smoke
+```
+
+| | E2B | E4B |
+|---|---|---|
+| Status | passed | passed |
+| Optimizer steps | 2 | 2 |
+| Training loss | 0.02382 | 0.03651 |
+| Adapter weights changed | yes | yes |
+| LoRA target modules | 106 | 122 |
+| `en_us` WER | 0.0952 | 0.0952 |
+| `hi_in` WER | 0.0417 | 0.0000 |
+| Macro reward, before -> after | 0.7452 -> 0.7452 | 0.7286 -> 0.8619 |
+
+**This verifies execution, not quality.** Two optimizer steps over one utterance per
+language cannot establish an improvement; the E4B before/after difference is one sample
+changing, which is noise at this size and must not be read as a training result.
+
+Unlike the OCR environment, the audio tower is **adapted, not skipped**: it is the part of
+an omni checkpoint this task depends on, which is why the target counts here (106 and 122)
+are the full sets rather than the 82 and 98 used there.
+
+Four things the smoke settled that reading the code did not:
+
+- **FLEURS is IEEE float WAV, not PCM.** The decoder used the standard library, which
+  rejects that subtype outright. The whole suite passed because the fixtures were PCM, and
+  the first GPU run died on real audio with `unknown format: 3`. Fixtures now write float
+  WAV like the corpus and a test asserts they do.
+- **`environment_factory` returns one environment per call**, not a pool.
+- **A `prompt` column in the dataset is read by TRL as a conversation.** The environment
+  owns the prompt; the sampler gets only immutable identifiers.
+- Preparing from an attached bucket mount avoids pulling shards through the Hub, which
+  matters because each file is a single row group.
+
 ## Not done yet
 
 No Space is deployed and no GRPO recipe is wired up: this PR establishes the environment,
