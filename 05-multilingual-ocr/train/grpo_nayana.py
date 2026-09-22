@@ -31,6 +31,7 @@ class Config:
     env_url: str = ""
     evalset: str = ""
     eval_limit: int = 0
+    lora_target_modules: tuple[str, ...] = ()
     source_root: str = ""
     cache_dir: str = ""
     local_source: bool = False
@@ -184,6 +185,43 @@ def evaluate(trainer, rows, url, cache, max_tokens):
     }
 
 
+def lora_target_modules(model_id, revision, wanted=("q_proj", "v_proj")):
+    """Resolve LoRA targets against the real module tree.
+
+    PEFT can only adapt genuine leaves (nn.Linear and friends), so naming a projection
+    is not enough when the architecture wraps it: Gemma 4 wraps every projection in a
+    Gemma4ClippableLinear, and injection fails with "Target module ... is not supported".
+    Build the tree on the meta device, which allocates no weights, and return the suffix
+    of each adaptable leaf under a wanted projection - "q_proj" for a plain model,
+    "q_proj.linear" for a wrapped one. Falls back to the plain names if a model cannot be
+    introspected, so an unknown architecture behaves exactly as before.
+    """
+    import torch
+    from transformers import AutoConfig, AutoModel
+
+    try:
+        settings = AutoConfig.from_pretrained(model_id, revision=revision or None)
+        with torch.device("meta"):
+            model = AutoModel.from_config(settings)
+    except Exception as error:  # Introspection is an optimisation, never a hard gate.
+        print(
+            f"LoRA target introspection unavailable ({error}); using {wanted}",
+            flush=True,
+        )
+        return list(wanted)
+    adaptable = (torch.nn.Linear, torch.nn.Embedding, torch.nn.Conv1d, torch.nn.Conv2d)
+    targets = set()
+    for name, module in model.named_modules():
+        if not isinstance(module, adaptable):
+            continue
+        parts = name.split(".")
+        for index, part in enumerate(parts):
+            if part in wanted:
+                targets.add(".".join(parts[index:]))
+                break
+    return sorted(targets) or list(wanted)
+
+
 def run(config):
     import torch
     from huggingface_hub import model_info
@@ -320,9 +358,16 @@ def run(config):
         revision = model_info(
             config.model, revision=config.model_revision or "main"
         ).sha
+        targets = (
+            list(config.lora_target_modules)
+            if config.lora_target_modules
+            else lora_target_modules(config.model, revision)
+        )
+        print(f"LoRA target modules: {targets}", flush=True)
         metadata = {
             "config": asdict(config),
             "model_revision": revision,
+            "lora_target_modules": targets,
             "manifest": manifest,
             "train_tasks": train_rows,
             "eval_tasks": eval_rows,
@@ -368,7 +413,7 @@ def run(config):
                 r=16,
                 lora_alpha=32,
                 lora_dropout=0.05,
-                target_modules=["q_proj", "v_proj"],
+                target_modules=targets,
             ),
             args=GRPOConfig(
                 output_dir=str(output),
@@ -463,6 +508,12 @@ def main():
         "--evalset",
         default="",
         help="Frozen evaluation set JSON; used whole, in place of ad-hoc sampling",
+    )
+    parser.add_argument(
+        "--lora-target-modules",
+        nargs="+",
+        default=[],
+        help="Override the resolved LoRA targets",
     )
     parser.add_argument("--source-root", default="")
     parser.add_argument("--cache-dir", default="")
