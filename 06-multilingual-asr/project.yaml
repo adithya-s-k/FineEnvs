@@ -1,0 +1,19 @@
+name: multilingual-asr
+title: "Multilingual ASR"
+tagline: "Serve FLEURS speech through OpenEnv with script-aware word and character error scoring."
+order: 6
+status: wip
+hub:
+  org: FineEnvs
+  datasets:
+    - google/fleurs
+  buckets:
+    - FineEnvs/fleurs-bucket
+  spaces: []
+  models: []
+envs:
+  - name: multilingual_asr
+    summary: "Normalized and verbatim transcription plus spoken language identification over 102 FLEURS languages, scored per word or per character by script."
+    backend: http
+    frameworks:
+      openenv: {transport: http-websocket, verified: false}
