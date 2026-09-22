@@ -85,6 +85,19 @@ class Config:
             )
 
 
+INTEGER_OPTIONS = (
+    "train_per_group",
+    "eval_per_group",
+    "max_steps",
+    "num_generations",
+    "max_completion_length",
+    "prefetch_blocks",
+    "max_pixels",
+    "eval_limit",
+    "seed",
+)
+
+
 def _iterate_rows(rows):
     yield from rows
 
@@ -552,20 +565,9 @@ def main():
     parser.add_argument(
         "--task-input", choices=("auto", "map", "iterable", "corpus"), default="auto"
     )
-    for name in (
-        "train_per_group",
-        "eval_per_group",
-        "max_steps",
-        "num_generations",
-        "max_completion_length",
-        "prefetch_blocks",
-        "max_pixels",
-        "eval_limit",
-        "seed",
-    ):
-        parser.add_argument(
-            "--" + name.replace("_", "-"), type=int, default=getattr(Config, name)
-        )
+    for name in INTEGER_OPTIONS:
+        # Default None so --smoke can fill only what the caller left unset.
+        parser.add_argument("--" + name.replace("_", "-"), type=int, default=None)
     parser.add_argument("--learning-rate", type=float, default=Config.learning_rate)
     parser.add_argument(
         "--output-dir", default=os.environ.get("OUTPUT_DIR", Config.output_dir)
@@ -579,10 +581,22 @@ def main():
         help="Two optimizer steps; two generations; one eval task per language/family",
     )
     args = vars(parser.parse_args())
-    if args["smoke"]:
-        args.update(max_steps=2, num_generations=2, eval_per_group=1)
-        # A frozen set is used whole unless the caller limits it explicitly.
-        args["eval_limit"] = args["eval_limit"] or 10
+    # A smoke run shrinks the defaults, but an explicit flag must still win: silently
+    # overriding one makes a failure impossible to investigate by changing it.
+    smoke_defaults = {
+        "max_steps": 2,
+        "num_generations": 2,
+        "eval_per_group": 1,
+        "eval_limit": 10,
+    }
+    for name in INTEGER_OPTIONS:
+        if args[name] is not None:
+            continue
+        args[name] = (
+            smoke_defaults[name]
+            if args["smoke"] and name in smoke_defaults
+            else getattr(Config, name)
+        )
     run(Config(**args))
 
 
