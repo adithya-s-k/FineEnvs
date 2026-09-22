@@ -44,6 +44,13 @@ def main():
         "--bucket-id",
         help="Mount source override; defaults to the manifest bucket resolved to its current name",
     )
+    parser.add_argument("--sessions", type=int, default=16)
+    parser.add_argument(
+        "--judge-concurrency",
+        type=int,
+        default=16,
+        help="Measured optimum; 32 halves throughput and pushes p95 toward the timeout",
+    )
     parser.add_argument("--output", type=Path)
     parser.add_argument(
         "--judge-config",
@@ -167,6 +174,11 @@ def main():
             "NAYANA_SOURCE_ROOT": "/corpus",
             "NAYANA_CACHE_DIR": "/tmp/nayana-cache",
             "NAYANA_INDEX_CACHE_BYTES": str(index_bytes),
+            # Concurrent evaluation needs a session per worker and a judge slot per
+            # session, or the surplus callers queue against the semaphore and fail.
+            # Judge throughput was measured to peak at 16 and degrade beyond it.
+            "NAYANA_MAX_SESSIONS": str(args.sessions),
+            "NAYANA_JUDGE_CONCURRENCY": str(args.judge_concurrency),
             **judge_variables,
         }.items():
             if key not in current_variables or current_variables[key].value != value:
@@ -180,6 +192,8 @@ def main():
             "volumes": [v.to_dict() for v in volumes],
             "bundled": "code and corpus manifest only; indexes and images fetched lazily",
             "index_cache_bytes": index_bytes,
+            "sessions": args.sessions,
+            "judge_concurrency": args.judge_concurrency,
         }
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)
