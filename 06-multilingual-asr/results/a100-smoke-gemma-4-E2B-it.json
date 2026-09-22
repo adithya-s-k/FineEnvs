@@ -1,0 +1,94 @@
+{
+  "status": "passed",
+  "smoke": true,
+  "steps": 2,
+  "training_loss": 0.023817043751478195,
+  "adapter_updated": true,
+  "reward_groups_without_variance": false,
+  "lora_target_count": 106,
+  "baseline": {
+    "macro_reward": 0.7452380952380953,
+    "by_language_task": {
+      "en_us/transcription": {
+        "samples": 1,
+        "reward": 0.7238095238095239,
+        "wer": 0.09523809523809523,
+        "exact_match": 0.0
+      },
+      "hi_in/transcription": {
+        "samples": 1,
+        "reward": 0.7666666666666667,
+        "wer": 0.041666666666666664,
+        "exact_match": 0.0
+      }
+    },
+    "samples": [
+      {
+        "task_id": "fleurs-2624ecae6334f5106401fc67c9a35e451ba9d3d31be78b60c13934734c7fce3f",
+        "language": "en_us",
+        "family": "transcription",
+        "prediction": "all nouns alongside the world say for you always begin with a capital letter even in the middle of a sentence",
+        "reward": 0.7238095238095239,
+        "wer": 0.09523809523809523,
+        "exact_match": false,
+        "reference_units": 21.0,
+        "predicted_units": 21.0
+      },
+      {
+        "task_id": "fleurs-1e3d3a52498e677e7cd175f0f7846b8e4a23603e9715b81ca04e81ecbdb63d5a",
+        "language": "hi_in",
+        "family": "transcription",
+        "prediction": "कुछ अणुओं में अस्थिर केंद्रक होता है जिसका मतलब यह कि उनमें थोड़े या बिना किसी झटके से टूटने की प्रवृत्ति होती है",
+        "reward": 0.7666666666666667,
+        "wer": 0.041666666666666664,
+        "exact_match": false,
+        "reference_units": 24.0,
+        "predicted_units": 23.0
+      }
+    ]
+  },
+  "trained": {
+    "macro_reward": 0.7452380952380953,
+    "by_language_task": {
+      "en_us/transcription": {
+        "samples": 1,
+        "reward": 0.7238095238095239,
+        "wer": 0.09523809523809523,
+        "exact_match": 0.0
+      },
+      "hi_in/transcription": {
+        "samples": 1,
+        "reward": 0.7666666666666667,
+        "wer": 0.041666666666666664,
+        "exact_match": 0.0
+      }
+    },
+    "samples": [
+      {
+        "task_id": "fleurs-2624ecae6334f5106401fc67c9a35e451ba9d3d31be78b60c13934734c7fce3f",
+        "language": "en_us",
+        "family": "transcription",
+        "prediction": "all nouns alongside the world say for you always begin with a capital letter even in the middle of a sentence",
+        "reward": 0.7238095238095239,
+        "wer": 0.09523809523809523,
+        "exact_match": false,
+        "reference_units": 21.0,
+        "predicted_units": 21.0
+      },
+      {
+        "task_id": "fleurs-1e3d3a52498e677e7cd175f0f7846b8e4a23603e9715b81ca04e81ecbdb63d5a",
+        "language": "hi_in",
+        "family": "transcription",
+        "prediction": "कुछ अणुओं में अस्थिर केंद्रक होता है जिसका मतलब यह कि उनमें थोड़े या बिना किसी झटके से टूटने की प्रवृत्ति होती है",
+        "reward": 0.7666666666666667,
+        "wer": 0.041666666666666664,
+        "exact_match": false,
+        "reference_units": 24.0,
+        "predicted_units": 23.0
+      }
+    ]
+  },
+  "snapshot_id": "d2ef804ae1ec42880c3825768557cfb01b172f78c1f92d8c69a8cc78e9755d92",
+  "job_id": "6ab2fb5651992417dfcd457f",
+  "job_url": "https://huggingface.co/jobs/AdithyaSK/6ab2fb5651992417dfcd457f"
+}
