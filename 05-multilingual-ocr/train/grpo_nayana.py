@@ -475,14 +475,35 @@ def run(config):
             for name, p in trainer.model.named_parameters()
             if p.requires_grad
         )
-        if (
-            trainer.state.global_step != config.max_steps
-            or not math.isfinite(result.training_loss)
-            or not changed
-        ):
-            raise RuntimeError(
-                "Training failed the step count, finite loss, or changed adapter check"
+        # GRPO scales each completion by (reward - group mean) / group std, so a group
+        # whose completions all score the same contributes exactly zero advantage. When
+        # that happens for every group the optimizer correctly does nothing and the
+        # adapter cannot change: that is arithmetic, not a broken pipeline, and it must
+        # be reported as such instead of as a generic failure.
+        zero_std = [
+            entry["frac_reward_zero_std"]
+            for entry in trainer.state.log_history
+            if "frac_reward_zero_std" in entry
+        ]
+        degenerate = bool(zero_std) and all(value == 1 for value in zero_std)
+        problems = []
+        if trainer.state.global_step != config.max_steps:
+            problems.append(
+                f"ran {trainer.state.global_step} steps, expected {config.max_steps}"
             )
+        if not math.isfinite(result.training_loss):
+            problems.append(f"training loss is {result.training_loss}")
+        if not changed and not degenerate:
+            problems.append("no adapter weight changed")
+        if not changed and degenerate:
+            problems.append(
+                "every reward group had identical rewards, so the advantage was zero "
+                "and no gradient could flow. The pipeline ran; the batch taught it "
+                "nothing. Raise --num-generations, or select task families the model "
+                "does not already solve exactly"
+            )
+        if problems:
+            raise RuntimeError("Training check failed: " + "; ".join(problems))
         trained = evaluate(trainer, eval_rows, url, cache, config.max_completion_length)
         trainer.save_model(str(output / "adapter"))
         processor.save_pretrained(str(output / "adapter"))
@@ -492,6 +513,7 @@ def run(config):
             "steps": trainer.state.global_step,
             "training_loss": result.training_loss,
             "adapter_updated": changed,
+            "reward_groups_without_variance": degenerate,
             "trained": trained,
             "baseline": json.loads((output / "baseline.json").read_text()),
             "snapshot_id": manifest["snapshot_id"],
