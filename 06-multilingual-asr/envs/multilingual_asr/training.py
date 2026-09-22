@@ -6,7 +6,6 @@ import math
 import random
 import re
 import threading
-import wave
 from collections import OrderedDict, defaultdict
 
 import requests
@@ -17,24 +16,23 @@ from .models import AsrAction
 SAMPLING_RATE = 16_000
 
 
-def decode_wav(raw):
-    """Decode 16-bit PCM to a mono float array in [-1, 1].
+def decode_audio(raw, expected_rate=SAMPLING_RATE):
+    """Decode an utterance to a mono float array in [-1, 1].
 
-    FLEURS is published as 16 kHz mono PCM, so the stdlib decoder is enough and the
-    environment does not take an audio dependency it would then have to pin. A file that
-    is not that shape fails here rather than reaching the feature extractor as noise.
+    FLEURS publishes 16 kHz mono **IEEE float** WAV, not PCM. An earlier version decoded
+    with the standard library, which rejects that subtype outright, and the fixtures were
+    PCM so the tests passed while real audio failed on the GPU. soundfile reads every
+    subtype the corpus uses, and the rate and channel count are still checked here rather
+    than left to reach the feature extractor as silent nonsense.
     """
-    import numpy
+    import soundfile
 
-    with wave.open(io.BytesIO(raw)) as handle:
-        if handle.getnchannels() != 1 or handle.getsampwidth() != 2:
-            raise ValueError("Expected 16-bit mono PCM audio")
-        if handle.getframerate() != SAMPLING_RATE:
-            raise ValueError(
-                f"Expected {SAMPLING_RATE} Hz audio, got {handle.getframerate()}"
-            )
-        frames = handle.readframes(handle.getnframes())
-    return numpy.frombuffer(frames, dtype="<i2").astype("float32") / 32768.0
+    audio, rate = soundfile.read(io.BytesIO(raw), dtype="float32", always_2d=True)
+    if rate != expected_rate:
+        raise ValueError(f"Expected {expected_rate} Hz audio, got {rate}")
+    if audio.shape[1] != 1:
+        raise ValueError(f"Expected mono audio, got {audio.shape[1]} channels")
+    return audio[:, 0]
 
 
 class AssetCache:
@@ -74,7 +72,7 @@ class AssetCache:
                 self._bytes += len(raw)
                 self.downloads += 1
             self._items[sha] = raw
-        return decode_wav(raw)
+        return decode_audio(raw)
 
 
 class TrainingEnvironment:
@@ -161,10 +159,7 @@ def balanced_rows(rows, languages, families, seed, per_group):
     for row in rows:
         groups[row["language"], row["family"]].append(row)
     missing = [
-        (lang, fam)
-        for lang in languages
-        for fam in families
-        if not groups[lang, fam]
+        (lang, fam) for lang in languages for fam in families if not groups[lang, fam]
     ]
     if missing:
         raise ValueError(f"Missing language/task groups: {missing}")

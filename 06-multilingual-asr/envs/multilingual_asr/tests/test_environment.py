@@ -57,7 +57,7 @@ def test_a_failed_reset_cannot_leave_a_previous_task_gradable(snapshot):
 
 
 def test_audio_assets_are_content_addressed_and_playable(snapshot):
-    import wave
+    import soundfile
 
     catalog, _ = snapshot
     task = catalog.at("test", 0)
@@ -65,9 +65,12 @@ def test_audio_assets_are_content_addressed_and_playable(snapshot):
     raw = path.read_bytes()
     assert hashlib.sha256(raw).hexdigest() == task["asset_sha256"]
     assert mime == "audio/wav"
-    with wave.open(str(path)) as handle:
-        assert handle.getframerate() == 16_000
-        assert handle.getnframes() == task["num_samples"]
+    # Verified with the reader the environment uses, so a subtype it cannot decode
+    # cannot pass here either.
+    info = soundfile.info(str(path))
+    assert info.samplerate == task["sampling_rate"] == 16_000
+    assert info.channels == 1
+    assert info.frames == task["num_samples"]
 
 
 def test_tasks_outside_the_duration_policy_are_excluded_not_truncated(tmp_path):

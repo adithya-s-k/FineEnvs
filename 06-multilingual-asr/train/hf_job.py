@@ -16,7 +16,9 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--revision", required=True, help="Pushed 40-character Git commit")
+    parser.add_argument(
+        "--revision", required=True, help="Pushed 40-character Git commit"
+    )
     parser.add_argument("--repo", default="adithya-s-k/FineEnvs")
     parser.add_argument("--mode", choices=("env-smoke", "train"), default="env-smoke")
     parser.add_argument("--languages", nargs="+", default=["en_us", "hi_in"])
@@ -63,11 +65,17 @@ def main():
             # Training needs a snapshot; build one inside the job from the pinned copy.
             snapshot = directory / "snapshot"
             prepare = base + [
-                "asr-prepare", "--output", str(snapshot),
-                "--languages", *args.languages,
-                "--splits", *args.splits,
-                "--per-split", str(args.per_split),
-                "--revision", args.revision,
+                "asr-prepare",
+                "--output",
+                str(snapshot),
+                "--languages",
+                *args.languages,
+                "--splits",
+                *args.splits,
+                "--per-split",
+                str(args.per_split),
+                "--revision",
+                args.revision,
             ]
             if args.source_root:
                 prepare += ["--source-root", args.source_root]
@@ -78,8 +86,14 @@ def main():
             subprocess.run(
                 base
                 + [
-                    "--extra", "train", "python", str(root / "train" / "grpo_asr.py"),
-                    "--snapshot", str(snapshot), "--output-dir", str(run),
+                    "--extra",
+                    "train",
+                    "python",
+                    str(root / "train" / "grpo_asr.py"),
+                    "--snapshot",
+                    str(snapshot),
+                    "--output-dir",
+                    str(run),
                 ]
                 + extra,
                 check=True,

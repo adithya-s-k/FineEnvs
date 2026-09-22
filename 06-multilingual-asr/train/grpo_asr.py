@@ -229,6 +229,7 @@ def run(config):
 
         processor = AutoProcessor.from_pretrained(config.model, revision=revision)
         cache = AssetCache(url)
+
         # TRL calls the factory once per parallel environment and owns the pool, so
         # this returns a single session rather than a list of them.
         def factory():
