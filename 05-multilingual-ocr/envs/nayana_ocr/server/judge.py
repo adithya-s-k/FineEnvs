@@ -16,11 +16,17 @@ import requests
 from huggingface_hub import get_token
 
 from ..data.schema import digest, normalize_text
+from ..models import JUDGE_BUSY, JUDGE_FAILED
 
 POLICY = "strict-reference-vqa-v1"
 MODEL = "google/gemma-4-31B-it"
 PROVIDER = "deepinfra"
 ROUTER_URL = "https://router.huggingface.co/v1/chat/completions"
+# Judge calls are the slowest part of a descriptive-VQA evaluation, so the ceiling is
+# the caller's concurrency, not the default. Keep NAYANA_JUDGE_CONCURRENCY >= the number
+# of concurrent sessions grading descriptive VQA, or the surplus callers queue and fail.
+JUDGE_CONCURRENCY = 8
+JUDGE_QUEUE_SECONDS = 30.0
 CHECKS = (
     "correct",
     "complete",
@@ -72,8 +78,9 @@ class GemmaJudge:
         provider=PROVIDER,
         token=None,
         timeout=60,
-        concurrency=2,
+        concurrency=JUDGE_CONCURRENCY,
         cache_size=4096,
+        queue_seconds=JUDGE_QUEUE_SECONDS,
     ):
         if not re.fullmatch(r"google/gemma-[A-Za-z0-9_.-]+", model):
             raise ValueError("Choose a Gemma Hub model ID")
@@ -91,7 +98,10 @@ class GemmaJudge:
             raise JudgeUnavailable(
                 "Set NAYANA_JUDGE_TOKEN or HF_TOKEN with Inference Providers permission"
             )
+        if concurrency < 1:
+            raise ValueError("Judge concurrency must be at least 1")
         self.timeout, self.cache_size = timeout, cache_size
+        self.concurrency, self.queue_seconds = concurrency, queue_seconds
         self.slots = threading.BoundedSemaphore(concurrency)
         self.cache, self.lock = OrderedDict(), threading.Lock()
         self.policy_id = digest(
@@ -154,8 +164,12 @@ class GemmaJudge:
             if key in self.cache:
                 self.cache.move_to_end(key)
                 return self.cache[key][0], dict(self.cache[key][1])
-        if not self.slots.acquire(timeout=10):
-            raise JudgeUnavailable("Judge busy; retry this step without resetting")
+        if not self.slots.acquire(timeout=self.queue_seconds):
+            raise JudgeUnavailable(
+                f"{JUDGE_BUSY}: {self.concurrency} in flight and no slot within "
+                f"{self.queue_seconds}s. Retry this step without resetting, or raise "
+                "NAYANA_JUDGE_CONCURRENCY to match the caller's concurrency"
+            )
         try:
             try:
                 response = self._post(
@@ -203,8 +217,11 @@ class GemmaJudge:
                 IndexError,
                 TypeError,
             ) as error:
+                # Name the failure class so an operator can tell a provider timeout
+                # from a malformed verdict. The judge's own output is never echoed:
+                # it would put grader text on a path the trainer can read.
                 raise JudgeUnavailable(
-                    "Judge request or verdict failed; no reward was assigned"
+                    f"{JUDGE_FAILED} ({type(error).__name__}); no reward was assigned"
                 ) from error
             accepted = all(verdict.values())
             result = float(accepted), {"judge_accepted": accepted, **verdict}
@@ -222,6 +239,10 @@ def configured_judge():
     return GemmaJudge(
         os.environ.get("NAYANA_JUDGE_MODEL", MODEL),
         os.environ.get("NAYANA_JUDGE_PROVIDER", PROVIDER),
+        concurrency=int(os.environ.get("NAYANA_JUDGE_CONCURRENCY", JUDGE_CONCURRENCY)),
+        queue_seconds=float(
+            os.environ.get("NAYANA_JUDGE_QUEUE_SECONDS", JUDGE_QUEUE_SECONDS)
+        ),
     )
 
 
@@ -240,6 +261,7 @@ def judge_info():
         "policy_id": judge.policy_id,
         "model": judge.model,
         "provider": judge.provider,
+        "concurrency": judge.concurrency,
         "revision_pinned": False,
         "grounding": "question and dataset reference; no independent image verification",
         "reward": "binary: all six checks must pass",
