@@ -104,6 +104,17 @@ def write_snapshot(
     return manifest
 
 
+def mounted_shards(source_root, language, split):
+    """List shards from an attached bucket mount, which needs no Hub round trip."""
+    directory = Path(source_root) / "parquet-data" / language
+    names = sorted(
+        path for path in directory.glob(f"{split}-*.parquet") if path.is_file()
+    )
+    if not names:
+        raise ValueError(f"No {split} shard for {language} under {directory}")
+    return names
+
+
 def bucket_shards(language, split, api=None):
     """List the published shards for one language/split.
 
@@ -126,14 +137,28 @@ def bucket_shards(language, split, api=None):
     return sorted(names)
 
 
-def bucket_rows(language, split, limit, token=None):
+def bucket_rows(language, split, limit, token=None, source_root=None):
     """Read one FLEURS language/split from the pinned bucket copy.
 
     Each published file is a single row group, so a read is all-or-nothing: bounding the
     snapshot bounds what is stored, not what is transferred.
     """
-    import fsspec
     import pyarrow.parquet as pq
+
+    if source_root:
+        produced = 0
+        for path in mounted_shards(source_root, language, split):
+            if produced >= limit:
+                return
+            table = pq.ParquetFile(path).read()
+            for row in table.to_pylist():
+                if produced >= limit:
+                    return
+                yield {**row, "split": split}
+                produced += 1
+        return
+
+    import fsspec
     from huggingface_hub import get_token
 
     token = token or get_token()
@@ -164,6 +189,10 @@ def main():
     parser.add_argument("--splits", nargs="+", default=list(SPLITS), choices=SPLITS)
     parser.add_argument("--per-split", type=int, default=16)
     parser.add_argument("--revision", default="main")
+    parser.add_argument(
+        "--source-root",
+        help="Attached bucket mount to read instead of fetching over HTTP",
+    )
     args = parser.parse_args()
 
     def sources():
@@ -171,7 +200,9 @@ def main():
 
             def rows(language=language):
                 for split in args.splits:
-                    yield from bucket_rows(language, split, args.per_split)
+                    yield from bucket_rows(
+                        language, split, args.per_split, source_root=args.source_root
+                    )
 
             yield language, rows()
 

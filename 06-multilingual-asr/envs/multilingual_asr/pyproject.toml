@@ -18,10 +18,22 @@ dependencies = [
   "aiohttp>=3.10,<4",
   "rapidfuzz>=3.14,<4",
   "requests>=2.32,<3",
+  "numpy>=1.26",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "ruff>=0.12,<1"]
+# Pinned to the versions verified on 05-multilingual-ocr, so a Gemma 4 omni
+# checkpoint loads the same way here.
+train = [
+  "trl[vlm]==1.13.0",
+  "transformers>=5.2,<6",
+  "peft>=0.18,<1",
+  "trackio==0.37.1",
+  "torch>=2.7,<3",
+  "accelerate>=1.4,<2",
+  "numpy>=1.26",
+]
 
 [project.scripts]
 asr-prepare = "multilingual_asr.data.prepare:main"
