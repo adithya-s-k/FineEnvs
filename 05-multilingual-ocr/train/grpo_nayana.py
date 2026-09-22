@@ -186,15 +186,18 @@ def evaluate(trainer, rows, url, cache, max_tokens):
 
 
 def lora_target_modules(model_id, revision, wanted=("q_proj", "v_proj")):
-    """Resolve LoRA targets against the real module tree.
+    """Resolve LoRA targets to full, unambiguous module names.
 
-    PEFT can only adapt genuine leaves (nn.Linear and friends), so naming a projection
-    is not enough when the architecture wraps it: Gemma 4 wraps every projection in a
-    Gemma4ClippableLinear, and injection fails with "Target module ... is not supported".
-    Build the tree on the meta device, which allocates no weights, and return the suffix
-    of each adaptable leaf under a wanted projection - "q_proj" for a plain model,
-    "q_proj.linear" for a wrapped one. Falls back to the plain names if a model cannot be
-    introspected, so an unknown architecture behaves exactly as before.
+    PEFT adapts genuine leaves, and it matches a short target against every module whose
+    name ends with it. Gemma 4 wraps its text projections in Gemma4ClippableLinear while
+    leaving the vision and audio towers as plain Linear, so a suffix like "q_proj" matches
+    both the wrappers and the leaves and injection fails with "Target module
+    Gemma4ClippableLinear(...) is not supported". Returning full module names removes the
+    ambiguity: every entry names exactly one adaptable leaf.
+
+    The tree is built on the meta device, which allocates no weights. Introspection is an
+    optimisation, never a gate: a model that cannot be built falls back to the plain names
+    and behaves exactly as before.
     """
     import torch
     from transformers import AutoConfig, AutoModel
@@ -203,22 +206,19 @@ def lora_target_modules(model_id, revision, wanted=("q_proj", "v_proj")):
         settings = AutoConfig.from_pretrained(model_id, revision=revision or None)
         with torch.device("meta"):
             model = AutoModel.from_config(settings)
-    except Exception as error:  # Introspection is an optimisation, never a hard gate.
+    except Exception as error:  # Unknown architecture: keep the previous behaviour.
         print(
-            f"LoRA target introspection unavailable ({error}); using {wanted}",
+            f"LoRA target introspection unavailable ({error}); using {list(wanted)}",
             flush=True,
         )
         return list(wanted)
     adaptable = (torch.nn.Linear, torch.nn.Embedding, torch.nn.Conv1d, torch.nn.Conv2d)
-    targets = set()
-    for name, module in model.named_modules():
-        if not isinstance(module, adaptable):
-            continue
-        parts = name.split(".")
-        for index, part in enumerate(parts):
-            if part in wanted:
-                targets.add(".".join(parts[index:]))
-                break
+    targets = [
+        name
+        for name, module in model.named_modules()
+        if isinstance(module, adaptable)
+        and any(part in wanted for part in name.split("."))
+    ]
     return sorted(targets) or list(wanted)
 
 
@@ -363,7 +363,10 @@ def run(config):
             if config.lora_target_modules
             else lora_target_modules(config.model, revision)
         )
-        print(f"LoRA target modules: {targets}", flush=True)
+        print(
+            f"LoRA targets: {len(targets)} modules, e.g. {targets[:2]}",
+            flush=True,
+        )
         metadata = {
             "config": asdict(config),
             "model_revision": revision,
