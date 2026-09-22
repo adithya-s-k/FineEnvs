@@ -193,20 +193,24 @@ def run(config):
         with connect(url) as client:
             manifest = client.manifest()
         languages, families = list(config.languages), list(config.families)
-        train_rows = balanced_rows(
-            task_rows(url, "train", languages, families),
-            languages,
-            families,
-            config.seed,
-            config.train_per_group,
-        )
-        eval_rows = balanced_rows(
-            task_rows(url, "test", languages, families),
-            languages,
-            families,
-            config.seed,
-            config.eval_per_group,
-        )
+
+        # Only immutable identifiers reach the sampler. A "prompt" column would be read
+        # by TRL as a conversation, and the environment already owns the prompt.
+        def selection(split, per_group):
+            rows = balanced_rows(
+                task_rows(url, split, languages, families),
+                languages,
+                families,
+                config.seed,
+                per_group,
+            )
+            return [
+                {key: row[key] for key in ("task_id", "language", "family")}
+                for row in rows
+            ]
+
+        train_rows = selection("train", config.train_per_group)
+        eval_rows = selection("test", config.eval_per_group)
         revision = model_info(
             config.model, revision=config.model_revision or "main"
         ).sha
