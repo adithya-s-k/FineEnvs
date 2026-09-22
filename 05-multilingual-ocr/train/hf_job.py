@@ -19,7 +19,7 @@ def main():
     parser.add_argument(
         "--revision", required=True, help="Pushed 40-character Git commit"
     )
-    parser.add_argument("--repo", default="adithya-s-k/HuggingEnvs")
+    parser.add_argument("--repo", default="adithya-s-k/FineEnvs")
     parser.add_argument(
         "--mode", choices=("env-smoke", "real-smoke", "train"), default="env-smoke"
     )

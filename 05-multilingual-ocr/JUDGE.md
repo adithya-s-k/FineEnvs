@@ -101,7 +101,7 @@ uv run --frozen --project envs/nayana_ocr python train/verify_judge.py \
   --output artifacts/judge-calibration.json
 
 uv run --frozen --project envs/nayana_ocr python train/deploy_space.py \
-  --space-id HuggingEnvs/nayana-ocr-env \
+  --space-id FineEnvs/nayana-ocr-env \
   --corpus-manifest data/corpus-manifest.json \
   --judge-config artifacts/judge-calibration.json --output artifacts/deployment.json
 ```
@@ -125,7 +125,7 @@ To train the four deterministic task families without a judge:
 
 ```bash
 uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana.py \
-  --env-url https://huggingenvs-nayana-ocr-env.hf.space \
+  --env-url https://fineenvs-nayana-ocr-env.hf.space \
   --families section_ocr page_ocr mcq_vqa layout_detection --smoke
 ```
 

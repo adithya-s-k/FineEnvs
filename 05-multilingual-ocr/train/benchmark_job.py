@@ -21,7 +21,7 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--revision", required=True)
-    parser.add_argument("--repo", default="adithya-s-k/HuggingEnvs")
+    parser.add_argument("--repo", default="adithya-s-k/FineEnvs")
     parser.add_argument("--source-root", default="/corpus")
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9a-f]{40}", args.revision):

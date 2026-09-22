@@ -21,8 +21,10 @@ def get_catalog(directory):
             os.environ.get("NAYANA_CACHE_DIR", "/tmp/nayana-cache"),
             source_root=os.environ.get("NAYANA_SOURCE_ROOT"),
             local_source=os.environ.get("NAYANA_LOCAL_SOURCE") == "true",
+            # The published 22-language index set is 4.30 GB. A 4 GB budget evicts and
+            # re-fetches ~200 MB databases whenever a request rotates languages.
             index_cache_bytes=int(
-                os.environ.get("NAYANA_INDEX_CACHE_BYTES", "4000000000")
+                os.environ.get("NAYANA_INDEX_CACHE_BYTES", "6000000000")
             ),
             group_cache_bytes=int(
                 os.environ.get("NAYANA_GROUP_CACHE_BYTES", "4000000000")
