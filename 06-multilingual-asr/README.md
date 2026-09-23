@@ -78,24 +78,22 @@ Three ways to run it, all on the same index:
 | Space / job | bucket mounted read only at `/fleurs`, same manifest |
 
 `asr-prepare` still builds a small self-contained snapshot for a machine with no bucket
-access at all; it is the offline path, not the main one.
+access at all. It is the offline fallback, not the path training and evaluation use.
 
 ## Run it
 
 ```bash
-# Build a bounded snapshot from the pinned bucket copy.
-uv run --frozen --project envs/multilingual_asr asr-prepare \
-  --output data/snapshots/dev --languages en_us hi_in cmn_hans_cn \
-  --splits test --per-split 8
+# Serve the whole corpus from the committed index. Nothing is downloaded up front.
+FLEURS_CORPUS_MANIFEST="$PWD/data/corpus-manifest.json" \
+  uv run --frozen --project envs/multilingual_asr asr-server   # port 8006
 
-ASR_SNAPSHOT="$PWD/data/snapshots/dev" \
-  uv run --frozen --project envs/multilingual_asr asr-server
-
-# No download: synthetic HTTP/transport/reward smoke.
+# No download at all: synthetic HTTP/transport/reward smoke.
 uv run --frozen --project envs/multilingual_asr asr-smoke
-# Or against a prepared snapshot.
-uv run --frozen --project envs/multilingual_asr asr-smoke --snapshot data/snapshots/dev
 ```
+
+The deployed Space runs this same manifest, so
+[FineEnvs/fleurs-asr-env](https://huggingface.co/spaces/FineEnvs/fleurs-asr-env) serves
+exactly what a local run does. See [REPRODUCE.md](REPRODUCE.md).
 
 ## Evaluation sets
 
@@ -127,8 +125,8 @@ both sets build in about 70 seconds; decoding every selected utterance is availa
 ## Limits
 
 Utterances outside 0.5–60 seconds are excluded rather than truncated, and the exclusion is
-counted in the snapshot manifest. This serves prepared snapshots; the indexed
-whole-corpus path used by 05 is not implemented, and no Space is deployed yet. Audio is
-served as stored, at FLEURS' 16 kHz; no resampling, denoising, or VAD is applied. Reward
-numbers here describe scoring behaviour, not any model's accuracy. Source audio and
-transcripts remain **CC BY 4.0** with Google attribution; see [data/README.md](data/README.md).
+counted per language in the corpus manifest. Audio is served as stored, at FLEURS' 16 kHz;
+no resampling, denoising, or VAD is applied. Reward numbers here describe scoring
+behaviour, not any model's accuracy: the committed GPU runs are smokes that verify the
+pipeline executes, not training results. Source audio and transcripts remain **CC BY 4.0**
+with Google attribution; see [data/README.md](data/README.md).

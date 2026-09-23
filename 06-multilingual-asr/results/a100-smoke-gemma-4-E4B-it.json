@@ -1,94 +1,277 @@
 {
+  "job_id": "6ab397ed51992417dfcd6929",
+  "job_url": "https://huggingface.co/jobs/AdithyaSK/6ab397ed51992417dfcd6929",
+  "revision": "ec0e692e8aa6f033a918648c1ee9268c8d44b006",
+  "model": "google/gemma-4-E4B-it",
   "status": "passed",
   "smoke": true,
-  "steps": 2,
-  "training_loss": 0.03650636970996857,
+  "steps": 4,
+  "training_loss": 0.010894118575379252,
   "adapter_updated": true,
   "reward_groups_without_variance": false,
   "lora_target_count": 122,
+  "evalset_id": "63ad56363574be9f9bb5b9f3aa9a7c33747fe8a35712ca3109e1ea3bb866bb55",
   "baseline": {
-    "macro_reward": 0.7285714285714286,
+    "macro_reward": 0.33517857142857144,
     "by_language_task": {
-      "en_us/transcription": {
+      "ar_eg/language_id": {
         "samples": 1,
-        "reward": 0.7238095238095239,
-        "wer": 0.09523809523809523,
+        "reward": 0.0,
         "exact_match": 0.0
       },
-      "hi_in/transcription": {
+      "cmn_hans_cn/transcription": {
         "samples": 1,
-        "reward": 0.7333333333333334,
-        "wer": 0.08333333333333333,
+        "reward": 0.55,
+        "cer": 0.3125,
+        "exact_match": 0.0
+      },
+      "es_419/language_id": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0
+      },
+      "gu_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.6400000000000001,
+        "wer": 0.2,
+        "exact_match": 0.0
+      },
+      "ja_jp/transcription": {
+        "samples": 1,
+        "reward": 0.52,
+        "cer": 0.35,
+        "exact_match": 0.0
+      },
+      "ml_in/language_id": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0
+      },
+      "or_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.5142857142857142,
+        "wer": 0.35714285714285715,
+        "exact_match": 0.0
+      },
+      "ta_in/transcription": {
+        "samples": 1,
+        "reward": 0.45714285714285713,
+        "wer": 0.42857142857142855,
         "exact_match": 0.0
       }
     },
     "samples": [
       {
-        "task_id": "fleurs-2624ecae6334f5106401fc67c9a35e451ba9d3d31be78b60c13934734c7fce3f",
-        "language": "en_us",
-        "family": "transcription",
-        "prediction": "all nouns alongside the world say for you always begin with a capital letter even in the middle of a sentence",
-        "reward": 0.7238095238095239,
-        "wer": 0.09523809523809523,
-        "exact_match": false,
-        "reference_units": 21.0,
-        "predicted_units": 21.0
+        "task_id": "fleurs-ar_eg.test.0be3277313320e97065c7ccf64b1f21a86324f0a3f0c375b1f16d47ba6807891",
+        "language": "ar_eg",
+        "family": "language_id",
+        "prediction": "ar_sa",
+        "reward": 0.0,
+        "exact_match": false
       },
       {
-        "task_id": "fleurs-1e3d3a52498e677e7cd175f0f7846b8e4a23603e9715b81ca04e81ecbdb63d5a",
-        "language": "hi_in",
+        "task_id": "fleurs-cmn_hans_cn.test.1e1c334a255f9b023a7507974b65cc4fe78e1cf0769f37038be205fdf0a69841",
+        "language": "cmn_hans_cn",
         "family": "transcription",
-        "prediction": "कुछ अणुओं में अस्थिर केंद्रक होता है जिसका मतलब यहां कि उनमें थोड़े या बिना किसी झटके से टूटने की प्रवृत्ति होती है",
-        "reward": 0.7333333333333334,
-        "wer": 0.08333333333333333,
+        "prediction": "在群島和湖泊之中有挺並不是必須的",
+        "reward": 0.55,
+        "cer": 0.3125,
         "exact_match": false,
-        "reference_units": 24.0,
-        "predicted_units": 23.0
+        "reference_units": 16.0,
+        "predicted_units": 16.0
+      },
+      {
+        "task_id": "fleurs-es_419.test.1fe86721a446ecb3ee9c77010f8bde0bfeb8694758459252e19275b154f2a501",
+        "language": "es_419",
+        "family": "language_id",
+        "prediction": "es_es",
+        "reward": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "fleurs-gu_in.test.8c201e5d0ac93c4b05c6d281250acb19e07b18ea827063a48dec35316215ed37",
+        "language": "gu_in",
+        "family": "verbatim_transcription",
+        "prediction": "હાજર લોકોની સંખ્યા એટલી બધી વધારે હતી કે દરેક માટે સેન્ટ પીટર્સ સ્ક્વેરમાં અંતિમ સંસ્કાર જોવાય શક્ય હતા નહીં.",
+        "reward": 0.6400000000000001,
+        "wer": 0.2,
+        "exact_match": false,
+        "reference_units": 20.0,
+        "predicted_units": 19.0
+      },
+      {
+        "task_id": "fleurs-ja_jp.test.21ccdec9bb859296eb726e896e3be852b49d19a85a9c118340b02d80077fa356",
+        "language": "ja_jp",
+        "family": "transcription",
+        "prediction": "当社の番組はトークラジオに特化したインターネットラジオサイトとギネットラジオのみで提供されこれは超時サイトです",
+        "reward": 0.52,
+        "cer": 0.35,
+        "exact_match": false,
+        "reference_units": 60.0,
+        "predicted_units": 55.0
+      },
+      {
+        "task_id": "fleurs-ml_in.test.3dd81e17f501d9c4d91f3e83641157c1e90f4307a86f7db6931a0b43c48af2e6",
+        "language": "ml_in",
+        "family": "language_id",
+        "prediction": "ta_in",
+        "reward": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "fleurs-or_in.test.d0475976156c160188754363175026f0eadddd6000c181024bce1405918da940",
+        "language": "or_in",
+        "family": "verbatim_transcription",
+        "prediction": "ଏକ ରୁ ତିନି ସମ୍ପର୍କିତ ବୟସର ଅଣ୍ଡରାଙ୍କ ସମେତ ତିରିଶଟି ମାଈ ଓ ଶାବକଙ୍କ ଦ୍ୱାରା ପାଇଡ୍ସ ଗଠିତ ହୋଇଥାଏ।",
+        "reward": 0.5142857142857142,
+        "wer": 0.35714285714285715,
+        "exact_match": false,
+        "reference_units": 14.0,
+        "predicted_units": 15.0
+      },
+      {
+        "task_id": "fleurs-ta_in.test.fa6c3633948427b23539de6dfc22f3694c77479c02d5cc96845746cfc6fc18ae",
+        "language": "ta_in",
+        "family": "transcription",
+        "prediction": "அதேபோல் ஒரு ஷெங்கன் விசா வைத்திருந்தால் ஷெங்கன் உறுப்பினர் நாடுகளுக்கு தனித்தனியாக ஒவ்வொன்றுகுமேனா விசாவுக்கு விண்ணப்பிக்க தேவையில்லை அதனால் நேரம் பணம் மற்றும் ஆவண வேலைகளை மிச்சப்படுத்தலாம்",
+        "reward": 0.45714285714285713,
+        "wer": 0.42857142857142855,
+        "exact_match": false,
+        "reference_units": 21.0,
+        "predicted_units": 20.0
       }
     ]
   },
   "trained": {
-    "macro_reward": 0.861904761904762,
+    "macro_reward": 0.33517857142857144,
     "by_language_task": {
-      "en_us/transcription": {
+      "ar_eg/language_id": {
         "samples": 1,
-        "reward": 0.7238095238095239,
-        "wer": 0.09523809523809523,
+        "reward": 0.0,
         "exact_match": 0.0
       },
-      "hi_in/transcription": {
+      "cmn_hans_cn/transcription": {
         "samples": 1,
-        "reward": 1.0,
-        "wer": 0.0,
-        "exact_match": 1.0
+        "reward": 0.55,
+        "cer": 0.3125,
+        "exact_match": 0.0
+      },
+      "es_419/language_id": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0
+      },
+      "gu_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.6400000000000001,
+        "wer": 0.2,
+        "exact_match": 0.0
+      },
+      "ja_jp/transcription": {
+        "samples": 1,
+        "reward": 0.52,
+        "cer": 0.35,
+        "exact_match": 0.0
+      },
+      "ml_in/language_id": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0
+      },
+      "or_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.5142857142857142,
+        "wer": 0.35714285714285715,
+        "exact_match": 0.0
+      },
+      "ta_in/transcription": {
+        "samples": 1,
+        "reward": 0.45714285714285713,
+        "wer": 0.42857142857142855,
+        "exact_match": 0.0
       }
     },
     "samples": [
       {
-        "task_id": "fleurs-2624ecae6334f5106401fc67c9a35e451ba9d3d31be78b60c13934734c7fce3f",
-        "language": "en_us",
-        "family": "transcription",
-        "prediction": "all nouns alongside the world say for you always begin with a capital letter even in the middle of a sentence",
-        "reward": 0.7238095238095239,
-        "wer": 0.09523809523809523,
-        "exact_match": false,
-        "reference_units": 21.0,
-        "predicted_units": 21.0
+        "task_id": "fleurs-ar_eg.test.0be3277313320e97065c7ccf64b1f21a86324f0a3f0c375b1f16d47ba6807891",
+        "language": "ar_eg",
+        "family": "language_id",
+        "prediction": "ar_sa",
+        "reward": 0.0,
+        "exact_match": false
       },
       {
-        "task_id": "fleurs-1e3d3a52498e677e7cd175f0f7846b8e4a23603e9715b81ca04e81ecbdb63d5a",
-        "language": "hi_in",
+        "task_id": "fleurs-cmn_hans_cn.test.1e1c334a255f9b023a7507974b65cc4fe78e1cf0769f37038be205fdf0a69841",
+        "language": "cmn_hans_cn",
         "family": "transcription",
-        "prediction": "कुछ अणुओं में अस्थिर केंद्रक होता है जिसका मतलब यह है कि उनमें थोड़े या बिना किसी झटके से टूटने की प्रवृत्ति होती है",
-        "reward": 1.0,
-        "wer": 0.0,
-        "exact_match": true,
-        "reference_units": 24.0,
-        "predicted_units": 24.0
+        "prediction": "在群島和湖泊之中有挺並不是必須的",
+        "reward": 0.55,
+        "cer": 0.3125,
+        "exact_match": false,
+        "reference_units": 16.0,
+        "predicted_units": 16.0
+      },
+      {
+        "task_id": "fleurs-es_419.test.1fe86721a446ecb3ee9c77010f8bde0bfeb8694758459252e19275b154f2a501",
+        "language": "es_419",
+        "family": "language_id",
+        "prediction": "es_es",
+        "reward": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "fleurs-gu_in.test.8c201e5d0ac93c4b05c6d281250acb19e07b18ea827063a48dec35316215ed37",
+        "language": "gu_in",
+        "family": "verbatim_transcription",
+        "prediction": "હાજર લોકોની સંખ્યા એટલી બધી વધારે હતી કે દરેક માટે સેન્ટ પીટર્સ સ્ક્વેરમાં અંતિમ સંસ્કાર જોવાય શક્ય હતા નહીં.",
+        "reward": 0.6400000000000001,
+        "wer": 0.2,
+        "exact_match": false,
+        "reference_units": 20.0,
+        "predicted_units": 19.0
+      },
+      {
+        "task_id": "fleurs-ja_jp.test.21ccdec9bb859296eb726e896e3be852b49d19a85a9c118340b02d80077fa356",
+        "language": "ja_jp",
+        "family": "transcription",
+        "prediction": "当社の番組はトークラジオに特化したインターネットラジオサイトとギネットラジオのみで提供されこれは超時サイトです",
+        "reward": 0.52,
+        "cer": 0.35,
+        "exact_match": false,
+        "reference_units": 60.0,
+        "predicted_units": 55.0
+      },
+      {
+        "task_id": "fleurs-ml_in.test.3dd81e17f501d9c4d91f3e83641157c1e90f4307a86f7db6931a0b43c48af2e6",
+        "language": "ml_in",
+        "family": "language_id",
+        "prediction": "ta_in",
+        "reward": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "fleurs-or_in.test.d0475976156c160188754363175026f0eadddd6000c181024bce1405918da940",
+        "language": "or_in",
+        "family": "verbatim_transcription",
+        "prediction": "ଏକ ରୁ ତିନି ସମ୍ପର୍କିତ ବୟସର ଅଣ୍ଡରାଙ୍କ ସମେତ ତିରିଶଟି ମାଈ ଓ ଶାବକଙ୍କ ଦ୍ୱାରା ପାଇଡ୍ସ ଗଠିତ ହୋଇଥାଏ।",
+        "reward": 0.5142857142857142,
+        "wer": 0.35714285714285715,
+        "exact_match": false,
+        "reference_units": 14.0,
+        "predicted_units": 15.0
+      },
+      {
+        "task_id": "fleurs-ta_in.test.fa6c3633948427b23539de6dfc22f3694c77479c02d5cc96845746cfc6fc18ae",
+        "language": "ta_in",
+        "family": "transcription",
+        "prediction": "அதேபோல் ஒரு ஷெங்கன் விசா வைத்திருந்தால் ஷெங்கன் உறுப்பினர் நாடுகளுக்கு தனித்தனியாக ஒவ்வொன்றுகுமேனா விசாவுக்கு விண்ணப்பிக்க தேவையில்லை அதனால் நேரம் பணம் மற்றும் ஆவண வேலைகளை மிச்சப்படுத்தலாம்",
+        "reward": 0.45714285714285713,
+        "wer": 0.42857142857142855,
+        "exact_match": false,
+        "reference_units": 21.0,
+        "predicted_units": 20.0
       }
     ]
   },
-  "snapshot_id": "d2ef804ae1ec42880c3825768557cfb01b172f78c1f92d8c69a8cc78e9755d92",
-  "job_id": "6ab2fbf351992417dfcd4591",
-  "job_url": "https://huggingface.co/jobs/AdithyaSK/6ab2fbf351992417dfcd4591"
+  "snapshot_id": "6c5e1f3ffdaf2ead41bac4804223786e4edb92f3f70bb2481df133bb817a0278"
 }
