@@ -9,7 +9,9 @@ In-process — no server, no external sandbox.
 `WordleSkyRLEnv(BaseTextEnv)` parses the model's free-text action for either:
 
 - `<guess>word</guess>` tags, or
-- a bare 5-letter word as a fallback
+- a reply that is just the 5-letter word
+
+Words are not taken from surrounding prose; `WordleSkyRLEnv(lenient_parsing=True)` restores the earlier fallback (a "guess is X" phrase, then the last 5-letter word in the text).
 
 …then submits it to the shared `WordleGame` and returns `BaseTextEnvStepOutput(observations, reward, done, ...)`.
 

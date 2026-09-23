@@ -58,13 +58,14 @@ class WordleSkyRLEnv(BaseTextEnv):
 
     The model sends free text via step(). The env extracts a 5-letter word
     and uses it as a Wordle guess. Supports <guess>word</guess> tags or
-    raw 5-letter words.
+    raw 5-letter words; words are not taken from surrounding prose.
     """
 
-    def __init__(self, answer: str = "", max_turns: int = 6):
+    def __init__(self, answer: str = "", max_turns: int = 6, lenient_parsing: bool = False):
         super().__init__()
         self._answer = answer
         self.max_turns = max_turns
+        self._lenient_parsing = lenient_parsing
         self._game = None
         self.last_output = ""
         self.error_count = 0
@@ -85,7 +86,7 @@ class WordleSkyRLEnv(BaseTextEnv):
         """Process model text — extract guess word and submit to game."""
         self.turns += 1
 
-        word = _extract_guess(action)
+        word = _extract_guess(action, lenient=self._lenient_parsing)
         if not word:
             self.error_count += 1
             result = "Could not parse a 5-letter word from your response. Use <guess>word</guess> or just type a 5-letter word."
@@ -121,25 +122,28 @@ except (ImportError, Exception):
     pass
 
 
-def _extract_guess(text: str) -> str:
-    """Extract a 5-letter word guess from free-form text.
+def _extract_guess(text: str, lenient: bool = False) -> str:
+    """Extract a 5-letter guess: a <guess>word</guess> tag, or a reply that is only the word.
 
-    Supports:
-    - <guess>word</guess> tags
-    - "guess: word" or "guess word"
-    - Any standalone 5-letter alphabetic word
+    Words are not pulled out of surrounding prose, so "Could you share your last guess?" is not played as the
+    guess "guess". lenient=True restores the earlier fallback (a "guess is X" phrase, then the last 5-letter
+    word anywhere in the text), e.g. to reproduce results produced before this change.
     """
-    # Try <guess>word</guess> tag
     match = re.search(r"<guess>(.*?)</guess>", text, re.IGNORECASE)
     if match:
         return match.group(1).strip().lower()
 
-    # Try "guess: word" or "my guess is word"
+    bare = text.strip().strip(".!?\"'`*").strip()
+    if re.fullmatch(r"[A-Za-z]{5}", bare):
+        return bare.lower()
+
+    if not lenient:
+        return ""
+
     match = re.search(r"guess(?:\s+is)?[:\s]+([a-zA-Z]{5})\b", text, re.IGNORECASE)
     if match:
         return match.group(1).lower()
 
-    # Try any standalone 5-letter word (last one in text, likely the guess)
     words = re.findall(r"\b([a-zA-Z]{5})\b", text)
     if words:
         return words[-1].lower()

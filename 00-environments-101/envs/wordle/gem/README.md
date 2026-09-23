@@ -6,7 +6,7 @@ In-process — no server. `step()` returns the classic Gymnasium 5-tuple `(obs, 
 
 ## What this environment exposes
 
-`WordleGemEnv(gem.Env)` parses the model's free-text action (either `<guess>word</guess>` or a bare 5-letter word fallback) and submits it to the shared `WordleGame`.
+`WordleGemEnv(gem.Env)` parses the model's free-text action (either `<guess>word</guess>` or a reply that is just the 5-letter word) and submits it to the shared `WordleGame`. Words are not taken from surrounding prose, so a reply like "Could you share your last guess?" is not played as `guess`; pass `lenient_parsing=True` to restore the earlier fallback (a "guess is X" phrase, then the last 5-letter word in the text).
 
 | Method | Returns |
 |---|---|
