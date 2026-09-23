@@ -2,11 +2,10 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
 
 ## What is a harness?
 
-The introduction leaned on the word without defining it, which is fair for a first pass and not good
-enough for the rest of the article. So: an agent harness is the program that runs the agent. It owns
-the loop, decides which tools exist, builds the context the model sees, parses what comes back, and
-decides when to stop. From the model's side the harness is the entire world. From the trainer's
-side it is an executable you do not control.
+An agent harness is the program that runs the agent. It owns the loop, decides which tools exist,
+builds the context the model sees, parses what comes back, and decides when to stop. From the
+model's side the harness is the interface. From the trainer's side it is an executable you do not
+control.
 
 The tightest definition in the literature comes from a position paper on benchmark disclosure, which
 calls it "the software layer between the model and the task that constructs the context the model
@@ -15,7 +14,8 @@ sees, mediates its tool calls, validates its outputs, and decides when to retry,
 model plus harness, and if you are not the model, you are the harness.
 
 It helps to say what a harness is not, because several neighbouring things get called by the same
-name in casual writing. The **model** is the next-token distribution, stateless, with no loop and no
+name in casual writing. Hugging Face's [agent glossary](https://huggingface.co/blog/agent-glossary)
+is the fuller version of this vocabulary; what follows is the short form this article needs. The **model** is the next-token distribution, stateless, with no loop and no
 memory between calls. The **sandbox** is the isolated place actions actually run, a container or a
 VM or a tmux session. A **benchmark** is a fixed task set plus a protocol for comparing results on
 it. None of those is the harness.
