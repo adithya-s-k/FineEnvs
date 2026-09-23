@@ -81,14 +81,14 @@ def main():
         )
 
     if not args.skip_upload:
+        # A bucket is not a repo: upload_folder rejects it, and sync_bucket is the
+        # supported path for putting a directory into one.
         print(f"uploading snapshot to {bucket}/{prefix}", flush=True)
-        api.upload_folder(
-            repo_id=bucket,
-            repo_type="bucket",
-            folder_path=str(args.snapshot),
-            path_in_repo=prefix,
-            commit_message=f"ASR evaluation snapshot {catalog.snapshot_id[:12]}",
+        plan = api.sync_bucket(
+            source=str(args.snapshot),
+            dest=f"hf://buckets/{bucket}/{prefix}",
         )
+        print(f"  sync: {plan}", flush=True)
 
     project = Path(__file__).resolve().parents[1] / "envs" / "multilingual_asr"
     with tempfile.TemporaryDirectory(prefix="asr-space-") as directory:
