@@ -3,11 +3,22 @@ import os
 from fastapi import HTTPException
 from fastapi.responses import FileResponse, Response
 from openenv.core.env_server import create_app
+from pydantic import BaseModel
 
 from ..models import AsrAction, AsrObservation
 from .environment import AsrEnvironment, configured_catalog
 from .gradio_ui import build_ui
 from .rewards import ERROR_WEIGHT, EXACT_WEIGHT, GRADING_POLICY
+
+
+class GroupRequest(BaseModel):
+    split: str
+    language: str
+    family: str
+
+
+class GroupTasksRequest(GroupRequest):
+    positions: list[int]
 
 
 def create_server():
@@ -36,7 +47,10 @@ def create_server():
             **catalog.manifest,
             "splits": catalog.splits() if hasattr(catalog, "splits") else None,
             "eval_splits": {
-                name: len(rows)
+                name: {
+                    "tasks": len(rows),
+                    "evalset_id": getattr(catalog, "eval_ids", {}).get(name),
+                }
                 for name, rows in getattr(catalog, "eval_splits", {}).items()
             },
             "grading": {
@@ -45,6 +59,27 @@ def create_server():
                 "error_unit": "cer for scripts without word spacing, wer otherwise",
             },
         }
+
+    # OpenEnv's task API addresses a split by absolute position, so selecting a few
+    # tasks per language would mean paging a split of hundreds of thousands. These two
+    # read the index by language and task family instead.
+    @app.post("/group_count", tags=["Task API"])
+    def group_count(request: GroupRequest):
+        try:
+            count = catalog.group_count(request.split, request.language, request.family)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        return {"count": count}
+
+    @app.post("/group_tasks", tags=["Task API"])
+    def group_tasks(request: GroupTasksRequest):
+        try:
+            tasks = catalog.group_range(
+                request.split, request.language, request.family, request.positions
+            )
+        except (ValueError, IndexError) as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        return {"tasks": tasks}
 
     @app.get("/assets/{sha}")
     def asset(sha: str, task_id: str | None = None):

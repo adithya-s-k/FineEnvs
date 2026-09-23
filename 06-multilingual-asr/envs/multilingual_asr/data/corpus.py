@@ -82,6 +82,7 @@ class CorpusCatalog:
         # or serve exactly the pinned tasks without first loading the JSON and resetting
         # by id. Its tasks live in the source splits; this is a view, not a copy.
         self.eval_splits = {}
+        self.eval_ids = {}
         for record in evalsets:
             name = eval_split_name(record)
             if name in SPLITS:
@@ -97,6 +98,7 @@ class CorpusCatalog:
                 {k: entry[k] for k in ("task_id", "language", "family")}
                 for entry in record["tasks"]
             ]
+            self.eval_ids[name] = record["evalset_id"]
 
     @contextmanager
     def _db(self, language):
@@ -358,6 +360,20 @@ class CorpusCatalog:
         if not 0 <= start <= stop <= count or stop - start > 1000:
             raise IndexError("Use an in-bounds range of at most 1000 tasks")
         return [self.public(self.at(split, i)) for i in range(start, stop)]
+
+    def group_range(self, split, language, family, positions):
+        """Named positions within one language/task group, without listing the split.
+
+        A split holds up to hundreds of thousands of tasks, so a caller that wants a
+        balanced handful per language reads group sizes and asks for the positions it
+        picked instead of paging the whole split.
+        """
+        if len(positions) > 1000:
+            raise IndexError("Ask for at most 1000 positions")
+        return [
+            self.public(self.group_at(split, language, family, position))
+            for position in positions
+        ]
 
     def stats(self):
         return {

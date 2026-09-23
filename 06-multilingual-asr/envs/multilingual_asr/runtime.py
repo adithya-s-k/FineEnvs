@@ -12,15 +12,14 @@ import requests
 
 
 @contextmanager
-def local_server(snapshot, sessions=16):
+def local_server(corpus, sessions=16):
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         port = sock.getsockname()[1]
-    env = {
-        **os.environ,
-        "ASR_SNAPSHOT": str(Path(snapshot).resolve()),
-        "ASR_MAX_SESSIONS": str(sessions),
-    }
+    # A manifest file selects the indexed corpus; a directory is a prepared snapshot.
+    resolved = Path(corpus).resolve()
+    key = "FLEURS_CORPUS_MANIFEST" if resolved.is_file() else "ASR_SNAPSHOT"
+    env = {**os.environ, key: str(resolved), "ASR_MAX_SESSIONS": str(sessions)}
     process = subprocess.Popen(
         [
             sys.executable,

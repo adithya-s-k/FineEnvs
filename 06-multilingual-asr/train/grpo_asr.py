@@ -10,15 +10,14 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from multilingual_asr.client import connect
-from multilingual_asr.data.evalset import load as load_evalset
 from multilingual_asr.data.schema import FAMILIES
 from multilingual_asr.models import AsrAction
 from multilingual_asr.runtime import local_server
 from multilingual_asr.training import (
     AssetCache,
     TrainingEnvironment,
-    balanced_rows,
     env_reward,
+    sampled_rows,
     task_rows,
 )
 
@@ -35,9 +34,9 @@ INTEGER_OPTIONS = (
 
 @dataclass
 class Config:
-    snapshot: str = ""
+    corpus: str = ""
     env_url: str = ""
-    evalset: str = ""
+    eval_split: str = ""
     eval_limit: int = 0
     model: str = "google/gemma-4-E2B-it"
     model_revision: str = ""
@@ -58,8 +57,8 @@ class Config:
     def validate(self):
         if not math.isfinite(self.learning_rate) or self.learning_rate <= 0:
             raise ValueError("Use a finite positive learning rate")
-        if bool(self.snapshot) == bool(self.env_url):
-            raise ValueError("Provide exactly one of --snapshot or --env-url")
+        if bool(self.corpus) == bool(self.env_url):
+            raise ValueError("Provide exactly one of --corpus or --env-url")
         if self.num_generations < 2:
             raise ValueError("GRPO needs at least two generations per group")
         if min(self.max_steps, self.train_per_group, self.eval_per_group) < 1:
@@ -192,7 +191,7 @@ def run(config):
 
     with ExitStack() as stack:
         url = config.env_url or stack.enter_context(
-            local_server(config.snapshot, config.num_generations + 4)
+            local_server(config.corpus, config.num_generations + 4)
         )
         with connect(url) as client:
             manifest = client.manifest()
@@ -201,46 +200,32 @@ def run(config):
         # Only immutable identifiers reach the sampler. A "prompt" column would be read
         # by TRL as a conversation, and the environment already owns the prompt.
         def selection(split, per_group):
-            rows = balanced_rows(
-                task_rows(url, split, languages, families),
-                languages,
-                families,
-                config.seed,
-                per_group,
-            )
+            rows = sampled_rows(url, split, languages, families, config.seed, per_group)
             return [
                 {key: row[key] for key in ("task_id", "language", "family")}
                 for row in rows
             ]
 
         train_rows = selection("train", config.train_per_group)
-        if config.evalset:
-            # A frozen set is used whole unless the caller limits it explicitly, so a
-            # score stays comparable against its evalset_id.
-            frozen = load_evalset(config.evalset)
-            served = {row["task_id"] for row in task_rows(url, "test", None, None)}
-            chosen = [e for e in frozen["tasks"] if e["task_id"] in served]
-            if not chosen:
+        if config.eval_split:
+            # A frozen set is served as its own split, so it is used whole unless the
+            # caller limits it explicitly and a score stays comparable to its evalset_id.
+            served = manifest.get("eval_splits") or {}
+            if config.eval_split not in served:
                 raise ValueError(
-                    f"This snapshot holds none of {frozen['name']}'s tasks; prepare it "
-                    "with asr-prepare --evalset"
+                    f"{config.eval_split!r} is not a frozen evaluation split; this "
+                    f"deployment serves {sorted(served) or 'none'}"
                 )
-            missing = frozen["size"] - len(chosen)
-            if missing:
-                print(
-                    f"warning: snapshot is missing {missing} of {frozen['size']} "
-                    f"{frozen['name']} tasks; scores are not comparable to the full set",
-                    flush=True,
-                )
+            chosen = task_rows(url, config.eval_split)
             if config.eval_limit:
                 chosen = chosen[:: max(1, len(chosen) // config.eval_limit)][
                     : config.eval_limit
                 ]
             eval_rows = [
-                {key: e[key] for key in ("task_id", "language", "family")}
-                for e in chosen
+                {key: row[key] for key in ("task_id", "language", "family")}
+                for row in chosen
             ]
-            evalset_id = frozen["evalset_id"]
+            evalset_id = served[config.eval_split]["evalset_id"]
         else:
             eval_rows = selection("test", config.eval_per_group)
             evalset_id = None
@@ -376,12 +361,15 @@ def run(config):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--snapshot", default="")
+    parser.add_argument(
+        "--corpus", default="", help="Corpus manifest JSON, or a prepared snapshot"
+    )
     parser.add_argument("--env-url", default="")
     parser.add_argument(
-        "--evalset",
+        "--eval-split",
         default="",
-        help="Frozen evaluation set JSON; used whole unless --eval-limit is given",
+        help="Frozen evaluation split served by the environment, e.g. eval_21_test; "
+        "used whole unless --eval-limit is given",
     )
     parser.add_argument("--model", default=Config.model)
     parser.add_argument("--model-revision", default="")

@@ -49,6 +49,29 @@ class AsrClient(EnvClient[AsrAction, AsrObservation, State]):
         response.raise_for_status()
         return response.json()["num_tasks"]
 
+    def num_group_tasks(self, split, language, family):
+        response = requests.post(
+            f"{self._http_base()}/group_count",
+            json={"split": split, "language": language, "family": family},
+            timeout=60,
+        )
+        response.raise_for_status()
+        return response.json()["count"]
+
+    def get_group_tasks(self, split, language, family, positions):
+        response = requests.post(
+            f"{self._http_base()}/group_tasks",
+            json={
+                "split": split,
+                "language": language,
+                "family": family,
+                "positions": list(positions),
+            },
+            timeout=180,
+        )
+        response.raise_for_status()
+        return response.json()["tasks"]
+
     def get_task_range(self, split, start=0, stop=None):
         response = requests.post(
             f"{self._http_base()}/{ENV_NAME}/task_range",

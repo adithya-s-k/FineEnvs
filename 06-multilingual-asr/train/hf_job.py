@@ -6,6 +6,7 @@
 
 import argparse
 import io
+import os
 import re
 import subprocess
 import tempfile
@@ -21,9 +22,6 @@ def main():
     )
     parser.add_argument("--repo", default="adithya-s-k/FineEnvs")
     parser.add_argument("--mode", choices=("env-smoke", "train"), default="env-smoke")
-    parser.add_argument("--languages", nargs="+", default=["en_us", "hi_in"])
-    parser.add_argument("--splits", nargs="+", default=["train", "test"])
-    parser.add_argument("--per-split", type=int, default=8)
     parser.add_argument("--source-root", help="Attached fleurs bucket mount")
     parser.add_argument("--artifact-repo")
     args, extra = parser.parse_known_args()
@@ -62,27 +60,14 @@ def main():
                     check=True,
                 )
                 return
-            # Training needs a snapshot; build one inside the job from the pinned copy.
-            snapshot = directory / "snapshot"
-            prepare = base + [
-                "asr-prepare",
-                "--output",
-                str(snapshot),
-                "--languages",
-                *args.languages,
-                "--splits",
-                *args.splits,
-                "--per-split",
-                str(args.per_split),
-                "--revision",
-                args.revision,
-            ]
+            # The corpus stays in the bucket and the committed manifest indexes it,
+            # so a job trains against exactly what the Space serves. The frozen
+            # evaluation sets sit beside the manifest and become splits of their own.
+            corpus = root / "data" / "corpus-manifest.json"
+            (run / "corpus-manifest.json").write_bytes(corpus.read_bytes())
+            env = {**os.environ, "FLEURS_CACHE_DIR": str(directory / "cache")}
             if args.source_root:
-                prepare += ["--source-root", args.source_root]
-            subprocess.run(prepare, check=True)
-            (run / "snapshot-manifest.json").write_bytes(
-                (snapshot / "manifest.json").read_bytes()
-            )
+                env["FLEURS_SOURCE_ROOT"] = args.source_root
             subprocess.run(
                 base
                 + [
@@ -90,13 +75,14 @@ def main():
                     "train",
                     "python",
                     str(root / "train" / "grpo_asr.py"),
-                    "--snapshot",
-                    str(snapshot),
+                    "--corpus",
+                    str(corpus),
                     "--output-dir",
                     str(run),
                 ]
                 + extra,
                 check=True,
+                env=env,
             )
         finally:
             if args.artifact_repo:

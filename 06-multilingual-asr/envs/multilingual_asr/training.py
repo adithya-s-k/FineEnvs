@@ -139,35 +139,36 @@ def env_reward(completions, environments, task_id, **kwargs):
     return scores
 
 
-def task_rows(url, split, languages=None, families=None):
+def task_rows(url, split):
+    """Every task in a split. Only sound for the small frozen evaluation splits."""
     with connect(url) as client:
         count = client.num_tasks(split)
         rows = []
         for start in range(0, count, 256):
-            for task in client.get_task_range(split, start, min(start + 256, count)):
-                if languages and task["language"] not in languages:
-                    continue
-                if families and task["family"] not in families:
-                    continue
-                rows.append(task)
+            rows.extend(client.get_task_range(split, start, min(start + 256, count)))
     return rows
 
 
-def balanced_rows(rows, languages, families, seed, per_group):
-    """Equal counts per language/family, so a short run is not one language's score."""
-    groups = defaultdict(list)
-    for row in rows:
-        groups[row["language"], row["family"]].append(row)
-    missing = [
-        (lang, fam) for lang in languages for fam in families if not groups[lang, fam]
-    ]
+def sampled_rows(url, split, languages, families, seed, per_group):
+    """Equal counts per language/family, so a short run is not one language's score.
+
+    The corpus train split holds hundreds of thousands of tasks, so paging it to keep a
+    handful per language is not an option. Each group's size comes from the index and
+    only the drawn positions are fetched. Positions are the index's own per-family order,
+    which is fixed for a snapshot, so a seed reproduces the selection.
+    """
+    rng = random.Random(seed)
+    selected, missing = [], []
+    with connect(url) as client:
+        for lang in languages:
+            for fam in families:
+                count = client.num_group_tasks(split, lang, fam)
+                if not count:
+                    missing.append((lang, fam))
+                    continue
+                drawn = sorted(rng.sample(range(count), min(per_group, count)))
+                selected.extend(client.get_group_tasks(split, lang, fam, drawn))
     if missing:
         raise ValueError(f"Missing language/task groups: {missing}")
-    rng = random.Random(seed)
-    selected = []
-    for lang in languages:
-        for fam in families:
-            pool = sorted(groups[lang, fam], key=lambda r: r["task_id"])
-            selected.extend(rng.sample(pool, min(per_group, len(pool))))
     rng.shuffle(selected)
     return selected
