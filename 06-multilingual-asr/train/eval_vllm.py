@@ -71,7 +71,15 @@ def vllm_server(
         *extra_args,
     ]
     print("starting vLLM: " + " ".join(command), flush=True)
-    process = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stderr)
+    # FlashInfer's sampler is JIT-compiled and wants a CUDA toolkit this image does not
+    # carry, so the engine dies on the first token. Evaluation samples greedily and has
+    # no use for it; vLLM's own sampler is what gets used either way.
+    process = subprocess.Popen(
+        command,
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+        env={**os.environ, "VLLM_USE_FLASHINFER_SAMPLER": "0"},
+    )
     url = f"http://127.0.0.1:{port}"
     try:
         deadline = time.monotonic() + boot_seconds
