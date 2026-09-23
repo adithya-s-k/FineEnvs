@@ -148,3 +148,58 @@ def test_recorded_verification_failures_block_use(tmp_path):
     path = save(body, tmp_path / "e.json")
     with pytest.raises(ValueError, match="did not verify"):
         load(path)
+
+
+def test_a_frozen_task_id_matches_the_one_prepare_derives():
+    """The set names task IDs a snapshot must contain; both sides must derive them alike.
+
+    A first version passed the repository id where the revision belongs, so every ID in
+    the set differed from the one prepare wrote, and a correctly built snapshot reported
+    504 of 504 tasks missing while holding exactly the right audio.
+    """
+    from multilingual_asr.data.schema import DEFAULT_REVISION
+    from multilingual_asr.data.tasks import derive_tasks
+
+    data = metadata(["en_us"])
+    by_id = {row["id"]: row for row in data["en_us"]}
+    frozen = select(data, ["en_us"], FAMS, 9)
+    assert frozen
+    for entry in frozen:
+        row = dict(by_id[entry["sample_id"]], audio={"bytes": b"x"}, split="test")
+        derived, _ = derive_tasks(row, "en_us", DEFAULT_REVISION)
+        assert entry["task_id"] in {t["task_id"] for t in derived}, (
+            f"{entry['family']} id differs between the frozen set and prepare"
+        )
+
+
+def test_the_frozen_set_records_the_revision_its_ids_were_derived_from():
+    from multilingual_asr.data.schema import DEFAULT_REVISION
+
+    data = metadata(["en_us"])
+    body = record(
+        select(data, ["en_us"], FAMS, 9),
+        name="t",
+        languages=["en_us"],
+        families=FAMS,
+        split="test",
+        size=9,
+        seed=42,
+        validated=False,
+    )
+    assert body["revision"] == DEFAULT_REVISION
+    # A set built under another revision is a different set, not the same one relabelled.
+    other = record(
+        select(data, ["en_us"], FAMS, 9, revision="other"),
+        name="t",
+        languages=["en_us"],
+        families=FAMS,
+        split="test",
+        size=9,
+        seed=42,
+        validated=False,
+        revision="other",
+    )
+    assert other["evalset_id"] != body["evalset_id"]
+    assert {e["task_id"] for e in other["tasks"]} != {
+        e["task_id"] for e in body["tasks"]
+    }

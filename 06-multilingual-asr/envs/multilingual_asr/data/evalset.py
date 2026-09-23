@@ -18,7 +18,14 @@ import hashlib
 import json
 from pathlib import Path
 
-from .schema import FAMILIES, REPO_ID, canonical_json, digest, task_id
+from .schema import (
+    DEFAULT_REVISION,
+    FAMILIES,
+    REPO_ID,
+    canonical_json,
+    digest,
+    task_id,
+)
 from .tasks import MAX_SECONDS, MIN_SECONDS, SAMPLING_RATE
 
 EVALSET_VERSION = 1
@@ -162,7 +169,7 @@ def read_metadata(language, split, source_root=None, token=None):
     return rows
 
 
-def select(metadata, languages, families, size, seed=42):
+def select(metadata, languages, families, size, seed=42, revision=DEFAULT_REVISION):
     """Choose fixed task IDs, balanced by family and even across languages."""
     counts = allocate(list(languages), list(families), size)
     selection = []
@@ -207,7 +214,7 @@ def select(metadata, languages, families, size, seed=42):
                 selection.append(
                     {
                         "task_id": task_id(
-                            REPO_ID, language, row["split"], row["id"], family
+                            revision, language, row["split"], row["id"], family
                         ),
                         "language": language,
                         "language_name": row.get("language") or language,
@@ -228,12 +235,23 @@ def select(metadata, languages, families, size, seed=42):
 
 
 def record(
-    selection, *, name, languages, families, split, size, seed, validated, failures=()
+    selection,
+    *,
+    name,
+    languages,
+    families,
+    split,
+    size,
+    seed,
+    validated,
+    revision=DEFAULT_REVISION,
+    failures=(),
 ):
     body = {
         "evalset_version": EVALSET_VERSION,
         "name": name,
         "source": REPO_ID,
+        "revision": revision,
         "split": split,
         "seed": seed,
         "size": len(selection),
@@ -246,7 +264,14 @@ def record(
     }
     body["evalset_id"] = hashlib.sha256(
         canonical_json(
-            [EVALSET_VERSION, REPO_ID, split, seed, [e["task_id"] for e in selection]]
+            [
+                EVALSET_VERSION,
+                REPO_ID,
+                revision,
+                split,
+                seed,
+                [e["task_id"] for e in selection],
+            ]
         ).encode()
     ).hexdigest()
     return body
@@ -273,6 +298,7 @@ def load(path):
             [
                 EVALSET_VERSION,
                 body["source"],
+                body["revision"],
                 body["split"],
                 body["seed"],
                 [e["task_id"] for e in tasks],
