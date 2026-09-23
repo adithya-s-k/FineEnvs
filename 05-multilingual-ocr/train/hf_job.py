@@ -21,7 +21,9 @@ def main():
     )
     parser.add_argument("--repo", default="adithya-s-k/FineEnvs")
     parser.add_argument(
-        "--mode", choices=("env-smoke", "real-smoke", "train"), default="env-smoke"
+        "--mode",
+        choices=("env-smoke", "real-smoke", "train", "eval-vllm"),
+        default="env-smoke",
     )
     parser.add_argument(
         "--corpus-manifest",
@@ -133,16 +135,28 @@ def main():
                         check=True,
                     )
                 else:
+                    # Evaluation drives vLLM in an environment of its own, so it needs
+                    # the same corpus and the frozen set but none of the training deps.
+                    script = (
+                        "eval_vllm.py" if args.mode == "eval-vllm" else "grpo_nayana.py"
+                    )
                     command = base + [
                         "--extra",
                         "train",
                         "python",
-                        str(root / "train" / "grpo_nayana.py"),
+                        str(root / "train" / script),
                         "--output-dir",
                         str(run),
                     ]
+                    if args.mode == "eval-vllm":
+                        if not args.evalset:
+                            parser.error("--mode eval-vllm needs --evalset")
+                        command += ["--evalset", str(root / "data" / args.evalset)]
                     if not remote:
-                        command += ["--snapshot", str(snapshot)]
+                        command += [
+                            "--corpus" if args.mode == "eval-vllm" else "--snapshot",
+                            str(snapshot),
+                        ]
                     subprocess.run(command + extra, check=True)
         finally:
             if args.artifact_repo:
