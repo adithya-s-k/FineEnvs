@@ -7,6 +7,10 @@ import unicodedata
 
 REPO_ID = "google/fleurs"
 BUCKET_ID = "FineEnvs/fleurs-bucket"
+# The bucket holds a pinned copy, so the effective source identity is its content.
+# This names the revision recorded in a snapshot and a frozen evaluation set; both
+# must use the same value or the task IDs they derive cannot match.
+DEFAULT_REVISION = "main"
 SCHEMA_VERSION = 1
 SPLITS = ("train", "validation", "test")
 FAMILIES = ("transcription", "verbatim_transcription", "language_id")

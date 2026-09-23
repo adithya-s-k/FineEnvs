@@ -8,7 +8,15 @@ import time
 from contextlib import closing
 from pathlib import Path
 
-from .schema import BUCKET_ID, FAMILIES, REPO_ID, SCHEMA_VERSION, SPLITS, canonical_json
+from .schema import (
+    BUCKET_ID,
+    DEFAULT_REVISION,
+    FAMILIES,
+    REPO_ID,
+    SCHEMA_VERSION,
+    SPLITS,
+    canonical_json,
+)
 from .tasks import derive_tasks
 
 DDL = """
@@ -203,7 +211,7 @@ def main():
     )
     parser.add_argument("--splits", nargs="+", default=list(SPLITS), choices=SPLITS)
     parser.add_argument("--per-split", type=int, default=16)
-    parser.add_argument("--revision", default="main")
+    parser.add_argument("--revision", default=DEFAULT_REVISION)
     parser.add_argument(
         "--source-root",
         help="Attached bucket mount to read instead of fetching over HTTP",
@@ -222,6 +230,9 @@ def main():
             ).add(entry["sample_id"])
         args.languages = sorted(wanted)
         args.splits = sorted({s for splits in wanted.values() for s in splits})
+        # Task IDs hash the revision, so a snapshot built under a different one holds
+        # none of the set's tasks despite holding exactly its audio.
+        args.revision = frozen["revision"]
         print(
             f"evaluation set {frozen['name']} ({frozen['evalset_id'][:12]}): "
             f"{frozen['size']} tasks over {len(args.languages)} languages",
