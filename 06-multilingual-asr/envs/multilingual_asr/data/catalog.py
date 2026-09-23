@@ -135,6 +135,14 @@ class Catalog:
             ).fetchall()
         return [self.public(json.loads(row[0])) for row in rows]
 
+    def group_range(self, split, language, family, positions):
+        if len(positions) > 1000:
+            raise IndexError("Ask for at most 1000 positions")
+        return [
+            self.public(self.group_at(split, language, family, position))
+            for position in positions
+        ]
+
     def asset(self, sha):
         if not re.fullmatch(r"[0-9a-f]{64}", sha):
             raise KeyError("Invalid asset hash")

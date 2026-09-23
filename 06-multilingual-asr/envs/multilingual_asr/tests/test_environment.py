@@ -138,3 +138,71 @@ def test_two_recordings_of_one_sentence_are_two_tasks(tmp_path):
     assert {t["sample_id"] for t in tasks} == {7}
     assert len({t["recording"] for t in tasks}) == 2
     assert sum(c["tasks"] for c in manifest["counts"]) == len(tasks)
+
+
+def test_group_range_addresses_tasks_without_listing_the_split(corpus_index):
+    """Selecting a few tasks per language must not require paging the whole split."""
+    catalog, _ = corpus_index
+    language, family = "hi_in", "transcription"
+    count = catalog.group_count("train", language, family)
+    assert count
+
+    rows = catalog.group_range("train", language, family, [0, count - 1])
+    assert [row["language"] for row in rows] == [language] * 2
+    assert [row["family"] for row in rows] == [family] * 2
+    assert rows[0]["task_id"] != rows[1]["task_id"]
+    # Discovery withholds the reference here exactly as the split listing does.
+    assert all("reference" not in row for row in rows)
+
+    # The same positions addressed one at a time give the same tasks.
+    assert rows == [
+        catalog.public(catalog.group_at("train", language, family, position))
+        for position in (0, count - 1)
+    ]
+
+    with pytest.raises(IndexError):
+        catalog.group_range("train", language, family, list(range(1001)))
+
+
+def test_sampling_is_balanced_and_reproducible_without_listing(monkeypatch):
+    """A seed must reproduce the draw, and no group may be listed to sample it."""
+    from contextlib import contextmanager
+
+    from multilingual_asr import training
+
+    listed = []
+
+    class FakeClient:
+        def num_group_tasks(self, split, language, family):
+            return 0 if language == "xx_xx" else 50
+
+        def get_group_tasks(self, split, language, family, positions):
+            listed.append((language, family, tuple(positions)))
+            return [
+                {"task_id": f"{language}.{family}.{p}", "language": language,
+                 "family": family}
+                for p in positions
+            ]
+
+    @contextmanager
+    def fake_connect(url):
+        yield FakeClient()
+
+    monkeypatch.setattr(training, "connect", fake_connect)
+    languages, families = ["en_us", "hi_in"], ["transcription", "language_id"]
+    rows = training.sampled_rows("http://x", "train", languages, families, 42, 3)
+
+    assert len(rows) == len(languages) * len(families) * 3
+    counts = Counter((row["language"], row["family"]) for row in rows)
+    assert set(counts) == {(lang, fam) for lang in languages for fam in families}
+    assert set(counts.values()) == {3}
+    # Only the drawn positions are fetched, never the 50 in each group.
+    assert all(len(positions) == 3 for _, _, positions in listed)
+
+    again = training.sampled_rows("http://x", "train", languages, families, 42, 3)
+    assert [row["task_id"] for row in rows] == [row["task_id"] for row in again]
+    other = training.sampled_rows("http://x", "train", languages, families, 7, 3)
+    assert [row["task_id"] for row in rows] != [row["task_id"] for row in other]
+
+    with pytest.raises(ValueError, match="Missing language/task groups"):
+        training.sampled_rows("http://x", "train", ["xx_xx"], ["transcription"], 42, 3)
