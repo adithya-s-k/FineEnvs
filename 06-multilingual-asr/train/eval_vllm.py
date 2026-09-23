@@ -25,7 +25,7 @@ from contextlib import ExitStack, contextmanager
 from pathlib import Path
 
 import requests
-from multilingual_asr.client import connect
+from multilingual_asr.client import AsrClient, connect
 from multilingual_asr.models import AsrAction
 from multilingual_asr.runtime import local_server
 from multilingual_asr.training import task_rows
@@ -135,31 +135,90 @@ def answer(vllm_url, model, prompt, wav, max_tokens, timeout):
     return response.json()["choices"][0]["message"]["content"].strip()
 
 
-def play(env_url, vllm_url, model, rows, max_tokens, timeout, workers, progress):
-    """Reset, answer and grade each task, several at a time.
+def open_client(env_url, timeout):
+    """A session of our own, with a timeout that survives a cold shard read."""
+    return AsrClient(
+        base_url=env_url, connect_timeout_s=60, message_timeout_s=timeout
+    ).sync()
 
-    The environment holds one task per session, so a worker keeps its own session for the
-    whole run rather than sharing one and racing over which task is currently loaded.
+
+def prefetch(env_url, rows, timeout, progress):
+    """Walk the split once, in shard order, collecting each task's prompt and audio.
+
+    This is deliberately sequential. A FLEURS file is a single row group of 310 MB to
+    1.5 GB and the cache holds only a few, so concurrent workers landing on different
+    languages each stall on their own cold read — which is what made reset time out.
+    One reader in language order pays for each shard exactly once.
     """
-    local = threading.local()
+    started = time.monotonic()
+    prepared = []
+    with open_client(env_url, timeout) as client:
+        for index, row in enumerate(rows, 1):
+            observation = client.reset(task_id=row["task_id"]).observation
+            wav = requests.get(
+                f"{env_url}/assets/{observation.asset_sha256}",
+                params={"task_id": observation.task_id},
+                timeout=timeout,
+            )
+            wav.raise_for_status()
+            prepared.append((row, observation.prompt, wav.content))
+            if progress and index % progress == 0:
+                print(
+                    f"  audio {index}/{len(rows)} "
+                    f"({index / (time.monotonic() - started):.1f} task/s)",
+                    flush=True,
+                )
+    print(
+        f"  audio ready: {len(prepared)} clips, "
+        f"{sum(len(w) for _, _, w in prepared) / 1e6:.0f} MB, "
+        f"in {time.monotonic() - started:.0f}s",
+        flush=True,
+    )
+    return prepared
+
+
+def predict(vllm_url, model, prepared, max_tokens, timeout, workers, progress):
+    """Ask vLLM for every answer at once. Nothing here touches the environment."""
+    started = time.monotonic()
+    done = [0]
+    lock = threading.Lock()
+
+    def one(item):
+        _, prompt, wav = item
+        text = answer(vllm_url, model, prompt, wav, max_tokens, timeout)
+        with lock:
+            done[0] += 1
+            if progress and done[0] % progress == 0:
+                print(
+                    f"  generated {done[0]}/{len(prepared)} "
+                    f"({done[0] / (time.monotonic() - started):.1f} task/s)",
+                    flush=True,
+                )
+        return text
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        predictions = list(pool.map(one, prepared))
+    print(
+        f"  generation done in {time.monotonic() - started:.0f}s "
+        f"({len(prepared) / (time.monotonic() - started):.1f} task/s)",
+        flush=True,
+    )
+    return predictions
+
+
+def grade(env_url, prepared, predictions, timeout, workers):
+    """Let the environment score each answer. The audio cache is warm by now."""
+    started = time.monotonic()
     samples, groups = [], defaultdict(list)
     lock = threading.Lock()
-    started = time.monotonic()
+    local = threading.local()
 
-    def one(row):
+    def one(pair):
+        (row, _, _), prediction = pair
         client = getattr(local, "client", None)
         if client is None:
-            client = local.client = connect(env_url)
-        observation = client.reset(task_id=row["task_id"]).observation
-        wav = requests.get(
-            f"{env_url}/assets/{observation.asset_sha256}",
-            params={"task_id": observation.task_id},
-            timeout=120,
-        )
-        wav.raise_for_status()
-        prediction = answer(
-            vllm_url, model, observation.prompt, wav.content, max_tokens, timeout
-        )
+            client = local.client = open_client(env_url, timeout)
+        client.reset(task_id=row["task_id"])
         result = client.step(AsrAction(transcript=prediction))
         sample = {
             **row,
@@ -170,19 +229,12 @@ def play(env_url, vllm_url, model, rows, max_tokens, timeout, workers, progress)
         with lock:
             samples.append(sample)
             groups[f"{row['language']}/{row['family']}"].append(sample)
-            done = len(samples)
-            if progress and done % progress == 0:
-                rate = done / (time.monotonic() - started)
-                print(
-                    f"  {done}/{len(rows)} at {rate:.1f} task/s, running reward "
-                    f"{sum(s['reward'] for s in samples) / done:.4f}",
-                    flush=True,
-                )
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        for outcome in pool.map(one, rows):
+        for outcome in pool.map(one, zip(prepared, predictions, strict=True)):
             del outcome
-    return summarize(samples, groups, time.monotonic() - started)
+    print(f"  grading done in {time.monotonic() - started:.0f}s", flush=True)
+    return samples, groups
 
 
 def summarize(samples, groups, elapsed):
@@ -282,6 +334,10 @@ def main():
             flush=True,
         )
 
+        # Fetched once and reused by every candidate: the clips are the same, and a
+        # second pass would re-read every shard for nothing.
+        prepared = prefetch(env_url, rows, args.request_timeout, args.progress)
+
         leaderboard = []
         for model_id in args.models:
             revision = model_info(model_id).sha
@@ -294,16 +350,20 @@ def main():
                 extra_args=args.vllm_arg,
                 boot_seconds=args.boot_seconds,
             ) as vllm_url:
-                result = play(
-                    env_url,
+                started = time.monotonic()
+                predictions = predict(
                     vllm_url,
                     model_id,
-                    rows,
+                    prepared,
                     args.max_new_tokens,
                     args.request_timeout,
                     args.workers,
                     args.progress,
                 )
+            samples, groups = grade(
+                env_url, prepared, predictions, args.request_timeout, args.workers
+            )
+            result = summarize(samples, groups, time.monotonic() - started)
             body = {
                 "model": model_id,
                 "model_revision": revision,
