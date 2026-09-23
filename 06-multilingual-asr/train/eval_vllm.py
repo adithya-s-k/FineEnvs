@@ -212,12 +212,18 @@ def grade(env_url, prepared, predictions, timeout, workers):
     samples, groups = [], defaultdict(list)
     lock = threading.Lock()
     local = threading.local()
+    # Sessions are a bounded server resource, so they are tracked and released here.
+    # Leaving one model's workers holding theirs starved the next model's grading, which
+    # failed with the server closing the connection rather than anything about the answer.
+    opened = []
 
     def one(pair):
         (row, _, _), prediction = pair
         client = getattr(local, "client", None)
         if client is None:
             client = local.client = open_client(env_url, timeout)
+            with lock:
+                opened.append(client)
         client.reset(task_id=row["task_id"])
         result = client.step(AsrAction(transcript=prediction))
         sample = {
@@ -230,9 +236,16 @@ def grade(env_url, prepared, predictions, timeout, workers):
             samples.append(sample)
             groups[f"{row['language']}/{row['family']}"].append(sample)
 
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        for outcome in pool.map(one, zip(prepared, predictions, strict=True)):
-            del outcome
+    try:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            for outcome in pool.map(one, zip(prepared, predictions, strict=True)):
+                del outcome
+    finally:
+        for client in opened:
+            try:
+                client.close()
+            except Exception as error:  # noqa: BLE001 - a closed session is the goal
+                print(f"  session close failed: {error}", flush=True)
     print(f"  grading done in {time.monotonic() - started:.0f}s", flush=True)
     return samples, groups
 
@@ -394,6 +407,11 @@ def main():
                 f"in {body['elapsed_seconds']}s",
                 flush=True,
             )
+            # A job's filesystem does not outlive it, so the whole result goes to stdout
+            # between markers rather than only to a file nobody will ever read.
+            print(f"RESULT-BEGIN {model_id}", flush=True)
+            print(json.dumps(body, ensure_ascii=False), flush=True)
+            print(f"RESULT-END {model_id}", flush=True)
 
         leaderboard.sort(key=lambda e: e["macro_reward"], reverse=True)
         (output / "leaderboard.json").write_text(
