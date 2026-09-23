@@ -53,9 +53,15 @@ class AssetCache:
         with self._lock:
             raw = self._items.pop(sha, None)
             if raw is None:
-                # Do not follow an arbitrary observation URL or cache unverified content.
+                # Do not follow an arbitrary observation URL or cache unverified
+                # content. The task id is passed as a parameter because the indexed
+                # corpus needs it to find the row group holding this audio; a prepared
+                # snapshot addresses by hash alone and ignores it.
                 with requests.get(
-                    f"{self.url}/assets/{sha}", timeout=120, stream=True
+                    f"{self.url}/assets/{sha}",
+                    params={"task_id": observation.task_id},
+                    timeout=120,
+                    stream=True,
                 ) as response:
                     response.raise_for_status()
                     content = bytearray()

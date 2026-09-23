@@ -1,4 +1,6 @@
+import hashlib
 import io
+from types import SimpleNamespace
 
 import numpy
 import pytest
@@ -42,3 +44,48 @@ def test_a_wrong_sample_rate_or_channel_count_is_rejected_not_resampled():
         decode_audio(wav(rate=8000))
     with pytest.raises(ValueError, match="Expected mono"):
         decode_audio(wav(channels=2))
+
+
+def test_the_trainer_asks_for_audio_by_task_not_by_hash_alone():
+    """The indexed corpus cannot find a row group from a hash, so the task must travel."""
+    import re as _re
+
+    import multilingual_asr.training as training
+
+    asked = {}
+    payload = tone(0.25, 300)
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def raise_for_status(self):
+            pass
+
+        def iter_content(self, size):
+            yield payload
+
+    def fake_get(url, params=None, **kwargs):
+        asked["url"], asked["params"] = url, params
+        return FakeResponse()
+
+    sha = hashlib.sha256(payload).hexdigest()
+    observation = SimpleNamespace(
+        asset_sha256=sha, task_id="fleurs-hi_in.test." + "a" * 64
+    )
+
+    cache = training.AssetCache("http://server")
+    original, training.requests.get = training.requests.get, fake_get
+    try:
+        audio = cache.audio(observation)
+    finally:
+        training.requests.get = original
+
+    assert audio.shape[0]
+    assert asked["url"] == f"http://server/assets/{sha}"
+    assert asked["params"] == {"task_id": observation.task_id}
+    # The URL is still built from the trainer's own base, not followed from the task.
+    assert _re.fullmatch(r"http://server/assets/[0-9a-f]{64}", asked["url"])
