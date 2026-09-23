@@ -128,6 +128,16 @@ def main():
             commit_message=f"Serve FLEURS corpus {manifest['snapshot_id'][:12]} from the bucket",
         )
 
+    # An upload adds and replaces but never removes, so an evaluation set from an earlier
+    # deployment would linger. Two sets covering the same languages and split resolve to
+    # the same split name, and the server refuses to start rather than serve whichever one
+    # happened to win, so renamed and dropped sets are deleted explicitly.
+    keep = {path.name for path in args.evalset}
+    for entry in api.list_repo_files(args.space_id, repo_type="space"):
+        if entry.startswith("eval-") and entry.endswith(".json") and entry not in keep:
+            api.delete_file(entry, args.space_id, repo_type="space")
+            print(f"removed stale evaluation set {entry}", flush=True)
+
     runtime = api.space_info(args.space_id).runtime
     volumes = [v for v in (runtime.volumes or []) if v.mount_path != "/fleurs"]
     volumes.append(
