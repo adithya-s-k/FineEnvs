@@ -14,6 +14,8 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+SCRIPTS = {"train": "grpo_asr.py", "eval": "eval_asr.py"}
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -21,7 +23,9 @@ def main():
         "--revision", required=True, help="Pushed 40-character Git commit"
     )
     parser.add_argument("--repo", default="adithya-s-k/FineEnvs")
-    parser.add_argument("--mode", choices=("env-smoke", "train"), default="env-smoke")
+    parser.add_argument(
+        "--mode", choices=("env-smoke", "train", "eval"), default="env-smoke"
+    )
     parser.add_argument("--source-root", help="Attached fleurs bucket mount")
     parser.add_argument("--artifact-repo")
     args, extra = parser.parse_known_args()
@@ -60,6 +64,7 @@ def main():
                     check=True,
                 )
                 return
+            # Both training and evaluation read the same corpus; only the script differs.
             # The corpus stays in the bucket and the committed manifest indexes it,
             # so a job trains against exactly what the Space serves. The frozen
             # evaluation sets sit beside the manifest and become splits of their own.
@@ -74,7 +79,7 @@ def main():
                     "--extra",
                     "train",
                     "python",
-                    str(root / "train" / "grpo_asr.py"),
+                    str(root / "train" / SCRIPTS[args.mode]),
                     "--corpus",
                     str(corpus),
                     "--output-dir",
