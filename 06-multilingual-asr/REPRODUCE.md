@@ -76,6 +76,67 @@ Character-scored languages: `cmn_hans_cn`, `yue_hant_hk`, `ja_jp`, `th_th`, `lo_
 one unit scores 0.73–0.78, dropping half scores 0.38–0.40, and an empty or wrong-language
 answer scores 0.000 in both units.
 
+## 5b. Frozen evaluation sets
+
+Two sets are committed, built from one pass:
+
+| File | Languages | Tasks | Per language | Per family |
+|---|---|---|---|---|
+| `data/eval-fleurs-all.json` | 102 | 510 | 5 | 170 |
+| `data/eval-fleurs-ocr-overlap.json` | 21 | 504 | 24 | 168 |
+
+The overlap set covers the languages shared with `05-multilingual-ocr`, so an ASR score can
+be read against an OCR score language for language. **The overlap is 21, not 22:** the OCR
+corpus includes Sanskrit and FLEURS does not, which the mapping records explicitly rather
+than dropping silently.
+
+**They nest.** Families take bands of the hash order fixed by family position rather than
+by how many tasks are wanted, so a larger set is a superset of a smaller one for any shared
+language. All 105 `fleurs-all` tasks in the 21 shared languages are also in the overlap
+set, so the two agree on every task they share instead of sampling independently.
+
+```bash
+uv run --frozen --project envs/multilingual_asr asr-evalset build \
+  --output-dir data --size 510 --overlap-size 504 --workers 12 --verify
+
+uv run --frozen --project envs/multilingual_asr asr-evalset verify \
+  --evalset data/eval-fleurs-ocr-overlap.json
+```
+
+**Selection reads metadata columns only.** Measured on one shard: 0.3 MB and 5.9s for the
+metadata columns against 309.6 MB and 34.3s for the same rows with audio, because each
+published file is a single row group and the audio column dominates it. Every eligibility
+rule this environment applies — the duration policy from `num_samples`, and whether a
+reference survives normalization — is decidable from metadata, so the cheap pass is also
+the correct one. Both sets over all 102 languages build in about **70 seconds**.
+
+The committed sets record `validated: false`: they are **selection verified** from
+metadata, which covers every eligibility rule this environment applies - the duration
+policy and whether a reference survives normalization - but does not decode the audio.
+
+`--verify` additionally decodes every selected utterance, which does cost the full shard
+per language (~31 GB over 102 languages). Whole-shard reads are bandwidth bound, so it
+uses four streams by default: a first attempt at twelve exhausted fsspec's HTTP timeout
+rather than finishing faster. Because the sets nest, the union is verified in
+a single pass rather than reading a shared language's shard twice, and a set that records
+any failure is refused by `load()` rather than quietly scored.
+
+To evaluate a set, build a snapshot holding exactly its utterances:
+
+```bash
+uv run --frozen --project envs/multilingual_asr asr-prepare \
+  --output data/snapshots/eval-overlap \
+  --evalset data/eval-fleurs-ocr-overlap.json
+
+uv run --frozen --project envs/multilingual_asr --extra train python train/grpo_asr.py \
+  --snapshot data/snapshots/eval-overlap \
+  --evalset data/eval-fleurs-ocr-overlap.json --max-steps 50
+```
+
+The runner uses a frozen set whole unless `--eval-limit` is given, and warns if the served
+snapshot is missing any of its tasks, because a partial set is not comparable with a full
+one.
+
 ## 6. Verified single-GPU smoke
 
 Both Gemma 4 sizes run end to end on one A100: the job builds its snapshot from the
