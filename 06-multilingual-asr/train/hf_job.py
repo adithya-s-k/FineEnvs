@@ -14,7 +14,13 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-SCRIPTS = {"train": "grpo_asr.py", "eval": "eval_asr.py"}
+SCRIPTS = {
+    "train": "grpo_asr.py",
+    "eval": "eval_asr.py",
+    # vLLM cannot share an environment with OpenEnv, so this one starts its own server
+    # in an isolated uv environment and drives it over the OpenAI-compatible API.
+    "eval-vllm": "eval_vllm.py",
+}
 
 
 def main():
@@ -24,7 +30,9 @@ def main():
     )
     parser.add_argument("--repo", default="adithya-s-k/FineEnvs")
     parser.add_argument(
-        "--mode", choices=("env-smoke", "train", "eval"), default="env-smoke"
+        "--mode",
+        choices=("env-smoke", "train", "eval", "eval-vllm"),
+        default="env-smoke",
     )
     parser.add_argument("--source-root", help="Attached fleurs bucket mount")
     parser.add_argument("--artifact-repo")
