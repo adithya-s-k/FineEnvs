@@ -60,9 +60,10 @@ def vllm_server(
         "--revision",
         revision,
         # One clip per prompt is all this task ever sends; a larger budget would
-        # reserve multimodal cache for nothing.
+        # reserve multimodal cache for nothing. vLLM 0.30 takes JSON here, not the
+        # key=value form older recipes show.
         "--limit-mm-per-prompt",
-        "audio=1",
+        json.dumps({"audio": 1}),
         "--max-model-len",
         str(max_model_len),
         "--gpu-memory-utilization",
