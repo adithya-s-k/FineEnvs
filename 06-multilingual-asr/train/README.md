@@ -18,6 +18,13 @@ rediscovering:
   zero by construction, so the adapter cannot change and the run proves nothing. Use at
   least four generations and tasks the model does not already solve exactly.
 
+**Evaluation.** Use a frozen set rather than an ad-hoc sample, or no two runs are
+comparable. `--evalset data/eval-fleurs-ocr-overlap.json` scores the 21 languages shared
+with `05-multilingual-ocr`, so an ASR result can be read against an OCR result language for
+language; `--evalset data/eval-fleurs-all.json` covers all 102. The two nest, so a score on
+a shared task means the same thing in both. A frozen set is used whole unless `--eval-limit`
+is given, and a limited run records that limit so a slice is never mistaken for a full score.
+
 Record normalization, reward, language sampling, and source revision with every run, and
 report per-language scores separately: a macro average over 102 languages hides exactly the
 low-resource behaviour this corpus exists to measure.

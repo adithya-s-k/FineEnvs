@@ -10,6 +10,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from multilingual_asr.client import connect
+from multilingual_asr.data.evalset import load as load_evalset
 from multilingual_asr.data.schema import FAMILIES
 from multilingual_asr.models import AsrAction
 from multilingual_asr.runtime import local_server
@@ -24,6 +25,7 @@ from multilingual_asr.training import (
 INTEGER_OPTIONS = (
     "train_per_group",
     "eval_per_group",
+    "eval_limit",
     "max_steps",
     "num_generations",
     "max_completion_length",
@@ -35,6 +37,8 @@ INTEGER_OPTIONS = (
 class Config:
     snapshot: str = ""
     env_url: str = ""
+    evalset: str = ""
+    eval_limit: int = 0
     model: str = "google/gemma-4-E2B-it"
     model_revision: str = ""
     languages: tuple[str, ...] = ("en_us", "hi_in")
@@ -210,7 +214,36 @@ def run(config):
             ]
 
         train_rows = selection("train", config.train_per_group)
-        eval_rows = selection("test", config.eval_per_group)
+        if config.evalset:
+            # A frozen set is used whole unless the caller limits it explicitly, so a
+            # score stays comparable against its evalset_id.
+            frozen = load_evalset(config.evalset)
+            served = {row["task_id"] for row in task_rows(url, "test", None, None)}
+            chosen = [e for e in frozen["tasks"] if e["task_id"] in served]
+            if not chosen:
+                raise ValueError(
+                    f"This snapshot holds none of {frozen['name']}'s tasks; prepare it "
+                    "with asr-prepare --evalset"
+                )
+            missing = frozen["size"] - len(chosen)
+            if missing:
+                print(
+                    f"warning: snapshot is missing {missing} of {frozen['size']} "
+                    f"{frozen['name']} tasks; scores are not comparable to the full set",
+                    flush=True,
+                )
+            if config.eval_limit:
+                chosen = chosen[:: max(1, len(chosen) // config.eval_limit)][
+                    : config.eval_limit
+                ]
+            eval_rows = [
+                {key: e[key] for key in ("task_id", "language", "family")}
+                for e in chosen
+            ]
+            evalset_id = frozen["evalset_id"]
+        else:
+            eval_rows = selection("test", config.eval_per_group)
+            evalset_id = None
         revision = model_info(
             config.model, revision=config.model_revision or "main"
         ).sha
@@ -224,6 +257,8 @@ def run(config):
             "model_revision": revision,
             "lora_target_modules": targets,
             "manifest": manifest,
+            "evalset_id": evalset_id,
+            "eval_limit": config.eval_limit or None,
             "train_tasks": train_rows,
             "eval_tasks": eval_rows,
         }
@@ -328,6 +363,7 @@ def run(config):
             "adapter_updated": changed,
             "reward_groups_without_variance": degenerate,
             "lora_target_count": len(targets),
+            "evalset_id": evalset_id,
             "baseline": baseline,
             "trained": trained,
             "snapshot_id": manifest["snapshot_id"],
@@ -342,6 +378,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--snapshot", default="")
     parser.add_argument("--env-url", default="")
+    parser.add_argument(
+        "--evalset",
+        default="",
+        help="Frozen evaluation set JSON; used whole unless --eval-limit is given",
+    )
     parser.add_argument("--model", default=Config.model)
     parser.add_argument("--model-revision", default="")
     parser.add_argument("--languages", nargs="+", default=list(Config.languages))

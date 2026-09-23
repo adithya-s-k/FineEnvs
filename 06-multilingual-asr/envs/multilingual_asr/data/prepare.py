@@ -137,11 +137,13 @@ def bucket_shards(language, split, api=None):
     return sorted(names)
 
 
-def bucket_rows(language, split, limit, token=None, source_root=None):
+def bucket_rows(language, split, limit, token=None, source_root=None, wanted_ids=None):
     """Read one FLEURS language/split from the pinned bucket copy.
 
     Each published file is a single row group, so a read is all-or-nothing: bounding the
-    snapshot bounds what is stored, not what is transferred.
+    snapshot bounds what is stored, not what is transferred. ``wanted_ids`` selects exact
+    utterances instead of a prefix, which is how a snapshot is built for a frozen
+    evaluation set.
     """
     import pyarrow.parquet as pq
 
@@ -152,6 +154,10 @@ def bucket_rows(language, split, limit, token=None, source_root=None):
                 return
             table = pq.ParquetFile(path).read()
             for row in table.to_pylist():
+                if wanted_ids is not None:
+                    if row.get("id") in wanted_ids:
+                        yield {**row, "split": split}
+                    continue
                 if produced >= limit:
                     return
                 yield {**row, "split": split}
@@ -176,6 +182,10 @@ def bucket_rows(language, split, limit, token=None, source_root=None):
         with fs.open(url) as handle:
             table = pq.ParquetFile(handle).read()
         for row in table.to_pylist():
+            if wanted_ids is not None:
+                if row.get("id") in wanted_ids:
+                    yield {**row, "split": split}
+                continue
             if produced >= limit:
                 return
             yield {**row, "split": split}
@@ -185,7 +195,12 @@ def bucket_rows(language, split, limit, token=None, source_root=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--languages", nargs="+", required=True)
+    parser.add_argument("--languages", nargs="+")
+    parser.add_argument(
+        "--evalset",
+        type=Path,
+        help="Build a snapshot holding exactly a frozen evaluation set's utterances",
+    )
     parser.add_argument("--splits", nargs="+", default=list(SPLITS), choices=SPLITS)
     parser.add_argument("--per-split", type=int, default=16)
     parser.add_argument("--revision", default="main")
@@ -195,13 +210,40 @@ def main():
     )
     args = parser.parse_args()
 
+    wanted = None
+    if args.evalset:
+        from .evalset import load as load_evalset
+
+        frozen = load_evalset(args.evalset)
+        wanted = {}
+        for entry in frozen["tasks"]:
+            wanted.setdefault(entry["language"], {}).setdefault(
+                entry["split"], set()
+            ).add(entry["sample_id"])
+        args.languages = sorted(wanted)
+        args.splits = sorted({s for splits in wanted.values() for s in splits})
+        print(
+            f"evaluation set {frozen['name']} ({frozen['evalset_id'][:12]}): "
+            f"{frozen['size']} tasks over {len(args.languages)} languages",
+            flush=True,
+        )
+    elif not args.languages:
+        parser.error("Provide --languages or --evalset")
+
     def sources():
         for language in args.languages:
 
             def rows(language=language):
                 for split in args.splits:
+                    ids = wanted.get(language, {}).get(split) if wanted else None
+                    if wanted is not None and not ids:
+                        continue
                     yield from bucket_rows(
-                        language, split, args.per_split, source_root=args.source_root
+                        language,
+                        split,
+                        args.per_split,
+                        source_root=args.source_root,
+                        wanted_ids=ids,
                     )
 
             yield language, rows()
