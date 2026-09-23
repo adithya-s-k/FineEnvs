@@ -1,7 +1,7 @@
 import os
 
 from fastapi import HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from openenv.core.env_server import create_app
 
 from ..models import AsrAction, AsrObservation
@@ -42,8 +42,15 @@ def create_server():
         }
 
     @app.get("/assets/{sha}")
-    def asset(sha: str):
+    def asset(sha: str, task_id: str | None = None):
         try:
+            # A snapshot addresses audio by hash alone; the indexed corpus needs the
+            # task to know which row group to read.
+            if task_id is not None and hasattr(catalog, "audio_bytes"):
+                raw, mime = catalog.asset(sha, task_id)
+                return Response(
+                    content=raw, media_type=mime, headers={"ETag": f'"{sha}"'}
+                )
             path, mime = catalog.asset(sha)
         except KeyError as error:
             raise HTTPException(status_code=404, detail=str(error)) from error

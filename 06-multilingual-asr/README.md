@@ -51,12 +51,34 @@ score 0.000 in both error units.
 
 ## Data flow
 
-FLEURS publishes **one row group per file** — hi_in test is 418 rows in a single 310 MB
-group — so a read is all-or-nothing and the row-group caching used by the OCR environment
-buys nothing here. This environment prepares a bounded snapshot instead: audio is stored
-once, content addressed by SHA-256, and served from disk with no bucket access at serve
-time. FLEURS' own train/validation/test splits are used as published; re-splitting would
-silently break comparison with every reported FLEURS score.
+**The whole corpus is addressable without copying it.** Each language gets a SQLite index
+of every eligible utterance and where it physically lives; audio stays in the bucket and is
+fetched on demand into a byte-bounded cache. The same manifest serves a local checkout, a
+job colocated with a bucket mount, and the Space — so what the Space serves is what a
+training or evaluation run sees: **1,151,940 tasks across 102 languages in every split**.
+
+Indexing reads metadata columns only: 0.3 MB against 309.6 MB for one measured shard,
+because each published file is a single row group that the audio column dominates. All 102
+languages index in **143 seconds** into 257 MB.
+
+That single-row-group layout is also the cost to respect at serve time. A shard is 310 MB
+for test and up to 1.5 GB for train, so a cold read is expensive and a warm one is free:
+measured, the first task of a language costs ~43 s and the next from the same shard costs
+0.0 s. Task order therefore decides throughput — serve a language and split together.
+
+FLEURS' own train/validation/test splits are used as published; re-splitting would silently
+break comparison with every reported FLEURS score.
+
+Three ways to run it, all on the same index:
+
+| | Setup |
+|---|---|
+| Local, no copy | `FLEURS_CORPUS_MANIFEST=data/corpus-manifest.json`; audio over HTTP range |
+| Local, synced | add `FLEURS_SOURCE_ROOT=/path/to/bucket` after `hf` sync; reads the mount |
+| Space / job | bucket mounted read only at `/fleurs`, same manifest |
+
+`asr-prepare` still builds a small self-contained snapshot for a machine with no bucket
+access at all; it is the offline path, not the main one.
 
 ## Run it
 

@@ -13,13 +13,39 @@ from .rewards import GRADING_POLICY, score
 
 @lru_cache(maxsize=4)
 def get_catalog(directory):
+    if os.environ.get("FLEURS_CORPUS_MANIFEST"):
+        from ..data.corpus import CorpusCatalog
+
+        return CorpusCatalog(
+            directory,
+            os.environ.get("FLEURS_CACHE_DIR", "/tmp/fleurs-cache"),
+            source_root=os.environ.get("FLEURS_SOURCE_ROOT"),
+            local_source=os.environ.get("FLEURS_LOCAL_SOURCE") == "true",
+            index_cache_bytes=int(
+                os.environ.get("FLEURS_INDEX_CACHE_BYTES", "2000000000")
+            ),
+            # One FLEURS shard is 310 MB to 1.5 GB, so a budget below a single train
+            # shard could never serve one.
+            group_cache_bytes=int(
+                os.environ.get("FLEURS_GROUP_CACHE_BYTES", "8000000000")
+            ),
+            max_group_bytes=int(
+                os.environ.get("FLEURS_MAX_GROUP_BYTES", "2000000000")
+            ),
+        )
     return Catalog(directory)
 
 
 def configured_catalog():
+    corpus = os.environ.get("FLEURS_CORPUS_MANIFEST")
+    if corpus:
+        return get_catalog(corpus)
     directory = os.environ.get("ASR_SNAPSHOT")
     if not directory:
-        raise RuntimeError("Set ASR_SNAPSHOT to a prepared snapshot directory")
+        raise RuntimeError(
+            "Set FLEURS_CORPUS_MANIFEST to an indexed corpus or ASR_SNAPSHOT to a "
+            "prepared snapshot directory"
+        )
     return get_catalog(os.path.realpath(directory))
 
 
@@ -61,9 +87,12 @@ class AsrEnvironment(Environment):
                 raise ValueError(f"Snapshot has no {split} tasks")
             index = random.Random(seed).randrange(count) if index is None else index
             task = self.catalog.at(split, index)
-        self._task = task
+        # The indexed corpus leaves audio in the bucket until a task is actually
+        # served, so materializing here is what gives the observation an asset to fetch.
+        # On a prepared snapshot this is identity.
+        self._task = self.catalog.materialize(task)
         self._state = State(episode_id=episode_id or str(uuid4()), step_count=0)
-        return self._observation(task)
+        return self._observation(self._task)
 
     def _observation(self, task, reward=None, metrics=None, done=False):
         public = self.catalog.public(task)

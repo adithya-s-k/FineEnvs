@@ -145,3 +145,7 @@ class Catalog:
 
     def materialize(self, task):
         return task
+
+    def audio_file(self, task):
+        """A local path for this task's audio; already on disk in a snapshot."""
+        return str(self.asset(task["asset_sha256"])[0])

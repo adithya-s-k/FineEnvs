@@ -78,12 +78,33 @@ def score_tokens(text, language):
 
 
 def language_code(language):
-    if not re.fullmatch(r"[a-z]{2,4}(_[A-Za-z]+)+", language):
+    if not re.fullmatch(r"[a-z]{2,4}(_[A-Za-z0-9]+)+", language):
         raise ValueError(f"Unrecognized FLEURS language code: {language!r}")
     return language
 
 
 def task_id(revision, language, split, sample_id, family):
-    return "fleurs-" + digest(
+    """A content-derived id that still says where to look it up.
+
+    The digest pins the schema, revision, utterance, and family, so an id means the same
+    task in any snapshot. The language and split are kept in plain text because a bare
+    hash would have to be searched for across all 102 language indexes to be resolved.
+    """
+    return f"fleurs-{language}.{split}." + digest(
         [SCHEMA_VERSION, revision, language, split, int(sample_id), family]
     )
+
+
+def parse_task_id(value):
+    """Return (language, split) for a task id, without needing an index."""
+    match = re.fullmatch(
+        # A region segment is not always alphabetic: es_419 is Latin American Spanish.
+        r"fleurs-([a-z]{2,4}(?:_[A-Za-z0-9]+)+)\.([a-z]+)\.[0-9a-f]{64}",
+        value or "",
+    )
+    if not match:
+        raise KeyError(f"Unrecognized task id: {value!r}")
+    language, split = match[1], match[2]
+    if split not in SPLITS:
+        raise KeyError(f"Unknown split in task id: {value!r}")
+    return language, split
