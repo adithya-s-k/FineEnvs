@@ -203,3 +203,29 @@ def test_the_frozen_set_records_the_revision_its_ids_were_derived_from():
     assert {e["task_id"] for e in other["tasks"]} != {
         e["task_id"] for e in body["tasks"]
     }
+
+
+def test_every_fleurs_language_code_round_trips_through_a_task_id():
+    """es_419 is a real FLEURS code; a region segment is not always alphabetic.
+
+    A stricter pattern rejected it, and the eval sets then looked as though 24 of their
+    tasks were missing from a corpus that held every one of them.
+    """
+    import json
+    import pathlib
+
+    from multilingual_asr.data.schema import (
+        DEFAULT_REVISION,
+        language_code,
+        parse_task_id,
+        task_id,
+    )
+
+    manifest = pathlib.Path(__file__).resolve().parents[3] / "data/corpus-manifest.json"
+    languages = json.loads(manifest.read_text())["config"]["languages"]
+    assert len(languages) == 102 and "es_419" in languages
+    for language in languages:
+        assert language_code(language) == language
+        for split in ("train", "validation", "test"):
+            identifier = task_id(DEFAULT_REVISION, language, split, 7, "transcription")
+            assert parse_task_id(identifier) == (language, split)

@@ -43,14 +43,14 @@ class Playground:
                 index = random.randrange(count)
         index = max(0, min(int(index), count - 1))
         task = self.catalog.group_at(split, language, family, index)
-        path, _ = self.catalog.asset(task["asset_sha256"])
+        path = self.catalog.audio_file(task)
         unit = "character error rate" if character_scored(language) else "word error rate"
         details = (
             f"**{task['language_name']}** · {task['duration_seconds']}s · "
             f"utterance `{task['sample_id']}` · scored by **{unit}**"
         )
         return (
-            str(path),
+            path,
             task["task_id"],
             task["prompt"],
             details,

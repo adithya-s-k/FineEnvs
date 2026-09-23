@@ -43,6 +43,7 @@ train = [
 [project.scripts]
 asr-prepare = "multilingual_asr.data.prepare:main"
 asr-evalset = "multilingual_asr.data.evalset:main"
+asr-index = "multilingual_asr.data.index:main"
 asr-server = "multilingual_asr.server.app:main"
 asr-smoke = "multilingual_asr.smoke:main"
 
