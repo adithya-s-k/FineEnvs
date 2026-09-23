@@ -24,14 +24,17 @@ from .schema import (
     REPO_ID,
     canonical_json,
     digest,
+    recording_id,
     task_id,
 )
 from .tasks import MAX_SECONDS, MIN_SECONDS, SAMPLING_RATE
 
 EVALSET_VERSION = 1
 DEFAULT_SPLIT = "test"
+# `path` identifies the recording; `id` is only the sentence it reads.
 METADATA_COLUMNS = [
     "id",
+    "path",
     "num_samples",
     "transcription",
     "raw_transcription",
@@ -123,8 +126,8 @@ def allocate(languages, families, size):
     return counts
 
 
-def _order(seed, language, sample_id):
-    return digest(["fleurs-evalset-v1", seed, language, int(sample_id)])
+def _order(seed, language, recording):
+    return digest(["fleurs-evalset-v1", seed, language, str(recording)])
 
 
 def eligible_rows(rows, language):
@@ -135,6 +138,10 @@ def eligible_rows(rows, language):
         if not MIN_SECONDS <= duration <= MAX_SECONDS:
             continue
         if row.get("id") is None:
+            continue
+        try:
+            row = {**row, "recording": recording_id(row.get("path"))}
+        except ValueError:
             continue
         keep.append(row)
     return keep
@@ -176,7 +183,7 @@ def select(metadata, languages, families, size, seed=42, revision=DEFAULT_REVISI
     for language in languages:
         rows = sorted(
             eligible_rows(metadata[language], language),
-            key=lambda row: _order(seed, language, row["id"]),
+            key=lambda row: _order(seed, language, row["recording"]),
         )
         if not rows:
             raise ValueError(f"{language}: no eligible utterances")
@@ -214,13 +221,14 @@ def select(metadata, languages, families, size, seed=42, revision=DEFAULT_REVISI
                 selection.append(
                     {
                         "task_id": task_id(
-                            revision, language, row["split"], row["id"], family
+                            revision, language, row["split"], row["recording"], family
                         ),
                         "language": language,
                         "language_name": row.get("language") or language,
                         "family": family,
                         "split": row["split"],
                         "sample_id": int(row["id"]),
+                        "recording": row["recording"],
                         "num_samples": int(row["num_samples"]),
                         "duration_seconds": round(
                             row["num_samples"] / SAMPLING_RATE, 3
@@ -230,7 +238,7 @@ def select(metadata, languages, families, size, seed=42, revision=DEFAULT_REVISI
                         ).hexdigest(),
                     }
                 )
-    selection.sort(key=lambda e: (e["language"], e["family"], e["sample_id"]))
+    selection.sort(key=lambda e: (e["language"], e["family"], e["recording"]))
     return selection
 
 
@@ -339,7 +347,7 @@ def verify_audio(languages, selection, split, source_root=None, workers=VERIFY_W
 
     wanted = {}
     for entry in selection:
-        wanted.setdefault(entry["language"], set()).add(entry["sample_id"])
+        wanted.setdefault(entry["language"], set()).add(entry["recording"])
     failures = []
 
     def check(language):
@@ -357,35 +365,41 @@ def verify_audio(languages, selection, split, source_root=None, workers=VERIFY_W
                         yield pq.ParquetFile(handle).read(columns=["id", "audio"])
 
             tables = tables_from_bucket()
+        from .schema import recording_id as _recording_id
+
         for table in tables:
             for row in table.to_pylist():
-                if row["id"] in wanted[language]:
-                    found[row["id"]] = (row.get("audio") or {}).get("bytes")
+                try:
+                    key = _recording_id(row.get("path"))
+                except ValueError:
+                    continue
+                if key in wanted[language]:
+                    found[key] = (row.get("audio") or {}).get("bytes")
         results = []
-        for sample_id in sorted(wanted[language]):
-            raw = found.get(sample_id)
+        for recording in sorted(wanted[language]):
+            raw = found.get(recording)
             try:
                 if not isinstance(raw, bytes):
                     raise ValueError("missing audio bytes")
                 decode_audio(raw)
-                results.append((sample_id, hashlib.sha256(raw).hexdigest(), None))
+                results.append((recording, hashlib.sha256(raw).hexdigest(), None))
             except Exception as error:
-                results.append((sample_id, None, f"{type(error).__name__}: {error}"))
+                results.append((recording, None, f"{type(error).__name__}: {error}"))
         return language, results
 
     hashes = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
         for language, results in pool.map(check, sorted(wanted)):
-            for sample_id, sha, error in results:
+            for recording, sha, error in results:
                 if error:
                     failures.append(
-                        {"language": language, "sample_id": sample_id, "error": error}
+                        {"language": language, "recording": recording, "error": error}
                     )
                 else:
-                    hashes[language, sample_id] = sha
+                    hashes[language, recording] = sha
             print(f"  verified {language}: {len(results)} utterances", flush=True)
     for entry in selection:
-        sha = hashes.get((entry["language"], entry["sample_id"]))
+        sha = hashes.get((entry["language"], entry["recording"]))
         if sha:
             entry["audio_sha256"] = sha
     return failures
@@ -481,7 +495,7 @@ def main():
         union, seen = [], set()
         for _, _, selection in sets.values():
             for entry in selection:
-                key = (entry["language"], entry["sample_id"])
+                key = (entry["language"], entry["recording"])
                 if key not in seen:
                     seen.add(key)
                     union.append(entry)
@@ -494,21 +508,21 @@ def main():
             languages, union, args.split, args.source_root, args.verify_workers
         )
         verified = {
-            (e["language"], e["sample_id"]): e["audio_sha256"]
+            (e["language"], e["recording"]): e["audio_sha256"]
             for e in union
             if e.get("audio_sha256")
         }
         for _, _, selection in sets.values():
             for entry in selection:
-                sha = verified.get((entry["language"], entry["sample_id"]))
+                sha = verified.get((entry["language"], entry["recording"]))
                 if sha:
                     entry["audio_sha256"] = sha
 
     outputs = {}
     for name, (langs, size, selection) in sets.items():
-        chosen = {(e["language"], e["sample_id"]) for e in selection}
+        chosen = {(e["language"], e["recording"]) for e in selection}
         failures = [
-            f for f in shared_failures if (f["language"], f["sample_id"]) in chosen
+            f for f in shared_failures if (f["language"], f["recording"]) in chosen
         ]
         body = record(
             selection,
@@ -521,7 +535,9 @@ def main():
             validated=bool(args.verify) and not failures,
             failures=failures,
         )
-        path = save(body, args.output_dir / f"eval-{name}.json")
+        # The split is part of the filename: a validation set and a test set are
+        # different sets, and writing both to one name silently loses the first.
+        path = save(body, args.output_dir / f"eval-{name}-{args.split}.json")
         outputs[name] = summarize(body)
         print(f"wrote {path}", flush=True)
     print(json.dumps(outputs, indent=2))

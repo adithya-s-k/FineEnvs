@@ -99,10 +99,18 @@ uv run --frozen --project envs/multilingual_asr asr-smoke --snapshot data/snapsh
 
 ## Evaluation sets
 
-Two frozen sets are committed and nest: `data/eval-fleurs-all.json` (102 languages, 510
-tasks, 5 each) and `data/eval-fleurs-ocr-overlap.json` (21 languages shared with the OCR
-corpus, 504 tasks, 24 each). The overlap is 21 rather than 22 because FLEURS has no
-Sanskrit. Selection reads metadata columns only — 0.3 MB against 309.6 MB per shard — so
+Four frozen sets are committed, a **test** and a **validation** variant of each, so model
+selection during training never touches the set a final number is reported on. The two
+splits share no task.
+
+| Set | Languages | Tasks |
+|---|---|---|
+| `eval-fleurs-all-{test,validation}.json` | 102 | 510 each |
+| `eval-fleurs-ocr-overlap-{test,validation}.json` | 21 | 504 each |
+
+Within a split the two sets nest: the overlap set's tasks are those of the
+all-language set for its 21 languages. The overlap is 21 rather than 22 because FLEURS has
+no Sanskrit. Selection reads metadata columns only — 0.3 MB against 309.6 MB per shard — so
 both sets build in about 70 seconds; decoding every selected utterance is available through
 `--verify`. See [REPRODUCE.md](REPRODUCE.md#5b-frozen-evaluation-sets).
 

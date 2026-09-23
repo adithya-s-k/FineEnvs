@@ -2,7 +2,7 @@
   "status": "ready",
   "storage": "bucket-parquet",
   "index_version": 1,
-  "snapshot_id": "67e595aacd4b50324665ecf4b6c62f7b1a9f61a7043d303d41293dc6aac33cf0",
+  "snapshot_id": "6c5e1f3ffdaf2ead41bac4804223786e4edb92f3f70bb2481df133bb817a0278",
   "inventory_id": "85355ac3725f7b9c4b2df3a7234fb5b67d22d19b5d4e48459903eddd3122aa26",
   "source_license": "cc-by-4.0",
   "config": {
@@ -5712,513 +5712,513 @@
   "indexes": {
     "af_za": {
       "path": "af_za.sqlite",
-      "size": 1523712,
-      "sha256": "253bea7a7cfd0cd867e99ff4920647cb73dced64698aaa17fb5b4c5e3f8677ff"
+      "size": 1900544,
+      "sha256": "d5f96ba1982a7077e760733e29083890110dc42e193ea2b820cd975bf4ae4aef"
     },
     "am_et": {
       "path": "am_et.sqlite",
-      "size": 2686976,
-      "sha256": "3344f643de1c95a847f28a99dc124472f4ae8b1bd94018ee6cc96ac4fbcc591e"
+      "size": 5566464,
+      "sha256": "576c084d77b540048e74d003c138a1634831725a8a59bd152b7ad2e04b8692ca"
     },
     "ar_eg": {
       "path": "ar_eg.sqlite",
-      "size": 2314240,
-      "sha256": "ac123f340b74b111cf1f69fde397c31a10668745251395979831c0c6c4af7b1c"
+      "size": 3928064,
+      "sha256": "c8fb8f4469c89e49f4863d70ac7c8d77b5b78343f16168490a0ec3f11c99b543"
     },
     "as_in": {
       "path": "as_in.sqlite",
-      "size": 3264512,
-      "sha256": "fba3b9a43d0da4194fe2de77e8ad4ce8a3aea6d7da06bb21157c1c577a957de4"
+      "size": 7139328,
+      "sha256": "e76ab2140e74ba0f6f46a3f9dd8d8fce6a73467f52587895135dba96ccebfdd0"
     },
     "ast_es": {
       "path": "ast_es.sqlite",
-      "size": 2314240,
-      "sha256": "27140d2d5fadc9262ceccdf4318840421b469e38c62ad1b0a7b0643dc5eaa3ef"
+      "size": 4825088,
+      "sha256": "734b1f0640f3036dc44050e3c3219b0e53f4767471ed6e70babf80e7f128aeab"
     },
     "az_az": {
       "path": "az_az.sqlite",
-      "size": 2453504,
-      "sha256": "d058f2d6f6c0ab21eb986cd14fe9ee3f12d5e843c2b5f4875d97f29bc65df7db"
+      "size": 5230592,
+      "sha256": "2b5cfa610246dc9a43bdc5d095680db1dba54cf5eef9a5bdecb34206a93ec5ca"
     },
     "be_by": {
       "path": "be_by.sqlite",
-      "size": 2834432,
-      "sha256": "ce985c2a4d99de1b01ccef7bef07d734137eb2e1934085157ed8d15587a34124"
+      "size": 5877760,
+      "sha256": "5ad645814f8aa426da955b0a7365d3cf0fec35b6fde79deb8f048598c7382767"
     },
     "bg_bg": {
       "path": "bg_bg.sqlite",
-      "size": 2891776,
-      "sha256": "4a6f804393c2f398f90269d0b96726cdfc52ac42a9632e13874358a9a89f4df3"
+      "size": 6021120,
+      "sha256": "60acaaff755046c301e4f2fa0ad900ac7d6b9da69f60bd3ba07dc2b530726e20"
     },
     "bn_in": {
       "path": "bn_in.sqlite",
-      "size": 3321856,
-      "sha256": "28f2aeadd1d00e7fbf429ab3d44e48911f60fefeac8dddf2fbccbd3a501e80c8"
+      "size": 7393280,
+      "sha256": "436d962b3ac6eca70fdf034e3d2d74be842602917bc7ce272b050a1bcfebff45"
     },
     "bs_ba": {
       "path": "bs_ba.sqlite",
-      "size": 2387968,
-      "sha256": "fef9ed6ed137f7b1a10e9e992b52b93ff7b89f37777d6c3f1c98f6a0cc609139"
+      "size": 5472256,
+      "sha256": "62a5c512195fe52d951bcc737cc3814b97270f0f4b1000b431d6983d4cb1bbe4"
     },
     "ca_es": {
       "path": "ca_es.sqlite",
-      "size": 2269184,
-      "sha256": "9718529988b531a8b4bbb70ec6e5d8fbbeb3d2e878679dae5ae32d0464f22117"
+      "size": 4603904,
+      "sha256": "6847307c5dfecba7326af925fe016d593126a1b4ecb71d2101dbfca9e38cd69e"
     },
     "ceb_ph": {
       "path": "ceb_ph.sqlite",
-      "size": 2428928,
-      "sha256": "1173784ffc6d17ab9cf5b0426fe66006dc7283d333a737709fcb06349a27c962"
+      "size": 5177344,
+      "sha256": "0b7b9a8b4f23b3982d02d71a0a41365e81ee9d77bcd0a36cf387aba64fe64ce4"
     },
     "ckb_iq": {
       "path": "ckb_iq.sqlite",
-      "size": 2846720,
-      "sha256": "ad706ce82616b78fab4de26db1664bcca481b7ad5c35a4de91d802a29be9adf3"
+      "size": 6377472,
+      "sha256": "2f4f80b057d0f2bf4c2f348fef5dc1e9685f60ac79e7b744a9ae0856be4f5b67"
     },
     "cmn_hans_cn": {
       "path": "cmn_hans_cn.sqlite",
-      "size": 2510848,
-      "sha256": "5813eb2ac5e26b484c1b1bb2e4569da232350b84d83cf039dff650777d4b257e"
+      "size": 5914624,
+      "sha256": "86528b218c228ef96367a2f6a00022c75c0be2fdc50cd91207b38adf665effee"
     },
     "cs_cz": {
       "path": "cs_cz.sqlite",
-      "size": 2363392,
-      "sha256": "d179167dd352d2404e169b5cae66a782934509ca292ba5a67979969fe51614b9"
+      "size": 4788224,
+      "sha256": "9d67a6c93ee82f859e1e3684f70fdcca53f97ae680c9b336aed682f1fedbbb71"
     },
     "cy_gb": {
       "path": "cy_gb.sqlite",
-      "size": 2437120,
-      "sha256": "e4a5f19b9e98ade49f5537c6b9557a2793e24ed21d68bbbd21fba33875e67bbb"
+      "size": 6111232,
+      "sha256": "f08e78593bd37682e1ec30a39aba6f54d074fddb20532a413f0804741f974fe8"
     },
     "da_dk": {
       "path": "da_dk.sqlite",
-      "size": 2269184,
-      "sha256": "b815fb95aa5bbae01da4c131d65372b3e412f9415b421378a3717f984f429650"
+      "size": 4698112,
+      "sha256": "303cf87e33710957a2cbdd6e1536a3994037eb4b14b665925c7a2b159fc9cd24"
     },
     "de_de": {
       "path": "de_de.sqlite",
-      "size": 2445312,
-      "sha256": "c9aa5315b99282feeb5e8a88ee96c94f9d2734886504c84b23d546282b8b4a62"
+      "size": 5369856,
+      "sha256": "655477f4be4d400b089312cc7b00ab5562b21cc5dd568b29b4856a665e131b7f"
     },
     "el_gr": {
       "path": "el_gr.sqlite",
-      "size": 3031040,
-      "sha256": "4618ff22311574b8903d3c817247d6a7538ffd53e35a19617e9e9ef122823f73"
+      "size": 6451200,
+      "sha256": "94f94ed7a4123e2410a8857c5f6b97f08f755e7a0fa9670fda3e79c06be561d0"
     },
     "en_us": {
       "path": "en_us.sqlite",
-      "size": 2367488,
-      "sha256": "91706d17924e62745836c90589d8a82f749be40be485777d5ae00ade1997442c"
+      "size": 4505600,
+      "sha256": "c6541c28ce2423bece99f2192a8e1c87fd86a94c3ab61691a8a217e7fdbf2e36"
     },
     "es_419": {
       "path": "es_419.sqlite",
-      "size": 2461696,
-      "sha256": "edbda114070ca7f817bb6529c5cdc32dcd98d3e7f7eb9fa25baf9ae5b2d86dcb"
+      "size": 5316608,
+      "sha256": "9aaa7c0e3f198512d8d296e5dbb714697646cb73c904abed1e1f980bb39c2233"
     },
     "et_ee": {
       "path": "et_ee.sqlite",
-      "size": 2289664,
-      "sha256": "1369c356238c579443606a1d6b3dabdcea71a5b82bed7fb66a9dfc3d314e0507"
+      "size": 4657152,
+      "sha256": "4f3bfd881ce3fb4a5c218d1199755134b66ea8153af04f616f1cb22cc60871b6"
     },
     "fa_ir": {
       "path": "fa_ir.sqlite",
-      "size": 2588672,
-      "sha256": "f7db52f336428d0101dfba0b94812437404d78694ac7af1a850dc430536949c3"
+      "size": 6197248,
+      "sha256": "3ce458fb167823e3a39d1b87698708bf9ccad94aa3c8d03de3622a763627e925"
     },
     "ff_sn": {
       "path": "ff_sn.sqlite",
-      "size": 2334720,
-      "sha256": "49f3e3421e9de1ce14b32b409c76ae7b9faad675187ecff680c32dd821fa4245"
+      "size": 5070848,
+      "sha256": "9a07d369a7553816c490b5e000ca786cd7dc33db3bb06f54353d88f0561dd76d"
     },
     "fi_fi": {
       "path": "fi_fi.sqlite",
-      "size": 2408448,
-      "sha256": "0483c84c43f7e429575f3d94620bac1c6659d17d418b3a11d67bb227257021b8"
+      "size": 5091328,
+      "sha256": "1e71332eff68f4b22cb7d574d221e1e54f880d4c6af8e0b15e430cd3a6e89b6a"
     },
     "fil_ph": {
       "path": "fil_ph.sqlite",
-      "size": 2203648,
-      "sha256": "2d9b9ed713599cf70a22b399ebaf5b806851ad7ac3e9236b2bb5455d1bd65f74"
+      "size": 4284416,
+      "sha256": "8fb7e0cb39f9d6b57ddd73e3df3a0050833a6a183c03f0f848289c78ead4d134"
     },
     "fr_fr": {
       "path": "fr_fr.sqlite",
-      "size": 2490368,
-      "sha256": "8edfb450eb631639dde2432f3d43d48f35eee13e9e05692f682cdb7a36725ed8"
+      "size": 5361664,
+      "sha256": "7d90873cf12a40140863f5c566f8c1a54aecf5dea2f24ffe5d572d1c6fc5d419"
     },
     "ga_ie": {
       "path": "ga_ie.sqlite",
-      "size": 2453504,
-      "sha256": "3df27de13ed0cf85311f698855df3b7be8c994b74f867db4e3872f3cc4a76428"
+      "size": 5230592,
+      "sha256": "4b45710ae4ab9ea3ceb9afd88e06c89c2d22452f6d10e38d6e40f957a184997a"
     },
     "gl_es": {
       "path": "gl_es.sqlite",
-      "size": 2248704,
-      "sha256": "36f393edd76d7766c824ae23b9c46865f92184ed6198ce83714247efaf3193d2"
+      "size": 4456448,
+      "sha256": "ae88b0f1cef1611ff3d8625269377ab3b50bb42d57e0a7467ab7fb3e8882e286"
     },
     "gu_in": {
       "path": "gu_in.sqlite",
-      "size": 3289088,
-      "sha256": "5d2fe888d62ef840e7e6b6c8eed5ca5e09616c19f74f948f03bda3c4a0a89290"
+      "size": 7663616,
+      "sha256": "26067662bbfea8b21b1b48bd44d2854622de3d55ad4c20be925a0366fea57eac"
     },
     "ha_ng": {
       "path": "ha_ng.sqlite",
-      "size": 2400256,
-      "sha256": "c38d463c0a91c65d1ce76ff1375531e2b328a461889904750b1b96187f0fcf13"
+      "size": 5201920,
+      "sha256": "7c1ecc646a97583ad95ff12225b9182ddb6744404bc51665d67d0b0886961f8b"
     },
     "he_il": {
       "path": "he_il.sqlite",
-      "size": 2609152,
-      "sha256": "34c89138822b7d179b42cdb2862f3cb260385d2f77379a33937d098284bea5f4"
+      "size": 5828608,
+      "sha256": "400d702089fc1e94e5d78b56c93164df772cc07506c2f9bee6e2d33ebef40c4b"
     },
     "hi_in": {
       "path": "hi_in.sqlite",
-      "size": 2801664,
-      "sha256": "b8b0ea016929ddce8d09d81fbecdaf99af202fcaf858a778fd56c9f7cdcc644e"
+      "size": 4644864,
+      "sha256": "e19fa4f7be23d2ead843d9346c0feb9f2963f24f859599b377ba207825adafaa"
     },
     "hr_hr": {
       "path": "hr_hr.sqlite",
-      "size": 2408448,
-      "sha256": "9a630e25e95023fb8070483e1d8cc1e2b20cc2318005b689269bcceb129ec2e1"
+      "size": 5865472,
+      "sha256": "4215cb1f8dedac6193d515894d42362ad5548581da3cd0e2fa5e23aa7360c21e"
     },
     "hu_hu": {
       "path": "hu_hu.sqlite",
-      "size": 2478080,
-      "sha256": "647b730c9a5944e0a3f4db0e768cca5617395f5799a03ac194ff5098221a88d7"
+      "size": 5607424,
+      "sha256": "88c107673b7aa1b1e7c1ead464b4ed11b1086150f2c2da028723494653d40ed2"
     },
     "hy_am": {
       "path": "hy_am.sqlite",
-      "size": 2977792,
-      "sha256": "30106e5b73e83e44debe0f419202f5139ec827e42ab133478c7a86aa34d92c9c"
+      "size": 6705152,
+      "sha256": "1a52d1fcb5b6b15f85919735d15484d0fe65412781975580be67de0e5d6e7005"
     },
     "id_id": {
       "path": "id_id.sqlite",
-      "size": 2363392,
-      "sha256": "eed575105dc31403490934814a0e4ed0e7d74511965f163c42ce836f9720da14"
+      "size": 4554752,
+      "sha256": "8d7d4b30da14d698eb71b275bd2b65d0614f9a508c7d5d438af1bb1f48a7db8d"
     },
     "ig_ng": {
       "path": "ig_ng.sqlite",
-      "size": 2465792,
-      "sha256": "8ceb90a0a6f2f6dca79d120fb7095bf1f6a22988cd0414fe8f6312e0c79b7c3c"
+      "size": 5419008,
+      "sha256": "0515542db4bd7cf5d88141a98c9c46fbc17a77e1be49d2f7d77fac77c9844065"
     },
     "is_is": {
       "path": "is_is.sqlite",
-      "size": 1069056,
-      "sha256": "8bf695bcbfdad1905e7295c7026f0c707649d9a6b78cb54ed07fab6b421579ed"
+      "size": 1314816,
+      "sha256": "ddc805b37b45c3d71349bb88710b6aad68078534893774b102e881229b3c4366"
     },
     "it_it": {
       "path": "it_it.sqlite",
-      "size": 2469888,
-      "sha256": "4ec84e387bab65ea44eb7f3f88582a6208a06eaf93c5869f71e87e79d37f9556"
+      "size": 5464064,
+      "sha256": "24b6bb8999a763121f77dc5d72cf4c89d2f701e5c4e74cb2c4784fd0a8eb712a"
     },
     "ja_jp": {
       "path": "ja_jp.sqlite",
-      "size": 2265088,
-      "sha256": "48c581d1f5be6cd3d7886b7bbd979819cc6e0842802c3f3aadd9176482769871"
+      "size": 4128768,
+      "sha256": "8328ecd542d3a9d1cdd7e74d4f67a0825751591e985b297e987da1bf812022ee"
     },
     "jv_id": {
       "path": "jv_id.sqlite",
-      "size": 2379776,
-      "sha256": "924be3b188403bbe214b5f3547a6d78dafda6358748afa063b09f9811ae5ec96"
+      "size": 5054464,
+      "sha256": "2fa8eaa85ada19163cdfee686f601d83a069dc05fc34ffb3d155bfffdc3cc2c6"
     },
     "ka_ge": {
       "path": "ka_ge.sqlite",
-      "size": 2805760,
-      "sha256": "ed930923c4ee57ebc6d3cdfcf7ef39354d692e28728ae99e1cc8422decce9fb0"
+      "size": 5197824,
+      "sha256": "3687d363f8cc97d8f07eaa5dd497eac8cb9235cc73c2e5dd0604e4f1a9210621"
     },
     "kam_ke": {
       "path": "kam_ke.sqlite",
-      "size": 2408448,
-      "sha256": "90f8dc164fcddef212e5112753c3fcdce421929b99428922703bb5ae8c166b34"
+      "size": 5574656,
+      "sha256": "bd61e27181f55e4ee91cb49111903ebb6e1d693f85bd12449d06dcb053a8c9da"
     },
     "kea_cv": {
       "path": "kea_cv.sqlite",
-      "size": 2342912,
-      "sha256": "e50a129eb0db66f7828f10fd1917138627df8ff76979d1ebb5fbb95c2a7aff89"
+      "size": 4898816,
+      "sha256": "11c4cbc4c075144eff23061ac42c33e8adb952bd72ff44bbbfdd5f6f726c86e5"
     },
     "kk_kz": {
       "path": "kk_kz.sqlite",
-      "size": 2887680,
-      "sha256": "802251d1774ab84e50b8e051848f61d9dabcd42a9cb52edfb90e8d2e82ce5c34"
+      "size": 6578176,
+      "sha256": "ba789c8f14f9a177c17fed949244efd90ccea3da7ba88e61afb44470340dce94"
     },
     "km_kh": {
       "path": "km_kh.sqlite",
-      "size": 3067904,
-      "sha256": "0fc8c30239c9eaf56390347411bdbadc8c2e66069eae25f78fc5bff57f5e5ce6"
+      "size": 5259264,
+      "sha256": "e0f3a6840dfd22eaa24487236a414afe5a3e08d8a100300cbe449c3db08b8345"
     },
     "kn_in": {
       "path": "kn_in.sqlite",
-      "size": 3186688,
-      "sha256": "358e06e12efd7dd580c276220a3f1af17a8920500a1fb2fe0c1bee55a09638f5"
+      "size": 6291456,
+      "sha256": "6ffbaf123d51692bc449bf759e565c908ce02e83aa252c6e7535f868d051fdf7"
     },
     "ko_kr": {
       "path": "ko_kr.sqlite",
-      "size": 2183168,
-      "sha256": "18064f14a3064d94c953da796ac1c275d0f2bcd17473dfbdd9c71861f6b6ec39"
+      "size": 3731456,
+      "sha256": "2ac7fcf6d2b7d9f015c2a4b92daf58456b30f0b6ed30fae72169288bdd32f384"
     },
     "ky_kg": {
       "path": "ky_kg.sqlite",
-      "size": 2842624,
-      "sha256": "29343aacd35214b499639797d1f8cdb5120ebc354bed0879114472fb27ecb6f5"
+      "size": 6258688,
+      "sha256": "8054fc4a7c389d272f2a62a165eba9d2a317b9975eeeccbdaca09b95d5df6ff7"
     },
     "lb_lu": {
       "path": "lb_lu.sqlite",
-      "size": 2355200,
-      "sha256": "f4919a831122c1a298863d13d5986b032c10a63f3e6dc15c62707e7b783b1b7d"
+      "size": 4907008,
+      "sha256": "05dc2cf822f6fba44b896cec0ba4abfa7ba0830e50998ce3ca5af28199c4c302"
     },
     "lg_ug": {
       "path": "lg_ug.sqlite",
-      "size": 2256896,
-      "sha256": "d6222a0cd75aee0275627fbf8166aa33e76530740de43d99a8238d40373f51b6"
+      "size": 4341760,
+      "sha256": "dcfeab837962d4b39e4cf0905296defbbac3544f6af13d6ae685a61e79581ad1"
     },
     "ln_cd": {
       "path": "ln_cd.sqlite",
-      "size": 2334720,
-      "sha256": "78930abba887b8551a59b5a3d0f52bf56100c33620e886cd559a00e95af70ffa"
+      "size": 5021696,
+      "sha256": "c1aee071c9866be714d1e1e68e802c9beec777871857fdf930eb180f3106a128"
     },
     "lo_la": {
       "path": "lo_la.sqlite",
-      "size": 2646016,
-      "sha256": "744e74293ff37585d3368f80bb2fa0b42ba966fb7992c1a2cfbf154febfc8b81"
+      "size": 4100096,
+      "sha256": "4fb13f066a6f2977b8bb735c2f4ea066aa9a3bdd6b9c4d2f355255cf7c21b965"
     },
     "lt_lt": {
       "path": "lt_lt.sqlite",
-      "size": 2396160,
-      "sha256": "8658d3ae803bf89d0476fe498eeeadc70e7855f3f2c757de001398759ac0544c"
+      "size": 5419008,
+      "sha256": "3b2dc9743fbdc1a4269163b35449a131e28d380af417d8b4887b948c07e02356"
     },
     "luo_ke": {
       "path": "luo_ke.sqlite",
-      "size": 2015232,
-      "sha256": "4707ed046662d2863ebfb21bf9b107783d9f23f6829aff7e5544e24f0b17bb49"
+      "size": 3416064,
+      "sha256": "d0ca2689d8a342c37bc8f69de0373f4865c446d3405fefa328932cfaa6ace2b1"
     },
     "lv_lv": {
       "path": "lv_lv.sqlite",
-      "size": 2154496,
-      "sha256": "eba22bb6bf36ffbb193eaf064fc1dbb9ba6187507f750251cf459078089a8130"
+      "size": 4165632,
+      "sha256": "3f46950281fa027fead277447c1a9cc78980d37525fe5c275fcdfd0736e17b8e"
     },
     "mi_nz": {
       "path": "mi_nz.sqlite",
-      "size": 2473984,
-      "sha256": "377e5e2e54519a01c9872b9a38257bc437dbe0606988bfa8d0f2a313574c2d79"
+      "size": 5951488,
+      "sha256": "5505c646af78f47271430fbfc22e2a06aa46a46d190094e35c7a318a4a95811d"
     },
     "mk_mk": {
       "path": "mk_mk.sqlite",
-      "size": 2695168,
-      "sha256": "238431a17f857b0247bec473eba01c7be09f61236ac889fc59abe81d2e6c0993"
+      "size": 5533696,
+      "sha256": "4005bedea013a6e6a2783de5e6d81ea26f24fa863153d11e8d803864cf864b78"
     },
     "ml_in": {
       "path": "ml_in.sqlite",
-      "size": 3592192,
-      "sha256": "7c5a3f33834aa5b7095ee9b206440dc298c936f74adca7557c7eebf50c928d16"
+      "size": 8241152,
+      "sha256": "101c033223e9de101e6f805d6fd9a2bfbe0e21e0c03b78bd3e0e82e23745d59f"
     },
     "mn_mn": {
       "path": "mn_mn.sqlite",
-      "size": 2916352,
-      "sha256": "02867f950ff0a1cc3cc4557010994feee97e2b6e850fc64c1c411a0dce45e5d9"
+      "size": 6627328,
+      "sha256": "8383e622b9f331ca41fa09d337daa5eb0ffa1706498962b6767ecb290682362c"
     },
     "mr_in": {
       "path": "mr_in.sqlite",
-      "size": 3379200,
-      "sha256": "0d3a79f54977f4278df045bb215deb04371d46e24429f7ce6a75bf013689788c"
+      "size": 8175616,
+      "sha256": "014dab82fb5ad8538ca942c0854019a9f7739d17b10c0d0a2a59dbc0a5ad190b"
     },
     "ms_my": {
       "path": "ms_my.sqlite",
-      "size": 2338816,
-      "sha256": "601d3fda5fda51bbe2872c6f106811590e1194279e68a29d988da3474d6b3f88"
+      "size": 4689920,
+      "sha256": "60b7cd7de1ff08a525cb1162c0bc8fbcaadcdacb9990422c828df1fb2e5f5e99"
     },
     "mt_mt": {
       "path": "mt_mt.sqlite",
-      "size": 2433024,
-      "sha256": "e8310d31fcad4cba4bdad2f892cd0abb768dfc25afccd668053a7be2009cbced"
+      "size": 5373952,
+      "sha256": "a56662de6dd84b160f0481a4be94e5bb9eab6cf17c80249dedce4f5ebc6cc33e"
     },
     "my_mm": {
       "path": "my_mm.sqlite",
-      "size": 3899392,
-      "sha256": "048cedc193dfd0ce4b53158b7fb423e3aa7c54a6243f97f860640edf17365e09"
+      "size": 8605696,
+      "sha256": "faa8894cc7898786d2081d103532cadb154b15582ab2fd83f66de52482842b69"
     },
     "nb_no": {
       "path": "nb_no.sqlite",
-      "size": 2240512,
-      "sha256": "879d69f197d6fb72b0b73035805a85f44b2ef7f5d4543eaa23ac58a89d317ee1"
+      "size": 4562944,
+      "sha256": "99b24aed76784150b5d45fbfff437200ec9e8604c8cc69a2574d0be197c715c0"
     },
     "ne_np": {
       "path": "ne_np.sqlite",
-      "size": 3297280,
-      "sha256": "d5f69d5bec72f2080e05b29343fe4892320bd8e540f032228da2484417dae82d"
+      "size": 7335936,
+      "sha256": "b4f4b4c879d241961acc548a06e577ce6a29e71eabdfb7f6a951c10c1e1d3c7f"
     },
     "nl_nl": {
       "path": "nl_nl.sqlite",
-      "size": 2244608,
-      "sha256": "782e9d73b2fb1e6f1fbdc17e96e20153204010d43d37b58035254467ad14b752"
+      "size": 4325376,
+      "sha256": "f0a90d28ba2992d4a9cf85a6cefc4e3e9741018683393027c01e13865ffab51a"
     },
     "nso_za": {
       "path": "nso_za.sqlite",
-      "size": 2207744,
-      "sha256": "7f8b60b1dcee7004d643a44c0a8f019baadbfddb4c31e21518c8b1fcc7cb5dcc"
+      "size": 4059136,
+      "sha256": "11fc00f2e397280133b57a16a2147afdf273b5f6f138addec147f20b61cd3487"
     },
     "ny_mw": {
       "path": "ny_mw.sqlite",
-      "size": 2359296,
-      "sha256": "e8fa5ce3c52acd8b25c3a3aec355daccae3e415492fb17d43631829165153428"
+      "size": 4734976,
+      "sha256": "9fe1f5c275ddf388601589d3df7b6b1b4a053d1d226dc58aa6265385ffafb2e9"
     },
     "oc_fr": {
       "path": "oc_fr.sqlite",
-      "size": 2502656,
-      "sha256": "990829a744260178190b2b55ee9df9c7d269ef8fe6309b39ba1dad2d47f36739"
+      "size": 6156288,
+      "sha256": "0e51e34c30e1742f4131f04b08de8005ac5996e86536fff2c1b7c47a9777ede5"
     },
     "om_et": {
       "path": "om_et.sqlite",
-      "size": 1527808,
-      "sha256": "051515511ae37bdc6a9ac1b637d4679734f34f9618c363c24eea7882eef42384"
+      "size": 2252800,
+      "sha256": "719a0a95e337061f293fde3423f4abd955afb638b9652908bf50eb562b586e45"
     },
     "or_in": {
       "path": "or_in.sqlite",
-      "size": 2285568,
-      "sha256": "fda7280fc3d5ec69a4ba1fcb31f622f4ae9015fd0f16b6681b68dd3cb3a7e9d8"
+      "size": 4165632,
+      "sha256": "3ec499b0451da9ea1ae6ced7b1437460e3f1e532d81be615265eec8d2efff1dc"
     },
     "pa_in": {
       "path": "pa_in.sqlite",
-      "size": 2633728,
-      "sha256": "cd16ff6810a3870105d66c1cbc4e2e96e58e2e7c6111346a6edb30445379972b"
+      "size": 4595712,
+      "sha256": "055fd7227d698bbdb07d4b8bf9f6497e8e736dfdcce0e41e5627e6683436e029"
     },
     "pl_pl": {
       "path": "pl_pl.sqlite",
-      "size": 2355200,
-      "sha256": "9dadbc4d44ad9be240d0ee55f6a721f97a4d571eec8970d49c9326aec7bd42a9"
+      "size": 4952064,
+      "sha256": "7d9d7897162b173b97e94b731f323fd73862554771ea5a740b04ea401422ddd3"
     },
     "ps_af": {
       "path": "ps_af.sqlite",
-      "size": 2506752,
-      "sha256": "78baf2d52fe72a492222562cef8c9617db511102667a2b6fbf0bae6f803fd85d"
+      "size": 4595712,
+      "sha256": "8a9b84e1b711078de6c271f6e9cf6fa2f0af8b972eb1ee44f2778a0c472a50b1"
     },
     "pt_br": {
       "path": "pt_br.sqlite",
-      "size": 2387968,
-      "sha256": "7d64d45ecbedc57a382099178086361047462450f5a967022a1e5a02ab3b1d64"
+      "size": 5173248,
+      "sha256": "ac9ada0118b0527601783d0dd86c3ecc38fd52d35dfd0b9fd361b3e257f12a4f"
     },
     "ro_ro": {
       "path": "ro_ro.sqlite",
-      "size": 2449408,
-      "sha256": "a406ed2dca140f2bc85d6df13e9c1b6acc9d0c71e05418ab2918daea12df2433"
+      "size": 5324800,
+      "sha256": "ca4e316f3e9df39444a9e60ebc0deecf6c71b5529e1cb9c56b5fca5cdd3189a2"
     },
     "ru_ru": {
       "path": "ru_ru.sqlite",
-      "size": 2908160,
-      "sha256": "68a246f0ea7eb8b97ec65e8d5039a3bd15275ad6c97c7979e013ee151b99f53b"
+      "size": 5570560,
+      "sha256": "ff533b1c756dbc845b389ff0ef5dd32a62b5650e3d0332561259781c3cbfbb40"
     },
     "sd_in": {
       "path": "sd_in.sqlite",
-      "size": 2744320,
-      "sha256": "46f36ee3e64ac38906881f787317f4fae5635b10bb81a3265dade4349c93ecaf"
+      "size": 6791168,
+      "sha256": "1361632072b3f3c97009db0e9e2fd0bbba266c3976de6c82e7ae5fe1505199c8"
     },
     "sk_sk": {
       "path": "sk_sk.sqlite",
-      "size": 2097152,
-      "sha256": "cd9109b158910ecd2bcc1e7d877492a74ca184a2ef11d19723d7e9ea7662c898"
+      "size": 3870720,
+      "sha256": "976ba93722c9c9e0a11ce5a9b45eef6e5fdc2a21fe4f99a1bbffe79bbdbd0c64"
     },
     "sl_si": {
       "path": "sl_si.sqlite",
-      "size": 2285568,
-      "sha256": "8f262cf534333a59d0b90b3a73ab8cc5d06de560009b923631f791ba8aa8aa18"
+      "size": 4558848,
+      "sha256": "28b64f1fbf4affa2e0d8ceb84eae1d67921e20fcd625ae53032ff2df82b25d46"
     },
     "sn_zw": {
       "path": "sn_zw.sqlite",
-      "size": 2330624,
-      "sha256": "ee36379fb4a8b3e576911b22f7ac67c5b86946a3552281a697ce3c18e1d1126d"
+      "size": 4759552,
+      "sha256": "a32b12c901e30cb380ad1fb30d1103a6c9884d99b74fa5ed910d99b55127e05e"
     },
     "so_so": {
       "path": "so_so.sqlite",
-      "size": 2469888,
-      "sha256": "170b98a7afed48e350b8ecba0152683777de5f76bdf27fc1afb2e7ccc82f910b"
+      "size": 5849088,
+      "sha256": "1839b0d29da6fc696fb7b849070bb9a6f076cc5dd5891218c0831815ea8f4ee4"
     },
     "sr_rs": {
       "path": "sr_rs.sqlite",
-      "size": 2547712,
-      "sha256": "6d9388f983516a4e972b09bc94972ac80a173929a15b49e89ac9a558b3398b10"
+      "size": 5316608,
+      "sha256": "bd6126e9bb1fa756ed478e69e2da79f69ab3db4df5a44fcc191b91da6708366c"
     },
     "sv_se": {
       "path": "sv_se.sqlite",
-      "size": 2248704,
-      "sha256": "dc464cf4c7019d4823f5f7dd27a6d781630c2e25247c3d9a91760733cddb8c80"
+      "size": 4317184,
+      "sha256": "63416432637e5719bf91aba3e524ae51f2ae14be2dfec28406482a331dfc59b3"
     },
     "sw_ke": {
       "path": "sw_ke.sqlite",
-      "size": 2342912,
-      "sha256": "092ebb6ff5499d7da1c6f05b0c451e339e5438cb5929091b3643411167da59c4"
+      "size": 4665344,
+      "sha256": "a05105894a676f5f7df9d34d961cfc6367edc22e16a226eb53d0ee8451baa2fb"
     },
     "ta_in": {
       "path": "ta_in.sqlite",
-      "size": 3481600,
-      "sha256": "54f55684a1a2cd2382b6c69945b3396479086ed89c50d24886fd9f067325647a"
+      "size": 6270976,
+      "sha256": "26f0172365657b1f79f651ce7658fcf40b8c1389a90c6c1f6f9aa873cb29c66d"
     },
     "te_in": {
       "path": "te_in.sqlite",
-      "size": 2940928,
-      "sha256": "2c737ad62801e75b10bcb5933c6710796c7ca4a7e13ebc601290d7c39e23d520"
+      "size": 5251072,
+      "sha256": "a99d5591f0134f5aca9a5579e468dea9c7da62fb30f04fa039af69eb09a027e3"
     },
     "tg_tj": {
       "path": "tg_tj.sqlite",
-      "size": 2695168,
-      "sha256": "eeace2c9ba81f6ec128d1fa0405c40f0b1e192ad6ea1430f0707ecde2d4d3627"
+      "size": 4759552,
+      "sha256": "e85db63af5f39c9ce732f2f0d47e45f87cd265d92eedd60933e80b7358f79994"
     },
     "th_th": {
       "path": "th_th.sqlite",
-      "size": 3276800,
-      "sha256": "b92546bed7590a1309692b5eb4409a81e7538077756eafa31b15d4f424bc2856"
+      "size": 7106560,
+      "sha256": "ee251737ff7ba4ee74983d7c7d1f6d1737db618585e983ab5f07ac886001494e"
     },
     "tr_tr": {
       "path": "tr_tr.sqlite",
-      "size": 2310144,
-      "sha256": "6992fa531a2b7ea7f2cadfe980883aab9b2cc77331b1af7b7ddff02301bde97c"
+      "size": 4538368,
+      "sha256": "ab15da214f779d05fc849bdc2b9fe3ec6cf606984de7f475bc23901959159f56"
     },
     "uk_ua": {
       "path": "uk_ua.sqlite",
-      "size": 2781184,
-      "sha256": "b9d6e33403cea8563805e07b3605e4c9efb4227258d77abe83369b29df6de9dd"
+      "size": 5738496,
+      "sha256": "10933a1b37c470c4fba4880ba8448fe32d4901c3baeb4668995e47a43c4f52e2"
     },
     "umb_ao": {
       "path": "umb_ao.sqlite",
-      "size": 1798144,
-      "sha256": "1a6ed7286adf88786549403335587f47795b2a99cca3a36f3d1c80dd8c3f05e2"
+      "size": 2600960,
+      "sha256": "7126e8373c9369560561c9aef8c959495b7c36a22a1ba4d83e92852186e2a6d0"
     },
     "ur_pk": {
       "path": "ur_pk.sqlite",
-      "size": 2330624,
-      "sha256": "bccbfcf71651e422d9ef83fdf5d775e9cc9284de64f639aca2b37d1ceffa5792"
+      "size": 3866624,
+      "sha256": "aef4a779f186b44d88e310863a989a31bee64e400f8a3c8a29dcac53f405a8da"
     },
     "uz_uz": {
       "path": "uz_uz.sqlite",
-      "size": 2420736,
-      "sha256": "3a64d3f9fef04c11c6f830253fb3261ebf44535e48c1561d149e2e2ba62b0cb4"
+      "size": 5263360,
+      "sha256": "855e2deb068b5cab01329418b7ba17a3eacb7516ef35aab4f2a51c10f592a078"
     },
     "vi_vn": {
       "path": "vi_vn.sqlite",
-      "size": 2592768,
-      "sha256": "9e0c8d4e9556d9918250d4a96f6b9212974ceb697338cd55a0d9aa122e7e8624"
+      "size": 5632000,
+      "sha256": "416e5b56316f87d2a113c8292064844b643ccb2decb481d52c45386368d6103e"
     },
     "wo_sn": {
       "path": "wo_sn.sqlite",
-      "size": 1978368,
-      "sha256": "50274df3852560b3a3b2bb85377722a73613e736f1eee943b77b47aa034592d2"
+      "size": 3444736,
+      "sha256": "f6a883e77eb147ab53e040c15ddef88148c1967353a7a09889f5a43bce9c059e"
     },
     "xh_za": {
       "path": "xh_za.sqlite",
-      "size": 2433024,
-      "sha256": "490a0d66d52ba8ab76e350a502bb0a32566d2dde6dc2830c072ef220517ec55a"
+      "size": 6172672,
+      "sha256": "6ea8f7dded987edfbc93801bbbbe935baf3f2815796e05d22887921386cdd262"
     },
     "yo_ng": {
       "path": "yo_ng.sqlite",
-      "size": 2351104,
-      "sha256": "faef91fc3d3e9da6879306e22ea8fe043a28f197a8b425b1764c82e57e56a473"
+      "size": 4653056,
+      "sha256": "13ce418662cd1559bd010e64a4b3a5ca469130fce0e257d82f148fabdec1c8a2"
     },
     "yue_hant_hk": {
       "path": "yue_hant_hk.sqlite",
-      "size": 2150400,
-      "sha256": "1ec4a620b06d75e3bc02fbff5f1b4841df42ebd599a3d2c416ac8f16fd918924"
+      "size": 3985408,
+      "sha256": "8dae7ad1da1225f1deebe156b0e0481e20e416b11baa4ca51c5472b8d192146c"
     },
     "zu_za": {
       "path": "zu_za.sqlite",
-      "size": 2420736,
-      "sha256": "2d79f1a1c71ae8d7353e520b9c910c71ceb98552a32463bf903bb72026afc524"
+      "size": 5128192,
+      "sha256": "b6001db67c17cc02ba96779d975bd9b9f046924997324b4c4c3408ede89f8c58"
     }
   },
   "source_files": [
@@ -7455,5 +7455,5 @@
       "size": 351164377
     }
   ],
-  "index_seconds": 143.276
+  "index_seconds": 137.214
 }

@@ -33,7 +33,9 @@ def fixture_rows(language):
         for offset, sentence in enumerate(sentences):
             seconds = 1.0 + 0.25 * offset
             yield {
-                "id": index * 100 + offset,
+                # Two recordings share a sentence id, as they do in FLEURS.
+                "id": index * 100 + offset // 2,
+                "path": f"/cache/{language}-{split}-{offset}.wav",
                 "split": split,
                 "num_samples": int(seconds * SAMPLING_RATE),
                 "audio": {"bytes": tone(seconds, 220 + 40 * offset), "path": "a.wav"},

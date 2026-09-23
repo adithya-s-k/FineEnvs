@@ -23,6 +23,8 @@ def metadata(languages, per_language=60):
         language: [
             {
                 "id": index,
+                # FLEURS keys recordings by path; id is the shared sentence id.
+                "path": f"/cache/{language}_{index}.wav",
                 "split": "test",
                 "num_samples": 5 * SAMPLING_RATE,
                 "transcription": f"utterance {index} in {language}",

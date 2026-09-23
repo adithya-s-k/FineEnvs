@@ -1,4 +1,5 @@
 import hashlib
+from collections import Counter
 
 import pytest
 from multilingual_asr.data.catalog import Catalog
@@ -79,6 +80,7 @@ def test_tasks_outside_the_duration_policy_are_excluded_not_truncated(tmp_path):
     def rows():
         yield {
             "id": 1,
+            "path": "/cache/too-short.wav",
             "split": "test",
             "num_samples": 16,  # 0.001s: far below policy
             "audio": {"bytes": b"RIFF"},
@@ -96,3 +98,43 @@ def test_tasks_outside_the_duration_policy_are_excluded_not_truncated(tmp_path):
     )
     assert manifest["counts"] == []
     assert manifest["skipped"]["duration_outside_policy"] == 1
+
+
+def test_two_recordings_of_one_sentence_are_two_tasks(tmp_path):
+    """FLEURS' id is a sentence id: several speakers read the same sentence under it.
+
+    hi_in test holds 418 recordings under 265 ids. Keying identity on the sentence id
+    collapsed distinct clips into one and made two different recordings share a task id.
+    """
+    from multilingual_asr.data.prepare import write_snapshot
+    from multilingual_asr.fixtures import tone
+
+    def rows():
+        for speaker in ("a", "b"):
+            yield {
+                "id": 7,  # the same sentence
+                "path": f"/cache/{speaker}.wav",  # different recordings
+                "split": "test",
+                "num_samples": 16_000,
+                "audio": {"bytes": tone(1.0, 220)},
+                "transcription": "one sentence",
+                "raw_transcription": "One sentence.",
+                "language": "English",
+            }
+
+    manifest = write_snapshot(
+        tmp_path / "s",
+        [("en_us", rows())],
+        source="synthetic-fixture",
+        revision="r",
+        languages=["en_us"],
+    )
+    catalog = Catalog(tmp_path / "s")
+    tasks = catalog.task_range("test", 0, catalog.count("test"))
+    per_family = Counter(t["family"] for t in tasks)
+    # Both recordings survive, each with its own task per family.
+    assert set(per_family.values()) == {2}, per_family
+    assert len({t["task_id"] for t in tasks}) == len(tasks)
+    assert {t["sample_id"] for t in tasks} == {7}
+    assert len({t["recording"] for t in tasks}) == 2
+    assert sum(c["tasks"] for c in manifest["counts"]) == len(tasks)

@@ -15,6 +15,7 @@ PUBLIC_FIELDS = (
     "language_name",
     "family",
     "sample_id",
+    "recording",
     "prompt",
     "asset_sha256",
     "mime",
