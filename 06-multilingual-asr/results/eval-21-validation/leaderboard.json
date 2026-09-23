@@ -1,0 +1,62 @@
+{
+  "eval_split": "eval_21_validation",
+  "evalset_id": "372df5df2eadc819e685e89e9b9eab2be3bdcc6d7d9c9370e4b8af191c20e44c",
+  "snapshot_id": "6c5e1f3ffdaf2ead41bac4804223786e4edb92f3f70bb2481df133bb817a0278",
+  "engine": "vllm[audio]==0.30.0",
+  "grading": {
+    "policy": "fleurs-asr-error-rate-v1",
+    "reward": "0.8 * max(0, 1 - error_rate) + 0.2 * exact_match",
+    "error_unit": "cer for scripts without word spacing, wer otherwise"
+  },
+  "tasks": 504,
+  "results": [
+    {
+      "model": "google/gemma-4-E4B-it",
+      "macro_reward": 0.6636199003350016,
+      "micro_reward": 0.6636199003350016,
+      "by_family": {
+        "language_id": 0.6607142857142857,
+        "transcription": 0.6772382082406226,
+        "verbatim_transcription": 0.6529072070500964
+      },
+      "generation_seconds": 57.6,
+      "model_revision": "ee0ef6023621cff504d758262d4e04895a5af4a2"
+    },
+    {
+      "model": "google/gemma-4-E2B-it",
+      "macro_reward": 0.5512918703474528,
+      "micro_reward": 0.5512918703474528,
+      "by_family": {
+        "language_id": 0.4166666666666667,
+        "transcription": 0.6278795249608854,
+        "verbatim_transcription": 0.609329419414806
+      },
+      "generation_seconds": 57.2,
+      "model_revision": "3e22461f65e89153144f8adb70e3b8c2cc9845a7"
+    },
+    {
+      "model": "Qwen/Qwen2.5-Omni-7B",
+      "macro_reward": 0.4799522129730803,
+      "micro_reward": 0.4799522129730803,
+      "by_family": {
+        "language_id": 0.4107142857142857,
+        "transcription": 0.5209249243587075,
+        "verbatim_transcription": 0.5082174288462477
+      },
+      "generation_seconds": 124.0,
+      "model_revision": "ae9e1690543ffd5c0221dc27f79834d0294cba00"
+    },
+    {
+      "model": "Qwen/Qwen2.5-Omni-3B",
+      "macro_reward": 0.4498666332676854,
+      "micro_reward": 0.4498666332676854,
+      "by_family": {
+        "language_id": 0.39880952380952384,
+        "transcription": 0.4783156618622921,
+        "verbatim_transcription": 0.4724747141312402
+      },
+      "generation_seconds": 102.3,
+      "model_revision": "f75b40e3da2003cdd6e1829b1f420ca70797c34e"
+    }
+  ]
+}
