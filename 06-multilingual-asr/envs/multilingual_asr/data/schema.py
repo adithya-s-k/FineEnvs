@@ -83,15 +83,28 @@ def language_code(language):
     return language
 
 
-def task_id(revision, language, split, sample_id, family):
+def recording_id(path):
+    """The per-recording identifier, taken from the source audio filename.
+
+    FLEURS' `id` column is a *sentence* id: the same sentence read by several speakers
+    shares it, so hi_in test has 418 rows under 265 ids. Keying anything on `id` collapses
+    distinct recordings and makes two different clips indistinguishable. The `path` column
+    is unique per recording, and its filename is the stable part of it.
+    """
+    if not isinstance(path, str) or not path.strip():
+        raise ValueError("Utterance has no source path to identify it by")
+    return path.replace("\\", "/").rsplit("/", 1)[-1]
+
+
+def task_id(revision, language, split, recording, family):
     """A content-derived id that still says where to look it up.
 
-    The digest pins the schema, revision, utterance, and family, so an id means the same
+    The digest pins the schema, revision, recording, and family, so an id means the same
     task in any snapshot. The language and split are kept in plain text because a bare
     hash would have to be searched for across all 102 language indexes to be resolved.
     """
     return f"fleurs-{language}.{split}." + digest(
-        [SCHEMA_VERSION, revision, language, split, int(sample_id), family]
+        [SCHEMA_VERSION, revision, language, split, str(recording), family]
     )
 
 

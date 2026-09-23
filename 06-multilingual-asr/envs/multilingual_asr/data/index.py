@@ -22,22 +22,30 @@ from .schema import (
     REPO_ID,
     SPLITS,
     canonical_json,
+    recording_id,
     task_id,
 )
 from .tasks import MAX_SECONDS, MIN_SECONDS, SAMPLING_RATE
 
 INDEX_VERSION = 1
-META_COLUMNS = ["id", "num_samples", "transcription", "raw_transcription", "language"]
+META_COLUMNS = [
+    "id",
+    "path",
+    "num_samples",
+    "transcription",
+    "raw_transcription",
+    "language",
+]
 
 DDL = """
 CREATE TABLE IF NOT EXISTS files(id INTEGER PRIMARY KEY, path TEXT UNIQUE, size INTEGER);
 CREATE TABLE IF NOT EXISTS utterances(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    sample_id INTEGER NOT NULL, split TEXT NOT NULL,
+    recording TEXT NOT NULL, sample_id INTEGER NOT NULL, split TEXT NOT NULL,
     file_id INTEGER NOT NULL, row_group INTEGER NOT NULL, row_in_group INTEGER NOT NULL,
     num_samples INTEGER NOT NULL, language_name TEXT,
     transcription TEXT, raw_transcription TEXT,
-    UNIQUE(split, sample_id));
+    UNIQUE(split, recording));
 CREATE TABLE IF NOT EXISTS tasks(
     id TEXT PRIMARY KEY, split TEXT NOT NULL, family TEXT NOT NULL,
     utterance INTEGER NOT NULL, position INTEGER, family_position INTEGER,
@@ -112,6 +120,11 @@ def index_language(language, directory, *, source_root=None, headers=None, api=N
                     shard, size, source_root=source_root, headers=headers
                 ):
                     duration = (row.get("num_samples") or 0) / SAMPLING_RATE
+                    try:
+                        recording = recording_id(row.get("path"))
+                    except ValueError:
+                        skipped["missing_path"] = skipped.get("missing_path", 0) + 1
+                        continue
                     if row.get("id") is None:
                         skipped["missing_id"] = skipped.get("missing_id", 0) + 1
                         continue
@@ -121,11 +134,12 @@ def index_language(language, directory, *, source_root=None, headers=None, api=N
                         )
                         continue
                     db.execute(
-                        """INSERT OR IGNORE INTO utterances(sample_id,split,file_id,
-                           row_group,row_in_group,num_samples,language_name,
+                        """INSERT OR IGNORE INTO utterances(recording,sample_id,split,
+                           file_id,row_group,row_in_group,num_samples,language_name,
                            transcription,raw_transcription)
-                           VALUES(?,?,?,?,?,?,?,?,?)""",
+                           VALUES(?,?,?,?,?,?,?,?,?,?)""",
                         (
+                            recording,
                             row["id"],
                             split,
                             file_id,
@@ -142,8 +156,8 @@ def index_language(language, directory, *, source_root=None, headers=None, api=N
                     # that a second shard repeated, and could have attached their tasks
                     # to whichever row happened to be inserted last.
                     utterance = db.execute(
-                        "SELECT id FROM utterances WHERE split=? AND sample_id=?",
-                        (split, row["id"]),
+                        "SELECT id FROM utterances WHERE split=? AND recording=?",
+                        (split, recording),
                     ).fetchone()[0]
                     for family in FAMILIES:
                         reference = (
@@ -163,14 +177,18 @@ def index_language(language, directory, *, source_root=None, headers=None, api=N
                             "INSERT OR IGNORE INTO tasks(id,split,family,utterance) VALUES(?,?,?,?)",
                             (
                                 task_id(
-                                    DEFAULT_REVISION, language, split, row["id"], family
+                                    DEFAULT_REVISION,
+                                    language,
+                                    split,
+                                    recording,
+                                    family,
                                 ),
                                 split,
                                 family,
                                 utterance,
                             ),
                         )
-                        counts[split, family] = counts.get((split, family), 0) + 1
+                        # Counted from the table below, never from attempts.
         # Positions are assigned last so they are stable regardless of arrival order.
         with db:
             for split in SPLITS:
@@ -192,6 +210,13 @@ def index_language(language, directory, *, source_root=None, headers=None, api=N
                     db.executemany(
                         "UPDATE tasks SET family_position=? WHERE id=?", enumerate(ids)
                     )
+        # Counts come from what the table actually holds: an INSERT OR IGNORE that
+        # discarded a duplicate must not be promised to a caller as a task, or an index
+        # near the reported end resolves to nothing.
+        for split, family, total in db.execute(
+            "SELECT split, family, COUNT(*) FROM tasks GROUP BY split, family"
+        ):
+            counts[split, family] = total
         db.execute("VACUUM")
     return {
         "language": language,

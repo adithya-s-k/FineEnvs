@@ -1,6 +1,12 @@
 """Derive ASR tasks from one FLEURS row. References never enter a public payload."""
 
-from .schema import FAMILIES, character_scored, normalize_for_scoring, task_id
+from .schema import (
+    FAMILIES,
+    character_scored,
+    normalize_for_scoring,
+    recording_id,
+    task_id,
+)
 
 SAMPLING_RATE = 16_000
 # FLEURS utterances are read sentences; anything far outside this is a source defect
@@ -35,6 +41,12 @@ def derive_tasks(row, language, revision, *, families=FAMILIES, metadata_only=Fa
     sample_id = row.get("id")
     if sample_id is None:
         return skip("missing_id")
+    try:
+        # FLEURS' id is a sentence id shared by several speakers; the recording is what
+        # identifies one clip.
+        recording = recording_id(row.get("path"))
+    except ValueError:
+        return skip("missing_path")
     num_samples = row.get("num_samples") or 0
     duration = num_samples / SAMPLING_RATE
     if not MIN_SECONDS <= duration <= MAX_SECONDS:
@@ -65,12 +77,13 @@ def derive_tasks(row, language, revision, *, families=FAMILIES, metadata_only=Fa
             continue
         tasks.append(
             {
-                "task_id": task_id(revision, language, row["split"], sample_id, family),
+                "task_id": task_id(revision, language, row["split"], recording, family),
                 "language": language,
                 "language_name": row.get("language") or language,
                 "split": row["split"],
                 "family": family,
                 "sample_id": int(sample_id),
+                "recording": recording,
                 "prompt": PROMPTS[family].format(name=row.get("language") or language),
                 "reference": reference,
                 "media": media,

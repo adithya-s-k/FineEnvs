@@ -3,6 +3,7 @@
 Shared verbatim with 05-multilingual-ocr: the caching problem is identical once the unit
 is "a parquet row group", and a divergent copy would be a second thing to get right.
 """
+
 import fcntl
 import hashlib
 import io

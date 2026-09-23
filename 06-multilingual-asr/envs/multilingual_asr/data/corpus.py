@@ -191,6 +191,7 @@ class CorpusCatalog:
             "language_name": name,
             "family": family,
             "sample_id": utterance["sample_id"],
+            "recording": utterance["recording"],
             "prompt": PROMPTS[family].format(name=name),
             "reference": reference,
             "mime": "audio/wav",
@@ -227,6 +228,11 @@ class CorpusCatalog:
                         "SELECT * FROM tasks WHERE split=? AND position=?",
                         (split, index),
                     ).fetchone()
+                if row is None:
+                    raise IndexError(
+                        f"{language}/{split} has no task at position {index}; the "
+                        "manifest count disagrees with the index"
+                    )
                 return self._task(language, dict(row))
             index -= total
         raise IndexError(index)
@@ -239,6 +245,11 @@ class CorpusCatalog:
                 "SELECT * FROM tasks WHERE split=? AND family=? AND family_position=?",
                 (split, family, index),
             ).fetchone()
+        if row is None:
+            raise IndexError(
+                f"{language}/{split}/{family} has no task at position {index}; the "
+                "manifest count disagrees with the index"
+            )
         return self._task(language, dict(row))
 
     def group_position(self, task_id, split, language, family):

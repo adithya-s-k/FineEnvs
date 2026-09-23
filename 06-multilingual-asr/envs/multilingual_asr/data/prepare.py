@@ -123,6 +123,15 @@ def mounted_shards(source_root, language, split):
     return names
 
 
+def _recording_key(row):
+    from .schema import recording_id
+
+    try:
+        return recording_id(row.get("path"))
+    except ValueError:
+        return None
+
+
 def bucket_shards(language, split, api=None):
     """List the published shards for one language/split.
 
@@ -163,7 +172,7 @@ def bucket_rows(language, split, limit, token=None, source_root=None, wanted_ids
             table = pq.ParquetFile(path).read()
             for row in table.to_pylist():
                 if wanted_ids is not None:
-                    if row.get("id") in wanted_ids:
+                    if _recording_key(row) in wanted_ids:
                         yield {**row, "split": split}
                     continue
                 if produced >= limit:
@@ -191,7 +200,7 @@ def bucket_rows(language, split, limit, token=None, source_root=None, wanted_ids
             table = pq.ParquetFile(handle).read()
         for row in table.to_pylist():
             if wanted_ids is not None:
-                if row.get("id") in wanted_ids:
+                if _recording_key(row) in wanted_ids:
                     yield {**row, "split": split}
                 continue
             if produced >= limit:
@@ -227,7 +236,7 @@ def main():
         for entry in frozen["tasks"]:
             wanted.setdefault(entry["language"], {}).setdefault(
                 entry["split"], set()
-            ).add(entry["sample_id"])
+            ).add(entry["recording"])
         args.languages = sorted(wanted)
         args.splits = sorted({s for splits in wanted.values() for s in splits})
         # Task IDs hash the revision, so a snapshot built under a different one holds
