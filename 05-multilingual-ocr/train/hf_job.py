@@ -95,9 +95,10 @@ def main():
                     arg.startswith("--env-url=") for arg in extra
                 )
                 if args.corpus_manifest:
-                    if remote or args.mode != "train":
+                    if remote or args.mode not in ("train", "eval-vllm"):
                         parser.error(
-                            "--corpus-manifest requires local --mode train without --env-url"
+                            "--corpus-manifest requires local --mode train or "
+                            "--mode eval-vllm without --env-url"
                         )
                     snapshot = args.corpus_manifest
                 elif not remote:
