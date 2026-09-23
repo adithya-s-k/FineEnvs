@@ -44,7 +44,9 @@ class Playground:
         index = max(0, min(int(index), count - 1))
         task = self.catalog.group_at(split, language, family, index)
         path = self.catalog.audio_file(task)
-        unit = "character error rate" if character_scored(language) else "word error rate"
+        unit = (
+            "character error rate" if character_scored(language) else "word error rate"
+        )
         details = (
             f"**{task['language_name']}** · {task['duration_seconds']}s · "
             f"utterance `{task['sample_id']}` · scored by **{unit}**"
@@ -86,7 +88,8 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
         for label, name in TASK_LABELS
         if name in catalog.manifest["config"]["families"]
     ]
-    splits = [split for split in SPLITS if catalog.count(split)]
+    available = catalog.splits() if hasattr(catalog, "splits") else list(SPLITS)
+    splits = [split for split in available if catalog.count(split)]
     tasks = sum(item["tasks"] for item in catalog.manifest["counts"])
 
     with gr.Blocks(title="Multilingual ASR", delete_cache=(300, 600)) as demo:
@@ -116,10 +119,14 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
         details = gr.Markdown()
         audio = gr.Audio(label="Utterance", type="filepath", interactive=False)
         prompt = gr.Textbox(label="Prompt", interactive=False, lines=2)
-        answer = gr.Textbox(label="Your transcript", lines=3, placeholder="Type what you hear")
+        answer = gr.Textbox(
+            label="Your transcript", lines=3, placeholder="Type what you hear"
+        )
         grade = gr.Button("Submit", variant="primary")
         score = gr.Markdown()
-        reference = gr.Textbox(label="Reference (revealed after scoring)", lines=3, interactive=False)
+        reference = gr.Textbox(
+            label="Reference (revealed after scoring)", lines=3, interactive=False
+        )
         task_id = gr.State("")
 
         outputs = [audio, task_id, prompt, details, position, score, reference]

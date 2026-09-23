@@ -1,6 +1,7 @@
 import os
 import random
 from functools import lru_cache
+from pathlib import Path
 from uuid import uuid4
 
 from openenv.core.env_server.interfaces import Environment
@@ -15,7 +16,19 @@ from .rewards import GRADING_POLICY, score
 def get_catalog(directory):
     if os.environ.get("FLEURS_CORPUS_MANIFEST"):
         from ..data.corpus import CorpusCatalog
+        from ..data.evalset import load as load_evalset
 
+        # Frozen sets sitting beside the manifest are served as their own splits, so a
+        # deployment exposes exactly the tasks it ships rather than only the files.
+        manifest_dir = (
+            Path(directory).parent if Path(directory).is_file() else Path(directory)
+        )
+        evalsets = []
+        for path in sorted(manifest_dir.glob("eval-*.json")):
+            try:
+                evalsets.append(load_evalset(path))
+            except Exception as error:
+                print(f"skipping {path.name}: {error}", flush=True)
         return CorpusCatalog(
             directory,
             os.environ.get("FLEURS_CACHE_DIR", "/tmp/fleurs-cache"),
@@ -24,14 +37,13 @@ def get_catalog(directory):
             index_cache_bytes=int(
                 os.environ.get("FLEURS_INDEX_CACHE_BYTES", "2000000000")
             ),
+            evalsets=evalsets,
             # One FLEURS shard is 310 MB to 1.5 GB, so a budget below a single train
             # shard could never serve one.
             group_cache_bytes=int(
                 os.environ.get("FLEURS_GROUP_CACHE_BYTES", "8000000000")
             ),
-            max_group_bytes=int(
-                os.environ.get("FLEURS_MAX_GROUP_BYTES", "2000000000")
-            ),
+            max_group_bytes=int(os.environ.get("FLEURS_MAX_GROUP_BYTES", "2000000000")),
         )
     return Catalog(directory)
 
@@ -59,7 +71,10 @@ class AsrEnvironment(Environment):
         self._task = None
 
     def list_splits(self):
-        return list(SPLITS)
+        # A frozen evaluation set is a split here, so a client can discover it.
+        return (
+            self.catalog.splits() if hasattr(self.catalog, "splits") else list(SPLITS)
+        )
 
     def num_tasks(self, split):
         return self.catalog.count(split)

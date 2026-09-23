@@ -231,3 +231,50 @@ def test_every_fleurs_language_code_round_trips_through_a_task_id():
         for split in ("train", "validation", "test"):
             identifier = task_id(DEFAULT_REVISION, language, split, 7, "transcription")
             assert parse_task_id(identifier) == (language, split)
+
+
+def test_a_frozen_set_is_named_for_what_it_actually_covers():
+    from multilingual_asr.data.evalset import eval_split_name
+
+    assert eval_split_name({"languages": ["a"] * 21, "split": "test"}) == "eval_21_test"
+    assert (
+        eval_split_name({"languages": ["a"] * 102, "split": "validation"})
+        == "eval_102_validation"
+    )
+
+
+def test_eval_splits_are_a_view_over_the_corpus_not_a_copy(corpus_index):
+    """Selecting the eval split must serve the pinned tasks, addressed like any split."""
+    catalog, record = corpus_index
+    name = "eval_2_test"
+    assert name in catalog.splits()
+    assert catalog.count(name) == record["size"]
+
+    # Addressable by position, and every task is one of the frozen ones.
+    frozen = {e["task_id"] for e in record["tasks"]}
+    served = {catalog.at(name, i)["task_id"] for i in range(catalog.count(name))}
+    assert served == frozen
+
+    # Grouping works the same way, and positions round-trip.
+    language, family = record["tasks"][0]["language"], record["tasks"][0]["family"]
+    n = catalog.group_count(name, language, family)
+    assert n
+    first = catalog.group_at(name, language, family, 0)
+    assert catalog.group_position(first["task_id"], name, language, family) == 0
+
+    # A source split still serves the whole corpus, not the frozen slice.
+    assert catalog.count("test") > catalog.count(name)
+
+
+def test_two_sets_cannot_share_an_eval_split_name(corpus_index):
+    """A name is derived from coverage, so two sets can collide and silently replace."""
+    from multilingual_asr.data.corpus import CorpusCatalog
+
+    catalog, record = corpus_index
+    other = dict(record, name="another")
+    with pytest.raises(ValueError, match="both named"):
+        CorpusCatalog(
+            catalog.manifest_path,
+            catalog.cache_dir,
+            evalsets=[record, other],
+        )
