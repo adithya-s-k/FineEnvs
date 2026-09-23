@@ -2,24 +2,17 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
 
 ## Introduction
 
-If you write code with AI, you have almost certainly used the same model in more than one place.
-Claude Code in the terminal, Codex or Cursor in the editor, maybe Cline or Pi. And you have probably
-noticed the thing nobody quite says out loud: the same model is better in some of them than in
-others. It feels sharp in one, and oddly clumsy in the next.
+If you use AI to write code, you have probably used the same model through more than one tool. Say,
+Anthropic models in Claude Code vs Cursor, Pi, or even Cline. You may have noticed that the model's
+approach and capabilities are different between tools.
 
-It is easy to write that off as a bad day. It is not. The effect is real, it is measurable, it is
-bigger than most people expect, and it has quietly become one of the central problems in training
-open models.
+That difference is measurable, and it is now something the models get trained against. The tool
+wrapped around the model is called an **agent harness**. It runs the loop, decides which tools the
+model can use, writes the context the model reads, interprets what comes back, and decides when to
+stop. And the open model you run behind them was almost certainly trained inside exactly one of
+them.
 
-The tool wrapped around the model is called an **agent harness**. It runs the loop, decides which
-tools the model can use, writes the context the model reads, interprets what comes back, and decides
-when to stop. To the model, the harness is the entire world. And the open model you downloaded was
-almost certainly trained inside exactly one of them.
-
-### The labs already tell you this, in the fine print
-
-Read the release notes of the newest open models and the same admission keeps surfacing in different
-handwriting.
+### Model cards name the harness now
 
 GLM-4.7 promises "significant improvements on complex tasks in mainstream agent frameworks such as
 Claude Code, Kilo Code, Cline, and Roo Code" [@zai2025glm47]. Kimi K2 reports Terminal-Bench twice,
@@ -27,13 +20,11 @@ Claude Code, Kilo Code, Cline, and Roo Code" [@zai2025glm47]. Kimi K2 reports Te
 [@kimi2025k2]. MiniMax M2 names a different harness for almost every benchmark it lists
 [@minimax2025m2card]. DeepSeek-V3.2 checks its scores across Claude Code and RooCode, then admits
 its thinking mode is incompatible with Terminus, so that number had to come from somewhere else
-[@deepseek2025v32].
-
-Sit with that last one. A major lab shipped a model that could not run in a major harness, noticed,
-and reported the score from a different one.
+[@deepseek2025v32]. A major lab shipped a model that could not run in a major harness, noticed, and
+reported the score from a different one.
 
 Which harness a model is good in has become a shipping claim, printed beside the benchmark numbers,
-because nobody runs raw weights. They run Claude Code with your model behind it.
+because almost nobody runs the weights on their own.
 
 It gets worse than uneven scores. Run the same benchmark under two harnesses and the ranking between
 models can flip. ByteDance's Seed-OSS card has two SWE-Bench Verified rows covering the same models,
