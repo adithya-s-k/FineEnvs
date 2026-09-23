@@ -6,17 +6,23 @@ from openenv.core.env_server import create_app
 
 from ..models import AsrAction, AsrObservation
 from .environment import AsrEnvironment, configured_catalog
+from .gradio_ui import build_ui
 from .rewards import ERROR_WEIGHT, EXACT_WEIGHT, GRADING_POLICY
 
 
 def create_server():
     catalog = configured_catalog()
+    os.environ.setdefault("ENABLE_WEB_INTERFACE", "true")
     app = create_app(
         lambda: AsrEnvironment(catalog),
         AsrAction,
         AsrObservation,
         env_name="multilingual_asr",
         max_concurrent_envs=int(os.environ.get("ASR_MAX_SESSIONS", "16")),
+        gradio_builder=build_ui,
+        custom_tab_name="Try it",
+        custom_tab_primary=True,
+        show_default_tab=False,
         title_override="Multilingual ASR (FLEURS)",
     )
 

@@ -69,6 +69,27 @@ class Catalog:
                 (split, language, family),
             ).fetchone()[0]
 
+    def _group_ids(self, split, language, family):
+        with self._connect() as db:
+            rows = db.execute(
+                """SELECT id, json_extract(payload,'$.sample_id') FROM tasks
+                   WHERE split=? AND json_extract(payload,'$.language')=?
+                   AND json_extract(payload,'$.family')=?""",
+                (split, language, family),
+            ).fetchall()
+        # Ordered by the source utterance id so navigation is stable across snapshots.
+        return [row[0] for row in sorted(rows, key=lambda row: (row[1], row[0]))]
+
+    def group_at(self, split, language, family, index):
+        ids = self._group_ids(split, language, family)
+        if not 0 <= index < len(ids):
+            raise IndexError("Task index outside group")
+        return self.get(ids[index])
+
+    def group_position(self, task_id, split, language, family):
+        ids = self._group_ids(split, language, family)
+        return ids.index(task_id) if task_id in ids else None
+
     def get(self, task_id):
         with self._connect() as db:
             row = db.execute(
