@@ -108,7 +108,17 @@ splits share no task.
 | `eval-fleurs-all-{test,validation}.json` | 102 | 510 each |
 | `eval-fleurs-ocr-overlap-{test,validation}.json` | 21 | 504 each |
 
-Within a split the two sets nest: the overlap set's tasks are those of the
+Each is also served as **its own split**, named for what it covers, so a frozen set can
+be browsed and served like any other split rather than only loaded from JSON:
+
+| Split | Tasks |
+|---|---|
+| `train` / `validation` / `test` | 815,226 / 103,326 / 233,388 |
+| `eval_21_test` / `eval_21_validation` | 504 each |
+| `eval_102_test` / `eval_102_validation` | 510 each |
+
+An eval split is a **view over the corpus, not a copy**: its tasks are the same rows the
+source splits serve. Within a split the two sets nest: the overlap set's tasks are those of the
 all-language set for its 21 languages. The overlap is 21 rather than 22 because FLEURS has
 no Sanskrit. Selection reads metadata columns only — 0.3 MB against 309.6 MB per shard — so
 both sets build in about 70 seconds; decoding every selected utterance is available through

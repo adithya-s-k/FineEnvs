@@ -285,6 +285,15 @@ def record(
     return body
 
 
+def eval_split_name(record):
+    """The split name a frozen set is served under, derived from the set itself.
+
+    Named for how many languages it covers and which source split it draws from -
+    `eval_21_test` - so the name cannot claim something the tasks do not.
+    """
+    return f"eval_{len(record['languages'])}_{record['split']}"
+
+
 def save(body, path):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

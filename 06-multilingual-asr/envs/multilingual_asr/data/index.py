@@ -55,8 +55,19 @@ CREATE INDEX IF NOT EXISTS task_family ON tasks(split, family, family_position);
 """
 
 
-def shard_paths(api, language):
+def shard_paths(api, language, source_root=None):
+    """List a language's shards, from a local copy when one is attached.
+
+    A synced or mounted corpus should index without reaching the Hub at all; going out to
+    list files an operator already has on disk is both slower and a needless dependency.
+    """
     prefix = f"parquet-data/{language}/"
+    if source_root:
+        directory = Path(source_root) / prefix
+        return sorted(
+            (f"{prefix}{path.name}", path.stat().st_size)
+            for path in directory.glob("*.parquet")
+        )
     return sorted(
         (entry.path, getattr(entry, "size", 0) or 0)
         for entry in api.list_bucket_tree(BUCKET_ID, prefix, recursive=True)
@@ -91,7 +102,7 @@ def index_language(language, directory, *, source_root=None, headers=None, api=N
     """Write one language's index; returns its summary."""
     from huggingface_hub import HfApi
 
-    api = api or HfApi()
+    api = api if api is not None else (None if source_root else HfApi())
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{language}.sqlite"
@@ -101,7 +112,7 @@ def index_language(language, directory, *, source_root=None, headers=None, api=N
     with closing(sqlite3.connect(path)) as db:
         db.executescript(DDL)
         with db:
-            for shard, size in shard_paths(api, language):
+            for shard, size in shard_paths(api, language, source_root):
                 split = shard.rsplit("/", 1)[-1].split("-")[0]
                 if split not in SPLITS:
                     skipped["unknown_split"] = skipped.get("unknown_split", 0) + 1
@@ -244,9 +255,15 @@ def build_index(directory, languages=None, *, source_root=None, workers=8):
     from huggingface_hub import HfApi, get_token
 
     started = time.monotonic()
-    api = HfApi()
+    api = None if source_root else HfApi()
     token = get_token()
     headers = {"Authorization": f"Bearer {token}"} if token else {}
+    if not languages and source_root:
+        languages = sorted(
+            path.name
+            for path in (Path(source_root) / "parquet-data").iterdir()
+            if path.is_dir() and path.name != "all"
+        )
     if not languages:
         languages = sorted(
             {

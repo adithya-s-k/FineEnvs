@@ -34,6 +34,11 @@ def create_server():
     def manifest():
         return {
             **catalog.manifest,
+            "splits": catalog.splits() if hasattr(catalog, "splits") else None,
+            "eval_splits": {
+                name: len(rows)
+                for name, rows in getattr(catalog, "eval_splits", {}).items()
+            },
             "grading": {
                 "policy": GRADING_POLICY,
                 "reward": f"{ERROR_WEIGHT} * max(0, 1 - error_rate) + {EXACT_WEIGHT} * exact_match",
