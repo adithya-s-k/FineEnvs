@@ -179,8 +179,11 @@ def test_sampling_is_balanced_and_reproducible_without_listing(monkeypatch):
         def get_group_tasks(self, split, language, family, positions):
             listed.append((language, family, tuple(positions)))
             return [
-                {"task_id": f"{language}.{family}.{p}", "language": language,
-                 "family": family}
+                {
+                    "task_id": f"{language}.{family}.{p}",
+                    "language": language,
+                    "family": family,
+                }
                 for p in positions
             ]
 
