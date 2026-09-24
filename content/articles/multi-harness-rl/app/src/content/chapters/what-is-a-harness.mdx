@@ -9,17 +9,17 @@ them.
 The tightest definition in the literature comes from a position paper on benchmark disclosure, which
 calls it "the software layer between the model and the task that constructs the context the model
 sees, mediates its tool calls, validates its outputs, and decides when to retry, escalate, or stop"
-[@zhang2026stopcomparing]. LangChain's version is shorter and sticks in the head better: agent equals
-model plus harness, and if you are not the model, you are the harness. From the model's side the
-harness is the interface. From the trainer's side it is an executable you do not control, which is
-the fact the whole article has to work around.
+[@zhang2026stopcomparing]. From the model's side the harness is the interface. From the trainer's
+side it is an executable you do not control, which is the fact the whole article has to work
+around.
 
 It helps to say what a harness is not, because several neighbouring things get called by the same
-name in casual writing. Hugging Face's [agent glossary](https://huggingface.co/blog/agent-glossary)
-is the fuller version of this vocabulary; what follows is the short form this article needs. The **model** is the next-token distribution, stateless, with no loop and no
-memory between calls. The **sandbox** is the isolated place actions actually run, a container or a
-VM or a tmux session. A **benchmark** is a fixed task set plus a protocol for comparing results on
-it. None of those is the harness.
+name in casual writing. Hugging Face's
+[agent glossary](https://huggingface.co/blog/agent-glossary) is the fuller version of this
+vocabulary; what follows is the short form this article needs. The **model** is the next-token
+distribution, stateless, with no loop and no memory between calls. The **sandbox** is the isolated
+place actions actually run, a container or a VM or a tmux session. A **benchmark** is a fixed task
+set plus a protocol for comparing results on it. None of those is the harness.
 
 The one worth dwelling on is the **RL environment**, because the difference is direction rather than
 content. An environment owns state, transition and reward: it receives an action and returns an
@@ -32,8 +32,6 @@ whole distinction the rest of this article turns on.
 > nearly opposite locus of control, so it is worth keeping the two straight when reading across the
 > two articles.
 
-### What a harness owns, and the one thing it does not
-
 The cleanest statement of the boundary is not a paper but a plugin contract. OpenClaw's agent-harness
 SDK defines a harness by negation: it is "the low level executor for one prepared agent turn," and
 explicitly "not a model provider, not a channel, and not a tool registry." The harness owns session
@@ -41,9 +39,7 @@ runtime and resumption, native tool execution, event streaming and auth bootstra
 around it owns provider and model selection, transcript files, tool policy and schema normalization.
 
 That split is the whole opening for this article. The harness decides *which call to make*. It does
-not, in the end, decide *where that call goes*. Every system in the next chapter works by taking the
-endpoint away from the harness and putting a proxy in its place, which is possible precisely because
-the endpoint was never the harness's to own.
+not, in the end, decide *where that call goes*.
 
 {/* VIZ: d3-harness-anatomy: one harness opened up. Its own loop, its own tool surface, its own
      sandbox, and exactly one wire leaving it toward an OpenAI-compatible endpoint. Everything
@@ -57,16 +53,13 @@ the endpoint was never the harness's to own.
   frameless
 />
 
-### The harness ecosystem today
-
 *Why does variety here cause so much trouble?*
 
-Because the variety is not cosmetic. Harnesses differ in the **API dialect** they speak, meaning the
-request and response format they use to talk to a model server: OpenAI chat-completions, OpenAI
-Responses, Anthropic Messages, Google Gemini. They differ in whether they
-use tool calling at all, in how they compact context, and in how much of the control flow they take
-away from the model. Those are exactly the axes the KAT-Coder team identified as the ones a model
-overfits to.
+Because the variety is not cosmetic. Harnesses differ in the **API dialect** they speak, meaning
+the request and response format they use to talk to a model server: OpenAI chat-completions,
+OpenAI Responses, Anthropic Messages, Google Gemini. They differ in whether they use tool calling
+at all, in how they compact context, and in how much of the control flow they take away from the
+model. Those are exactly the axes the KAT-Coder team identified as the ones a model overfits to.
 
 {/* VIZ: harness-ecosystem-matrix: scannable HTML table, not a chart, following the pattern of
      concept-rosetta in the previous guide. Columns: harness, maker, API dialect, tool calling
