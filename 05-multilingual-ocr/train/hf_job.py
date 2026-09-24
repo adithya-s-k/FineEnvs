@@ -6,6 +6,7 @@
 
 import argparse
 import io
+import os
 import re
 import subprocess
 import tempfile
@@ -22,7 +23,7 @@ def main():
     parser.add_argument("--repo", default="adithya-s-k/FineEnvs")
     parser.add_argument(
         "--mode",
-        choices=("env-smoke", "real-smoke", "train", "eval-vllm"),
+        choices=("env-smoke", "real-smoke", "train", "eval-vllm", "evalset"),
         default="env-smoke",
     )
     parser.add_argument(
@@ -34,6 +35,16 @@ def main():
         "--evalset",
         help="Frozen evaluation set committed under 05-multilingual-ocr/data/, by file "
         "name; the job resolves it inside its own checkout",
+    )
+    parser.add_argument(
+        "--build",
+        action="append",
+        nargs="+",
+        default=[],
+        metavar="OUTPUT SPLIT SIZE [LANG ...]",
+        help="For --mode evalset: one frozen set to build. Repeat for several. Building "
+        "on a job rather than locally is what makes it reliable — the corpus is mounted, "
+        "so pages are read from disk instead of streamed over HTTP.",
     )
     parser.add_argument("--prepare-pages", type=int, default=256)
     parser.add_argument(
@@ -118,7 +129,35 @@ def main():
                     (run / "manifest.json").write_bytes(
                         (snapshot / "manifest.json").read_bytes()
                     )
-                if args.mode == "real-smoke":
+                if args.mode == "evalset":
+                    if not args.build:
+                        parser.error("--mode evalset needs at least one --build")
+                    env = {
+                        **os.environ,
+                        "NAYANA_CORPUS_MANIFEST": str(snapshot),
+                        "NAYANA_CACHE_DIR": str(directory / "cache"),
+                    }
+                    if args.source_root:
+                        env["NAYANA_SOURCE_ROOT"] = args.source_root
+                    for spec in args.build:
+                        if len(spec) < 3:
+                            parser.error(f"--build needs OUTPUT SPLIT SIZE: {spec}")
+                        output_name, split, size, *languages = spec
+                        command = base + [
+                            "nayana-evalset",
+                            "build",
+                            "--output",
+                            str(run / output_name),
+                            "--split",
+                            split,
+                            "--size",
+                            str(size),
+                        ]
+                        if languages:
+                            command += ["--languages", *languages]
+                        print(f"building {output_name}", flush=True)
+                        subprocess.run(command + extra, check=True, env=env)
+                elif args.mode == "real-smoke":
                     if remote:
                         parser.error(
                             "Use --mode env-smoke --url for remote smoke checks"
