@@ -7,6 +7,9 @@ interface Props {
   modified?: string;
   tags?: string[];
   image?: string; // Preferred absolute URL
+  canonical?: string; // Public URL of the article, used for canonical and og:url
+  twitter?: string; // Author handle, e.g. "@name"
+  authorUrl?: string;
 }
 
 const {
@@ -17,9 +20,13 @@ const {
   modified,
   tags = [],
   image,
+  canonical,
+  twitter,
+  authorUrl,
 } = Astro.props as Props;
 
-const url = Astro.url?.toString?.() ?? "";
+// The page is served from a *.hf.space iframe, so the shareable URL is set explicitly when known.
+const url = canonical || (Astro.url?.toString?.() ?? "");
 const site = (Astro.site ? String(Astro.site) : "") as string;
 
 // Build base URL: prefer Astro.site, fallback to origin from Astro.url
@@ -41,7 +48,7 @@ const jsonLd = {
   description: description || undefined,
   datePublished: published || undefined,
   dateModified: modified || published || undefined,
-  author: authors.map((name) => ({ "@type": "Person", name })),
+  author: authors.map((name, i) => ({ "@type": "Person", name, url: i === 0 && authorUrl ? authorUrl : undefined })),
   publisher: {
     "@type": "Organization",
     name: "Hugging Face",
@@ -55,6 +62,9 @@ const jsonLd = {
 
 <title>{title}</title>
 <meta name="description" content={description} />
+{authors.length > 0 && <meta name="author" content={authors.join(", ")} />}
+{tags.length > 0 && <meta name="keywords" content={tags.join(", ")} />}
+<meta name="robots" content="index, follow, max-image-preview:large" />
 <link rel="canonical" href={url} />
 
 <meta property="og:type" content="article" />
@@ -65,14 +75,20 @@ const jsonLd = {
 {baseUrl && <meta property="og:site_name" content={title} />}
 {ogImage && <meta property="og:image" content={ogImage} />}
 {ogImage && <meta property="og:image:alt" content={title} />}
+{ogImage && <meta property="og:image:width" content="1200" />}
+{ogImage && <meta property="og:image:height" content="630" />}
+{ogImage && ogImage.endsWith(".png") && <meta property="og:image:type" content="image/png" />}
 {published && <meta property="article:published_time" content={published} />}
 {modified && <meta property="article:modified_time" content={modified} />}
 {authors.map((a) => <meta property="article:author" content={a} />)}
+{tags.map((t) => <meta property="article:tag" content={t} />)}
 
 <meta
   name="twitter:card"
   content={ogImage ? "summary_large_image" : "summary"}
 />
+{twitter && <meta name="twitter:creator" content={twitter} />}
+{twitter && <meta name="twitter:site" content={twitter} />}
 <meta name="twitter:title" content={title} />
 {description && <meta name="twitter:description" content={description} />}
 {ogImage && <meta name="twitter:image" content={ogImage} />}
