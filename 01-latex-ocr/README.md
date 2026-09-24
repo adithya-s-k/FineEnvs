@@ -118,3 +118,14 @@ The scorer strips formatting and whitespace for comparison but measures **raw co
 padding. This is a string-based OCR reward: it does not render LaTeX or prove mathematical equivalence.
 Training uses indexed materialize mode so every completion in a group receives the same image. Streaming is
 sequential per session; concurrent sessions each begin their own pass.
+
+## Citation
+
+```bibtex
+@misc{fineenvs,
+  author = {Kolavi, Adithya S},
+  title  = {FineEnvs: Open Source RL Environments for LLM Agents},
+  year   = {2026},
+  url    = {https://github.com/adithya-s-k/FineEnvs}
+}
+```
