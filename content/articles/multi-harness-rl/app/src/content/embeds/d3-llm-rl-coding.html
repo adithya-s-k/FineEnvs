@@ -1,9 +1,10 @@
-<!-- Carried over from The ultimate guide to RL environments, unchanged, so the two
-     articles share one visual vocabulary. Source: content/articles/rl-environments-guide/
+<!-- Carried over from The ultimate guide to RL environments, recoloured with this
+     article's figure palette (teal, blue, lavender, pink) so it matches the other figures. Source: content/articles/rl-environments-guide/
      app/src/content/embeds/d3-llm-rl-coding.html -->
 <div class="d3-llm-rl" style="width:100%;margin:14px 0;"></div>
 <style>
   .d3-llm-rl {
+    --fx-accent: rgb(78,165,183);
     position: relative;
     border: 1px solid var(--border-color);
     border-radius: 12px;
@@ -28,10 +29,10 @@
     font-size: 12px; font-weight: 600; cursor: pointer;
     transition: border-color .12s ease, background .12s ease;
   }
-  .d3-llm-rl__btn:hover { border-color: var(--primary-color); }
+  .d3-llm-rl__btn:hover { border-color: var(--fx-accent); }
   .d3-llm-rl__btn.primary {
-    border-color: var(--primary-color);
-    background: color-mix(in oklab, var(--primary-color) 12%, var(--surface-bg));
+    border-color: var(--fx-accent);
+    background: color-mix(in oklab, var(--fx-accent) 12%, var(--surface-bg));
   }
   .d3-llm-rl__btn svg { width: 12px; height: 12px; }
   .d3-llm-rl__speed {
@@ -39,7 +40,7 @@
     font-size: 11px; color: var(--muted-color);
   }
   .d3-llm-rl__speed input[type=range] {
-    width: 110px; accent-color: var(--primary-color);
+    width: 110px; accent-color: var(--fx-accent);
   }
   .d3-llm-rl__speed-val {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -107,8 +108,8 @@
     text-transform: uppercase; color: var(--muted-color);
   }
   .d3-llm-rl__zone--agent.flash {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary-color) 22%, transparent);
+    border-color: var(--fx-accent);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--fx-accent) 22%, transparent);
   }
 
   .d3-llm-rl__policy {
@@ -133,8 +134,8 @@
     max-width: 100%; min-width: 0;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 10.5px; font-weight: 700;
-    background: color-mix(in oklab, var(--primary-color) 16%, transparent);
-    color: var(--primary-color);
+    background: color-mix(in oklab, var(--fx-accent) 16%, transparent);
+    color: var(--fx-accent);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .d3-llm-rl__counters {
@@ -191,12 +192,12 @@
     display: flex; align-items: flex-start; gap: 10px;
     padding: 10px 12px;
     border-radius: 6px;
-    background: color-mix(in oklab, var(--primary-color) 6%, transparent);
-    border: 1px solid color-mix(in oklab, var(--primary-color) 18%, var(--border-color));
+    background: color-mix(in oklab, var(--fx-accent) 6%, transparent);
+    border: 1px solid color-mix(in oklab, var(--fx-accent) 18%, var(--border-color));
   }
   .d3-llm-rl__task-label {
     font-size: 10px; font-weight: 800; letter-spacing: 1.0px;
-    text-transform: uppercase; color: var(--primary-color);
+    text-transform: uppercase; color: var(--fx-accent);
     flex-shrink: 0; margin-top: 2px;
   }
   .d3-llm-rl__task-text { font-size: 12.5px; line-height: 1.5; color: var(--text-color); }
@@ -238,7 +239,7 @@
     transition: background .25s ease;
   }
   .d3-llm-rl__progress span.done {
-    background: var(--ro-accent, var(--primary-color));
+    background: var(--ro-accent, var(--fx-accent));
   }
 
   .d3-llm-rl__steps { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; }
@@ -258,7 +259,7 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 10px;
     background: color-mix(in oklab, var(--muted-color) 8%, transparent);
-    border-left: 2px solid var(--ro-accent, var(--primary-color));
+    border-left: 2px solid var(--ro-accent, var(--fx-accent));
     padding: 4px 8px;
     border-radius: 0 4px 4px 0;
     color: var(--text-color);
@@ -280,8 +281,8 @@
   }
 
   .d3-llm-rl__step--submit {
-    background: color-mix(in oklab, var(--primary-color) 12%, transparent);
-    border: 1px solid var(--ro-accent, var(--primary-color));
+    background: color-mix(in oklab, var(--fx-accent) 12%, transparent);
+    border: 1px solid var(--ro-accent, var(--fx-accent));
     border-radius: 6px;
     padding: 6px 8px;
     font-size: 11px;
@@ -296,7 +297,7 @@
     font-size: 0.86em;
     padding: 1px 5px;
     border-radius: 4px;
-    background: color-mix(in oklab, var(--ro-accent, var(--primary-color)) 18%, transparent);
+    background: color-mix(in oklab, var(--ro-accent, var(--fx-accent)) 18%, transparent);
     color: var(--text-color);
     white-space: nowrap;
   }
@@ -318,12 +319,12 @@
     flex-shrink: 0;
   }
   .d3-llm-rl__reward-chip.ok {
-    background: color-mix(in oklab, #22c55e 16%, transparent);
-    color: #22c55e;
+    background: color-mix(in oklab, rgb(78,165,183) 16%, transparent);
+    color: rgb(78,165,183);
   }
   .d3-llm-rl__reward-chip.no {
-    background: color-mix(in oklab, #ef4444 16%, transparent);
-    color: #ef4444;
+    background: color-mix(in oklab, rgb(232,137,171) 16%, transparent);
+    color: rgb(232,137,171);
   }
   .d3-llm-rl__reward-meta { color: var(--muted-color); font-style: italic; }
 
@@ -356,7 +357,7 @@
       // is the whole basis of the advantage GRPO computes.
       const ROLLOUTS = [
         {
-          accent: '#3b82f6',
+          accent: 'rgb(146,176,234)',
           steps: [
             { type: 'assistant', text: '<em>List the Python files first.</em>' },
             { type: 'tool',      text: '$ ls *.py',                                 toolCall: 'ls *.py' },
@@ -370,7 +371,7 @@
           rewardNote: 'matched expected'
         },
         {
-          accent: '#ec4899',
+          accent: 'rgb(146,176,234)',
           steps: [
             { type: 'assistant', text: '<em>Quick peek at the directory.</em>' },
             { type: 'tool',      text: '$ ls -la',                                  toolCall: 'ls -la' },
@@ -382,7 +383,7 @@
           rewardNote: 'wrong file'
         },
         {
-          accent: '#4ea5b7',
+          accent: 'rgb(146,176,234)',
           steps: [
             { type: 'assistant', text: '<em>Sort every Python file by length.</em>' },
             { type: 'tool',      text: '$ wc -l *.py | sort -rn',                   toolCall: 'wc -l *.py | sort -rn' },
@@ -553,7 +554,7 @@
       };
 
       const flashBus = (busEl, ms = 240) => {
-        const primary = cssVar('--primary-color') || '#6D4AFF';
+        const primary = 'rgb(78,165,183)';
         const muted = cssVar('--muted-color');
         busEl.style.color = primary;
         busEl.querySelector('line').setAttribute('stroke-width', '2.4');
@@ -638,7 +639,7 @@
             statEls.rollouts.textContent = `${rolloutsDone}/${ROLLOUTS.length}`;
 
             // bus flashes green/red for the reward signal returning
-            flashStateBus(r.reward > 0 ? '#22c55e' : '#ef4444', 320);
+            flashStateBus(r.reward > 0 ? 'rgb(78,165,183)' : 'rgb(232,137,171)', 320);
 
             if (rolloutsDone === ROLLOUTS.length) {
               const avg = rewardsCollected.reduce((a, b) => a + b, 0) / rewardsCollected.length;

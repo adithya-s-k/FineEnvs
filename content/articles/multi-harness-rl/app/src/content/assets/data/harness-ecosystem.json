@@ -1,96 +1,186 @@
 {
-  "note": "Dialect is the axis that matters most for capture: it decides whether one proxy can serve a harness at all.",
+  "note": "The model API a harness speaks decides whether a capture proxy can sit in front of it without changes to the harness.",
   "columns": [
     "Harness",
     "Maker",
-    "Wire dialect",
+    "Model API it speaks",
     "Tool calling",
     "What makes it distinct"
   ],
   "rows": [
     [
-      "claude-code",
+      "Claude Code",
       "Anthropic",
       "Anthropic Messages",
       "yes",
-      "The de-facto reference implementation; agent source not published"
+      "The de facto reference implementation, with its agent source unpublished"
     ],
     [
-      "codex",
+      "Codex",
       "OpenAI",
       "OpenAI Responses",
       "yes",
-      "The only harness to have deliberately deleted chat-completions"
+      "The only harness to have deliberately deleted chat completions"
     ],
     [
-      "opencode",
+      "OpenCode",
       "Anomaly",
       "all four",
       "yes",
       "Headless daemon with a published OpenAPI schema"
     ],
     [
-      "goose",
+      "Goose",
       "Agentic AI Foundation",
-      "Anthropic, chat, Google",
+      "Anthropic, chat completions or Google",
       "yes",
-      "Most MCP-native; can treat other harnesses as model providers"
+      "Most MCP-native, and can treat other harnesses as model providers"
     ],
     [
-      "swe-agent",
+      "SWE-agent",
       "Princeton, Stanford",
-      "chat-completions",
+      "chat completions",
       "yes",
       "Tools installed into the container as shell scripts"
     ],
     [
-      "mini-swe-agent",
+      "Mini-SWE-Agent",
       "SWE-agent team",
-      "chat, Responses, text",
+      "chat completions, Responses or plain text",
       "one tool",
       "Deliberately minimal, stateless steps, built to avoid overfitting"
     ],
     [
-      "openhands-sdk",
+      "OpenHands SDK",
       "OpenHands",
-      "chat-completions",
+      "chat completions",
       "yes",
       "Event-stream architecture, agent server over REST"
     ],
     [
-      "aider",
+      "Aider",
       "Aider-AI",
-      "chat-completions",
+      "chat completions",
       "no",
       "Parses edit formats out of prose instead of calling tools"
     ],
     [
-      "qwen-coder",
+      "Qwen Code",
       "Alibaba",
-      "multi, Google-shaped",
+      "several, Google’s by default",
       "yes",
       "Forked from Gemini CLI, canonical form still Google's"
     ],
     [
-      "kimi-cli",
+      "Kimi CLI",
       "Moonshot",
-      "chat-completions",
+      "chat completions",
       "yes",
       "A coding agent that is also a shell"
     ],
     [
-      "terminus-2",
+      "Terminus 2",
       "Laude Institute",
-      "chat-completions",
+      "chat completions",
       "no",
       "Uses no tool-calling API at all, plain text parsing"
     ],
     [
-      "hermes",
+      "Hermes",
       "Nous Research",
-      "all three, switchable",
+      "three, switchable",
       "yes",
       "Persistent multi-surface agent with a learning loop"
     ]
-  ]
+  ],
+  "apis": [
+    "Anthropic Messages",
+    "OpenAI Responses",
+    "Google generateContent",
+    "chat completions",
+    "plain text"
+  ],
+  "api_support": {
+    "Claude Code": [
+      2,
+      0,
+      0,
+      0,
+      0
+    ],
+    "Codex": [
+      0,
+      2,
+      0,
+      0,
+      0
+    ],
+    "OpenCode": [
+      2,
+      2,
+      2,
+      2,
+      0
+    ],
+    "Goose": [
+      2,
+      0,
+      2,
+      2,
+      0
+    ],
+    "SWE-agent": [
+      0,
+      0,
+      0,
+      2,
+      0
+    ],
+    "Mini-SWE-Agent": [
+      0,
+      1,
+      0,
+      2,
+      1
+    ],
+    "OpenHands SDK": [
+      0,
+      0,
+      0,
+      2,
+      0
+    ],
+    "Aider": [
+      0,
+      0,
+      0,
+      2,
+      0
+    ],
+    "Qwen Code": [
+      0,
+      0,
+      2,
+      1,
+      0
+    ],
+    "Kimi CLI": [
+      0,
+      0,
+      0,
+      2,
+      0
+    ],
+    "Terminus 2": [
+      0,
+      0,
+      0,
+      2,
+      0
+    ],
+    "Hermes": null
+  },
+  "api_note": {
+    "Hermes": "three APIs, switchable"
+  }
 }

@@ -1,0 +1,429 @@
+<div class="train-results" style="width:100%;margin:14px 0;"></div>
+<style>
+  .train-results { position: relative; }
+  .train-results svg { display:block; width:100%; height:auto; overflow:visible; }
+  .train-results .tr-bar { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .train-results .tr-chip { appearance:none; cursor:pointer; font:inherit; font-size:12px; line-height:1; padding:6px 11px;
+    border-radius:999px; border:1px solid var(--border-color); background:transparent; color:var(--muted-color); }
+  .train-results .tr-chip:hover { color:var(--text-color); }
+  .train-results .tr-chip[aria-pressed="true"] { color:var(--text-color); border-color:var(--text-color); font-weight:600; }
+  .train-results .tr-chip:focus-visible { outline:2px solid var(--text-color); outline-offset:2px; }
+  .train-results .tr-sub { margin:14px 0 -4px; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-color); }
+  .train-results .tr-sm { display:flex; align-items:center; gap:10px; margin:-2px 0 8px; font-size:12px; color:var(--muted-color); }
+  .train-results .tr-sm input { width:170px; accent-color:var(--text-color); cursor:pointer; }
+  .train-results .tr-sm output { min-width:112px; color:var(--text-color); font-variant-numeric:tabular-nums; }
+  .train-results .tr-grid { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap:10px; margin-top:12px; }
+  .train-results .tr-panel { border:1px solid var(--border-color); border-radius:10px; padding:8px 8px 4px; min-width:0; }
+  .train-results .tr-ph { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:var(--text-color); margin:0 0 2px 2px; }
+  .train-results .logo { width:18px; height:18px; border-radius:5px; background:#fcfcfd; display:inline-grid; place-items:center; flex:none; }
+  .train-results .logo img { width:13px; height:13px; object-fit:contain; }
+  .train-results .lg { display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px; margin-top:10px; font-size:12px; color:var(--muted-color); }
+  .train-results .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .train-results .k { display:inline-flex; align-items:center; gap:7px; }
+  .train-results .sw { width:14px; height:14px; border-radius:3px; border:1px solid; box-sizing:border-box; }
+  .train-results .nt { margin-top:8px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+  /* GRPO group view */
+  .train-results .gr { display:grid; grid-template-columns: 118px repeat(8, minmax(0, 1fr)); gap:4px 6px; align-items:center; }
+  .train-results .gr .lab { font-size:11.5px; color:var(--muted-color); line-height:1.3; }
+  .train-results .gr .lab b { display:block; color:var(--text-color); font-size:12px; }
+  .train-results .gr .ro { text-align:center; font-size:11px; color:var(--muted-color); border:1px solid var(--border-color); border-radius:7px; padding:5px 2px; }
+  .train-results .gr .ro b { display:block; font-size:14px; line-height:1.1; }
+  .train-results .gr .ro.ok b { color:var(--tr-ok); }
+  .train-results .gr .ro.no b { color:var(--tr-no); }
+  .train-results .gr .rw { text-align:center; font-size:11px; font-variant-numeric:tabular-nums; color:var(--text-color); }
+  .train-results .gr .av { height:58px; position:relative; }
+  .train-results .gr .av i { position:absolute; left:18%; right:18%; border-radius:3px; }
+  .train-results .gr .av::after { content:''; position:absolute; left:0; right:0; top:50%; border-top:1px solid var(--border-color); }
+  .train-results .gr .sep { grid-column:1/-1; height:1px; background:var(--border-color); margin:4px 0; }
+  @media (max-width: 640px) {
+    .train-results .tr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .train-results .gr { grid-template-columns: 70px repeat(8, minmax(0, 1fr)); gap:4px 3px; }
+    .train-results .gr .ro { font-size:9.5px; }
+    .train-results .gr .rw { font-size:9px; }
+  }
+</style>
+<script>
+  (() => {
+    const C = 'train-results';
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let r = scriptEl ? scriptEl.previousElementSibling : null;
+      while (r && !(r.classList && r.classList.contains(C))) r = r.previousElementSibling;
+      if (!r) { const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true'); r = n[n.length-1]; }
+      if (!r || r.dataset.mounted === 'true') return;
+      r.dataset.mounted = 'true';
+
+      let host = r; while (host && !host.getAttribute?.('data-config')) host = host.parentElement;
+      let cfg = {}; try { cfg = JSON.parse(host?.getAttribute('data-config') || '{}'); } catch (e) {}
+      const view = cfg.view || 'curve';
+      const uid = 'tr' + Math.random().toString(36).slice(2, 8);
+
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      r.style.setProperty('--tr-ok', P(0));
+      r.style.setProperty('--tr-no', P(3));
+      // One colour per run everywhere in the article. Qwen runs are drawn dashed.
+      const RUN = {
+        lfm_harbor_opencode:  { c:() => P(0), short:'LFM · OpenCode only' },
+        lfm_harbor_multi:     { c:() => P(3), short:'LFM · multi-harness' },
+        qwen_harbor_opencode: { c:() => P(1), short:'Qwen · OpenCode only', dash:true },
+        qwen_harbor_multi:    { c:() => P(2), short:'Qwen · multi-harness', dash:true },
+        qwen_native_opencode: { c:() => V('--muted-color','#999'), short:'Qwen · standalone OpenCode', dash:true },
+      };
+      // Mini-SWE-Agent has no mark of its own; it comes from the SWE-agent team, so it uses theirs.
+      const LOGO = { 'opencode':'opencode.svg', 'claude-code':'claude-code.svg', 'codex':'codex.png', 'mini-swe-agent':'swe-agent.svg' };
+      const logo = (h) => `<span class="logo"><img src="/logos/${LOGO[h]}" alt="" loading="lazy"></span>`;
+
+      const grab = async (f) => {
+        for (const u of ['/data/'+f, 'assets/data/'+f, '../assets/data/'+f]) {
+          try { const x = await fetch(u, {cache:'no-cache'}); if (x.ok) return await x.json(); } catch(e) {}
+        }
+        throw new Error('could not load '+f);
+      };
+      const fmt = (v, unit) => unit === '%' ? `${Number.isInteger(v) ? v : v.toFixed(1)}%`
+        : unit === 'k' ? `${(v/1000).toFixed(v >= 100000 || v % 1000 === 0 ? 0 : 1)}k`
+        : (Number.isInteger(v) ? String(v) : Math.abs(v) < 10 ? v.toFixed(2) : Math.round(v).toLocaleString('en'));
+      // Ticks on round steps (1, 2, 2.5 or 5 times a power of ten).
+      const ticks = (lo, hi, want = 4) => {
+        const raw = (hi - lo) / want, p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+        const st = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
+        const out = []; for (let v = Math.ceil(lo / st - 1e-9) * st; v <= hi + 1e-9; v += st) out.push(+v.toFixed(6));
+        return { out, st };
+      };
+      // Fit the axis to the data so that change is visible, then round outward to a tick.
+      const fit = (vals, pad = .12, floor0 = false) => {
+        let lo = Math.min(...vals), hi = Math.max(...vals); const span = (hi - lo) || Math.abs(hi) || 1;
+        lo -= span*pad; hi += span*pad; if (floor0 || (lo < 0 && Math.min(...vals) >= 0)) lo = Math.max(0, lo);
+        const { st } = ticks(lo, hi); return [Math.floor(lo/st)*st, Math.ceil(hi/st)*st];
+      };
+
+      // ── reveal animation: a clip rect that sweeps left to right, once on scroll ──
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let seen = reduce;
+      const reveal = (mode) => {
+        if (mode === 'hold') return;                                   // not on screen yet
+        const rects = [...r.querySelectorAll('rect[data-clip]')];
+        if (reduce || mode === 'none') { rects.forEach(c => c.setAttribute('width', c.dataset.w)); return; }
+        const dur = mode === 'full' ? 1700 : 550, t0 = performance.now();
+        rects.forEach(c => c.setAttribute('width', 0));
+        const step = (t) => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+          rects.forEach(c => c.setAttribute('width', (+c.dataset.w) * e)); if (k < 1) requestAnimationFrame(step); };
+        requestAnimationFrame(step);
+      };
+      const clipDef = (id, x, y, w, h) => `<defs><clipPath id="${id}"><rect data-clip data-w="${w}" x="${x}" y="${y - 6}" width="${seen ? w : 0}" height="${h + 12}"/></clipPath></defs>`;
+
+      grab('training-results.json').then(D => {
+        const HL = D.harness_labels, H = D.harnesses;
+        // `sel` picks the metric chip; a config can open a chart on a different one.
+        let sel = cfg.sel || 0, clipN = 0, smooth = cfg.smooth || 100;
+
+        const legend = (items, note) => `<div class="lg"><div class="lg-t">Legend</div>`
+          + items.map(([c, t, dash]) => `<span class="k"><span class="sw" style="border-color:${c};background:${dash ? 'transparent' : `color-mix(in srgb, ${c} 30%, transparent)`};${dash ? 'border-style:dashed' : ''}"></span>${esc(t)}</span>`).join('')
+          + `</div>` + (note ? `<div class="nt">${note}</div>` : '');
+        const chips = (opts) => `<div class="tr-bar" role="group">` + opts.map((o, i) => `<button type="button" class="tr-chip" data-i="${i}" aria-pressed="${i===sel}">${esc(o)}</button>`).join('') + `</div>`;
+        const bindChips = () => r.querySelectorAll('.tr-chip').forEach(b => b.addEventListener('click', () => { sel = +b.dataset.i; draw('quick'); }));
+
+        // A line chart for one panel. `series` is [{c, dash, label, pts:[{x,y,hollow,t}]}].
+        const lineChart = (W, Ht, series, o = {}) => {
+          const small = !!o.small, unit = o.unit || '';
+          const m = { l: small ? 34 : 46, r: small ? 8 : 12, t: 10, b: small ? 20 : 34 };
+          // Raw per-step series are noise around the smoothed line; fit the axis to the line.
+          const vals = series.filter(s => !s.raw).flatMap(s => s.pts.map(p => p.y));
+          const [y0, y1] = o.range || fit(vals, .12, o.floor0);
+          const X = (v) => m.l + v / 1000 * (W - m.l - m.r);
+          const Y = (v) => Ht - m.b - (v - y0) / (y1 - y0) * (Ht - m.t - m.b);
+          const mu = V('--muted-color','#888'), bd = V('--border-color','rgba(128,128,128,.3)');
+          const id = `${uid}c${clipN++}`;
+          let s = `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="${esc(o.aria || 'chart')}">` + clipDef(id, m.l - 6, m.t, W - m.l - m.r + 12, Ht - m.t - m.b);
+          ticks(y0, y1, small ? 3 : 4).out.forEach(v => {
+            s += `<line x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${bd}" stroke-dasharray="2 4"/>`;
+            s += `<text x="${m.l-6}" y="${Y(v)+3.5}" text-anchor="end" font-size="${small?9.5:10.5}" fill="${mu}">${esc(fmt(v, unit))}</text>`;
+          });
+          (small ? [0, 500, 1000] : [0, 200, 400, 600, 800, 1000]).forEach(v => s += `<text x="${X(v)}" y="${Ht-m.b+14}" text-anchor="${small && v === 1000 ? 'end' : small && v === 0 ? 'start' : 'middle'}" font-size="${small?9.5:10.5}" fill="${mu}">${v}</text>`);
+          if (!small) s += `<text x="${(m.l + W - m.r)/2}" y="${Ht-5}" text-anchor="middle" font-size="10.5" fill="${mu}">training step</text>`;
+          s += `<g clip-path="url(#${id})">`;
+          // End labels are placed after the lines and nudged apart when two runs finish close together.
+          const ends = [];
+          series.forEach(sr => {
+            if (sr.raw) { s += `<path d="${sr.pts.map((p,i) => `${i?'L':'M'} ${X(p.x)} ${Y(p.y)}`).join(' ')}" fill="none" stroke="${sr.c}" stroke-width="1" stroke-opacity=".28"/>`; return; }
+            s += `<path d="${sr.pts.map((p,i) => `${i?'L':'M'} ${X(p.x)} ${Y(p.y)}`).join(' ')}" fill="none" stroke="${sr.c}" stroke-width="${small?1.8:2.3}" ${sr.dash ? 'stroke-dasharray="5 4"' : ''} stroke-linejoin="round"/>`;
+            if (!sr.noDots) sr.pts.forEach(p => s += `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="${small?2.4:3.2}" fill="${p.hollow ? V('--surface-bg','#fff') : sr.c}" stroke="${sr.c}" stroke-width="1.4"><title>${esc(sr.label)} · step ${p.x}: ${esc(p.t)}</title></circle>`);
+            // label the last value so the end state reads without hovering
+            const L = sr.pts[sr.pts.length-1];
+            if (L && !small && o.endLabels) ends.push({ x: X(L.x) - 6, y: Y(L.y) - 8, c: sr.c, t: fmt(L.y, unit) });
+          });
+          ends.sort((a, b) => a.y - b.y).forEach((e, i, a) => { if (i && e.y - a[i-1].y < 13) e.y = a[i-1].y + 13; });
+          ends.forEach(e => s += `<text x="${e.x}" y="${e.y}" text-anchor="end" font-size="10.5" font-weight="600" fill="${e.c}">${esc(e.t)}</text>`);
+          return s + `</g></svg>`;
+        };
+        // Overall chart on top, one small chart per harness underneath.
+        const panels = (mainSeries, perHarness, o) =>
+          lineChart(Math.max(320, r.clientWidth), o.height || 250, mainSeries, { ...o, endLabels: true }) + panelGrid(perHarness, o);
+        const panelGrid = (perHarness, o) => {
+          const W = Math.max(320, r.clientWidth), narrow = W < 640;
+          const pw = narrow ? (W - 10) / 2 - 18 : (W - 30) / 4 - 18;
+          let h = '';
+          const hs = H.filter(hk => perHarness(hk));
+          if (hs.length) h += `<div class="tr-grid">` + hs.map(hk =>
+                 `<div class="tr-panel"><div class="tr-ph">${logo(hk)}${esc(HL[hk])}</div>`
+               + lineChart(pw, 120, perHarness(hk), { ...o, small: true }) + `</div>`).join('') + `</div>`;
+          return h;
+        };
+        const evalSeries = (runs, hk) => runs.map(k => ({ c: RUN[k].c(), dash: RUN[k].dash, label: RUN[k].short,
+          pts: D.evals[k].points.filter(p => hk ? p.h && p.h[hk] != null : true)
+            .map(p => { const v = hk ? p.h[hk] : p.overall; return { x: p.step, y: v, hollow: !p.complete, t: `${v.toFixed(1)}%${p.complete ? '' : ' (a few cells ungraded)'}` }; }) }));
+
+        const views = {
+          // Base models before any training, per harness.
+          baselines: () => {
+            const W = Math.max(320, r.clientWidth), narrow = W < 560;
+            const q = D.evals.qwen_harbor_multi.points[0], l = D.evals.lfm_harbor_multi.points[0];
+            const cats = [...H.map(h => [h, q.h[h], l.h[h]]), [null, q.overall, l.overall]];
+            const m = { l: narrow ? 122 : 150, r: 46, t: 6, b: 24 }, rowH = 38, Ht = m.t + m.b + rowH*cats.length;
+            const X = (v) => m.l + v / 70 * (W - m.l - m.r);
+            const mu = V('--muted-color','#888'), tx = V('--text-color','#111'), bd = V('--border-color','rgba(128,128,128,.3)');
+            const cq = V('--muted-color','#999'), cl = P(0), id = `${uid}c${clipN++}`;
+            let s = `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="Pass@1 of the two base models on the test set, by harness">` + clipDef(id, m.l, 0, W - m.l, Ht);
+            [0, 10, 20, 30, 40, 50, 60, 70].forEach(v => { s += `<line x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${Ht-m.b}" stroke="${bd}" stroke-dasharray="${v?'2 4':''}"/>`;
+              s += `<text x="${X(v)}" y="${Ht-6}" text-anchor="middle" font-size="10.5" fill="${mu}">${v}%</text>`; });
+            cats.forEach(([hk, a, b], i) => {
+              const y = m.t + i*rowH, bh = 12;
+              if (hk) { const lx = 4; s += `<rect x="${lx}" y="${y+rowH/2-9}" width="18" height="18" rx="5" fill="#fcfcfd"/><image href="/logos/${LOGO[hk]}" x="${lx+2.5}" y="${y+rowH/2-6.5}" width="13" height="13"/>`; }
+              s += `<text x="${m.l-10}" y="${y+rowH/2+4}" text-anchor="end" font-size="12" font-weight="${hk?500:700}" fill="${tx}">${esc(hk ? HL[hk] : 'Overall')}</text>`;
+              s += `<g clip-path="url(#${id})">`;
+              [[a, cq, 'Qwen3.5-2B', .55], [b, cl, 'LFM2.5-2.6B', .92]].forEach(([v, c, who, op], j) => {
+                const yy = y + 5 + j*(bh+3);
+                s += `<rect x="${X(0)}" y="${yy}" width="${X(v)-X(0)}" height="${bh}" rx="3" fill="${c}" fill-opacity="${op}"><title>${who}: ${v.toFixed(1)}%</title></rect>`;
+                s += `<text x="${X(v)+5}" y="${yy+bh-2}" font-size="10.5" fill="${j ? tx : mu}">${v.toFixed(1)}%</text>`;
+              });
+              s += `</g>`;
+            });
+            s += `</svg>`;
+            r.innerHTML = s + legend([[cq, 'Qwen3.5-2B'], [cl, 'LFM2.5-2.6B']],
+              'Pass@1 on the 250 test tasks under each harness, before any training. LFM’s baseline has 998 of 1,000 cells graded.');
+          },
+
+          // The reward itself: correct answers, as a function of tool calls.
+          reward: () => {
+            const W = Math.max(320, r.clientWidth), Ht = 220, m = { l: 46, r: 16, t: 16, b: 38 };
+            const lo = 0.98, hi = 1.11, X = (v) => m.l + (v - 1) / 29 * (W - m.l - m.r), Y = (v) => Ht - m.b - (v - lo) / (hi - lo) * (Ht - m.t - m.b);
+            const cq = V('--muted-color','#999'), cl = P(0), mu = V('--muted-color','#888'), bd = V('--border-color','rgba(128,128,128,.3)'), id = `${uid}c${clipN++}`;
+            let s = `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="Reward for a correct answer as a function of tool calls">` + clipDef(id, m.l - 6, m.t, W - m.l - m.r + 12, Ht - m.t - m.b);
+            [1.0, 1.03, 1.06, 1.09].forEach(v => { s += `<line x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${bd}" stroke-dasharray="2 4"/><text x="${m.l-6}" y="${Y(v)+3.5}" text-anchor="end" font-size="10.5" fill="${mu}">${v.toFixed(2)}</text>`; });
+            [1, 5, 10, 15, 20, 25, 30].forEach(v => s += `<text x="${X(v)}" y="${Ht-m.b+14}" text-anchor="middle" font-size="10.5" fill="${mu}">${v}</text>`);
+            s += `<text x="${(m.l + W - m.r)/2}" y="${Ht-5}" text-anchor="middle" font-size="10.5" fill="${mu}">tool calls in the rollout</text><g clip-path="url(#${id})">`;
+            s += `<path d="M ${X(1)} ${Y(1)} L ${X(30)} ${Y(1)}" stroke="${cq}" stroke-width="2.2" stroke-dasharray="5 4" fill="none"/>`;
+            const pts = []; for (let n = 1; n <= 30; n++) pts.push([X(n), Y(1 + 1.5/(15+n))]);
+            s += `<path d="${pts.map((p,i) => `${i?'L':'M'} ${p[0]} ${p[1]}`).join(' ')}" stroke="${cl}" stroke-width="2.6" fill="none"/>`;
+            [1, 5, 15, 30].forEach(n => { const v = 1 + 1.5/(15+n);
+              s += `<circle cx="${X(n)}" cy="${Y(v)}" r="3.6" fill="${cl}"/><text x="${X(n)}" y="${Y(v)-9}" text-anchor="${n === 1 ? 'start' : n === 30 ? 'end' : 'middle'}" font-size="10.5" fill="${cl}">${n} call${n>1?'s':''}: ${v.toFixed(3)}</text>`; });
+            s += `</g></svg>`;
+            r.innerHTML = s + legend([[cq, 'Qwen: 1 for a correct answer, however many calls', true], [cl, 'LFM: 1 + 1.5 / (15 + calls)']],
+              'Reward for a correct rollout. A wrong answer scores 0 in both, however few calls it made.');
+          },
+
+          // Two real GRPO groups from the LFM multi-harness run, scored both ways.
+          group: () => {
+            const opts = D.example_groups.map(g => g.label);
+            const g = D.example_groups[sel], R = g.rollouts;
+            const qR = R.map(x => x.correct), lR = R.map(x => x.reward);
+            // GRPO's advantage: distance from the group mean, in group standard deviations.
+            const adv = (rs) => { const mu = rs.reduce((a,b)=>a+b,0)/rs.length; const sd = Math.sqrt(rs.reduce((a,b)=>a+(b-mu)**2,0)/rs.length);
+              return rs.map(x => sd < 1e-9 ? 0 : (x - mu) / sd); };
+            const qa = adv(qR), la = adv(lR), mx = Math.max(2, ...qa.map(Math.abs), ...la.map(Math.abs));
+            const cq = V('--muted-color','#999'), cl = P(0);
+            const bar = (a, c) => { const hpx = Math.abs(a) / mx * 27; return `<div class="av" title="advantage ${a.toFixed(2)}"><i style="background:${c};height:${Math.max(hpx, a ? 2 : 0)}px;${a >= 0 ? `bottom:50%` : `top:50%`}"></i></div>`; };
+            const h = chips(opts)
+              + `<div class="gr">`
+              + `<div class="lab"><b>Rollout</b>answer · tool calls</div>` + R.map(x => `<div class="ro ${x.correct ? 'ok' : 'no'}"><b>${x.correct ? '✓' : '✗'}</b>${x.calls} calls</div>`).join('')
+              + `<div class="sep"></div>`
+              + `<div class="lab"><b>Qwen reward</b>correctness only</div>` + qR.map(v => `<div class="rw">${v}</div>`).join('')
+              + `<div class="lab">advantage</div>` + qa.map(a => bar(a, cq)).join('')
+              + `<div class="sep"></div>`
+              + `<div class="lab"><b>LFM reward</b>with the tool bonus</div>` + lR.map(v => `<div class="rw">${v ? v.toFixed(3) : '0'}</div>`).join('')
+              + `<div class="lab">advantage</div>` + la.map(a => bar(a, cl)).join('')
+              + `</div>`;
+            const note = sel === 0
+              ? `All eight solved this hard ${esc(HL[g.harness])} task (training step ${g.step}). With correctness alone every rollout scores 1, so every advantage is zero and the group teaches nothing. With the bonus, the rollouts that needed 4 calls are pushed up and the one that needed 10 is pushed down.`
+              : `Half of this group solved a medium ${esc(HL[g.harness])} task (training step ${g.step}). Both rewards push the correct rollouts up. With the bonus, the correct answer that took 16 calls gains the least, and the wrong answer that stopped after 3 calls still scores 0.`;
+            r.innerHTML = h + legend([[cq, 'Qwen: correctness only'], [cl, 'LFM: correctness plus tool bonus']], note + ' Advantage is how far each reward sits from the group’s average, in standard deviations. It is what GRPO trains on.');
+            bindChips();
+          },
+
+          // Pass@1 across checkpoints: overall and per harness.
+          curve: () => {
+            const runs = cfg.runs || ['lfm_harbor_opencode','lfm_harbor_multi'];
+            r.innerHTML = panels(evalSeries(runs, null), (hk) => evalSeries(runs, hk), { unit:'%', aria:'Pass@1 over training steps', height: 260 })
+              + legend(runs.map(k => [RUN[k].c(), RUN[k].short, RUN[k].dash]),
+                cfg.note || 'Top: all 1,000 test cells. Below: the 250 cells of each harness. Hollow points are checkpoints where a few cells were never graded.');
+          },
+
+          // Final checkpoint, per harness: accuracy, or efficiency on matched successes.
+          final: () => {
+            const opts = ['Pass@1', 'Fewer tool calls', 'Fewer output tokens', 'Fewer input tokens'];
+            const key = [null, 'tool_sav', 'out_sav', 'in_sav'][sel];
+            const W = Math.max(320, r.clientWidth), narrow = W < 560;
+            const base = D.evals.lfm_harbor_multi.points[0].h;
+            const fin = (k) => D.evals[k].points.find(p => p.step === 1000).h;
+            const groups = H.map(h => ({ h, vals: key
+              ? [['lfm_harbor_opencode', D.final_by_harness.lfm_harbor_opencode[h][key]], ['lfm_harbor_multi', D.final_by_harness.lfm_harbor_multi[h][key]]]
+              : [['base', base[h]], ['lfm_harbor_opencode', fin('lfm_harbor_opencode')[h]], ['lfm_harbor_multi', fin('lfm_harbor_multi')[h]]] }));
+            const vals = groups.flatMap(g => g.vals.map(v => v[1]));
+            const lo = Math.min(0, Math.floor(Math.min(...vals) / 10) * 10), hi = key ? Math.max(10, Math.ceil(Math.max(...vals) / 10) * 10) : 70;
+            const Ht = 262, m = { l: 40, r: 10, t: 18, b: 44 };
+            const Y = (v) => Ht - m.b - (v - lo) / (hi - lo) * (Ht - m.t - m.b);
+            const gw = (W - m.l - m.r) / groups.length, n = groups[0].vals.length, bw = Math.min(30, (gw - 18) / n);
+            const mu = V('--muted-color','#888'), tx = V('--text-color','#111'), bd = V('--border-color','rgba(128,128,128,.3)'), id = `${uid}c${clipN++}`;
+            const col = (k) => k === 'base' ? V('--muted-color','#999') : RUN[k].c();
+            let s = `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="${esc(opts[sel])} at the final checkpoint, by harness">` + clipDef(id, m.l, 0, W - m.l, Ht);
+            ticks(lo, hi).out.forEach(v => s += `<line x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${bd}" stroke-dasharray="${v ? '2 4' : ''}"/><text x="${m.l-6}" y="${Y(v)+3.5}" text-anchor="end" font-size="10.5" fill="${mu}">${v}%</text>`);
+            s += `<g clip-path="url(#${id})">`;
+            groups.forEach((g, gi) => {
+              const gx = m.l + gi*gw + (gw - n*bw - (n-1)*4)/2;
+              g.vals.forEach(([k, v], j) => {
+                const x = gx + j*(bw+4), y = Y(Math.max(0, v)), y0 = Y(Math.min(0, v));
+                s += `<rect x="${x}" y="${Math.min(y, y0)}" width="${bw}" height="${Math.abs(y0 - y) || 1}" rx="3" fill="${col(k)}" fill-opacity="${k==='base'?0.55:0.92}"><title>${esc(k==='base' ? 'LFM base model' : RUN[k].short)}: ${v.toFixed(1)}%</title></rect>`;
+                if (!narrow || n < 3) s += `<text x="${x+bw/2}" y="${(v >= 0 ? y - 4 : y0 + 12)}" text-anchor="middle" font-size="10" fill="${tx}" fill-opacity=".8">${Math.round(v)}</text>`;
+              });
+            });
+            s += `</g>`;
+            groups.forEach((g, gi) => { const cx = m.l + gi*gw + gw/2;
+              s += `<rect x="${cx-9}" y="${Ht-m.b+8}" width="18" height="18" rx="5" fill="#fcfcfd"/><image href="/logos/${LOGO[g.h]}" x="${cx-6.5}" y="${Ht-m.b+10.5}" width="13" height="13"/>`;
+              s += `<text x="${cx}" y="${Ht-6}" text-anchor="middle" font-size="11.5" fill="${tx}">${esc(HL[g.h])}</text>`; });
+            s += `</svg>`;
+            const leg = key ? [[RUN.lfm_harbor_opencode.c(), RUN.lfm_harbor_opencode.short], [RUN.lfm_harbor_multi.c(), RUN.lfm_harbor_multi.short]]
+                            : [[V('--muted-color','#999'), 'LFM base model'], [RUN.lfm_harbor_opencode.c(), RUN.lfm_harbor_opencode.short], [RUN.lfm_harbor_multi.c(), RUN.lfm_harbor_multi.short]];
+            r.innerHTML = chips(opts) + s + legend(leg, key
+              ? 'Change against the base model, counted on the tasks both of them solved. Higher means the trained model used less. A bar below zero means it used more.'
+              : 'Pass@1 at step 1,000 under each harness, next to the base model.');
+            bindChips();
+          },
+
+          // LFM efficiency across checkpoints: overall and per harness.
+          efficiency: () => {
+            const opts = ['Tool calls per task', 'Fewer calls on shared successes', 'Output tokens per task', 'Input tokens per task'];
+            const key = ['calls', 'tool_savings', 'out', 'in'][sel], unit = ['', '%', 'k', 'k'][sel];
+            const runs = ['lfm_harbor_opencode', 'lfm_harbor_multi'];
+            const mk = (pts) => pts.filter(p => p[key] != null).map(p => ({ x: p.step, y: p[key], t: fmt(p[key], unit) }));
+            const main = runs.map(k => ({ c: RUN[k].c(), label: RUN[k].short, pts: mk(D.efficiency[k]) }));
+            const per = (hk) => runs.map(k => ({ c: RUN[k].c(), label: RUN[k].short, pts: mk(D.efficiency_by_harness[k][hk]) }));
+            const notes = [
+              'Mean tool calls per graded task. Top: all four harnesses. Below: each harness.',
+              'Drop in tool calls against the base model, counted only on tasks both the base model and the checkpoint solved.',
+              'Mean generated tokens per graded task, summed over every model call.',
+              'Mean prompt tokens per graded task, summed over every model call. History is counted again on each call.'];
+            r.innerHTML = chips(opts) + panels(main, per, { unit, aria: opts[sel] + ' over training' })
+              + legend(runs.map(k => [RUN[k].c(), RUN[k].short]), notes[sel]);
+            bindChips();
+          },
+
+          // Per-step training curves: raw values faint, a 50-step trailing average on top.
+          train: () => {
+            const opts = ['Training reward', 'Correct answers', 'Tool calls per rollout'];
+            const key = ['reward', 'correct', 'calls'][sel];
+            const runs = cfg.runs || ['lfm_harbor_opencode', 'lfm_harbor_multi'];
+            // Trailing mean over `win` steps. The first points average too few steps to mean much,
+            // so they are dropped until the window holds a reasonable number.
+            const trail = (xs, ys, win) => { const out = []; const q = []; let sum = 0;
+              ys.forEach((v, i) => { if (v == null) return; q.push(v); sum += v; if (q.length > win) sum -= q.shift();
+                if (q.length >= Math.min(win / 2, 25)) out.push({ x: xs[i], y: sum / q.length, t: fmt(sum / q.length, '') }); }); return out; };
+            const mainSeries = () => {
+              const main = [];
+              runs.forEach(k => {
+                const T = D.train_steps[k]; if (!T) return;
+                // Qwen's reward is its correctness, so the "correct answers" view uses it.
+                const ys = key === 'correct' && k.startsWith('qwen') ? T.reward : T[key];
+                // A faint 10-step line behind the smoothed one, for one or two runs and when it adds something.
+                if (runs.length <= 2 && smooth > 15) main.push({ c: RUN[k].c(), raw: true, pts: trail(T.step, ys, 10) });
+                main.push({ c: RUN[k].c(), dash: RUN[k].dash, noDots: true, label: RUN[k].short, pts: trail(T.step, ys, smooth) });
+              });
+              return main;
+            };
+            const mainChart = () => lineChart(Math.max(320, r.clientWidth), 270, mainSeries(), { unit: '', aria: opts[sel] + ' during training', endLabels: true });
+            const sLabel = () => smooth <= 1 ? 'off, raw steps' : `${smooth}-step average`;
+            // The small charts use the test set, which every run was evaluated on under all four
+            // harnesses every 100 steps. Training data would only cover the harnesses a run trained in.
+            const per = (hk) => {
+              const out = [];
+              runs.forEach(k => {
+                if (key === 'calls') {
+                  const arr = ((D.efficiency_by_harness || {})[k] || {})[hk];
+                  if (arr) out.push({ c: RUN[k].c(), dash: RUN[k].dash, label: RUN[k].short, pts: arr.map(p => ({ x: p.step, y: p.calls, t: `${p.calls.toFixed(1)} calls per task` })) });
+                } else {
+                  const pts = ((D.evals[k] || {}).points || []).filter(p => p.h && p.h[hk] != null);
+                  if (pts.length) out.push({ c: RUN[k].c(), dash: RUN[k].dash, label: RUN[k].short,
+                    pts: pts.map(p => ({ x: p.step, y: p.h[hk], hollow: !p.complete, t: `${p.h[hk].toFixed(1)}% pass@1${p.complete ? '' : ' (a few cells ungraded)'}` })) });
+                }
+              });
+              return out.length ? out : null;
+            };
+            const perUnit = key === 'calls' ? '' : '%';
+            const perHead = `<div class="tr-sub">On the test set, under each harness · ${key === 'calls' ? 'tool calls per task' : 'pass@1'}</div>`;
+            const notes = [
+              'Mean training reward at every optimizer step, smoothed with a trailing average. LFM’s reward includes the tool bonus, so it sits slightly above its correctness.',
+              'Share of rollouts with a correct answer at every optimizer step, smoothed with a trailing average.',
+              'Mean tool calls per rollout at every optimizer step, smoothed with a trailing average.'];
+            r.innerHTML = chips(opts)
+              + `<label class="tr-sm">Smoothing <input type="range" min="1" max="200" step="1" value="${smooth}" aria-label="Smoothing window in steps"><output>${sLabel()}</output></label>`
+              + `<div data-main>${mainChart()}</div>` + (H.some(hk => per(hk)) ? perHead + panelGrid(per, { unit: perUnit }) : '')
+              + legend(runs.map(k => [RUN[k].c(), RUN[k].short, RUN[k].dash]),
+                notes[sel] + (runs.length <= 2 ? ' With heavier smoothing, a faint 10-step line shows the noise behind it.' : '') + ' The small charts show the same runs on the held-out test set, evaluated under all four harnesses every 100 steps.');
+            bindChips();
+            // Dragging the slider redraws only the main chart, so the control is never replaced mid-drag.
+            const rng = r.querySelector('.tr-sm input'), out = r.querySelector('.tr-sm output'), host = r.querySelector('[data-main]');
+            rng.addEventListener('input', () => {
+              smooth = +rng.value; out.textContent = sLabel();
+              host.innerHTML = mainChart();
+              host.querySelectorAll('rect[data-clip]').forEach(c => c.setAttribute('width', c.dataset.w));
+            });
+          },
+
+          // Training-time behaviour in 100-step windows, overall and per harness.
+          windows: () => {
+            const opts = ['Tool calls per rollout', 'Correct answers', 'Training reward'];
+            const key = ['calls', 'correct', 'reward'][sel];
+            const runs = cfg.runs || ['qwen_harbor_opencode', 'qwen_harbor_multi', 'lfm_harbor_opencode', 'lfm_harbor_multi'];
+            // Qwen's reward is correctness, so its "correct" series is its reward.
+            const getv = (k, p) => key === 'correct' && p.correct == null && k.startsWith('qwen') ? p.reward : p[key];
+            const mkRun = (k, arr) => ({ c: RUN[k].c(), dash: RUN[k].dash, label: RUN[k].short,
+              pts: (arr || []).map(p => ({ x: p.end, y: getv(k, p), t: fmt(getv(k, p), '') + ` (steps ${p.start}–${p.end})` })).filter(p => p.y != null) });
+            const main = runs.map(k => mkRun(k, D.train_windows[k]));
+            // Per-harness training windows exist for the LFM runs, from once-per-rollout records.
+            const per = (hk) => {
+              const out = [];
+              ['lfm_harbor_opencode', 'lfm_harbor_multi'].forEach(k => {
+                const arr = (D.train_windows_by_harness[k] || {})[hk];
+                if (arr) out.push({ c: RUN[k].c(), label: RUN[k].short, pts: arr.map(p => ({ x: p.end, y: p[key], t: fmt(p[key], '') + ` (steps ${p.start}–${p.end}, ${p.rollouts} rollouts)` })) });
+              });
+              return out.length ? out : null;
+            };
+            const notes = [
+              'Mean tool calls per training rollout in 100-step windows. The small charts split the LFM runs by the harness each rollout used.',
+              'Share of training rollouts with a correct answer. For Qwen this is the reward itself.',
+              'Mean training reward. Qwen’s is correctness alone. LFM’s adds the tool bonus, so it sits slightly above its correctness.'];
+            r.innerHTML = chips(opts) + panels(main, per, { unit: '', aria: opts[sel] + ' during training' })
+              + legend(runs.map(k => [RUN[k].c(), RUN[k].short, RUN[k].dash]), notes[sel]);
+            bindChips();
+          },
+        };
+
+        const draw = (mode) => { clipN = 0; (views[view] || views.curve)(); reveal(seen ? (mode || 'none') : 'hold'); };
+        draw();
+        if ('IntersectionObserver' in window && !reduce) {
+          const io = new IntersectionObserver((es) => {
+            if (es.some(e => e.isIntersecting) && !seen) { seen = true; reveal('full'); io.disconnect(); }
+          }, { threshold: .3 });
+          io.observe(r);
+        } else { seen = true; reveal('none'); }
+        if ('ResizeObserver' in window) { let t, w0 = r.clientWidth; new ResizeObserver(() => { if (Math.abs(r.clientWidth - w0) < 2) return; w0 = r.clientWidth; clearTimeout(t); t = setTimeout(() => draw('none'), 100); }).observe(r); }
+      }).catch(e => { r.innerHTML = `<pre style="color:#c33;font-size:12px">${esc(e.message)}</pre>`; });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
+  })();
+</script>

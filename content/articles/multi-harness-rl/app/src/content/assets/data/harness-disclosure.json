@@ -1,5 +1,5 @@
 {
-  "note": "Disclosure level rises from naming no harness at all, to naming one per benchmark row, to measuring across several, to training across several.",
+  "note": "Each release sits at the most its report says about harnesses: naming none, naming one per benchmark row, measuring across several, or training across several.",
   "levels": [
     "names none",
     "names one per row",
@@ -14,16 +14,16 @@
       "detail": "The words harness and scaffold appear zero times."
     },
     {
-      "label": "Kimi K2",
-      "date": "2025-07",
-      "level": 1,
-      "detail": "Terminal-Bench listed twice, 25.0 Terminus and 30.0 in-house."
-    },
-    {
       "label": "Qwen3-Coder",
       "date": "2025-07",
       "level": 0,
       "detail": "Ships Qwen Code, Claude Code and Cline instructions, never names its own."
+    },
+    {
+      "label": "Kimi K2",
+      "date": "2025-07",
+      "level": 1,
+      "detail": "Terminal-Bench listed twice, 25.0 Terminus and 30.0 in-house."
     },
     {
       "label": "gpt-oss",
@@ -35,7 +35,7 @@
       "label": "Seed-OSS",
       "date": "2025-08",
       "level": 1,
-      "detail": "Harness inside the row label; two rank reversals."
+      "detail": "Names the harness inside the row label, with two rank reversals."
     },
     {
       "label": "MiniMax M2",
@@ -47,13 +47,19 @@
       "label": "DeepSeek-V3.2",
       "date": "2025-12",
       "level": 2,
-      "detail": "Robustness check across Claude Code and RooCode; incompatible with Terminus."
+      "detail": "Checked across Claude Code and RooCode, and incompatible with Terminus."
+    },
+    {
+      "label": "Qwen3-Coder-Next",
+      "date": "2026-03",
+      "level": 3,
+      "detail": "Generates its agentic training data in six different harnesses."
     },
     {
       "label": "Orchard",
       "date": "2026-05",
       "level": 3,
-      "detail": "Measures 62.4 collapsing to 3.6 on an unseen harness."
+      "detail": "Trains across harnesses, and measures 62.4 falling to 3.6 on an unseen one."
     },
     {
       "label": "Polar",
@@ -62,16 +68,34 @@
       "detail": "RL against four harnesses through an endpoint proxy."
     },
     {
+      "label": "poolside Laguna",
+      "date": "2026-05",
+      "level": 3,
+      "detail": "1.3B tokens of trajectories from three harnesses it does not own."
+    },
+    {
       "label": "KAT-Coder-V2.5",
       "date": "2026-07",
       "level": 3,
-      "detail": "Coins harness randomization; names three overfitting modes."
+      "detail": "Coins harness scaling and names three ways a model overfits."
     },
     {
       "label": "OpenForgeRL",
       "date": "2026-07",
       "level": 3,
-      "detail": "The only controlled one-versus-three harness ablation."
+      "detail": "A controlled comparison of training on one harness against three."
+    },
+    {
+      "label": "Kimi K3",
+      "date": "2026-07",
+      "level": 3,
+      "detail": "RL across harnesses assembled from composable modules."
+    },
+    {
+      "label": "MiMo-V2.6",
+      "date": "2026-09",
+      "level": 3,
+      "detail": "Multi-harness RL on a pool of task-adapted mini-harnesses."
     }
   ]
 }

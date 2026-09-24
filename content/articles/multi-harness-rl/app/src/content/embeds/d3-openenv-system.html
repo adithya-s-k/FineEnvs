@@ -1,0 +1,310 @@
+<div class="openenv-system" style="width:100%;margin:14px 0;"></div>
+<style>
+  .openenv-system { position: relative; }
+  .openenv-system svg { display:block; width:100%; height:auto; overflow:visible; }
+  .openenv-system .os-bar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:12px; }
+  .openenv-system .os-btn, .openenv-system .os-h { appearance:none; cursor:pointer; font:inherit; font-size:12px; line-height:1;
+    padding:7px 12px; border-radius:999px; border:1px solid var(--border-color);
+    background:transparent; color:var(--muted-color); transition:color .15s, border-color .15s; }
+  .openenv-system .os-btn:hover, .openenv-system .os-h:hover { color:var(--text-color); }
+  .openenv-system .os-h[aria-pressed="true"] { color:var(--text-color); border-color:var(--text-color); font-weight:600; }
+  .openenv-system .os-btn:focus-visible, .openenv-system .os-h:focus-visible { outline:2px solid var(--text-color); outline-offset:2px; }
+  .openenv-system .os-lbl { font-size:11.5px; color:var(--muted-color); margin-left:4px; }
+  .openenv-system .os-count { font-size:11.5px; color:var(--muted-color); font-variant-numeric:tabular-nums; min-width:74px; }
+  .openenv-system .os-sp { flex:1; }
+  .openenv-system .os-stage { position:relative; }
+  /* The explanation for the current step. On wide screens it floats in the empty gap
+     between two layers, next to the arrow it describes; on narrow ones it sits below. */
+  .openenv-system .os-pop { position:absolute; box-sizing:border-box; padding:8px 11px; border-radius:9px; overflow:hidden;
+    background:var(--surface-bg); border:1px solid var(--pc, var(--border-color)); box-shadow:0 4px 18px rgba(0,0,0,.18);
+    font-size:12px; line-height:1.45; color:var(--text-color); pointer-events:none; transition:opacity .25s; }
+  .openenv-system .os-pop b { display:block; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--pc, var(--muted-color)); margin-bottom:2px; }
+  .openenv-system .os-pop code { font-size:11px; }
+  .openenv-system .os-pop.below { position:static; margin-top:10px; box-shadow:none; }
+</style>
+<script>
+  (() => {
+    const C = 'openenv-system';
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let r = scriptEl ? scriptEl.previousElementSibling : null;
+      while (r && !(r.classList && r.classList.contains(C))) r = r.previousElementSibling;
+      if (!r) { const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true'); r = n[n.length-1]; }
+      if (!r || r.dataset.mounted === 'true') return;
+      r.dataset.mounted = 'true';
+
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const ease = (t) => t < .5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2;
+
+      // Only the wiring, the wire format and the tool names change between harnesses.
+      // The three tool calls are one SmolDataEnvs task: look at the data, compute, answer.
+      const H = {
+        'Claude Code': { call:'POST /v1/messages',         api:'Anthropic Messages', seam:'ANTHROPIC_BASE_URL and ANTHROPIC_API_KEY',
+                         tools:['Bash: ls /home/user/input', 'Bash: python -c "import pandas …"', 'Write: /workdir/answer.txt'] },
+        'Codex':       { call:'POST /v1/responses',        api:'OpenAI Responses',   seam:'OPENAI_BASE_URL and OPENAI_API_KEY',
+                         tools:['shell: ls /home/user/input', 'shell: python -c "import pandas …"', 'shell: echo 95293 > /workdir/answer.txt'] },
+        'OpenCode':    { call:'POST /v1/chat/completions', api:'chat completions',   seam:'a provider block in its config',
+                         tools:['bash: ls /home/user/input', 'bash: python -c "import pandas …"', 'write: /workdir/answer.txt'] },
+      };
+      const HN = Object.keys(H);
+      const TURNS = 3;
+
+      // The timeline. Turn 1 is told in full and slowly; turns 2 and 3 repeat the same
+      // hops faster, each with its own tool call and its own reason to exist.
+      const STEPS = [];
+      const add = (o) => STEPS.push(o);
+      add({ a:'run',  lit:['trainer','api'],     ms:4200, t:'Rollout request',
+            d:(h) => `The trainer asks for one rollout: a task, a harness (${h}) and a sandbox.` });
+      add({ a:'mint', lit:['runner','proxy'],    ms:3600, t:'Capture session',
+            d:() => 'The server mints a capture session. Its id becomes the agent’s API key.' });
+      add({ a:'boot', lit:['runner','sandbox'],  ms:4400, t:'Boot the sandbox',
+            d:(h) => `Harbor boots the sandbox, installs ${h} and points it at the proxy with ${H[h].seam}.` });
+      for (let k = 1; k <= TURNS; k++) {
+        const first = k === 1, f = first ? 1 : .6;
+        add({ a:'call', lit:['harness','proxy'], turn:k, ms:4000*f, t:`Turn ${k} · model call`,
+              d:(h) => first ? `${h} calls what it thinks is a model API, in its own format (${H[h].api}).`
+                             : `${h} calls the model again. The prompt now ends with turn ${k-1}’s tool result.` });
+        add({ a:'fwd',  lit:['proxy','engine'],  turn:k, ms:3800*f, t:`Turn ${k} · to vLLM`,
+              d:() => first ? 'The proxy converts the call to chat completions and asks vLLM for token ids and logprobs.'
+                            : 'The same conversion, and the same request for token ids and logprobs.' });
+        add({ a:'back', lit:['engine','proxy'],  turn:k, ms:4200*f, t:`Turn ${k} · recorded`, rec:true,
+              d:() => first ? 'vLLM returns the completion with its exact token ids and a logprob per token. The proxy records turn 1.'
+                            : `The proxy records turn ${k}. Its prompt starts with turn ${k-1}’s tokens exactly, so it is stored as turn ${k-1}’s child.` });
+        add({ a:'replay', lit:['proxy','harness'], turn:k, ms:3600*f, t:`Turn ${k} · reply`,
+              d:(h) => first ? `The reply goes back to ${h} in its own format, streamed if it asked for streaming.`
+                             : `The reply goes back to ${h} in its own format again.` });
+        add({ a:'tools', lit:['harness','work'], turn:k, tool:k-1, ms:first ? 4800 : 3800, t:`Turn ${k} · tool call`,
+              d:(h) => [ `The model asked to look at the data, so ${h} runs a command in the sandbox.`,
+                         'This time the model asked to compute the answer with pandas.',
+                         'The model asked to write the answer file. Its next reply has no tool call, so the agent stops.' ][k-1] });
+      }
+      add({ a:'grade',  lit:['verifier','runner'], ms:4200, t:'Grade',
+            d:() => 'The task’s own test script runs in the same sandbox and turns the answer file into a reward.' });
+      add({ a:'result', lit:['api','trainer'],     ms:4400, t:'Result',
+            d:() => `The trainer gets the reward and all ${TURNS} turns, each with its token ids, logprobs and loss mask.` });
+      add({ a:'sync',   lit:['trainer','engine'],  ms:4000, t:'Update',
+            d:() => 'After the update, the new weights go to vLLM, so the next rollout samples from the new policy.' });
+      const TOTAL = STEPS.reduce((a,s)=>a+s.ms,0);
+      const starts = []; STEPS.reduce((a,s,i)=>{ starts[i]=a; return a+s.ms; }, 0);
+
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let clock = 0, last = 0, playing = !reduce, visible = false, hi = 0, auto = true;
+      // After Back or Next, autoplay picks up again once the reader has been idle for a while.
+      // Pause is an explicit choice and stays paused.
+      const RESUME_MS = 12000; let resumeAt = 0;
+      if (reduce) clock = starts[3] + STEPS[3].ms*.6;
+
+      r.innerHTML =
+          `<div class="os-bar">`
+        +   `<button type="button" class="os-btn" data-act="play"></button>`
+        +   `<button type="button" class="os-btn" data-act="prev" aria-label="Previous step">‹ Back</button>`
+        +   `<button type="button" class="os-btn" data-act="next" aria-label="Next step">Next ›</button>`
+        +   `<span class="os-count"></span>`
+        +   `<span class="os-sp"></span>`
+        +   `<span class="os-lbl">Harness</span>`
+        +   HN.map((n,i) => `<button type="button" class="os-h" data-h="${i}" aria-pressed="${i===0}">${n}</button>`).join('')
+        + `</div>`
+        + `<div class="os-stage"><div data-svg></div><div class="os-pop" role="status" aria-live="polite"></div></div>`;
+
+      const els = {
+        svg: r.querySelector('[data-svg]'), pop: r.querySelector('.os-pop'),
+        play: r.querySelector('[data-act="play"]'), count: r.querySelector('.os-count'),
+        hs: [...r.querySelectorAll('.os-h')],
+      };
+      const phase = () => ((clock % TOTAL) + TOTAL) % TOTAL;
+      const stepAt = () => { const c = phase(); let i = 0; while (i < STEPS.length-1 && c >= starts[i+1]) i++; return i; };
+      const goto = (i) => { i = (i + STEPS.length) % STEPS.length; clock = Math.floor(clock / TOTAL)*TOTAL + starts[i] + STEPS[i].ms*.55; playing = false; resumeAt = reduce ? 0 : performance.now() + RESUME_MS; draw(); };
+      els.play.addEventListener('click', () => { playing = !playing; resumeAt = 0; draw(); });
+      r.querySelector('[data-act="prev"]').addEventListener('click', () => goto(stepAt() - 1));
+      r.querySelector('[data-act="next"]').addEventListener('click', () => goto(stepAt() + 1));
+      els.hs.forEach(b => b.addEventListener('click', () => { hi = +b.dataset.h; auto = false; draw(); }));
+
+      let lastPopKey = '';
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const mono = 'ui-monospace,SFMono-Regular,Menlo,monospace';
+        const cReq = P(0), cRes = P(3), cRec = P(1), cTrain = P(2);
+        const hname = HN[hi], h = H[hname];
+
+        const si = stepAt(), S = STEPS[si];
+        const st = Math.min(1, (phase() - starts[si]) / S.ms);
+        const wide = W >= 700;
+
+        // Where the rollout has got to, for the small counters inside the boxes.
+        const turnNow = S.turn || (si < 3 ? 0 : TURNS);
+        const recorded = STEPS.filter((x,j) => x.rec && (j < si || (j === si && st > .5))).length;
+        let toolIdx = null; for (let j = si; j >= 0; j--) if (STEPS[j].a === 'tools') { toolIdx = STEPS[j].tool; break; }
+        const done = si >= STEPS.length - 3;
+
+        // ── grid: three columns shared by all three layers, so vertical arrows line up
+        const pad = 2, inset = 10, gap = wide ? 34 : 22;
+        const cw = (W - 2*pad - 2*inset - 2*gap) / 3;
+        const cx = (k) => pad + inset + k*(cw + gap);
+        const yA = 6, hA = 60;
+        const gapV = wide ? 92 : 50;
+        const yB = yA + hA + gapV, headB = 26, hSub = wide ? 64 : 70, hB = headB + hSub + 12;
+        const yC = yB + hB + gapV, headC = 26, hC = headC + hSub + 44;
+        const Ht = yC + hC + 6;
+        const ySubB = yB + headB, ySubC = yC + headC;
+
+        const lit = (k) => S.lit.includes(k);
+        const col = (k) => ({ trainer:cTrain, engine:cRes, api:cTrain, runner:cReq, proxy:cRec, harness:cReq, work:cReq, verifier:cTrain })[k] || tx;
+
+        let s = `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="One rollout through OpenEnv, step ${si+1} of ${STEPS.length}: ${esc(S.t)}. ${esc(S.d(hname))}">`;
+        s += `<defs>`;
+        [['q',cReq],['s',cRes],['k',cRec],['t',cTrain],['m',mu]].forEach(([id,cc]) => {
+          s += `<marker id="os-${id}" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="${cc}"/></marker>`;
+        });
+        s += `</defs>`;
+
+        const clip = (t, w, px) => { const max = Math.max(3, Math.floor((w - 16) / px)); return t.length > max ? t.slice(0, max-1) + '…' : t; };
+        const box = (x, y, w, hh, label, title, sub, key) => {
+          const on = lit(key), cc = col(key);
+          let g = `<rect x="${x}" y="${y}" width="${w}" height="${hh}" rx="9" fill="${sf}" stroke="${on ? cc : bd}" stroke-width="${on ? 1.8 : 1}"/>`;
+          if (label) g += `<text x="${x+10}" y="${y+16}" font-size="9.5" fill="${on ? cc : mu}" font-family="${mono}" letter-spacing=".6">${esc(clip(label, w, 6.2))}</text>`;
+          g += `<text x="${x+10}" y="${y+(label?33:22)}" font-size="${wide?12.5:11.5}" font-weight="600" fill="${tx}" fill-opacity="${on?1:.82}">${esc(clip(title, w, wide?7.2:6.8))}</text>`;
+          if (sub) g += `<text x="${x+10}" y="${y+(label?49:38)}" font-size="${wide?10.5:9.8}" fill="${mu}">${esc(clip(sub, w, wide?5.9:5.6))}</text>`;
+          return g;
+        };
+        const status = (x, y, w, t, cc) => `<text x="${x+10}" y="${y}" font-size="${wide?10:9.4}" fill="${cc}" font-family="${mono}">${esc(clip(t, w, wide?6.1:5.8))}</text>`;
+        const frame = (x, y, w, hh, label, on, lx, cc) =>
+            `<rect x="${x}" y="${y}" width="${w}" height="${hh}" rx="12" fill="none" stroke="${on ? cc : bd}" stroke-dasharray="${on?'':'5 4'}" stroke-width="${on?1.4:1}"/>`
+          + `<text x="${lx}" y="${y+17}" font-size="10" fill="${mu}" font-family="${mono}" letter-spacing=".6">${esc(label)}</text>`;
+
+        // ── layer A: the GPU side
+        s += box(cx(0), yA, cw, hA, 'TRAINER', wide ? 'TRL, async GRPO' : 'TRL', wide ? 'computes the policy update' : 'GRPO update', 'trainer');
+        s += box(cx(2), yA, cw, hA, wide ? 'INFERENCE ENGINE' : 'ENGINE', wide ? 'vLLM, the policy' : 'vLLM', wide ? 'returns token ids + logprobs' : 'the policy', 'engine');
+
+        // ── layer B: the OpenEnv server
+        const fx = pad, fw = W - 2*pad;
+        s += frame(fx, yB, fw, hB, wide ? 'OPENENV SERVER · openenv harbor serve' : 'OPENENV', S.lit.some(k => ['api','runner','proxy'].includes(k)), cx(1)+2, cRec);
+        s += box(cx(0), ySubB, cw, hSub, null, wide ? 'Task API + MCP' : 'Task API', wide ? 'lists tasks, takes rollouts' : 'tasks', 'api');
+        s += box(cx(1), ySubB, cw, hSub, null, wide ? 'Harbor runner' : 'Harbor', wide ? 'one trial per rollout' : 'runs trial', 'runner');
+        s += box(cx(2), ySubB, cw, hSub, null, wide ? 'Capture proxy' : 'Proxy', wide ? 'records every model call' : 'records', 'proxy');
+        // turns recorded so far, as a row of cells inside the proxy box
+        { const x0 = cx(2) + 10, y0 = ySubB + hSub - 15, cwid = wide ? 24 : 14;
+          for (let k = 0; k < TURNS; k++) {
+            const on = k < recorded;
+            s += `<rect x="${x0 + k*(cwid+4)}" y="${y0}" width="${cwid}" height="7" rx="2" fill="${on ? cRec : 'none'}" stroke="${on ? cRec : bd}" fill-opacity="${on ? .85 : 0}"/>`;
+          }
+          if (wide) s += `<text x="${x0 + TURNS*(cwid+4) + 4}" y="${y0+7}" font-size="9.5" fill="${mu}" font-family="${mono}">${recorded} of ${TURNS} turns recorded</text>`;
+        }
+
+        // ── layer C: the sandbox
+        s += frame(fx, yC, fw, hC, wide ? 'SANDBOX · E2B, Modal, Docker or Daytona' : 'SANDBOX', S.a === 'boot', cx(0)+2, cReq);
+        s += box(cx(0), ySubC, cw, hSub, null, wide ? 'Task workspace' : 'Workspace', wide ? 'data files, bash, editor' : 'files, bash', 'work');
+        if (wide && toolIdx !== null) s += status(cx(0), ySubC + hSub - 9, cw, `$ ${h.tools[toolIdx]}`, S.a === 'tools' ? cReq : mu);
+        s += box(cx(1), ySubC, cw, hSub, null, 'Verifier', wide ? 'tests/test.sh, runs last' : 'test.sh', 'verifier');
+        if (wide && S.a === 'grade') s += status(cx(1), ySubC + hSub - 9, cw, 'reading answer.txt', cTrain);
+        s += box(cx(2), ySubC, cw, hSub, null, hname, wide ? h.call : 'unmodified', 'harness');
+        if (wide && turnNow > 0) s += status(cx(2), ySubC + hSub - 9, cw, done ? 'finished' : `turn ${turnNow} of ${TURNS}`, lit('harness') ? cReq : mu);
+
+        // ── arrows
+        const X = (k, f) => cx(k) + cw*f;
+        const A = {
+          run:    { left:true, lbl:'request',  d:`M ${X(0,.34)} ${yA+hA} L ${X(0,.34)} ${ySubB}`, c:cTrain, m:'t' },
+          result: { lbl:'result',               d:`M ${X(0,.66)} ${ySubB} L ${X(0,.66)} ${yA+hA}`, c:cTrain, m:'t' },
+          handoff:{ h:true,                      d:`M ${cx(0)+cw} ${ySubB+hSub/2} L ${cx(1)} ${ySubB+hSub/2}`, c:mu, m:'m' },
+          mint:   { h:true,                      d:`M ${cx(1)+cw} ${ySubB+hSub/2} L ${cx(2)} ${ySubB+hSub/2}`, c:cRec, m:'k' },
+          boot:   { lbl:'boot',                  d:`M ${X(1,.66)} ${ySubB+hSub} L ${X(1,.66)} ${ySubC}`, c:cReq, m:'q' },
+          grade:  { left:true, lbl:'reward',     d:`M ${X(1,.34)} ${ySubC} L ${X(1,.34)} ${ySubB+hSub}`, c:cTrain, m:'t' },
+          call:   { left:true, lbl:'model call', d:`M ${X(2,.34)} ${ySubC} L ${X(2,.34)} ${ySubB+hSub}`, c:cReq, m:'q' },
+          replay: { lbl:'reply',                 d:`M ${X(2,.66)} ${ySubB+hSub} L ${X(2,.66)} ${ySubC}`, c:cRes, m:'s' },
+          fwd:    { left:true, lbl:'chat + ids', d:`M ${X(2,.34)} ${ySubB} L ${X(2,.34)} ${yA+hA}`, c:cReq, m:'q' },
+          back:   { lbl:'tokens',                d:`M ${X(2,.66)} ${yA+hA} L ${X(2,.66)} ${ySubB}`, c:cRes, m:'s' },
+          sync:   { h:true, lbl:'sync weights',  d:`M ${cx(0)+cw} ${yA+hA/2} L ${cx(2)} ${yA+hA/2}`, c:cTrain, m:'t' },
+          tools:  { lbl:'tool call',             d:`M ${X(2,.5)} ${ySubC+hSub} L ${X(2,.5)} ${ySubC+hSub+22} L ${X(0,.5)} ${ySubC+hSub+22} L ${X(0,.5)} ${ySubC+hSub}`, c:cReq, m:'q' },
+        };
+        const pts = (d) => { const n = d.match(/-?\d+(\.\d+)?/g).map(Number); const p = []; for (let k=0;k<n.length;k+=2) p.push([n[k],n[k+1]]); return p; };
+        const along = (d, t) => {
+          const p = pts(d); const seg = []; let L = 0;
+          for (let k=1;k<p.length;k++){ const l = Math.hypot(p[k][0]-p[k-1][0], p[k][1]-p[k-1][1]); seg.push(l); L += l; }
+          let dist = t*L;
+          for (let k=1;k<p.length;k++){ if (dist <= seg[k-1] || k === p.length-1) { const f = seg[k-1] ? Math.min(1, dist/seg[k-1]) : 0; return [p[k-1][0]+(p[k][0]-p[k-1][0])*f, p[k-1][1]+(p[k][1]-p[k-1][1])*f]; } dist -= seg[k-1]; }
+          return p[p.length-1];
+        };
+        Object.entries(A).forEach(([k, a]) => {
+          const on = S.a === k || (k === 'handoff' && S.a === 'run');
+          s += `<path d="${a.d}" fill="none" stroke="${on ? a.c : mu}" stroke-opacity="${on ? 1 : .45}" stroke-width="${on ? 2 : 1.3}" marker-end="url(#os-${on ? a.m : 'm'})"/>`;
+          if (wide && a.lbl) {
+            const b = along(a.d, .5);
+            if (a.h) s += `<text x="${b[0]}" y="${b[1]-8}" text-anchor="middle" font-size="10" fill="${on ? a.c : mu}">${esc(a.lbl)}</text>`;
+            else if (k === 'tools') s += `<text x="${b[0]}" y="${b[1]+14}" text-anchor="middle" font-size="10" fill="${on ? a.c : mu}">${esc(a.lbl)}</text>`;
+            else s += `<text x="${b[0] + (a.left ? -8 : 8)}" y="${b[1]+3.5}" text-anchor="${a.left ? 'end' : 'start'}" font-size="10" fill="${on ? a.c : mu}">${esc(a.lbl)}</text>`;
+          }
+        });
+
+        // a dot travels along the active arrow
+        const a = A[S.a];
+        const pos = along(a.d, ease(Math.min(1, st*1.25)));
+        s += `<circle cx="${pos[0]}" cy="${pos[1]}" r="7" fill="${a.c}" fill-opacity=".2"/>`;
+        s += `<circle cx="${pos[0]}" cy="${pos[1]}" r="4.5" fill="${a.c}"/>`;
+        s += `</svg>`;
+        els.svg.innerHTML = s;
+
+        // ── the popup. It sits in the empty gap between two layers, beside the active
+        // arrow. Narrow screens get it as a caption under the diagram instead.
+        const pop = els.pop;
+        const key = `${si}|${hi}|${wide}`;
+        if (key !== lastPopKey) {
+          lastPopKey = key;
+          pop.style.setProperty('--pc', a.c);
+          pop.innerHTML = `<b>Step ${si+1} · ${esc(S.t)}</b>${esc(S.d(hname))}`;
+          if (wide) {
+            pop.classList.remove('below');
+            const upper = ['run','result','fwd','back','sync','mint'].includes(S.a);
+            const gy = upper ? yA + hA : yB + hB;          // top of the gap it sits in
+            const zone = upper ? 1 : 0;                    // the column whose gap has no arrows
+            pop.style.left = `${cx(zone) - 4}px`;
+            pop.style.width = `${cw + 8}px`;
+            pop.style.top = `${gy + 7}px`;
+            pop.style.maxHeight = `${gapV - 14}px`;
+          } else {
+            pop.classList.add('below');
+            pop.style.left = pop.style.top = pop.style.width = pop.style.maxHeight = '';
+          }
+        }
+        pop.style.opacity = st < .05 ? .4 : 1;
+
+        els.count.textContent = `Step ${si+1} of ${STEPS.length}`;
+        els.hs.forEach((b, i) => b.setAttribute('aria-pressed', String(i === hi)));
+        els.play.textContent = playing ? 'Pause' : 'Play';
+      };
+
+      const tick = (ts) => {
+        if (!last) last = ts;
+        const dt = Math.min(64, ts - last); last = ts;
+        if (!playing && resumeAt && ts > resumeAt) { playing = true; resumeAt = 0; }
+        if (playing && visible && !document.hidden) {
+          const before = Math.floor(clock / TOTAL);
+          clock += dt;
+          // Each full rollout moves on to the next harness, until the reader picks one.
+          if (auto && Math.floor(clock / TOTAL) !== before) hi = (hi + 1) % HN.length;
+          draw();
+        }
+        requestAnimationFrame(tick);
+      };
+      draw();
+      if (!reduce) requestAnimationFrame(tick);
+
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver((es) => { visible = es.some(e => e.isIntersecting); }, { threshold: .25 }).observe(r);
+      } else visible = true;
+      if ('ResizeObserver' in window) {
+        let t; new ResizeObserver(() => { clearTimeout(t); t = setTimeout(() => { lastPopKey = ''; draw(); }, 100); }).observe(r);
+      } else window.addEventListener('resize', () => { lastPopKey = ''; draw(); });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
+  })();
+</script>

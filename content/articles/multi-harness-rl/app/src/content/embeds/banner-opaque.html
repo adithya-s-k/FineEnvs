@@ -83,7 +83,9 @@
             // reads as one family. Hue is per harness — but it only ever appears on the
             // wire and in the tokens, never on a box. Identity is not observable from
             // outside the agent; it becomes observable the moment it makes a call.
-            const A0 = [78, 165, 183], A1 = [206, 192, 250], A2 = [232, 137, 171];
+            // Brighter than the shared anchors on purpose: this is the hero, and it is the
+            // only figure that uses these values. The rest of the article keeps the palette.
+            const A0 = [56, 212, 238], A1 = [190, 160, 255], A2 = [255, 106, 170];
             const ramp = (t) => {
                 t = Math.max(0, Math.min(1, t));
                 const [c, d, u] = t <= 0.5 ? [A0, A1, t / 0.5] : [A1, A2, (t - 0.5) / 0.5];
@@ -173,6 +175,8 @@
 
             const reduceMotion = window.matchMedia
                 && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            // `?og` holds every card in place so the social-card screenshot never catches a swap.
+            const holdCards = /[?&]og\b/.test(location.search);
 
             container.style.position = container.style.position || 'relative';
             const canvas = document.createElement('canvas');
@@ -325,7 +329,7 @@
                     if (b.phase === 'run') {
                         if (--b.timer <= 0) { b.timer = b.interval; emit(b); }
                         // the sandbox is recycled and another harness takes the slot
-                        if (--b.swap <= 0) { b.phase = 'stop'; b.pt = STOP_D; b.spike = 0; }
+                        if (--b.swap <= 0 && !holdCards) { b.phase = 'stop'; b.pt = STOP_D; b.spike = 0; }
                     } else if (b.phase === 'stop') {
                         if (--b.pt <= 0) {
                             const taken = new Set(boxes.filter((o) => o !== b).map((o) => o.hi));
@@ -358,7 +362,7 @@
                         b.spike *= 0.88;
                     }
                     // the set is larger than what fits, so slabs hand over occasionally
-                    if (--b.swap <= 0) {
+                    if (--b.swap <= 0 && !holdCards) {
                         b.swap = Math.round(rnd(900, 2400));
                         const taken = new Set(boxes.filter((o) => o !== b).map((o) => o.hi));
                         b.hi = pickUnused(taken);
@@ -475,9 +479,9 @@
                     // a running light, so a card is never fully still
                     const breathe = 0.5 + 0.5 * Math.sin(b.idle * (b.phase === 'boot' ? 4 : 1));
                     ctx.fillStyle = b.phase === 'run'
-                        ? rgba(b.rgb, 0.30 + 0.55 * breathe)
+                        ? rgba(b.rgb, 0.45 + 0.55 * breathe)
                         : b.phase === 'boot'
-                            ? rgba(b.rgb, 0.35 + 0.6 * breathe)
+                            ? rgba(b.rgb, 0.5 + 0.5 * breathe)
                             : rgba([150, 150, 158], 0.35);
                     ctx.beginPath();
                     ctx.arc(b.x + 13, b.y + 13, 2.4, 0, Math.PI * 2);
@@ -544,7 +548,7 @@
                             const v = b.trace[k];
                             if (v < 0.015) continue;
                             const bh = Math.max(1, Math.pow(v, 0.8) * th);
-                            ctx.fillStyle = rgba(b.rgb, 0.30 + 0.6 * v);
+                            ctx.fillStyle = rgba(b.rgb, 0.42 + 0.58 * v);
                             ctx.fillRect(tx + k * TRACE_STEP, tb - bh, 2, bh);
                         }
                     }
@@ -605,7 +609,7 @@
                     const outEdge = Math.min(1, (streamX0 + streamW - c.x) / 90);
                     const inEdge = Math.min(1, (c.x - streamX0) / 26 + 0.25);
                     const edge = Math.min(outEdge, inEdge);
-                    ctx.fillStyle = rgba(c.rgb, (c.bright ? 1 : 0.46) * edge);
+                    ctx.fillStyle = rgba(c.rgb, (c.bright ? 1 : 0.62) * edge);
                     ctx.fillRect(c.x, streamY0 + c.row * (TOK + TOK_GAP), TOK, TOK);
                 }
 

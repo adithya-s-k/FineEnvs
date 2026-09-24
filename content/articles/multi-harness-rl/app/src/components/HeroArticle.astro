@@ -54,17 +54,17 @@ const repoName = repo ? String(repo).replace(/\/+$/, "").split("/").pop() : "";
         banner-seam.html, the rollout fleet, the seam, the token field
       banner.html, the galaxy inherited from the template, is still in the repo
       but no longer offered. */}
+  {/* Only the harness grid is shown for now. To offer the rollout fleet again, add a
+      second panel with banner-seam.html (data-banner="seam") and the picker below:
+        <div class="hero-banner-pick" role="group" aria-label="Choose the hero visualisation">
+          <button type="button" data-pick="opaque" aria-pressed="true">Harnesses</button>
+          <button type="button" data-pick="seam" aria-pressed="false">Rollouts</button>
+        </div>
+      The picker script further down already handles both. */}
   <div class="hero-banner" data-banner-stage>
     <div class="hero-banner__panel" data-banner="opaque" data-active>
       <HtmlEmbed src="banner-opaque.html" frameless />
     </div>
-    <div class="hero-banner__panel" data-banner="seam">
-      <HtmlEmbed src="banner-seam.html" frameless />
-    </div>
-  </div>
-  <div class="hero-banner-pick" role="group" aria-label="Choose the hero visualisation">
-    <button type="button" data-pick="opaque" aria-pressed="true">Harnesses</button>
-    <button type="button" data-pick="seam" aria-pressed="false">Rollouts</button>
   </div>
   {description && <p class="hero-desc">{description}</p>}
 </section>

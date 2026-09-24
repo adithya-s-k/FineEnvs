@@ -29,8 +29,8 @@
         const sf = V('--surface-bg','#fff');
         const L = [
           ['tokens','prompt ids, sampled ids, aligned logprobs','trainable', 0],
-          ['logprobs','logprobs, but no ids to attach them to','not trainable', 3],
-          ['text','neither','not trainable', 3],
+          ['logprobs','logprobs, but no ids to attach them to','eval only', 3],
+          ['text','neither','eval only', 3],
         ];
         const rowH = 54, H = 30 + L.length*rowH;
         const lx = Math.min(130, W*0.17), rx = W - 16;
@@ -43,7 +43,7 @@
           s += `<text x="${rx}" y="${y+2}" text-anchor="end" font-size="11.5" font-weight="600" fill="${c}">${l[2]}</text>`;
         });
         s += '</svg>';
-        r.innerHTML = s + `<div class="nt">An endpoint missing the token-id flags still returns text, a 200 and plausible usage numbers. It just returns nothing trainable, so the first symptom is a loss curve that never moved, noticed days later. That is why the server refuses to start instead of degrading quietly.</div>`;
+        r.innerHTML = s + `<div class="nt">An endpoint missing the token-id flags still returns text, a 200 and plausible usage numbers, so the proxy does not take the configuration on trust. It probes each engine the first time it sees it and grades it. Anything below tokens still runs, but only for evaluation, and asking it for training data raises an error.</div>`;
       };
       draw();
       if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
