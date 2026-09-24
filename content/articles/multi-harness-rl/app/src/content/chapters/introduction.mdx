@@ -116,28 +116,27 @@ someone else's retry timing and stop conditions, unable to plan for itself once 
 ### Frontier labs now train across harnesses on purpose
 
 The fix is to vary the harness during training, which KwaiKAT frames as domain randomization applied
-to the environment. Labs now pay real money for it.
+to the environment. Two claims sit inside that, and they are easier to believe separately. The first
+is that labs deliberately buy harness variety. The second is that buying it costs them nothing.
 
-poolside's Laguna report has a section titled Multi-harness Training, and its opening line is this
-article's thesis in someone else's words [@poolside2026laguna]:
+For the first: poolside's Laguna report has a section titled Multi-harness Training, and its opening
+line is this article's thesis in someone else's words [@poolside2026laguna]:
 
 > "To encourage generalization across diverse agent harnesses, our training data includes
 > trajectories from external frameworks such as OpenHands, OpenCode, and Mini-SWE-Agent."
 
-That is 1.3 billion tokens of trajectories from three harnesses that are not theirs, each one's
-native behaviour deliberately left intact. poolside does have a harness of its own, `pool`, the
-terminal coding agent they ship and run all their evaluations in. They still bought the variety
-anyway, and their RL phase then runs through `pool` itself, so "any change to the deployed harness
-is also a change the policy is trained against."
+That is 1.3 billion tokens of trajectories from three harnesses that are not poolside's, with each
+one's native behaviour deliberately preserved, down to its subagent spawning, context compaction,
+planning scaffolds and reminder systems. poolside has a harness of its own, `pool`, the terminal
+coding agent they ship and run every evaluation in, and their RL phase runs through `pool` itself,
+so "any change to the deployed harness is also a change the policy is trained against." Supervised
+training on other people's harnesses, reinforcement learning inside their own.
 
-The split is worth noticing: supervised training on other people's harnesses, reinforcement
-learning inside their own.
-
-The obvious worry is that spreading training across harnesses trades peak performance for
+For the second: the worry is that spreading training across harnesses trades peak performance for
 robustness. The one controlled ablation published so far says otherwise. OpenForgeRL trained the
 same model on one harness and on three, and the three-harness run won even on the single harness's
-home turf, 48.5 against 46.0, while nearly tripling Codex [@yu2026openforgerl]. Harness variety
-behaved like a regularizer, not a tax.
+home turf, 48.5 against 46.0, while nearly tripling its Codex score [@yu2026openforgerl]. Harness
+variety behaved like a regularizer, not a tax.
 
 None of this has to be taken on my word. Here are the passages themselves.
 
