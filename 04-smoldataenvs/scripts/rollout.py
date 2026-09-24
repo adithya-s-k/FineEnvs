@@ -33,12 +33,12 @@ PROMPT = """{question}
 The files are in /home/user/input and your program runs in that directory:
 {files}
 
-Write one short Python program in a ```python block, then stop.
+Write one Python program in a ```python block, then stop.
 
-- `print()` the answer and nothing else: no exploration, no headers, no explanation.
-- The answer is one value: a bare number (no commas or units), a short label, yes/no,
-  or a comma-separated list.
-- pandas, numpy, scipy, sklearn and statsmodels are installed."""
+- Look at the data if you need to, then compute the answer.
+- The LAST thing the program prints must be the answer on its own: a bare number
+  (no commas or units), a short label, yes/no, or a comma-separated list.
+- Keep it under 40 lines. pandas, numpy, scipy, sklearn and statsmodels are installed."""
 
 
 def build_prompt(row: dict) -> list[dict]:

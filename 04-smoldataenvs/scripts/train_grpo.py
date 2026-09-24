@@ -74,6 +74,10 @@ RUN_NAME = os.environ.get("RUN_NAME", "smoldataenvs-grpo")
 # carry over is the completion budget: that run was a 17-step agent loop with a
 # 16k completion window, this one is a single program.
 NUM_TASKS = int(os.environ.get("NUM_TASKS", 256))  # tasks drawn from the train split
+# Restrict to a difficulty tier. GRPO learns from disagreement inside a group, so
+# a tier the model solves sometimes teaches more than one it never solves: the
+# base model is at 43% on easy and 6% on medium.
+DIFFICULTY = os.environ.get("DIFFICULTY", "")
 NUM_GENERATIONS = int(os.environ.get("NUM_GENERATIONS", 8))
 MAX_STEPS = int(os.environ.get("MAX_STEPS", 200))
 # Programs that actually finish run 250-900 tokens; the rest are a 2B repeating
@@ -146,14 +150,18 @@ def reward_ran(completions, **columns) -> list[float]:
 def main() -> None:
     from datasets import load_dataset
 
-    ds = load_dataset(DATASET, split="train").shuffle(seed=42).select(range(NUM_TASKS))
+    ds = load_dataset(DATASET, split="train").shuffle(seed=42)
+    if DIFFICULTY:
+        ds = ds.filter(lambda r: r["difficulty_tier"] == DIFFICULTY)
+    ds = ds.select(range(min(NUM_TASKS, len(ds))))
     # load_from_cache_file=False: datasets fingerprints the lambda, not the
     # prompt text it closes over, so editing the prompt silently reuses the old
     # mapped copy -- and a local dry run then tests a prompt that no longer exists.
     ds = ds.map(lambda row: {"prompt": build_prompt(row)}, load_from_cache_file=False)
     keep = {"prompt", "answer", "reward_mode", "atol", "rtol", "bucket_prefix"}
     ds = ds.remove_columns([c for c in ds.column_names if c not in keep])
-    print(f"{DATASET}: {len(ds)} training tasks, {NUM_GENERATIONS} generations each")
+    print(f"{DATASET}: {len(ds)} training tasks"
+          f"{' (' + DIFFICULTY + ')' if DIFFICULTY else ''}, {NUM_GENERATIONS} generations each")
 
     if "--dry-run" in sys.argv:
         _dry_run(ds)
