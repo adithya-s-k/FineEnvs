@@ -2,6 +2,7 @@
 # dependencies = [
 #   "transformers>=4.56.0",
 #   "torch>=2.4.0",
+#   "torchvision",
 #   "accelerate",
 #   "datasets>=3.0.0",
 #   "huggingface_hub>=1.22.0",

@@ -2,6 +2,13 @@
 # dependencies = [
 #   "trl>=0.27.0",
 #   "transformers>=4.56.0",
+#   # torchvision: AutoProcessor for Qwen3.5 resolves a VL video processor that
+#   #   imports it, even though nothing here touches video.
+#   # vllm: colocate mode runs vLLM in the trainer process. uv builds the env from
+#   #   this header, not from the image, so it has to be declared here.
+#   "torchvision",
+#   "vllm>=0.22.0",
+#   "accelerate",
 #   "datasets>=3.0.0",
 #   "huggingface_hub>=1.22.0",
 #   "math-verify",

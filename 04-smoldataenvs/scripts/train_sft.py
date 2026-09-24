@@ -3,6 +3,10 @@
 #   "trl>=0.12.0",
 #   "peft>=0.7.0",
 #   "transformers>=4.45.0",
+#   # AutoProcessor for Qwen3.5 resolves a VL video processor that imports
+#   # torchvision, even though nothing here touches video.
+#   "torchvision",
+#   "accelerate",
 #   "datasets>=3.0.0",
 #   "trackio",
 # ]
