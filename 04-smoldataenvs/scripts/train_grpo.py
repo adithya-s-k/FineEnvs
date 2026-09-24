@@ -42,6 +42,10 @@ import os
 import sys
 import urllib.request
 
+# 10GB sat reserved-but-unallocated in the run that OOMed; expandable segments
+# hand that back instead of fragmenting it away.
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
 # ── the environment lives in rollout.py ──────────────────────────────────────
 # Jobs runs a single file fetched by URL, so a sibling import will not resolve
 # there. Use the local copy when running from the repo, otherwise pull the same
@@ -76,10 +80,14 @@ MAX_COMPLETION_LENGTH = int(os.environ.get("MAX_COMPLETION_LENGTH", 1536))
 LEARNING_RATE = float(os.environ.get("LEARNING_RATE", 3e-6))
 TEMPERATURE = float(os.environ.get("TEMPERATURE", 0.8))
 TOP_P = float(os.environ.get("TOP_P", 1.0))
-PER_DEVICE_BATCH = int(os.environ.get("PER_DEVICE_BATCH", 4))
-GRAD_ACCUM = int(os.environ.get("GRAD_ACCUM", 4))
+# The reference run had per-device 4 x accum 4 across two GPUs. Here it is one
+# GPU shared with vLLM, so the same effective batch of 16 is reached with a
+# smaller per-device step: 2 x 8. The optimiser update is identical; only the
+# activation peak changes, and that peak is what ran the A100 out of memory.
+PER_DEVICE_BATCH = int(os.environ.get("PER_DEVICE_BATCH", 2))
+GRAD_ACCUM = int(os.environ.get("GRAD_ACCUM", 8))
 # vLLM shares the GPU with the model being trained, so it gets a slice, not the card.
-VLLM_MEM = float(os.environ.get("VLLM_MEM", 0.3))
+VLLM_MEM = float(os.environ.get("VLLM_MEM", 0.22))
 
 RUNNER = SandboxRunner()
 
@@ -163,6 +171,9 @@ def main() -> None:
             per_device_train_batch_size=PER_DEVICE_BATCH,
             gradient_accumulation_steps=GRAD_ACCUM,
             bf16=True,
+            # 2B full fine-tune + Adam states + a colocated vLLM is most of an
+            # 80GB card before a single activation exists.
+            gradient_checkpointing=True,
             logging_steps=1,
             save_steps=50,
             log_completions=True,
