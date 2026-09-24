@@ -209,7 +209,7 @@ with per-language exposure counts; the smoke is a pipeline check.
 uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana.py \
   --env-url https://fineenvs-nayana-ocr-env.hf.space \
   --model google/gemma-4-E2B-it --task-input corpus \
-  --evalset data/eval-500.json --output-dir artifacts/gemma4-e2b
+  --evalset data/eval-nayana-all-validation.json --output-dir artifacts/gemma4-e2b
 ```
 
 `google/gemma-4-E2B-it` (10.25 GB bf16, 35 text layers) and `google/gemma-4-E4B-it`
@@ -487,11 +487,11 @@ prefer a mount when building or evaluating at scale.
 # checked at load time, so this proves the set is usable, not merely indexed.
 uv run --frozen --project envs/nayana_ocr nayana-evalset build \
   --manifest data/corpus-manifest.json --cache-dir data/corpus-cache-local \
-  --output data/eval-500.json --size 500 --seed 42
+  --output data/eval-nayana-all-validation.json --size 1100 --seed 42
 
 # Re-check a frozen set against the corpus a server is actually serving.
 uv run --frozen --project envs/nayana_ocr nayana-evalset verify \
-  --evalset data/eval-500.json
+  --evalset data/eval-nayana-all-validation.json
 ```
 
 The record pins, per task, the immutable task ID, its language, family, source block,
@@ -515,7 +515,7 @@ comparability with every score already reported against that `evalset_id`:
 ```bash
 uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana.py \
   --env-url https://fineenvs-nayana-ocr-env.hf.space \
-  --evalset data/eval-500.json --output-dir artifacts/run
+  --evalset data/eval-nayana-all-validation.json --output-dir artifacts/run
 ```
 
 ### Rendered assets are not byte-reproducible across deployments
@@ -581,7 +581,7 @@ on-disk shape `nayana-prepare` produces:
 
 ```bash
 uv run --frozen --project envs/nayana_ocr nayana-evalset export \
-  --evalset data/eval-500.json --manifest data/corpus-manifest.json \
+  --evalset data/eval-nayana-all-validation.json --manifest data/corpus-manifest.json \
   --cache-dir data/corpus-cache-local --output data/eval-pack-500
 
 NAYANA_SNAPSHOT="$PWD/data/eval-pack-500" \

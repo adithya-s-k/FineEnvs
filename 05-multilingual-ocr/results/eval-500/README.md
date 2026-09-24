@@ -1,3 +1,10 @@
+> **Superseded.** These numbers were measured on `eval-500.json`, a 500-task set at
+> ~23 tasks per language. It has been retired: it covered the same 22 languages and
+> the same source split as the current `eval-nayana-all-test.json`, so both resolved
+> to the split name `eval_22_test` and the server refused to serve either. The sets
+> in use now carry **50 tasks per language**. Kept for the record; not comparable to
+> anything scored since.
+
 # Gemma 4 on the frozen evaluation set
 
 Both Gemma 4 sizes scored on all 500 tasks of `eval-500.json` — 22 languages, of which
