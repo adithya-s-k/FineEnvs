@@ -5,8 +5,8 @@
   .harness-lockin .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
   .harness-lockin .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
   .harness-lockin .k { display:inline-flex; align-items:center; gap:7px; }
-  .harness-lockin .sw { width:13px; height:3px; border-radius:2px; }
-  .harness-lockin .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+  .harness-lockin .sw { width:13px; height:10px; border-radius:2px; }
+  .harness-lockin .nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); }
 </style>
 <script>
   (() => {
@@ -21,52 +21,103 @@
         }
         return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
       };
+
+      // Orchard, Table 9 and section 3.7. Resolve rate (%), matched conditions.
+      // star = number reported in the original system's own paper.
+      // null = the system produced malformed tool calls, so there is no rate at all.
+      const COLS = [
+        {harness:'OpenHands',      task:'SWE-V',        seen:true},
+        {harness:'mini-swe-agent', task:'SWE-V',        seen:true},
+        {harness:'mini-swe-agent', task:'SWE-M',        seen:true},
+        {harness:'Kimi-CLI',       task:'SWE-V',        seen:false},
+        {harness:'Kimi-CLI',       task:'T-Bench 2.0',  seen:false},
+      ];
+      const ROWS = [
+        {n:'Scale-SWE',    sub:'trained in one harness',    v:[64.0, null, null, null, null], star:[1,0,0,0,0], c:3},
+        {n:'OpenSWE-32B',  sub:'trained in one harness',    v:[62.4, 54.9, 28.7, 3.6,  0.0 ], star:[1,0,0,0,0], c:3},
+        {n:'Orchard-SWE',  sub:'trained across harnesses',  v:[62.1, 64.3, 51.0, 45.0, 20.1], star:[0,0,0,0,0], c:0},
+      ];
+
       const draw = () => {
         const W = Math.max(320, r.clientWidth);
         const bd = V('--border-color','rgba(128,128,128,.3)');
         const mu = V('--muted-color','rgba(128,128,128,.8)');
         const tx = V('--text-color','#16181d');
-        const sf = V('--surface-bg','#fff');
-        const HN = ['OpenHands','mini-swe-agent','Kimi-CLI'];
-        const R = [
-          {n:'OpenSWE-32B, trained in one harness', v:[62.4,54.9,3.6],  c:P(3), flag:1},
-          {n:'Orchard-SWE, trained across several', v:[62.1,64.3,45.0], c:P(0)},
-        ];
-        const H = Math.max(240, Math.round(W/2.5));
-        const M = {t:30, r:34, b:44, l:52};
-        const iw = W-M.l-M.r, ih = H-M.t-M.b;
-        const x = i => M.l + (i/(HN.length-1))*iw;
-        const y = v => M.t + ih - (v/70)*ih;
-        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="A single-harness model collapsing across harnesses while a multi-harness model holds a band">`;
-        [0,20,40,60].forEach(g => {
-          s += `<line x1="${M.l}" y1="${y(g)}" x2="${W-M.r}" y2="${y(g)}" stroke="${bd}" stroke-opacity=".55"/>`;
-          s += `<text x="${M.l-8}" y="${y(g)+4}" text-anchor="end" font-size="10.5" fill="${mu}" font-family="ui-monospace,Menlo,monospace">${g}</text>`;
+        const narrow = W < 620;
+
+        const labW = narrow ? 118 : 168;
+        const padR = 6;
+        const headH = narrow ? 54 : 58;
+        const rowH  = narrow ? 58 : 62;
+        const H = headH + ROWS.length*rowH + 26;
+        const gridW = W - labW - padR;
+        const cw = gridW / COLS.length;
+        const barMax = 70;                       // common scale for every cell
+        const barW = cw - (narrow ? 14 : 22);
+        const fs = narrow ? 10 : 11.5;
+
+        const cx = i => labW + i*cw + (cw - barW)/2;
+        const split = labW + 3*cw;               // where the unseen harness starts
+
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Three systems evaluated across three harnesses and two task sets. The single-harness systems lose a little on a harness they have seen and collapse on one they have not.">`;
+
+        // the unseen-harness field, called out rather than left to the reader
+        s += `<rect x="${split}" y="${headH-34}" width="${W-split-padR+2}" height="${ROWS.length*rowH+30}" fill="${P(3)}" fill-opacity=".05"/>`;
+        s += `<line x1="${split}" y1="${headH-34}" x2="${split}" y2="${headH+ROWS.length*rowH-4}" stroke="${bd}"/>`;
+
+        // column headers: harness on top, task underneath
+        let i = 0;
+        while (i < COLS.length) {
+          let j = i; while (j+1 < COLS.length && COLS[j+1].harness === COLS[i].harness) j++;
+          const midX = labW + ((i + j + 1)/2)*cw;
+          const unseen = !COLS[i].seen;
+          s += `<text x="${midX}" y="${headH-38}" text-anchor="middle" font-size="${fs+.5}" font-weight="600" fill="${unseen ? P(3) : tx}" font-family="ui-monospace,Menlo,monospace">${COLS[i].harness}</text>`;
+          if (unseen) s += `<text x="${midX}" y="${headH-24}" text-anchor="middle" font-size="${fs-1}" fill="${P(3)}">never seen in training</text>`;
+          i = j + 1;
+        }
+        COLS.forEach((c,k) => {
+          s += `<text x="${labW + k*cw + cw/2}" y="${headH-6}" text-anchor="middle" font-size="${fs-.5}" fill="${mu}" font-family="ui-monospace,Menlo,monospace">${c.task}</text>`;
         });
-        HN.forEach((h,i) => s += `<text x="${x(i)}" y="${H-22}" text-anchor="middle" font-size="11.5" fill="${mu}" font-family="ui-monospace,Menlo,monospace">${h}</text>`);
-        // the band the multi-harness model stays inside
-        const mh = R[1].v, lo = Math.min(...mh), hi = Math.max(...mh);
-        s += `<rect x="${M.l}" y="${y(hi)}" width="${iw}" height="${y(lo)-y(hi)}" fill="${P(0)}" fill-opacity=".08"/>`;
-        s += `<text x="${W-M.r-6}" y="${y(hi)-6}" text-anchor="end" font-size="10.5" fill="${P(0)}">holds a 19-point band</text>`;
-        R.forEach((r, ri) => {
-          s += `<polyline fill="none" stroke="${r.c}" stroke-width="2.4" stroke-linecap="round" points="${r.v.map((v,i)=>`${x(i)},${y(v)}`).join(' ')}"/>`;
-          r.v.forEach((v,i) => {
-            s += `<circle cx="${x(i)}" cy="${y(v)}" r="4.6" fill="${r.c}"/>`;
-            // Two series can land within a point of each other, so push the labels
-            // apart rather than stacking them, and keep the end labels inside the box.
-            const other = R[1-ri].v[i];
-            const close = Math.abs(v - other) < 6;
-            const below = (r.flag && i === r.v.length-1) || (close && v < other);
-            const anchor = i === 0 ? 'start' : i === r.v.length-1 ? 'end' : 'middle';
-            const lx2 = i === 0 ? x(i) - 4 : i === r.v.length-1 ? x(i) + 4 : x(i);
-            s += `<text x="${lx2}" y="${y(v)+(below?21:-12)}" text-anchor="${anchor}" font-size="12" font-weight="600" fill="${r.c}" font-family="ui-monospace,Menlo,monospace">${v.toFixed(1)}</text>`;
+
+        ROWS.forEach((row,ri) => {
+          const yTop = headH + ri*rowH;
+          const yBar = yTop + (narrow ? 26 : 28);
+          const col = P(row.c);
+          s += `<line x1="0" y1="${yTop-4}" x2="${W-padR}" y2="${yTop-4}" stroke="${bd}" stroke-opacity=".7"/>`;
+          s += `<text x="0" y="${yTop+16}" font-size="${fs+1.5}" font-weight="600" fill="${tx}">${row.n}</text>`;
+          s += `<text x="0" y="${yTop+32}" font-size="${fs-.5}" fill="${mu}">${row.sub}</text>`;
+
+          row.v.forEach((v,k) => {
+            const x0 = cx(k);
+            if (v === null) {
+              // no bar, because there is no score: malformed tool calls. The
+              // reason is written once per row rather than in every cell.
+              const mx = x0 + barW/2, my = yBar - 3;
+              s += `<path d="M${mx-6} ${my-6} L${mx+6} ${my+6} M${mx+6} ${my-6} L${mx-6} ${my+6}" stroke="${P(3)}" stroke-width="2" stroke-linecap="round"/>`;
+              if (k === row.v.findIndex(q => q === null)) {
+                s += `<text x="${x0}" y="${my+24}" font-size="${fs-1}" fill="${P(3)}">no valid tool calls anywhere but at home</text>`;
+              }
+              return;
+            }
+            const bh = narrow ? 13 : 15;
+            s += `<rect x="${x0}" y="${yBar-bh}" width="${barW}" height="${bh}" rx="3" fill="${bd}" fill-opacity=".35"/>`;
+            // a zero is drawn as an empty track, never as a sliver that reads as "some"
+            if (v > 0) s += `<rect x="${x0}" y="${yBar-bh}" width="${Math.max(2, barW*(v/barMax))}" height="${bh}" rx="3" fill="${col}"/>`;
+            s += `<text x="${x0}" y="${yBar+15}" font-size="${fs+.5}" font-weight="600" fill="${col}" font-family="ui-monospace,Menlo,monospace">${v.toFixed(1)}${row.star[k] ? '*' : ''}</text>`;
           });
         });
-        s += `<text x="${x(2)-14}" y="${y(14)}" text-anchor="end" font-size="11" fill="${P(3)}">not a worse score, a broken one</text>`;
+
+        // the two numbers the whole figure exists to compare
+        const yOp = headH + 1*rowH + (narrow ? 26 : 28);
+        s += `<text x="${W-padR}" y="${H-6}" text-anchor="end" font-size="${fs-.5}" fill="${mu}">* reported by that system's own paper; every other cell is Orchard's own matched run</text>`;
         s += '</svg>';
+
         r.innerHTML = s +
           `<div class="lg"><div class="lg-t">Legend</div>` +
-          R.map(q => `<span class="k"><span class="sw" style="background:${q.c}"></span>${q.n}</span>`).join('') +
-          `</div><div class="nt">Same benchmark, same three harnesses, two training recipes. The model trained in one harness resolves 62.4 percent inside it and 3.6 percent in a harness it has never seen. Percentage points on the axis, so the drop is a cliff rather than a slope.</div>`;
+          `<span class="k"><span class="sw" style="background:${P(3)}"></span>trained inside a single harness</span>` +
+          `<span class="k"><span class="sw" style="background:${P(0)}"></span>trained across several harnesses</span>` +
+          `<span class="k">bars share one 0–70% scale</span>` +
+          `</div><div class="nt">Moving OpenSWE-32B off OpenHands, the harness it was trained in, onto mini-swe-agent costs 7.5 points. Moving it onto Kimi-CLI, which it had never seen, costs 58.8 and leaves 3.6. Scale-SWE does not degrade at all; away from its own harness it stops emitting valid tool calls, so there is no score to report. Orchard, trained across harnesses, stays inside a 19-point band and keeps 20.1 on a benchmark in a harness it never trained against.</div>`;
       };
       draw();
       if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }

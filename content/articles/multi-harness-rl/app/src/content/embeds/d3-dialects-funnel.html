@@ -57,7 +57,7 @@
       let sel = 0, timer = 0, visible = true;
 
       const els = (() => {
-        r.innerHTML = `<div class="df-pick" role="group" aria-label="Choose a wire dialect">`
+        r.innerHTML = `<div class="df-pick" role="group" aria-label="Choose an API dialect">`
           + D.map((d,i) => `<button type="button" class="df-btn" data-i="${i}" aria-pressed="${i===0}">${esc(d.name)} <small>${esc(d.who)}</small></button>`).join('')
           + `</div><div data-svg></div>`;
         return { svg: r.querySelector('[data-svg]'), btns: [...r.querySelectorAll('.df-btn')] };

@@ -2,16 +2,17 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
 
 ## What is a harness?
 
-An agent harness is the program that runs the agent. It owns the loop, decides which tools exist,
-builds the context the model sees, parses what comes back, and decides when to stop. From the
-model's side the harness is the interface. From the trainer's side it is an executable you do not
-control.
+The introduction gave the one-line version: the harness is the program that runs the agent. This
+chapter is about where its edges are, because every later decision in the article turns on one of
+them.
 
 The tightest definition in the literature comes from a position paper on benchmark disclosure, which
 calls it "the software layer between the model and the task that constructs the context the model
 sees, mediates its tool calls, validates its outputs, and decides when to retry, escalate, or stop"
 [@zhang2026stopcomparing]. LangChain's version is shorter and sticks in the head better: agent equals
-model plus harness, and if you are not the model, you are the harness.
+model plus harness, and if you are not the model, you are the harness. From the model's side the
+harness is the interface. From the trainer's side it is an executable you do not control, which is
+the fact the whole article has to work around.
 
 It helps to say what a harness is not, because several neighbouring things get called by the same
 name in casual writing. Hugging Face's [agent glossary](https://huggingface.co/blog/agent-glossary)
@@ -60,13 +61,15 @@ the endpoint was never the harness's to own.
 
 *Why does variety here cause so much trouble?*
 
-Because the variety is not cosmetic. Harnesses differ in the API dialect they speak, in whether they
+Because the variety is not cosmetic. Harnesses differ in the **API dialect** they speak, meaning the
+request and response format they use to talk to a model server: OpenAI chat-completions, OpenAI
+Responses, Anthropic Messages, Google Gemini. They differ in whether they
 use tool calling at all, in how they compact context, and in how much of the control flow they take
 away from the model. Those are exactly the axes the KAT-Coder team identified as the ones a model
 overfits to.
 
 {/* VIZ: harness-ecosystem-matrix: scannable HTML table, not a chart, following the pattern of
-     concept-rosetta in the previous guide. Columns: harness, maker, wire dialect, tool calling
+     concept-rosetta in the previous guide. Columns: harness, maker, API dialect, tool calling
      yes/no, whether it is drivable from a trainer, whether Harbor ships an adapter. Tint the
      dialect column so the four families are visible as blocks. */}
 <HtmlEmbed
