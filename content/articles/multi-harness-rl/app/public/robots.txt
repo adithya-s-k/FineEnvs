@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
 
-Sitemap: /sitemap-index.xml
+Sitemap: https://adithyask-multi-harness-rl.hf.space/sitemap.xml
 LLMs-Txt: /llms.txt

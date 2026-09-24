@@ -2,11 +2,7 @@
 <style>
   .overfit-modes { position: relative; }
   .overfit-modes svg { display:block; width:100%; height:auto; overflow:visible; }
-  .overfit-modes .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
-  .overfit-modes .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
-  .overfit-modes .k { display:inline-flex; align-items:center; gap:7px; }
-  .overfit-modes .sw { width:13px; height:3px; border-radius:2px; }
-  .overfit-modes .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+  .overfit-modes .nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); }
 </style>
 <script>
   (() => {
@@ -21,38 +17,116 @@
         }
         return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
       };
+      const esc = (t) => t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+      // The three modes are KAT-Coder's. The examples are the concrete form each
+      // one takes on the wire, so the row is readable without the chapter text.
+      const MODES = [
+        {
+          name:'Format',
+          gloss:'anchored to one action format',
+          trained:{ h:'trained in a tool-calling harness', code:'"tool_calls": [{"name": "edit_file", …}]' },
+          foreign:{ h:'dropped into aider, which takes edits in prose', code:'<<<<<<< SEARCH … ======= … >>>>>>> REPLACE' },
+          seen:'The JSON arrives as chat text. Nothing is parsed, nothing is edited, and the turn is scored as a non-answer.'
+        },
+        {
+          name:'Context structure',
+          gloss:'anchored to one way of stacking history',
+          trained:{ h:'trained where each result is its own message', code:'role: "tool"  →  one message per result' },
+          foreign:{ h:'dropped into a harness that compacts history', code:'role: "user"  →  one summarised turn' },
+          seen:'Its own earlier results are no longer where it expects them, so it repeats work it has already done.'
+        },
+        {
+          name:'Control flow',
+          gloss:'anchored to someone else’s retry and stop rules',
+          trained:{ h:'trained where the harness retries for it', code:'exit 1  →  harness retries, then stops at step N' },
+          foreign:{ h:'dropped into a harness that just reports and waits', code:'exit 1  →  error returned to the model' },
+          seen:'It runs the same failing command again, because deciding when to stop was never its job.'
+        },
+      ];
+
       const draw = () => {
         const W = Math.max(320, r.clientWidth);
         const bd = V('--border-color','rgba(128,128,128,.3)');
         const mu = V('--muted-color','rgba(128,128,128,.8)');
         const tx = V('--text-color','#16181d');
-        const sf = V('--surface-bg','#fff');
-        const M3 = [
-          ['Format','the action format it was trained to emit','the tool protocol changes, and parse failures spike'],
-          ['Context structure','the order its training harness concatenated history in','the context is laid out differently, and behaviour degrades'],
-          ['Control flow','someone else\u2019s reflection timing and stopping conditions','that scaffolding is absent, and it cannot plan for itself'],
-        ];
-        const rowH = 64, H = 34 + M3.length*rowH;
-        const lx = Math.min(150, W*0.19), mx = lx + Math.min(250, W*0.30);
-        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Three ways a model overfits to the harness it was trained in">`;
-        s += `<text x="${lx}" y="14" font-size="10" fill="${mu}" font-family="ui-monospace,Menlo,monospace" letter-spacing="1">ANCHORED TO</text>`;
-        s += `<text x="${mx}" y="14" font-size="10" fill="${mu}" font-family="ui-monospace,Menlo,monospace" letter-spacing="1">BREAKS WHEN</text>`;
-        M3.forEach((m,i) => {
-          const y = 42 + i*rowH, c = P(i);
-          s += `<rect x="0" y="${y-20}" width="${W}" height="${rowH-14}" rx="8" fill="${c}" fill-opacity=".05"/>`;
-          s += `<rect x="0" y="${y-20}" width="3" height="${rowH-14}" rx="1.5" fill="${c}"/>`;
-          s += `<text x="14" y="${y}" font-size="13" font-weight="700" fill="${tx}">${m[0]}</text>`;
-          s += `<text x="14" y="${y+17}" font-size="10.5" fill="${mu}">overfitting</text>`;
-          const wrap = (t,cx2,limit) => {
-            const w = t.split(' '); const out=[]; let cur='';
-            w.forEach(x2 => { if ((cur+' '+x2).trim().length > limit) { out.push(cur); cur=x2; } else cur=(cur+' '+x2).trim(); });
-            if (cur) out.push(cur);
-            return out.map((ln,j) => `<text x="${cx2}" y="${y+j*15}" font-size="11.5" fill="${j===0?tx:mu}">${ln}</text>`).join('');
-          };
-          s += wrap(m[1], lx, 34) + wrap(m[2], mx, 40);
+        const narrow = W < 680;
+
+        const pad = 14;
+        const labW = narrow ? 0 : 168;                 // stacked on narrow screens
+        const colGap = 14;
+        const bodyX = labW ? labW + colGap : pad;
+        const bodyW = W - bodyX - pad;
+        const colW = (bodyW - colGap) / 2;
+        const fsMono = narrow ? 9.5 : 10.5;
+        const fs = narrow ? 11 : 12;
+
+        // monospace wraps on a character budget; prose wraps on a wider one
+        const wrapChars = (t, px, perChar) => {
+          const limit = Math.max(8, Math.floor(px / perChar));
+          const out = []; let cur = '';
+          t.split(' ').forEach(w => {
+            if ((cur + ' ' + w).trim().length > limit) { out.push(cur); cur = w; }
+            else cur = (cur + ' ' + w).trim();
+          });
+          if (cur) out.push(cur);
+          return out;
+        };
+
+        const rows = MODES.map(m => {
+          const tl = wrapChars(m.trained.code, colW - 20, fsMono * 0.60);
+          const fl = wrapChars(m.foreign.code, colW - 20, fsMono * 0.60);
+          const th = wrapChars(m.trained.h, colW, fs * 0.52);
+          const fh = wrapChars(m.foreign.h, colW, fs * 0.52);
+          const sn = wrapChars(m.seen, bodyW, fs * 0.52);
+          const codeLines = Math.max(tl.length, fl.length);
+          const headLines = Math.max(th.length, fh.length);
+          const labLines = narrow ? 2 : 0;
+          const h = 10 + labLines*18 + headLines*15 + 8 + codeLines*15 + 26 + sn.length*16 + 14;
+          return {m, tl, fl, th, fh, sn, codeLines, headLines, h};
+        });
+
+        const H = rows.reduce((a,b) => a + b.h + 12, 6);
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Three ways a model overfits to its harness, each with the concrete form it takes: a format it keeps emitting, a history layout it expects, and retry rules it leans on.">`;
+
+        let y = 6;
+        rows.forEach((row, i) => {
+          const c = P(i);
+          const m = row.m;
+          s += `<rect x="0" y="${y}" width="${W}" height="${row.h}" rx="10" fill="${c}" fill-opacity=".05"/>`;
+          s += `<rect x="0" y="${y}" width="3" height="${row.h}" rx="1.5" fill="${c}"/>`;
+
+          let ty = y + 22;
+          if (narrow) {
+            s += `<text x="${pad}" y="${ty}" font-size="${fs+1}" font-weight="700" fill="${tx}">${m.name} overfitting</text>`;
+            s += `<text x="${pad}" y="${ty+16}" font-size="${fs-1}" fill="${mu}">${m.gloss}</text>`;
+            ty += 36;
+          } else {
+            s += `<text x="${pad}" y="${y+24}" font-size="${fs+1}" font-weight="700" fill="${tx}">${m.name}</text>`;
+            s += `<text x="${pad}" y="${y+40}" font-size="${fs-1}" fill="${mu}">overfitting</text>`;
+            const gl = wrapChars(m.gloss, labW - pad, (fs-1) * 0.52);
+            gl.forEach((ln,j) => s += `<text x="${pad}" y="${y+62+j*14}" font-size="${fs-1.5}" fill="${mu}">${ln}</text>`);
+          }
+
+          // two columns: what it was trained against, what it was dropped into
+          [[0, m.trained, row.th, row.tl, c], [1, m.foreign, row.fh, row.fl, P(3)]].forEach(([k, side, heads, code, col]) => {
+            const x = bodyX + k*(colW + colGap);
+            heads.forEach((ln,j) => s += `<text x="${x}" y="${ty + j*15}" font-size="${fs}" font-weight="${j===0?600:400}" fill="${k ? P(3) : tx}">${ln}</text>`);
+            const cy = ty + row.headLines*15 + 6;
+            s += `<rect x="${x}" y="${cy}" width="${colW}" height="${row.codeLines*15 + 12}" rx="6" fill="${V('--surface-bg','#fff')}" stroke="${bd}"/>`;
+            code.forEach((ln,j) => s += `<text x="${x+10}" y="${cy + 17 + j*15}" font-size="${fsMono}" fill="${col}" font-family="ui-monospace,Menlo,monospace">${esc(ln)}</text>`);
+          });
+
+          // the symptom, spanning both columns
+          const sy = ty + row.headLines*15 + 6 + row.codeLines*15 + 12 + 36;
+          row.sn.forEach((ln,j) => s += `<text x="${bodyX}" y="${sy + j*16}" font-size="${fs}" fill="${mu}">${j===0 ? '' : ''}${ln}</text>`);
+          s += `<text x="${bodyX}" y="${sy-16}" font-size="${fs-2}" fill="${mu}" font-family="ui-monospace,Menlo,monospace" letter-spacing="1">WHAT YOU SEE</text>`;
+
+          y += row.h + 12;
         });
         s += '</svg>';
-        r.innerHTML = s + `<div class="nt">Named by the KAT-Coder team, and worth keeping to hand: the rest of this article is about removing all three at once by varying the harness during rollouts, rather than patching each of them separately.</div>`;
+
+        r.innerHTML = s + `<div class="nt">The three modes are the KAT-Coder team's; the examples are the form each one takes on the wire. All three have the same cure and it is not three separate patches: vary the harness during rollouts, and none of the three has a fixed target to anchor to.</div>`;
       };
       draw();
       if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }

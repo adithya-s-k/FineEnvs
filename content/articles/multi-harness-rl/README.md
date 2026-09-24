@@ -1,6 +1,6 @@
 ---
 title: "The ultimate guide to multi-harness RL"
-short_description: "Training and evals together across many agent harnesses"
+short_description: "Train open models with RL inside real agent harnesses"
 emoji: 🔀
 colorFrom: green
 colorTo: purple
@@ -14,17 +14,21 @@ tags:
   - llm-training
   - reinforcement-learning
   - agents
+  - openenv
+  - harbor
+  - grpo
+  - trl
 thumbnail: >-
-  https://raw.githubusercontent.com/adithya-s-k/HuggingEnvs/refs/heads/main/assets/content/multi-harness-training.png
+  https://huggingface.co/spaces/AdithyaSK/multi-harness-rl/resolve/main/app/public/og/og-image.png
 ---
 
 # Multi-Harness RL
 
-[Read the article](https://huggingface.co/spaces/HuggingEnvs/multi-harness-rl).
+[Read the article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl).
 
 A research article built with [research-article-template](https://huggingface.co/spaces/tfrere/research-article-template).
 
-Source lives in [HuggingEnvs](https://github.com/adithya-s-k/HuggingEnvs) under
+Source lives in [FineEnvs](https://github.com/adithya-s-k/FineEnvs) under
 `content/articles/multi-harness-rl/`.
 
 ## Quick start
@@ -51,7 +55,7 @@ npm run dev           # http://localhost:4321
 From the repo root, over the Hub HTTP endpoint (no git remote, no nested repo):
 
 ```bash
-python3 tools/deploy.py content/articles/multi-harness-rl HuggingEnvs/multi-harness-rl
+python3 tools/deploy.py content/articles/multi-harness-rl AdithyaSK/multi-harness-rl
 ```
 
 The Dockerfile and nginx config are included; this README is the Space card.

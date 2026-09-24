@@ -1,163 +1,127 @@
 <div class="scaffold-reversal" style="width:100%;margin:14px 0;"></div>
-
 <style>
   .scaffold-reversal { position: relative; }
-  .scaffold-reversal svg { display: block; width: 100%; height: auto; overflow: visible; }
-  .scaffold-reversal .sr-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 18px;
-    margin-top: 14px;
-    font-size: 12px;
-    color: var(--muted-color);
-  }
-  .scaffold-reversal .sr-legend-title {
-    width: 100%;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted-color);
-    opacity: 0.75;
-  }
-  .scaffold-reversal .sr-key { display: inline-flex; align-items: center; gap: 7px; }
-  .scaffold-reversal .sr-swatch { width: 14px; height: 3px; border-radius: 2px; }
-  .scaffold-reversal .sr-note {
-    margin-top: 10px;
-    font-size: 12px;
-    line-height: 1.5;
-    color: var(--muted-color);
-    }
-  .scaffold-reversal .sr-err {
-    padding: 10px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: #b3261e;
-    font-size: 12px;
-    white-space: pre-wrap;
-  }
+  .scaffold-reversal svg { display:block; width:100%; height:auto; overflow:visible; }
+  .scaffold-reversal .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .scaffold-reversal .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .scaffold-reversal .k { display:inline-flex; align-items:center; gap:7px; }
+  .scaffold-reversal .sw { width:14px; height:3px; border-radius:2px; }
+  .scaffold-reversal .nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); }
 </style>
-
 <script>
   (() => {
-    const ROOT = 'scaffold-reversal';
-
-    const bootstrap = () => {
-      const nodes = Array.from(document.querySelectorAll('.' + ROOT))
-        .filter((el) => !(el.dataset && el.dataset.mounted === 'true'));
-      const root = nodes[nodes.length - 1];
-      if (!root) return;
-      root.dataset.mounted = 'true';
-
-      const cssVar = (n, f) => (getComputedStyle(root).getPropertyValue(n).trim() || f);
-
-      const palette = (i, total) => {
-        // Fall back to the article's own ramp when ColorPalettes is unavailable.
-        if (window.ColorPalettes && typeof window.ColorPalettes.categorical === 'function') {
-          try { return window.ColorPalettes.categorical(total)[i]; } catch (e) { /* fall through */ }
+    const C = 'scaffold-reversal';
+    const boot = () => {
+      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
         }
-        const A = [[78,165,183],[146,176,234],[206,192,250],[232,137,171]];
-        const c = A[i % A.length];
-        return `rgb(${c[0]},${c[1]},${c[2]})`;
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
       };
 
-      const fetchFirst = async (urls) => {
-        for (const u of urls) {
-          try {
-            const r = await fetch(u, { cache: 'no-cache' });
-            if (r.ok) return await r.json();
-          } catch (e) { /* try the next one */ }
-        }
-        throw new Error('could not load scaffold-reversal.json');
-      };
+      // Table 2 of "Stop Comparing LLM Agents Without Disclosing the Harness".
+      // A controlled factorial: same 100-task difficulty-stratified SWE-bench
+      // Verified subset, same Docker environment, same 50-step budget, same
+      // 120s per-step timeout, two runs per cell, mean pass@1. Only the harness
+      // configuration changes, so nothing here mixes in extra test-time compute.
+      const HN = [
+        {k:'H1', t:'Minimal',  s:'no compression, verbose tools, no retries'},
+        {k:'H2', t:'Improved', s:'compressed context, minimal tools, retries'},
+        {k:'H3', t:'Full',     s:'H2 plus self-checks, drift checks, rollback'},
+      ];
+      const R = [
+        {n:'GLM-5.1',   v:[52.5, 56.5, 65.5], c:0},
+        {n:'GPT-5.4',   v:[55.0, 58.5, 63.5], c:3},
+        {n:'Kimi K2.6', v:[52.0, 59.0, 60.5], c:1},
+      ];
 
-      const render = (data) => {
-        const models = data.models;
-        const cols = data.scaffolds;
-        const flips = new Set();
-        for (const r of data.reversals) { flips.add(r.a); flips.add(r.b); }
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const narrow = W < 620;
 
-        const draw = () => {
-          const W = Math.max(320, root.clientWidth);
-          const H = Math.max(240, Math.round(W / 2.4));
-          const M = { t: 26, r: Math.min(180, W * 0.24), b: 34, l: Math.min(180, W * 0.24) };
-          const iw = W - M.l - M.r;
-          const ih = H - M.t - M.b;
+        const H = Math.max(300, Math.round(W/2.4));
+        const M = {t:56, r:narrow ? 104 : 150, b:40, l:62};
+        const iw = W-M.l-M.r, ih = H-M.t-M.b;
+        const lo = 50, hi = 67;                        // the data's own range, printed on the axis
+        const x = i => M.l + (i/(HN.length-1))*iw;
+        const y = v => M.t + ih - ((v-lo)/(hi-lo))*ih;
+        const fs = narrow ? 10.5 : 12;
 
-          const all = cols.flatMap((c) => c.scores);
-          const lo = Math.floor(Math.min(...all) / 5) * 5 - 2;
-          const hi = Math.ceil(Math.max(...all) / 5) * 5 + 2;
-          const y = (v) => M.t + ih - ((v - lo) / (hi - lo)) * ih;
-          const x = (i) => M.l + (cols.length === 1 ? 0 : (i / (cols.length - 1)) * iw);
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Three models across three harness configurations. Each model is best under a different configuration, so the ranking changes with the harness.">`;
 
-          const border = cssVar('--border-color', 'rgba(128,128,128,0.3)');
-          const muted = cssVar('--muted-color', 'rgba(128,128,128,0.8)');
-          const text = cssVar('--text-color', '#16181d');
+        // gridlines, labelled, so the cropped y range is stated rather than hidden
+        [50,55,60,65].forEach(g => {
+          s += `<line x1="${M.l}" y1="${y(g)}" x2="${W-M.r}" y2="${y(g)}" stroke="${bd}" stroke-opacity=".55"/>`;
+          s += `<text x="${M.l-8}" y="${y(g)+4}" text-anchor="end" font-size="${fs-1.5}" fill="${mu}" font-family="ui-monospace,Menlo,monospace">${g}</text>`;
+        });
 
-          let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="SWE-Bench Verified scores for four models under two scaffolds, showing two rank reversals">`;
+        // one column per harness configuration
+        HN.forEach((h,i) => {
+          s += `<line x1="${x(i)}" y1="${M.t-26}" x2="${x(i)}" y2="${M.t+ih}" stroke="${bd}" stroke-opacity=".5"/>`;
+          s += `<text x="${x(i)}" y="${M.t-34}" text-anchor="middle" font-size="${fs+1}" font-weight="700" fill="${tx}" font-family="ui-monospace,Menlo,monospace">${h.k} ${h.t}</text>`;
+        });
 
-          // the two scaffold axes
-          cols.forEach((c, i) => {
-            s += `<line x1="${x(i)}" y1="${M.t - 8}" x2="${x(i)}" y2="${M.t + ih + 8}" stroke="${border}" stroke-width="1"/>`;
-            s += `<text x="${x(i)}" y="${M.t + ih + 26}" text-anchor="middle" font-size="11.5" fill="${muted}" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">${c.name}</text>`;
-          });
+        // the winner of each column, which is a different model every time
+        HN.forEach((h,i) => {
+          const best = R.reduce((a,b) => b.v[i] > a.v[i] ? b : a);
+          s += `<circle cx="${x(i)}" cy="${y(best.v[i])}" r="10" fill="none" stroke="${P(best.c)}" stroke-width="1.5" stroke-opacity=".55"/>`;
+          s += `<text x="${x(i)}" y="${y(best.v[i])-18}" text-anchor="middle" font-size="${fs-2}" fill="${P(best.c)}" font-family="ui-monospace,Menlo,monospace">best here</text>`;
+        });
 
-          // one line per model, crossings are the whole point
-          models.forEach((m, mi) => {
-            const flip = flips.has(m);
-            const col = palette(mi, models.length);
-            const pts = cols.map((c, ci) => [x(ci), y(c.scores[mi])]);
-            s += `<polyline fill="none" stroke="${col}" stroke-width="${flip ? 2.6 : 1.4}"
-                    stroke-opacity="${flip ? 0.95 : 0.4}" stroke-linecap="round"
-                    points="${pts.map((p) => p.join(',')).join(' ')}"/>`;
-            pts.forEach((p, pi) => {
-              s += `<circle cx="${p[0]}" cy="${p[1]}" r="${flip ? 4.2 : 3}" fill="${col}" fill-opacity="${flip ? 1 : 0.5}"/>`;
-              const v = cols[pi].scores[mi].toFixed(1);
-              const anchor = pi === 0 ? 'end' : 'start';
-              const dx = pi === 0 ? -10 : 10;
-              s += `<text x="${p[0] + dx}" y="${p[1] + 4}" text-anchor="${anchor}" font-size="12"
-                      font-family="ui-monospace,SFMono-Regular,Menlo,monospace"
-                      fill="${flip ? text : muted}" fill-opacity="${flip ? 1 : 0.75}">${v}</text>`;
-            });
-          });
-
-          s += '</svg>';
-
-          const legend =
-            '<div class="sr-legend"><div class="sr-legend-title">Legend</div>' +
-            models.map((m, i) =>
-              `<span class="sr-key"><span class="sr-swatch" style="background:${palette(i, models.length)};opacity:${flips.has(m) ? 1 : 0.45}"></span>${m}</span>`
-            ).join('') +
-            '</div>' +
-            `<div class="sr-note">Lines that cross are rank reversals: the two models swap order when only the scaffold changes.
-             ${data.note} Source:
-             <a href="${data.url}" target="_blank" rel="noopener noreferrer">${data.source}</a>.</div>`;
-
-          root.innerHTML = s + legend;
+        // Labels get dodged per column: three series inside a 17-point range put
+        // points within a few pixels of each other, and stacked text is unreadable.
+        const dodge = (items) => {
+          const out = items.slice().sort((a,b) => a.y - b.y);
+          for (let i = 1; i < out.length; i++) {
+            if (out[i].y - out[i-1].y < 16) out[i].y = out[i-1].y + 16;
+          }
+          return out;
         };
+        const colLabels = [0,1,2].map(i => dodge(R.map(row => ({row, y: y(row.v[i]), v: row.v[i]}))));
 
-        draw();
-        if ('ResizeObserver' in window) {
-          let t;
-          new ResizeObserver(() => { clearTimeout(t); t = setTimeout(draw, 120); }).observe(root);
-        } else {
-          window.addEventListener('resize', draw);
-        }
+        R.forEach(row => {
+          const col = P(row.c);
+          s += `<polyline fill="none" stroke="${col}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" points="${row.v.map((v,i)=>`${x(i)},${y(v)}`).join(' ')}"/>`;
+          row.v.forEach((v,i) => {
+            s += `<circle cx="${x(i)}" cy="${y(v)}" r="5.5" fill="${sf}"/>`;
+            s += `<circle cx="${x(i)}" cy="${y(v)}" r="3.6" fill="${col}"/>`;
+          });
+        });
+
+        // H1 and H2 carry bare numbers; H3 carries the model name, so the reader
+        // never has to match a colour to the legend to follow a line across.
+        [0,1].forEach(i => {
+          colLabels[i].forEach(({row, y:ly, v}) => {
+            const anchor = i === 0 ? 'start' : 'middle';
+            const lx = i === 0 ? x(i)+12 : x(i);
+            s += `<text x="${lx}" y="${ly+4}" text-anchor="${anchor}" font-size="${fs-1}" fill="${P(row.c)}" font-family="ui-monospace,Menlo,monospace">${v.toFixed(1)}</text>`;
+          });
+        });
+        colLabels[2].forEach(({row, y:ly, v}) => {
+          s += `<text x="${x(2)+14}" y="${ly+4.5}" font-size="${fs}" font-weight="600" fill="${P(row.c)}">${row.n} <tspan font-family="ui-monospace,Menlo,monospace" font-weight="400">${v.toFixed(1)}</tspan></text>`;
+        });
+
+        s += `<text x="${M.l}" y="${H-14}" font-size="${fs-1}" fill="${mu}">pass@1 on the same 100 SWE-bench Verified tasks, mean of two runs. Only the harness changes.</text>`;
+        s += '</svg>';
+
+        r.innerHTML = s +
+          `<div class="lg"><div class="lg-t">Legend</div>` +
+          R.map(q => `<span class="k"><span class="sw" style="background:${P(q.c)}"></span>${q.n}</span>`).join('') +
+          `<div class="lg-t" style="margin-top:8px">The three configurations</div>` +
+          HN.map(h => `<span class="k"><strong>${h.k}</strong> ${h.s}</span>`).join('') +
+          `</div><div class="nt">Three models that sit within 3 points of each other on a public coding leaderboard, run across three harness configurations under matched conditions: same task subset, same container, same 50-step budget, same timeout. <strong>Each model is best under a different configuration.</strong> Changing the harness moves GLM-5.1 by 13.0 points; changing the model inside a fixed harness moves scores by 2.5 to 5.0. The authors count six ranking reversals across the nine model-pair/harness-pair comparisons, and harness-induced variance 7.8 times model-induced variance. Source: Table 2, Stop Comparing LLM Agents Without Disclosing the Harness.</div>`;
       };
-
-      const files = (root.closest('[data-datafiles]') || {}).dataset;
-      const name = (files && files.datafiles) || 'scaffold-reversal.json';
-      fetchFirst([
-        name.includes('/') ? name : '/data/' + name,
-        'assets/data/' + name,
-      ]).then(render).catch((e) => {
-        root.innerHTML = `<pre class="sr-err">${e.message}</pre>`;
-      });
+      draw();
+      if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
+      else window.addEventListener('resize', draw);
     };
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', bootstrap);
-    } else {
-      bootstrap();
-    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   })();
 </script>

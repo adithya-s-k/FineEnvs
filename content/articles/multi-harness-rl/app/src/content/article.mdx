@@ -1,6 +1,6 @@
 ---
 title: "The ultimate guide to multi-harness RL"
-description: "Training and evals together: how a capture layer turns any black-box agent harness into trainable tokens, and what it takes to train a small model across many of them."
+description: "The same model performs differently in every agent harness. Now you can train it with RL inside the ones people actually use, like Claude Code and Codex, and improve it across all of them."
 authors:
   - name: "Adithya S Kolavi"
     url: "https://huggingface.co/AdithyaSK"
@@ -9,9 +9,23 @@ authors:
 affiliations:
   - name: "Hugging Face"
     url: "https://huggingface.co"
-published: "August 30, 2026"
-# repo: "https://github.com/adithya-s-k/HuggingEnvs"   # uncomment to show the CODE button
-seoThumbImage: "https://raw.githubusercontent.com/adithya-s-k/HuggingEnvs/refs/heads/main/assets/content/multi-harness-training.png"
+published: "September 24, 2026"
+# repo: "https://github.com/adithya-s-k/FineEnvs"   # uncomment to show the CODE button
+seoThumbImage: "https://huggingface.co/spaces/AdithyaSK/multi-harness-rl/resolve/main/app/public/og/og-image.png"
+canonicalUrl: "https://huggingface.co/spaces/AdithyaSK/multi-harness-rl"
+twitter: "@adithya_s_k"
+tags:
+  - multi-harness RL
+  - reinforcement learning
+  - agent harness
+  - GRPO
+  - OpenEnv
+  - Harbor
+  - TRL
+  - Claude Code
+  - Codex
+  - OpenCode
+  - small language models
 template: "article"
 tableOfContentsAutoCollapse: true
 showPdf: true
@@ -25,19 +39,13 @@ showPdf: true
 import Introduction from "./chapters/introduction.mdx";
 import WhatIsAHarness from "./chapters/what-is-a-harness.mdx";
 import RlEnvironments from "./chapters/rl-environments.mdx";
-import DataAgent from "./chapters/data-agent.mdx";
-import OpenEnvHarbor from "./chapters/openenv-harbor.mdx";
-import Evals from "./chapters/evals.mdx";
-import TrainingAblations from "./chapters/training-ablations.mdx";
-import AsyncGrpo from "./chapters/async-grpo.mdx";
+import OpenEnv from "./chapters/openenv.mdx";
+import Training from "./chapters/training.mdx";
 import Conclusions from "./chapters/conclusions.mdx";
 
 <Introduction />
 <WhatIsAHarness />
 <RlEnvironments />
-<DataAgent />
-<OpenEnvHarbor />
-<Evals />
-<TrainingAblations />
-<AsyncGrpo />
+<OpenEnv />
+<Training />
 <Conclusions />

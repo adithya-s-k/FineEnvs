@@ -1,0 +1,165 @@
+<div class="savings-heat" style="width:100%;margin:14px 0;"></div>
+<style>
+  .savings-heat { position: relative; }
+  .savings-heat .sh-bar { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .savings-heat .sh-chip { appearance:none; cursor:pointer; font:inherit; font-size:12px; line-height:1; padding:6px 11px;
+    border-radius:999px; border:1px solid var(--border-color); background:transparent; color:var(--muted-color); }
+  .savings-heat .sh-chip:hover { color:var(--text-color); }
+  .savings-heat .sh-chip[aria-pressed="true"] { color:var(--text-color); border-color:var(--text-color); font-weight:600; }
+  .savings-heat .sh-chip:focus-visible { outline:2px solid var(--text-color); outline-offset:2px; }
+  .savings-heat .sh-wrap { display:grid; grid-template-columns: 1fr 1fr; gap:18px; }
+  .savings-heat .sh-t { font-size:12.5px; font-weight:600; color:var(--text-color); margin:0 0 6px 46px; }
+  .savings-heat .sh-g { display:grid; grid-template-columns: 42px repeat(4, minmax(0, 1fr)); gap:2px; }
+  .savings-heat .sh-h { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10.5px; line-height:1.15; color:var(--muted-color); text-align:center; padding-bottom:4px; }
+  .savings-heat .logo { width:18px; height:18px; border-radius:5px; background:#fcfcfd; display:inline-grid; place-items:center; }
+  .savings-heat .logo img { width:13px; height:13px; object-fit:contain; }
+  .savings-heat .sh-s { font-size:11px; color:var(--muted-color); text-align:right; padding-right:6px; align-self:center; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .savings-heat .sh-c { height:26px; border-radius:3px; display:grid; place-items:center; font-size:11.5px; font-variant-numeric:tabular-nums;
+    cursor:default; transition: background-color .45s ease, color .45s ease, opacity .5s ease, transform .5s ease; }
+  .savings-heat .sh-c.empty { background: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--border-color) 60%, transparent) 4px 5px); }
+  .savings-heat .sh-c.on { outline:2px solid var(--text-color); outline-offset:-1px; }
+  .savings-heat .sh-c.pre { opacity:0; transform:scale(.85); }
+  .savings-heat .sh-lg { display:flex; align-items:center; gap:10px; margin-top:12px; font-size:11.5px; color:var(--muted-color); flex-wrap:wrap; }
+  .savings-heat .sh-ramp { width:180px; height:10px; border-radius:3px; }
+  .savings-heat .sh-cap { margin-top:8px; min-height:38px; font-size:12.5px; line-height:1.5; color:var(--text-color); }
+  .savings-heat .sh-cap span { color:var(--muted-color); }
+  @media (max-width: 640px) {
+    .savings-heat .sh-wrap { grid-template-columns: 1fr; gap:14px; }
+    .savings-heat .sh-c { height:22px; font-size:11px; }
+    .savings-heat .sh-lg { flex-wrap:nowrap; gap:8px; font-size:11px; }
+    .savings-heat .sh-ramp { width:auto; flex:1; min-width:60px; }
+  }
+</style>
+<script>
+  (() => {
+    const C = 'savings-heat';
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let r = scriptEl ? scriptEl.previousElementSibling : null;
+      while (r && !(r.classList && r.classList.contains(C))) r = r.previousElementSibling;
+      if (!r) { const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true'); r = n[n.length-1]; }
+      if (!r || r.dataset.mounted === 'true') return;
+      r.dataset.mounted = 'true';
+
+      const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const grab = async (f) => {
+        for (const u of ['/data/'+f, 'assets/data/'+f, '../assets/data/'+f]) {
+          try { const x = await fetch(u, {cache:'no-cache'}); if (x.ok) return await x.json(); } catch(e) {}
+        }
+        throw new Error('could not load '+f);
+      };
+      // Ends of the diverging palette: the first stop marks more usage, the last marks savings.
+      const DIV = (() => {
+        try { const d = window.ColorPalettes.getColors('diverging', 9); if (d && d.length) return [d[0], d[d.length-1]]; } catch(e) {}
+        return ['#EC956A', '#48BDE8'];
+      })();
+      const LOGO = { 'opencode':'opencode.svg', 'claude-code':'claude-code.svg', 'codex':'codex.png', 'mini-swe-agent':'swe-agent.svg' };
+      const HL = { 'opencode':'OpenCode', 'claude-code':'Claude Code', 'codex':'Codex', 'mini-swe-agent':'Mini-SWE-Agent' };
+      const METRICS = [
+        { label:'Tool calls', i:1, noun:'tool calls' },
+        { label:'Generated tokens', i:3, noun:'generated tokens' },
+        { label:'Input tokens', i:4, noun:'input tokens' },
+      ];
+      const RUNS = [['opencode', 'Trained in OpenCode only'], ['multi', 'Trained across four harnesses']];
+      const MAX = 50;   // percent at which a cell reaches full colour
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const isDark = () => {
+        const m = getComputedStyle(r).getPropertyValue('--surface-bg').trim() || getComputedStyle(document.body).backgroundColor;
+        const el = document.createElement('i'); el.style.color = m; document.body.appendChild(el);
+        const rgb = getComputedStyle(el).color.match(/[\d.]+/g) || [255,255,255]; el.remove();
+        return (0.2126*rgb[0] + 0.7152*rgb[1] + 0.0722*rgb[2]) < 110;
+      };
+
+      grab('lfm-savings-heat.json').then(D => {
+        const H = D.harnesses;
+        const steps = [...new Set(RUNS.flatMap(([k]) => D.runs[k].map(x => x.step)))].sort((a, b) => a - b);
+        let sel = 0, pinned = null, revealed = reduce;
+
+        r.innerHTML = `<div class="sh-bar" role="group" aria-label="Metric">`
+          + METRICS.map((m, i) => `<button type="button" class="sh-chip" data-i="${i}" aria-pressed="${i === 0}">${esc(m.label)}</button>`).join('') + `</div>`
+          + `<div class="sh-wrap">` + RUNS.map(([k, t]) => {
+              const by = Object.fromEntries(D.runs[k].map(x => [x.step, x]));
+              return `<div><div class="sh-t">${esc(t)}</div><div class="sh-g" role="table" aria-label="${esc(t)}">`
+                + `<div></div>` + H.map(h => `<div class="sh-h" role="columnheader"><span class="logo"><img src="/logos/${LOGO[h]}" alt="" loading="lazy"></span>${esc(HL[h])}</div>`).join('')
+                + steps.map((s, ri) => {
+                    const row = by[s];
+                    return `<div class="sh-s" role="rowheader">${s}${row && row.partial ? '*' : ''}</div>`
+                      + H.map((h, hi) => row
+                          ? `<div class="sh-c${revealed ? '' : ' pre'}" role="cell" tabindex="0" data-k="${k}" data-s="${s}" data-h="${hi}" style="transition-delay:${revealed ? 0 : ri*55}ms"></div>`
+                          : `<div class="sh-c empty" role="cell" aria-label="not evaluated"></div>`).join('');
+                  }).join('')
+                + `</div></div>`;
+            }).join('') + `</div>`
+          + `<div class="sh-lg"><span>more than the base model</span><span class="sh-ramp"></span><span>fewer</span></div>`
+          + `<div class="sh-cap" aria-live="polite"></div>`;
+
+        const cells = [...r.querySelectorAll('.sh-c[data-k]')];
+        const cap = r.querySelector('.sh-cap');
+        const cellData = (el) => {
+          const row = D.runs[el.dataset.k].find(x => x.step === +el.dataset.s);
+          return { row, c: row.cells[+el.dataset.h], h: H[+el.dataset.h] };
+        };
+        const fmt = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(0);
+
+        const paint = () => {
+          const m = METRICS[sel], dark = isDark();
+          r.querySelector('.sh-ramp').style.background = `linear-gradient(90deg, ${DIV[0]}, color-mix(in oklab, ${DIV[0]} 0%, var(--surface-bg, #fff)), ${DIV[1]})`;
+          cells.forEach(el => {
+            const { c } = cellData(el), v = c[m.i];
+            const t = Math.min(1, Math.abs(v) / MAX), end = v >= 0 ? DIV[1] : DIV[0];
+            el.style.backgroundColor = `color-mix(in oklab, ${end} ${Math.round(t*92)}%, var(--surface-bg, #fff))`;
+            // Light cells take the page's text colour; strong cells in dark mode switch to dark text.
+            el.style.color = dark && t > .7 ? '#0b0d10' : 'var(--text-color)';
+            el.textContent = fmt(v);
+            el.setAttribute('aria-label', `${HL[cellData(el).h]}, step ${el.dataset.s}: ${fmt(v)}% ${m.noun}`);
+          });
+          r.querySelectorAll('.sh-chip').forEach((b, i) => b.setAttribute('aria-pressed', String(i === sel)));
+          caption();
+        };
+        const caption = () => {
+          const m = METRICS[sel];
+          if (!pinned) {
+            cap.innerHTML = `<span>Each cell compares a checkpoint with the base model on the test tasks both solved under that harness. `
+              + `Blue means fewer ${m.noun}, orange means more. * marks an evaluation that was still missing a few cells.</span>`;
+            return;
+          }
+          const { row, c, h } = cellData(pinned), v = c[m.i];
+          const run = pinned.dataset.k === 'multi' ? 'multi-harness' : 'OpenCode-only';
+          cap.innerHTML = `<b>${esc(HL[h])}, step ${row.step}</b> <span>· ${run} run</span><br>`
+            + (Math.abs(v) < .5 ? `About the same ${m.noun} as the base model` : `${Math.abs(v).toFixed(1)}% ${v > 0 ? 'fewer' : 'more'} ${m.noun} than the base model`)
+            + ` <span>on the ${c[0]} tasks both solved.</span>`;
+        };
+
+        r.querySelector('.sh-bar').addEventListener('click', (e) => {
+          const b = e.target.closest('.sh-chip'); if (!b) return;
+          sel = +b.dataset.i; paint();
+        });
+        const pin = (el) => { cells.forEach(x => x.classList.toggle('on', x === el)); pinned = el; caption(); };
+        cells.forEach(el => {
+          el.addEventListener('pointerenter', () => pin(el));
+          el.addEventListener('focus', () => pin(el));
+          el.addEventListener('click', () => pin(el));
+        });
+        r.querySelector('.sh-wrap').addEventListener('pointerleave', () => pin(null));
+
+        paint();
+        // Reveal once, a checkpoint at a time, the first time the figure scrolls into view.
+        const reveal = () => {
+          if (revealed) return; revealed = true;
+          cells.forEach(el => el.classList.remove('pre'));
+          setTimeout(() => cells.forEach(el => { el.style.transitionDelay = '0ms'; }), 1400);
+        };
+        if (!revealed) {
+          if ('IntersectionObserver' in window) {
+            const io = new IntersectionObserver((es) => { if (es.some(e => e.isIntersecting)) { io.disconnect(); requestAnimationFrame(reveal); } }, { threshold: .25 });
+            io.observe(r);
+          } else reveal();
+        }
+        // Repaint when the site theme flips, so text contrast follows it.
+        new MutationObserver(paint).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+      }).catch(e => { r.innerHTML = `<pre style="color:#c33;font-size:12px">${esc(e.message)}</pre>`; });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
+  })();
+</script>

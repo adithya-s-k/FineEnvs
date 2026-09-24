@@ -193,9 +193,12 @@ const links: Array<{ label: string; url: string; icon?: string }> =
       title={docTitle}
       description={description}
       authors={authorNames}
-      published={published}
+      published={published && !isNaN(Date.parse(published)) ? new Date(published + " UTC").toISOString().slice(0, 10) : published}
       tags={tags}
       image={imageAbs}
+      canonical={(articleFM as any)?.canonicalUrl}
+      twitter={(articleFM as any)?.twitter}
+      authorUrl={normalizedAuthors[0]?.url}
     />
     <script is:inline>
       (() => {

@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import svelte from '@astrojs/svelte';
-import sitemap from '@astrojs/sitemap';
+// @astrojs/sitemap 3.7 needs Astro 5 and crashes on this Astro 4 build; public/sitemap.xml covers the one page.
 import mermaid from 'astro-mermaid';
 import compressor from 'astro-compressor';
 import generateLlmsTxt from './plugins/astro/generate-llms-txt.mjs';
@@ -26,9 +26,10 @@ import rehypeWrapOutput from './plugins/rehype/wrap-outputs.mjs';
 
 // Auto-detect HF Space URL for SEO (og:image needs absolute URLs)
 const spaceId = process.env.SPACE_ID; // e.g. "tfrere/research-article-template"
-const siteUrl = spaceId
-  ? `https://${spaceId.replace('/', '-').toLowerCase()}.hf.space`
-  : undefined;
+// SPACE_ID is only set at runtime on Spaces, not during the Docker build, so fall back to
+// this article's Space. Without a site, canonical URLs point at localhost and no sitemap is built.
+const siteUrl = process.env.SITE_URL
+  || (spaceId ? `https://${spaceId.replace('/', '-').toLowerCase()}.hf.space` : 'https://adithyask-multi-harness-rl.hf.space');
 
 export default defineConfig({
   ...(siteUrl ? { site: siteUrl } : {}),
@@ -37,7 +38,6 @@ export default defineConfig({
     mermaid({ theme: 'neutral', autoTheme: true }),
     mdx(),
     svelte(),
-    sitemap(),
     generateLlmsTxt(),
     // Precompress output with Gzip only (Brotli disabled due to server module mismatch)
     compressor({ brotli: false, gzip: true })

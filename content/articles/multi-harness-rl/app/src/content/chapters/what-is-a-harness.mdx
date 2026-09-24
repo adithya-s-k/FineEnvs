@@ -2,51 +2,44 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
 
 ## What is a harness?
 
-The introduction leaned on the word without defining it, which is fair for a first pass and not good
-enough for the rest of the article. So: an agent harness is the program that runs the agent. It owns
-the loop, decides which tools exist, builds the context the model sees, parses what comes back, and
-decides when to stop. From the model's side the harness is the entire world. From the trainer's
-side it is a binary you do not control.
+The introduction gave the one-line version: the harness is the program that runs the agent. This
+chapter is about where its edges are, because every later decision in the article turns on one of
+them.
 
 The tightest definition in the literature comes from a position paper on benchmark disclosure, which
 calls it "the software layer between the model and the task that constructs the context the model
 sees, mediates its tool calls, validates its outputs, and decides when to retry, escalate, or stop"
-[@zhang2026stopcomparing]. LangChain's version is shorter and sticks in the head better: agent equals
-model plus harness, and if you are not the model, you are the harness.
+[@zhang2026stopcomparing]. From the model's side the harness is the interface. From the trainer's
+side it is an executable you do not control, which is the fact the whole article has to work
+around.
 
-It helps to say what a harness is not, because four neighbouring things get called by the same name
-in casual writing.
+It helps to say what a harness is not, because several neighbouring things get called by the same
+name in casual writing. Hugging Face's
+[agent glossary](https://huggingface.co/blog/agent-glossary) is the fuller version of this
+vocabulary; what follows is the short form this article needs. The **model** is the next-token
+distribution, stateless, with no loop and no memory between calls. The **sandbox** is the isolated
+place actions actually run, a container or a VM or a tmux session. A **benchmark** is a fixed task
+set plus a protocol for comparing results on it. None of those is the harness.
 
-| | Owns |
-|---|---|
-| **Model** | The next-token distribution. Stateless, no loop, no memory between calls. |
-| **Harness** | The loop, the tool surface, the prompt, context management, retries, the stop condition. |
-| **RL environment** | State, transition and reward. It receives an action and returns an observation. |
-| **Sandbox** | The isolated place actions actually run: a container, a VM, a tmux session. |
-| **Benchmark** | A fixed task set plus an evaluation protocol, administered on top of environments. |
+The one worth dwelling on is the **RL environment**, because the difference is direction rather than
+content. An environment owns state, transition and reward: it receives an action and returns an
+observation. A harness executes the loop. A harness pulls, an environment is pulled, and that is the
+whole distinction the rest of this article turns on.
 
-The distinction that matters most here is the second against the third, and it is a distinction of
-direction rather than content. The harness executes the loop. The environment receives actions and
-returns observations. A harness pulls, an environment is pulled.
-
-> **Note:** the previous guide uses "harness" in a narrower sense, meaning the trainer-side
+> **Note:** the previous guide [@kolavi2026rlenvironments] uses "harness" in a narrower sense, meaning the trainer-side
 > interaction layer, the tool surface a trainer drives. This article uses it in the sense the 2026
 > literature settled on, meaning the whole deployed agent program that owns the loop. Same word,
 > nearly opposite locus of control, so it is worth keeping the two straight when reading across the
 > two articles.
 
-### What a harness owns, and the one thing it does not
-
-The cleanest statement of the boundary is not a paper but a plugin contract. OpenClaw's agent-harness
-SDK defines a harness by negation: it is "the low level executor for one prepared agent turn," and
+The cleanest statement of the boundary is not a paper but a plugin contract. OpenClaw's [agent-harness
+SDK](https://docs.openclaw.ai/plugins/sdk-agent-harness) defines a harness by negation: it is "the low level executor for one prepared OpenClaw agent turn," and
 explicitly "not a model provider, not a channel, and not a tool registry." The harness owns session
 runtime and resumption, native tool execution, event streaming and auth bootstrap. The platform
 around it owns provider and model selection, transcript files, tool policy and schema normalization.
 
 That split is the whole opening for this article. The harness decides *which call to make*. It does
-not, in the end, decide *where that call goes*. Every system in the next chapter works by taking the
-endpoint away from the harness and putting a proxy in its place, which is possible precisely because
-the endpoint was never the harness's to own.
+not, in the end, decide *where that call goes*.
 
 {/* VIZ: d3-harness-anatomy: one harness opened up. Its own loop, its own tool surface, its own
      sandbox, and exactly one wire leaving it toward an OpenAI-compatible endpoint. Everything
@@ -60,62 +53,51 @@ the endpoint was never the harness's to own.
   frameless
 />
 
-### The harness ecosystem today
-
 *Why does variety here cause so much trouble?*
 
-Because the variety is not cosmetic. Harnesses differ in the API dialect they speak, in whether they
-use tool calling at all, in how they compact context, and in how much of the control flow they take
-away from the model. Those are exactly the axes the KAT-Coder team identified as the ones a model
-overfits to.
+Because the variety is not cosmetic. Harnesses differ in the **API dialect** they speak, meaning
+the request and response format they use to talk to a model server: OpenAI chat-completions,
+OpenAI Responses, Anthropic Messages, Google Gemini. They differ in whether they use tool calling
+at all, in how they compact context, and in how much of the control flow they take away from the
+model. Those are exactly the axes the KAT-Coder team identified as the ones a model overfits to
+[@kwaikat2026katcoder].
 
 {/* VIZ: harness-ecosystem-matrix: scannable HTML table, not a chart, following the pattern of
-     concept-rosetta in the previous guide. Columns: harness, maker, wire dialect, tool calling
+     concept-rosetta in the previous guide. Columns: harness, maker, API dialect, tool calling
      yes/no, whether it is drivable from a trainer, whether Harbor ships an adapter. Tint the
      dialect column so the four families are visible as blocks. */}
 <HtmlEmbed
   src="harness-ecosystem-matrix.html"
   title="The harness landscape"
-  desc="Agent harnesses, the API dialect each speaks, and what it targets."
+  desc="The model APIs each harness speaks. Hover a harness for its maker and what sets it apart."
   frameless
 />
 
-Two entries in that table are worth pulling out. The first is that mini-swe-agent's own README gives
-scaffold overfitting as a reason to use it, which tells you the problem was understood by harness
-authors before it was named in a tech report. The second is aider, which does not do tool calling at
-all and instead asks the model to emit edit blocks in prose. A model trained to produce structured
-tool calls and then dropped into aider is not slightly out of distribution, it is being asked to
-speak a different language.
+Mini-SWE-Agent's own [README](https://github.com/SWE-agent/mini-swe-agent) gives scaffold overfitting as a reason to use it, so harness authors knew
+about the problem before any tech report named it. [Aider](https://aider.chat/) is the far end of the range. It does not use
+tool calling at all and asks the model to write [edit blocks](https://aider.chat/docs/more/edit-formats.html) in prose, so a model trained on
+structured tool calls has to switch to a different output format entirely.
 
-That is also the practical shape of harness overfitting in the wild. The failure does not usually
-look like a lower score. It looks like an open model emitting capitalised tool names that its new
-harness has never heard of, or leaking raw markup into a field that was supposed to hold JSON, and
-the harness returning an error rather than a result. The model is not confused about the task. It is
-confused about the interface, and the interface is the only thing it can see.
+In practice the failure often shows up as an error rather than a lower score. A model trained in one
+harness calls a tool by that harness's name for it, with that harness's argument names, and a
+harness that spells them differently rejects the call before the tool ever runs.
 
 <HtmlEmbed
   src="d3-format-mismatch.html"
-  title="What harness overfitting actually looks like"
-  desc="One model output, accepted by its native harness and rejected by a foreign one."
+  title="What harness overfitting looks like"
+  desc="One tool call, accepted by the harness the model trained in and rejected by one it never saw."
   frameless
 />
 
+Model reports only recently started saying which harness a number came from. In 2025 most named
+none or one per benchmark. By 2026 every report on the timeline below trains across several.
 
-The fact that this table needs to exist at all is recent. Eighteen months ago a model report
-could omit the word harness entirely and lose nothing; today the harness is named per benchmark row,
-and in some cases trained against.
-
-{/* Moved here from the introduction, which now makes the same point with paper excerpts.
-     VIZ: recent releases on a timeline, each annotated with whether its report names a harness
-     at all, names one per benchmark row, or describes training across several. */}
 <HtmlEmbed
   src="d3-posttraining-timeline.html"
-  title="When the harness entered the tech report"
-  desc="When the harness started appearing in tech reports."
+  title="From naming no harness to training across several"
+  desc="Recent model releases over time, by the most each report says about harnesses. Hover or tap a dot for details."
   frameless
 />
 
-The count keeps moving, which is itself part of the argument. Harbor ships adapters for roughly forty
-harnesses. The OpenEnv integration this article builds on validates sixteen end to end. Any number
-printed here will be wrong within a quarter, and a model trained against one of them will still be
-running inside the others.
+The list of harnesses keeps growing. [Harbor 0.22.0](https://github.com/harbor-framework/harbor/releases/tag/v0.22.0) ships adapters for more than 40 of them, and [OpenEnv](https://github.com/huggingface/OpenEnv) has
+validated ten end to end, so a model trained on a few will keep meeting ones it never saw.
