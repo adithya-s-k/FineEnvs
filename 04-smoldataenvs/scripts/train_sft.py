@@ -108,10 +108,19 @@ trainer = SFTTrainer(
     model=MODEL,
     train_dataset=split["train"],
     eval_dataset=split["test"],
-    # target_modules="all-linear": PEFT cannot infer the target names for
-    # Qwen3.5's hybrid attention and raises rather than guessing.
+    # target_modules="all-linear" because PEFT cannot infer the target names for
+    # Qwen3.5's hybrid attention and raises rather than guessing. Excluding the
+    # vision tower matters: Qwen3.5 is VL-capable, all-linear adapts its visual
+    # blocks too, and those adapters see no gradient from a text-only dataset and
+    # then load as UNEXPECTED keys at inference.
     peft_config=(
-        LoraConfig(r=16, lora_alpha=32, lora_dropout=0.05, target_modules="all-linear")
+        LoraConfig(
+            r=16,
+            lora_alpha=32,
+            lora_dropout=0.05,
+            target_modules="all-linear",
+            exclude_modules="visual.*",
+        )
         if USE_LORA
         else None
     ),
