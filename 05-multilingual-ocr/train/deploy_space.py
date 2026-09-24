@@ -44,6 +44,13 @@ def main():
         "--bucket-id",
         help="Mount source override; defaults to the manifest bucket resolved to its current name",
     )
+    parser.add_argument(
+        "--evalset",
+        type=Path,
+        action="append",
+        default=[],
+        help="Frozen set to ship and serve as its own split; repeat for several",
+    )
     parser.add_argument("--sessions", type=int, default=16)
     parser.add_argument(
         "--judge-concurrency",
@@ -113,6 +120,21 @@ def main():
             ),
         )
         shutil.copyfile(args.corpus_manifest, staging / "corpus-manifest.json")
+        # The server serves each set beside the manifest as a split of its own, so what
+        # is shipped here is exactly what the deployment exposes.
+        from nayana_ocr.data.evalset import eval_split_name
+        from nayana_ocr.data.evalset import load as load_evalset
+
+        served = {}
+        for path in args.evalset:
+            record = load_evalset(path, manifest["snapshot_id"])
+            served[path.name] = eval_split_name(record)
+            shutil.copyfile(path, staging / path.name)
+            print(
+                f"evaluation set {path.name} -> split {served[path.name]} "
+                f"({record['size']} tasks)",
+                flush=True,
+            )
         with (staging / "README.md").open("a") as card:
             card.write("\n## Served corpus\n\n")
             card.write(
@@ -124,6 +146,10 @@ def main():
             card.write(
                 f"Snapshot: `{manifest['snapshot_id']}`. Image bounds are validated when a task is loaded.\n"
             )
+            if served:
+                card.write("\nFrozen evaluation splits: ")
+                card.write(", ".join(f"`{name}`" for name in sorted(served.values())))
+                card.write(".\n")
         api.create_repo(
             args.space_id,
             repo_type="space",
@@ -138,6 +164,19 @@ def main():
             delete_patterns=["snapshot/*"],
             commit_message=f"Serve complete Nayana corpus {manifest['snapshot_id'][:12]} from mounted bucket",
         )
+        # An upload adds and replaces but never removes, so a set from an earlier
+        # deployment would linger. Two sets covering the same languages and split resolve
+        # to one split name and the server refuses to start rather than serve whichever
+        # won, so sets this deployment does not carry are deleted explicitly.
+        for entry in api.list_repo_files(args.space_id, repo_type="space"):
+            if (
+                entry.startswith("eval-")
+                and entry.endswith(".json")
+                and entry not in served
+            ):
+                api.delete_file(entry, args.space_id, repo_type="space")
+                print(f"removed stale evaluation set {entry}", flush=True)
+
         # Preserve unrelated mounts; this path is owned by the Nayana deployment.
         runtime = api.space_info(args.space_id).runtime
         volumes = [v for v in (runtime.volumes or []) if v.mount_path != "/corpus"]
