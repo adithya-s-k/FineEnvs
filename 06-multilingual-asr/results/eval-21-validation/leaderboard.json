@@ -1,6 +1,6 @@
 {
   "eval_split": "eval_21_validation",
-  "evalset_id": "372df5df2eadc819e685e89e9b9eab2be3bdcc6d7d9c9370e4b8af191c20e44c",
+  "evalset_id": "b3d711ce8579d92fcbb9d443220b34dca46a59c54b78f8c0b160f6ef98ca543e",
   "snapshot_id": "6c5e1f3ffdaf2ead41bac4804223786e4edb92f3f70bb2481df133bb817a0278",
   "engine": "vllm[audio]==0.30.0",
   "grading": {
@@ -8,54 +8,54 @@
     "reward": "0.8 * max(0, 1 - error_rate) + 0.2 * exact_match",
     "error_unit": "cer for scripts without word spacing, wer otherwise"
   },
-  "tasks": 504,
+  "tasks": 1050,
   "results": [
     {
       "model": "google/gemma-4-E4B-it",
-      "macro_reward": 0.6636199003350016,
-      "micro_reward": 0.6636199003350016,
+      "macro_reward": 0.6614469871254578,
+      "micro_reward": 0.6625738330262083,
       "by_family": {
-        "language_id": 0.6607142857142857,
-        "transcription": 0.6772382082406226,
-        "verbatim_transcription": 0.6529072070500964
+        "language_id": 0.6714285714285714,
+        "transcription": 0.6768181228631319,
+        "verbatim_transcription": 0.6394748047869213
       },
-      "generation_seconds": 57.6,
+      "generation_seconds": 127.4,
       "model_revision": "ee0ef6023621cff504d758262d4e04895a5af4a2"
     },
     {
       "model": "google/gemma-4-E2B-it",
-      "macro_reward": 0.5512918703474528,
-      "micro_reward": 0.5512918703474528,
+      "macro_reward": 0.5412886914750726,
+      "micro_reward": 0.5419443385755809,
       "by_family": {
-        "language_id": 0.4166666666666667,
-        "transcription": 0.6278795249608854,
-        "verbatim_transcription": 0.609329419414806
+        "language_id": 0.4114285714285714,
+        "transcription": 0.6217715873297612,
+        "verbatim_transcription": 0.59263285696841
       },
-      "generation_seconds": 57.2,
+      "generation_seconds": 119.6,
       "model_revision": "3e22461f65e89153144f8adb70e3b8c2cc9845a7"
     },
     {
       "model": "Qwen/Qwen2.5-Omni-7B",
-      "macro_reward": 0.4799522129730803,
-      "micro_reward": 0.4799522129730803,
+      "macro_reward": 0.4702953614784677,
+      "micro_reward": 0.4707206942500062,
       "by_family": {
-        "language_id": 0.4107142857142857,
-        "transcription": 0.5209249243587075,
-        "verbatim_transcription": 0.5082174288462477
+        "language_id": 0.4228571428571429,
+        "transcription": 0.5024420791126365,
+        "verbatim_transcription": 0.48686286078023916
       },
-      "generation_seconds": 124.0,
+      "generation_seconds": 259.3,
       "model_revision": "ae9e1690543ffd5c0221dc27f79834d0294cba00"
     },
     {
       "model": "Qwen/Qwen2.5-Omni-3B",
-      "macro_reward": 0.4498666332676854,
-      "micro_reward": 0.4498666332676854,
+      "macro_reward": 0.4364699589645803,
+      "micro_reward": 0.43721920492982913,
       "by_family": {
-        "language_id": 0.39880952380952384,
-        "transcription": 0.4783156618622921,
-        "verbatim_transcription": 0.4724747141312402
+        "language_id": 0.38857142857142857,
+        "transcription": 0.46778605859007355,
+        "verbatim_transcription": 0.4553001276279852
       },
-      "generation_seconds": 102.3,
+      "generation_seconds": 229.4,
       "model_revision": "f75b40e3da2003cdd6e1829b1f420ca70797c34e"
     }
   ]
