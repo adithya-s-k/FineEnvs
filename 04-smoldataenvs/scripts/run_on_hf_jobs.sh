@@ -18,30 +18,44 @@ MODE="${1:?usage: $0 <eval|sft|grpo> <model-or-hub-id>}"
 TARGET="${2:?usage: $0 <eval|sft|grpo> <model-or-hub-id>}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-FLAVOR="${FLAVOR:-a10g-large}"
+# Jobs fetch the script over HTTP, and raw.githubusercontent.com caches a branch
+# path for 300s -- long enough to run the *previous* version of a script you just
+# fixed, which is a confusing way to lose a GPU-minute. Pin to this commit
+# instead: immutable URL, no cache to be stale, and the job is reproducible.
+SHA="${SHA:-$(git -C "$HERE" rev-parse HEAD)}"
+RAW="${RAW:-https://raw.githubusercontent.com/adithya-s-k/FineEnvs/$SHA/04-smoldataenvs/scripts}"
+
+FLAVOR="${FLAVOR:-a10g-large}"   # grpo on a 2B needs a100-large: full fine-tune + colocated vLLM
 IMAGE="${IMAGE:-huggingface/trl}"
 MODEL="${MODEL:-Qwen/Qwen3.5-2B}"
 TRACKIO_SPACE="${TRACKIO_SPACE:-}"
 
 case "$MODE" in
   eval)
-    SCRIPT="$HERE/eval_pass1.py"
+    SCRIPT="$RAW/eval_pass1.py"
     TIMEOUT="${TIMEOUT:-2h}"
     # for eval, the positional argument IS the model under test
-    ENVS=(-e "MODEL=$TARGET" -e "SPLIT=${SPLIT:-eval}" -e "TRACKIO_SPACE=$TRACKIO_SPACE")
+    ENVS=(
+      -e "MODEL=$TARGET" -e "SPLIT=${SPLIT:-eval}" -e "NUM_TASKS=${NUM_TASKS:-0}"
+      -e "ROLLOUT_URL=$RAW/rollout.py" -e "TRACKIO_SPACE=$TRACKIO_SPACE"
+    )
     ;;
   sft)
-    SCRIPT="$HERE/train_sft.py"
+    SCRIPT="$RAW/train_sft.py"
     TIMEOUT="${TIMEOUT:-3h}"
-    ENVS=(-e "MODEL=$MODEL" -e "HUB_MODEL_ID=$TARGET" -e "TRACKIO_SPACE=$TRACKIO_SPACE")
+    ENVS=(
+      -e "MODEL=$MODEL" -e "HUB_MODEL_ID=$TARGET" -e "MAX_STEPS=${MAX_STEPS:-0}"
+      -e "TRACKIO_SPACE_ID=$TRACKIO_SPACE"
+    )
     ;;
   grpo)
-    SCRIPT="$HERE/train_grpo.py"
+    SCRIPT="$RAW/train_grpo.py"
     TIMEOUT="${TIMEOUT:-6h}"
     # Rollouts run in Hugging Face Sandboxes, which are themselves Jobs, so the
     # token has to reach the training job: --secrets HF_TOKEN below.
     ENVS=(
-      -e "MODEL=$MODEL" -e "HUB_MODEL_ID=$TARGET" -e "TRACKIO_SPACE=$TRACKIO_SPACE"
+      -e "MODEL=$MODEL" -e "HUB_MODEL_ID=$TARGET" -e "TRACKIO_SPACE_ID=$TRACKIO_SPACE"
+      -e "ROLLOUT_URL=$RAW/rollout.py"
       -e "NUM_TASKS=${NUM_TASKS:-256}" -e "MAX_STEPS=${MAX_STEPS:-200}"
       -e "NUM_GENERATIONS=${NUM_GENERATIONS:-8}"
     )
@@ -57,10 +71,11 @@ echo "script   $SCRIPT"
 echo "model    $MODEL"
 echo "target   $TARGET"
 echo "image    $IMAGE   flavor $FLAVOR   timeout $TIMEOUT"
+echo "commit   $SHA"
 echo
 
 # Flags go BEFORE the script path; anything after it is passed to the script.
-hf jobs uv run \
+hf jobs uv run --detach \
   --flavor "$FLAVOR" \
   --timeout "$TIMEOUT" \
   --image "$IMAGE" \
