@@ -123,13 +123,17 @@ def reward_correct(completions, **columns) -> list[float]:
 
 
 def reward_ran(completions, **columns) -> list[float]:
-    """0.1 for a program that ran and printed something.
+    """Diagnostic only: did the program run and print anything?
 
-    Shaping, not scoring: early in training almost everything is wrong, and
-    without this the advantage inside a group is zero for every completion and
-    there is nothing to learn from.
+    Carried at weight 0 (see reward_weights below) so it shows up in the logs
+    without steering the policy. It was weighted 0.1 as a shaping term, and that
+    turned out to reward verbosity: when almost nothing is correct, the only way
+    to earn anything is to print *something*, and a long exploratory program does
+    that more reliably than a short exact one. Completion length climbed 300 ->
+    900 tokens in five steps with a quarter of them hitting the cap. Correctness
+    alone gives a usable signal -- the first step of every run scores around 0.3.
     """
-    return [0.1 * r["ran"] for r in _results(completions, **columns)]
+    return [r["ran"] for r in _results(completions, **columns)]
 
 
 def main() -> None:
@@ -162,6 +166,8 @@ def main() -> None:
             # completion budget, so the whole run is non-thinking.
             chat_template_kwargs={"enable_thinking": False},
             vllm_gpu_memory_utilization=VLLM_MEM,
+            # correctness is the reward; "it ran" is logged, not optimised
+            reward_weights=[1.0, 0.0],
             num_generations=NUM_GENERATIONS,
             max_completion_length=MAX_COMPLETION_LENGTH,
             # A completion cut off at the cap has no closing fence, so it cannot
@@ -219,8 +225,8 @@ def _dry_run(ds) -> None:
     print(batch[0]["prompt"][-1]["content"][:600])
     print("-" * 70)
     for i in range(n):
-        print(f"  completion {i}: correct={correct[i]:.1f} ran={ran[i]:.1f} gold={columns['answer'][i]!r}")
-    assert correct[0] == 1.0 and ran[0] == 0.1, "a correct program should score 1.0 and run"
+        print(f"  completion {i}: correct={correct[i]:.1f} ran={ran[i]:.1f} (ran is logged, weight 0) gold={columns['answer'][i]!r}")
+    assert correct[0] == 1.0 and ran[0] == 1.0, "a correct program should score 1.0 and run"
     assert correct[1] == 0.0, "a crashing program should score 0.0"
     print("\ndry run ok: rewards line up, sandbox torn down")
 
