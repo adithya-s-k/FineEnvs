@@ -203,18 +203,48 @@ def open_client(env_url, timeout):
     ).sync()
 
 
-def prefetch(env_url, rows, timeout, progress):
-    """Walk the set once collecting each task's prompt and page image.
+def page_cache_paths(cache_dir, evalset_id, task_id):
+    """Where one task's page and prompt live. Keyed by set, so two sets cannot mix."""
+    base = Path(cache_dir) / evalset_id
+    return (
+        base / f"{task_id.replace('/', '_')}.bin",
+        base / f"{task_id.replace('/', '_')}.json",
+    )
 
-    Deliberately sequential. Pages live in row groups of which only a few fit the cache,
-    so concurrent readers landing on different documents each stall on their own cold
-    read. One reader pays for each group exactly once — and every later checkpoint pays
-    nothing, because this is held for the whole session.
+
+def prefetch(env_url, rows, timeout, progress, *, cache_dir=None, evalset_id=None):
+    """Collect each task's prompt and page image, reusing a cache when there is one.
+
+    The corpus read is deliberately sequential: pages live in row groups of which only a
+    few fit the cache at once, so concurrent readers landing on different documents each
+    stall on their own cold read. One reader pays for each group exactly once.
+
+    That cost returns every time a fresh job starts, which is why the pages can also be
+    written to a directory keyed by evalset_id. Mount a bucket there and the whole pass
+    becomes local reads. Nothing here depends on the model, so one cache serves every
+    checkpoint and every candidate.
     """
     started = time.monotonic()
-    prepared = []
+    prepared, hits = [], 0
     with open_client(env_url, timeout) as client:
         for index, row in enumerate(rows, 1):
+            if cache_dir:
+                blob, meta = page_cache_paths(cache_dir, evalset_id, row["task_id"])
+                if blob.is_file() and meta.is_file():
+                    try:
+                        info = json.loads(meta.read_text())
+                        prepared.append(
+                            (row, info["prompt"], blob.read_bytes(), info["mime"])
+                        )
+                        hits += 1
+                        continue
+                    except (OSError, ValueError, KeyError) as error:
+                        # A half-written entry is refetched, never served.
+                        print(
+                            f"  cache unusable for {row['task_id']}: {error}",
+                            flush=True,
+                        )
+
             observation = client.reset(task_id=row["task_id"]).observation
             page = requests.get(
                 f"{env_url}/assets/{observation.asset_sha256}",
@@ -222,9 +252,21 @@ def prefetch(env_url, rows, timeout, progress):
                 timeout=timeout,
             )
             page.raise_for_status()
-            prepared.append(
-                (row, observation.prompt, page.content, observation.mime or "image/png")
-            )
+            mime = observation.mime or "image/png"
+            prepared.append((row, observation.prompt, page.content, mime))
+            if cache_dir:
+                try:
+                    blob, meta = page_cache_paths(cache_dir, evalset_id, row["task_id"])
+                    blob.parent.mkdir(parents=True, exist_ok=True)
+                    # Bytes before sidecar: a crash then leaves an entry that reads as
+                    # absent rather than as present but empty.
+                    blob.write_bytes(page.content)
+                    meta.write_text(
+                        json.dumps({"prompt": observation.prompt, "mime": mime})
+                    )
+                except OSError as error:
+                    print(f"  page cache disabled: {error}", flush=True)
+                    cache_dir = None
             if progress and index % progress == 0:
                 print(
                     f"  pages {index}/{len(rows)} "
@@ -234,7 +276,8 @@ def prefetch(env_url, rows, timeout, progress):
     print(
         f"  pages ready: {len(prepared)} images, "
         f"{sum(len(p) for _, _, p, _ in prepared) / 1e6:.0f} MB, "
-        f"in {time.monotonic() - started:.0f}s (reused by every checkpoint)",
+        f"in {time.monotonic() - started:.0f}s "
+        f"({hits} from cache, {len(prepared) - hits} fetched)",
         flush=True,
     )
     return prepared
@@ -484,6 +527,12 @@ def main():
     parser.add_argument("--request-timeout", type=int, default=900)
     parser.add_argument("--boot-seconds", type=int, default=2400)
     parser.add_argument("--vllm-arg", action="append", default=[])
+    parser.add_argument(
+        "--page-cache",
+        default=os.environ.get("NAYANA_PAGE_CACHE"),
+        help="Directory holding fetched pages, keyed by evalset id. Mount a bucket here "
+        "and the corpus read is paid once ever instead of once per job.",
+    )
     parser.add_argument("--progress", type=int, default=100)
     parser.add_argument(
         "--output-dir", default=os.environ.get("OUTPUT_DIR", "artifacts/eval")
@@ -533,7 +582,14 @@ def main():
             flush=True,
         )
 
-        prepared = prefetch(env_url, rows, args.request_timeout, args.progress)
+        prepared = prefetch(
+            env_url,
+            rows,
+            args.request_timeout,
+            args.progress,
+            cache_dir=args.page_cache,
+            evalset_id=frozen["evalset_id"],
+        )
 
         common = {
             "engine": VLLM_SPEC,

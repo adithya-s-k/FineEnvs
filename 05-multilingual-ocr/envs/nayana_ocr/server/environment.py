@@ -14,13 +14,29 @@ from .rewards import score
 @lru_cache(maxsize=4)
 def get_catalog(directory):
     if os.environ.get("NAYANA_CORPUS_MANIFEST"):
+        from pathlib import Path
+
         from ..data.corpus import CorpusCatalog
+        from ..data.evalset import load as load_evalset
+
+        # Frozen sets sitting beside the manifest are served as their own splits, so a
+        # deployment exposes exactly the tasks it ships rather than only the files.
+        manifest_dir = (
+            Path(directory).parent if Path(directory).is_file() else Path(directory)
+        )
+        evalsets = []
+        for path in sorted(manifest_dir.glob("eval-*.json")):
+            try:
+                evalsets.append(load_evalset(path))
+            except Exception as error:  # noqa: BLE001 - a bad file must not stop serving
+                print(f"skipping {path.name}: {error}", flush=True)
 
         return CorpusCatalog(
             directory,
             os.environ.get("NAYANA_CACHE_DIR", "/tmp/nayana-cache"),
             source_root=os.environ.get("NAYANA_SOURCE_ROOT"),
             local_source=os.environ.get("NAYANA_LOCAL_SOURCE") == "true",
+            evalsets=evalsets,
             # The published 22-language index set is 4.30 GB. A 4 GB budget evicts and
             # re-fetches ~200 MB databases whenever a request rotates languages.
             index_cache_bytes=int(
@@ -62,7 +78,10 @@ class NayanaEnvironment(Environment):
         self.judge = judge
 
     def list_splits(self):
-        return list(SPLITS)
+        # A frozen evaluation set is a split here, so a client can discover it.
+        return (
+            self.catalog.splits() if hasattr(self.catalog, "splits") else list(SPLITS)
+        )
 
     def num_tasks(self, split):
         return self.catalog.count(split)

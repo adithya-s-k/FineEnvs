@@ -20,6 +20,7 @@ from PIL import Image
 
 from .cache import DiskCache
 from .catalog import PUBLIC_FIELDS, SPLITS
+from .evalset import eval_split_name
 from .index import INDEX_VERSION, sha256_file
 from .schema import FAMILIES, canonical_json
 from .storage import CorpusStorage, load_manifest
@@ -36,6 +37,7 @@ class CorpusCatalog:
         local_source=False,
         index_cache_bytes=4_000_000_000,
         asset_cache_bytes=512_000_000,
+        evalsets=(),
         **storage_options,
     ):
         self.manifest, self.index_root = load_manifest(manifest_path)
@@ -99,6 +101,7 @@ class CorpusCatalog:
             (c["split"], c["language"], c["family"]): c["tasks"]
             for c in self.manifest["counts"]
         }
+        self._register_evalsets(evalsets)
 
     @contextmanager
     def _db(self, language):
@@ -175,17 +178,61 @@ class CorpusCatalog:
             db.row_factory = sqlite3.Row
             yield db
 
+    def _register_evalsets(self, evalsets):
+        """Serve each frozen set as a split of its own.
+
+        A caller can then browse or score exactly the pinned tasks by naming a split,
+        instead of loading the JSON and resetting by id. The tasks live in the source
+        splits; this is a view over them, not a copy.
+        """
+        self.eval_splits = {}
+        self.eval_ids = {}
+        for record in evalsets:
+            name = eval_split_name(record)
+            if name in SPLITS:
+                raise ValueError(f"{name!r} collides with a source split")
+            if name in self.eval_splits:
+                # Two sets covering the same languages and split would otherwise share a
+                # name and one would silently be served in place of the other.
+                raise ValueError(
+                    f"Two evaluation sets are both named {name!r}; they cover the same "
+                    "languages and split, so one would be served in place of the other"
+                )
+            self.eval_splits[name] = [
+                {k: entry[k] for k in ("task_id", "language", "family")}
+                for entry in record["tasks"]
+            ]
+            self.eval_ids[name] = record["evalset_id"]
+
+    def splits(self):
+        """Source splits plus every frozen evaluation set served as its own split."""
+        return list(SPLITS) + sorted(self.eval_splits)
+
+    def _eval_group(self, split, language, family):
+        return [
+            row
+            for row in self.eval_splits[split]
+            if row["language"] == language and row["family"] == family
+        ]
+
     def count(self, split):
         self._split(split)
+        if split in self.eval_splits:
+            return len(self.eval_splits[split])
         return sum(n for (s, _, _), n in self.counts.items() if s == split)
 
-    @staticmethod
-    def _split(split):
-        if split not in SPLITS:
+    def _split(self, split):
+        if split not in SPLITS and split not in self.eval_splits:
             raise ValueError(f"Unknown split {split!r}")
 
     def group_count(self, split, language, family):
         self._split(split)
+        if split in self.eval_splits:
+            return sum(
+                1
+                for row in self.eval_splits[split]
+                if row["language"] == language and row["family"] == family
+            )
         return self.counts.get((split, language, family), 0)
 
     def _id(self, language, split, position):
@@ -249,6 +296,8 @@ class CorpusCatalog:
     def at(self, split, index):
         if not 0 <= index < self.count(split):
             raise IndexError("Task index outside split")
+        if split in self.eval_splits:
+            return self.get(self.eval_splits[split][index]["task_id"])
         for language in self.languages:
             count = sum(
                 self.group_count(split, language, family) for family in FAMILIES
@@ -261,6 +310,8 @@ class CorpusCatalog:
     def group_at(self, split, language, family, index):
         if not 0 <= index < self.group_count(split, language, family):
             raise IndexError("Task index outside language/task group")
+        if split in self.eval_splits:
+            return self.get(self._eval_group(split, language, family)[index]["task_id"])
         with self._db(language) as db:
             row = db.execute(
                 "SELECT * FROM tasks WHERE split=? AND family=? AND family_position=?",
@@ -269,6 +320,9 @@ class CorpusCatalog:
         return self._task(language, row)
 
     def group_position(self, task_id, split, language, family):
+        if split in self.eval_splits:
+            rows = [r["task_id"] for r in self._eval_group(split, language, family)]
+            return rows.index(task_id) if task_id in rows else None
         try:
             task_language, task_split, _ = self._parse(task_id)
         except (KeyError, TypeError):

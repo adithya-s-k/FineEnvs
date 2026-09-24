@@ -358,3 +358,96 @@ def test_manifest_cannot_change_source_hashes_without_changing_identity(
         path.write_text(json.dumps(changed))
         with pytest.raises(ValueError, match="source inventory identity mismatch"):
             CorpusCatalog(path, tmp_path / "invalid-cache")
+
+
+def _frozen(catalog):
+    """A frozen set over whatever the fixture corpus can actually supply.
+
+    The fixture is deliberately tiny, so the split and families are read off its own
+    counts rather than assumed; the point under test is how a set is served, not how
+    richly the fixture happens to be populated.
+    """
+    from nayana_ocr.data.evalset import build
+
+    languages = sorted(catalog.languages)
+    for split in ("train", "test", "validation"):
+        families = sorted(
+            {
+                family
+                for (s, _, family) in catalog.counts
+                if s == split
+                and all(catalog.counts.get((s, lang, family)) for lang in languages)
+            }
+        )
+        if len(families) >= 2:
+            size = len(languages) * len(families)
+            return build(
+                catalog,
+                split=split,
+                languages=languages,
+                families=families,
+                size=size,
+                seed=42,
+                validate=False,
+            )
+    pytest.skip("fixture corpus has no split covering two families in every language")
+
+
+def test_a_frozen_set_is_served_as_its_own_split(corpus):
+    """Selecting the eval split must serve the pinned tasks, addressed like any split."""
+    from nayana_ocr.data.corpus import CorpusCatalog
+
+    catalog, _, root, index, _ = corpus
+    frozen = _frozen(catalog)
+
+    served = CorpusCatalog(
+        index,
+        index.parent / "eval-cache",
+        source_root=root,
+        local_source=True,
+        evalsets=[frozen],
+    )
+    try:
+        name = f"eval_{len(frozen['languages'])}_{frozen['split']}"
+        assert name in served.splits()
+        assert served.count(name) == frozen["size"]
+
+        # Addressable by position, and every task is one of the frozen ones.
+        assert {served.at(name, i)["task_id"] for i in range(served.count(name))} == {
+            e["task_id"] for e in frozen["tasks"]
+        }
+
+        # Grouping works the same way and positions round-trip.
+        first = frozen["tasks"][0]
+        n = served.group_count(name, first["language"], first["family"])
+        assert n
+        got = served.group_at(name, first["language"], first["family"], 0)
+        assert (
+            served.group_position(
+                got["task_id"], name, first["language"], first["family"]
+            )
+            == 0
+        )
+
+        # A source split still serves the whole corpus, not the frozen slice.
+        assert served.count(frozen["split"]) > served.count(name)
+        # Discovery still withholds the reference.
+        assert all("reference" not in r for r in served.task_range(name, 0, 2))
+    finally:
+        served.close()
+
+
+def test_two_sets_covering_the_same_languages_and_split_are_refused(corpus):
+    """A split name is derived from coverage, so two sets can collide and replace."""
+    from nayana_ocr.data.corpus import CorpusCatalog
+
+    catalog, _, root, index, _ = corpus
+    frozen = _frozen(catalog)
+    with pytest.raises(ValueError, match="both named"):
+        CorpusCatalog(
+            index,
+            index.parent / "eval-cache-2",
+            source_root=root,
+            local_source=True,
+            evalsets=[frozen, dict(frozen, name="another")],
+        )
