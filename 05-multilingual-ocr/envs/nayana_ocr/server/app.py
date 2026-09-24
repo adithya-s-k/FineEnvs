@@ -87,6 +87,17 @@ def create_server():
             "descriptive_vqa": judge_info(),
             "layout_detection": POLICY,
         }
+        # What this deployment actually serves, so a client can discover the frozen sets
+        # instead of being told which files to go and read.
+        if hasattr(catalog, "splits"):
+            result["splits"] = catalog.splits()
+        result["eval_splits"] = {
+            name: {
+                "tasks": len(rows),
+                "evalset_id": getattr(catalog, "eval_ids", {}).get(name),
+            }
+            for name, rows in getattr(catalog, "eval_splits", {}).items()
+        }
         return result
 
     def corpus_query(request, operation):

@@ -248,6 +248,17 @@ def save(record, path):
     return path
 
 
+def eval_split_name(record):
+    """The split name a frozen set is served under, derived from the set itself.
+
+    Named for how many languages it covers and which source split it draws from —
+    `eval_21_validation` — so the name cannot claim something the tasks do not. The
+    ASR environment derives its split names the same way, so `eval_21` means the same
+    21 languages in both.
+    """
+    return f"eval_{len(record['languages'])}_{record['split']}"
+
+
 def load(path, snapshot_id=None):
     """Read a frozen set and refuse one that does not match the served corpus."""
     record = json.loads(Path(path).read_text())
