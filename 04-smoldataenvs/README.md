@@ -15,7 +15,8 @@
 
 <img src="./curves.gif" alt="Reward and held-out pass@k climbing over 1,119 GRPO steps" width="100%">
 
-<sub>A 2B model on these tasks: reward, tool efficiency and held-out pass@k over 1,119 GRPO steps.</sub>
+<sub>A 2B model on these tasks. Left: what it optimises. Right: 144 held-out tasks it never trains on.<br>
+Two runs over the same 5,000 tasks — <b>shuffled</b> against a <b>curriculum</b> ordered easiest to hardest.</sub>
 
 </div>
 
