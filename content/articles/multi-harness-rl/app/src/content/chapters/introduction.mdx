@@ -40,18 +40,29 @@ Which harness a model is good in has become a shipping claim, printed beside the
 because almost nobody runs the weights on their own.
 
 It gets worse than uneven scores. Run the same benchmark under two harnesses and the ranking between
-models can flip. ByteDance's Seed-OSS card has two SWE-Bench Verified rows covering the same models,
-and the order reverses twice between them [@bytedance2025seedoss]. Some of that gap is extra
-sampling rather than the harness, and the reversals survive that objection anyway: more sampling can
-raise a score, it cannot explain why one model passes another while a second model moves the
-opposite way.
+models can flip. The cleanest demonstration is a controlled one. A 2026 position paper on harness
+disclosure took three models that sit within three points of each other on a public coding
+leaderboard, GLM-5.1, GPT-5.4 and Kimi K2.6, and ran them across three harness configurations on the
+same 100 SWE-bench Verified tasks, in the same container, with the same 50-step budget and the same
+per-step timeout, twice each [@zhang2026stopcomparing]. Nothing varied except the harness.
 
 <HtmlEmbed
   src="d3-scaffold-reversal.html"
-  title="One benchmark, two scaffolds, two rank reversals"
-  desc="SWE-Bench Verified for four models, run under OpenHands and under Agentless."
+  title="Same models, same tasks, three harnesses"
+  desc="Each of the three models is the best model under a different harness configuration."
   frameless
 />
+
+Every one of the three is the best model under one of the three configurations. Changing the harness
+moves GLM-5.1 by 13.0 points; changing the model inside a fixed harness moves the score by 2.5 to
+5.0. Across the nine model-pair/harness-pair comparisons, six are ranking reversals, and
+harness-induced variance comes out 7.8 times model-induced variance.
+
+That is a controlled grid rather than a leaderboard, and the paper is careful to say the 7.8 figure
+is not a universal constant. The observational evidence points the same way and is easier to
+recognise: the same paper's survey has Claude Opus 4.5 going from 45.9 to 55.4 percent on SWE-bench
+Pro on a move from SEAL to Claude Code, and Grok 4 gaining 14 to 16 points on SWE-bench Verified on
+a move from SWE-agent to xAI's own scaffold. Same weights, different program around them.
 
 So "model A is better than model B" is not a harness-independent statement.
 
