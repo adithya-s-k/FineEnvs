@@ -76,7 +76,10 @@ RUN_NAME = os.environ.get("RUN_NAME", "smoldataenvs-grpo")
 NUM_TASKS = int(os.environ.get("NUM_TASKS", 256))  # tasks drawn from the train split
 NUM_GENERATIONS = int(os.environ.get("NUM_GENERATIONS", 8))
 MAX_STEPS = int(os.environ.get("MAX_STEPS", 200))
-MAX_COMPLETION_LENGTH = int(os.environ.get("MAX_COMPLETION_LENGTH", 2048))
+# Programs that actually finish run 250-900 tokens; the rest are a 2B repeating
+# itself until the cap. A tighter cap costs few real answers and halves the time
+# spent generating rubbish, and truncated completions are masked out anyway.
+MAX_COMPLETION_LENGTH = int(os.environ.get("MAX_COMPLETION_LENGTH", 1024))
 LEARNING_RATE = float(os.environ.get("LEARNING_RATE", 3e-6))
 TEMPERATURE = float(os.environ.get("TEMPERATURE", 0.8))
 TOP_P = float(os.environ.get("TOP_P", 1.0))
@@ -144,7 +147,10 @@ def main() -> None:
     from datasets import load_dataset
 
     ds = load_dataset(DATASET, split="train").shuffle(seed=42).select(range(NUM_TASKS))
-    ds = ds.map(lambda row: {"prompt": build_prompt(row)})
+    # load_from_cache_file=False: datasets fingerprints the lambda, not the
+    # prompt text it closes over, so editing the prompt silently reuses the old
+    # mapped copy -- and a local dry run then tests a prompt that no longer exists.
+    ds = ds.map(lambda row: {"prompt": build_prompt(row)}, load_from_cache_file=False)
     keep = {"prompt", "answer", "reward_mode", "atol", "rtol", "bucket_prefix"}
     ds = ds.remove_columns([c for c in ds.column_names if c not in keep])
     print(f"{DATASET}: {len(ds)} training tasks, {NUM_GENERATIONS} generations each")
@@ -184,6 +190,9 @@ def main() -> None:
             learning_rate=LEARNING_RATE,
             temperature=TEMPERATURE,
             top_p=TOP_P,
+            # 44% of completions were hitting the cap without terminating -- a
+            # repetition loop, not a long answer. This is the cheapest brake.
+            repetition_penalty=float(os.environ.get("REPETITION_PENALTY", 1.05)),
             per_device_train_batch_size=PER_DEVICE_BATCH,
             gradient_accumulation_steps=GRAD_ACCUM,
             bf16=True,
