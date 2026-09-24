@@ -76,7 +76,7 @@ RUN_NAME = os.environ.get("RUN_NAME", "smoldataenvs-grpo")
 NUM_TASKS = int(os.environ.get("NUM_TASKS", 256))  # tasks drawn from the train split
 NUM_GENERATIONS = int(os.environ.get("NUM_GENERATIONS", 8))
 MAX_STEPS = int(os.environ.get("MAX_STEPS", 200))
-MAX_COMPLETION_LENGTH = int(os.environ.get("MAX_COMPLETION_LENGTH", 1536))
+MAX_COMPLETION_LENGTH = int(os.environ.get("MAX_COMPLETION_LENGTH", 2048))
 LEARNING_RATE = float(os.environ.get("LEARNING_RATE", 3e-6))
 TEMPERATURE = float(os.environ.get("TEMPERATURE", 0.8))
 TOP_P = float(os.environ.get("TOP_P", 1.0))
@@ -164,6 +164,12 @@ def main() -> None:
             vllm_gpu_memory_utilization=VLLM_MEM,
             num_generations=NUM_GENERATIONS,
             max_completion_length=MAX_COMPLETION_LENGTH,
+            # A completion cut off at the cap has no closing fence, so it cannot
+            # compile and scores zero -- but without this flag it still receives
+            # gradient as though it were a finished answer, which teaches the
+            # model to ramble. The first attempt drifted 276 -> 1331 tokens in six
+            # steps with three quarters of completions truncated.
+            mask_truncated_completions=True,
             max_steps=MAX_STEPS,
             learning_rate=LEARNING_RATE,
             temperature=TEMPERATURE,
