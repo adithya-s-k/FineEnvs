@@ -111,6 +111,25 @@ Ten hours on four A100s, or one GPU if you are in no hurry. Three training runs,
 redesigned once, and every measurement bug written down in
 [the article](https://huggingface.co/spaces/FineEnvs/geoguesser-article).
 
+### [04 · SmolDataEnvs](./04-smoldataenvs/) &nbsp;<sub>5.5K+ RL tasks in code and data science</sub>
+
+**A dataset, not a single run.** The first three projects each train one model against one
+environment. This one ships the environments: **5,394 verified data-analysis tasks** built from real
+Kaggle notebooks, where the agent gets a sandbox with the tables in it and has to compute the answer.
+
+Grading is an exact comparison against a known answer — numeric tolerances, list normalisation,
+symbolic equivalence — so **no LLM sits in the reward path**. Every task had to be solved in a live
+sandbox before it was let in, which means a zero says something about your model rather than about
+the task. Three ways in: [flat rows](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs) with a
+bundled grader, [4,677 verified trajectories](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-sft)
+to fine-tune on, and three
+[Harbor suites](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-harbor-train) you can serve
+straight into a trainer. A notebook takes you from one task to a trained small model in a sitting.
+
+Browse the tasks in the
+[Harbor Visualiser](https://huggingface.co/spaces/HuggingFaceH4/harbor-visualiser?dataset=FineEnvs/SmolDataEnvs-harbor-train),
+or the whole [SmolDataEnvs collection](https://huggingface.co/collections/FineEnvs/smoldataenvs).
+
 > **More coming.** Each new project is another end-to-end recipe: an environment, a training run, and
 > the artifacts on the Hub. [Proposals and contributions welcome →](./CONTRIBUTING.md)
 
