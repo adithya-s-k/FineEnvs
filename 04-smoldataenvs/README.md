@@ -16,7 +16,7 @@
 <img src="./curves.gif" alt="Reward and held-out pass@k climbing over 1,119 GRPO steps" width="100%">
 
 <sub>A 2B model on these tasks. Left: what it optimises. Right: 144 held-out tasks it never trains on.<br>
-Two runs over the same 5,000 tasks — <b>shuffled</b> against a <b>curriculum</b> ordered easiest to hardest.</sub>
+Two runs over the same 5,000 tasks: <b>shuffled</b> against a <b>curriculum</b> ordered easiest to hardest.</sub>
 
 </div>
 
@@ -25,7 +25,7 @@ Two runs over the same 5,000 tasks — <b>shuffled</b> against a <b>curriculum</
 A small model that can write code is not the same thing as a small model that can *use* code to
 answer a question about data. The second one has to open a file it has never seen, work out what is
 in it, decide what to compute, run something, read the result, and commit to an answer. That is a
-long-horizon task with a short, checkable answer at the end — which is exactly the shape RL wants.
+long-horizon task with a short, checkable answer at the end, which is exactly the shape RL wants.
 
 SmolDataEnvs is 5,394 of those tasks. Each one is a real Kaggle dataset, a question a human actually
 asked about it in a notebook, and the answer that human computed. The agent gets a sandbox with the
@@ -49,7 +49,7 @@ So a zero from a task is a statement about your model, not about the task.
 | eval | 144 | 16 | 74 | 54 |
 
 Drawn from 471 Kaggle datasets. Answer types run numeric (2,906), short label (1,409), list (367),
-free-form (152), yes/no (127) and csv-list (39) — the match mode is per task, and so are the numeric
+free-form (152), yes/no (127) and csv-list (39). The match mode is per task, and so are the numeric
 tolerances.
 
 **The held-out splits are deliberately harder than train.** Train is 29% easy and 14% hard; test and
@@ -138,7 +138,7 @@ a run that does not push is a run you cannot keep.
   model and measure another.
 - **The shaping reward is exploitable, and it got exploited.** `+0.1` for a program that runs exists
   because early on almost nothing is correct and an all-zero group carries no gradient. The first
-  version paid it for "no traceback" — which a program that does nothing also satisfies. Within 70
+  version paid it for "no traceback", which a program that does nothing also satisfies. Within 70
   steps the policy was emitting an empty `<think></think>`, collecting 0.1 per rollout, with zero
   variance and therefore zero learning. It now requires the program to have **printed** something,
   and a completion that is not a program is rejected by `compile()` before a sandbox is spent on it.
