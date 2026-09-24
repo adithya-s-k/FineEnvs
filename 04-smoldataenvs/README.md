@@ -168,6 +168,4 @@ one project, training and eval together.
 ## Provenance
 
 Built from the [jupyter-agent dataset](https://huggingface.co/datasets/jupyter-agent/jupyter-agent-dataset)
-— real data-science notebooks over Kaggle datasets — then verified end to end in a sandbox. The
-training and evaluation work that used these tasks is written up in
-[The ultimate guide to multi-harness RL](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl).
+(real data-science notebooks over Kaggle datasets), then verified end to end in a sandbox.
