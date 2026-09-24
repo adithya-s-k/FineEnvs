@@ -145,7 +145,7 @@ port each.
 Two properties make this general rather than a per-agent hack. Nothing is tokenised locally: the
 inference engine tokenises each prompt in order to serve it and hands back the token ids, so turn
 *k+1*'s prompt is by construction the canonical tokenisation of everything before it, tool results
-included. And four wire dialects are supported, because coding agents never converged on one. That is not completeness for its own sake: a capture layer that speaks only chat-completions cannot see codex, claude-code or gemini-cli at all, so the other three dialects are exactly what buys those agents.
+included. And four API dialects are supported, because coding agents never converged on one. That is not completeness for its own sake: a capture layer that speaks only chat-completions cannot see codex, claude-code or gemini-cli at all, so the other three dialects are exactly what buys those agents.
 
 {/* VIZ: d3-capture-proxy: agent in a sandbox, to the capture proxy, to vLLM, and back. Annotate
      outbound with "detect dialect, normalise to chat, force token ids and logprobs on" and the
@@ -164,8 +164,8 @@ included. And four wire dialects are supported, because coding agents never conv
      caller's own dialect. Supporting all four is what buys codex, claude-code and gemini-cli. */}
 <HtmlEmbed
   src="d3-dialects-funnel.html"
-  title="Four wire dialects, one shape"
-  desc="The same request in four dialects, and one shape in the middle."
+  title="Four API dialects, one shape"
+  desc="The same request in the four formats coding agents actually speak, and the one shape the trainer sees."
   frameless
 />
 

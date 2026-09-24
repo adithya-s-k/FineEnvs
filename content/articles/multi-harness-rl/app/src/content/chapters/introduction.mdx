@@ -1,3 +1,4 @@
+import Accordion from "../../components/Accordion.astro";
 import HtmlEmbed from "../../components/HtmlEmbed.astro";
 
 ## Introduction
@@ -12,6 +13,18 @@ model can use, writes the context the model reads, interprets what comes back, a
 stop. And the open model you run behind them was almost certainly trained inside exactly one of
 them.
 
+<Accordion title="What exactly counts as a harness?">
+
+The harness is the program that runs the agent: the loop, the tool surface, the prompt and context
+management, the retries, the stop condition. The **model** is only the next-token distribution
+inside it, stateless between calls. The **sandbox** is the isolated place its actions actually run.
+An **RL environment** is the thing on the other side of the loop, receiving actions and returning
+observations. Hugging Face's [agent glossary](https://huggingface.co/blog/agent-glossary) has the
+longer version. [The next chapter](#what-is-a-harness) works through where the boundaries sit and
+why the harness/environment one decides how you train.
+
+</Accordion>
+
 ### Model cards name the harness now
 
 GLM-4.7 promises "significant improvements on complex tasks in mainstream agent frameworks such as
@@ -20,8 +33,8 @@ Claude Code, Kilo Code, Cline, and Roo Code" [@zai2025glm47]. Kimi K2 reports Te
 [@kimi2025k2]. MiniMax M2 names a different harness for almost every benchmark it lists
 [@minimax2025m2card]. DeepSeek-V3.2 checks its scores across Claude Code and RooCode, then admits
 its thinking mode is incompatible with Terminus, so that number had to come from somewhere else
-[@deepseek2025v32]. A major lab shipped a model that could not run in a major harness, noticed, and
-reported the score from a different one.
+[@deepseek2025v32]. DeepSeek shipped a model whose thinking mode could not run under Terminus,
+noticed, and reported the Terminal-Bench number from a different harness.
 
 Which harness a model is good in has become a shipping claim, printed beside the benchmark numbers,
 because almost nobody runs the weights on their own.
@@ -55,29 +68,31 @@ something you tune away. When all you have is the weights, it is something that 
 
 ### How badly it breaks
 
-Not gently. The Orchard team trained a coding agent in one harness, then ran it in others
-[@peng2026orchard]:
-
-| System | OpenHands | mini-swe-agent | Kimi-CLI (unseen) |
-|---|---|---|---|
-| **OpenSWE-32B**, single-harness | 62.4 | 54.9 | **3.6** |
-| **Orchard-SWE**, multi-harness | 62.1 | 64.3 | **45.0** |
-
-62.4 percent of SWE-bench Verified in the harness it trained in. 3.6 percent in one it had never
-seen. That is not a worse score, it is a broken one. A second system in the same table does not even
-produce valid tool calls outside its own harness, so it has no score at all.
+Not gently. The Orchard team took two open systems that had each been trained inside a single
+harness and ran them in three, one of which neither system had seen in training
+[@peng2026orchard].
 
 <HtmlEmbed
   src="d3-harness-lockin.html"
   title="What single-harness training costs"
-  desc="Two systems, three harnesses, one of them collapsing."
+  desc="Three systems across three harnesses and two task sets. A tax on a harness the model has seen, a collapse on one it has not."
   frameless
 />
 
-If you have ever watched a local model call a tool its harness has never heard of, or spill raw
-markup into a field that wanted JSON, you have seen the small version of this. The model is not
-confused about the task. It is confused about the interface, and the interface is the only thing it
-can see.
+The two halves of that figure say different things. Moving OpenSWE-32B off OpenHands, the harness it
+was trained in, onto mini-swe-agent costs 7.5 points: a real tax, not a catastrophe, and the kind of
+number you could talk yourself into ignoring. Moving it onto Kimi-CLI, which it had never seen,
+costs 58.8 and leaves 3.6 percent of SWE-bench Verified. On Terminal-Bench 2.0 in that same unseen
+harness it scores zero. Scale-SWE does not degrade at all, it simply stops producing valid tool
+calls anywhere but at home. Orchard, trained across harnesses, stays inside a 19-point band across
+all three and keeps 20.1 on the benchmark the other two systems cannot score on at all.
+
+Those are the two failure modes, and Orchard names them: a **degraded resolve rate**, where the
+model still behaves but solves less, and a **catastrophic format failure**, where the output stops
+being parseable at all. The second one is the one you meet on a laptop. If you have ever watched a
+local model call a tool its harness has never heard of, or spill raw markup into a field that wanted
+JSON, that is a format failure at small scale. The model is not confused about the task. It is
+confused about the interface, and the interface is the only thing it can see.
 
 The KwaiKAT team names the failure, harness scaling, and describes it better than anyone
 [@kwaikat2026katcoder]:
@@ -98,7 +113,7 @@ someone else's retry timing and stop conditions, unable to plan for itself once 
   frameless
 />
 
-### Frontier labs stopped reporting this and started training for it
+### Frontier labs now train across harnesses on purpose
 
 The fix is to vary the harness during training, which KwaiKAT frames as domain randomization applied
 to the environment. Labs now pay real money for it.
@@ -110,8 +125,13 @@ article's thesis in someone else's words [@poolside2026laguna]:
 > trajectories from external frameworks such as OpenHands, OpenCode, and Mini-SWE-Agent."
 
 That is 1.3 billion tokens of trajectories from three harnesses that are not theirs, each one's
-native behaviour deliberately left intact. Their RL phase then runs through the harness they ship to
-customers, so "any change to the deployed harness is also a change the policy is trained against."
+native behaviour deliberately left intact. poolside does have a harness of its own, `pool`, the
+terminal coding agent they ship and run all their evaluations in. They still bought the variety
+anyway, and their RL phase then runs through `pool` itself, so "any change to the deployed harness
+is also a change the policy is trained against."
+
+The split is worth noticing: supervised training on other people's harnesses, reinforcement
+learning inside their own.
 
 The obvious worry is that spreading training across harnesses trades peak performance for
 robustness. The one controlled ablation published so far says otherwise. OpenForgeRL trained the

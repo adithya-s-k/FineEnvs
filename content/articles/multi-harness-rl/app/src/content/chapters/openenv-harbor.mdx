@@ -250,12 +250,12 @@ different here rather than claiming novelty that is not there.
 | **SkyRL** | In-process, and the integration Harbor itself endorses. Reads token ids and logprobs out of the trial result, which in practice means Terminus 2. |
 | **NeMo Gym** | In-process, with a compatibility layer, plus its own sandbox for HPC. |
 | **verifiers** | Consumes Harbor's task format, then runs rollouts on its own runtime. Harbor is a task source, not the rollout engine. |
-| **Polar** | Does wire-level capture across dialects, and has no Harbor. |
+| **Polar** | Does on-the-wire capture across API dialects, and has no Harbor. |
 
 Read down that column and the gap is specific. Everyone running Harbor in-process depends on the
 harness handing tokens back, which limits them to harnesses modified to do so. The one project doing
-wire-level capture across dialects is not connected to Harbor at all. Nothing yet serves Harbor tasks
-to a trainer over an HTTP boundary with wire-level capture across four dialects, which is exactly the
+on-the-wire capture across API dialects is not connected to Harbor at all. Nothing yet serves Harbor tasks
+to a trainer over an HTTP boundary with on-the-wire capture across four API dialects, which is exactly the
 combination that makes the harness a per-rollout argument.
 
 > **Status.** The integration described here is [OpenEnv pull request
