@@ -623,10 +623,19 @@ def main():
                 f"in {body['elapsed_seconds']}s",
                 flush=True,
             )
-            # A job's filesystem does not outlive it, so the whole result goes to stdout
-            # between markers rather than only to a file nobody will ever read.
+            # A job's filesystem does not outlive it, so a copy goes to stdout — but
+            # only the summary. Page transcripts run to thousands of characters and the
+            # log transport wraps long lines mid-escape, which corrupted a whole run's
+            # detail beyond recovery. Predictions travel by --artifact-repo, which is a
+            # file transfer and does not rewrite what it carries.
             print(f"RESULT-BEGIN {label}", flush=True)
-            print(json.dumps(body, ensure_ascii=False), flush=True)
+            print(
+                json.dumps(
+                    {k: v for k, v in body.items() if k != "samples"},
+                    ensure_ascii=False,
+                ),
+                flush=True,
+            )
             print(f"RESULT-END {label}", flush=True)
 
         if args.adapters:
