@@ -44,6 +44,10 @@ class WordleGame:
 
     def guess(self, word: str) -> str:
         """Submit a guess. Returns colored feedback string."""
+        if self.done:
+            # A finished game must not change: a later guess could turn a loss into a win.
+            return f"The game is over. The word was '{self.answer}'."
+
         word = word.lower().strip()
 
         if len(word) != 5:

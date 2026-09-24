@@ -19,6 +19,11 @@ def _guess(wordle, word):
     return wordle.step(CallToolAction(tool_name="guess", arguments={"word": word}))
 
 
+def _text(obs):
+    result = obs.result
+    return result.data if hasattr(result, "data") else result
+
+
 def _expected_reward(answer, words):
     game = WordleGame(answer=answer)
     for word in words:
@@ -51,6 +56,28 @@ def test_sixth_wrong_guess_ends_the_episode_with_partial_credit():
         obs = _guess(wordle, word)
     assert obs.done is True
     assert obs.reward == pytest.approx(_expected_reward("crane", words))
+
+
+def test_reset_game_does_not_abandon_a_game_in_progress():
+    wordle = WordleEnvironment()
+    wordle.reset(answer="crane")
+    _guess(wordle, "slate")
+    obs = wordle.step(CallToolAction(tool_name="reset_game", arguments={}))
+    assert "in progress" in _text(obs)
+    assert obs.done is False
+    obs = _guess(wordle, "crane")
+    assert obs.done is True
+    assert obs.reward == pytest.approx(_expected_reward("crane", ["slate", "crane"]))
+
+
+def test_guesses_after_the_game_ends_change_nothing():
+    wordle = WordleEnvironment()
+    wordle.reset(answer="crane")
+    reward = _guess(wordle, "crane").reward
+    obs = _guess(wordle, "slate")
+    assert obs.done is True
+    assert obs.reward == pytest.approx(reward)
+    assert wordle.state["reward"] == pytest.approx(reward)
 
 
 def test_async_step_reports_the_outcome_too():

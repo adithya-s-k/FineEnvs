@@ -59,6 +59,22 @@ def test_lenient_env_plays_the_word_from_prose():
     assert wordle.spawn(same_state=True)._lenient_parsing is True
 
 
+def test_a_finished_game_accepts_no_more_guesses():
+    lost = env.WordleGame(answer="crane")
+    for word in ["adieu", "ghost", "lumpy", "brisk", "fjord", "waltz"]:
+        lost.guess(word)
+    reward = lost.reward
+    assert lost.done and not lost.won
+    assert lost.guess("crane").startswith("The game is over")
+    assert not lost.won and lost.reward == pytest.approx(reward) and len(lost.guesses) == 6
+
+    won = env.WordleGame(answer="crane")
+    won.guess("crane")
+    reward = won.reward
+    won.guess("slate")
+    assert won.reward == pytest.approx(reward) and won.guesses == ["crane"]
+
+
 def test_tagged_win_gets_the_game_reward():
     wordle = env.WordleGemEnv(answer="crane")
     wordle.reset()

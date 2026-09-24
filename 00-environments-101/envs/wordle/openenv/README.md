@@ -12,7 +12,7 @@ The OpenEnv server registers three MCP tools (auto-discoverable via `list_tools(
 |---|---|
 | `guess(word: str)` | Submit a 5-letter word. Returns colored feedback (`🟩🟨⬛`) and remaining-guesses count. |
 | `get_history()` | View all previous guesses with their feedback. |
-| `reset_game()` | Start a new game with a fresh random word. |
+| `reset_game()` | Start a new game with a fresh random word once the current game is over (it refuses while a game is in progress). |
 
 A guess returns a string like `'⬛🟨⬛⬛🟨 — 5 guesses remaining.'`:
 - 🟩 letter is in the correct position
