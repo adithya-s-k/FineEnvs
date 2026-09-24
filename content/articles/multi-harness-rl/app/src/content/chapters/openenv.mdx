@@ -1,0 +1,295 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## OpenEnv
+
+OpenEnv is a standard interface for RL environments [@openenv2026]. It offers [Gymnasium](https://gymnasium.farama.org)-style `reset`, `step` and
+`state` over a client and server transport, with typed actions and observations, packaged as Docker
+and publishable to the Hub. It began as a Meta PyTorch and Hugging Face collaboration and now lives
+at [`huggingface/OpenEnv`](https://github.com/huggingface/OpenEnv), steered by a committee of twelve organisations, under BSD-3-Clause.
+
+In this article OpenEnv is the shared interface that the harness, the environment and the trainer
+all connect to. It does not train anything or define rewards. Two pieces added in [OpenEnv 0.5.0](https://github.com/huggingface/OpenEnv/releases/tag/v0.5.0) make
+it possible to train inside a black-box harness. The **capture proxy** records what RL training needs
+from any agent that calls a model API. The **Harbor integration** [@openenv2026harbor] serves Harbor's containerised tasks
+as OpenEnv environments, with the harness and the sandbox chosen per rollout. Both install with
+`pip install "openenv[harbor]"`.
+
+### One rollout, end to end
+
+The figure follows one rollout of a SmolDataEnvs task, three turns long, through every part of the
+system. Switching the harness changes only how Harbor wires it to the proxy, the format of its model
+calls and replies, and the names of its tools.
+
+<HtmlEmbed
+  src="d3-openenv-system.html"
+  title="One rollout through OpenEnv"
+  desc="One three-turn rollout, from the trainer’s request to the weight update, step by step."
+  frameless
+/>
+
+In our runs the trainer and vLLM [@kwon2023vllm] had one GPU each, the OpenEnv server ran next to them or on a
+Hugging Face Space, and the Harbor runs used [E2B](https://e2b.dev) sandboxes. The harness inside the sandbox never
+talks to vLLM or to the trainer. It reaches the model only through the capture proxy, and the only
+credential it holds for that is a session id.
+
+### The capture proxy
+
+A harness finds the proxy the way it would find any model provider, through a base URL and an API
+key. The API key is a capture session id minted for that rollout, which is how one proxy on one port
+serves every concurrent rollout. A call carrying a key the proxy never registered gets a 401.
+
+<HtmlEmbed
+  src="d3-capture-proxy.html"
+  title="The capture proxy"
+  desc="One model call, step by step, through the capture proxy."
+  frameless
+/>
+
+Harnesses speak four different model APIs, as the harness table in [What is a
+harness?](#what-is-a-harness) shows. The proxy works out which one a request uses from its path,
+then its headers, then the shape of its body.
+It converts the request to chat completions with converters vendored from NVIDIA's Polar gateway [@xu2026polar],
+and replays the answer in the caller's own format.
+
+<HtmlEmbed
+  src="d3-dialects-funnel.html"
+  title="Four API dialects, one shape"
+  desc="The same request in the four formats coding agents speak, and the one shape the trainer sees."
+  frameless
+/>
+
+The call to the engine never streams. The proxy waits for the whole completion, stores it, and
+replays it to the harness as a stream if the harness asked for one. Apart from a later first token,
+the harness cannot tell the difference, and the proxy never has to parse partial deltas.
+
+#### What gets recorded
+
+For each call the proxy asks the engine for the prompt's token ids, the sampled token ids and a
+logprob for every sampled token. It also switches off truncating sampling such as `top_p`, because
+vLLM's processed logprobs are computed after truncation. In our runs, moving `top_p` to 1.0 took the
+importance ratio from 0.985–0.993 to 0.9984–0.9999. On vLLM this needs two server flags:
+
+```bash
+vllm serve <model> --return-tokens-as-token-ids --logprobs-mode processed_logprobs
+```
+
+[SGLang](https://github.com/sgl-project/sglang) works when built from its main branch. The v0.5.16 release cannot return the sampled token ids.
+
+The proxy does not take any of this on trust. The first time it sees an engine it sends a probe and
+grades the result, and it also checks whether the logprobs are raw or processed. An engine below the
+`tokens` level still serves rollouts, but they are marked as evaluation only, and asking for training
+data from one raises an error. Hosted APIs such as OpenAI, Anthropic and [Hugging Face Inference
+Providers](https://huggingface.co/docs/inference-providers/index) land there, so they can evaluate a harness but not train through it.
+
+<HtmlEmbed
+  src="d3-capture-levels.html"
+  title="Three levels of capture"
+  desc="Only one of them can be trained against."
+  frameless
+/>
+
+#### From calls to training sequences
+
+A rollout is rarely one clean conversation. Harnesses retry, spawn subagents and compact their
+context. The proxy stores each model call as a node and links it to the earlier call whose prompt and
+completion form the longest exact token prefix of its own prompt. A retry shows up as a sibling that
+never continued. A subagent has its own system prompt, so its first call extends nothing and starts a
+new root, and a compacted context does the same.
+
+<HtmlEmbed
+  src="d3-rollout-graph.html"
+  title="The rollout graph"
+  desc="A trace as a graph of model calls, and its trainable branches."
+  frameless
+/>
+
+Each path from a root to a leaf becomes one training sequence. Context tokens get a loss mask of 0
+and sampled tokens get 1. A turn whose logprobs are missing or misaligned stays in the sequence as
+context and is never used as a target. These checks run as each call arrives rather than at export,
+because a misaligned turn is easiest to diagnose while the proxy still knows which turn it was.
+
+<HtmlEmbed
+  src="d3-token-contract.html"
+  title="What a rollout returns"
+  desc="What one rollout hands back, turn by turn."
+  frameless
+/>
+
+#### Capturing your own harness
+
+Nothing in the proxy is specific to Harbor, so any program that calls one of the four APIs can be
+captured. Start the proxy, mint a session with `POST /sessions`, give your agent the proxy's URL as
+its base URL and the session id as its API key, and read the rollout back from
+`GET /sessions/{id}/rollout`.
+
+```bash
+python -m openenv.core.harness.capture.server --llm-url http://127.0.0.1:8000 --model <model>
+```
+
+The proxy binds to localhost by default. On any other interface it needs an admin key, which guards
+the routes that mint and read sessions.
+
+The proxy is a single process. In our runs its health check started to starve at around 200
+concurrent sessions, and the process crashed at 320. A rollout that hits its model-call budget is
+also stopped by the proxy itself, so that final reply is never part of the training data.
+
+### Harbor
+
+[Harbor](https://harborframework.com/), from the team behind Terminal-Bench [@merrill2026terminalbench], runs agents against containerised tasks and keeps the
+task, the harness and the sandbox independent of each other. [Version 0.22.0](https://github.com/harbor-framework/harbor/releases/tag/v0.22.0) ships adapters for more than 40
+agent harnesses and 26 execution backends, from local Docker to [Daytona](https://www.daytona.io), [Modal](https://modal.com) and E2B, and about 80
+task datasets already use its format, including Terminal-Bench and SWE-bench [@jimenez2024swebench]. Any harness can attempt
+any task on any backend, and a run is one command that names the dataset, the agent and the backend.
+
+A Harbor task is a directory with an instruction, an environment and a test script. The ones below
+come from SmolDataEnvs, the task suite used for every run in this article: data-analysis questions
+built from real Kaggle notebooks in the [jupyter-agent
+dataset](https://huggingface.co/datasets/jupyter-agent/jupyter-agent-dataset), each with an automatic
+grader, published in the [SmolDataEnvs collection](https://huggingface.co/collections/FineEnvs/smoldataenvs).
+Pick a task and a file to read it as the agent and the verifier see it.
+
+<HtmlEmbed
+  src="d3-harbor-task.html"
+  title="Three SmolDataEnvs tasks, file by file"
+  desc="The six files of a Harbor task, taken unedited from the training set, and how the reward gets out."
+  frameless
+/>
+
+The task names no harness, sandbox backend or trainer, because those are chosen when it runs. The
+[Harbor visualiser](https://huggingface.co/spaces/HuggingFaceH4/harbor-visualiser) opens the whole training set the same way, all 5,000 tasks.
+
+<iframe
+  src="https://huggingfaceh4-harbor-visualiser.hf.space/?dataset=FineEnvs/SmolDataEnvs-harbor-train"
+  title="Harbor visualiser showing the SmolDataEnvs training set"
+  width="100%"
+  height="640"
+  loading="lazy"
+  style={{ border: "1px solid var(--border-color)", borderRadius: "10px", margin: "14px 0" }}
+></iframe>
+
+> **Note:** Harbor calls its sandbox backends *environments*. In this article, *sandbox* means the
+> box the agent runs in, and *environment* means the OpenEnv server.
+
+### Serving Harbor through OpenEnv
+
+Harbor already runs an agent against a task and returns a score. A trainer also needs the tokens the
+policy generated and their probabilities. Harbor's [RL documentation](https://github.com/harbor-framework/harbor/blob/v0.22.0/docs/content/docs/training-workflows/rl.mdx) lists two ways to get them:
+intercept the tokens at the inference server, or have the harness return them with its result. The
+second needs a harness that puts its tokens in the result metadata, and the docs say that support is
+still being added to [Terminus 2](https://github.com/harbor-framework/harbor/blob/v0.22.0/docs/content/docs/agents/terminus-2.mdx), Harbor's own harness. The
+integration takes the first, through the capture proxy, so it works with any harness that calls a
+model API.
+
+The trainer talks to the environment over HTTP instead of running rollouts in its own process. An
+earlier in-process version let an exception from inside someone else's agent reach the training loop,
+where one crashed rank left the others waiting at the NCCL barrier indefinitely. Now nothing raises
+across that boundary. A failed rollout comes back with `ok=False` and `reward=None`, and the trainer
+handles a value instead of catching an exception.
+
+#### The four commands
+
+| Command | What it does |
+|---|---|
+| `openenv harbor info` | Reports what this machine can run: whether the engine returns token ids, which sandbox backends have working credentials, which datasets resolve and how many tasks each holds, and which harnesses are validated. Starts nothing. |
+| `openenv harbor rollout` | Runs rollouts without an environment server. If a rollout works here and fails under `serve`, the fault is in the serving layer. |
+| `openenv harbor serve` | The environment server: a Task API, a `run_rollout` tool over MCP, a web UI and the capture proxy. |
+| `openenv harbor push` | Deploys the same server to a Hugging Face Space, with configuration as Space variables and credentials as secrets. |
+
+```bash
+openenv harbor info    --llm-url $LLM --dataset org/train,org/eval
+openenv harbor rollout --llm-url $LLM --dataset org/train --task-index 0 -n 5 --harness codex --sandbox e2b
+openenv harbor serve   --dataset org/train,org/eval
+openenv harbor push    --llm-url $LLM --dataset org/train,org/eval --repo-id you/harbor-env
+```
+
+`rollout` requires `--llm-url` and has no default, because a stale endpoint produces rollouts that
+look fine and carry no token ids. `serve` can start without one, because each rollout names its own
+engine. That let one deployment serve both training, pointed at the trainer's vLLM, and evaluation.
+A rollout prints one line when it finishes:
+
+```
+[opencode / e2b] task 0: 0000_369_369503_qa_1 ...
+   ok    reward=1.00  turns=9  roots=2  multi-turn  tokens=1043  atif=match  48s
+```
+
+<HtmlEmbed
+  src="d3-serve-flow.html"
+  title="From serve to rollout"
+  desc="What happens once at start-up, and what happens on every rollout."
+  frameless
+/>
+
+#### Wiring each harness
+
+Harbor already knows how to install and launch each harness. OpenEnv adds only the place each one
+reads its model URL and API key from, kept as one table entry per harness, so supporting a new
+harness means adding an entry rather than writing a new environment. Ten harnesses have passed the
+capture contract and the trace check described below, across 16,000 rollouts on the SmolDataEnvs test
+set.
+
+<HtmlEmbed
+  src="harness-seams.html"
+  title="How each validated harness reaches the proxy"
+  desc="Where each harness gets the proxy's URL and its session id from."
+  frameless
+/>
+
+Most harnesses read environment variables, and OpenEnv sets those for the agent's run only. The
+session id [Codex](https://github.com/openai/codex) receives as `OPENAI_API_KEY` therefore never reaches the verifier, which may need a
+real key of its own. [Claude Code](https://code.claude.com/docs/en/overview) and [Gemini CLI](https://github.com/google-gemini/gemini-cli) also read the variables in the server process, so
+they get them there too. [OpenCode](https://opencode.ai) and [Pi](https://pi.dev) take a config file written into the sandbox, and Terminus 2
+runs on the host and is handed the URL and key directly.
+
+#### Picking the reward, and checking the capture
+
+Harbor's verifier can return several named scores, and GRPO [@shao2024deepseekmath] needs one number per rollout. The
+integration uses the only score if there is one, or the one named `reward`, and otherwise asks the
+caller to choose. It never combines scores itself, because whatever weighting it picked would become
+the training objective. An earlier run had a `+0.2 for submitting anything` term. The policy learned
+to submit immediately, and held-out accuracy fell from 0.740 to 0.178 while training reward still
+looked healthy. When the verifier never runs, the reward stays `None` all the way to the trainer, so
+a sandbox that died is not scored as a wrong answer.
+
+The proxy's own checks can only look at data it captured. As an independent check, each rollout is
+also compared with the trajectory file Harbor writes itself, in its [ATIF](https://docs.harborframework.com/core-concepts/agents/atif) format, call by call: the
+number of turns, the completion tokens per call, and which calls count as agent steps. Any mismatch
+fails the rollout.
+
+```
+ATIF completion_tokens : [37, 36, 104, 264, 255, 119, 32, 27]   total 874
+intercept turn_lengths : [37, 36, 104, 264, 255, 119, 32, 27]   total 874
+ATIF step-1 prompt_tokens 7990  ==  intercept prompt_len 7990
+```
+
+This caught a harness that sent an empty tools array, got a 400 from the inference server and was
+cut short, leaving a rollout graph that looked well formed. The proxy now drops empty tools arrays
+before forwarding.
+
+#### Deploying it and training against it
+
+On one machine, `serve` listens on two ports, one for trainers and the web UI and one for the capture
+proxy. Sandboxes usually run somewhere else, so the proxy reaches them through a tunnel, set with
+`--expose` and [Gradio](https://www.gradio.app) by default. A Hugging Face Space has only one port, so there the proxy is
+mounted at `/capture`. The Space has to be public, because the agent in the sandbox cannot send the
+auth header a private Space requires. It stays safe because the proxy only answers registered
+session ids, and minting one needs an admin key. Before training, raise the concurrency limit.
+`serve` allows four environments at once by default and rejects the rest with `CAPACITY_REACHED`,
+fewer than the eight rollouts in each of our GRPO groups.
+
+The trainer side lives in OpenEnv's `harbor_env` package. Its `HarborSessionFactory` produces
+sessions in the shape [TRL](https://github.com/huggingface/trl)'s `HarnessRolloutWorker` expects when the agent owns the loop, a worker
+added in [TRL pull request #6947](https://github.com/huggingface/trl/pull/6947), which is still open.
+Each session requests one rollout, waits for it, and returns the captured turns as TRL trace entries.
+In our runs every rollout in a GRPO group used the same harness, so the advantage compared actions
+rather than harnesses. The sampling temperature sent with each rollout also matched the one the
+trainer used to recompute logprobs. [The training chapter](#training-small-models-across-harnesses) covers the
+training loop.
+
+{/* PLACEHOLDER: a worked rollout, and the single most convincing artifact this section could
+     carry. Take one L2 SmolDataEnvs task, run it under two harnesses, and show the trajectories side
+     by side: same task, same weights, different tool-call formats, different turn counts, both
+     arriving as trainable tokens. Needs real captured output rather than an illustration. */}
+
+{/* TODO: link the live Space and walk through what a reader sees on opening it: the task list
+     from the Task API, a rollout in flight, and the finished graph with per-turn token ids behind
+     an accordion. FineEnvs/data-agent-blackbox-harbor-env is the current deployment. */}

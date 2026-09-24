@@ -1,0 +1,138 @@
+<div class="harness-seams" style="width:100%;margin:14px 0;"></div>
+<style>
+  .harness-seams { position: relative; }
+  .harness-seams svg { display:block; width:100%; height:auto; overflow:visible; }
+  .harness-seams .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .harness-seams .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .harness-seams .k { display:inline-flex; align-items:center; gap:7px; }
+  .harness-seams .sw { width:14px; height:14px; border-radius:3px; border:1px solid; box-sizing:border-box; }
+  .harness-seams .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'harness-seams';
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let r = scriptEl ? scriptEl.previousElementSibling : null;
+      while (r && !(r.classList && r.classList.contains(C))) r = r.previousElementSibling;
+      if (!r) { const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true'); r = n[n.length-1]; }
+      if (!r || r.dataset.mounted === 'true') return;
+      r.dataset.mounted = 'true';
+
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+      // The ten harnesses marked validated in openenv/harbor/seams.py (OpenEnv 0.6), grouped
+      // by how the seam reaches them. Every API key written here is the capture session id.
+      const KIND = {
+        agent:  { i:0, label:'environment variables, agent run only' },
+        both:   { i:3, label:'environment variables, agent run and server process' },
+        config: { i:1, label:'a config file written into the sandbox' },
+        host:   { i:2, label:'passed in directly, on the host' },
+      };
+      const D = [
+        ['Claude Code',    'both',   'ANTHROPIC_BASE_URL · ANTHROPIC_API_KEY'],
+        ['Gemini CLI',     'both',   'GOOGLE_GEMINI_BASE_URL · GEMINI_API_KEY'],
+        ['Codex',          'agent',  'OPENAI_BASE_URL · OPENAI_API_KEY'],
+        ['Mini-SWE-Agent', 'agent',  'OPENAI_BASE_URL · MSWEA_API_KEY'],
+        ['Qwen Code',      'agent',  'OPENAI_BASE_URL · OPENAI_API_KEY'],
+        ['Vibe',           'agent',  'VIBE_API_BASE · OPENAI_API_KEY'],
+        ['OpenHands SDK',  'agent',  'LLM_BASE_URL · LLM_API_KEY'],
+        ['OpenCode',       'config', 'provider block in opencode config'],
+        ['Pi',             'config', '~/.pi/agent/models.json'],
+        ['Terminus 2',     'host',   'api_base and api_key arguments'],
+      ];
+
+      const hover = -1;
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const mono = 'ui-monospace,SFMono-Regular,Menlo,monospace';
+        const wide = W >= 640;
+
+        // Rows on the left, one proxy on the right. On wide screens the seam is written on
+        // the wire itself; on narrow ones it moves into the harness card as a second line.
+        // Narrow cards carry the seam themselves, one variable per line, so rows vary in height.
+        const maxCh = Math.max(12, Math.floor((W - 66 - 2 - 44 - 14 - 22) / 5.7));
+        const wrap = (t) => { const out = []; let cur = ''; t.split(' ').forEach(w => { if ((cur + ' ' + w).trim().length > maxCh && cur) { out.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); }); if (cur) out.push(cur); return out; };
+        const lines = (seam) => wide ? [] : seam.split(' · ').flatMap(wrap);
+        const cardHOf = (i) => wide ? 24 : 20 + 12*lines(D[i][2]).length;
+        const top = 34, rowGap = wide ? 8 : 6;
+        const inBox = D.filter(d => d[1] !== 'host').length;
+        const hostGap = 34;                                   // room for the sandbox edge and its label
+        const ys = []; { let y = top; D.forEach((_, i) => { if (i === inBox) y += hostGap; ys.push(y); y += cardHOf(i) + rowGap; }); }
+        const yRow = (i) => ys[i];
+        const cardHLast = cardHOf(D.length-1);
+        const Ht = yRow(D.length-1) + cardHLast + 14;
+        const pxW = wide ? 132 : 66, pxX = W - pxW - 2;
+        const cardX = 14, cardW = wide ? 128 : pxX - 44 - cardX;
+        const wireEnd = pxX;
+        const bendX = wide ? pxX - 120 : pxX - 30;            // where the straight run turns toward the proxy
+        const pxY = top + 20, pxH = Math.max(90, yRow(D.length-1) + cardHLast - pxY - 20);
+
+        let s = `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="How each of the ten validated harnesses is pointed at the capture proxy">`;
+
+        // sandbox boundary around every harness that runs inside it
+        const sbY = top - 26, sbH = yRow(inBox-1) + cardHOf(inBox-1) + 10 - sbY;
+        s += `<rect x="2" y="${sbY}" width="${bendX - 6}" height="${sbH}" rx="12" fill="none" stroke="${bd}" stroke-dasharray="5 4"/>`;
+        s += `<text x="14" y="${sbY+15}" font-size="10" fill="${mu}" font-family="${mono}" letter-spacing=".6">INSIDE THE SANDBOX</text>`;
+        const hy = yRow(inBox) - 12;
+        s += `<text x="14" y="${hy}" font-size="10" fill="${mu}" font-family="${mono}" letter-spacing=".6">ON THE HOST</text>`;
+
+        // the proxy
+        s += `<rect x="${pxX}" y="${pxY}" width="${pxW}" height="${pxH}" rx="10" fill="${sf}" stroke="${P(1)}" stroke-width="1.6"/>`;
+        const pcx = pxX + pxW/2, pcy = pxY + pxH/2;
+        if (wide) {
+          s += `<text x="${pcx}" y="${pcy-6}" text-anchor="middle" font-size="12.5" font-weight="600" fill="${tx}">Capture proxy</text>`;
+          s += `<text x="${pcx}" y="${pcy+12}" text-anchor="middle" font-size="10.5" fill="${mu}">key = session id</text>`;
+        } else {
+          s += `<text x="${pcx}" y="${pcy-14}" text-anchor="middle" font-size="11" font-weight="600" fill="${tx}">Capture</text>`;
+          s += `<text x="${pcx}" y="${pcy}" text-anchor="middle" font-size="11" font-weight="600" fill="${tx}">proxy</text>`;
+          s += `<text x="${pcx}" y="${pcy+18}" text-anchor="middle" font-size="9" fill="${mu}">key =</text>`;
+          s += `<text x="${pcx}" y="${pcy+29}" text-anchor="middle" font-size="9" fill="${mu}">session id</text>`;
+        }
+
+        D.forEach(([name, kind, seam], i) => {
+          const k = KIND[kind], c = P(k.i);
+          const cardH = cardHOf(i), y = yRow(i), cy = y + cardH/2;
+          const dim = hover >= 0 && hover !== i;
+          const op = dim ? .25 : 1;
+          // wire: straight run from the card, then a smooth turn into the proxy
+          const ey = pxY + 14 + (i + .5) * ((pxH - 28) / D.length);
+          const x1 = cardX + cardW;
+          s += `<path d="M ${x1} ${cy} L ${bendX} ${cy} C ${bendX + (wireEnd-bendX)*.55} ${cy}, ${bendX + (wireEnd-bendX)*.45} ${ey}, ${wireEnd} ${ey}" fill="none" stroke="${c}" stroke-width="${hover===i?2.2:1.5}" stroke-opacity="${op}"/>`;
+          // card
+          s += `<g data-i="${i}" style="cursor:default">`;
+          s += `<rect x="${cardX}" y="${y}" width="${cardW}" height="${cardH}" rx="6" fill="${sf}" stroke="${c}" stroke-opacity="${dim?.3:.9}" stroke-width="1.2"/>`;
+          s += `<rect x="${cardX}" y="${y}" width="4" height="${cardH}" rx="2" fill="${c}" fill-opacity="${op}"/>`;
+          s += `<text x="${cardX+12}" y="${wide ? cy+4 : y+16}" font-size="12" font-weight="600" fill="${tx}" fill-opacity="${dim?.4:1}">${esc(name)}</text>`;
+          if (!wide) lines(seam).forEach((ln, j) => { s += `<text x="${cardX+12}" y="${y+30+j*12}" font-size="9.4" fill="${mu}" fill-opacity="${dim?.4:1}" font-family="${mono}">${esc(ln)}</text>`; });
+          s += `</g>`;
+          // on wide screens the seam rides on the wire
+          if (wide) s += `<text x="${x1 + 10}" y="${cy - 5}" font-size="10" fill="${c}" fill-opacity="${op}" font-family="${mono}">${esc(seam)}</text>`;
+        });
+
+        s += `</svg>`;
+        const kinds = Object.values(KIND);
+        r.innerHTML = s
+          + `<div class="lg"><div class="lg-t">Legend</div>`
+          + kinds.map(k => `<span class="k"><span class="sw" style="border-color:${P(k.i)};background:color-mix(in srgb, ${P(k.i)} 25%, transparent)"></span>${esc(k.label)}</span>`).join('')
+          + `</div>`
+          + `<div class="nt">These are the ten harnesses marked validated in OpenEnv 0.6. Another 19 are listed but not validated: 2 unstable, 3 unsupported, 3 blocked and 11 untested.</div>`;
+      };
+      draw();
+      if ('ResizeObserver' in window) { let t; new ResizeObserver(() => { clearTimeout(t); t = setTimeout(draw, 100); }).observe(r); }
+      else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
+  })();
+</script>

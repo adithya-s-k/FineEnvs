@@ -4,7 +4,7 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
 ## Introduction
 
 If you use AI to write code, you have probably used the same model through more than one tool:
-Claude in Claude Code, in Cursor, in Pi, or in Cline. And you may have noticed it doesn't behave
+Claude in [Claude Code](https://code.claude.com/docs/en/overview), in [Cursor](https://cursor.com), in [Pi](https://pi.dev), or in [Cline](https://cline.bot). And you may have noticed it doesn't behave
 the same way in each. It plans differently, reaches for different tools, and finishes tasks in one
 that it gets stuck on in another.
 
@@ -31,21 +31,21 @@ harness can't read.
 
 The fix is to train the model inside those harnesses, and this article introduces an open framework
 that makes it possible: <mark>pick a model, pick a harness, pick a sandbox, and train</mark>. We walk
-through how it works, and what happened when we used it to train a small 2B-parameter model across
-several harnesses at once.
+through how it works, and what happened when we used it to train two small open models, [Qwen3.5-2B](https://huggingface.co/Qwen/Qwen3.5-2B)
+and [LFM2.5-2.6B](https://huggingface.co/LiquidAI/LFM2.5-2.6B), across several harnesses at once.
 
 ### Benchmark scores now come with a harness attached
 
 Model cards have started saying which harness a score came from. GLM-4.7 promises "significant
 improvements on complex tasks in mainstream agent frameworks such as Claude Code, Kilo Code, Cline,
-and Roo Code" [@zai2025glm47]. Kimi K2 reports Terminal-Bench twice, 25.0 under Terminus and 30.0
+and Roo Code" [@zai2025glm47]. Kimi K2 reports Terminal-Bench [@merrill2026terminalbench] twice, 25.0 under Terminus and 30.0
 under Moonshot's own framework [@kimi2025k2]. MiniMax M2 names a harness for almost every benchmark
 it lists [@minimax2025m2card]. DeepSeek-V3.2's thinking mode wouldn't run under Terminus at all, so
 its Terminal-Bench number had to come from a different harness [@deepseek2025v32].
 
 The harness can even change which model comes out ahead. A 2026 paper on harness disclosure took
 three models within three points of each other on a public coding leaderboard, GLM-5.1, GPT-5.4
-and Kimi K2.6, and ran them on the same 100 SWE-bench Verified tasks under three harness
+and Kimi K2.6, and ran them on the same 100 SWE-bench Verified [@jimenez2024swebench] tasks under three harness
 configurations, with everything else held fixed [@zhang2026stopcomparing].
 
 <HtmlEmbed
@@ -58,8 +58,8 @@ configurations, with everything else held fixed [@zhang2026stopcomparing].
 Each model comes out on top under a different harness. Swapping the harness moved GLM-5.1 by 13
 points, while swapping the model inside the same harness moved the score by only 2.5 to 5.
 
-You can see the same thing outside a controlled test. Claude Opus 4.5 scores 45.9% on SWE-bench Pro
-on Scale's SEAL leaderboard and 55.4% inside Claude Code, with the same weights
+You can see the same thing outside a controlled test. Claude Opus 4.5 scores 45.9% on SWE-bench Pro [@deng2025swebenchpro]
+on Scale's [SEAL leaderboard](https://labs.scale.com/leaderboard/swe_bench_pro) and 55.4% inside Claude Code, with the same weights
 [@zhang2026stopcomparing].
 
 ### When a model leaves the harness it was trained in
@@ -77,8 +77,8 @@ harnesses.
   frameless
 />
 
-Moving OpenSWE-32B from OpenHands, where it was trained, to Mini-SWE-Agent costs 7.5 points. Under
-Kimi-CLI, which it had never seen, it drops 58.8 points, to 3.6% on SWE-bench Verified, and scores
+Moving OpenSWE-32B from [OpenHands](https://github.com/OpenHands/OpenHands), where it was trained, to [Mini-SWE-Agent](https://github.com/SWE-agent/mini-swe-agent) costs 7.5 points. Under
+[Kimi-CLI](https://github.com/MoonshotAI/kimi-cli), which it had never seen, it drops 58.8 points, to 3.6% on SWE-bench Verified, and scores
 zero on Terminal-Bench 2.0. Scale-SWE stops producing valid tool calls anywhere but its home harness.
 Orchard's model stays between 45.0 and 64.3 on SWE-bench Verified across all three.
 
@@ -115,14 +115,14 @@ poolside's Laguna report does this [@poolside2026laguna]:
 That is 1.3 billion tokens of supervised trajectories from harnesses poolside doesn't own, with each
 one's own habits left in. Their reinforcement learning then runs inside their own harness, `pool`.
 
-Kimi K3's RL environment builds harnesses such as Claude Code and Codex from composable modules, so
+Kimi K3's RL environment builds harnesses such as Claude Code and [Codex](https://github.com/openai/codex) from composable modules, so
 the model trains on many harness configurations instead of one [@kimi2026k3]. Qwen3-Coder-Next
 generates its agentic coding data in six different harnesses [@qwen2026codernext], and MiMo-V2.6
 trains on a pool of task-adapted mini-harnesses [@xiaomi2026mimov26].
 
 OpenForgeRL checked whether that variety costs peak performance. It trained the same model on one
 harness and on three, and the three-harness model scored higher even on the single harness's home
-turf, 48.5 to 46.0, while nearly tripling its Codex score [@yu2026openforgerl].
+turf, 48.5 to 46.0, and almost twice as high under Codex [@yu2026openforgerl].
 
 {/* VIZ: paper-receipts: tabbed excerpt viewer. Each tab shows a real crop from the official
      PDF of the passage being cited, with page reference and a link. The point is that the
@@ -145,14 +145,14 @@ going past, and turning those back into training samples is still an open proble
 An open, reliable way to do it is still missing. It has to capture everything RL training uses from
 harnesses you don't control, and plug into whichever trainer you already use.
 
-We built this on OpenEnv, around a capture proxy that sits between the harness and the model. Every
+We built this on OpenEnv [@openenv2026], around a capture proxy that sits between the harness and the model. Every
 call the agent makes passes through the proxy, which records the prompt and completion tokens as the
 model saw and produced them, with their log probabilities. It speaks the API formats coding agents
-use, so Claude Code, Codex and OpenCode run unmodified, and a custom harness only has to point at it.
+use, so Claude Code, Codex and [OpenCode](https://opencode.ai) run unmodified, and a custom harness only has to point at it.
 Because it all sits behind OpenEnv's open environment interface, the same setup can feed different
-trainers. This article uses TRL.
+trainers. This article uses TRL [@trl].
 
-On top of that, the Harbor integration serves Harbor's containerized tasks as
+On top of that, the Harbor integration [@openenv2026harbor] serves [Harbor's](https://harborframework.com/) containerized tasks as
 OpenEnv environments, so the harness and the sandbox become settings you choose per rollout.
 
 <Accordion title="What is Harbor?">
@@ -160,10 +160,10 @@ OpenEnv environments, so the harness and the sandbox become settings you choose 
 Harbor is a framework for running agents against containerized tasks, from the team behind
 Terminal-Bench. A task is an instruction, a container and a test script, and Harbor keeps the task,
 the agent harness and the machine it runs on independent of each other. Any harness can attempt any
-task on any backend, from local Docker to Modal or Daytona, so one task set can be trained against
+task on any backend, from local Docker to [Modal](https://modal.com) or [Daytona](https://www.daytona.io), so one task set can be trained against
 many harnesses. I wrote about why it is the right abstraction for coding RL
 in [RL Coding Environments 101: Why Harbor
-Exists](https://x.com/adithya_s_k/article/2054961319179420035), and [the OpenEnv × Harbor
-chapter](#openenv--harbor) covers how the integration works.
+Exists](https://x.com/adithya_s_k/article/2054961319179420035), and [the OpenEnv
+chapter](#openenv) covers how the integration works.
 
 </Accordion>

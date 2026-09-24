@@ -1,112 +1,158 @@
 <div class="harbor-task" style="width:100%;margin:14px 0;"></div>
 <style>
-  .harbor-task { position: relative; }
-  .harbor-task svg { display:block; width:100%; height:auto; overflow:visible; }
-  .harbor-task .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
-  .harbor-task .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
-  .harbor-task .k { display:inline-flex; align-items:center; gap:7px; }
-  .harbor-task .sw { width:13px; height:3px; border-radius:2px; }
-  .harbor-task .rp { margin-top: 16px; }
-  .harbor-task .rp-t { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-color); opacity:.8; margin-bottom:7px; }
-  .harbor-task .rp ol { margin:0; padding-left:20px; font-size:12.5px; line-height:1.55; color:var(--text-color); }
-  .harbor-task .rp li { margin:0; padding:1px 0; }
-  .harbor-task .dif { margin-top:18px; }
-  .harbor-task .bars { display:flex; gap:4px; align-items:stretch; }
-  .harbor-task .b { position:relative; min-width:0; }
-  .harbor-task .fill { height:10px; border-radius:3px; }
-  .harbor-task .fill { height:12px; border-radius:3px; }
-  .harbor-task .dkeys { display:flex; flex-wrap:wrap; gap:5px 18px; margin-top:10px; font-size:11.5px; color:var(--muted-color); }
-  .harbor-task .dk { display:inline-flex; align-items:center; gap:7px; }
-  .harbor-task .dk b { color:var(--text-color); }
-  .harbor-task .dsw { width:12px; height:8px; border-radius:2px; flex:none; }
+  .harbor-task { position: relative; --ht-accent: rgb(78,165,183); }
+  .harbor-task .ht-tasks { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .harbor-task .ht-chip { appearance:none; cursor:pointer; font:inherit; font-size:12px; line-height:1; padding:7px 12px;
+    border-radius:999px; border:1px solid var(--border-color); background:transparent; color:var(--muted-color); }
+  .harbor-task .ht-chip:hover { color:var(--text-color); }
+  .harbor-task .ht-chip[aria-pressed="true"] { color:var(--text-color); border-color:var(--text-color); font-weight:600; }
+  .harbor-task .ht-chip:focus-visible, .harbor-task .ht-file:focus-visible { outline:2px solid var(--text-color); outline-offset:2px; }
+  .harbor-task .ht-q { font-size:13px; line-height:1.5; color:var(--text-color); margin:0 0 12px; }
+  .harbor-task .ht-q span { color:var(--muted-color); }
+  .harbor-task .ht-q code { font-size:12px; }
+  .harbor-task .ht-body { display:grid; grid-template-columns: 230px 1fr; gap:12px; align-items:start; }
+  .harbor-task .ht-tree { border:1px solid var(--border-color); border-radius:10px; padding:8px; }
+  .harbor-task .ht-root { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px; color:var(--muted-color); padding:2px 6px 8px; word-break:break-all; }
+  .harbor-task .ht-file { appearance:none; display:block; width:100%; text-align:left; cursor:pointer; font:inherit; background:none;
+    border:0; border-radius:7px; padding:6px 8px; color:var(--muted-color); }
+  .harbor-task .ht-file:hover { color:var(--text-color); }
+  .harbor-task .ht-file[aria-selected="true"] { color:var(--text-color); background:color-mix(in srgb, var(--text-color) 7%, transparent); }
+  .harbor-task .ht-file .n { display:block; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; }
+  /* Folders are labels, not buttons; the files inside them are indented under a guide line. */
+  .harbor-task .ht-dir { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; color:var(--muted-color); padding:6px 8px 2px; }
+  .harbor-task .ht-dir::before { content:'▾ '; opacity:.6; }
+  .harbor-task .ht-in { margin-left:14px; padding-left:8px; border-left:1px solid var(--border-color); }
+  .harbor-task .ht-file .r { display:block; font-size:11px; margin-top:1px; opacity:.85; }
+  .harbor-task .ht-view { border:1px solid var(--border-color); border-radius:10px; overflow:hidden; min-width:0; }
+  .harbor-task .ht-head { padding:9px 12px; border-bottom:1px solid var(--border-color); font-size:12.5px; line-height:1.5; color:var(--text-color); }
+  .harbor-task .ht-head b { font-weight:600; }
+  .harbor-task .ht-head code { font-size:11.5px; margin-right:4px; }
+  .harbor-task .ht-head .p { float:right; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px; color:var(--muted-color); margin-left:10px; }
+  .harbor-task pre.ht-code { margin:0; padding:10px 0; max-height:360px; overflow:auto; font-size:11.5px; line-height:1.55;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; background:color-mix(in srgb, var(--text-color) 3%, transparent); counter-reset:ln; }
+  .harbor-task pre.ht-code .l { display:block; padding:0 12px 0 0; white-space:pre; }
+  .harbor-task pre.ht-code .l::before { counter-increment:ln; content:counter(ln); display:inline-block; width:3.2em; padding-right:1em;
+    text-align:right; color:var(--muted-color); opacity:.55; user-select:none; }
+  .harbor-task .c { color:var(--muted-color); }
+  .harbor-task .s { color:var(--ht-sec); font-weight:600; }
+  .harbor-task .k { color:var(--ht-key); }
+  .harbor-task .hl { background:color-mix(in srgb, var(--ht-key) 16%, transparent); border-radius:3px; }
+  .harbor-task .ht-flow { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:12px; font-size:12px; color:var(--text-color); }
+  .harbor-task .ht-flow .t { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-color); width:100%; margin-bottom:2px; }
+  .harbor-task .ht-flow .st { border:1px solid var(--border-color); border-radius:7px; padding:5px 9px; line-height:1.35; }
+  .harbor-task .ht-flow .st code { font-size:11px; }
+  .harbor-task .ht-flow .ar { color:var(--muted-color); }
   .harbor-task .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+  .harbor-task .nt code { font-size:11px; }
+  /* prose files wrap, code keeps its lines */
+  .harbor-task pre.ht-code.wrap .l { white-space:pre-wrap; padding-left:4.2em; text-indent:-4.2em; }
+  @media (max-width: 640px) {
+    .harbor-task .ht-body { grid-template-columns: 1fr; }
+    .harbor-task .ht-tree { display:flex; overflow-x:auto; gap:4px; padding:6px; }
+    .harbor-task .ht-root { display:none; }
+    .harbor-task .ht-file { flex:none; width:auto; }
+    .harbor-task .ht-file .r { display:none; }
+    .harbor-task .ht-dir { display:none; }
+    .harbor-task .ht-in { display:contents; }
+  }
 </style>
 <script>
   (() => {
     const C = 'harbor-task';
     const boot = () => {
-      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
-      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
-      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const scriptEl = document.currentScript;
+      let r = scriptEl ? scriptEl.previousElementSibling : null;
+      while (r && !(r.classList && r.classList.contains(C))) r = r.previousElementSibling;
+      if (!r) { const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true'); r = n[n.length-1]; }
+      if (!r || r.dataset.mounted === 'true') return;
+      r.dataset.mounted = 'true';
+
       const P = (i) => {
         if (window.ColorPalettes && window.ColorPalettes.categorical) {
           try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
         }
         return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
       };
+      r.style.setProperty('--ht-sec', P(3));
+      r.style.setProperty('--ht-key', P(0));
+      const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+      // What each file is for. The contents come verbatim from the dataset on the Hub.
+      const FILES = [
+        ['task.toml',                  'the spec',   'The question, the gold answer and difficulty, the sandbox’s resources, the pre-agent hook, and the verifier’s settings.'],
+        ['instruction.md',             'the prompt', 'Exactly what the agent is shown: where its files are, what is installed, and how to write the answer.'],
+        ['environment/Dockerfile',     'the image',  'What the sandbox is built from. Every task in the suite shares one base image.'],
+        ['environment/pull_bucket.py', 'the data',   'Runs from the healthcheck after the container starts and before the agent does, and downloads this task’s Kaggle files into /home/user/input.'],
+        ['tests/test.sh',              'the verifier', 'Reads the agent’s answer. If there is none it writes 0.0 and exits cleanly, so a missing answer scores as wrong rather than as a crash.'],
+        ['tests/grader.py',            'the reward', 'Exact match, then numeric tolerance, then order-insensitive lists, then symbolic comparison. It prints one float, and no LLM is involved.'],
+      ];
+      const LANG = { 'task.toml':'toml', 'instruction.md':'md', 'environment/Dockerfile':'sh', 'environment/pull_bucket.py':'py', 'tests/test.sh':'sh', 'tests/grader.py':'py' };
+
+      // Light highlighting: comments, TOML sections and keys. The gold answer is marked
+      // wherever it appears, so it is easy to see where the verifier gets it from.
+      const paint = (text, lang, gold) => text.replace(/\n$/, '').split('\n').map(line => {
+        let h = esc(line);
+        const tr = line.trim();
+        if ((lang === 'toml' || lang === 'sh' || lang === 'py') && tr.startsWith('#')) h = `<span class="c">${h}</span>`;
+        else if (lang === 'toml' && /^\[.*\]$/.test(tr)) h = `<span class="s">${h}</span>`;
+        else if (lang === 'toml') h = h.replace(/^(\s*)([A-Za-z_][\w.-]*)(\s*=)/, '$1<span class="k">$2</span>$3');
+        if (gold && lang === 'toml') h = h.split(esc(`"${gold}"`)).join(`<span class="hl">${esc(`"${gold}"`)}</span>`);
+        return `<span class="l">${h || ' '}</span>`;
+      }).join('');
+
+      // Files at the top of the task, then one block per folder with its files indented.
+      const tree = () => {
+        const btn = ([p, ro], i) => `<button type="button" role="tab" class="ht-file" data-f="${i}" aria-selected="${i===fi}" aria-label="${esc(p)}"><span class="n">${esc(p.split('/').pop())}</span><span class="r">${esc(ro)}</span></button>`;
+        let h = '', dir = null;
+        FILES.forEach((f, i) => {
+          const d = f[0].includes('/') ? f[0].split('/')[0] : null;
+          if (d !== dir) { if (dir) h += `</div>`; if (d) h += `<div class="ht-dir">${esc(d)}/</div><div class="ht-in">`; dir = d; }
+          h += btn(f, i);
+        });
+        if (dir) h += `</div>`;
+        return h;
+      };
+
+      let D = null, ti = 1, fi = 1;
+      const draw = () => {
+        if (!D) return;
+        const T = D.tasks[ti];
+        const [path, role, what] = FILES[fi];
+        const body = T.files[path] ?? D.shared[path];
+        const shared = !(path in T.files);
+        r.innerHTML =
+            `<div class="ht-tasks" role="group" aria-label="Choose a task">`
+          + D.tasks.map((t,i) => `<button type="button" class="ht-chip" data-t="${i}" aria-pressed="${i===ti}">${t.tier[0].toUpperCase()+t.tier.slice(1)} · level ${t.level}</button>`).join('')
+          + `</div>`
+          + `<p class="ht-q">${esc(T.question)} <span>Gold answer:</span> <code>${esc(T.answer)}</code> <span>· data from</span> <code>${esc(T.kaggle)}</code></p>`
+          + `<div class="ht-body">`
+          +   `<div class="ht-tree" role="tablist" aria-label="Files in this task">`
+          +     `<div class="ht-root">tasks/${esc(T.id)}/</div>`
+          +     tree()
+          +   `</div>`
+          +   `<div class="ht-view" role="tabpanel">`
+          +     `<div class="ht-head"><span class="p">${shared ? 'same in every task' : 'this task only'}</span><code>${esc(path)}</code> <b>${esc(role[0].toUpperCase()+role.slice(1))}.</b> ${esc(what)}</div>`
+          +     `<pre class="ht-code${LANG[path] === 'md' ? ' wrap' : ''}" tabindex="0" aria-label="${esc(path)}">${paint(body, LANG[path], T.answer)}</pre>`
+          +   `</div>`
+          + `</div>`
+          + `<div class="ht-flow"><div class="t">How the reward gets out</div>`
+          +   [`agent writes <code>/workdir/answer.txt</code>`, `<code>test.sh</code> reads it`, `<code>grader.py</code> prints one float`, `lands in <code>/logs/verifier/reward.txt</code>`, `Harbor returns it with the trial`]
+                .map(x => `<span class="st">${x}</span>`).join('<span class="ar">→</span>')
+          + `</div>`
+          + `<div class="nt">Real files from <a href="https://huggingface.co/datasets/${esc(D.source)}" target="_blank" rel="noopener">${esc(D.source)}</a>, shown unedited. The gold answer is highlighted where <code>task.toml</code> hands it to the verifier.</div>`;
+        r.querySelectorAll('.ht-chip').forEach(b => b.addEventListener('click', () => { ti = +b.dataset.t; draw(); }));
+        r.querySelectorAll('.ht-file').forEach(b => b.addEventListener('click', () => { fi = +b.dataset.f; draw(); r.querySelector(`.ht-file[data-f="${fi}"]`)?.focus(); }));
+      };
+
       const grab = async (f) => {
-        for (const u of ['/data/'+f, 'assets/data/'+f]) {
+        for (const u of ['/data/'+f, 'assets/data/'+f, '../assets/data/'+f]) {
           try { const x = await fetch(u, {cache:'no-cache'}); if (x.ok) return await x.json(); } catch(e) {}
         }
         throw new Error('could not load '+f);
       };
-      let D = null;
-      const draw = () => {
-        if (!D) return;
-        const W = Math.max(320, r.clientWidth);
-        const bd = V('--border-color','rgba(128,128,128,.3)');
-        const mu = V('--muted-color','rgba(128,128,128,.8)');
-        const tx = V('--text-color','#16181d');
-        const sf = V('--surface-bg','#fff');
-        const F = D.files, R = D.reward_path;
-        const c0 = P(0), c3 = P(3);
-        const cx = Math.min(300, W*0.38);
-
-        // The detail lines are long enough to run off the right edge, so wrap them
-        // against real text metrics and let each row take the height it needs.
-        const mc = draw._mc || (draw._mc = document.createElement('canvas').getContext('2d'));
-        const fam = getComputedStyle(r).fontFamily || 'system-ui, sans-serif';
-        mc.font = `11.5px ${fam}`;
-        const availW = Math.max(120, W - cx - 4);
-        const wrap = (t) => {
-          const words = String(t).split(' '); const out = []; let cur = '';
-          for (const w of words) {
-            const test = cur ? cur + ' ' + w : w;
-            if (mc.measureText(test).width > availW && cur) { out.push(cur); cur = w; } else cur = test;
-          }
-          if (cur) out.push(cur);
-          return out;
-        };
-        const LH = 15;
-        const rows = F.map(f => { const dl = wrap(f.detail); return { ...f, dl, h: Math.max(44, 24 + dl.length*LH) }; });
-        let acc = 34; rows.forEach(rw => { rw.y = acc; acc += rw.h; });
-        const H = acc + 6;
-
-        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="The files that make up one Harbor task and what each one does">`;
-        s += `<text x="0" y="16" font-size="11" fill="${mu}" font-family="ui-monospace,Menlo,monospace">${D.example}/</text>`;
-        rows.forEach((f,i) => {
-          const y = f.y;
-          const last = i === rows.length-1;
-          s += `<line x1="9" y1="${y-24}" x2="9" y2="${last ? y-4 : y+f.h-24}" stroke="${bd}"/>`;
-          s += `<line x1="9" y1="${y-4}" x2="22" y2="${y-4}" stroke="${bd}"/>`;
-          s += `<text x="28" y="${y}" font-size="12.5" fill="${tx}" font-family="ui-monospace,Menlo,monospace">${f.path}</text>`;
-          s += `<text x="${cx}" y="${y}" font-size="12" font-weight="600" fill="${c0}">${f.role}</text>`;
-          f.dl.forEach((ln,k) => {
-            s += `<text x="${cx}" y="${y+16+k*LH}" font-size="11.5" fill="${mu}">${ln}</text>`;
-          });
-        });
-        s += '</svg>';
-        let rp = '<div class="rp"><div class="rp-t">How the reward gets out</div><ol>' +
-          R.map(x => `<li>${x}</li>`).join('') + '</ol></div>';
-        const dif = D.suite.difficulty, tot = D.suite.tasks;
-        let bar = '<div class="dif"><div class="rp-t">' + tot.toLocaleString() + ' tasks by difficulty</div><div class="bars">';
-        dif.forEach((d,i) => {
-          // a level with no tasks in this split gets no bar. The floor of 30 was
-          // there to keep small levels visible and was drawing L5 as if it existed.
-          if (!d.count) return;
-          bar += `<div class="b" style="flex:${Math.max(d.count,30)}" title="${d.level}: ${d.what}">
-            <div class="fill" style="background:${P(i)};opacity:${0.4+0.13*i}"></div></div>`;
-        });
-        bar += '</div><div class="dkeys">' + dif.map((d,i) =>
-          `<span class="dk"><span class="dsw" style="background:${P(i)};opacity:${0.4+0.13*i}"></span><b>${d.level}</b> ${d.count} &middot; ${d.what}</span>`
-        ).join('') + '</div></div>';
-        r.innerHTML = s + rp + bar +
-          `<div class="nt">One task from <a href="${D.url}" target="_blank" rel="noopener noreferrer">${D.source}</a>, unedited. Every task in the suite has this shape, which is what makes it servable: nothing about it names a harness, a sandbox or a trainer.</div>`;
-      };
-      grab('harbor-task.json').then(d => { D = d; draw(); }).catch(e => { r.innerHTML = '<div class="nt">'+e.message+'</div>'; });
-      if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
-      else window.addEventListener('resize', draw);
+      grab('harbor-tasks.json').then(d => { D = d; draw(); })
+        .catch(e => { r.innerHTML = `<pre style="color:#c33;font-size:12px">${esc(e.message)}</pre>`; });
     };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
   })();
 </script>

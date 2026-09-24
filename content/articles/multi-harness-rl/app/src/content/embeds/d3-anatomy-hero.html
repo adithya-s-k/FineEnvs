@@ -1,15 +1,16 @@
-<!-- Carried over from The ultimate guide to RL environments, unchanged, so the two
-     articles share one visual vocabulary. Source: content/articles/rl-environments-guide/
+<!-- Carried over from The ultimate guide to RL environments, recoloured with this
+     article's figure palette (teal, blue, lavender, pink) so it matches the other figures. Source: content/articles/rl-environments-guide/
      app/src/content/embeds/d3-anatomy-hero.html -->
 <div class="anatomy-hero" style="width:100%;margin:14px 0;"></div>
 <style>
   .anatomy-hero {
+    --fx-accent: rgb(78,165,183);
     position: relative;
     border: 1px solid var(--border-color);
     border-radius: 16px;
     overflow: hidden;
     background:
-      radial-gradient(circle at 50% 45%, color-mix(in oklab, var(--primary-color) 7%, transparent), transparent 60%),
+      radial-gradient(circle at 50% 45%, color-mix(in oklab, var(--fx-accent) 7%, transparent), transparent 60%),
       var(--surface-bg);
     color: var(--text-color);
   }
@@ -44,7 +45,7 @@
 
   /* dashed boundaries (env + episode control) */
   .anatomy-hero .ah-boundary {
-    fill: color-mix(in oklab, var(--primary-color) 4%, var(--surface-bg));
+    fill: color-mix(in oklab, var(--fx-accent) 4%, var(--surface-bg));
     stroke: var(--text-color);
     stroke-width: 1.6;
     stroke-dasharray: 8 5;
@@ -103,20 +104,20 @@
     fill: none;
   }
   .anatomy-hero .ah-return-loop {
-    stroke: color-mix(in oklab, var(--primary-color) 65%, var(--muted-color));
+    stroke: color-mix(in oklab, var(--fx-accent) 65%, var(--muted-color));
     stroke-width: 1.6;
     stroke-dasharray: 5 4;
     fill: none;
   }
   .anatomy-hero .ah-loop-inner-label {
-    fill: color-mix(in oklab, var(--primary-color) 80%, var(--text-color));
+    fill: color-mix(in oklab, var(--fx-accent) 80%, var(--text-color));
     font-size: 9.5px;
     font-weight: 800;
     letter-spacing: 0.5px;
     text-transform: uppercase;
   }
   .anatomy-hero .ah-loop-label {
-    fill: color-mix(in oklab, var(--primary-color) 80%, var(--text-color));
+    fill: color-mix(in oklab, var(--fx-accent) 80%, var(--text-color));
     font-size: 11.5px;
     font-weight: 800;
     letter-spacing: 1.2px;
@@ -128,8 +129,8 @@
 
   /* clickable env header */
   .anatomy-hero a.ah-env-link { text-decoration: none; cursor: pointer; }
-  .anatomy-hero a.ah-env-link:hover .ah-zone-label { fill: var(--primary-color); }
-  .anatomy-hero a.ah-env-link:hover .ah-link-arrow { fill: var(--primary-color); }
+  .anatomy-hero a.ah-env-link:hover .ah-zone-label { fill: var(--fx-accent); }
+  .anatomy-hero a.ah-env-link:hover .ah-link-arrow { fill: var(--fx-accent); }
   .anatomy-hero .ah-link-arrow {
     fill: var(--muted-color);
     font-size: 11px;
@@ -226,15 +227,15 @@
 
       // ── Components inside env ───────────────────────────────────────
       const COMPONENTS = [
-        { name: 'Tasks',         icon: 'tasks',      color: '#f97316', sub: 'dataset' },
-        { name: 'Prompt template', icon: 'prompt',   color: '#a855f7', sub: 'task → prompt' },
-        { name: 'Initial state', icon: 'initial',    color: '#6366f1', sub: 'reset()' },
-        { name: 'Tools / Harness', icon: 'tools',    color: '#eab308', sub: 'tool defs + wiring' },
-        { name: 'State',         icon: 'state',      color: '#14b8a6', sub: 'world state' },
-        { name: 'Execution backend', icon: 'exec',   color: '#22c55e', sub: 'where tools run' },
-        { name: 'Observation',   icon: 'observation',color: '#06b6d4', sub: 'next-turn input' },
-        { name: 'Reward',        icon: 'reward',     color: '#3b82f6', sub: 'rubric / verify' },
-        { name: 'Done',          icon: 'done',       color: '#ec4899', sub: 'termination' },
+        { name: 'Tasks',         icon: 'tasks',      color: 'rgb(146,176,234)', sub: 'dataset' },
+        { name: 'Prompt template', icon: 'prompt',   color: 'rgb(146,176,234)', sub: 'task → prompt' },
+        { name: 'Initial state', icon: 'initial',    color: 'rgb(146,176,234)', sub: 'reset()' },
+        { name: 'Tools / Harness', icon: 'tools',    color: 'rgb(78,165,183)', sub: 'tool defs + wiring' },
+        { name: 'State',         icon: 'state',      color: 'rgb(78,165,183)', sub: 'world state' },
+        { name: 'Execution backend', icon: 'exec',   color: 'rgb(78,165,183)', sub: 'where tools run' },
+        { name: 'Observation',   icon: 'observation',color: 'rgb(206,192,250)', sub: 'next-turn input' },
+        { name: 'Reward',        icon: 'reward',     color: 'rgb(206,192,250)', sub: 'rubric / verify' },
+        { name: 'Done',          icon: 'done',       color: 'rgb(206,192,250)', sub: 'termination' },
       ];
 
       const renderEnvCard = (c, i) => {
@@ -265,10 +266,10 @@
 
       // ── Components inside Episode Control ───────────────────────────
       const EC_COMPONENTS = [
-        { name: 'LLM Agent',     icon: 'llm',     color: '#8b5cf6', sub: 'policy · token gen' },
-        { name: 'Rollout',       icon: 'loop',    color: '#0ea5e9', sub: 'collect episode' },
-        { name: 'Trainer',       icon: 'trainer', color: '#f59e0b', sub: 'loss + gradient' },
-        { name: 'Weight update', icon: 'weights', color: '#f43f5e', sub: 'apply update' },
+        { name: 'LLM Agent',     icon: 'llm',     color: 'rgb(232,137,171)', sub: 'policy · token gen' },
+        { name: 'Rollout',       icon: 'loop',    color: 'rgb(232,137,171)', sub: 'collect episode' },
+        { name: 'Trainer',       icon: 'trainer', color: 'rgb(232,137,171)', sub: 'loss + gradient' },
+        { name: 'Weight update', icon: 'weights', color: 'rgb(232,137,171)', sub: 'apply update' },
       ];
 
       const renderEcCard = (c, i) => {
@@ -340,7 +341,7 @@
           <marker id="ah-arrow-loop" viewBox="0 -5 10 10" refX="9" refY="0"
                   markerWidth="6" markerHeight="6" orient="auto">
             <path d="M0,-4L10,0L0,4"
-                  fill="color-mix(in oklab, var(--primary-color) 65%, var(--muted-color))"/>
+                  fill="color-mix(in oklab, var(--fx-accent) 65%, var(--muted-color))"/>
           </marker>
         </defs>
 

@@ -1,0 +1,267 @@
+import Accordion from "../../components/Accordion.astro";
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+import Note from "../../components/Note.astro";
+
+## Training small models across harnesses
+
+We trained two small open models with the setup from the previous chapter:
+[Qwen3.5-2B](https://huggingface.co/Qwen/Qwen3.5-2B) first, then
+[LFM2.5-2.6B](https://huggingface.co/LiquidAI/LFM2.5-2.6B). Most of this chapter is about LFM,
+where both the scores and the tool use moved the most. The Qwen runs, and what they taught us, are in
+a collapsible section at the end.
+
+### Setup
+
+- **Tasks.** 1,000 [SmolDataEnvs](https://huggingface.co/collections/FineEnvs/smoldataenvs) training tasks, 400 medium and 600 hard, in one fixed order shared
+  by both runs. The test set is 250 held-out tasks with no overlap in notebook, question or
+  instruction.
+- **Evaluation.** Every 100 steps, each test task runs once under [OpenCode](https://opencode.ai), [Claude Code](https://code.claude.com/docs/en/overview), [Codex](https://github.com/openai/codex) and
+  [Mini-SWE-Agent](https://github.com/SWE-agent/mini-swe-agent), 1,000 cells in all. A cell counts as solved when its first graded attempt is
+  correct.
+- **Two runs.** One trains in OpenCode only. The other is multi-harness, where each GRPO [@shao2024deepseekmath] group of
+  eight rollouts uses one of the four harnesses.
+- **Recipe.** [Async GRPO](https://huggingface.co/docs/trl/async_grpo_trainer) in TRL for 1,000 steps. One H100 trains, a second serves the policy with
+  vLLM [@kwon2023vllm], and the tasks run in [E2B](https://e2b.dev) sandboxes.
+
+{/* TODO: link the training code and configs once they are published. */}
+
+Each cell runs once, so a point or two between neighbouring checkpoints is noise. Trust the trend
+across checkpoints over any single one.
+
+### Where the base models start
+
+<HtmlEmbed
+  src="d3-train-results.html"
+  config={{ view: "baselines" }}
+  title="The two base models on the test set"
+  desc="Pass@1 by harness before any training."
+  frameless
+/>
+
+LFM starts almost three times higher than Qwen. It also shows the problem this article is about
+before any training. The same weights solve 62% of tasks under Mini-SWE-Agent and 33% under Claude
+Code.
+
+### What we rewarded
+
+For Qwen, the reward was the verifier's verdict alone, 1 for a correct answer and 0 for a wrong one.
+It ignores how the model got there. A correct answer after 30 tool calls scores the same as one after
+3, so nothing pushes the model to stop exploring once it has the answer, and in an early Qwen run the
+tool calls per rollout crept from 13 to 41.
+
+For LFM we kept correctness as the main signal and added a small bonus for correct answers that take
+fewer calls. A wrong answer still scores 0, however few calls it made, so the model cannot earn the
+bonus by giving up early.
+
+<HtmlEmbed
+  src="d3-train-results.html"
+  config={{ view: "reward" }}
+  title="Reward for one rollout"
+  desc="Correctness alone for Qwen, and correctness with a tool-call bonus for LFM."
+  frameless
+/>
+
+The bonus is at most 0.1, but GRPO learns from differences inside a group, so even a small bonus
+counts. GRPO runs eight rollouts of the same task and trains on how each one compares with the group's
+average. When all eight are correct, correctness alone makes them identical and the group teaches
+nothing. The bonus is then the only thing that tells them apart, and it favours the shortest
+solutions. Here are two real groups from the multi-harness run, scored both ways.
+
+<HtmlEmbed
+  src="d3-train-results.html"
+  config={{ view: "group" }}
+  title="One GRPO group, scored both ways"
+  desc="Eight real rollouts of one task, with the reward and advantage each would get under the two rewards."
+  frameless
+/>
+
+All-correct groups like the first one made up 97 of the OpenCode-only run's groups and 155 of the
+multi-harness run's. The call count comes from the harness's own trace, and an audit of every
+training rollout found the bonus applied exactly as written and never to a wrong answer.
+
+During training, tool calls per rollout in the Qwen OpenCode-only run doubled from about 10 to 20,
+and the Qwen multi-harness run stayed between 11 and 16. LFM's fell in both runs and under every
+harness.
+
+<HtmlEmbed
+  src="d3-train-results.html"
+  config={{ view: "train", sel: 2, runs: ["qwen_harbor_opencode", "qwen_harbor_multi", "lfm_harbor_opencode", "lfm_harbor_multi"] }}
+  title="Tool calls during training, Qwen and LFM"
+  desc="Every optimizer step for the two Qwen runs, trained on correctness alone, and the two LFM runs, trained with the bonus."
+  frameless
+/>
+
+The models differ in other ways too, and there was no LFM run without the bonus, so we cannot say
+the bonus caused it on its own.
+
+### Training curves
+
+<HtmlEmbed
+  src="d3-train-results.html"
+  config={{ view: "train", runs: ["lfm_harbor_opencode", "lfm_harbor_multi"] }}
+  title="LFM2.5-2.6B training curves"
+  desc="Reward, correct answers and tool calls at every optimizer step. Drag the slider to change the smoothing."
+  frameless
+/>
+
+The share of correct rollouts climbs over the first few hundred steps in both runs, then rises and
+falls with the difficulty of the tasks in each stretch, since both runs follow the same task order.
+Tool calls fall throughout. On the test set, the OpenCode-only model ends at 58% under OpenCode
+against 50% for multi-harness, and the multi-harness model ends at 49% under Claude Code against 42%.
+
+### Accuracy
+
+<HtmlEmbed
+  src="d3-train-results.html"
+  config={{ view: "curve", runs: ["lfm_harbor_opencode", "lfm_harbor_multi"] }}
+  title="LFM2.5-2.6B pass@1 during training"
+  desc="Pass@1 at every evaluated checkpoint, overall and under each harness."
+  frameless
+/>
+
+Both runs climb, by 10 points for OpenCode-only and 12 for multi-harness, most of it in the first 200 steps, and hold it to step 1,000.
+They end at 52.3% for OpenCode-only and 54.2% for multi-harness. Both gains are well outside the
+noise. The 1.9-point gap between the runs is within the noise, so overall accuracy does not separate
+them.
+
+<HtmlEmbed
+  src="d3-train-results.html"
+  config={{ view: "final" }}
+  title="LFM2.5-2.6B at step 1,000, by harness"
+  desc="Pass@1 by harness next to the base model, or the change in tool calls and tokens on tasks both solved."
+  frameless
+/>
+
+The per-harness split is the clearest result. The OpenCode-only model is best under OpenCode, the
+harness it trained in. The multi-harness model is better under Claude Code and Codex, and the two tie
+under Mini-SWE-Agent. Most of the OpenCode-only model's gain is in OpenCode (34 → 58%), while the
+multi-harness model gained under all four.
+
+### Tool calls and tokens
+
+<HtmlEmbed
+  src="d3-train-results.html"
+  config={{ view: "efficiency" }}
+  title="How much work each LFM checkpoint does"
+  desc="Tool calls and tokens per test task at every checkpoint, overall and under each harness."
+  frameless
+/>
+
+Both models solve more tasks with fewer tool calls, and the multi-harness model cuts more, about a
+third fewer calls than the base model on the tasks both solved, against about a tenth for
+OpenCode-only. Fewer calls also means less history resent on every call, so input tokens fall with
+them. The biggest saving is under Codex, where the multi-harness model uses about half the calls. The
+clear exception is OpenCode-only under Claude Code, a harness it never trained in, where it used more
+calls and more tokens than the base model.
+
+<HtmlEmbed
+  src="d3-savings-heat.html"
+  title="Savings against the base model, by checkpoint and harness"
+  desc="Percent fewer tool calls, generated tokens or input tokens than the base model, on the test tasks both solved. Hover a cell for its task count."
+  frameless
+/>
+
+The multi-harness model's Codex savings grow at almost every checkpoint, and by step 1,000 every
+harness is blue on all three measures. The OpenCode-only model saves steadily in OpenCode and more
+and more in Codex. Under Claude Code, it generated more tokens than the base model at nearly every
+checkpoint, up to 62% more at step 500.
+
+### How much each run saw
+
+Both runs took 1,000 optimizer steps, but they did not see the same amount of data.
+
+| | OpenCode only | Multi-harness |
+|---|---:|---:|
+| Distinct training tasks | 555 | 626 |
+| Supervised tokens | 12.5M | 18.7M |
+| Tokens processed in training | 162M | 451M |
+
+Claude Code rewrites its own history as it goes, so each of its rollouts became about eight training
+rows, each carrying its own copy of the context, while the other harnesses averaged about one. With
+one seed per run and unequal exposure, the comparison between the two runs is observational.
+
+<Accordion title="The Qwen3.5-2B runs, and what they taught us">
+
+#### The runs
+
+Qwen came first, trained with the correctness-only reward on an easier pool of 1,000 tasks (150 easy,
+600 medium, 250 hard). There were three runs, all evaluated on the same 1,000 test cells:
+
+- **Harbor multi-harness**, rotating the four harnesses across GRPO groups.
+- **Harbor OpenCode-only**, the same pipeline with one harness.
+- **Standalone OpenCode**, OpenCode in its own environment outside Harbor, running in [Daytona](https://www.daytona.io).
+
+<HtmlEmbed
+  src="d3-train-results.html"
+  config={{ view: "curve", runs: ["qwen_harbor_opencode", "qwen_harbor_multi", "qwen_native_opencode"], note: "Top: all 1,000 test cells. Below: each harness. The standalone OpenCode run has its own measured baseline of 15.9%." }}
+  title="Qwen3.5-2B pass@1 during training"
+  desc="The three Qwen runs, trained with correctness as the only reward."
+  frameless
+/>
+
+<HtmlEmbed
+  src="d3-train-results.html"
+  config={{ view: "train", runs: ["qwen_harbor_opencode", "qwen_harbor_multi", "qwen_native_opencode"] }}
+  title="Qwen3.5-2B training curves"
+  desc="Reward and tool calls at every optimizer step, with adjustable smoothing. For Qwen the reward is correctness."
+  frameless
+/>
+
+#### Up, then down
+
+All three improved at first, which showed that an unmodified harness can be trained through once
+you have the exact tokens. Multi-harness more than doubled, from 14.6% to 37.0% at step 500.
+OpenCode-only peaked at 39.5% at step 700. Then both fell back to about 26% by step 1,000. The
+standalone run rose more slowly and ended at its best, 29.8%.
+
+The standalone run trained only in OpenCode, yet it gained about twice as much under Claude Code,
+Codex and Mini-SWE-Agent as under OpenCode.
+
+#### Why the two Harbor runs declined
+
+The two declines look different in the traces, and neither comes down to a single cause.
+
+- **Multi-harness ran out of output budget.** Late in training, answers grew until they hit the
+  4,096-token output limit used in evaluation. Cells cut off at that limit rose from 9 to 556 of
+  1,000, often a long explanation where the calculation should have been. Training allowed responses
+  up to 16,384 tokens, so the model learned a habit that evaluation cut short. Under OpenCode, calls
+  per task collapsed from 16 to 3.
+- **OpenCode-only kept working without finishing.** Calls per task rose from 17 to 21, and in the
+  cells where submission was tracked, the share that submitted an answer fell from 69% to 41%.
+- **A resume bug replayed old tasks.** After the multi-harness run restarted at step 684, almost every
+  new rollout came from a task it had already seen. That changed its late training, but the decline
+  started at step 500, before the restart, so the bug does not explain its start.
+
+#### Other things the Qwen runs showed
+
+- **Many steps taught nothing.** Between 35% and 58% of optimizer steps had no reward contrast in any
+  group, because all eight rollouts were right or all were wrong.
+- **Claude Code dominated the training data.** Each harness got about a quarter of the
+  rollouts, but Claude Code produced 77% of the training rows and 35% of the supervised tokens.
+- **SETA**, a synchronous run in a plain bash environment with its own evaluator, went from 18.8% to
+  38.0% in 150 steps before we stopped it on purpose.
+- **Harder data did not rescue the decline.** Continuing the multi-harness checkpoint from step 500
+  on 500 new hard tasks did not recover the peak. Nearly two thirds of its steps had no reward
+  contrast, and even counting every ungraded cell as correct, its final score could not reach its
+  starting 37.0%.
+
+#### What changed for LFM
+
+The LFM setup changed three things. The reward gained the tool-call bonus, so all-correct groups
+still carry a signal and long, unfinished loops cost something. The training pool moved to medium and
+hard tasks. And the output cap was 4,096 tokens in both training and evaluation, so the model could
+not learn answers that evaluation would cut off.
+
+</Accordion>
+
+### Reproducing it
+
+- [Training comparison dashboard](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio): every training curve and checkpoint evaluation.
+- [Harbor environment](https://huggingface.co/spaces/FineEnvs/data-agent-blackbox-harbor-env) and [standalone OpenCode environment](https://huggingface.co/spaces/FineEnvs/data-agent-blackbox-opencode-env): the environment servers used in training.
+- [OpenEnv #1036](https://github.com/huggingface/OpenEnv/pull/1036) for the capture proxy and Harbor integration, and [TRL #6947](https://github.com/huggingface/trl/pull/6947) for the trainer side.
+
+<Note variant="info" title="Bigger runs are coming">
+Every run in this article uses a small model, 2 to 2.6 billion parameters, trained for 1,000 steps on
+a single seed. We are now setting up larger runs with bigger models on the same stack, and we will
+add the results here when they are in. Stay tuned.
+</Note>
