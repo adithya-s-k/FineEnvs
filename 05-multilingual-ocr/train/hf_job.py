@@ -105,11 +105,15 @@ def main():
                 remote = "--env-url" in extra or any(
                     arg.startswith("--env-url=") for arg in extra
                 )
+                # Every mode that reads the indexed corpus directly may be pointed at
+                # the committed manifest; only the hosted-env path cannot.
+                CORPUS_MODES = ("train", "eval-vllm", "evalset")
                 if args.corpus_manifest:
-                    if remote or args.mode not in ("train", "eval-vllm"):
+                    if remote or args.mode not in CORPUS_MODES:
                         parser.error(
-                            "--corpus-manifest requires local --mode train or "
-                            "--mode eval-vllm without --env-url"
+                            "--corpus-manifest requires local "
+                            + ", ".join(f"--mode {m}" for m in CORPUS_MODES)
+                            + " without --env-url"
                         )
                     snapshot = args.corpus_manifest
                 elif not remote:
