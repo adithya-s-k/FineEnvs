@@ -46,6 +46,11 @@ def main():
         "on a job rather than locally is what makes it reliable — the corpus is mounted, "
         "so pages are read from disk instead of streamed over HTTP.",
     )
+    parser.add_argument(
+        "--source-root",
+        help="Where the corpus bucket is mounted in the job, e.g. /corpus. Reads then "
+        "come off disk instead of streaming over HTTP.",
+    )
     parser.add_argument("--prepare-pages", type=int, default=256)
     parser.add_argument(
         "--prepare-languages", nargs="+", default=["en", "kn", "hi", "ar"]
