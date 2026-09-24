@@ -66,7 +66,13 @@ def generate(rows) -> list[str]:
     for i in range(0, len(rows), BATCH):
         chunk = rows[i : i + BATCH]
         texts = [
-            tok.apply_chat_template(build_prompt(r), tokenize=False, add_generation_prompt=True)
+            tok.apply_chat_template(
+                build_prompt(r),
+                tokenize=False,
+                add_generation_prompt=True,
+                # non-thinking, to match how the model is trained
+                enable_thinking=False,
+            )
             for r in chunk
         ]
         enc = tok(texts, return_tensors="pt", padding=True, truncation=True).to(model.device)

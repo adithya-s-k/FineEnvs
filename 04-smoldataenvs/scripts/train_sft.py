@@ -79,6 +79,9 @@ if TRACKIO_SPACE:
 # ── train ────────────────────────────────────────────────────────────────────
 args = SFTConfig(
     output_dir=RUN_NAME,
+    # non-thinking everywhere: SFT, RL and eval have to render the same template
+    # or a model trained under one is measured under another.
+    chat_template_kwargs={"enable_thinking": False},
     num_train_epochs=EPOCHS,
     max_steps=MAX_STEPS or -1,
     max_length=MAX_LENGTH,

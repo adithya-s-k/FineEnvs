@@ -149,6 +149,10 @@ def main() -> None:
             # up, no second GPU, nothing to keep in sync.
             use_vllm=True,
             vllm_mode="colocate",
+            # Qwen3.5 thinks by default. A single program does not need a
+            # reasoning preamble, and the tokens it costs come out of the
+            # completion budget, so the whole run is non-thinking.
+            chat_template_kwargs={"enable_thinking": False},
             vllm_gpu_memory_utilization=VLLM_MEM,
             num_generations=NUM_GENERATIONS,
             max_completion_length=MAX_COMPLETION_LENGTH,
