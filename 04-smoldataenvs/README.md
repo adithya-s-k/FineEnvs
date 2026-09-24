@@ -68,35 +68,39 @@ including ours.
 
 ## Start here
 
-Three scripts, one environment, no framework between them.
+Two notebooks. Open either in Colab and run it top to bottom.
+
+| | | |
+|---|---|---|
+| **1 · SFT** | imitate 4,677 verified trajectories | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/adithya-s-k/FineEnvs/blob/main/04-smoldataenvs/notebooks/01_sft.ipynb) |
+| **2 · RL** | build the environment, then GRPO against the grader | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/adithya-s-k/FineEnvs/blob/main/04-smoldataenvs/notebooks/02_rl.ipynb) |
+
+Both finish on a free T4 with their defaults, and both end with the command that runs the same thing
+properly on a Hugging Face Jobs GPU.
+
+## How a rollout works
+
+One turn, no environment framework:
+
+```
+prompt → model writes a Python program → a sandbox runs it against the real tables
+       → whatever it printed last is the answer → the dataset's grader says 1.0 or 0.0
+```
 
 ```
 scripts/rollout.py        the environment: prompt in, reward out
-scripts/train_sft.py      imitate 4,677 verified trajectories
+scripts/train_sft.py      imitate the verified trajectories
 scripts/train_grpo.py     RL against the grader
 scripts/eval_pass1.py     score any model on the held-out split
 ```
 
-A rollout is one turn. The model gets the question and the file names, writes a Python
-program, and a [Hugging Face Sandbox](https://huggingface.co/docs/huggingface_hub/main/guides/sandbox)
-runs it against the real tables. Whatever the program prints last is the answer, and the
-dataset's own `grader.py` decides whether it is right. That is the whole reward:
-
-```
-prompt → model writes code → sandbox runs it → grader compares to the gold answer → 0.0 or 1.0
-```
-
-You can watch that happen without a GPU, on the live sandbox:
+You can watch the whole thing happen without a GPU, on the live sandbox:
 
 ```bash
-uv run scripts/rollout.py                # 3 tasks: gold code scores 1.0, wrong code scores 0.0
+uv run scripts/rollout.py                # gold code scores 1.0, wrong code scores 0.0
 uv run scripts/train_grpo.py --dry-run   # the training rewards, without the training
 uv run scripts/eval_pass1.py --dry-run   # the scoring path, without the GPU
 ```
-
-[`notebooks/train_smoldataenvs.ipynb`](./notebooks/train_smoldataenvs.ipynb) walks the same
-ground by hand — one task, its tables, the grader, then a small SFT run — and finishes on a
-free Colab T4.
 
 ## Run it
 
@@ -124,15 +128,33 @@ a run that does not push is a run you cannot keep.
 
 ## Notes on the environment
 
-- **One sandbox per process, not per rollout.** A sandbox starts in 6–10s, which would be
-  the entire per-rollout budget. `rollout.py` starts one and swaps the contents of
-  `/home/user/input` per task. GRPO asks for N completions of the same task in a row, so
-  the data pull happens once and the rest reuse it.
-- **A crashing program is not an error.** It is a reward of zero and a gradient. The runner
-  returns tracebacks as text rather than raising.
-- **Two reward terms.** `1.0` for a correct answer, plus `0.1` for a program that ran at
-  all. Without the second one, every completion in an early group scores zero, the
-  advantage is flat, and there is nothing to learn from.
+- **One sandbox per process, not per rollout.** A sandbox starts in 6–10s, which would be the
+  entire per-rollout budget. `rollout.py` starts one and swaps the contents of `/home/user/input`
+  per task; GRPO asks for N attempts at the same task in a row, so the data pull happens once.
+- **A crashing program is not an error.** It is a reward of zero and a gradient. The runner returns
+  tracebacks as text rather than raising.
+- **Everything runs non-thinking.** Qwen3.5 opens with a `<think>` block by default; a single
+  program does not need one, and SFT, RL and eval must render the same template or you train one
+  model and measure another.
+- **The shaping reward is exploitable, and it got exploited.** `+0.1` for a program that runs exists
+  because early on almost nothing is correct and an all-zero group carries no gradient. The first
+  version paid it for "no traceback" — which a program that does nothing also satisfies. Within 70
+  steps the policy was emitting an empty `<think></think>`, collecting 0.1 per rollout, with zero
+  variance and therefore zero learning. It now requires the program to have **printed** something,
+  and a completion that is not a program is rejected by `compile()` before a sandbox is spent on it.
+
+## Baseline
+
+`Qwen/Qwen3.5-2B`, untrained, on the 144-task held-out split:
+
+| | pass@1 |
+|---|---|
+| overall | **0.167** |
+| easy | 0.43 |
+| medium | 0.06 |
+
+Non-zero means there is signal for RL to work with; far from 1.0 means there is room to climb. Runs
+are logged to [a Trackio Space](https://huggingface.co/spaces/AdithyaSK/smoldataenvs-trackio).
 
 ## Provenance
 
