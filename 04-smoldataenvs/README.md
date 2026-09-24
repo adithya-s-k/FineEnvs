@@ -75,8 +75,9 @@ Two notebooks. Open either in Colab and run it top to bottom.
 | **1 · SFT** | imitate 4,677 verified trajectories | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/adithya-s-k/FineEnvs/blob/main/04-smoldataenvs/notebooks/01_sft.ipynb) |
 | **2 · RL** | build the environment, then GRPO against the grader | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/adithya-s-k/FineEnvs/blob/main/04-smoldataenvs/notebooks/02_rl.ipynb) |
 
-Both finish on a free T4 with their defaults, and both end with the command that runs the same thing
-properly on a Hugging Face Jobs GPU.
+SFT finishes on a free Colab T4 with its defaults. RL needs an A100, because vLLM generates on the
+same GPU the model is training on. Both end with the command that runs the same thing properly on a
+Hugging Face Jobs GPU.
 
 ## How a rollout works
 

@@ -25,7 +25,6 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SHA="${SHA:-$(git -C "$HERE" rev-parse HEAD)}"
 RAW="${RAW:-https://raw.githubusercontent.com/adithya-s-k/FineEnvs/$SHA/04-smoldataenvs/scripts}"
 
-FLAVOR="${FLAVOR:-a10g-large}"   # grpo on a 2B needs a100-large: full fine-tune + colocated vLLM
 IMAGE="${IMAGE:-huggingface/trl}"
 MODEL="${MODEL:-Qwen/Qwen3.5-2B}"
 TRACKIO_SPACE="${TRACKIO_SPACE:-}"
@@ -33,6 +32,7 @@ TRACKIO_SPACE="${TRACKIO_SPACE:-}"
 case "$MODE" in
   eval)
     SCRIPT="$RAW/eval_pass1.py"
+    FLAVOR="${FLAVOR:-a10g-large}"
     TIMEOUT="${TIMEOUT:-2h}"
     # for eval, the positional argument IS the model under test
     ENVS=(
@@ -42,6 +42,7 @@ case "$MODE" in
     ;;
   sft)
     SCRIPT="$RAW/train_sft.py"
+    FLAVOR="${FLAVOR:-a10g-large}"
     TIMEOUT="${TIMEOUT:-3h}"
     ENVS=(
       -e "MODEL=$MODEL" -e "HUB_MODEL_ID=$TARGET" -e "MAX_STEPS=${MAX_STEPS:-0}"
@@ -50,6 +51,8 @@ case "$MODE" in
     ;;
   grpo)
     SCRIPT="$RAW/train_grpo.py"
+    # a 2B full fine-tune plus colocated vLLM does not fit on an A10G
+    FLAVOR="${FLAVOR:-a100-large}"
     TIMEOUT="${TIMEOUT:-6h}"
     # Rollouts run in Hugging Face Sandboxes, which are themselves Jobs, so the
     # token has to reach the training job: --secrets HF_TOKEN below.
