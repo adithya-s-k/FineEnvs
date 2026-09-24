@@ -102,6 +102,7 @@ def select(
     size=DEFAULT_SIZE,
     seed=42,
     per_block_per_family=PER_BLOCK_PER_FAMILY,
+    spare=0,
 ):
     """Choose the fixed task IDs, spread across source documents.
 
@@ -120,7 +121,7 @@ def select(
     counts = allocate(languages, families, size)
     selection, blocks_used = [], []
     for language in languages:
-        needed = {family: counts[language, family] for family in families}
+        needed = {family: counts[language, family] + spare for family in families}
         for block in _block_candidates(catalog, split, language, families, seed):
             if not any(needed.values()):
                 break
@@ -146,11 +147,14 @@ def select(
                     taken += 1
             if taken:
                 blocks_used.append(block)
-        if any(needed.values()):
-            short = {family: count for family, count in needed.items() if count}
+        # Running out of spares is fine; running out of quota is not.
+        short = {
+            family: count - spare for family, count in needed.items() if count > spare
+        }
+        if short:
             raise ValueError(f"{language}: {split} split cannot supply {short}")
-    if len(selection) != size:
-        raise ValueError(f"Selected {len(selection)} tasks; expected {size}")
+    if len(selection) < size:
+        raise ValueError(f"Selected {len(selection)} tasks; expected at least {size}")
     return selection, blocks_used
 
 
@@ -164,12 +168,20 @@ def build(
     seed=42,
     validate=True,
     per_block_per_family=PER_BLOCK_PER_FAMILY,
+    spare=4,
 ):
-    """Select, optionally load every task once, and return the frozen record.
+    """Select, load every task once, and return the frozen record.
 
-    Loading is what proves a task is actually usable: image bounds and annotation
-    validity are checked at load time, not at index time. A task that fails is
-    recorded, never silently swapped for another.
+    Loading is what proves a task usable: image bounds and annotation validity are
+    checked at load time, not at index time, because a page's dimensions are not in the
+    index. A page too large to render therefore cannot be avoided during selection, and
+    it is not rare — building a 1100-task set turned up four such pages on one seed and
+    five on the next, each of which would have left the set short.
+
+    So the walk draws ``spare`` extra candidates per language and family, and a task that
+    fails to load is replaced by the next candidate in the same deterministic order. What
+    was dropped is recorded under ``excluded``; ``failures`` stays for the case that
+    matters, a group that could not be filled at all.
     """
     selection, blocks_used = select(
         catalog,
@@ -179,22 +191,29 @@ def build(
         size=size,
         seed=seed,
         per_block_per_family=per_block_per_family,
+        spare=spare if validate else 0,
     )
-    failures = []
+    quota = allocate(list(languages or catalog.languages), list(families), size)
+    kept = {key: 0 for key in quota}
+    failures, excluded, chosen = [], [], []
     for entry in selection:
+        key = (entry["language"], entry["family"])
+        if kept[key] >= quota[key]:
+            continue  # this group is full; spares beyond it are never loaded
         task = catalog.get(entry["task_id"])
         entry["page_id"] = task["page_id"]
         entry["document_id"] = task["document_id"]
         entry["unit"] = task["unit"]
         if not validate:
             entry["reference_sha256"] = _reference_digest(task)
+            kept[key] += 1
+            chosen.append(entry)
             continue
         try:
             # Pin what the server actually serves, not what the index predicted.
             served = catalog.materialize(task)
-        except Exception as error:  # Record, do not substitute.
-            entry["reference_sha256"] = _reference_digest(task)
-            failures.append(
+        except Exception as error:  # Replaced by the next candidate, and recorded.
+            excluded.append(
                 {
                     "task_id": entry["task_id"],
                     "language": entry["language"],
@@ -207,6 +226,21 @@ def build(
         entry["asset_sha256"] = served["asset_sha256"]
         entry["width"] = served["width"]
         entry["height"] = served["height"]
+        kept[key] += 1
+        chosen.append(entry)
+
+    # A group the spares could not fill is a real failure, not a replacement.
+    for (language, family), want in sorted(quota.items()):
+        if kept[language, family] < want:
+            failures.append(
+                {
+                    "language": language,
+                    "family": family,
+                    "error": f"only {kept[language, family]} of {want} tasks loaded; "
+                    "raise --spare or widen the split",
+                }
+            )
+    selection = chosen
     selection.sort(
         key=lambda entry: (entry["language"], entry["family"], entry["task_id"])
     )
@@ -218,6 +252,7 @@ def build(
         "seed": seed,
         "size": len(selection),
         "validated": bool(validate),
+        "spare": spare if validate else 0,
         "languages": list(languages or catalog.languages),
         "families": list(families),
         "per_block_per_family": per_block_per_family,
@@ -225,6 +260,7 @@ def build(
         "documents": sorted({entry["document_id"] for entry in selection}),
         "block_bytes": sum(block["image_bytes"] for block in unique_blocks.values()),
         "failures": failures,
+        "excluded": excluded,
         "tasks": selection,
     }
     record["evalset_id"] = hashlib.sha256(
@@ -482,6 +518,13 @@ def main():
         default=int(os.environ.get("NAYANA_GROUP_CACHE_BYTES", "4000000000")),
     )
     make.add_argument(
+        "--spare",
+        type=int,
+        default=4,
+        help="Extra candidates drawn per language and family, so a page that cannot be "
+        "rendered is replaced rather than leaving the set short",
+    )
+    make.add_argument(
         "--no-validate",
         action="store_true",
         help="Skip loading each task; the set is then not proven usable",
@@ -568,11 +611,18 @@ def main():
             size=args.size,
             seed=args.seed,
             validate=not args.no_validate,
+            spare=args.spare,
         )
     finally:
         catalog.close()
     save(record, args.output)
     print(json.dumps(summarize(record), indent=2))
+    if record.get("excluded"):
+        print(
+            f"{len(record['excluded'])} task(s) could not be loaded and were replaced "
+            "by the next candidate; see 'excluded' in the set",
+            flush=True,
+        )
     if record["failures"]:
         raise SystemExit(
             f"{len(record['failures'])} task(s) failed to load; "

@@ -114,9 +114,14 @@ def test_load_refuses_an_edited_task_list(corpus, tmp_path):
         load(path, catalog.snapshot_id)
 
 
-def test_recorded_load_failures_block_use_instead_of_substituting(
+def test_a_page_that_cannot_be_loaded_is_replaced_and_recorded(
     corpus, tmp_path, monkeypatch
 ):
+    """A page too large to render must cost one task, not the whole set.
+
+    Dimensions are not in the index, so selection cannot avoid such a page; the walk
+    draws spares and the next candidate takes its place, deterministically.
+    """
     catalog = corpus[0]
     record = build(
         catalog,
@@ -126,6 +131,8 @@ def test_recorded_load_failures_block_use_instead_of_substituting(
         seed=42,
     )
     selected = [e["task_id"] for e in record["tasks"]]
+    assert len(selected) == FIXTURE_SIZE
+    assert not record["failures"] and not record["excluded"]
 
     original = type(catalog).materialize
     broken = selected[0]
@@ -136,18 +143,53 @@ def test_recorded_load_failures_block_use_instead_of_substituting(
         return original(self, task)
 
     monkeypatch.setattr(type(catalog), "materialize", fail_one)
-    damaged = build(
+    repaired = build(
         catalog,
         languages=FIXTURE_LANGUAGES,
         families=FIXTURE_FAMILIES,
         size=FIXTURE_SIZE,
         seed=42,
     )
-    # The same task is still selected; it is reported, not swapped out.
-    assert [e["task_id"] for e in damaged["tasks"]] == selected
-    assert [f["task_id"] for f in damaged["failures"]] == [broken]
+    ids = [e["task_id"] for e in repaired["tasks"]]
+    # Still a full set, the bad page gone, and what it cost is on the record.
+    assert len(ids) == FIXTURE_SIZE
+    assert broken not in ids
+    assert [f["task_id"] for f in repaired["excluded"]] == [broken]
+    assert not repaired["failures"]
+    # Everything that was fine before is still here: only the bad page moved.
+    assert set(selected) - {broken} <= set(ids)
+    # And the result still loads, because a replaced page is not a broken set.
+    assert load(save(repaired, tmp_path / "repaired.json"), catalog.snapshot_id)
 
-    path = save(damaged, tmp_path / "damaged.json")
+    # Rebuilding picks the same replacement rather than a fresh draw.
+    again = build(
+        catalog,
+        languages=FIXTURE_LANGUAGES,
+        families=FIXTURE_FAMILIES,
+        size=FIXTURE_SIZE,
+        seed=42,
+    )
+    assert [e["task_id"] for e in again["tasks"]] == ids
+
+
+def test_a_group_the_spares_cannot_fill_is_a_failure(corpus, tmp_path, monkeypatch):
+    """Replacement has a limit: past it the set is short and must say so."""
+    catalog = corpus[0]
+
+    def fail_all(self, task):
+        raise ValueError("synthetic load failure")
+
+    monkeypatch.setattr(type(catalog), "materialize", fail_all)
+    record = build(
+        catalog,
+        languages=FIXTURE_LANGUAGES,
+        families=FIXTURE_FAMILIES,
+        size=FIXTURE_SIZE,
+        seed=42,
+    )
+    assert record["failures"], "a set nothing loaded for must record failures"
+    assert not record["tasks"]
+    path = save(record, tmp_path / "broken.json")
     with pytest.raises(ValueError, match="do not load"):
         load(path, catalog.snapshot_id)
 
