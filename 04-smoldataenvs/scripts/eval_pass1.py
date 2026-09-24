@@ -4,6 +4,7 @@
 #   "torch>=2.4.0",
 #   "torchvision",
 #   "accelerate",
+#   "peft",   # so a LoRA adapter repo can be evaluated directly
 #   "datasets>=3.0.0",
 #   "huggingface_hub>=1.22.0",
 #   "math-verify",
