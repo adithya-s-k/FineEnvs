@@ -171,11 +171,25 @@ def grade(row: dict, prediction: str) -> float:
 def rollout(runner: SandboxRunner, row: dict, completion) -> dict:
     """One completion → one graded result. The only place rewards come from."""
     code = extract_code(completion)
+    try:
+        compile(code, "<rollout>", "exec")
+    except SyntaxError as exc:
+        # Not a program. Scoring it costs a sandbox round trip and the answer is
+        # always zero, so decide here. Length is deliberately not the test: a
+        # correct program can be one short line.
+        return {"reward": 0.0, "ran": 0.0, "prediction": "", "stderr": f"syntax: {exc}"}
+
     stdout, stderr = runner.run(row["bucket_prefix"], code)
     prediction = last_line(stdout)
     return {
         "reward": grade(row, prediction),
-        "ran": 0.0 if stderr.strip() and not prediction else 1.0,
+        # A program only counts as having run if it PRINTED something. An earlier
+        # version counted "no traceback" as success, which a program that does
+        # nothing also satisfies -- and the policy found that: by step ~70 it was
+        # emitting two tokens, collecting the shaping reward on every rollout, and
+        # every completion in a group scored identically, so the advantage was
+        # zero and training had quietly stopped. Requiring output closes it.
+        "ran": 1.0 if prediction else 0.0,
         "prediction": prediction,
         "stderr": stderr[-400:],
     }
