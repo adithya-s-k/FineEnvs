@@ -1,28 +1,51 @@
 <div class="paper-receipts" style="width:100%;margin:14px 0;"></div>
 <style>
-  .paper-receipts { position: relative; }
-  .paper-receipts .pr-tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
-  .paper-receipts .pr-tab { appearance:none; cursor:pointer; font:inherit; font-size:12px; line-height:1;
-    padding:7px 12px; border-radius:999px; border:1px solid var(--border-color);
-    background:transparent; color:var(--muted-color); transition:color .15s, border-color .15s, background .15s; }
+  .paper-receipts { position: relative; --pr-dwell: 5s; }
+  .paper-receipts .pr-bar { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .paper-receipts .pr-tabs { display:flex; flex-wrap:wrap; gap:6px; flex:1; }
+  .paper-receipts .pr-tab { position:relative; overflow:hidden; appearance:none; cursor:pointer; font:inherit;
+    font-size:12px; line-height:1; padding:6px 11px; border-radius:999px; border:1px solid var(--border-color);
+    background:transparent; color:var(--muted-color); transition:color .15s, border-color .15s; }
   .paper-receipts .pr-tab:hover { color:var(--text-color); }
-  .paper-receipts .pr-tab[aria-pressed="true"] { color:var(--text-color); border-color:var(--text-color); font-weight:600; }
-  .paper-receipts .pr-tab:focus-visible { outline:2px solid var(--text-color); outline-offset:2px; }
+  .paper-receipts .pr-tab[aria-selected="true"] { color:var(--text-color); border-color:var(--text-color); font-weight:600; }
+  .paper-receipts .pr-tab:focus-visible,
+  .paper-receipts .pr-play:focus-visible { outline:2px solid var(--text-color); outline-offset:2px; }
+  /* Progress fill on the active tab. Its animationend is what advances the carousel,
+     so the bar and the timer can never disagree. */
+  .paper-receipts .pr-prog { position:absolute; left:0; bottom:0; height:2px; width:0; background:var(--text-color); opacity:.55; }
+  .paper-receipts .pr-tab[aria-selected="true"] .pr-prog { animation: pr-fill var(--pr-dwell) linear forwards; }
+  .paper-receipts.is-paused .pr-prog { animation-play-state: paused !important; }
+  .paper-receipts.is-stopped .pr-prog { display:none; }
+  @keyframes pr-fill { from { width:0; } to { width:100%; } }
+  .paper-receipts .pr-play { appearance:none; cursor:pointer; flex:none; width:26px; height:26px; padding:0;
+    display:grid; place-items:center; border-radius:999px; border:1px solid var(--border-color);
+    background:transparent; color:var(--muted-color); }
+  .paper-receipts .pr-play:hover { color:var(--text-color); }
+  .paper-receipts .pr-play svg { width:10px; height:10px; fill:currentColor; }
   .paper-receipts .pr-card { border:1px solid var(--border-color); border-radius:10px; overflow:hidden; }
-  .paper-receipts .pr-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px;
-    padding:11px 14px; border-bottom:1px solid var(--border-color); }
-  .paper-receipts .pr-lab { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-color); }
-  .paper-receipts .pr-ttl { font-size:13.5px; font-weight:600; color:var(--text-color); }
-  .paper-receipts .pr-loc { font-size:12px; color:var(--muted-color); margin-left:auto; white-space:nowrap; }
+  .paper-receipts .pr-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 10px;
+    padding:8px 12px; border-bottom:1px solid var(--border-color); }
+  .paper-receipts .pr-ttl { font-size:13px; font-weight:600; color:var(--text-color); }
+  .paper-receipts .pr-loc { font-size:11.5px; color:var(--muted-color); margin-left:auto; white-space:nowrap; }
   .paper-receipts .pr-loc a { color:inherit; }
   /* The crop is a photograph of a white page, so the plate stays light in both
-     themes rather than inverting type that belongs to someone else's document. */
-  .paper-receipts .pr-plate { background:#fff; padding:10px 12px; overflow-x:auto; }
-  .paper-receipts .pr-plate img { display:block; width:100%; min-width:520px; height:auto; }
-  .paper-receipts .pr-says { padding:11px 14px; border-top:1px solid var(--border-color);
+     themes rather than inverting type that belongs to someone else's document.
+     A fixed plate height keeps the card from resizing as it rotates. */
+  .paper-receipts .pr-plate { display:flex; align-items:center; justify-content:center; background:#fff;
+    height:168px; padding:8px 12px; box-sizing:border-box; }
+  .paper-receipts .pr-plate a { display:contents; }
+  .paper-receipts .pr-plate img { display:block; max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; }
+  .paper-receipts .pr-says { padding:9px 12px; border-top:1px solid var(--border-color);
     font-size:12.5px; line-height:1.55; color:var(--text-color); }
+  /* Every title and caption sits in the same grid cell, so the card is always as tall as the
+     longest one and never changes height while it rotates. */
+  .paper-receipts .pr-stack { display:grid; }
+  .paper-receipts .pr-stack > * { grid-area:1 / 1; visibility:hidden; }
+  .paper-receipts .pr-stack > .on { visibility:visible; }
+  .paper-receipts .pr-ttl.pr-stack { flex:1 1 auto; min-width:0; }
   .paper-receipts .pr-says b { font-weight:600; }
-  .paper-receipts .pr-nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+  .paper-receipts .pr-nt { margin-top:8px; font-size:11.5px; line-height:1.5; color:var(--muted-color); }
+  @media (max-width: 640px) { .paper-receipts .pr-plate { height:120px; } }
 </style>
 <script>
   (() => {
@@ -31,6 +54,16 @@
       { k:'laguna', lab:'poolside', ttl:'LAGUNA M.1/XS.2 Technical Report',
         loc:'§4.3.3, p20', id:'2605.27605', img:'laguna.png',
         says:'<b>A frontier lab budgets for this.</b> 1.3B tokens of supervised trajectories collected across OpenHands, OpenCode and Mini-SWE-Agent, with each harness’s native quirks deliberately left intact.' },
+      { k:'kimi', lab:'Kimi', ttl:'Kimi K3: Open Frontier Intelligence',
+        loc:'§4.2.1, p14', id:'2607.24653', img:'kimi.png',
+        says:'<b>Kimi K3 trains across harnesses by design.</b> Its RL environment assembles Kimi Code, Claude Code, Codex, OpenClaw, Hermes and new harnesses from composable modules, because one fixed harness makes a model overfit.' },
+      { k:'qwen', lab:'Qwen', ttl:'Qwen3-Coder-Next Technical Report',
+        loc:'§3.1.2, p5', id:'2603.00729', img:'qwen.png',
+        says:'<b>Qwen3-Coder-Next learns from six harnesses.</b> Its multi-turn agentic coding data is generated with SWE-agent, Mini-SWE-agent, OpenHands, Claude Code, Qwen Code and Terminus.' },
+      { k:'mimo', lab:'Xiaomi MiMo', ttl:'MiMo-V2.6: Scaling Reinforcement Learning Towards Self-Improvement',
+        loc:'§4.2.5, p14', img:'mimo.png', src:'PDF on Hugging Face',
+        href:'https://huggingface.co/XiaomiMiMo/MiMo-V2.6-Pro-RL/blob/main/MiMo_V2_6_technical_report.pdf',
+        says:'<b>MiMo-V2.6 calls it multi-harness training.</b> Xiaomi derives diverse, task-adapted mini-harnesses from one minimal agent loop to encourage transferable task-solving strategies.' },
       { k:'katcoder', lab:'KwaiKAT', ttl:'KAT-Coder-V2.5 Technical Report',
         loc:'§4.1, p9', id:'2607.05471', img:'katcoder.png',
         says:'<b>The failure has a name.</b> Train in one harness and the model learns that harness’s interface conventions rather than the task. They call the fix harness scaling.' },
@@ -44,30 +77,101 @@
         loc:'Abstract, p1', id:'2608.17528', img:'agentlt.png',
         says:'<b>Why it is hard.</b> The harness owns the interaction loop, so the trainer sees only a stream of request and response pairs. Reassembling those into training samples is the open problem.' },
     ];
+    const ICON_PAUSE = '<svg viewBox="0 0 10 10" aria-hidden="true"><rect x="1" y="0" width="3" height="10"/><rect x="6" y="0" width="3" height="10"/></svg>';
+    const ICON_PLAY = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1 0 L10 5 L1 10 Z"/></svg>';
+
     const boot = () => {
-      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
-      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+      const scriptEl = document.currentScript;
+      let r = scriptEl ? scriptEl.previousElementSibling : null;
+      while (r && !(r.classList && r.classList.contains(C))) r = r.previousElementSibling;
+      if (!r) { const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true'); r = n[n.length-1]; }
+      if (!r || r.dataset.mounted === 'true') return;
+      r.dataset.mounted = 'true';
+
+      // Warm the cache so rotating never shows an empty plate.
+      D.forEach(d => { const im = new Image(); im.src = '/papers/' + d.img; });
+
+      const uid = 'pr' + Math.random().toString(36).slice(2, 8);
+      r.innerHTML =
+        '<div class="pr-bar">' +
+          `<div class="pr-tabs" role="tablist" aria-label="Papers cited in this section">` +
+          D.map((x,i) => `<button type="button" role="tab" class="pr-tab" id="${uid}-t${i}" aria-controls="${uid}-p" aria-selected="false" tabindex="-1" data-i="${i}">${x.lab}<i class="pr-prog" aria-hidden="true"></i></button>`).join('') +
+          '</div>' +
+          '<button type="button" class="pr-play"></button>' +
+        '</div>' +
+        `<div class="pr-card" role="tabpanel" id="${uid}-p">` +
+          '<div class="pr-head"><span class="pr-ttl pr-stack">' + D.map(d => `<span>${d.ttl}</span>`).join('') + '</span><span class="pr-loc"></span></div>' +
+          '<div class="pr-plate"><a target="_blank" rel="noopener"><img alt=""></a></div>' +
+          '<div class="pr-says pr-stack">' + D.map(d => `<div>${d.says}</div>`).join('') + '</div>' +
+        '</div>' +
+        '<div class="pr-nt">Unretouched crops from the official PDFs; the only edit is the crop. Pick a paper to stop the rotation.</div>';
+
+      const tabs = [...r.querySelectorAll('.pr-tab')];
+      const panel = r.querySelector('.pr-card');
+      const ttls = [...r.querySelectorAll('.pr-ttl > span')], says = [...r.querySelectorAll('.pr-says > div')];
+      const loc = r.querySelector('.pr-loc');
+      const link = r.querySelector('.pr-plate a'), img = r.querySelector('.pr-plate img');
+      const play = r.querySelector('.pr-play');
+
       let cur = 0;
-      const render = () => {
-        const d = D[cur];
-        r.innerHTML =
-          '<div class="pr-tabs" role="group" aria-label="Choose a paper">' +
-          D.map((x,i) => `<button type="button" class="pr-tab" data-i="${i}" aria-pressed="${i===cur}">${x.lab}</button>`).join('') +
-          '</div>' +
-          '<div class="pr-card"><div class="pr-head">' +
-          `<span class="pr-lab">${d.lab}</span><span class="pr-ttl">${d.ttl}</span>` +
-          `<span class="pr-loc">${d.loc} · <a href="https://arxiv.org/abs/${d.id}" target="_blank" rel="noopener">arXiv:${d.id}</a></span>` +
-          '</div>' +
-          `<div class="pr-plate"><img src="/papers/${d.img}" alt="Excerpt from ${d.ttl}, ${d.loc}" loading="lazy"></div>` +
-          `<div class="pr-says">${d.says}</div></div>` +
-          '<div class="pr-nt">Crops rendered from the official arXiv PDFs. Nothing is retouched or recomposed; the only edit is the crop rectangle. Follow any link to read the passage in context.</div>';
-        r.querySelectorAll('.pr-tab').forEach(b => b.addEventListener('click', () => {
-          cur = +b.dataset.i; render();
-        }));
+      const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      // stopped: the reader chose to stop (picked a tab or hit pause). The other flags are transient.
+      const st = { stopped: reduced, hover: false, focus: false, visible: false };
+
+      const sync = () => {
+        const paused = st.stopped || st.hover || st.focus || !st.visible || document.hidden;
+        r.classList.toggle('is-stopped', st.stopped);
+        r.classList.toggle('is-paused', paused);
+        play.innerHTML = st.stopped ? ICON_PLAY : ICON_PAUSE;
+        play.setAttribute('aria-label', st.stopped ? 'Resume rotating through papers' : 'Pause rotating through papers');
       };
-      render();
+
+      const show = (i, { focusTab = false } = {}) => {
+        cur = (i + D.length) % D.length;
+        const d = D[cur], href = d.href || `https://arxiv.org/abs/${d.id}`, src = d.src || `arXiv:${d.id}`;
+        tabs.forEach((b, j) => {
+          const on = j === cur;
+          b.setAttribute('aria-selected', String(on));
+          b.tabIndex = on ? 0 : -1;
+          // Re-attach the progress bar so its animation restarts from zero.
+          const p = b.querySelector('.pr-prog'); p.replaceWith(p.cloneNode());
+        });
+        panel.setAttribute('aria-labelledby', tabs[cur].id);
+        ttls.forEach((n, j) => n.classList.toggle('on', j === cur));
+        says.forEach((n, j) => { n.classList.toggle('on', j === cur); n.setAttribute('aria-hidden', String(j !== cur)); });
+        loc.innerHTML = `${d.loc} · <a href="${href}" target="_blank" rel="noopener">${src}</a>`;
+        link.href = href;
+        img.src = '/papers/' + d.img;
+        img.alt = `Excerpt from ${d.ttl}, ${d.loc}`;
+        if (focusTab) tabs[cur].focus();
+      };
+
+      r.addEventListener('animationend', (e) => {
+        if (e.animationName === 'pr-fill' && !st.stopped) show(cur + 1);
+      });
+      tabs.forEach(b => b.addEventListener('click', () => { st.stopped = true; sync(); show(+b.dataset.i); }));
+      r.querySelector('.pr-tabs').addEventListener('keydown', (e) => {
+        const k = e.key;
+        if (!['ArrowRight','ArrowLeft','Home','End'].includes(k)) return;
+        e.preventDefault();
+        st.stopped = true; sync();
+        show(k === 'Home' ? 0 : k === 'End' ? D.length - 1 : cur + (k === 'ArrowRight' ? 1 : -1), { focusTab: true });
+      });
+      play.addEventListener('click', () => { st.stopped = !st.stopped; sync(); if (!st.stopped) show(cur); });
+
+      // Pause while the reader is looking at or interacting with it, and while it is off screen.
+      r.addEventListener('pointerenter', () => { st.hover = true; sync(); });
+      r.addEventListener('pointerleave', () => { st.hover = false; sync(); });
+      r.addEventListener('focusin', () => { st.focus = true; sync(); });
+      r.addEventListener('focusout', (e) => { if (!r.contains(e.relatedTarget)) { st.focus = false; sync(); } });
+      document.addEventListener('visibilitychange', sync);
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(([en]) => { st.visible = en.isIntersecting; sync(); }, { threshold: 0.5 }).observe(r);
+      } else { st.visible = true; }
+
+      show(0); sync();
     };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
     else boot();
   })();
 </script>
