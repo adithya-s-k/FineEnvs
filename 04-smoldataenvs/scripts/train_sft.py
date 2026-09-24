@@ -24,8 +24,8 @@ Run it locally:
 
 Run it on a Hugging Face Jobs GPU (see run_on_hf_jobs.sh for the full command):
 
-    hf jobs uv run --flavor a10g-large --timeout 2h --secrets HF_TOKEN \\
-      https://raw.githubusercontent.com/adithya-s-k/FineEnvs/main/04-smoldataenvs/scripts/train_sft.py
+    hf jobs uv run --flavor a10g-large --timeout 3h --secrets HF_TOKEN \\
+      --image huggingface/trl train_sft.py
 
 Everything is set through environment variables so the same file works in both
 places without editing it.
@@ -38,9 +38,10 @@ from peft import LoraConfig
 from trl import SFTConfig, SFTTrainer
 
 # ── configuration ────────────────────────────────────────────────────────────
-# The 360M default exists so a first run finishes in minutes and proves the path
-# end to end. Set MODEL=HuggingFaceTB/SmolLM3-3B for a result worth reading.
-MODEL = os.environ.get("MODEL", "HuggingFaceTB/SmolLM2-360M-Instruct")
+# Qwen3.5-2B is the model the RL run uses, so SFT here is a warm start for that
+# rather than a separate experiment. MODEL=HuggingFaceTB/SmolLM2-360M-Instruct
+# runs anywhere in minutes if you only want to prove the path.
+MODEL = os.environ.get("MODEL", "Qwen/Qwen3.5-2B")
 DATASET = os.environ.get("DATASET", "FineEnvs/SmolDataEnvs-sft")
 RUN_NAME = os.environ.get("RUN_NAME", f"smoldataenvs-sft-{MODEL.split('/')[-1]}")
 HUB_MODEL_ID = os.environ.get("HUB_MODEL_ID", "")  # e.g. you/smoldataenvs-sft-360m

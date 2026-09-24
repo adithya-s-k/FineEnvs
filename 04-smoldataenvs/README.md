@@ -68,58 +68,71 @@ including ours.
 
 ## Start here
 
-[`notebooks/train_smoldataenvs.ipynb`](./notebooks/train_smoldataenvs.ipynb) goes from one task to a
-trained model in one sitting: look at a task, pull its data, grade an answer the way the dataset
-grades it, then fine-tune a small model on the verified trajectories. It runs end to end on a free
-Colab T4 with the 360M default.
+Three scripts, one environment, no framework between them.
 
-## Train it on a GPU you do not own
+```
+scripts/rollout.py        the environment: prompt in, reward out
+scripts/train_sft.py      imitate 4,677 verified trajectories
+scripts/train_grpo.py     RL against the grader
+scripts/eval_pass1.py     score any model on the held-out split
+```
 
-The notebook's training cell also exists as a single self-contained script, so it can be handed
-straight to Hugging Face Jobs:
+A rollout is one turn. The model gets the question and the file names, writes a Python
+program, and a [Hugging Face Sandbox](https://huggingface.co/docs/huggingface_hub/main/guides/sandbox)
+runs it against the real tables. Whatever the program prints last is the answer, and the
+dataset's own `grader.py` decides whether it is right. That is the whole reward:
+
+```
+prompt → model writes code → sandbox runs it → grader compares to the gold answer → 0.0 or 1.0
+```
+
+You can watch that happen without a GPU, on the live sandbox:
 
 ```bash
-# quick: 360M, finishes in minutes, proves the path
-./scripts/run_on_hf_jobs.sh your-username/smoldataenvs-sft-360m
-
-# real: 3B on an A10G
-MODEL=HuggingFaceTB/SmolLM3-3B FLAVOR=a10g-large TIMEOUT=3h \
-  ./scripts/run_on_hf_jobs.sh your-username/smoldataenvs-sft-3b
+uv run scripts/rollout.py                # 3 tasks: gold code scores 1.0, wrong code scores 0.0
+uv run scripts/train_grpo.py --dry-run   # the training rewards, without the training
+uv run scripts/eval_pass1.py --dry-run   # the scoring path, without the GPU
 ```
 
-The Jobs container is deleted when the job ends, which is why the script pushes to the Hub rather
-than writing to disk, and why the launcher insists on a model id.
+[`notebooks/train_smoldataenvs.ipynb`](./notebooks/train_smoldataenvs.ipynb) walks the same
+ground by hand — one task, its tables, the grader, then a small SFT run — and finishes on a
+free Colab T4.
 
-Locally, the same script with no GPU:
+## Run it
 
 ```bash
-MAX_SAMPLES=32 uv run scripts/train_sft.py
+# 1. measure the base model first, or the rest is a story without a control
+./scripts/run_on_hf_jobs.sh eval Qwen/Qwen3.5-2B
+
+# 2. warm start on trajectories that are known to be correct
+./scripts/run_on_hf_jobs.sh sft you/smoldataenvs-sft-2b
+
+# 3. RL against the grader
+MODEL=you/smoldataenvs-sft-2b ./scripts/run_on_hf_jobs.sh grpo you/smoldataenvs-grpo-2b
+
+# 4. the same measurement as step 1, so the numbers are comparable
+./scripts/run_on_hf_jobs.sh eval you/smoldataenvs-grpo-2b
 ```
 
-## Then the RL
+Everything runs on Hugging Face Jobs with the `huggingface/trl` image. Generation during
+GRPO is colocated in the training process, so there is no inference server to stand up
+alongside it. The rollout sandboxes are Jobs too, which is why the training job needs your
+token forwarded (`--secrets HF_TOKEN`).
 
-SFT on correct trajectories is the warm start. The reason the tasks ship as Harbor environments is
-so a policy can be trained against the verifier itself:
+The container is deleted when a job ends, so every training mode insists on a Hub model id:
+a run that does not push is a run you cannot keep.
 
-```bash
-openenv harbor serve \
-  --dataset FineEnvs/SmolDataEnvs-harbor-train,FineEnvs/SmolDataEnvs-harbor-eval \
-  --llm-url http://127.0.0.1:8000/v1 --model your-model \
-  --port 8000 --capture-port 8100
-```
+## Notes on the environment
 
-Each `--dataset` arrives as its own split, so one server covers training and validation. What comes
-back per rollout is the reward from the task's own verifier plus the exact token ids the model
-generated — which is what makes it trainable rather than merely observable.
-
-## Layout
-
-```
-04-smoldataenvs/
-  notebooks/train_smoldataenvs.ipynb   one task → grading → a fine-tuned model
-  scripts/train_sft.py                 the same run, single file, PEP 723 deps
-  scripts/run_on_hf_jobs.sh            hand it to a Hugging Face Jobs GPU
-```
+- **One sandbox per process, not per rollout.** A sandbox starts in 6–10s, which would be
+  the entire per-rollout budget. `rollout.py` starts one and swaps the contents of
+  `/home/user/input` per task. GRPO asks for N completions of the same task in a row, so
+  the data pull happens once and the rest reuse it.
+- **A crashing program is not an error.** It is a reward of zero and a gradient. The runner
+  returns tracebacks as text rather than raising.
+- **Two reward terms.** `1.0` for a correct answer, plus `0.1` for a program that ran at
+  all. Without the second one, every completion in an early group scores zero, the
+  advantage is flat, and there is nothing to learn from.
 
 ## Provenance
 
