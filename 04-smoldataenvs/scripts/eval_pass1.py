@@ -13,7 +13,7 @@
 
     uv run eval_pass1.py                       # 144 eval tasks, Qwen3.5-2B
     MODEL=you/smoldataenvs-grpo-2b uv run eval_pass1.py
-    SPLIT=test N=250 uv run eval_pass1.py      # the benchmark split
+    SPLIT=test NUM_TASKS=250 uv run eval_pass1.py      # the benchmark split
     uv run eval_pass1.py --dry-run             # no GPU: prompts + grading only
 
 Run it once before training and once after; the difference is the result. Nothing
@@ -44,7 +44,7 @@ from rollout import SandboxRunner, build_prompt, rollout  # noqa: E402
 MODEL = os.environ.get("MODEL", "Qwen/Qwen3.5-2B")
 DATASET = os.environ.get("DATASET", "FineEnvs/SmolDataEnvs")
 SPLIT = os.environ.get("SPLIT", "eval")
-N = int(os.environ.get("N", 0))  # 0 = the whole split
+NUM_TASKS = int(os.environ.get("NUM_TASKS", 0))  # 0 = the whole split
 MAX_NEW_TOKENS = int(os.environ.get("MAX_NEW_TOKENS", 1024))
 BATCH = int(os.environ.get("BATCH", 8))
 OUT = os.environ.get("OUT", "eval_results.json")
@@ -81,8 +81,8 @@ def main() -> None:
     from datasets import load_dataset
 
     rows = list(load_dataset(DATASET, split=SPLIT))
-    if N:
-        rows = rows[:N]
+    if NUM_TASKS:
+        rows = rows[:NUM_TASKS]
     dry = "--dry-run" in sys.argv
     print(f"{MODEL} on {DATASET}:{SPLIT} — {len(rows)} tasks{' (dry run)' if dry else ''}")
 

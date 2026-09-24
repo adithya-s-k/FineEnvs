@@ -57,11 +57,22 @@ DATASET = os.environ.get("DATASET", "FineEnvs/SmolDataEnvs")
 HUB_MODEL_ID = os.environ.get("HUB_MODEL_ID", "")
 RUN_NAME = os.environ.get("RUN_NAME", "smoldataenvs-grpo")
 
+# Hyperparameters follow the 2B run the dataset card's curves come from
+# (04-data-agent/train/launch_harbor_multi.slurm): lr 3e-6, temperature 0.8,
+# top_p 1.0, 8 generations, grad-accum 4, per-device batch 4, bf16. What does not
+# carry over is the completion budget: that run was a 17-step agent loop with a
+# 16k completion window, this one is a single program.
 NUM_TASKS = int(os.environ.get("NUM_TASKS", 256))  # tasks drawn from the train split
 NUM_GENERATIONS = int(os.environ.get("NUM_GENERATIONS", 8))
 MAX_STEPS = int(os.environ.get("MAX_STEPS", 200))
-MAX_COMPLETION_LENGTH = int(os.environ.get("MAX_COMPLETION_LENGTH", 1024))
-LEARNING_RATE = float(os.environ.get("LEARNING_RATE", 1e-6))
+MAX_COMPLETION_LENGTH = int(os.environ.get("MAX_COMPLETION_LENGTH", 1536))
+LEARNING_RATE = float(os.environ.get("LEARNING_RATE", 3e-6))
+TEMPERATURE = float(os.environ.get("TEMPERATURE", 0.8))
+TOP_P = float(os.environ.get("TOP_P", 1.0))
+PER_DEVICE_BATCH = int(os.environ.get("PER_DEVICE_BATCH", 4))
+GRAD_ACCUM = int(os.environ.get("GRAD_ACCUM", 4))
+# vLLM shares the GPU with the model being trained, so it gets a slice, not the card.
+VLLM_MEM = float(os.environ.get("VLLM_MEM", 0.3))
 
 RUNNER = SandboxRunner()
 
@@ -131,12 +142,15 @@ def main() -> None:
             # up, no second GPU, nothing to keep in sync.
             use_vllm=True,
             vllm_mode="colocate",
+            vllm_gpu_memory_utilization=VLLM_MEM,
             num_generations=NUM_GENERATIONS,
             max_completion_length=MAX_COMPLETION_LENGTH,
             max_steps=MAX_STEPS,
             learning_rate=LEARNING_RATE,
-            per_device_train_batch_size=NUM_GENERATIONS,
-            gradient_accumulation_steps=4,
+            temperature=TEMPERATURE,
+            top_p=TOP_P,
+            per_device_train_batch_size=PER_DEVICE_BATCH,
+            gradient_accumulation_steps=GRAD_ACCUM,
             bf16=True,
             logging_steps=1,
             save_steps=50,

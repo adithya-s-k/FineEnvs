@@ -48,6 +48,8 @@ HUB_MODEL_ID = os.environ.get("HUB_MODEL_ID", "")  # e.g. you/smoldataenvs-sft-3
 TRACKIO_SPACE = os.environ.get("TRACKIO_SPACE", "")  # e.g. you/trackio
 
 EPOCHS = float(os.environ.get("EPOCHS", 1))
+# MAX_STEPS > 0 caps the run: useful for a verification pass before the real one.
+MAX_STEPS = int(os.environ.get("MAX_STEPS", 0))
 MAX_LENGTH = int(os.environ.get("MAX_LENGTH", 8192))  # these trajectories are long
 BATCH_SIZE = int(os.environ.get("BATCH_SIZE", 1))
 GRAD_ACCUM = int(os.environ.get("GRAD_ACCUM", 8))
@@ -74,16 +76,17 @@ if TRACKIO_SPACE:
 args = SFTConfig(
     output_dir=RUN_NAME,
     num_train_epochs=EPOCHS,
+    max_steps=MAX_STEPS or -1,
     max_length=MAX_LENGTH,
     per_device_train_batch_size=BATCH_SIZE,
     gradient_accumulation_steps=GRAD_ACCUM,
     learning_rate=LEARNING_RATE,
     gradient_checkpointing=True,
-    logging_steps=10,
+    logging_steps=5,
     eval_strategy="steps",
-    eval_steps=100,
+    eval_steps=max(25, (MAX_STEPS or 200) // 4),
     save_strategy="steps",
-    save_steps=200,
+    save_steps=max(50, (MAX_STEPS or 200) // 2),
     bf16=True,
     report_to="trackio",
     project="smoldataenvs",
