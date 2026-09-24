@@ -105,7 +105,13 @@ trainer = SFTTrainer(
     model=MODEL,
     train_dataset=split["train"],
     eval_dataset=split["test"],
-    peft_config=LoraConfig(r=16, lora_alpha=32, lora_dropout=0.05) if USE_LORA else None,
+    # target_modules="all-linear": PEFT cannot infer the target names for
+    # Qwen3.5's hybrid attention and raises rather than guessing.
+    peft_config=(
+        LoraConfig(r=16, lora_alpha=32, lora_dropout=0.05, target_modules="all-linear")
+        if USE_LORA
+        else None
+    ),
     args=args,
 )
 
