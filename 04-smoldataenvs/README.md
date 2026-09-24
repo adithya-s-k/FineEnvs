@@ -4,10 +4,18 @@
 
 # SmolDataEnvs
 
-**5.5K+ RL tasks for hill-climbing small models in code and data science.**
-
 [![Collection](https://img.shields.io/badge/%F0%9F%A4%97%20Collection-SmolDataEnvs-FFD21E?style=for-the-badge&labelColor=1a1a1a)](https://huggingface.co/collections/FineEnvs/smoldataenvs)
 [![Harbor Visualiser](https://img.shields.io/badge/%F0%9F%A4%97%20Browse-the%20tasks-FFD21E?style=for-the-badge&labelColor=1a1a1a)](https://huggingface.co/spaces/HuggingFaceH4/harbor-visualiser?dataset=FineEnvs/SmolDataEnvs-harbor-train)
+
+</div>
+
+> **5.5K+ RL tasks for hill-climbing small models in code and data science.**
+
+<div align="center">
+
+<img src="./curves.gif" alt="Reward and held-out pass@k climbing over 1,119 GRPO steps" width="100%">
+
+<sub>A 2B model on these tasks: reward, tool efficiency and held-out pass@k over 1,119 GRPO steps.</sub>
 
 </div>
 
