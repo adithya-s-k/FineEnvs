@@ -63,6 +63,10 @@ def extract_code(completion: str | list[dict]) -> str:
     return (completion or "").strip()
 
 
+class SandboxUnavailable(RuntimeError):
+    """The sandbox died. That is not the policy's fault and must not be scored."""
+
+
 class SandboxRunner:
     """One Hugging Face Sandbox, reused for every rollout in the process.
 
@@ -111,8 +115,19 @@ class SandboxRunner:
         self._prefix = bucket_prefix
 
     def run(self, bucket_prefix: str, code: str) -> tuple[str, str]:
-        """Run one program against one task's data. Returns (stdout, stderr)."""
-        self._stage(bucket_prefix)
+        """Run one program against one task's data. Returns (stdout, stderr).
+
+        Raises `SandboxUnavailable` if the sandbox itself failed, which the caller
+        turns into an ungraded rollout rather than a zero.
+        """
+        try:
+            self._stage(bucket_prefix)
+        except Exception as exc:  # the sandbox, not the program
+            self._recycle()
+            try:
+                self._stage(bucket_prefix)
+            except Exception as exc2:
+                raise SandboxUnavailable(str(exc2)) from exc
         payload = code.replace("'", "'\\''")
         # check=False: the model's program failing is the ordinary case here, not
         # an error in the harness. A traceback is a reward of 0 and a signal, so it
@@ -125,10 +140,31 @@ class SandboxRunner:
         )
         return (r.stdout or ""), (r.stderr or "")
 
+    def _recycle(self) -> None:
+        """Throw the sandbox away and start a fresh one on the next call."""
+        try:
+            self.close()
+        except Exception:
+            pass
+        self._prefix = None
+
     def close(self) -> None:
         if self._sb is not None:
             self._sb.kill()
             self._sb = None
+
+
+# Adapted from 04-data-agent/envs/whitebox-bash/grader.py, where 42% of partial
+# credit once went to strings like `echo -n "2.14" > answer.txt`: the text contains
+# the right number and grades as the right answer.
+_COMMAND_SHAPED = re.compile(
+    r"(^|\s)(echo|printf|cat|python3?|bash|sh|tee|awk|sed)\b|[>|]{1,2}\s*\S+|\$\(|`",
+)
+
+
+def looks_like_a_command(answer: str) -> bool:
+    """True when the 'answer' is really the line that would produce it."""
+    return bool(answer) and bool(_COMMAND_SHAPED.search(answer.strip()))
 
 
 def last_line(stdout: str) -> str:
@@ -179,8 +215,19 @@ def rollout(runner: SandboxRunner, row: dict, completion) -> dict:
         # correct program can be one short line.
         return {"reward": 0.0, "ran": 0.0, "prediction": "", "stderr": f"syntax: {exc}"}
 
-    stdout, stderr = runner.run(row["bucket_prefix"], code)
+    try:
+        stdout, stderr = runner.run(row["bucket_prefix"], code)
+    except SandboxUnavailable as exc:
+        # An ungraded rollout is None, never 0.0. A dead sandbox and a wrong
+        # answer are different events, and collapsing them teaches the model that
+        # the dead sandbox was its fault. TRL turns None into NaN and drops the
+        # sample from its group baseline.
+        return {"reward": None, "ran": 0.0, "prediction": "", "stderr": f"sandbox: {exc}"}
+
     prediction = last_line(stdout)
+    if looks_like_a_command(prediction):
+        return {"reward": 0.0, "ran": 1.0, "prediction": prediction,
+                "stderr": "answer is a command, not a value"}
     return {
         "reward": grade(row, prediction),
         # A program only counts as having run if it PRINTED something. An earlier

@@ -117,8 +117,12 @@ def _results(completions, **columns) -> list[dict]:
     return _cache[key]
 
 
-def reward_correct(completions, **columns) -> list[float]:
-    """1.0 when the printed value matches the gold answer under the dataset's grader."""
+def reward_correct(completions, **columns) -> list[float | None]:
+    """1.0 when the printed value matches the gold answer under the dataset's grader.
+
+    `None` for a rollout the sandbox could not run: TRL turns it into NaN and drops
+    it from the group baseline, so a dead sandbox is not scored as a wrong answer.
+    """
     return [r["reward"] for r in _results(completions, **columns)]
 
 
