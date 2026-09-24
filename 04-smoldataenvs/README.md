@@ -16,7 +16,7 @@
 <img src="./curves.gif" alt="Reward and held-out pass@k climbing over 1,119 GRPO steps" width="100%">
 
 <sub>A 2B model on these tasks. Left: what it optimises. Right: 144 held-out tasks it never trains on.<br>
-Two runs over the same 5,000 tasks — <b>shuffled</b> against a <b>curriculum</b> ordered easiest to hardest.</sub>
+Two runs over the same 5,000 tasks: <b>shuffled</b> against a <b>curriculum</b> ordered easiest to hardest.</sub>
 
 </div>
 
@@ -25,7 +25,7 @@ Two runs over the same 5,000 tasks — <b>shuffled</b> against a <b>curriculum</
 A small model that can write code is not the same thing as a small model that can *use* code to
 answer a question about data. The second one has to open a file it has never seen, work out what is
 in it, decide what to compute, run something, read the result, and commit to an answer. That is a
-long-horizon task with a short, checkable answer at the end — which is exactly the shape RL wants.
+long-horizon task with a short, checkable answer at the end, which is exactly the shape RL wants.
 
 SmolDataEnvs is 5,394 of those tasks. Each one is a real Kaggle dataset, a question a human actually
 asked about it in a notebook, and the answer that human computed. The agent gets a sandbox with the
@@ -49,7 +49,7 @@ So a zero from a task is a statement about your model, not about the task.
 | eval | 144 | 16 | 74 | 54 |
 
 Drawn from 471 Kaggle datasets. Answer types run numeric (2,906), short label (1,409), list (367),
-free-form (152), yes/no (127) and csv-list (39) — the match mode is per task, and so are the numeric
+free-form (152), yes/no (127) and csv-list (39). The match mode is per task, and so are the numeric
 tolerances.
 
 **The held-out splits are deliberately harder than train.** Train is 29% easy and 14% hard; test and
@@ -75,8 +75,9 @@ Two notebooks. Open either in Colab and run it top to bottom.
 | **1 · SFT** | imitate 4,677 verified trajectories | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/adithya-s-k/FineEnvs/blob/main/04-smoldataenvs/notebooks/01_sft.ipynb) |
 | **2 · RL** | build the environment, then GRPO against the grader | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/adithya-s-k/FineEnvs/blob/main/04-smoldataenvs/notebooks/02_rl.ipynb) |
 
-Both finish on a free T4 with their defaults, and both end with the command that runs the same thing
-properly on a Hugging Face Jobs GPU.
+SFT finishes on a free Colab T4 with its defaults. RL needs an A100, because vLLM generates on the
+same GPU the model is training on. Both end with the command that runs the same thing properly on a
+Hugging Face Jobs GPU.
 
 ## How a rollout works
 
@@ -138,7 +139,7 @@ a run that does not push is a run you cannot keep.
   model and measure another.
 - **The shaping reward is exploitable, and it got exploited.** `+0.1` for a program that runs exists
   because early on almost nothing is correct and an all-zero group carries no gradient. The first
-  version paid it for "no traceback" — which a program that does nothing also satisfies. Within 70
+  version paid it for "no traceback", which a program that does nothing also satisfies. Within 70
   steps the policy was emitting an empty `<think></think>`, collecting 0.1 per rollout, with zero
   variance and therefore zero learning. It now requires the program to have **printed** something,
   and a completion that is not a program is rejected by `compile()` before a sandbox is spent on it.
@@ -168,6 +169,15 @@ one project, training and eval together.
 ## Provenance
 
 Built from the [jupyter-agent dataset](https://huggingface.co/datasets/jupyter-agent/jupyter-agent-dataset)
-— real data-science notebooks over Kaggle datasets — then verified end to end in a sandbox. The
-training and evaluation work that used these tasks is written up in
-[The ultimate guide to multi-harness RL](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl).
+(real data-science notebooks over Kaggle datasets), then verified end to end in a sandbox.
+
+## Citation
+
+```bibtex
+@misc{fineenvs,
+  author = {Kolavi, Adithya S},
+  title  = {FineEnvs: Open Source RL Environments for LLM Agents},
+  year   = {2026},
+  url    = {https://github.com/adithya-s-k/FineEnvs}
+}
+```

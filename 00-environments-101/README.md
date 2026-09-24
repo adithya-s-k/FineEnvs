@@ -539,3 +539,14 @@ Sandbox-backed Spaces expect `E2B_API_KEY` as a Space secret.
 - **[The full write-up](https://huggingface.co/spaces/AdithyaSK/rl-environments-guide)** — the long-form guide this project backs (source: [`content/articles/rl-environments-guide/`](../content/articles/rl-environments-guide/))
 - **[The talk](https://huggingface.co/spaces/AdithyaSK/rl-environments-101-slides)** — slides (source: [`content/slides/`](../content/slides/))
 - **[01 · LaTeX OCR](../01-latex-ocr/)** — take an environment all the way to a trained model
+
+## Citation
+
+```bibtex
+@misc{fineenvs,
+  author = {Kolavi, Adithya S},
+  title  = {FineEnvs: Open Source RL Environments for LLM Agents},
+  year   = {2026},
+  url    = {https://github.com/adithya-s-k/FineEnvs}
+}
+```

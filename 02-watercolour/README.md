@@ -247,3 +247,14 @@ For a domain of your own: write a `Domain` in `core/domains.py` (the subjects, t
 composition, the judge criteria) and **build a pool**. The first is an afternoon.
 The second is 90% of the work. `core/domains.py` ships a second domain,
 `JELLYFISH`, complete except for its pool, and left out for exactly that reason.
+
+## Citation
+
+```bibtex
+@misc{fineenvs,
+  author = {Kolavi, Adithya S},
+  title  = {FineEnvs: Open Source RL Environments for LLM Agents},
+  year   = {2026},
+  url    = {https://github.com/adithya-s-k/FineEnvs}
+}
+```
