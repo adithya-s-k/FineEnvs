@@ -143,18 +143,27 @@ a run that does not push is a run you cannot keep.
   variance and therefore zero learning. It now requires the program to have **printed** something,
   and a completion that is not a program is rejected by `compile()` before a sandbox is spent on it.
 
-## Baseline
+## Measure before you train
 
-`Qwen/Qwen3.5-2B`, untrained, on the 144-task held-out split:
+Run the eval once on the untrained model. Without that number nothing afterwards
+means anything, and it takes about ten minutes:
 
-| | pass@1 |
-|---|---|
-| overall | **0.167** |
-| easy | 0.43 |
-| medium | 0.06 |
+```bash
+./scripts/run_on_hf_jobs.sh eval Qwen/Qwen3.5-2B
+```
 
-Non-zero means there is signal for RL to work with; far from 1.0 means there is room to climb. Runs
-are logged to [a Trackio Space](https://huggingface.co/spaces/AdithyaSK/smoldataenvs-trackio).
+Two things worth knowing before you read any result of your own:
+
+- **Use the whole split.** A subset large enough to be quick is not large enough to
+  separate 4% from 6%. On 144 tasks the confidence interval is still wide; on 24 it
+  is wider than any effect a short run will produce.
+- **Train on a mix of tiers.** `DIFFICULTY=easy` makes rewards dense, which is useful
+  for getting the loop moving, but a model trained only on easy tasks is a model that
+  is good at easy tasks. `DIFFICULTY=easy,medium` or no filter at all is what you
+  want before believing a number.
+
+Runs land in [a Trackio Space](https://huggingface.co/spaces/AdithyaSK/smoldataenvs-trackio),
+one project, training and eval together.
 
 ## Provenance
 

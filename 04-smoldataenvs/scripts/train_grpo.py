@@ -74,9 +74,11 @@ RUN_NAME = os.environ.get("RUN_NAME", "smoldataenvs-grpo")
 # carry over is the completion budget: that run was a 17-step agent loop with a
 # 16k completion window, this one is a single program.
 NUM_TASKS = int(os.environ.get("NUM_TASKS", 256))  # tasks drawn from the train split
-# Restrict to a difficulty tier. GRPO learns from disagreement inside a group, so
-# a tier the model solves sometimes teaches more than one it never solves: the
-# base model is at 43% on easy and 6% on medium.
+# Which difficulty tiers to train on, comma separated: "easy", "easy,medium", or
+# empty for all three. GRPO learns from disagreement inside a group, so a tier the
+# model never solves contributes nothing -- but training on easy alone teaches a
+# model to be good at easy. A mix is the honest default; narrow it only to debug
+# the loop, and widen it again before you believe any number.
 DIFFICULTY = os.environ.get("DIFFICULTY", "")
 NUM_GENERATIONS = int(os.environ.get("NUM_GENERATIONS", 8))
 MAX_STEPS = int(os.environ.get("MAX_STEPS", 200))
@@ -152,7 +154,8 @@ def main() -> None:
 
     ds = load_dataset(DATASET, split="train").shuffle(seed=42)
     if DIFFICULTY:
-        ds = ds.filter(lambda r: r["difficulty_tier"] == DIFFICULTY)
+        tiers = {t.strip() for t in DIFFICULTY.split(",") if t.strip()}
+        ds = ds.filter(lambda r: r["difficulty_tier"] in tiers)
     ds = ds.select(range(min(NUM_TASKS, len(ds))))
     # load_from_cache_file=False: datasets fingerprints the lambda, not the
     # prompt text it closes over, so editing the prompt silently reuses the old
