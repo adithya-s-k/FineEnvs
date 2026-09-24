@@ -200,7 +200,8 @@ def main():
                     if args.mode == "eval-vllm":
                         if not args.evalset:
                             parser.error("--mode eval-vllm needs --evalset")
-                        command += ["--evalset", str(root / "data" / args.evalset)]
+                        # --evalset already reaches the script through `extra`, which is
+                        # resolved to this checkout above; adding it here passed it twice.
                     if not remote:
                         command += [
                             "--corpus" if args.mode == "eval-vllm" else "--snapshot",
