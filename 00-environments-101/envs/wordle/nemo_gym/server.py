@@ -20,6 +20,7 @@ Docker (from wordle/ directory):
     docker run -p 11000:11000 wordle-nemo-gym
 """
 
+import json
 import os
 import re
 import sys
@@ -50,6 +51,19 @@ from core.game import WordleGame, TASKS
 # announcement. An invalid guess echoes the model's word back, so matching the whole line (not a
 # substring) is what keeps a crafted guess from producing something that reads as a win.
 WIN_LINE = re.compile(r"🟩{5} — Correct! The word was '[a-z]{5}'\. Solved in \d+ guesses\.")
+
+
+def _tool_text(output: Any) -> str:
+    """The game's text from a recorded tool output: a ToolResponse body, or the bare string."""
+    if not isinstance(output, str):
+        return ""
+    try:
+        body = json.loads(output)
+    except ValueError:
+        return output
+    if isinstance(body, dict) and isinstance(body.get("output"), str):
+        return body["output"]
+    return output
 
 
 # ---------------------------------------------------------------------------
@@ -142,13 +156,16 @@ class WordleResourcesServer(SimpleResourcesServer):
         Only tool outputs count, and only the exact line WordleGame.guess returns on a win. The
         model's own messages are ignored: scanning them for "Correct" paid 1.0 to a model that
         simply wrote the word, without winning.
+
+        NeMo Gym's agent records a tool output as the raw HTTP body of the call, which for /guess is
+        the ToolResponse JSON ({"output": "..."}), so that envelope is unwrapped first.
         """
         reward = 0.0
         for item in body.response.output:
             if getattr(item, "type", None) != "function_call_output":
                 continue
-            output = getattr(item, "output", "")
-            if isinstance(output, str) and WIN_LINE.fullmatch(output.strip()):
+            output = _tool_text(getattr(item, "output", ""))
+            if WIN_LINE.fullmatch(output.strip()):
                 reward = 1.0
                 break
 
@@ -166,15 +183,17 @@ class WordleResourcesServer(SimpleResourcesServer):
 #   ng_run "+config_paths=[configs/wordle.yaml]"
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
-    import uvicorn
+
+def create_app(port: int = 11000) -> FastAPI:
+    """The standalone app the Dockerfile serves, without the NeMo Gym orchestrator.
+
+    run_webserver() needs the full orchestrator (Ray + OmegaConf config), so for a standalone
+    deployment the server is instantiated directly while still using the SDK classes above.
+    The server object is kept on app.state.server.
+    """
     from uuid import uuid4
     from starlette.middleware.sessions import SessionMiddleware
-    from fastapi import Request, Response
 
-    port = int(os.environ.get("PORT", "11000"))
-
-    # Instantiate server with minimal config (no full orchestrator)
     config = WordleConfig.model_construct(
         entrypoint="server.py",
         domain="agent",
@@ -188,8 +207,8 @@ if __name__ == "__main__":
         sessions={},
     )
     app = FastAPI(title="Wordle NeMo Gym Resources Server")
+    app.state.server = server
 
-    # Register endpoints
     app.post("/seed_session")(server.seed_session)
     app.post("/verify")(server.verify)
     app.post("/guess")(server.guess)
@@ -205,11 +224,16 @@ if __name__ == "__main__":
         request.session[SESSION_ID_KEY] = request.session.get(
             SESSION_ID_KEY, str(uuid4())
         )
-        response: Response = await call_next(request)
-        return response
+        return await call_next(request)
 
     app.add_middleware(SessionMiddleware, secret_key="wordle-nemo-gym")
+    return app
 
+
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.environ.get("PORT", "11000"))
     print(f"Starting Wordle NeMo Gym server on 0.0.0.0:{port}")
     print(f"  Tasks: {len(TASKS)}, Tools: guess, get_history")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(create_app(port), host="0.0.0.0", port=port)
