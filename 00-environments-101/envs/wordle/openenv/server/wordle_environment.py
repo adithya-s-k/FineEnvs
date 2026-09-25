@@ -163,7 +163,12 @@ class WordleEnvironment(MCPEnvironment):
         The reward is reported once, on the step that ends the game. An observation's reward is what
         that step earned, so a guess or get_history after the end carries done=True and reward=None:
         repeating the final reward there would count the win again for any client that sums
-        per-step rewards. The episode's reward stays readable from state["reward"].
+        per-step rewards.
+
+        For a remote client this observation is the only place the reward arrives: over the
+        WebSocket, OpenEnv's State model keeps episode_id and step_count and drops the rest of the
+        state dict. So score an episode by its last non-null reward (or the sum; they agree).
+        state["reward"] is there for in-process use.
         """
         game = self._game
         if game is not None and game.done:
