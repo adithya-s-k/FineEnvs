@@ -21,6 +21,7 @@ Docker (from wordle/ directory):
 """
 
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict
@@ -44,6 +45,11 @@ if _parent not in sys.path:
     sys.path.insert(0, _parent)
 
 from core.game import WordleGame, TASKS
+
+# What WordleGame.guess returns on a win, and nothing else: five green squares, then the
+# announcement. An invalid guess echoes the model's word back, so matching the whole line (not a
+# substring) is what keeps a crafted guess from producing something that reads as a win.
+WIN_LINE = re.compile(r"🟩{5} — Correct! The word was '[a-z]{5}'\. Solved in \d+ guesses\.")
 
 
 # ---------------------------------------------------------------------------
@@ -131,21 +137,20 @@ class WordleResourcesServer(SimpleResourcesServer):
     # -- Verification -------------------------------------------------------
 
     async def verify(self, body: WordleVerifyRequest) -> BaseVerifyResponse:
-        """Evaluate the episode — check if 'Correct' appears in any output."""
-        reward = 0.0
+        """Evaluate the episode: 1.0 if the game itself reported a win, else 0.0.
 
+        Only tool outputs count, and only the exact line WordleGame.guess returns on a win. The
+        model's own messages are ignored: scanning them for "Correct" paid 1.0 to a model that
+        simply wrote the word, without winning.
+        """
+        reward = 0.0
         for item in body.response.output:
-            if hasattr(item, "type") and item.type == "function_call_output":
-                output_text = getattr(item, "output", "")
-                if isinstance(output_text, str) and "Correct" in output_text:
-                    reward = 1.0
-                    break
-            elif hasattr(item, "type") and item.type == "message":
-                for c in getattr(item, "content", []):
-                    text = getattr(c, "text", "")
-                    if isinstance(text, str) and "Correct" in text:
-                        reward = 1.0
-                        break
+            if getattr(item, "type", None) != "function_call_output":
+                continue
+            output = getattr(item, "output", "")
+            if isinstance(output, str) and WIN_LINE.fullmatch(output.strip()):
+                reward = 1.0
+                break
 
         return BaseVerifyResponse(**body.model_dump(), reward=reward)
 
