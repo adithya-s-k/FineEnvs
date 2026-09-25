@@ -106,7 +106,8 @@ def main() -> None:
     try:
         for row, completion in zip(rows, completions):
             res = rollout(runner, row, completion)
-            by_tier[row["difficulty_tier"]].append(res["reward"])
+            if res["reward"] is not None:  # None: the sandbox died; not a wrong answer
+                by_tier[row["difficulty_tier"]].append(res["reward"])
             records.append(
                 {
                     "task_id": row["task_id"],
@@ -123,12 +124,13 @@ def main() -> None:
     finally:
         runner.close()
 
-    scored = [r["reward"] for r in records]
+    scored = [r["reward"] for r in records if r["reward"] is not None]
     overall = sum(scored) / max(1, len(scored))
     summary = {
         "model": MODEL,
         "split": SPLIT,
         "n": len(scored),
+        "ungraded": len(records) - len(scored),
         "pass@1": round(overall, 4),
         "by_tier": {k: round(sum(v) / len(v), 4) for k, v in sorted(by_tier.items())},
     }

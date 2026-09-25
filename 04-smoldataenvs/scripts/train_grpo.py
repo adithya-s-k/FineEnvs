@@ -114,16 +114,20 @@ def _grade_batch(completions, **columns) -> list[dict]:
     return [rollout(RUNNER, row, c) for row, c in zip(rows, completions)]
 
 
-_cache: dict[int, list[dict]] = {}
+_cache: tuple[object, list[dict]] | None = None
 
 
 def _results(completions, **columns) -> list[dict]:
-    """Both reward functions see the same batch; run the sandbox once for it."""
-    key = id(completions)
-    if key not in _cache:
-        _cache.clear()
-        _cache[key] = _grade_batch(completions, **columns)
-    return _cache[key]
+    """Both reward functions see the same batch; run the sandbox once for it.
+
+    The cache holds the batch's list itself, not its id(): TRL builds a new list for
+    every batch and frees the last one, so a new batch can be given the old one's id,
+    and an id-keyed cache then returns the previous batch's rewards.
+    """
+    global _cache
+    if _cache is None or _cache[0] is not completions:
+        _cache = (completions, _grade_batch(completions, **columns))
+    return _cache[1]
 
 
 def reward_correct(completions, **columns) -> list[float | None]:

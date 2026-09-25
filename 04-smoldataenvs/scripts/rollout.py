@@ -159,8 +159,10 @@ class SandboxRunner:
 # Adapted from 04-data-agent/envs/whitebox-bash/grader.py, where 42% of partial
 # credit once went to strings like `echo -n "2.14" > answer.txt`: the text contains
 # the right number and grades as the right answer.
+# A redirect only counts when something comes before it (`2.14 > answer.txt`): a value that
+# starts with `>` is an answer, e.g. the gold answers `>50K`, `> 2 Years` and `>40hrs`.
 _COMMAND_SHAPED = re.compile(
-    r"(^|\s)(echo|printf|cat|python3?|bash|sh|tee|awk|sed)\b|[>|]{1,2}\s*\S+|\$\(|`",
+    r"(^|\s)(echo|printf|cat|python3?|bash|sh|tee|awk|sed)\b|\S\s*[>|]{1,2}\s*\S+|\$\(|`",
 )
 
 
