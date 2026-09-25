@@ -1,0 +1,32 @@
+name: Multilingual ASR
+on:
+  pull_request:
+    paths: ['06-multilingual-asr/**', '.github/workflows/multilingual-asr.yml']
+  push:
+    branches: [main]
+    paths: ['06-multilingual-asr/**', '.github/workflows/multilingual-asr.yml']
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Regression tests
+        run: uv run --frozen --project 06-multilingual-asr/envs/multilingual_asr --extra dev pytest 06-multilingual-asr/envs/multilingual_asr/tests -q --junitxml=06-multilingual-asr/artifacts/ci/pytest.xml
+      - name: HTTP, audio, WebSocket, and reward smoke
+        run: uv run --frozen --project 06-multilingual-asr/envs/multilingual_asr asr-smoke --output 06-multilingual-asr/artifacts/ci/smoke.json
+      - name: Validate source formatting
+        run: uv run --frozen --project 06-multilingual-asr/envs/multilingual_asr --extra dev ruff check 06-multilingual-asr
+      - name: Upload verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: multilingual-asr-checks
+          path: 06-multilingual-asr/artifacts/ci/
+          if-no-files-found: ignore
+          retention-days: 14

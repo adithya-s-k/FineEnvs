@@ -1,0 +1,277 @@
+{
+  "job_id": "6ab3971352d0dbd7f1d83bb4",
+  "job_url": "https://huggingface.co/jobs/AdithyaSK/6ab3971352d0dbd7f1d83bb4",
+  "revision": "ec0e692e8aa6f033a918648c1ee9268c8d44b006",
+  "model": "google/gemma-4-E2B-it",
+  "status": "passed",
+  "smoke": true,
+  "steps": 4,
+  "training_loss": 0.024062393116764724,
+  "adapter_updated": true,
+  "reward_groups_without_variance": false,
+  "lora_target_count": 106,
+  "evalset_id": "63ad56363574be9f9bb5b9f3aa9a7c33747fe8a35712ca3109e1ea3bb866bb55",
+  "baseline": {
+    "macro_reward": 0.3092261904761905,
+    "by_language_task": {
+      "ar_eg/language_id": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0
+      },
+      "cmn_hans_cn/transcription": {
+        "samples": 1,
+        "reward": 0.55,
+        "cer": 0.3125,
+        "exact_match": 0.0
+      },
+      "es_419/language_id": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0
+      },
+      "gu_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.6000000000000001,
+        "wer": 0.25,
+        "exact_match": 0.0
+      },
+      "ja_jp/transcription": {
+        "samples": 1,
+        "reward": 0.6000000000000001,
+        "cer": 0.25,
+        "exact_match": 0.0
+      },
+      "ml_in/language_id": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0
+      },
+      "or_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.45714285714285713,
+        "wer": 0.42857142857142855,
+        "exact_match": 0.0
+      },
+      "ta_in/transcription": {
+        "samples": 1,
+        "reward": 0.2666666666666667,
+        "wer": 0.6666666666666666,
+        "exact_match": 0.0
+      }
+    },
+    "samples": [
+      {
+        "task_id": "fleurs-ar_eg.test.0be3277313320e97065c7ccf64b1f21a86324f0a3f0c375b1f16d47ba6807891",
+        "language": "ar_eg",
+        "family": "language_id",
+        "prediction": "ar_sa",
+        "reward": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "fleurs-cmn_hans_cn.test.1e1c334a255f9b023a7507974b65cc4fe78e1cf0769f37038be205fdf0a69841",
+        "language": "cmn_hans_cn",
+        "family": "transcription",
+        "prediction": "在群島和胡泊之中有艇並不是必須的",
+        "reward": 0.55,
+        "cer": 0.3125,
+        "exact_match": false,
+        "reference_units": 16.0,
+        "predicted_units": 16.0
+      },
+      {
+        "task_id": "fleurs-es_419.test.1fe86721a446ecb3ee9c77010f8bde0bfeb8694758459252e19275b154f2a501",
+        "language": "es_419",
+        "family": "language_id",
+        "prediction": "es_es",
+        "reward": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "fleurs-gu_in.test.8c201e5d0ac93c4b05c6d281250acb19e07b18ea827063a48dec35316215ed37",
+        "language": "gu_in",
+        "family": "verbatim_transcription",
+        "prediction": "હાજર લોકોની સંખ્યા એટલી બધી વધારે હતી કે દરેક વખતે સેન્ટ પીટર્સ સ્ક્વેરમાં અંતિમ સંસ્કાર જોવા શક્ય હતા નહીં",
+        "reward": 0.6000000000000001,
+        "wer": 0.25,
+        "exact_match": false,
+        "reference_units": 20.0,
+        "predicted_units": 19.0
+      },
+      {
+        "task_id": "fleurs-ja_jp.test.21ccdec9bb859296eb726e896e3be852b49d19a85a9c118340b02d80077fa356",
+        "language": "ja_jp",
+        "family": "transcription",
+        "prediction": "当社番組やトークラジオに特化したインターネットラジオサイトととぎネットラジオをみで取り上げられこれは長寿サイトです\n",
+        "reward": 0.6000000000000001,
+        "cer": 0.25,
+        "exact_match": false,
+        "reference_units": 60.0,
+        "predicted_units": 57.0
+      },
+      {
+        "task_id": "fleurs-ml_in.test.3dd81e17f501d9c4d91f3e83641157c1e90f4307a86f7db6931a0b43c48af2e6",
+        "language": "ml_in",
+        "family": "language_id",
+        "prediction": "hi_in",
+        "reward": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "fleurs-or_in.test.d0475976156c160188754363175026f0eadddd6000c181024bce1405918da940",
+        "language": "or_in",
+        "family": "verbatim_transcription",
+        "prediction": "ଏକରୁ ତିନି ସମ୍ପର୍କିତ ବॉयସର ଅନ୍ଧରାଙ୍କ ସମେତ ୩୦ଟି ମାୟୀ ଓ ସାବକଙ୍କ ଦ୍ୱାରା ପାଇଟ୍ସ ଗଠିତ ହୋଇଥାଏ।",
+        "reward": 0.45714285714285713,
+        "wer": 0.42857142857142855,
+        "exact_match": false,
+        "reference_units": 14.0,
+        "predicted_units": 14.0
+      },
+      {
+        "task_id": "fleurs-ta_in.test.fa6c3633948427b23539de6dfc22f3694c77479c02d5cc96845746cfc6fc18ae",
+        "language": "ta_in",
+        "family": "transcription",
+        "prediction": "அதேபோல் ஒரு சேங்கல் விசா வைத்திருந்தால் சேங்கல் உறுப்பினர் நாடுகளுக்கு தனித்தனியாக ஒவ்வொன்றுக்கும் என விசாவுக்கு விண்ணப்பிக்க தேவை இல்லை அந்த நாள் நேரம் பணம் மற்றும் ஆவண வேலைகளை மிச்சப்படுத்தலாம்",
+        "reward": 0.2666666666666667,
+        "wer": 0.6666666666666666,
+        "exact_match": false,
+        "reference_units": 21.0,
+        "predicted_units": 23.0
+      }
+    ]
+  },
+  "trained": {
+    "macro_reward": 0.3092261904761905,
+    "by_language_task": {
+      "ar_eg/language_id": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0
+      },
+      "cmn_hans_cn/transcription": {
+        "samples": 1,
+        "reward": 0.55,
+        "cer": 0.3125,
+        "exact_match": 0.0
+      },
+      "es_419/language_id": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0
+      },
+      "gu_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.6000000000000001,
+        "wer": 0.25,
+        "exact_match": 0.0
+      },
+      "ja_jp/transcription": {
+        "samples": 1,
+        "reward": 0.6000000000000001,
+        "cer": 0.25,
+        "exact_match": 0.0
+      },
+      "ml_in/language_id": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0
+      },
+      "or_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.45714285714285713,
+        "wer": 0.42857142857142855,
+        "exact_match": 0.0
+      },
+      "ta_in/transcription": {
+        "samples": 1,
+        "reward": 0.2666666666666667,
+        "wer": 0.6666666666666666,
+        "exact_match": 0.0
+      }
+    },
+    "samples": [
+      {
+        "task_id": "fleurs-ar_eg.test.0be3277313320e97065c7ccf64b1f21a86324f0a3f0c375b1f16d47ba6807891",
+        "language": "ar_eg",
+        "family": "language_id",
+        "prediction": "ar_sa",
+        "reward": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "fleurs-cmn_hans_cn.test.1e1c334a255f9b023a7507974b65cc4fe78e1cf0769f37038be205fdf0a69841",
+        "language": "cmn_hans_cn",
+        "family": "transcription",
+        "prediction": "在群島和胡泊之中有艇並不是必須的",
+        "reward": 0.55,
+        "cer": 0.3125,
+        "exact_match": false,
+        "reference_units": 16.0,
+        "predicted_units": 16.0
+      },
+      {
+        "task_id": "fleurs-es_419.test.1fe86721a446ecb3ee9c77010f8bde0bfeb8694758459252e19275b154f2a501",
+        "language": "es_419",
+        "family": "language_id",
+        "prediction": "es_es",
+        "reward": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "fleurs-gu_in.test.8c201e5d0ac93c4b05c6d281250acb19e07b18ea827063a48dec35316215ed37",
+        "language": "gu_in",
+        "family": "verbatim_transcription",
+        "prediction": "હાજર લોકોની સંખ્યા એટલી બધી વધારે હતી કે દરેક વખતે સેન્ટ પીટર્સ સ્ક્વેરમાં અંતિમ સંસ્કાર જોવા શક્ય હતા નહીં",
+        "reward": 0.6000000000000001,
+        "wer": 0.25,
+        "exact_match": false,
+        "reference_units": 20.0,
+        "predicted_units": 19.0
+      },
+      {
+        "task_id": "fleurs-ja_jp.test.21ccdec9bb859296eb726e896e3be852b49d19a85a9c118340b02d80077fa356",
+        "language": "ja_jp",
+        "family": "transcription",
+        "prediction": "当社番組やトークラジオに特化したインターネットラジオサイトととぎネットラジオをみで取り上げられこれは長寿サイトです\n",
+        "reward": 0.6000000000000001,
+        "cer": 0.25,
+        "exact_match": false,
+        "reference_units": 60.0,
+        "predicted_units": 57.0
+      },
+      {
+        "task_id": "fleurs-ml_in.test.3dd81e17f501d9c4d91f3e83641157c1e90f4307a86f7db6931a0b43c48af2e6",
+        "language": "ml_in",
+        "family": "language_id",
+        "prediction": "hi_in",
+        "reward": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "fleurs-or_in.test.d0475976156c160188754363175026f0eadddd6000c181024bce1405918da940",
+        "language": "or_in",
+        "family": "verbatim_transcription",
+        "prediction": "ଏକରୁ ତିନି ସମ୍ପର୍କିତ ବॉयସର ଅନ୍ଧରାଙ୍କ ସମେତ ୩୦ଟି ମାୟୀ ଓ ସାବକଙ୍କ ଦ୍ୱାରା ପାଇଟ୍ସ ଗଠିତ ହୋଇଥାଏ।",
+        "reward": 0.45714285714285713,
+        "wer": 0.42857142857142855,
+        "exact_match": false,
+        "reference_units": 14.0,
+        "predicted_units": 14.0
+      },
+      {
+        "task_id": "fleurs-ta_in.test.fa6c3633948427b23539de6dfc22f3694c77479c02d5cc96845746cfc6fc18ae",
+        "language": "ta_in",
+        "family": "transcription",
+        "prediction": "அதேபோல் ஒரு சேங்கல் விசா வைத்திருந்தால் சேங்கல் உறுப்பினர் நாடுகளுக்கு தனித்தனியாக ஒவ்வொன்றுக்கும் என விசாவுக்கு விண்ணப்பிக்க தேவை இல்லை அந்த நாள் நேரம் பணம் மற்றும் ஆவண வேலைகளை மிச்சப்படுத்தலாம்",
+        "reward": 0.2666666666666667,
+        "wer": 0.6666666666666666,
+        "exact_match": false,
+        "reference_units": 21.0,
+        "predicted_units": 23.0
+      }
+    ]
+  },
+  "snapshot_id": "6c5e1f3ffdaf2ead41bac4804223786e4edb92f3f70bb2481df133bb817a0278"
+}

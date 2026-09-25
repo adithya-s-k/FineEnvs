@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openenv-multilingual-asr"
+version = "0.1.0"
+description = "Multilingual ASR tasks from FLEURS served through OpenEnv"
+requires-python = ">=3.11,<3.14"
+license = "Apache-2.0"
+dependencies = [
+  "openenv==0.4.2",
+  "huggingface-hub==1.31.0",
+  "pyarrow==25.0.1",
+  # fsspec's HTTP filesystem is what reads a bucket parquet footer without
+  # downloading the file; it needs aiohttp at runtime.
+  "fsspec[http]>=2024.6",
+  "aiohttp>=3.10,<4",
+  "rapidfuzz>=3.14,<4",
+  "requests>=2.32,<3",
+  "gradio>=6,<7",
+  "numpy>=1.26",
+  # FLEURS publishes IEEE float WAV, which the standard library cannot read.
+  "soundfile>=0.12,<1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "ruff>=0.12,<1"]
+# Pinned to the versions verified on 05-multilingual-ocr, so a Gemma 4 omni
+# checkpoint loads the same way here.
+train = [
+  "trl[vlm]==1.13.0",
+  "transformers>=5.2,<6",
+  "peft>=0.18,<1",
+  "trackio==0.37.1",
+  "torch>=2.7,<3",
+  "accelerate>=1.4,<2",
+  "numpy>=1.26",
+  # FLEURS publishes IEEE float WAV, which the standard library cannot read.
+  "soundfile>=0.12,<1",
+]
+
+[project.scripts]
+asr-prepare = "multilingual_asr.data.prepare:main"
+asr-evalset = "multilingual_asr.data.evalset:main"
+asr-index = "multilingual_asr.data.index:main"
+asr-server = "multilingual_asr.server.app:main"
+asr-smoke = "multilingual_asr.smoke:main"
+
+[tool.setuptools]
+packages = ["multilingual_asr", "multilingual_asr.data", "multilingual_asr.server"]
+package-dir = {multilingual_asr = "."}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B"]
