@@ -4,9 +4,10 @@ Wordle MCP Environment.
 Exposes 3 tools via FastMCP on MCPEnvironment:
   1. guess        — submit a 5-letter word guess
   2. get_history  — view all previous guesses and feedback
-  3. reset_game   — start a new game with a random word
+  3. reset_game   — start a new game with a random word (only once the current game is over)
 
-Each episode (reset → guess* → [reset]) maps to one WordleGame instance.
+Each episode (reset → guess* → [reset]) maps to one WordleGame instance. When a guess ends the game,
+the step observation has done=True and reward set to WordleGame.reward; later guesses leave it unchanged.
 """
 
 import sys
@@ -84,11 +85,14 @@ class WordleEnvironment(MCPEnvironment):
 
         @mcp.tool
         def reset_game() -> str:
-            """Start a new Wordle game with a random word.
+            """Start a new Wordle game with a random word, once the current game is over.
 
             Returns:
-                Confirmation that a new game has started.
+                Confirmation that a new game has started, or a notice that the current game must be finished first.
             """
+            if self._game is not None and not self._game.done:
+                # Abandoning a game would let an agent discard a losing game and swap in a new word.
+                return "A game is in progress. Finish it before starting a new one."
             self._game = WordleGame()
             return "New game started! Guess the 5-letter word. You have 6 attempts."
 
@@ -140,7 +144,7 @@ class WordleEnvironment(MCPEnvironment):
         **kwargs: Any,
     ) -> Observation:
         self._step_count += 1
-        return super().step(action, timeout_s=timeout_s, **kwargs)
+        return self._with_game_outcome(super().step(action, timeout_s=timeout_s, **kwargs))
 
     async def step_async(
         self,
@@ -149,7 +153,14 @@ class WordleEnvironment(MCPEnvironment):
         **kwargs: Any,
     ) -> Observation:
         self._step_count += 1
-        return await super().step_async(action, timeout_s=timeout_s, **kwargs)
+        return self._with_game_outcome(await super().step_async(action, timeout_s=timeout_s, **kwargs))
+
+    def _with_game_outcome(self, observation: Observation) -> Observation:
+        """Tell OpenEnv clients when the game is over: done=True and the game's reward."""
+        if self._game is not None and self._game.done:
+            observation.done = True
+            observation.reward = float(self._game.reward)
+        return observation
 
     @property
     def state(self):
@@ -158,4 +169,5 @@ class WordleEnvironment(MCPEnvironment):
             "step_count": self._step_count,
             "game_done": self._game.done if self._game else False,
             "game_won": self._game.won if self._game else False,
+            "reward": self._game.reward if self._game and self._game.done else None,
         }
