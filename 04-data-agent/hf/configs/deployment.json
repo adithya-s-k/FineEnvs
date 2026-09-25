@@ -1,0 +1,391 @@
+{
+  "schema_version": 1,
+  "status": "reproducible_recipes",
+  "namespace": "HuggingEnvs",
+  "private": true,
+  "experiment": "data-agent-daytona",
+  "run_id": "data-agent-reproduction-20260916",
+  "resources": {
+    "trackio_space": null,
+    "space_visibility": "protected",
+    "repro_dataset_repo": "HuggingEnvs/data-agent-daytona-repro",
+    "artifacts_bucket": "HuggingEnvs/data-agent-daytona-artifacts",
+    "trackio_bucket": "HuggingEnvs/data-agent-daytona-trackio",
+    "model_repos": {
+      "blackbox": "HuggingEnvs/qwen35-2b-daytona-opencode",
+      "whitebox": "HuggingEnvs/qwen35-2b-daytona-whitebox",
+      "opencode": "HuggingEnvs/qwen35-2b-standalone-opencode"
+    },
+    "environment_spaces": {
+      "blackbox": "HuggingEnvs/data-agent-blackbox-harbor-env",
+      "whitebox": "HuggingEnvs/data-agent-seta-whitebox-env",
+      "opencode": "HuggingEnvs/data-agent-blackbox-opencode-env"
+    },
+    "retired_spaces": []
+  },
+  "model": {
+    "id": "Qwen/Qwen3.5-2B",
+    "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc"
+  },
+  "data": {
+    "train_tasks": 1000,
+    "train_difficulty": {
+      "easy": 150,
+      "medium": 600,
+      "hard": 250
+    },
+    "test_tasks": 250,
+    "test_difficulty": {
+      "easy": 33,
+      "medium": 118,
+      "hard": 99
+    },
+    "seed": 0,
+    "schedule": "same frozen reference task order; all blackbox assignments become opencode; whitebox consumes the same task order",
+    "manifest_sha256": {
+      "train_manifest.json": "65ebbf8c86825597e4605ee2f75c2332a6e2144e22413bdc63aa39150cc54703",
+      "test_manifest.json": "38943d89f5bb0fec79db8c7a2680c4a8353cf5c53c6eabffaaef8971cb2eb964",
+      "reference_schedule.json": "6a6ea4a085908f3f256a0a605031aaf7f16469797c2b04ffa73092c4a44f2696",
+      "opencode_schedule.json": "dccc1102d76ccd2c2170239340a836f1c6158d80fe627c04a049e01b426311d6"
+    }
+  },
+  "training": {
+    "learning_rate": 3e-06,
+    "num_generations": 8,
+    "optim": "paged_adamw_8bit",
+    "dtype": "bfloat16",
+    "gradient_checkpointing": true,
+    "gradient_checkpointing_use_reentrant": false,
+    "max_model_len": 131072,
+    "max_completion_length": 16384,
+    "save_steps": 50,
+    "max_steps": 1000,
+    "seed": 0,
+    "max_train_seconds": 82200,
+    "checkpoint_max_seconds": 3600,
+    "walltime": "24h",
+    "initialization": "pinned base, independent from disposable optimizer smoke",
+    "sampling": {
+      "temperature": 0.8,
+      "top_p": 1.0,
+      "top_k_disabled": true,
+      "enable_thinking": false
+    },
+    "rollout_limits": {
+      "agent_step_limit": 17,
+      "agent_timeout_seconds": 600
+    }
+  },
+  "arms": {
+    "blackbox": {
+      "trainer": "AsyncGRPOTrainer + current atomic rollout recipe",
+      "training_harnesses": [
+        "opencode"
+      ],
+      "sandbox": "daytona",
+      "eval_harnesses": [
+        "opencode",
+        "claude-code",
+        "codex",
+        "mini-swe-agent"
+      ],
+      "evaluations_per_checkpoint": 1000,
+      "max_staleness": 4,
+      "max_outstanding_rollouts": 16,
+      "worker_ceiling": 32,
+      "token_budget": 40960,
+      "max_row_tokens": 131072,
+      "fork_threshold_tokens": 0,
+      "per_device_batch_size": 4,
+      "gradient_accumulation_steps": 4,
+      "atomic_rollouts": true
+    },
+    "whitebox": {
+      "trainer": "synchronous GRPOTrainer",
+      "toolsets": [
+        "bash",
+        "seta"
+      ],
+      "sandbox": "daytona",
+      "eval_harnesses": [
+        "whitebox_seta"
+      ],
+      "evaluations_per_checkpoint": 250,
+      "beta": 0.0,
+      "loss_type": "dapo",
+      "differences_to_validate": [
+        "synchronous sampling and batch semantics",
+        "full-episode completion budget includes masked tool results",
+        "tool-call submission adapter versus answer.txt",
+        "TiTO masks and generation ids"
+      ],
+      "per_device_batch_size": 1,
+      "gradient_accumulation_steps": 8,
+      "max_tool_calling_iterations": 16
+    },
+    "opencode": {
+      "trainer": "same atomic AsyncGRPO recipe with native DataAgentSessionFactory",
+      "training_harnesses": [
+        "opencode"
+      ],
+      "sandbox": "daytona",
+      "eval_harnesses": [
+        "opencode",
+        "claude-code",
+        "codex",
+        "mini-swe-agent"
+      ],
+      "evaluations_per_checkpoint": 1000,
+      "max_staleness": 4,
+      "max_outstanding_rollouts": 16,
+      "worker_ceiling": 32,
+      "token_budget": 40960,
+      "max_row_tokens": 131072,
+      "fork_threshold_tokens": 0,
+      "per_device_batch_size": 4,
+      "gradient_accumulation_steps": 4,
+      "atomic_rollouts": true,
+      "implementation": "standalone-opencode",
+      "reward_policy": "binary_correctness; no chat partial-credit or efficiency bonus"
+    }
+  },
+  "compute": {
+    "provider": "hf_jobs",
+    "training_flavor": "h200x2",
+    "training_jobs": 3,
+    "trainer_gpus_per_job": 1,
+    "vllm_gpus_per_job": 1,
+    "train_tp": 1,
+    "train_dp": 1,
+    "eval_flavor": "a100-large",
+    "eval_tp": 1,
+    "eval_dp": 1,
+    "coordinator_flavor": "cpu-upgrade",
+    "job_namespace": "HuggingEnvs",
+    "forbidden_new_partitions": [
+      "hopper-atl",
+      "hopper-extra"
+    ],
+    "training_hardware_candidates": [
+      "h200x2",
+      "a100x4"
+    ],
+    "training_selection": "One independent inference GPU and one optimizer GPU per arm; separate A100 checkpoint evaluation Jobs.",
+    "environment_provider": "hf_spaces",
+    "bootstrap_image": "ghcr.io/astral-sh/uv@sha256:85d4cb1afa769a7338e095b927bee941cf5ec92266c7424b3f6c0f2748567248"
+  },
+  "evaluation": {
+    "metric": "pass@1",
+    "interval_steps": 100,
+    "also_final": true,
+    "concurrency_per_job": 35,
+    "max_active_jobs_per_arm": 1,
+    "max_active_jobs_total": 2,
+    "training_priority": true,
+    "daytona_joint_capacity_gate": "measure live quotas and reserve both trainers before admitting evals; serialize eval jobs if required",
+    "base_on_hf": true,
+    "preserve_prior_baselines": true,
+    "max_output_tokens_per_call": 4096,
+    "max_model_calls": 17,
+    "episode_timeout_seconds": 600,
+    "first_graded_result_immutable": true,
+    "retry_only_ungraded_infrastructure_failures": true,
+    "publish_score_requires": [
+      "complete fixed cell coverage",
+      "TiTO pass",
+      "matching harness pins",
+      "matching task hashes",
+      "checkpoint hash verified"
+    ],
+    "concurrency_per_arm": {
+      "blackbox": 35,
+      "opencode": 35,
+      "whitebox": 35
+    },
+    "opencode_backend_concurrency": {
+      "daytona": 35,
+      "hf": 35
+    }
+  },
+  "harness_pins": {
+    "opencode": "1.18.31",
+    "claude-code": "2.1.270",
+    "codex": "0.154.0",
+    "mini-swe-agent": "2.4.6"
+  },
+  "serving": {
+    "launcher": "frozen eval-source/serve_vllm_tunnel.sh with portable paths",
+    "max_model_len": 131072,
+    "train_gpu_memory_utilization": 0.85,
+    "eval_gpu_memory_utilization": 0.9,
+    "vllm_server_dev_mode": true,
+    "logprobs_mode": "processed_logprobs",
+    "return_tokens_as_token_ids": true,
+    "prefix_caching": false,
+    "gdn_prefill_backend": "triton",
+    "flashinfer_sampler": false,
+    "tool_call_parser": "qwen3_xml",
+    "reasoning_parser": "qwen3",
+    "thinking": false,
+    "model_network": "authenticated HF Jobs endpoint for Space-to-vLLM; private Space accessed through a local auth bridge; capture-only tunnel for Daytona",
+    "shared_service": {
+      "transport_sessions": 1024,
+      "sandbox_capacity_per_arm": {
+        "blackbox": 64,
+        "whitebox": 61,
+        "opencode": 100
+      },
+      "train_reserved_per_arm": {
+        "blackbox": 16,
+        "whitebox": 8,
+        "opencode": 8
+      },
+      "status": "Deployment caps; recheck sandbox team quotas before concurrent jobs.",
+      "ui_sessions": 8,
+      "hardware": "cpu-basic",
+      "daytona_quota": {
+        "region": "eu",
+        "cpu": 250,
+        "memory_gib": 500,
+        "disk_gib": 2000,
+        "checked_utc": "2026-09-15T14:00:00Z"
+      }
+    }
+  },
+  "durability": {
+    "local_training_disk": true,
+    "async_upload": true,
+    "checkpoint_upload_commit": "immutable files -> manifest verification -> ready marker last",
+    "persist": [
+      "model",
+      "optimizer",
+      "scheduler",
+      "RNG",
+      "native rollout cursor",
+      "token captures",
+      "metrics JSONL",
+      "source and dependency hashes",
+      "eval first-graded ledger"
+    ],
+    "eval_identity_fields": [
+      "run_id",
+      "arm",
+      "step",
+      "checkpoint_sha256",
+      "eval_protocol_sha256"
+    ],
+    "resume": "full native checkpoint; in-flight groups may be regenerated",
+    "local_checkpoint_delete_only_after_remote_verified": true
+  },
+  "monitoring": {
+    "startup_interval_seconds": 120,
+    "stable_interval_seconds": 600,
+    "stable_after_optimizer_steps": 10,
+    "progressing_checks_required": 2,
+    "chat_notifications_enabled": false,
+    "persistent_coordinator": true,
+    "space_restart_must_not_stop_training": true,
+    "max_automatic_training_restarts_per_arm": 2,
+    "fatal_stop_reasons": [
+      "TiTO corruption",
+      "non-finite model updates",
+      "invalid checkpoint provenance"
+    ]
+  },
+  "logging": {
+    "trackio_version": "0.33.0",
+    "offline": "append-only metrics JSONL + SQLite replay backup",
+    "online": "Asynchronous Trackio event/database upload to the artifact bucket; optional shared dashboard replay.",
+    "network_in_optimizer_path": false,
+    "deduplicate_events": true,
+    "axes": [
+      "optimizer step",
+      "wall time",
+      "completed rollouts",
+      "supervised tokens",
+      "unique task coverage"
+    ],
+    "projects": {
+      "blackbox": "daytona-blackbox-qwen35-2b",
+      "whitebox": "daytona-whitebox-qwen35-2b",
+      "opencode": "daytona-opencode-qwen35-2b"
+    },
+    "space_private": false,
+    "visibility": "Training Trackio databases and events persist with run artifacts",
+    "scope": "training jobs only; environment Spaces have no logging dashboard"
+  },
+  "gates": [
+    "portable bundle and two locked environments",
+    "HF CPU import/config/artifact roundtrip preflight",
+    "HF Daytona task+TiTO smoke for both arms",
+    "HF base pass@1 and concurrency ramp",
+    "each arm: 2 optimizer steps -> save2 -> fresh trainer resume -> step4 -> verified checkpoint",
+    "each arm: full training from base",
+    "separate checkpoint eval jobs and durable logging verified"
+  ],
+  "historical_baselines": {
+    "blackbox": {
+      "correct": 159,
+      "cells": 1000,
+      "pass_at_1": 0.159,
+      "platform": "Slurm H100 / Daytona"
+    },
+    "whitebox": {
+      "correct": 41,
+      "cells": 250,
+      "pass_at_1": 0.164,
+      "platform": "Slurm H100 / Daytona"
+    }
+  },
+  "runtime_lock_adjustments": {
+    "reason": "resolve incompatible dependencies in the inherited trainer environment before building the HF runtime",
+    "numpy": "vLLM/mistral-common on Python 3.12 requires <2.4",
+    "websockets": "15.0.1; Harbor/Supabase requires <16",
+    "requires_fresh_runtime_validation": true
+  },
+  "access": {
+    "org_jobs_read_verified": true,
+    "credential_source": "HF_API_KEY in experiments/.env, explicitly selected instead of ambient OAuth",
+    "credentials_uploaded_as_files": false
+  },
+  "dependency_locks": {
+    "requirements-env.lock": {
+      "sha256": "a73c0e2d1326eff124d0b38a3203a050cbbb110ec2e4acd094f7b07ef9a4c444",
+      "resolved_packages": 178
+    },
+    "requirements-train.lock": {
+      "sha256": "54d630e16823edd5e1504a92deb6745afc9a53cc9514753a175ba25db7f0aa7d",
+      "resolved_packages": 294
+    }
+  },
+  "implementations": {
+    "blackbox": "Harbor adapter (historical arm key; retain as Blackbox Harbor)",
+    "opencode": "envs/blackbox-opencode standalone OpenCode",
+    "whitebox": "native SETA/bash"
+  },
+  "scaling_note": "Standalone Daytona baseline may use100slots while Harbor/SETA are idle. Re-budget joint125Daytona capacity before parallel trainers/evals.",
+  "training_smoke": {
+    "authorized": true,
+    "steps": [
+      2,
+      4
+    ],
+    "save_steps": 2,
+    "preserve_live_spaces": true,
+    "space_bundle_pins": {
+      "opencode": "3dbab07f0abad40dadd556262cbfa5d19730d02c0a3c5e0c2b3f8cf8aba58c3e",
+      "whitebox": "f61d3e774ec58e8d2279fcac0611a62620c2fc3d986932d069d58a4c39d389ec"
+    },
+    "opencode_wait_for_daytona_baseline_job": "6aa98b715527934177ee5e73",
+    "whitebox_sandbox_budget": 8,
+    "opencode_sandbox_budget": 16,
+    "long_launches_held": true
+  },
+  "pipeline": {
+    "baseline_jobs": {
+      "blackbox": null,
+      "whitebox": null
+    },
+    "note": "Optional legacy Harbor/SETA coordinator; reproduce.py selects one explicit recipe."
+  }
+}

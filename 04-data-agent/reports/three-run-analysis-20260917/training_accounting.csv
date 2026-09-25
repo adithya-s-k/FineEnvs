@@ -1,0 +1,4 @@
+run,steps,zero_gradient_steps,forwarded_tokens,supervised_tokens,forwarded_per_supervised_token,supervised_tokens_in_zero_gradient_steps,zero_gradient_supervised_token_fraction,zero_gradient_forwarded_token_fraction,mean_step_s,step_timing_observations,receipt_token_mismatches
+Harbor OpenCode-only,1000,380,419428466.0,14625038.0,28.67879495424217,5912749.0,0.40428947945297644,0.39100410509571853,79.62124525297799,999,0
+Harbor multi-harness,1000,349,1001322856.0,22148436.0,45.20964171014152,7357643.0,0.3321969551258608,0.34976226988271203,108.20385101597033,993,0
+Native OpenCode,1000,583,228413083.0,5327227.0,42.87654402562534,3418521.0,0.6417074023689998,0.5876681459616742,36.3195656516987,999,0

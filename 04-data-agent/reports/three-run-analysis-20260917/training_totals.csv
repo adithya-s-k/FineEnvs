@@ -1,0 +1,4 @@
+run,forwarded_tokens,supervised_tokens,mean_step_s,step_timing_observations,max_staleness_observed,fraction_steps_staleness_gt4,nonfinite_grad_steps
+Harbor OpenCode-only,419428466.0,14625038.0,79.62124525297799,999,4.0,0.0,0
+Harbor multi-harness,1001322856.0,22148436.0,108.20385101597033,993,4.0,0.0,0
+Native OpenCode,228413083.0,5327227.0,36.3195656516987,999,4.0,0.0,0

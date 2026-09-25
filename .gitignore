@@ -227,3 +227,18 @@ dist/
 .astro/
 # Slide deck exports (PDF/PPTX) — published to the Hub, not tracked here
 export/
+
+# Generated run artifacts: training checkpoints, capture traces, Harbor trial trees, eval records.
+# These reach tens of GB -- 22 GB on disk here, of which 877 MB had actually been committed and had
+# to be stripped from this branch's history before its first push. Committing generated data is the
+# fastest way to make a repo unusable, and none of it is reproducible-by-review anyway.
+#
+# `logs/` now holds ONLY generated output. The operational scripts that used to live there
+# (start_server.sh, stop_all.sh, hf_token.sh, needle.txt) moved to each environment's `tools/`,
+# because tracked source inside an ignored directory is a contradiction waiting to bite -- a fresh
+# clone would look complete and silently lack them.
+04-data-agent/**/logs/
+
+# Gradio scratch. `certificate.pem` is the CA bundle gradio writes on first tunnel use and
+# `flagged/` is its UI capture dir -- both generated per machine, neither is source.
+.gradio/

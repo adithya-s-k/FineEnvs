@@ -1,0 +1,43 @@
+---
+title: "The ultimate guide to multi-harness RL"
+description: "Training and evals together: how a capture layer turns any black-box agent harness into trainable tokens, and what it takes to train a small model across many of them."
+authors:
+  - name: "Adithya S Kolavi"
+    url: "https://huggingface.co/AdithyaSK"
+    affiliations: [1]
+  # Add co-authors here as they join — same shape, affiliations is 1-based.
+affiliations:
+  - name: "Hugging Face"
+    url: "https://huggingface.co"
+published: "August 30, 2026"
+# repo: "https://github.com/adithya-s-k/HuggingEnvs"   # uncomment to show the CODE button
+seoThumbImage: "https://raw.githubusercontent.com/adithya-s-k/HuggingEnvs/refs/heads/main/assets/content/multi-harness-training.png"
+template: "article"
+tableOfContentsAutoCollapse: true
+showPdf: true
+---
+
+{/*
+  This import list IS the chapter registry — there is no glob and no ordering config.
+  To add, remove or reorder a section, edit both the imports and the element list below.
+*/}
+
+import Introduction from "./chapters/introduction.mdx";
+import WhatIsAHarness from "./chapters/what-is-a-harness.mdx";
+import RlEnvironments from "./chapters/rl-environments.mdx";
+import DataAgent from "./chapters/data-agent.mdx";
+import OpenEnvHarbor from "./chapters/openenv-harbor.mdx";
+import Evals from "./chapters/evals.mdx";
+import TrainingAblations from "./chapters/training-ablations.mdx";
+import AsyncGrpo from "./chapters/async-grpo.mdx";
+import Conclusions from "./chapters/conclusions.mdx";
+
+<Introduction />
+<WhatIsAHarness />
+<RlEnvironments />
+<DataAgent />
+<OpenEnvHarbor />
+<Evals />
+<TrainingAblations />
+<AsyncGrpo />
+<Conclusions />

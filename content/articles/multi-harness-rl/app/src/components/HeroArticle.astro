@@ -1,0 +1,845 @@
+---
+import HtmlEmbed from "./HtmlEmbed.astro";
+import {
+  type HeroProps,
+  type Author,
+  normalizeAuthors,
+  stripHtml,
+  slugify,
+} from "./heroUtils";
+
+const {
+  title,
+  titleRaw,
+  description,
+  authors = [],
+  affiliations = [],
+  affiliation,
+  published,
+  doi,
+  pdfProOnly = false,
+  showPdf = true,
+  repo,
+} = Astro.props as HeroProps;
+
+const normalizedAuthors: Author[] = normalizeAuthors(authors as any);
+
+const authorAffiliationIndexSet = new Set<number>();
+for (const author of normalizedAuthors) {
+  const indices = Array.isArray(author.affiliationIndices)
+    ? author.affiliationIndices
+    : [];
+  for (const idx of indices) {
+    if (typeof idx === "number") authorAffiliationIndexSet.add(idx);
+  }
+}
+const shouldShowAffiliationSupers = authorAffiliationIndexSet.size > 1;
+const hasMultipleAffiliations =
+  Array.isArray(affiliations) && affiliations.length > 1;
+
+const pdfBase = titleRaw ? stripHtml(titleRaw) : stripHtml(title);
+const pdfFilename = `${slugify(pdfBase)}.pdf`;
+
+// The repo button's label used to be a hardcoded string, so it kept naming the
+// template author's repo no matter what `repo` pointed at. Derive it.
+const repoName = repo ? String(repo).replace(/\/+$/, "").split("/").pop() : "";
+---
+
+<section class="hero">
+  <h1 class="hero-title" set:html={title} />
+  {/* Two heroes are built for this article and the reader picks. Each panel is
+      lazily mounted and re-measures on becoming visible, so a hidden one costs
+      nothing until it is shown:
+        banner-opaque.html, the harness grid, one wire each, tokens after
+        banner-seam.html, the rollout fleet, the seam, the token field
+      banner.html, the galaxy inherited from the template, is still in the repo
+      but no longer offered. */}
+  <div class="hero-banner" data-banner-stage>
+    <div class="hero-banner__panel" data-banner="opaque" data-active>
+      <HtmlEmbed src="banner-opaque.html" frameless />
+    </div>
+    <div class="hero-banner__panel" data-banner="seam">
+      <HtmlEmbed src="banner-seam.html" frameless />
+    </div>
+  </div>
+  <div class="hero-banner-pick" role="group" aria-label="Choose the hero visualisation">
+    <button type="button" data-pick="opaque" aria-pressed="true">Harnesses</button>
+    <button type="button" data-pick="seam" aria-pressed="false">Rollouts</button>
+  </div>
+  {description && <p class="hero-desc">{description}</p>}
+</section>
+
+<script is:inline>
+  (() => {
+    const stage = document.querySelector("[data-banner-stage]");
+    const pick = document.querySelector(".hero-banner-pick");
+    if (!stage || !pick) return;
+    const KEY = "mhrl:hero-banner";
+
+    const show = (name) => {
+      let found = false;
+      stage.querySelectorAll("[data-banner]").forEach((panel) => {
+        const on = panel.dataset.banner === name;
+        if (on) { panel.setAttribute("data-active", ""); found = true; }
+        else panel.removeAttribute("data-active");
+      });
+      if (!found) return false;
+      pick.querySelectorAll("button").forEach((b) => {
+        b.setAttribute("aria-pressed", String(b.dataset.pick === name));
+      });
+      // A panel that was hidden has never been measured, so nudge the embeds
+      // inside it to re-read their box now that they have one.
+      window.dispatchEvent(new Event("resize"));
+      return true;
+    };
+
+    try {
+      const saved = localStorage.getItem(KEY);
+      if (saved) show(saved);
+    } catch (e) { /* private mode, cleared storage: keep the default */ }
+
+    pick.addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-pick]");
+      if (!b) return;
+      if (!show(b.dataset.pick)) return;
+      try { localStorage.setItem(KEY, b.dataset.pick); } catch (e) { /* not essential */ }
+    });
+  })();
+</script>
+
+<script is:inline>
+  (() => {
+    const el = document.querySelector(".hero-title");
+    if (!el) return;
+    const len = (el.textContent || "").length;
+    if (len > 100) el.dataset.titleSize = "sm";
+    else if (len > 60) el.dataset.titleSize = "md";
+  })();
+</script>
+
+<header class="meta" aria-label="Article meta information">
+  <div class="meta-container">
+    {
+      normalizedAuthors.length > 0 && (
+        <div class="meta-container-cell">
+          <h3>Author{normalizedAuthors.length > 1 ? "s" : ""}</h3>
+          <ul class="authors">
+            {normalizedAuthors.map((a, i) => {
+              const supers =
+                shouldShowAffiliationSupers &&
+                Array.isArray(a.affiliationIndices) &&
+                a.affiliationIndices.length ? (
+                  <sup>{a.affiliationIndices.join(", ")}</sup>
+                ) : null;
+              return (
+                <li>
+                  {a.url ? <a href={a.url}>{a.name}</a> : a.name}{supers}{i < normalizedAuthors.length - 1 && <span set:html=",&nbsp;" />}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )
+    }
+    {
+      Array.isArray(affiliations) && affiliations.length > 0 && (
+        <div class="meta-container-cell meta-container-cell--affiliations">
+          <h3>Affiliation{affiliations.length > 1 ? "s" : ""}</h3>
+          {hasMultipleAffiliations ? (
+            <ol class="affiliations">
+              {affiliations.map((af) => (
+                <li value={af.id}>
+                  {af.url ? (
+                    <a href={af.url} target="_blank" rel="noopener noreferrer">
+                      {af.name}
+                    </a>
+                  ) : (
+                    af.name
+                  )}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p>
+              {affiliations[0]?.url ? (
+                <a
+                  href={affiliations[0].url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {affiliations[0].name}
+                </a>
+              ) : (
+                affiliations[0]?.name
+              )}
+            </p>
+          )}
+        </div>
+      )
+    }
+    {
+      (!affiliations || affiliations.length === 0) && affiliation && (
+        <div class="meta-container-cell meta-container-cell--affiliations">
+          <h3>Affiliation</h3>
+          <p>{affiliation}</p>
+        </div>
+      )
+    }
+    {
+      published && (
+        <div class="meta-container-cell meta-container-cell--published">
+          <h3>Published</h3>
+          <p>{published}</p>
+        </div>
+      )
+    }
+    {doi && (
+      <div class="meta-container-cell meta-container-cell--doi">
+        <h3>DOI</h3>
+        <p><a href={`https://doi.org/${doi}`} target="_blank" rel="noopener noreferrer">{doi}</a></p>
+      </div>
+    )}
+    {showPdf && (
+      <div class="pdf-modal" role="dialog" aria-modal="true" aria-labelledby="pdf-modal-title" hidden>
+        <div class="pdf-modal__inner">
+          <p class="pdf-modal__title" id="pdf-modal-title">Heads up before you download</p>
+          <p class="pdf-modal__body">Animations and wide comparison tables clip in the PDF. The web version is the canonical reference and stays interactive.</p>
+          <div class="pdf-modal__actions">
+            <button type="button" class="pdf-modal__btn" data-pdf-modal-action="cancel">Cancel</button>
+            <button type="button" class="pdf-modal__btn pdf-modal__btn--primary" data-pdf-modal-action="confirm">Download anyway</button>
+          </div>
+        </div>
+      </div>
+    )}
+    {(repo || showPdf) && (
+    <div class="meta-actions">
+    {repo && (
+      <div class="meta-container-cell meta-container-cell--repo">
+        <h3>Code</h3>
+        <p>
+          <a class="repo-button" href={repo} target="_blank" rel="noopener noreferrer" aria-label="Companion code repository on GitHub">
+            <span class="repo-button__left">
+              <svg class="repo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+                <path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.4-4-1.4-.6-1.4-1.4-1.8-1.4-1.8-1.1-.8.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11 11 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.7-2.8 5.7-5.5 6 .4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3Z"/>
+              </svg>
+              <span class="repo-button__name">{repoName}</span>
+            </span>
+            <span class="repo-button__right" aria-label="Star on GitHub">
+              <svg class="star-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+                <path d="M12 2.5l2.95 6.18 6.8.9-5 4.74 1.27 6.74L12 17.77l-6.02 3.29L7.25 14.32l-5-4.74 6.8-.9L12 2.5z"/>
+              </svg>
+            </span>
+          </a>
+        </p>
+      </div>
+    )}
+    {showPdf && (
+      <div class="meta-container-cell meta-container-cell--pdf">
+        <div class="pdf-header-wrapper">
+          <h3>PDF</h3>
+          <span class="pro-badge-wrapper" style="display: none;">
+            <span class="pro-badge-prefix">- you are</span>
+            <span class="pro-badge">PRO</span>
+          </span>
+          <span class="pro-only-label" style="display: none;">
+            <span class="pro-only-dash">-</span>
+            <span class="pro-only-text">pro only</span>
+            <svg class="pro-only-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </span>
+        </div>
+        <div id="pdf-download-container" data-pdf-pro-only={pdfProOnly.toString()}>
+          <p class="pdf-loading">Checking access...</p>
+          <p class="pdf-pro-only" style="display: none;">
+            <a
+              class="button"
+              href={`/${pdfFilename}`}
+              download={pdfFilename}
+              data-pdf-warn="true"
+              aria-label={`Download PDF ${pdfFilename}`}
+            >
+              Download PDF
+            </a>
+          </p>
+          <div class="pdf-locked" style="display: none;">
+            <a
+              class="button button-locked"
+              href="https://huggingface.co/subscribe/pro"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <svg class="lock-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" role="img" width="1em" height="1em" viewBox="0 0 12 12" fill="none">
+                <path d="M6.48 1.26c0 1.55.67 2.58 1.5 3.24.86.68 1.9 1 2.58 1.07v.86A5.3 5.3 0 0 0 7.99 7.5a3.95 3.95 0 0 0-1.51 3.24h-.96c0-1.55-.67-2.58-1.5-3.24a5.3 5.3 0 0 0-2.58-1.07v-.86A5.3 5.3 0 0 0 4.01 4.5a3.95 3.95 0 0 0 1.51-3.24h.96Z" fill="currentColor"></path>
+              </svg>
+              <span class="locked-title">Subscribe to Pro</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    )}
+    </div>
+    )}
+  </div>
+</header>
+
+{showPdf && (
+  <script is:inline>
+    // Pop up a warning modal when the user clicks Download PDF, then proceed
+    // with the download only if they confirm.
+    (() => {
+      const init = () => {
+        const modal = document.querySelector(".pdf-modal");
+        if (!modal) return;
+        let pendingHref = null;
+        let pendingDownload = null;
+
+        const openModal = (href, downloadName) => {
+          pendingHref = href;
+          pendingDownload = downloadName;
+          modal.classList.add("is-open");
+          modal.removeAttribute("hidden");
+          const confirmBtn = modal.querySelector('[data-pdf-modal-action="confirm"]');
+          if (confirmBtn) confirmBtn.focus();
+        };
+        const closeModal = () => {
+          modal.classList.remove("is-open");
+          modal.setAttribute("hidden", "");
+          pendingHref = null;
+          pendingDownload = null;
+        };
+        const triggerDownload = () => {
+          if (!pendingHref) { closeModal(); return; }
+          const a = document.createElement("a");
+          a.href = pendingHref;
+          if (pendingDownload) a.download = pendingDownload;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          closeModal();
+        };
+
+        document.addEventListener("click", (e) => {
+          const link = e.target.closest('a[data-pdf-warn="true"]');
+          if (link) {
+            e.preventDefault();
+            openModal(link.getAttribute("href"), link.getAttribute("download"));
+            return;
+          }
+          const action = e.target.closest("[data-pdf-modal-action]");
+          if (action) {
+            const kind = action.getAttribute("data-pdf-modal-action");
+            if (kind === "confirm") triggerDownload();
+            else closeModal();
+            return;
+          }
+          if (modal.classList.contains("is-open") && !e.target.closest(".pdf-modal__inner")) {
+            closeModal();
+          }
+        });
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal();
+        });
+      };
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init, { once: true });
+      } else {
+        init();
+      }
+    })();
+
+    // PDF access control for Pro users only
+    const LOCAL_IS_PRO = true;
+    const FALLBACK_TIMEOUT_MS = 3000;
+    const MAX_RETRY_ATTEMPTS = 100;
+    let userPlanChecked = false;
+    let initialized = false;
+
+    function isProUser(plan) {
+      if (!plan) return false;
+      return plan.user === "pro";
+    }
+
+    function updatePdfAccess(isPro, pdfProOnly) {
+      const loadingEl = document.querySelector(".pdf-loading");
+      const proOnlyEl = document.querySelector(".pdf-pro-only");
+      const lockedEl = document.querySelector(".pdf-locked");
+      const proOnlyLabel = document.querySelector(".pro-only-label");
+      const proBadgeWrapper = document.querySelector(".pro-badge-wrapper");
+      if (loadingEl) loadingEl.style.display = "none";
+      if (!pdfProOnly) {
+        if (proOnlyEl) proOnlyEl.style.display = "block";
+        if (proOnlyLabel) proOnlyLabel.style.display = "none";
+        if (lockedEl) lockedEl.style.display = "none";
+        if (proBadgeWrapper) proBadgeWrapper.style.display = "none";
+        return;
+      }
+      if (isPro) {
+        if (proOnlyEl) proOnlyEl.style.display = "block";
+        if (proOnlyLabel) proOnlyLabel.style.display = "none";
+        if (lockedEl) lockedEl.style.display = "none";
+        if (proBadgeWrapper) proBadgeWrapper.style.display = "inline-flex";
+      } else {
+        if (proOnlyEl) proOnlyEl.style.display = "none";
+        if (proOnlyLabel) proOnlyLabel.style.display = "inline-flex";
+        if (lockedEl) lockedEl.style.display = "block";
+        if (proBadgeWrapper) proBadgeWrapper.style.display = "none";
+      }
+    }
+
+    function handleUserPlan(plan, pdfProOnly) {
+      userPlanChecked = true;
+      updatePdfAccess(isProUser(plan), pdfProOnly);
+    }
+
+    function handleFallback(pdfProOnly) {
+      handleUserPlan(LOCAL_IS_PRO ? { user: "pro" } : { user: "free" }, pdfProOnly);
+    }
+
+    function initPdfAccess(retryCount = 0) {
+      if (initialized) return;
+      const pdfContainer = document.querySelector("#pdf-download-container");
+      if (!pdfContainer) {
+        if (retryCount < MAX_RETRY_ATTEMPTS) {
+          setTimeout(() => initPdfAccess(retryCount + 1), 10);
+        } else {
+          setTimeout(() => {
+            const container = document.querySelector("#pdf-download-container");
+            if (container && !initialized) {
+              initialized = true;
+              const pdfProOnly = container.getAttribute("data-pdf-pro-only") === "true";
+              updatePdfAccess(!pdfProOnly, pdfProOnly);
+            }
+          }, 100);
+        }
+        return;
+      }
+      initialized = true;
+      const pdfProOnly = pdfContainer.getAttribute("data-pdf-pro-only") === "true";
+      if (!pdfProOnly) {
+        updatePdfAccess(true, pdfProOnly);
+      } else {
+        window.addEventListener("message", (event) => {
+          if (event.data.type === "USER_PLAN") handleUserPlan(event.data.plan, pdfProOnly);
+        });
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: "USER_PLAN_REQUEST" }, "*");
+          setTimeout(() => { if (!userPlanChecked) handleFallback(pdfProOnly); }, FALLBACK_TIMEOUT_MS);
+        } else {
+          handleFallback(pdfProOnly);
+        }
+      }
+    }
+
+    (function() {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => setTimeout(() => initPdfAccess(), 0));
+      } else {
+        setTimeout(() => initPdfAccess(), 0);
+      }
+    })();
+  </script>
+)}
+
+<style>
+  .hero {
+    width: 100%;
+    padding: 64px 16px 16px;
+    text-align: center;
+  }
+  .hero-title {
+    font-size: clamp(34px, 5vw, 54px);
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    margin: 0 auto 8px;
+    max-width: 1060px;
+    text-wrap: balance;
+  }
+  .hero-title[data-title-size="md"] {
+    font-size: clamp(28px, 4vw, 44px);
+  }
+  .hero-title[data-title-size="sm"] {
+    font-size: clamp(24px, 3.2vw, 38px);
+  }
+  .hero-banner {
+    position: relative;
+    max-width: 1100px;
+    margin: 0 auto;
+    aspect-ratio: 5 / 2;
+    overflow: hidden;
+  }
+  .hero-banner__panel { display: none; height: 100%; }
+  .hero-banner__panel[data-active] { display: block; }
+
+  .hero-banner-pick {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin: 10px auto 0;
+  }
+  .hero-banner-pick button {
+    appearance: none;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--muted-color);
+    font: inherit;
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    padding: 4px 11px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+  .hero-banner-pick button:hover { color: var(--text-color); }
+  .hero-banner-pick button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+  .hero-banner-pick button[aria-pressed="true"] {
+    color: var(--text-color);
+    border-color: var(--text-color);
+    background: color-mix(in oklab, var(--text-color) 7%, transparent);
+  }
+  .hero-banner :global(.html-embed) {
+    height: 100%;
+  }
+  .hero-banner :global(.html-embed__card) {
+    height: 100%;
+  }
+  .hero-desc {
+    color: var(--muted-color);
+    font-style: italic;
+    margin: 32px auto 16px;
+    max-width: 55%;
+  }
+
+  @media (max-width: 768px) {
+    .hero-banner { aspect-ratio: auto; }
+    .hero-desc { max-width: 90%; }
+  }
+
+  /* Meta bar */
+  .meta {
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 0;
+    font-size: 0.9rem;
+  }
+  .meta-container {
+    max-width: 1100px;
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: start;
+    margin: 0 auto;
+    padding: 0 var(--content-padding-x);
+    gap: 16px 32px;
+  }
+  @media (max-width: 768px) {
+    .meta-container {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .meta-container a:not(.button):not(.repo-button) {
+    color: var(--primary-color);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 0.06em;
+    text-decoration-color: var(--link-underline);
+    transition: text-decoration-color 0.15s ease-in-out;
+  }
+  .meta-container a:not(.repo-button):hover {
+    text-decoration-color: var(--link-underline-hover);
+  }
+  .meta-container a.button,
+  .meta-container a.repo-button,
+  .meta-container .button {
+    text-decoration: none;
+  }
+  .meta-container-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 400px;
+  }
+  .meta-container-cell h3 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--muted-color);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .meta-container-cell p {
+    margin: 0;
+  }
+  .repo-button {
+    display: inline-flex;
+    align-items: stretch;
+    line-height: 1;
+    background: #000;
+    color: #fff;
+    border: 1.5px solid var(--primary-color);
+    border-radius: var(--button-radius);
+    overflow: hidden;
+    font-size: var(--button-font-size);
+    font-weight: 600;
+    transition: background 0.15s ease;
+    text-decoration: none;
+  }
+  .repo-button:hover {
+    background: #1a1a1a;
+  }
+  .repo-button__left,
+  .repo-button__right {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--button-padding-y) calc(var(--button-padding-x) - 2px);
+  }
+  .repo-button__left { gap: 7px; }
+  .repo-button__right {
+    border-left: 1.5px solid var(--primary-color);
+    color: var(--primary-color);
+  }
+  .repo-button .repo-icon,
+  .repo-button .star-icon {
+    flex-shrink: 0;
+  }
+
+  /* Match PDF button to the repo button */
+  .meta-container-cell--pdf .pdf-pro-only .button {
+    background: #000;
+    color: #fff;
+    border: 1.5px solid var(--primary-color);
+    border-radius: var(--button-radius);
+    font-weight: 600;
+    transition: background 0.15s ease;
+  }
+  .meta-container-cell--pdf .pdf-pro-only .button:hover {
+    background: #1a1a1a;
+  }
+
+  /* Code + PDF live in the rightmost grid column as a pair, stacked vertically
+     so they share the same column width and stay visually grouped. */
+  .meta-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .meta-actions .meta-container-cell--repo,
+  .meta-actions .meta-container-cell--pdf {
+    margin: 0;
+  }
+  @media (max-width: 768px) {
+    .meta-actions {
+      grid-column: 1 / -1;
+      flex-direction: row;
+      gap: 24px;
+    }
+  }
+  .authors {
+    margin: 0;
+    list-style-type: none;
+    padding-left: 0;
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .authors li {
+    white-space: nowrap;
+    padding: 0;
+  }
+  .affiliations {
+    margin: 0;
+    padding-left: 1.25em;
+  }
+  .affiliations li {
+    margin: 0;
+  }
+
+  /* On phones the four meta cells stack top to bottom. The old two-column
+     split pushed every second cell hard right, which read as two ragged
+     columns rather than one list. */
+  @media (max-width: 768px) {
+    .meta-container {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .meta-container-cell {
+      max-width: none;
+      text-align: left;
+      gap: 4px;
+    }
+    .meta-container-cell:nth-child(even) { text-align: left; }
+  }
+
+  @media print {
+    .meta-container-cell--pdf { display: none !important; }
+  }
+
+  /* PDF styles */
+  .pdf-header-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+  }
+  .pdf-header-wrapper h3 { line-height: 1; }
+  #pdf-download-container {
+    min-height: calc(var(--button-padding-y) * 2 + var(--button-font-size) + 2px);
+  }
+  .pdf-loading {
+    color: var(--muted-color);
+    font-size: var(--button-font-size);
+    line-height: 1;
+    padding: var(--button-padding-y) var(--button-padding-x);
+    margin: 0;
+    display: inline-block;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    height: calc(var(--button-padding-y) * 2 + var(--button-font-size) + 2px);
+    vertical-align: top;
+  }
+  .pdf-pro-only { margin: 0; line-height: 0; }
+  .pdf-pro-only .button { margin: 0; }
+
+  /* Modal that pops up when the user clicks Download PDF, telling them about
+     the animation/table clipping caveat. They confirm to proceed with download. */
+  .pdf-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+  }
+  .pdf-modal.is-open { display: flex; }
+  .pdf-modal__inner {
+    background: var(--surface-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    max-width: 420px;
+    width: 100%;
+    padding: 22px 22px 18px 22px;
+  }
+  .pdf-modal__title {
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .pdf-modal__body {
+    margin: 0 0 18px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--muted-color);
+  }
+  .pdf-modal__actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+  .pdf-modal__btn {
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background: var(--surface-bg);
+    color: var(--text-color);
+  }
+  .pdf-modal__btn--primary {
+    background: #000;
+    color: #fff;
+    border-color: var(--primary-color);
+  }
+  .pdf-modal__btn--primary:hover { background: #1a1a1a; }
+  @media print {
+    .pdf-modal { display: none !important; }
+  }
+  .pro-badge-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-style: normal;
+  }
+  .pro-badge-prefix {
+    font-size: 0.85em;
+    opacity: 0.5;
+    font-weight: 400;
+    font-style: normal;
+  }
+  .pro-badge {
+    display: inline-block;
+    border: 1px solid rgba(0, 0, 0, 0.025);
+    background: linear-gradient(to bottom right, #f9a8d4, #86efac, #fde047);
+    color: black;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.5rem;
+    font-weight: 700;
+    font-style: normal;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+  }
+  :global(.dark) .pro-badge,
+  :global([data-theme="dark"]) .pro-badge {
+    background: linear-gradient(to bottom right, #ec4899, #22c55e, #eab308);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+  .pro-only-label {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.85em;
+    opacity: 0.5;
+    font-weight: 400;
+    line-height: 1;
+  }
+  .pro-only-dash { display: inline-flex; align-items: center; line-height: 1; }
+  .pro-only-icon {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+  }
+  .pro-only-text { display: inline-flex; align-items: center; line-height: 1; }
+  .pdf-locked { display: block; }
+  .button-locked {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg,
+      var(--primary-color) 0%,
+      oklch(from var(--primary-color) calc(l - 0.1) calc(c + 0.05) calc(h - 60)) 100%);
+    border-radius: var(--button-radius);
+    padding: var(--button-padding-y) var(--button-padding-x);
+    font-size: var(--button-font-size);
+    line-height: 1;
+    color: var(--on-primary);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: normal;
+    border-color: rgba(0, 0, 0, 0.15);
+  }
+  .button-locked:active { transform: translateY(0); }
+  .lock-icon { font-size: 1em; flex-shrink: 0; position: relative; z-index: 1; }
+  .locked-title { position: relative; z-index: 1; }
+
+  @media (max-width: 768px) {
+    /* Left-aligned with the other three cells now that they stack. */
+    .meta-container-cell--pdf {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>

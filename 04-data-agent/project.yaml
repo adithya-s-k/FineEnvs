@@ -1,0 +1,43 @@
+name: data-agent
+title: Data Agent
+tagline: Three agent-loop implementations with exact-token training, fixed pass@1 evaluations, and local or HF Jobs
+  reproduction.
+order: 4
+status: trained
+hub:
+  org: HuggingEnvs
+  datasets:
+  - HuggingEnvs/data-agent
+  - HuggingEnvs/data-agent-harbor-train
+  - HuggingEnvs/data-agent-harbor-test
+  - HuggingEnvs/data-agent-harbor-eval
+envs:
+- name: blackbox-opencode
+  summary: Native OpenCode owns the sandbox agent loop; capture retains exact engine tokens, log probabilities and
+    loss masks.
+  backend: e2b / hf / daytona
+  tools: agent-owned
+  frameworks:
+    openenv:
+      transport: http-mcp
+      verified: true
+      space: HuggingEnvs/data-agent-blackbox-opencode-env
+- name: blackbox-harbor
+  summary: Harbor serves the fixed tasks through multiple harnesses, with exact capture for asynchronous training.
+  backend: Harbor / Daytona / E2B
+  tools: agent-owned
+  frameworks:
+    openenv:
+      transport: http-mcp
+      verified: true
+      space: HuggingEnvs/data-agent-blackbox-harbor-env
+- name: whitebox-bash
+  summary: TRL owns the synchronous bash/SETA tool loop; the frozen-task adapter preserves the shared grading contract.
+  backend: e2b / daytona
+  tools: bash, read, write, edit, grep, glob, ls, submit_solution
+  trainer: sync
+  frameworks:
+    openenv:
+      transport: http-mcp
+      verified: true
+      space: HuggingEnvs/data-agent-seta-whitebox-env

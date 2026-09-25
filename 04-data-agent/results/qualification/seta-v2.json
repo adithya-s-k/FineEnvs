@@ -1,0 +1,47 @@
+{
+  "id": "6aaa77a65527934177ee9c34",
+  "owner": "train-whitebox-1789556646",
+  "stage": "COMPLETED",
+  "status.json": {
+    "arm": "whitebox",
+    "phase": "smoke",
+    "started_at": 1789556698.284571,
+    "passed": true,
+    "finished_at": 1789558558.68511
+  },
+  "training_smoke_verified.json": {
+    "arm": "whitebox",
+    "passed": true,
+    "bundle_sha256": "8b02b40687414905830799a458bf253d3552f9a40860f9980c983fb4ededa45a",
+    "optimizer_steps": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "native_optimizer_state_verified": true,
+    "remote_restore_verified": true,
+    "tito_pass": true,
+    "weights_updated": true,
+    "nonzero_gradient_updates": 2
+  },
+  "trackio_verified.json": {
+    "passed": true,
+    "project": "daytona-whitebox-qwen35-2b-smoke",
+    "run": "train-whitebox-1789556646",
+    "local_database": "/workspace/repro/outputs/train-whitebox-1789556646/trackio/daytona-whitebox-qwen35-2b-smoke.db",
+    "mode": "offline",
+    "remote_storage": "run artifact bucket",
+    "native_remote_readback": false,
+    "updated_at": 1789558378.5921993,
+    "unique_events": 6
+  },
+  "upload_status.json": {
+    "last_success": 1789558531.14131,
+    "destination": "hf://buckets/HuggingEnvs/data-agent-daytona-artifacts/data-agent-reproduction-20260916/jobs/train-whitebox-1789556646",
+    "published_checkpoints": [
+      "checkpoint-2",
+      "checkpoint-4"
+    ]
+  }
+}

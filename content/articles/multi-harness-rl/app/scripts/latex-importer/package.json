@@ -1,0 +1,33 @@
+{
+    "name": "latex-to-mdx-toolkit",
+    "version": "2.0.0",
+    "description": "Complete LaTeX to MDX conversion toolkit with advanced references, interactive equations, and Astro components",
+    "type": "module",
+    "scripts": {
+        "convert": "node index.mjs",
+        "convert:clean": "node index.mjs --clean",
+        "convert:mdx": "node mdx-converter.mjs",
+        "clean:bib": "node bib-cleaner.mjs",
+        "postprocess": "node post-processor.mjs",
+        "postprocess:verbose": "node post-processor.mjs --verbose"
+    },
+    "dependencies": {
+        "unified": "^11.0.4",
+        "remark-parse": "^11.0.0",
+        "remark-mdx": "^3.0.0",
+        "remark-stringify": "^11.0.0"
+    },
+    "keywords": [
+        "latex",
+        "mdx",
+        "astro",
+        "katex",
+        "references",
+        "equations",
+        "pandoc",
+        "conversion",
+        "scientific-writing"
+    ],
+    "author": "LaTeX-to-MDX Toolkit",
+    "license": "MIT"
+}

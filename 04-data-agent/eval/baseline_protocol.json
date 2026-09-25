@@ -1,0 +1,102 @@
+{
+  "model": "Qwen/Qwen3.5-2B",
+  "model_revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+  "source_dataset": "HuggingEnvs/data-agent-harbor-test",
+  "split": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/dataset",
+  "harnesses": [
+    "opencode",
+    "claude-code",
+    "codex",
+    "mini-swe-agent"
+  ],
+  "pass_k": 1,
+  "concurrency": 100,
+  "tp": 1,
+  "dp": 2,
+  "serving_context": 131072,
+  "max_output_tokens": 4096,
+  "temperature": 0.8,
+  "top_p": 1.0,
+  "top_k": -1,
+  "agent_step_limit": 17,
+  "agent_timeout_s": 600,
+  "schema_version": 1,
+  "status": "completed",
+  "metric": "pass@1",
+  "completed_evaluations": 1000,
+  "unique_test_tasks": 250,
+  "date": "2026-09-14",
+  "dataset_revision": "291c8e50bfa7e34135090071ecaa0686bd99d06f",
+  "baseline_run": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914",
+  "baseline_job": 78215,
+  "cleanup_job": 78216,
+  "manifest_sha256": "c00e79efbe8157f1f20b614b0ad5f04923f51a5bd8fda69ed002e03a96fe27be",
+  "indices_sha256": "c95a768b09f910a2e1d2073c0e0d90edf85b8adade245e8c34b14eb615567316",
+  "correct": 146,
+  "average_pass_at_1": 0.146,
+  "harness_versions": {
+    "opencode": "1.18.31",
+    "claude-code": "2.1.270",
+    "codex": "0.154.0",
+    "mini-swe-agent": "2.4.6"
+  },
+  "scores": {
+    "opencode": {
+      "correct": 27,
+      "evaluations": 250,
+      "pass_at_1": 0.108
+    },
+    "claude-code": {
+      "correct": 42,
+      "evaluations": 250,
+      "pass_at_1": 0.168
+    },
+    "codex": {
+      "correct": 41,
+      "evaluations": 250,
+      "pass_at_1": 0.164
+    },
+    "mini-swe-agent": {
+      "correct": 36,
+      "evaluations": 250,
+      "pass_at_1": 0.144
+    }
+  },
+  "difficulty": {
+    "easy": {
+      "tasks": 33,
+      "correct": 53,
+      "evaluations": 132,
+      "pass_at_1": 0.4015151515151515
+    },
+    "medium": {
+      "tasks": 118,
+      "correct": 68,
+      "evaluations": 472,
+      "pass_at_1": 0.1440677966101695
+    },
+    "hard": {
+      "tasks": 99,
+      "correct": 25,
+      "evaluations": 396,
+      "pass_at_1": 0.06313131313131314
+    }
+  },
+  "tito": {
+    "passed": 1000,
+    "audited": 1000,
+    "eligible_supervised_tokens": 2721986,
+    "retained_supervised_tokens": 2721986,
+    "scope": "capture and TRL sequence builder; not optimizer consumption"
+  },
+  "evaluation": {
+    "concurrency": 100,
+    "server_concurrency": 100,
+    "sandbox_concurrency": 100,
+    "openenv_capacity": 128,
+    "reward_key": "correctness,reward",
+    "repeat": 1,
+    "max_retries": 3
+  },
+  "selection_policy": "first valid graded result per fixed task/harness cell; retry only ungraded failures"
+}

@@ -1,0 +1,140 @@
+{
+  "source": "HuggingEnvs/data-agent-harbor-train",
+  "url": "https://huggingface.co/datasets/HuggingEnvs/data-agent-harbor-train",
+  "visualiser": "https://huggingface.co/spaces/AdithyaSK/harbor-visualiser",
+  "example": "tasks/0000_324_324947_qa_1",
+  "suite": {
+    "tasks": 5000,
+    "schema_version": "2.0",
+    "splits": [
+      {
+        "name": "train",
+        "repo": "HuggingEnvs/data-agent-harbor-train",
+        "tasks": 5000,
+        "what": "training"
+      },
+      {
+        "name": "test",
+        "repo": "HuggingEnvs/data-agent-harbor-test",
+        "tasks": 250,
+        "what": "held out, skewed harder"
+      },
+      {
+        "name": "eval",
+        "repo": "HuggingEnvs/data-agent-harbor-eval",
+        "tasks": 144,
+        "what": "validation during training"
+      }
+    ],
+    "difficulty": [
+      {
+        "level": "L1",
+        "count": 1433,
+        "pct": 29,
+        "tier": "easy",
+        "what": "one-line filter or aggregation"
+      },
+      {
+        "level": "L2",
+        "count": 2256,
+        "pct": 45,
+        "tier": "medium",
+        "what": "filter, groupby, aggregate, a few turns"
+      },
+      {
+        "level": "L3",
+        "count": 589,
+        "pct": 12,
+        "tier": "medium",
+        "what": "multi-step pandas, joins, light feature work"
+      },
+      {
+        "level": "L4",
+        "count": 722,
+        "pct": 14,
+        "tier": "hard",
+        "what": "ML training, complex stats, non-trivial pipelines"
+      },
+      {
+        "level": "L5",
+        "count": 0,
+        "pct": 0,
+        "tier": "hard",
+        "what": "held back entirely for the test split"
+      }
+    ],
+    "reward_modes": [
+      {
+        "mode": "numeric",
+        "count": 2906,
+        "what": "compared with atol and rtol"
+      },
+      {
+        "mode": "exact_short",
+        "count": 1409,
+        "what": "one short string, matched exactly"
+      },
+      {
+        "mode": "list",
+        "count": 367,
+        "what": "normalised for order and spacing"
+      },
+      {
+        "mode": "flexible",
+        "count": 152,
+        "what": "normalised free-ish text"
+      },
+      {
+        "mode": "exact_bool",
+        "count": 127,
+        "what": "yes or no"
+      },
+      {
+        "mode": "list_csv",
+        "count": 39,
+        "what": "comma separated list"
+      }
+    ]
+  },
+  "files": [
+    {
+      "path": "task.toml",
+      "role": "the spec",
+      "detail": "task name and description, metadata including the gold answer and difficulty, the environment shape, the verifier, and the agent timeout"
+    },
+    {
+      "path": "instruction.md",
+      "role": "the prompt",
+      "detail": "exactly what the agent is shown, including where its files live and how to format an answer"
+    },
+    {
+      "path": "environment/Dockerfile",
+      "role": "the image",
+      "detail": "what the sandbox is built from"
+    },
+    {
+      "path": "environment/pull_bucket.py",
+      "role": "a pre-agent hook",
+      "detail": "run by the healthcheck after the container starts and before the agent does, to pull this task's data in"
+    },
+    {
+      "path": "tests/test.sh",
+      "role": "the verifier entrypoint",
+      "detail": "reads the agent's answer, and with no answer writes 0.0 and exits cleanly rather than failing"
+    },
+    {
+      "path": "tests/grader.py",
+      "role": "the reward",
+      "detail": "exact match, then numeric tolerance, then list and percent normalisation, then symbolic comparison, printing a single float. No LLM judge anywhere in it"
+    }
+  ],
+  "reward_path": [
+    "the agent writes /workdir/answer.txt",
+    "test.sh reads it, or writes 0.0 if it is missing",
+    "grader.py prints one float",
+    "the float lands in /logs/verifier/reward.txt",
+    "Harbor reads that file and returns it with the trial"
+  ],
+  "flat": "https://huggingface.co/datasets/HuggingEnvs/data-agent",
+  "collection": "https://huggingface.co/collections/HuggingEnvs/data-agent"
+}

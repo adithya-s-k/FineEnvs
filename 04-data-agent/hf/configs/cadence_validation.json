@@ -1,0 +1,87 @@
+{
+  "historical_record": true,
+  "usage": "Dated experiment evidence; active reproduction settings are in deployment.json.",
+  "scope": "Real launcher commands and controller scheduling logic, using synthetic step metadata; no claim of 100 GPU optimizer updates",
+  "passed": true,
+  "main": {
+    "save_steps": 50,
+    "eval_steps": 100,
+    "simulated_saved_steps": [
+      50,
+      100,
+      150,
+      200
+    ],
+    "selected_evals": [
+      100,
+      200
+    ]
+  },
+  "short": {
+    "save_steps": 2,
+    "eval_step": 4,
+    "step2_triggers_eval": false,
+    "step4_triggers_eval": true
+  },
+  "training_commands": {
+    "opencode/smoke": {
+      "save_steps": 2
+    },
+    "opencode/long": {
+      "save_steps": 50
+    },
+    "whitebox/smoke": {
+      "save_steps": 2
+    },
+    "whitebox/long": {
+      "save_steps": 50
+    }
+  },
+  "independent_evaluation_allocations": true,
+  "live_short_validation": {
+    "opencode_optimizer_job": "80593",
+    "opencode_eval_controller": "80594",
+    "opencode_checkpoint4_eval": "80603",
+    "whitebox_local_optimizer_job": "80555",
+    "whitebox_hf_optimizer_job": "6aa9a487f76d6a098a70e3d2",
+    "whitebox_hf_eval_controller": "80567",
+    "whitebox_local_eval_controller": "80572",
+    "whitebox_local_checkpoint4_eval": "80576",
+    "whitebox_hf_checkpoint4_eval": "6aa9af55f76d6a098a70e52d"
+  },
+  "live_evaluation_validation_complete": true,
+  "long_training_submitted": true,
+  "live_short_validation_results": {
+    "opencode": "passed: corrected optimizer80593, controller80594, checkpoint4eval80603; 8/8 TiTO and version checks, zero owned sandboxes remain",
+    "whitebox_local": "passed: optimizer80555, controller80572, checkpoint4eval80576; 2/2 TiTO, zero owned sandboxes remain",
+    "whitebox_hf": "passed: optimizer6aa9a487f76d6a098a70e3d2; four updates, three nonzero-gradient, native state/remote restore/TiTO/changed weights verified. Independent A100 checkpoint4 eval6aa9af55f76d6a098a70e52d completed 250/250, 52 correct, all TiTO at concurrency50."
+  },
+  "local_live_evaluation_validation_complete": true,
+  "launch_validation": {
+    "focused_tests_passed": 15,
+    "dry_run_never_allocates_jobs": true,
+    "hf_main_readonly_preview_job": "80585",
+    "after_checkpoint_controller": "80567",
+    "controller_walltime_main": "36:00:00",
+    "hf_late_score_replay_job": "80586",
+    "late_logging_failure_boundary_tests_passed": 2,
+    "late_logging_live_validation": "passed: CPU80586 replayed checkpoint4 into finished smoke Trackio and proved idempotence; 7 events"
+  },
+  "hf_optimizer_validation_complete": true,
+  "main_launches": {
+    "authorized_after_qualification": true,
+    "opencode": {
+      "trainer": "80626",
+      "controller": "80627"
+    },
+    "whitebox": {
+      "trainer": "6aa9b6c9f76d6a098a70e786",
+      "controller": "80605"
+    }
+  },
+  "main_live_cadence_evidence": {
+    "opencode_checkpoint50_saved_and_published": true,
+    "original_checkpoint700_eval_job": "80641",
+    "note": "Main comparison step100 evaluation is still future work; short end-to-end cadence qualifications passed."
+  }
+}

@@ -1,0 +1,253 @@
+<div class="who-drives" style="width:100%;margin:14px 0;"></div>
+<style>
+  .who-drives { position: relative; }
+  .who-drives svg { display:block; width:100%; height:auto; overflow:visible; }
+  .who-drives .wd-pick { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .who-drives .wd-btn { appearance:none; cursor:pointer; font:inherit; font-size:12px; line-height:1;
+    padding:7px 13px; border-radius:999px; border:1px solid var(--border-color);
+    background:transparent; color:var(--muted-color); transition:color .15s, border-color .15s; }
+  .who-drives .wd-btn:hover { color:var(--text-color); }
+  .who-drives .wd-btn[aria-pressed="true"] { color:var(--text-color); border-color:var(--text-color); font-weight:600; }
+  .who-drives .wd-btn:focus-visible { outline:2px solid var(--text-color); outline-offset:2px; }
+  .who-drives .wd-score { display:flex; flex-wrap:wrap; gap:8px 22px; margin-top:12px; }
+  .who-drives .wd-stat { display:flex; flex-direction:column; gap:2px; }
+  .who-drives .wd-stat b { font-size:17px; font-weight:700; color:var(--text-color);
+    font-variant-numeric:tabular-nums; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .who-drives .wd-stat span { font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted-color); }
+  .who-drives .wd-lg { display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .who-drives .wd-lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .who-drives .wd-k { display:inline-flex; align-items:center; gap:7px; }
+  .who-drives .wd-sw { width:14px; height:3px; border-radius:2px; }
+  .who-drives .wd-dash { background:none; height:0; border-top:2.5px dashed currentColor; }
+  .who-drives .wd-nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'who-drives';
+    const boot = () => {
+      const nodes = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = nodes[nodes.length-1]; if (!r) return; r.dataset.mounted = 'true';
+
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+      // Both modes run the same task. What changes is who makes each call, and
+      // therefore how much of the episode the trainer is present for.
+      // `by` is the actor that initiated; `sees` is whether the trainer observes it.
+      const MODES = {
+        white: {
+          label: 'White box',
+          tag: 'THE TRAINER DRIVES IT',
+          actors: [
+            { id:'model',   label:'model', short:'model' },
+            { id:'trainer', label:'trainer', short:'trainer' },
+            { id:'env',     label:'environment', short:'env' },
+          ],
+          msgs: [
+            { from:'trainer', to:'model',   text:'sample(prompt)',        by:'trainer', sees:true,  init:true },
+            { from:'model',   to:'trainer', text:'tokens + logprobs',     by:'model',   sees:true },
+            { from:'trainer', to:'env',     text:'step(action)',          by:'trainer', sees:true,  init:true },
+            { from:'env',     to:'trainer', text:'observation',           by:'env',     sees:true },
+            { from:'trainer', to:'model',   text:'sample(prompt + obs)',  by:'trainer', sees:true,  init:true },
+            { from:'model',   to:'trainer', text:'tokens + logprobs',     by:'model',   sees:true },
+            { from:'trainer', to:'env',     text:'step(action)',          by:'trainer', sees:true,  init:true },
+            { from:'env',     to:'trainer', text:'observation + reward',  by:'env',     sees:true },
+          ],
+        },
+        black: {
+          label: 'Black box',
+          tag: 'THE AGENT DRIVES IT',
+          actors: [
+            { id:'model',   label:'model', short:'model' },
+            { id:'trainer', label:'trainer + proxy', short:'trainer' },
+            { id:'harness', label:'harness', short:'harness' },
+            { id:'sandbox', label:'sandbox', short:'sandbox' },
+          ],
+          msgs: [
+            { from:'harness', to:'sandbox', text:'run tool',              by:'harness', sees:false, init:true },
+            { from:'sandbox', to:'harness', text:'stdout',                by:'sandbox', sees:false },
+            { from:'harness', to:'harness', text:'build context',         by:'harness', sees:false, init:true },
+            { from:'harness', to:'trainer', text:'POST /chat/completions',by:'harness', sees:true,  init:true },
+            { from:'trainer', to:'model',   text:'forward, ids on',       by:'trainer', sees:true  },
+            { from:'model',   to:'trainer', text:'tokens + logprobs',     by:'model',   sees:true  },
+            { from:'trainer', to:'harness', text:'completion',            by:'trainer', sees:true  },
+            { from:'harness', to:'sandbox', text:'run tool',              by:'harness', sees:false, init:true },
+            { from:'sandbox', to:'harness', text:'stdout',                by:'sandbox', sees:false },
+            { from:'harness', to:'harness', text:'compact history',       by:'harness', sees:false, init:true },
+            { from:'harness', to:'trainer', text:'POST /chat/completions',by:'harness', sees:true,  init:true },
+            { from:'trainer', to:'model',   text:'forward, ids on',       by:'trainer', sees:true  },
+            { from:'model',   to:'trainer', text:'tokens + logprobs',     by:'model',   sees:true  },
+            { from:'trainer', to:'harness', text:'completion',            by:'trainer', sees:true  },
+            { from:'harness', to:'harness', text:'decide: stop',          by:'harness', sees:false, init:true },
+          ],
+        },
+      };
+
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let mode = 'white', shown = 0, timer = 0, io = null, visible = true;
+
+      const actorColor = (m, id) => {
+        const i = MODES[m].actors.findIndex(a => a.id === id);
+        return [P(1), P(0), P(3), P(2)][i] || P(0);
+      };
+
+      const draw = () => {
+        const M = MODES[mode];
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const mono = 'ui-monospace,SFMono-Regular,Menlo,monospace';
+
+        // Narrow trims the rail and abbreviates the actor names; at 390px the full
+        // words overflow their boxes and collide with the rail heading.
+        const narrow = W < 560;
+        const railW = narrow ? 42 : 74;         // right rail: does the trainer see it
+        const padL = 8, padR = 8;
+        const laneL = padL, laneR = W - padR - railW;
+        const n = M.actors.length;
+        const colGap = (laneR - laneL) / n;
+        const cx = (id) => {
+          const i = M.actors.findIndex(a => a.id === id);
+          return Math.round(laneL + colGap*(i + 0.5));
+        };
+
+        const headY = 30, rowH = M.msgs.length > 12 ? 29 : 34, top = headY + 26;
+        const H = top + M.msgs.length*rowH + 26;
+
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${mode === 'white'
+          ? 'White box: the trainer initiates every call, and observes all eight events.'
+          : 'Black box: the harness initiates every call, and the trainer observes only four of eleven events.'}">`;
+        s += `<defs>`;
+        for (const a of M.actors) {
+          const c = actorColor(mode, a.id);
+          s += `<marker id="wd-${mode}-${a.id}" markerWidth="8" markerHeight="8" refX="7" refY="3.4" orient="auto">`
+             + `<path d="M0,0 L8,3.4 L0,6.8 z" fill="${c}"/></marker>`;
+          s += `<marker id="wd-${mode}-${a.id}-m" markerWidth="8" markerHeight="8" refX="7" refY="3.4" orient="auto">`
+             + `<path d="M0,0 L8,3.4 L0,6.8 z" fill="${mu}" fill-opacity=".55"/></marker>`;
+        }
+        s += `</defs>`;
+
+        // actor headers and lifelines
+        M.actors.forEach(a => {
+          const x = cx(a.id), c = actorColor(mode, a.id);
+          const w = Math.min(colGap - (narrow ? 8 : 14), 132);
+          const nm = narrow && a.short ? a.short : a.label;
+          s += `<rect x="${x-w/2}" y="${headY-17}" width="${w}" height="26" rx="7" fill="${sf}" stroke="${c}"/>`;
+          s += `<text x="${x}" y="${headY}" text-anchor="middle" font-size="${narrow?10.5:12}" font-weight="600" fill="${tx}">${esc(nm)}</text>`;
+          s += `<line x1="${x}" y1="${headY+13}" x2="${x}" y2="${H-16}" stroke="${bd}" stroke-dasharray="2 4"/>`;
+        });
+
+        // right rail header
+        s += `<text x="${W-padR}" y="${headY}" text-anchor="end" font-size="10" fill="${mu}" font-family="${mono}" letter-spacing=".5">${narrow ? 'SEEN' : 'TRAINER SEES'}</text>`;
+        s += `<line x1="${laneR+12}" y1="${headY+13}" x2="${laneR+12}" y2="${H-16}" stroke="${bd}"/>`;
+
+        // messages, revealed in order
+        M.msgs.forEach((m, i) => {
+          if (i >= shown) return;
+          const y = top + i*rowH + rowH/2;
+          const c = actorColor(mode, m.by);
+          const dim = !m.sees;
+          const stroke = c;
+          const op = dim ? 0.55 : 1;
+          const mk = `wd-${mode}-${m.by}`;
+          const isNew = i === shown-1;
+
+          if (m.from === m.to) {
+            // a self call: the harness doing work nobody outside asked for
+            const x = cx(m.from);
+            s += `<path d="M ${x} ${y-9} h 22 a 9 9 0 0 1 0 18 h ${-22+7}" fill="none" stroke="${stroke}" stroke-opacity="${op}"
+                   stroke-width="1.6" stroke-dasharray="${dim?'5 4':''}" marker-end="url(#${mk})"/>`;
+            s += `<circle cx="${x}" cy="${y-9}" r="3.6" fill="${stroke}" fill-opacity="${op}"/>`;
+            s += `<text x="${x+44}" y="${y+4}" font-size="${narrow?10:11.5}" fill="${dim?mu:tx}" fill-opacity="${op}">${esc(m.text)}</text>`;
+          } else {
+            const x1 = cx(m.from), x2 = cx(m.to);
+            const dir = x2 > x1 ? 1 : -1;
+            s += `<line x1="${x1}" y1="${y}" x2="${x2 - dir*7}" y2="${y}" stroke="${stroke}" stroke-opacity="${op}"
+                   stroke-width="1.6" stroke-dasharray="${dim?'5 4':''}" marker-end="url(#${mk})"/>`;
+            // a filled dot marks who initiated, at the tail
+            s += `<circle cx="${x1}" cy="${y}" r="3.6" fill="${stroke}" fill-opacity="${op}"/>`;
+            s += `<text x="${(x1+x2)/2}" y="${y-7}" text-anchor="middle" font-size="${narrow?10:11.5}"
+                   fill="${dim?mu:tx}" fill-opacity="${op}">${esc(m.text)}</text>`;
+          }
+          if (isNew && !reduce) {
+            const hx = m.from === m.to ? cx(m.from) : cx(m.from);
+            s += `<circle cx="${hx}" cy="${y}" r="9" fill="none" stroke="${stroke}" stroke-opacity=".35"/>`;
+          }
+
+          // rail marker
+          const rx = laneR + (narrow ? 16 : 34);
+          if (m.sees) {
+            s += `<rect x="${rx}" y="${y-6}" width="12" height="12" rx="3" fill="${P(0)}"/>`;
+          } else {
+            s += `<rect x="${rx}" y="${y-6}" width="12" height="12" rx="3" fill="none" stroke="${mu}" stroke-opacity=".6" stroke-dasharray="2 2"/>`;
+          }
+        });
+
+        s += '</svg>';
+
+        const seen = M.msgs.filter(m => m.sees).length;
+        const exchanges = M.msgs.filter(m => m.init).length;
+        const byTrainer = M.msgs.filter(m => m.init && m.by === 'trainer').length;
+        const score = `<div class="wd-score">
+          <span class="wd-stat"><b>${byTrainer}/${exchanges}</b><span>exchanges the trainer starts</span></span>
+          <span class="wd-stat"><b>${seen}/${M.msgs.length}</b><span>events the trainer observes</span></span>
+          <span class="wd-stat"><b>${M.tag}</b><span>who owns the loop</span></span>
+        </div>`;
+
+        const legend = `<div class="wd-lg"><span class="wd-lg-t">Arrow colour is whoever made the call</span>` +
+          M.actors.map(a => `<span class="wd-k"><span class="wd-sw" style="background:${actorColor(mode,a.id)}"></span>${esc(a.label)}</span>`).join('') +
+          `<span class="wd-k"><span class="wd-sw wd-dash" style="color:${mu}"></span>dashed: the trainer is not there</span></div>`;
+
+        const note = mode === 'white'
+          ? `<div class="wd-nt">Every arrow starts or ends at the trainer, because the trainer is the one calling. It asks the model for an action, hands that action to the environment, reads the observation back, and decides whether to go again. Nothing happens that it did not ask for, so the full episode is in its hands by construction.</div>`
+          : `<div class="wd-nt">Now read the tails of the arrows. Not one exchange begins at the trainer. The harness runs tools, assembles context and decides when to stop, entirely on its own, and the trainer is woken only when a completion is needed. Note where the trainer now sits: in the wire between the harness and the model, which is the only reason it can see token ids at all. It is a service being called, not a driver, and most of the episode happens while it is not looking.</div>`;
+
+        r.innerHTML =
+          `<div class="wd-pick" role="group" aria-label="Choose an architecture">` +
+          Object.keys(MODES).map(k =>
+            `<button type="button" class="wd-btn" data-mode="${k}" aria-pressed="${k===mode}">${MODES[k].label}</button>`
+          ).join('') + `</div>` + s + score + legend + note;
+
+        r.querySelectorAll('.wd-btn').forEach(b => b.addEventListener('click', () => {
+          if (b.dataset.mode === mode) return;
+          mode = b.dataset.mode; shown = reduce ? MODES[mode].msgs.length : 0;
+          restart();
+        }));
+      };
+
+      const tick = () => {
+        if (visible && shown < MODES[mode].msgs.length) { shown++; draw(); }
+        else if (visible && shown >= MODES[mode].msgs.length) {
+          // hold on the finished sequence, then replay
+          clearInterval(timer); timer = 0;
+          setTimeout(() => { if (!timer) { shown = 0; restart(); } }, 2600);
+        }
+      };
+      const restart = () => {
+        clearInterval(timer); timer = 0;
+        draw();
+        if (!reduce) timer = setInterval(tick, 620);
+      };
+
+      if (reduce) { shown = MODES[mode].msgs.length; draw(); }
+      else restart();
+
+      if ('IntersectionObserver' in window && !reduce) {
+        io = new IntersectionObserver((es) => { visible = es.some(e => e.isIntersecting); },
+          { rootMargin:'80px' }); io.observe(r);
+      }
+      if ('ResizeObserver' in window) {
+        let t; new ResizeObserver(() => { clearTimeout(t); t = setTimeout(draw, 120); }).observe(r);
+      } else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

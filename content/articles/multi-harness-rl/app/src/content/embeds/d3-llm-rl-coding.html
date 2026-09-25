@@ -1,0 +1,707 @@
+<!-- Carried over from The ultimate guide to RL environments, unchanged, so the two
+     articles share one visual vocabulary. Source: content/articles/rl-environments-guide/
+     app/src/content/embeds/d3-llm-rl-coding.html -->
+<div class="d3-llm-rl" style="width:100%;margin:14px 0;"></div>
+<style>
+  .d3-llm-rl {
+    position: relative;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--surface-bg);
+    overflow: hidden;
+  }
+  .d3-llm-rl__header {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 12px 16px; padding: 14px 18px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .d3-llm-rl__title {
+    font-size: 11px; font-weight: 800; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--muted-color);
+    margin-right: auto;
+  }
+  .d3-llm-rl__btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 7px;
+    border: 1px solid var(--border-color);
+    background: var(--surface-bg); color: var(--text-color);
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: border-color .12s ease, background .12s ease;
+  }
+  .d3-llm-rl__btn:hover { border-color: var(--primary-color); }
+  .d3-llm-rl__btn.primary {
+    border-color: var(--primary-color);
+    background: color-mix(in oklab, var(--primary-color) 12%, var(--surface-bg));
+  }
+  .d3-llm-rl__btn svg { width: 12px; height: 12px; }
+  .d3-llm-rl__speed {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; color: var(--muted-color);
+  }
+  .d3-llm-rl__speed input[type=range] {
+    width: 110px; accent-color: var(--primary-color);
+  }
+  .d3-llm-rl__speed-val {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--text-color); font-size: 11px;
+    min-width: 38px; text-align: right;
+  }
+
+  /* ─── Body: agent on top, bus, environment below ─── */
+  .d3-llm-rl__body {
+    display: flex;
+    flex-direction: column;
+    padding: 18px 18px 16px 18px;
+    background: color-mix(in oklab, var(--muted-color) 3%, transparent);
+  }
+
+  .d3-llm-rl__zone {
+    position: relative;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 18px 16px 14px 16px;
+    background: var(--surface-bg);
+    transition: box-shadow .25s ease, border-color .25s ease;
+    min-width: 0;
+  }
+  /* Agent zone in top-bottom layout = horizontal strip with 3 sections */
+  .d3-llm-rl__zone--agent {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) minmax(160px, 1.2fr) minmax(220px, 1.2fr);
+    gap: 16px;
+    align-items: stretch;
+  }
+  @media (max-width: 720px) {
+    .d3-llm-rl__zone--agent { grid-template-columns: 1fr; }
+  }
+  .d3-llm-rl__agent-section {
+    display: flex; flex-direction: column; gap: 6px;
+    min-width: 0;
+  }
+  .d3-llm-rl__agent-section + .d3-llm-rl__agent-section {
+    padding-left: 16px;
+    border-left: 1px dashed var(--border-color);
+  }
+  @media (max-width: 720px) {
+    .d3-llm-rl__agent-section + .d3-llm-rl__agent-section {
+      padding-left: 0; padding-top: 12px; border-left: none;
+      border-top: 1px dashed var(--border-color);
+    }
+  }
+  .d3-llm-rl__section-label {
+    font-size: 9.5px; font-weight: 800; letter-spacing: 0.8px;
+    text-transform: uppercase; color: var(--muted-color);
+  }
+  /* Environment zone — keep as block with internal stacking */
+  .d3-llm-rl__zone--env {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .d3-llm-rl__zone-label {
+    position: absolute;
+    top: -9px; left: 12px;
+    padding: 1px 8px;
+    background: var(--surface-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 9.5px; font-weight: 800; letter-spacing: 1.0px;
+    text-transform: uppercase; color: var(--muted-color);
+  }
+  .d3-llm-rl__zone--agent.flash {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary-color) 22%, transparent);
+  }
+
+  .d3-llm-rl__policy {
+    background: color-mix(in oklab, var(--muted-color) 7%, transparent);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px; line-height: 1.45; color: var(--text-color);
+  }
+  .d3-llm-rl__policy-line + .d3-llm-rl__policy-line { margin-top: 2px; }
+  .d3-llm-rl__policy-comment { color: var(--muted-color); font-size: 10.5px; }
+
+  .d3-llm-rl__action-row {
+    font-size: 11px; color: var(--muted-color);
+  }
+  .d3-llm-rl__action-row .label {
+    display: block; margin-bottom: 4px;
+  }
+  .d3-llm-rl__action-tag {
+    display: inline-flex; align-items: center;
+    padding: 3px 9px; border-radius: 999px;
+    max-width: 100%; min-width: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10.5px; font-weight: 700;
+    background: color-mix(in oklab, var(--primary-color) 16%, transparent);
+    color: var(--primary-color);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .d3-llm-rl__counters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 14px;
+    font-size: 11px;
+  }
+  .d3-llm-rl__counter {
+    display: flex; justify-content: space-between; color: var(--muted-color);
+  }
+  .d3-llm-rl__counter strong {
+    color: var(--text-color);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-weight: 600;
+  }
+
+  /* Bus — horizontal strip between agent (top) and env (bottom).
+     Uses HTML for labels (no text stretching) and inline SVG only for the arrow shafts. */
+  .d3-llm-rl__bus {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 64px;
+    padding: 8px 0;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .d3-llm-rl__bus-arrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted-color);
+    transition: color .15s ease;
+  }
+  .d3-llm-rl__bus-arrow.is-action {}
+  .d3-llm-rl__bus-arrow svg {
+    width: 18px;
+    height: 40px;
+    flex-shrink: 0;
+  }
+  .d3-llm-rl__bus-arrow .label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--muted-color);
+    white-space: nowrap;
+  }
+
+  /* Environment zone with rollouts */
+  .d3-llm-rl__zone--env { padding: 18px 14px 14px 14px; }
+  .d3-llm-rl__task {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    background: color-mix(in oklab, var(--primary-color) 6%, transparent);
+    border: 1px solid color-mix(in oklab, var(--primary-color) 18%, var(--border-color));
+  }
+  .d3-llm-rl__task-label {
+    font-size: 10px; font-weight: 800; letter-spacing: 1.0px;
+    text-transform: uppercase; color: var(--primary-color);
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .d3-llm-rl__task-text { font-size: 12.5px; line-height: 1.5; color: var(--text-color); }
+  .d3-llm-rl__task-text code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11.5px;
+    padding: 1px 5px;
+    background: color-mix(in oklab, var(--muted-color) 12%, transparent);
+    border-radius: 4px;
+  }
+
+  .d3-llm-rl__rollouts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(160px, 0.85fr);
+    gap: 10px;
+    margin-top: 10px;
+  }
+  @media (max-width: 880px) { .d3-llm-rl__rollouts { grid-template-columns: 1fr; } }
+
+  .d3-llm-rl__rollout {
+    padding: 10px 11px 9px 11px;
+    display: flex; flex-direction: column;
+    min-height: 260px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    min-width: 0;
+  }
+
+  .d3-llm-rl__rollout-header {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; font-weight: 800; letter-spacing: 1.0px;
+    text-transform: uppercase; color: var(--muted-color);
+    margin-bottom: 10px;
+  }
+  .d3-llm-rl__progress { display: inline-flex; gap: 3px; }
+  .d3-llm-rl__progress span {
+    width: 10px; height: 3px; border-radius: 2px;
+    background: color-mix(in oklab, var(--muted-color) 30%, transparent);
+    transition: background .25s ease;
+  }
+  .d3-llm-rl__progress span.done {
+    background: var(--ro-accent, var(--primary-color));
+  }
+
+  .d3-llm-rl__steps { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; }
+
+  .d3-llm-rl__step {
+    opacity: 0; transform: translateY(4px);
+    transition: opacity .3s ease, transform .3s ease;
+    font-size: 11px; line-height: 1.45;
+  }
+  .d3-llm-rl__step.visible { opacity: 1; transform: translateY(0); }
+
+  .d3-llm-rl__step--assistant { color: var(--text-color); }
+  .d3-llm-rl__step--assistant::before { content: '🤖 '; opacity: 0.7; margin-right: 4px; }
+  .d3-llm-rl__step--assistant em { font-style: italic; opacity: 0.85; }
+
+  .d3-llm-rl__step--tool {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10px;
+    background: color-mix(in oklab, var(--muted-color) 8%, transparent);
+    border-left: 2px solid var(--ro-accent, var(--primary-color));
+    padding: 4px 8px;
+    border-radius: 0 4px 4px 0;
+    color: var(--text-color);
+    word-break: break-word;
+  }
+  .d3-llm-rl__step--tool .label {
+    font-size: 8.5px; font-weight: 800; letter-spacing: 0.8px;
+    text-transform: uppercase; color: var(--muted-color); margin-right: 6px;
+  }
+
+  .d3-llm-rl__step--response {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 9.5px;
+    color: var(--muted-color);
+    padding: 0 0 0 9px;
+    white-space: pre-wrap;
+    border-left: 1px dashed var(--border-color);
+    margin-left: 4px;
+  }
+
+  .d3-llm-rl__step--submit {
+    background: color-mix(in oklab, var(--primary-color) 12%, transparent);
+    border: 1px solid var(--ro-accent, var(--primary-color));
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 11px;
+    color: var(--text-color);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .d3-llm-rl__step--submit::before { content: '🎯 '; opacity: 0.8; margin-right: 4px; }
+  .d3-llm-rl__step--submit code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-weight: 700;
+    font-size: 0.86em;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: color-mix(in oklab, var(--ro-accent, var(--primary-color)) 18%, transparent);
+    color: var(--text-color);
+    white-space: nowrap;
+  }
+
+  .d3-llm-rl__reward {
+    margin-top: auto; padding-top: 10px;
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+    font-size: 10.5px;
+    opacity: 0; transition: opacity .4s ease;
+  }
+  .d3-llm-rl__reward.visible { opacity: 1; }
+  .d3-llm-rl__reward-chip {
+    display: inline-flex; align-items: center;
+    padding: 3px 9px; border-radius: 999px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10.5px; font-weight: 800;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .d3-llm-rl__reward-chip.ok {
+    background: color-mix(in oklab, #22c55e 16%, transparent);
+    color: #22c55e;
+  }
+  .d3-llm-rl__reward-chip.no {
+    background: color-mix(in oklab, #ef4444 16%, transparent);
+    color: #ef4444;
+  }
+  .d3-llm-rl__reward-meta { color: var(--muted-color); font-style: italic; }
+
+  .d3-llm-rl__caption {
+    padding: 10px 18px;
+    border-top: 1px solid var(--border-color);
+    font-size: 11.5px; color: var(--muted-color); font-style: italic;
+  }
+  .d3-llm-rl__caption strong { color: var(--text-color); font-style: normal; }
+</style>
+<script>
+  (() => {
+    const bootstrap = () => {
+      const scriptEl = document.currentScript;
+      let container = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(container && container.classList && container.classList.contains('d3-llm-rl'))) {
+        const cands = Array.from(document.querySelectorAll('.d3-llm-rl'))
+          .filter(el => !(el.dataset && el.dataset.mounted === 'true'));
+        container = cands[cands.length - 1] || null;
+      }
+      if (!container || (container.dataset && container.dataset.mounted === 'true')) return;
+      container.dataset.mounted = 'true';
+
+      const TASK = `Find the <code>.py</code> file with the most lines in the current directory.`;
+
+      // Three illustrative rollouts of the same prompt: one methodical success, one
+      // failure that guesses from filenames, and one that finds the right file but
+      // submits it in a form the grader does not accept. A real training loop samples
+      // more, but three is what it takes to show reward varying within a group, which
+      // is the whole basis of the advantage GRPO computes.
+      const ROLLOUTS = [
+        {
+          accent: '#3b82f6',
+          steps: [
+            { type: 'assistant', text: '<em>List the Python files first.</em>' },
+            { type: 'tool',      text: '$ ls *.py',                                 toolCall: 'ls *.py' },
+            { type: 'response',  text: 'data.py  model.py  train.py' },
+            { type: 'assistant', text: '<em>Now count lines.</em>' },
+            { type: 'tool',      text: '$ wc -l *.py',                              toolCall: 'wc -l *.py' },
+            { type: 'response',  text: '  30 data.py\n 150 model.py\n  42 train.py\n 222 total' },
+            { type: 'submit',    text: 'final_answer(<code>"model.py"</code>)' }
+          ],
+          reward: 1.0,
+          rewardNote: 'matched expected'
+        },
+        {
+          accent: '#ec4899',
+          steps: [
+            { type: 'assistant', text: '<em>Quick peek at the directory.</em>' },
+            { type: 'tool',      text: '$ ls -la',                                  toolCall: 'ls -la' },
+            { type: 'response',  text: '-rw-r--r--  data.py\n-rw-r--r--  model.py\n-rw-r--r--  train.py' },
+            { type: 'assistant', text: '<em>train.py sounds like the longest.</em>' },
+            { type: 'submit',    text: 'final_answer(<code>"train.py"</code>)' }
+          ],
+          reward: 0.0,
+          rewardNote: 'wrong file'
+        },
+        {
+          accent: '#4ea5b7',
+          steps: [
+            { type: 'assistant', text: '<em>Sort every Python file by length.</em>' },
+            { type: 'tool',      text: '$ wc -l *.py | sort -rn',                   toolCall: 'wc -l *.py | sort -rn' },
+            { type: 'response',  text: ' 222 total\n 150 model.py\n  42 train.py\n  30 data.py' },
+            { type: 'assistant', text: '<em>model.py, at 150 lines.</em>' },
+            { type: 'submit',    text: 'final_answer(<code>"model.py (150 lines)"</code>)' }
+          ],
+          reward: 0.0,
+          rewardNote: 'right file, wrong format'
+        }
+      ];
+
+      const realRolloutsHtml = ROLLOUTS.map((r, i) => `
+        <div class="d3-llm-rl__rollout" style="--ro-accent:${r.accent};" data-ro="${i}">
+          <div class="d3-llm-rl__rollout-header">
+            <span>Rollout ${i + 1}</span>
+            <span class="d3-llm-rl__progress" data-progress>
+              ${r.steps.map(() => '<span></span>').join('')}
+            </span>
+          </div>
+          <div class="d3-llm-rl__steps" data-steps>
+            ${r.steps.map((s) => {
+              if (s.type === 'tool') {
+                return `<div class="d3-llm-rl__step d3-llm-rl__step--tool"><span class="label">bash</span>${s.text.replace(/^\$\s*/, '')}</div>`;
+              } else if (s.type === 'response') {
+                return `<div class="d3-llm-rl__step d3-llm-rl__step--response">${s.text}</div>`;
+              } else if (s.type === 'submit') {
+                return `<div class="d3-llm-rl__step d3-llm-rl__step--submit">${s.text}</div>`;
+              }
+              return `<div class="d3-llm-rl__step d3-llm-rl__step--assistant">${s.text}</div>`;
+            }).join('')}
+          </div>
+          <div class="d3-llm-rl__reward" data-reward>
+            <span class="d3-llm-rl__reward-chip ${r.reward > 0 ? 'ok' : 'no'}">reward ${r.reward.toFixed(1)}</span>
+            <span class="d3-llm-rl__reward-meta">${r.rewardNote}</span>
+          </div>
+        </div>
+      `).join('');
+
+      const rolloutsHtml = realRolloutsHtml;
+
+      container.innerHTML = `
+        <div class="d3-llm-rl__header">
+          <div class="d3-llm-rl__title">LLM RL · multi-rollout</div>
+          <button type="button" class="d3-llm-rl__btn primary" data-act="play">
+            <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg>
+            <span data-label>Play</span>
+          </button>
+          <button type="button" class="d3-llm-rl__btn" data-act="reset">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/><path d="M21 3v5h-5"/>
+            </svg>
+            <span>Reset</span>
+          </button>
+          <label class="d3-llm-rl__speed">
+            Speed
+            <input type="range" min="0.25" max="2" step="0.25" value="1" data-act="speed">
+            <span class="d3-llm-rl__speed-val" data-speed-val>1.00×</span>
+          </label>
+        </div>
+
+        <div class="d3-llm-rl__body">
+          <div class="d3-llm-rl__zone d3-llm-rl__zone--agent" data-agent>
+            <span class="d3-llm-rl__zone-label">Agent · LLM</span>
+            <div class="d3-llm-rl__agent-section">
+              <div class="d3-llm-rl__section-label">Model</div>
+              <div class="d3-llm-rl__policy">
+                <div class="d3-llm-rl__policy-line">samples N rollouts per task</div>
+                <div class="d3-llm-rl__policy-line d3-llm-rl__policy-comment">// trainer updates from rewards</div>
+              </div>
+            </div>
+            <div class="d3-llm-rl__agent-section">
+              <div class="d3-llm-rl__section-label">Last tool call</div>
+              <div data-stat="last-call"><span class="d3-llm-rl__action-tag">—</span></div>
+            </div>
+            <div class="d3-llm-rl__agent-section">
+              <div class="d3-llm-rl__section-label">Stats</div>
+              <div class="d3-llm-rl__counters">
+                <span class="d3-llm-rl__counter"><span>rollouts shown</span><strong data-stat="rollouts">0/3</strong></span>
+                <span class="d3-llm-rl__counter"><span>tool calls</span><strong data-stat="calls">0</strong></span>
+                <span class="d3-llm-rl__counter"><span>group avg</span><strong data-stat="avg">—</strong></span>
+                <span class="d3-llm-rl__counter"><span>group size</span><strong>${ROLLOUTS.length}</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="d3-llm-rl__bus">
+            <div class="d3-llm-rl__bus-arrow is-action" data-bus-action>
+              <span class="label">tool call</span>
+              <svg viewBox="0 0 12 40">
+                <defs>
+                  <marker id="lrl-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                    <path d="M0,0 L10,5 L0,10 Z" fill="currentColor"/>
+                  </marker>
+                </defs>
+                <line x1="6" y1="2" x2="6" y2="36" stroke="currentColor" stroke-width="1.6" marker-end="url(#lrl-arrow)"/>
+              </svg>
+            </div>
+            <div class="d3-llm-rl__bus-arrow is-state" data-bus-state>
+              <svg viewBox="0 0 12 40">
+                <line x1="6" y1="38" x2="6" y2="4" stroke="currentColor" stroke-width="1.6" marker-end="url(#lrl-arrow)"/>
+              </svg>
+              <span class="label">obs · reward</span>
+            </div>
+          </div>
+
+          <div class="d3-llm-rl__zone d3-llm-rl__zone--env">
+            <span class="d3-llm-rl__zone-label">Environment · sandboxed shell</span>
+            <div class="d3-llm-rl__task">
+              <span class="d3-llm-rl__task-label">Task</span>
+              <span class="d3-llm-rl__task-text">${TASK}</span>
+            </div>
+            <div class="d3-llm-rl__rollouts">${rolloutsHtml}</div>
+          </div>
+        </div>
+
+        <div class="d3-llm-rl__caption">
+          Each rollout is a multi-turn trace: the model writes a thought, calls a tool, reads the
+          output, decides what to do next, and submits an answer. The environment scores the
+          completed trace and returns a reward, and the training loop collects a group of these
+          traces per prompt to learn from. This is one shape of environment, multi-turn tool use;
+          LLM-based RL environments vary widely (single-turn reasoning, agentic web tasks,
+          code-repo agents, multi-agent setups), and the same traces can feed very different
+          training methods. <em>GRPO</em> is an example of <em>online RL</em>, where the policy
+          updates from the group right away, but the same traces can equally be stored and used
+          later for <em>distillation</em>, <em>offline RL</em>, or imitation learning.
+        </div>
+      `;
+
+      // ─── Refs ───
+      const playBtn = container.querySelector('[data-act="play"]');
+      const playLabel = container.querySelector('[data-label]');
+      const resetBtn = container.querySelector('[data-act="reset"]');
+      const speedInput = container.querySelector('[data-act="speed"]');
+      const speedVal = container.querySelector('[data-speed-val]');
+      const agentBox = container.querySelector('[data-agent]');
+      const busAction = container.querySelector('[data-bus-action]');
+      const busState = container.querySelector('[data-bus-state]');
+
+      const stepEls = ROLLOUTS.map((_, i) =>
+        Array.from(container.querySelectorAll(`[data-ro="${i}"] .d3-llm-rl__step`))
+      );
+      const progressEls = ROLLOUTS.map((_, i) =>
+        Array.from(container.querySelectorAll(`[data-ro="${i}"] [data-progress] span`))
+      );
+      const rewardEls = ROLLOUTS.map((_, i) =>
+        container.querySelector(`[data-ro="${i}"] [data-reward]`)
+      );
+      const statEls = {
+        lastCall: container.querySelector('[data-stat="last-call"]'),
+        rollouts: container.querySelector('[data-stat="rollouts"]'),
+        avg:      container.querySelector('[data-stat="avg"]'),
+        calls:    container.querySelector('[data-stat="calls"]'),
+        updates:  container.querySelector('[data-stat="updates"]')
+      };
+
+      // ─── State ───
+      let speed = 1.0;
+      let running = false;
+      let timers = [];
+      let toolCallCount = 0;
+      let updates = 0;
+      const baseStepIntervalMs = 900;
+
+      const cssVar = (name) => {
+        const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return v || '#888';
+      };
+
+      const flashBus = (busEl, ms = 240) => {
+        const primary = cssVar('--primary-color') || '#6D4AFF';
+        const muted = cssVar('--muted-color');
+        busEl.style.color = primary;
+        busEl.querySelector('line').setAttribute('stroke-width', '2.4');
+        setTimeout(() => {
+          busEl.style.color = muted;
+          busEl.querySelector('line').setAttribute('stroke-width', '1.4');
+        }, ms);
+      };
+
+      const flashStateBus = (color, ms = 240) => {
+        const muted = cssVar('--muted-color');
+        busState.style.color = color;
+        busState.querySelector('line').setAttribute('stroke-width', '2.4');
+        setTimeout(() => {
+          busState.style.color = muted;
+          busState.querySelector('line').setAttribute('stroke-width', '1.4');
+        }, ms);
+      };
+
+      const setLastToolCall = (toolCall) => {
+        statEls.lastCall.innerHTML = `<span class="d3-llm-rl__action-tag" title="${toolCall}">$ ${toolCall}</span>`;
+      };
+
+      const updatePlayBtn = () => {
+        playLabel.textContent = running ? 'Pause' : 'Play';
+        playBtn.classList.toggle('primary', !running);
+        const svgEl = playBtn.querySelector('svg');
+        svgEl.innerHTML = running
+          ? '<rect x="6" y="5" width="4" height="14" fill="currentColor"/><rect x="14" y="5" width="4" height="14" fill="currentColor"/>'
+          : '<polygon points="6,4 20,12 6,20" fill="currentColor"/>';
+      };
+
+      const clearAll = () => {
+        timers.forEach(t => clearTimeout(t));
+        timers = [];
+        stepEls.forEach(arr => arr.forEach(el => el.classList.remove('visible')));
+        progressEls.forEach(arr => arr.forEach(el => el.classList.remove('done')));
+        rewardEls.forEach(el => el.classList.remove('visible'));
+        toolCallCount = 0;
+        statEls.lastCall.innerHTML = '<span class="d3-llm-rl__action-tag">—</span>';
+        statEls.rollouts.textContent = '0/' + ROLLOUTS.length;
+        statEls.avg.textContent = '—';
+        statEls.calls.textContent = '0';
+      };
+
+      const playAll = () => {
+        clearAll();
+        running = true;
+        updatePlayBtn();
+
+        let rolloutsDone = 0;
+        const rewardsCollected = [];
+        const interval = baseStepIntervalMs / speed;
+
+        ROLLOUTS.forEach((r, ri) => {
+          r.steps.forEach((s, si) => {
+            const t = setTimeout(() => {
+              stepEls[ri][si].classList.add('visible');
+              progressEls[ri][si].classList.add('done');
+
+              if (s.type === 'tool') {
+                toolCallCount += 1;
+                statEls.calls.textContent = String(toolCallCount);
+                setLastToolCall(s.toolCall);
+                flashBus(busAction);
+              } else if (s.type === 'response') {
+                flashStateBus(cssVar('--muted-color'));
+                // briefly tint with framework accent
+                flashStateBus(r.accent);
+              } else if (s.type === 'submit') {
+                // submission causes the env to compute reward
+              }
+            }, (si + 1) * interval);
+            timers.push(t);
+          });
+
+          // Reveal reward shortly after last step
+          const tFinal = setTimeout(() => {
+            rewardEls[ri].classList.add('visible');
+            rolloutsDone += 1;
+            rewardsCollected.push(r.reward);
+            statEls.rollouts.textContent = `${rolloutsDone}/${ROLLOUTS.length}`;
+
+            // bus flashes green/red for the reward signal returning
+            flashStateBus(r.reward > 0 ? '#22c55e' : '#ef4444', 320);
+
+            if (rolloutsDone === ROLLOUTS.length) {
+              const avg = rewardsCollected.reduce((a, b) => a + b, 0) / rewardsCollected.length;
+              statEls.avg.textContent = avg.toFixed(2);
+              // The other parallel rollouts also "finish" with the group — stop their animation.
+              setTimeout(() => {
+                updates += 1;
+                statEls.updates.textContent = String(updates);
+                agentBox.classList.add('flash');
+                setTimeout(() => agentBox.classList.remove('flash'), 800);
+                running = false;
+                updatePlayBtn();
+              }, 500);
+            }
+          }, (r.steps.length + 1) * interval);
+          timers.push(tFinal);
+        });
+      };
+
+      const pauseAll = () => {
+        timers.forEach(t => clearTimeout(t));
+        timers = [];
+        running = false;
+        updatePlayBtn();
+      };
+
+      playBtn.addEventListener('click', () => {
+        if (running) {
+          pauseAll();
+        } else {
+          const allDone = stepEls.every(arr => arr.every(el => el.classList.contains('visible')));
+          if (allDone) clearAll();
+          playAll();
+        }
+      });
+      resetBtn.addEventListener('click', () => {
+        pauseAll();
+        clearAll();
+        updates = 0;
+        statEls.updates.textContent = '0';
+      });
+      speedInput.addEventListener('input', () => {
+        speed = parseFloat(speedInput.value);
+        speedVal.textContent = speed.toFixed(2) + '×';
+      });
+
+      // Auto-play once when scrolled into view
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(en => {
+          if (en.isIntersecting && !running) {
+            const anyVisible = stepEls.some(arr => arr.some(el => el.classList.contains('visible')));
+            if (!anyVisible) playAll();
+            io.disconnect();
+          }
+        });
+      }, { threshold: 0.4 });
+      io.observe(container);
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootstrap, { once: true });
+    } else {
+      bootstrap();
+    }
+  })();
+</script>

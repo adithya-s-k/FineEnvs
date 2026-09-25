@@ -1,0 +1,56 @@
+{
+  "id": "6aaa8a06f76d6a098a710a5e",
+  "owner": "train-blackbox-1789561350",
+  "stage": "COMPLETED",
+  "status.json": {
+    "arm": "blackbox",
+    "phase": "smoke",
+    "started_at": 1789561426.4942746,
+    "passed": true,
+    "finished_at": 1789565459.8160994
+  },
+  "services.json": {
+    "job_id": "6aaa8a06f76d6a098a710a5e",
+    "public_vllm": "https://6aaa8a06f76d6a098a710a5e--8000.hf.jobs",
+    "server": "http://127.0.0.1:8100",
+    "space": "https://huggingenvs-data-agent-blackbox-harbor-env.hf.space",
+    "tp": 1,
+    "dp": 1,
+    "flavor": "a100x4"
+  },
+  "training_smoke_verified.json": {
+    "arm": "blackbox",
+    "passed": true,
+    "bundle_sha256": "d24c3641bdda424259741e27d451430830df1c54e0a31245ac2c8ae6210a44da",
+    "optimizer_steps": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "native_optimizer_state_verified": true,
+    "remote_restore_verified": true,
+    "tito_pass": true,
+    "weights_updated": true,
+    "nonzero_gradient_updates": 4
+  },
+  "trackio_verified.json": {
+    "passed": true,
+    "project": "daytona-blackbox-qwen35-2b-smoke",
+    "run": "train-blackbox-1789561350",
+    "local_database": "/workspace/repro/outputs/train-blackbox-1789561350/trackio/daytona-blackbox-qwen35-2b-smoke.db",
+    "mode": "offline",
+    "remote_storage": "run artifact bucket",
+    "native_remote_readback": false,
+    "updated_at": 1789564559.6583176,
+    "unique_events": 6
+  },
+  "upload_status.json": {
+    "last_success": 1789565418.31508,
+    "destination": "hf://buckets/HuggingEnvs/data-agent-daytona-artifacts/data-agent-reproduction-20260916/jobs/train-blackbox-1789561350",
+    "published_checkpoints": [
+      "checkpoint-2",
+      "checkpoint-4"
+    ]
+  }
+}

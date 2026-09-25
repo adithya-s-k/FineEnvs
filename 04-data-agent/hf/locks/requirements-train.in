@@ -1,0 +1,33 @@
+# Direct pins from the frozen comparison trainer environment. Vendored TRL/OpenEnv are supplied separately.
+torch==2.11.0
+vllm==0.25.1
+transformers==5.14.1
+datasets==5.0.0
+huggingface_hub==1.24.0
+accelerate==1.14.0
+bitsandbytes==0.49.2
+kernels==0.15.2
+trackio==0.33.0
+gradio==6.20.0
+httpx==0.28.1
+# Harbor -> Supabase requires websockets <16; matches the validated environment service.
+websockets==15.0.1
+harbor==0.22.0
+daytona==0.203.0
+pydantic==2.13.4
+fastapi==0.136.3
+uvicorn==0.51.0
+mcp==1.28.1
+fastmcp==3.4.4
+tomli==2.4.1
+tomli-w==1.2.0
+ninja==1.13.0
+peft==0.19.1
+# vLLM's Numba requires <2.5; mistral-common on Python 3.12 requires <2.4.
+numpy>=2.2,<2.4
+safetensors==0.8.0
+rich==15.0.0
+typer==0.27.0
+python-dotenv==1.2.2
+packaging==26.2
+jinja2==3.1.6

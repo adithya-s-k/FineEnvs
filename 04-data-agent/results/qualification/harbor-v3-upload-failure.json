@@ -1,0 +1,71 @@
+{
+  "id": "6aaa7b18f76d6a098a71093d",
+  "owner": "train-blackbox-1789557528",
+  "stage": "ERROR",
+  "status.json": {
+    "arm": "blackbox",
+    "phase": "smoke",
+    "started_at": 1789557599.0150673,
+    "passed": false,
+    "error_type": "TimeoutError",
+    "finished_at": 1789560537.914167
+  },
+  "services.json": {
+    "job_id": "6aaa7b18f76d6a098a71093d",
+    "public_vllm": "https://6aaa7b18f76d6a098a71093d--8000.hf.jobs",
+    "server": "http://127.0.0.1:8100",
+    "space": "https://huggingenvs-data-agent-blackbox-harbor-env.hf.space",
+    "tp": 1,
+    "dp": 1,
+    "flavor": "a100x4"
+  },
+  "trackio_verified.json": {
+    "passed": true,
+    "project": "daytona-blackbox-qwen35-2b-smoke",
+    "run": "train-blackbox-1789557528",
+    "local_database": "/workspace/repro/outputs/train-blackbox-1789557528/trackio/daytona-blackbox-qwen35-2b-smoke.db",
+    "mode": "offline",
+    "remote_storage": "run artifact bucket",
+    "native_remote_readback": false,
+    "updated_at": 1789559547.7700548,
+    "unique_events": 6
+  },
+  "upload_status.json": {
+    "last_success": 1789560580.5810785,
+    "destination": "hf://buckets/HuggingEnvs/data-agent-daytona-artifacts/data-agent-reproduction-20260916/jobs/train-blackbox-1789557528",
+    "published_checkpoints": [
+      "checkpoint-2",
+      "checkpoint-4"
+    ]
+  },
+  "failure": "Transient HF Xet upload TimeoutError after all four optimizer updates; final cleanup published both checkpoints. Final integrated smoke validator was not reached.",
+  "posthoc_capture_audit": {
+    "blackbox": {
+      "completed_results": 37,
+      "tito_pass": 37,
+      "eligible_tokens": 19880,
+      "retained_tokens": 19880,
+      "rows_over_token_budget": 0,
+      "optimizer_rollouts_verified": 25
+    }
+  },
+  "optimizer_updates": [
+    {
+      "step": 1,
+      "grad_norm": 11.0
+    },
+    {
+      "step": 2,
+      "grad_norm": 10.4375
+    },
+    {
+      "step": 3,
+      "grad_norm": 6.9375
+    },
+    {
+      "step": 4,
+      "grad_norm": 5.59375
+    }
+  ],
+  "qualifies_long_run": false
+}

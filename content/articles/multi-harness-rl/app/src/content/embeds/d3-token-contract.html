@@ -1,0 +1,124 @@
+<div class="token-contract" style="width:100%;margin:14px 0;"></div>
+<style>
+  .token-contract { position: relative; }
+  .token-contract svg { display:block; width:100%; height:auto; overflow:visible; }
+  .token-contract .tc-lg { display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .token-contract .tc-lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .token-contract .tc-k { display:inline-flex; align-items:center; gap:7px; }
+  .token-contract .tc-sw { width:13px; height:11px; border-radius:3px; }
+  .token-contract .tc-hatch { background-image: repeating-linear-gradient(45deg,
+    var(--muted-color) 0 1.5px, transparent 1.5px 5px); opacity:.6; }
+  .token-contract .tc-nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'token-contract';
+    const boot = () => {
+      const nodes = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = nodes[nodes.length-1]; if (!r) return; r.dataset.mounted = 'true';
+
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const n = (v) => v.toLocaleString('en-US');
+
+      // One rollout, laid out along the token axis it actually occupies. Each turn's
+      // prompt is everything before it, so the bars form a staircase; the solid tip
+      // is the only part the model chose, and the only part a gradient can touch.
+      // The gap between one turn's end and the next turn's start is the tool result
+      // that got appended in between.
+      const T = [
+        { turn:'turn 1', ctx:7994, gen:79  },
+        { turn:'turn 2', ctx:8240, gen:331 },
+        { turn:'turn 3', ctx:8760, gen:90  },
+        { turn:'retry',  ctx:9010, gen:143, dead:true },
+        { turn:'turn 4', ctx:9180, gen:396 },
+        { turn:'turn 5', ctx:9790, gen:212 },
+      ];
+      const live = T.filter(t => !t.dead);
+      const sampled = live.reduce((a,t) => a + t.gen, 0);
+      const finalLen = live[live.length-1].ctx + live[live.length-1].gen;
+      const pct = Math.round(sampled / finalLen * 100);
+      const maxX = Math.max(...T.map(t => t.ctx + t.gen));
+
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const mono = 'ui-monospace,SFMono-Regular,Menlo,monospace';
+        const cGen = P(0), cDead = mu;
+
+        const narrow = W < 620;
+        const labW = narrow ? 46 : 62;
+        const statW = narrow ? 66 : 104;
+        const plotW = W - labW - statW - 8;
+        const X = (v) => labW + (v / maxX) * plotW;
+
+        const rowH = 24, gap = 7, top = 34;
+        const H = top + T.length*(rowH+gap) + 46;
+
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Each turn's prompt is everything before it, so the bars grow. The solid tip on each bar is the tokens the model sampled: ${n(sampled)} of ${n(finalLen)}, about ${pct} percent.">`;
+        s += `<defs><pattern id="tc-h" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="6" stroke="${mu}" stroke-opacity=".35" stroke-width="1.6"/></pattern></defs>`;
+
+        // axis
+        s += `<text x="${labW}" y="14" font-size="10" fill="${mu}" font-family="${mono}">0</text>`;
+        s += `<text x="${labW+plotW}" y="14" text-anchor="end" font-size="10" fill="${mu}" font-family="${mono}">${n(maxX)} tokens</text>`;
+        s += `<line x1="${labW}" y1="20" x2="${labW+plotW}" y2="20" stroke="${bd}"/>`;
+
+        T.forEach((t, i) => {
+          const y = top + i*(rowH+gap);
+          const x0 = labW, x1 = X(t.ctx), x2 = X(t.ctx + t.gen);
+          const genW = Math.max(3.5, x2 - x1);       // a real turn is ~1% of its prompt
+          const dim = t.dead ? .45 : 1;
+
+          s += `<text x="0" y="${y+16}" font-size="10.5" fill="${t.dead?mu:tx}" fill-opacity="${dim}" font-family="${mono}">${esc(t.turn)}</text>`;
+          // the prompt: everything the model was shown, and none of it trainable
+          s += `<rect x="${x0}" y="${y}" width="${x1-x0}" height="${rowH}" rx="3"
+                 fill="url(#tc-h)" stroke="${mu}" stroke-opacity="${t.dead?.15:.28}"/>`;
+          // the completion: the only part it chose
+          s += `<rect x="${x1}" y="${y}" width="${genW}" height="${rowH}" rx="2.5"
+                 fill="${t.dead ? cDead : cGen}" fill-opacity="${t.dead ? .4 : 1}"/>`;
+
+          const lab = t.dead ? `+${t.gen} discarded` : `+${t.gen} sampled`;
+          s += `<text x="${labW+plotW+10}" y="${y+16}" font-size="10.5" font-family="${mono}"
+                 fill="${t.dead?mu:cGen}" fill-opacity="${dim}">${esc(lab)}</text>`;
+          if (t.dead) s += `<line x1="${x0}" y1="${y+rowH/2}" x2="${x1+genW}" y2="${y+rowH/2}" stroke="${mu}" stroke-opacity=".5"/>`;
+        });
+
+        // the payoff, stated once
+        const fy = H - 18;
+        s += `<text x="0" y="${fy}" font-size="11.5" fill="${tx}">`
+           + `<tspan font-weight="600" font-family="${mono}">${n(sampled)}</tspan>`
+           + `<tspan fill="${mu}"> tokens sampled across the rollout, out of </tspan>`
+           + `<tspan font-weight="600" font-family="${mono}">${n(finalLen)}</tspan>`
+           + `<tspan fill="${mu}"> in the finished sequence. ${pct}% of it is trainable.</tspan></text>`;
+
+        s += '</svg>';
+
+        const legend = `<div class="tc-lg"><span class="tc-lg-t">One bar is one turn, drawn on the token axis</span>`
+          + `<span class="tc-k"><span class="tc-sw tc-hatch"></span>prompt, masked out of the loss</span>`
+          + `<span class="tc-k"><span class="tc-sw" style="background:${cGen}"></span>sampled, carries a logprob</span>`
+          + `<span class="tc-k"><span class="tc-sw" style="background:${mu};opacity:.4"></span>abandoned branch, excluded</span>`
+          + `</div>`;
+
+        const note = `<div class="tc-nt">Each bar starts at zero because each prompt contains every turn before it. The step between one bar's tip and the next bar's start is the tool result appended in between.</div>`;
+
+        r.innerHTML = s + legend + note;
+      };
+
+      draw();
+      if ('ResizeObserver' in window) {
+        let t; new ResizeObserver(() => { clearTimeout(t); t = setTimeout(draw, 120); }).observe(r);
+      } else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

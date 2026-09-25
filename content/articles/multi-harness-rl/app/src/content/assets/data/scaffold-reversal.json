@@ -1,0 +1,50 @@
+{
+  "source": "Seed-OSS-36B-Instruct model card, ByteDance Seed",
+  "url": "https://huggingface.co/ByteDance-Seed/Seed-OSS-36B-Instruct",
+  "benchmark": "SWE-Bench Verified",
+  "note": "AgentLess 4*10 is best-of-n sampling, so absolute gaps mix scaffold with test-time compute. The rank reversals survive that; the raw point gaps do not.",
+  "models": [
+    "Seed1.6-Thinking-0715",
+    "Qwen3-30B-A3B-Thinking-2507",
+    "Qwen3-32B",
+    "Seed-OSS-36B-Instruct"
+  ],
+  "scaffolds": [
+    {
+      "name": "OpenHands",
+      "scores": [
+        41.8,
+        31.0,
+        23.4,
+        56.0
+      ]
+    },
+    {
+      "name": "AgentLess 4*10",
+      "scores": [
+        48.4,
+        33.5,
+        39.7,
+        47.0
+      ]
+    }
+  ],
+  "reversals": [
+    {
+      "a": "Seed-OSS-36B-Instruct",
+      "b": "Seed1.6-Thinking-0715",
+      "under": "OpenHands",
+      "margin": 14.2,
+      "flips_under": "AgentLess 4*10",
+      "flipped_margin": 1.4
+    },
+    {
+      "a": "Qwen3-30B-A3B-Thinking-2507",
+      "b": "Qwen3-32B",
+      "under": "OpenHands",
+      "margin": 7.6,
+      "flips_under": "AgentLess 4*10",
+      "flipped_margin": 6.2
+    }
+  ]
+}

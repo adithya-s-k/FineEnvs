@@ -1,0 +1,19 @@
+## Evals
+
+We evaluate Qwen3.5-2B on **250 fixed test tasks**: 33 easy, 118 medium and 99 hard.
+Each checkpoint runs once under OpenCode, Claude Code, Codex and Mini-SWE-Agent:
+**1,000 task–harness cells, pass@1**. Aggregate scores weight the four harnesses equally.
+Only complete, accepted cohorts enter the comparison. Missing cells are not counted as
+failures, and a graded zero is not replaced by a later retry. Historical retry and
+provenance limitations are recorded in the [analysis](https://github.com/adithya-s-k/HuggingEnvs/blob/04-data-agent/04-data-agent/reports/three-run-analysis-20260917/REPORT.md).
+
+The base model already changes score with the harness. Under the Harbor/E2B protocol,
+OpenCode scores **10.8%**, Claude Code **16.8%**, Codex **16.4%**, and Mini-SWE-Agent
+**14.4%**, averaging **14.6%**. The native OpenCode training run has a separately
+measured four-harness Harbor/Daytona baseline of **15.9%**. These are different measured
+cohorts; we retain both rather than assigning every run the same starting score.
+
+The [checkpoint report](https://github.com/adithya-s-k/HuggingEnvs/blob/04-data-agent/04-data-agent/reports/async-comparison-20260916/REPORT.md) includes
+correct counts and scores by harness and difficulty at every checkpoint. SETA's native
+bash evaluator is a separate 250-cell protocol: **18.8% → 38.0% at step 150**. It is
+not a fourth line in the four-harness comparison below.

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "historical_runtime_root": "/fsx/adithyaskolavi/projects/trl_prod",
+  "task_bundle": {
+    "repo": "HuggingEnvs/data-agent-daytona-repro",
+    "revision": "b4714cb652f71d519ce74c564f9fe6110cec032f",
+    "sha256": "f4a288eaafefddf3cb686eb89de184437a0496f75074a00f1903a9335dcd1a0d"
+  },
+  "repositories": [
+    {
+      "name": "openenv",
+      "directory": "OpenEnv",
+      "url": "https://github.com/adithya-s-k/OpenEnv.git",
+      "revision": "b13aeb9f8ecd4817e02d3a37c2a9ae15e41710e3"
+    },
+    {
+      "name": "trl",
+      "directory": "trl",
+      "url": "https://github.com/adithya-s-k/trl.git",
+      "revision": "8e87edb45eac7c52d749256379714fa40f0eb746"
+    }
+  ],
+  "data_hashes": {
+    "train_manifest.json": "65ebbf8c86825597e4605ee2f75c2332a6e2144e22413bdc63aa39150cc54703",
+    "test_manifest.json": "38943d89f5bb0fec79db8c7a2680c4a8353cf5c53c6eabffaaef8971cb2eb964",
+    "reference_schedule.json": "6a6ea4a085908f3f256a0a605031aaf7f16469797c2b04ffa73092c4a44f2696",
+    "opencode_schedule.json": "dccc1102d76ccd2c2170239340a836f1c6158d80fe627c04a049e01b426311d6"
+  }
+}

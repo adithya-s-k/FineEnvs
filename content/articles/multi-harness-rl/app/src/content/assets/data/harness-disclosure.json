@@ -1,0 +1,77 @@
+{
+  "note": "Disclosure level rises from naming no harness at all, to naming one per benchmark row, to measuring across several, to training across several.",
+  "levels": [
+    "names none",
+    "names one per row",
+    "measures across",
+    "trains across"
+  ],
+  "items": [
+    {
+      "label": "Cohere Command A",
+      "date": "2025-04",
+      "level": 0,
+      "detail": "The words harness and scaffold appear zero times."
+    },
+    {
+      "label": "Kimi K2",
+      "date": "2025-07",
+      "level": 1,
+      "detail": "Terminal-Bench listed twice, 25.0 Terminus and 30.0 in-house."
+    },
+    {
+      "label": "Qwen3-Coder",
+      "date": "2025-07",
+      "level": 0,
+      "detail": "Ships Qwen Code, Claude Code and Cline instructions, never names its own."
+    },
+    {
+      "label": "gpt-oss",
+      "date": "2025-08",
+      "level": 0,
+      "detail": "SWE-bench on n=477 tasks, scaffold unnamed."
+    },
+    {
+      "label": "Seed-OSS",
+      "date": "2025-08",
+      "level": 1,
+      "detail": "Harness inside the row label; two rank reversals."
+    },
+    {
+      "label": "MiniMax M2",
+      "date": "2025-10",
+      "level": 1,
+      "detail": "A different named harness for each benchmark."
+    },
+    {
+      "label": "DeepSeek-V3.2",
+      "date": "2025-12",
+      "level": 2,
+      "detail": "Robustness check across Claude Code and RooCode; incompatible with Terminus."
+    },
+    {
+      "label": "Orchard",
+      "date": "2026-05",
+      "level": 3,
+      "detail": "Measures 62.4 collapsing to 3.6 on an unseen harness."
+    },
+    {
+      "label": "Polar",
+      "date": "2026-05",
+      "level": 3,
+      "detail": "RL against four harnesses through an endpoint proxy."
+    },
+    {
+      "label": "KAT-Coder-V2.5",
+      "date": "2026-07",
+      "level": 3,
+      "detail": "Coins harness randomization; names three overfitting modes."
+    },
+    {
+      "label": "OpenForgeRL",
+      "date": "2026-07",
+      "level": 3,
+      "detail": "The only controlled one-versus-three harness ablation."
+    }
+  ]
+}

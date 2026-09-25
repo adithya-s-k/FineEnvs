@@ -1,0 +1,43 @@
+## Conclusions and observations
+
+*Results snapshot: September 18, 2026; completed comparisons were audited September 17.*
+
+**Training in one harness can transfer to others.** Harbor OpenCode-only reaches
+39.5% aggregate pass@1 at step 700, including **46.4% under Claude Code** and **40.0%
+under OpenCode**. Native OpenCode improves all four evaluation harnesses and ends
+at 29.8%. The evidence does not support a simple claim that one-harness training
+only improves its own harness, or that multi-harness training necessarily wins.
+
+**The late declines have different observable signatures.** Multi-harness falls
+from 37.0% at step 500 to 26.3% at step 1,000. Across those evaluation cohorts,
+output-truncated rollouts rise from **9/1,000 to 556/1,000**. Its training responses
+get longer while emitted tool calls fall. Harbor OpenCode-only instead uses more
+tools but submits answers less reliably; output truncation remains rare. These
+patterns suggest different follow-up experiments, not a single proven cause.
+
+**Resume accounting and reward contrast matter.** After the multi-harness restart
+at step 684, **1,575 of 1,579 admitted rollouts** revisit previously seen tasks.
+That bug changes late exposure, but cannot explain the initial decline after step
+500, which precedes the restart. Across the three runs, **35–58% of optimizer steps**
+have no fresh gradient from reward contrast. Those steps still consume rollout and
+training compute. Compare token exposure, task coverage and useful gradient steps,
+not just nominal optimizer steps.
+
+**Successful token capture is necessary, but not sufficient, for a reliable run.**
+TiTO preserves which tokens were generated and their behavior log probabilities.
+It does not by itself solve prompt-fork weighting, sample budgets, uniform-reward
+groups, serving interruptions or evaluation coverage. Each needs separate telemetry
+and qualification.
+
+A separate continuation from checkpoint 500 uses **500 hard tasks for two passes**.
+Its evaluation transport is being qualified through an authenticated HF Jobs endpoint,
+with the environment and capture proxy inside the job and task sandboxes external.
+It is **not included in the completed results above**: partial qualification cells
+are not a benchmark score, and no curriculum improvement is claimed yet.
+
+The next comparison should preserve task coverage across resume, match train/eval
+output budgets, and compare harness mixtures at matched token exposure. The
+[analysis](https://github.com/adithya-s-k/HuggingEnvs/blob/04-data-agent/04-data-agent/reports/three-run-analysis-20260917/REPORT.md),
+[training accounting](https://github.com/adithya-s-k/HuggingEnvs/blob/04-data-agent/04-data-agent/reports/three-run-analysis-20260917/TRAINING.md), and
+[accepted checkpoint counts](https://github.com/adithya-s-k/HuggingEnvs/blob/04-data-agent/04-data-agent/reports/async-comparison-20260916/checkpoint_scores.csv)
+make those follow-ups traceable to the recorded runs.

@@ -1,0 +1,440 @@
+---
+interface Props {
+  citationText: string;
+  bibtex: string;
+  licence?: string;
+  doi?: string;
+  template?: string;
+}
+const { citationText, bibtex, licence, doi, template = "article" } = Astro.props as Props;
+const isPaper = template === "paper";
+---
+
+<footer class="footer">
+  <div class="footer-inner">
+    {!isPaper && (
+      <section class="citation-block">
+        <p class="footer-heading" role="heading" aria-level="2">Citation</p>
+        <p>For attribution in academic contexts, please cite this work as</p>
+        <pre class="citation short">{citationText}</pre>
+
+        <p>BibTeX citation</p>
+        <pre class="citation long">{bibtex}</pre>
+      </section>
+    )}
+    {!isPaper &&
+      doi && (
+        <section class="doi-block">
+          <p class="footer-heading" role="heading" aria-level="2">DOI</p>
+          <p>
+            <a
+              href={`https://doi.org/${doi}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {doi}
+            </a>
+          </p>
+        </section>
+      )
+    }
+    {
+      licence && (
+        <section class="reuse-block">
+          <p class="footer-heading" role="heading" aria-level="2">Reuse</p>
+          <p set:html={licence} />
+        </section>
+      )
+    }
+    <section class="references-block">
+      <slot />
+    </section>
+    <div class="template-credit">
+      <p>
+        Made with ❤️ with <a
+          href="https://huggingface.co/spaces/tfrere/research-article-template"
+          target="_blank"
+          rel="noopener noreferrer">research article template</a
+        >
+      </p>
+    </div>
+  </div>
+</footer>
+
+<script is:inline>
+  (() => {
+    const getFooter = () =>
+      document.currentScript?.closest("footer") ||
+      document.querySelector("footer.footer");
+    const footer = getFooter();
+    if (!footer) return;
+    const target = footer.querySelector(".references-block");
+    if (!target) return;
+
+    const contentRoot =
+      document.querySelector("section.content-grid main") ||
+      document.querySelector("main") ||
+      document.body;
+
+    const ensureHeading = (text) => {
+      const exists = Array.from(target.children).some(
+        (c) =>
+          c.classList.contains("footer-heading") &&
+          c.textContent.trim().toLowerCase() === text.toLowerCase(),
+      );
+      if (!exists) {
+        const h = document.createElement("p");
+        h.className = "footer-heading";
+        h.setAttribute("role", "heading");
+        h.setAttribute("aria-level", "2");
+        h.textContent = text;
+        target.appendChild(h);
+      }
+    };
+
+    const moveIntoFooter = (element, headingText) => {
+      if (!element) return false;
+
+      // Remove an eventual heading already included inside the block (avoid duplicates)
+      const firstHeading = element.querySelector(
+        ":scope > h1, :scope > h2, :scope > h3, :scope > .footer-heading",
+      );
+      if (firstHeading) {
+        const txt = (firstHeading.textContent || "").trim().toLowerCase();
+        const targetTxt = headingText.trim().toLowerCase();
+        if (
+          txt === targetTxt ||
+          txt.includes("reference") ||
+          txt.includes("bibliograph")
+        ) {
+          firstHeading.remove();
+        }
+      }
+
+      // Move footnote backref links inside paragraphs BEFORE moving element
+      if (element.classList && element.classList.contains("footnotes")) {
+        const footnoteItems = element.querySelectorAll("li");
+        footnoteItems.forEach((item) => {
+          const backrefContainer = item.querySelector("small.backrefs");
+          const lastP = item.querySelector("p:last-of-type");
+          if (backrefContainer && lastP && !lastP.contains(backrefContainer)) {
+            lastP.appendChild(document.createTextNode(" "));
+            lastP.appendChild(backrefContainer);
+          }
+        });
+      }
+
+      ensureHeading(headingText);
+
+      // Move element directly - this preserves KaTeX DOM structure and inline styles
+      // KaTeX is already rendered at build-time, so we just need to preserve the HTML
+      target.appendChild(element);
+
+      return true;
+    };
+    const run = () => {
+      // Prevent multiple runs
+      if (footer.dataset.processed === "true") return false;
+
+      const findAllOutsideFooter = (selectors) => {
+        // Find ALL matching elements outside the footer (not just the first)
+        const results = [];
+        const searchRoots = [contentRoot, document.body].filter(Boolean);
+
+        for (const root of searchRoots) {
+          for (const sel of selectors) {
+            const elements = root.querySelectorAll(sel);
+            elements.forEach((el) => {
+              if (el && !footer.contains(el) && !results.includes(el)) {
+                results.push(el);
+              }
+            });
+          }
+        }
+        return results;
+      };
+
+      const findFirstOutsideFooter = (selectors) => {
+        const all = findAllOutsideFooter(selectors);
+        return all.length > 0 ? all[0] : null;
+      };
+
+      // Move ALL references from content to footer (handles duplicate bibliography issue)
+      const allRefsEls = findAllOutsideFooter([
+        "#bibliography-references-list",
+        "[data-bibliography-block]",
+        "#references",
+        "#refs",
+        ".references:not(ol.references)", // Avoid selecting normalized <ol> inside the container
+        ".bibliography",
+      ]);
+
+      // Try multiple selectors for footnotes
+      const footnotesEl = findFirstOutsideFooter([
+        "[data-built-footnotes]",
+        ".footnotes",
+        "section.footnotes",
+        "div.footnotes",
+      ]);
+
+      // Move all reference blocks found outside the footer
+      let movedRefs = false;
+      allRefsEls.forEach((el) => {
+        if (moveIntoFooter(el, "References")) {
+          movedRefs = true;
+        }
+      });
+
+      const movedNotes = moveIntoFooter(footnotesEl, "Footnotes");
+
+      if (movedRefs || movedNotes) {
+        footer.dataset.processed = "true";
+      }
+
+      return movedRefs || movedNotes;
+    };
+
+    // Try multiple times to catch footnotes at different stages
+    const attemptMove = () => {
+      run();
+    };
+
+    // Try immediately
+    attemptMove();
+
+    // Try on DOMContentLoaded
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", attemptMove, {
+        once: true,
+      });
+    }
+
+    // Try on window load
+    window.addEventListener(
+      "load",
+      () => {
+        setTimeout(attemptMove, 100);
+      },
+      { once: true },
+    );
+
+    // Final attempt after a short delay
+    setTimeout(attemptMove, 300);
+
+    // Resize on window changes (e.g., fonts, layout)
+    // No textarea auto-resize needed for <pre> blocks
+  })();
+</script>
+
+<style is:global>
+  .footer {
+    contain: layout style;
+    font-size: 0.8em;
+    line-height: 1.7em;
+    margin-top: 60px;
+    margin-bottom: 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    color: rgba(0, 0, 0, 0.5);
+  }
+
+  .footer-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 60px 16px 48px;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 680px) 260px;
+    gap: 32px;
+    align-items: start;
+  }
+
+  /* Use the parent grid (3 columns like .content-grid) */
+  .citation-block,
+  .references-block,
+  .reuse-block,
+  .doi-block {
+    display: contents;
+  }
+
+  .citation-block > .footer-heading,
+  .references-block > .footer-heading,
+  .reuse-block > .footer-heading,
+  .doi-block > .footer-heading {
+    grid-column: 1;
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    text-align: right;
+    padding-right: 30px;
+  }
+
+  .citation-block > :not(.footer-heading),
+  .references-block > :not(.footer-heading),
+  .reuse-block > :not(.footer-heading),
+  .doi-block > :not(.footer-heading) {
+    grid-column: 2;
+  }
+
+  .citation-block .footer-heading {
+    margin: 0 0 8px;
+  }
+
+  .citation-block h4 {
+    margin: 16px 0 8px;
+    font-size: 14px;
+    text-transform: uppercase;
+    color: var(--muted-color);
+  }
+
+  .citation-block p,
+  .reuse-block p,
+  .doi-block p,
+  .footnotes ol,
+  .footnotes ol p,
+  .references {
+    margin-top: 0;
+  }
+
+  /* Preserve KaTeX rendering in footnotes - essential for math formulas */
+  /* Compensate for footer's 0.8em font-size */
+  .footer .footnotes .katex {
+    font-size: 1.25em; /* 1em / 0.8em = 1.25em to compensate */
+    line-height: 1.21;
+  }
+
+  .footer .footnotes .katex-display {
+    margin: 1em 0;
+    text-align: center;
+    display: block;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .footer .footnotes .katex-display > .katex {
+    display: block;
+    text-align: center;
+  }
+
+  /* Preserve KaTeX internal structure */
+  .footer .footnotes .katex .katex-html {
+    display: inline-block;
+  }
+
+  .footer .footnotes .katex .base {
+    display: inline-block;
+  }
+
+  /* Distill-like appendix citation styling */
+  .citation {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      "Liberation Mono", "Courier New", monospace;
+    font-size: 11px;
+    line-height: 15px;
+    border-left: 1px solid rgba(0, 0, 0, 0.1);
+    padding-left: 18px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.02);
+    padding: 10px 18px;
+    border-radius: 3px;
+    color: rgba(150, 150, 150, 1);
+    overflow: hidden;
+    margin-top: -12px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .citation a {
+    color: rgba(0, 0, 0, 0.6);
+    text-decoration: underline;
+  }
+
+  .citation.short {
+    margin-top: -4px;
+  }
+
+  .references-block .footer-heading {
+    margin: 0;
+  }
+
+  /* Distill-like list styling for references/footnotes */
+  .references-block ol {
+    padding: 0 0 0 15px;
+  }
+
+  @media (min-width: 768px) {
+    .references-block ol {
+      padding: 0 0 0 30px;
+      margin-left: -30px;
+    }
+  }
+
+  .references-block li {
+    margin-bottom: 1em;
+  }
+
+  .references-block a {
+    color: var(--text-color);
+  }
+
+  [data-theme="dark"] .footer {
+    border-top-color: rgba(255, 255, 255, 0.15);
+    color: rgba(200, 200, 200, 0.8);
+  }
+  [data-theme="dark"] .citation {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: rgba(200, 200, 200, 1);
+  }
+  [data-theme="dark"] .citation a {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  /* Footer links: use primary color consistently */
+  .footer a {
+    color: var(--primary-color);
+    border-bottom: 1px solid var(--link-underline);
+    text-decoration: none;
+  }
+  .footer a:hover {
+    color: var(--primary-color-hover);
+    border-bottom-color: var(--link-underline-hover);
+  }
+  [data-theme="dark"] .footer a {
+    color: var(--primary-color);
+  }
+
+  /* Template credit - discrete at the bottom */
+  .template-credit {
+    display: contents;
+  }
+
+  .template-credit p {
+    grid-column: 2;
+    margin: 24px 0 0 0;
+    font-size: 0.85em;
+    color: rgba(0, 0, 0, 0.5);
+  }
+
+  .template-credit a {
+    color: rgba(0, 0, 0, 0.6);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+  }
+
+  .template-credit a:hover {
+    color: rgba(0, 0, 0, 0.8);
+    border-bottom-color: rgba(0, 0, 0, 0.3);
+  }
+
+  [data-theme="dark"] .template-credit p {
+    color: rgba(200, 200, 200, 0.6);
+  }
+
+  [data-theme="dark"] .template-credit a {
+    color: rgba(200, 200, 200, 0.7);
+    border-bottom-color: rgba(255, 255, 255, 0.2);
+  }
+
+  [data-theme="dark"] .template-credit a:hover {
+    color: rgba(200, 200, 200, 0.9);
+    border-bottom-color: rgba(255, 255, 255, 0.35);
+  }
+</style>

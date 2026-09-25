@@ -1,0 +1,28 @@
+## OpenEnv × Harbor × TRL
+
+TRL requests a task rollout from OpenEnv. Harbor starts the harness in a sandbox;
+the harness sends model requests through the capture proxy to vLLM. The proxy records
+engine prompt IDs, generated token IDs and aligned log probabilities. The environment
+returns the verified reward and captured trajectory, which the trainer converts into
+masked training samples. A rollout may produce several samples when its prompt history
+forks; those rows must remain associated with their originating rollout and reward group.
+
+Training and evaluation use the same task-serving interface. Checkpoints are saved
+every 50 steps and scheduled for evaluation every 100 steps on separate inference
+resources. Evaluation retains task identities and the first accepted grade per cell.
+Isolation removes competition for the training GPU; sandbox capacity and proxy throughput
+still require their own limits and measurements.
+
+### Reproducing it and inspecting artifacts
+
+- [Reproduction guide](https://github.com/adithya-s-k/HuggingEnvs/blob/04-data-agent/04-data-agent/reproduce.md): local/Slurm and Hugging Face Jobs/Spaces entry points.
+- [Results and qualifications](https://github.com/adithya-s-k/HuggingEnvs/blob/04-data-agent/04-data-agent/results.md): completed scores, accounting definitions and limitations.
+- [Public artifact index](https://huggingface.co/datasets/HuggingEnvs/data-agent-experiment-results): published checkpoints, report downloads and qualification receipts.
+- [Trackio comparison](https://huggingface.co/spaces/HuggingEnvs/data-agent-training-comparison-trackio): training metrics and checkpoint evaluations.
+- [Harbor environment](https://huggingface.co/spaces/HuggingEnvs/data-agent-blackbox-harbor-env), [native OpenCode environment](https://huggingface.co/spaces/HuggingEnvs/data-agent-blackbox-opencode-env), and [SETA environment](https://huggingface.co/spaces/HuggingEnvs/data-agent-seta-whitebox-env): the three environment implementations.
+
+The [Data Agent PR](https://github.com/adithya-s-k/HuggingEnvs/pull/7) combines the
+reproduction code and this article. The integration work is tracked in
+[OpenEnv #1036](https://github.com/huggingface/OpenEnv/pull/1036) and
+[TRL #6947](https://github.com/huggingface/trl/pull/6947). Use the pinned source and
+qualification records for a run rather than assuming a moving PR head is the same build.

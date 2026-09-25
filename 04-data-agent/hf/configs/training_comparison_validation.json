@@ -1,0 +1,44 @@
+{
+  "historical_record": true,
+  "usage": "Dated experiment evidence; active reproduction settings are in deployment.json.",
+  "passed": true,
+  "reference_job": 79083,
+  "async_matched": {
+    "learning_rate": 3e-06,
+    "num_generations": 8.0,
+    "max_inflight": 32.0,
+    "max_staleness": 4.0,
+    "per_device_batch_size": 4.0,
+    "gradient_accumulation_steps": 4.0,
+    "token_budget": 40960.0,
+    "max_row_tokens": 131072.0,
+    "max_outstanding_rollouts": 16.0,
+    "max_completion_length": 16384.0,
+    "save_steps": 50.0
+  },
+  "whitebox_matched": {
+    "learning_rate": 3e-06,
+    "num_generations": 8,
+    "max_completion_length": 16384,
+    "temperature": 0.8,
+    "top_p": 1.0,
+    "optim": "paged_adamw_8bit",
+    "bf16": true,
+    "seed": 0,
+    "lr_scheduler_type": "constant"
+  },
+  "data_manifest_matches": true,
+  "differences": [
+    "SETA synchronous GRPO: batch1/GAS8, native DAPO loss and full-episode completion budget",
+    "Standalone OpenCode uses its native host verifier; binary success excludes chat/efficiency shaping",
+    "HF smoke GPU pair differs from the reference H100 pair",
+    "Smoke saves at2 and resumes to4; long recipe saves50/evals100"
+  ],
+  "gpu_optimizer_verified": true,
+  "gpu_optimizer_scope": "Native OpenCode and SETA qualified locally; SETA also qualified on HF H200",
+  "optimizer_proofs": {
+    "opencode": "experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v3/repro/outputs/local-train-opencode-80549/training_smoke_verified.json",
+    "whitebox_local": "experiments/daytona_harness_comparison/logs/hf-20260915/local-whitebox-smoke-v2/repro/outputs/local-train-whitebox-80555/training_smoke_verified.json",
+    "whitebox_hf": "experiments/daytona_harness_comparison/logs/hf-20260915/whitebox-h200-package-fix/downloads/training_smoke_verified.json"
+  }
+}

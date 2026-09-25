@@ -1,0 +1,73 @@
+<div class="paper-receipts" style="width:100%;margin:14px 0;"></div>
+<style>
+  .paper-receipts { position: relative; }
+  .paper-receipts .pr-tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+  .paper-receipts .pr-tab { appearance:none; cursor:pointer; font:inherit; font-size:12px; line-height:1;
+    padding:7px 12px; border-radius:999px; border:1px solid var(--border-color);
+    background:transparent; color:var(--muted-color); transition:color .15s, border-color .15s, background .15s; }
+  .paper-receipts .pr-tab:hover { color:var(--text-color); }
+  .paper-receipts .pr-tab[aria-pressed="true"] { color:var(--text-color); border-color:var(--text-color); font-weight:600; }
+  .paper-receipts .pr-tab:focus-visible { outline:2px solid var(--text-color); outline-offset:2px; }
+  .paper-receipts .pr-card { border:1px solid var(--border-color); border-radius:10px; overflow:hidden; }
+  .paper-receipts .pr-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px;
+    padding:11px 14px; border-bottom:1px solid var(--border-color); }
+  .paper-receipts .pr-lab { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-color); }
+  .paper-receipts .pr-ttl { font-size:13.5px; font-weight:600; color:var(--text-color); }
+  .paper-receipts .pr-loc { font-size:12px; color:var(--muted-color); margin-left:auto; white-space:nowrap; }
+  .paper-receipts .pr-loc a { color:inherit; }
+  /* The crop is a photograph of a white page, so the plate stays light in both
+     themes rather than inverting type that belongs to someone else's document. */
+  .paper-receipts .pr-plate { background:#fff; padding:10px 12px; overflow-x:auto; }
+  .paper-receipts .pr-plate img { display:block; width:100%; min-width:520px; height:auto; }
+  .paper-receipts .pr-says { padding:11px 14px; border-top:1px solid var(--border-color);
+    font-size:12.5px; line-height:1.55; color:var(--text-color); }
+  .paper-receipts .pr-says b { font-weight:600; }
+  .paper-receipts .pr-nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'paper-receipts';
+    const D = [
+      { k:'laguna', lab:'poolside', ttl:'LAGUNA M.1/XS.2 Technical Report',
+        loc:'§4.3.3, p20', id:'2605.27605', img:'laguna.png',
+        says:'<b>A frontier lab budgets for this.</b> 1.3B tokens of supervised trajectories collected across OpenHands, OpenCode and Mini-SWE-Agent, with each harness’s native quirks deliberately left intact.' },
+      { k:'katcoder', lab:'KwaiKAT', ttl:'KAT-Coder-V2.5 Technical Report',
+        loc:'§4.1, p9', id:'2607.05471', img:'katcoder.png',
+        says:'<b>The failure has a name.</b> Train in one harness and the model learns that harness’s interface conventions rather than the task. They call the fix harness scaling.' },
+      { k:'orchard', lab:'Orchard', ttl:'Orchard: An Open-Source Agentic Modeling Framework',
+        loc:'§5, p20', id:'2605.15040', img:'orchard.png',
+        says:'<b>And it is measured.</b> 62.4% on the harness it trained in, 3.6% on one it had never seen. A multi-harness model holds a 45.0 to 64.3 band instead.' },
+      { k:'openforge', lab:'OpenForgeRL', ttl:'OpenForgeRL: Train Harness-native Agents in Any Environment',
+        loc:'Table 5, p9', id:'2607.21557', img:'openforge.png',
+        says:'<b>Diversity is not a tax.</b> Training on three harnesses beat training on one even on that one’s home turf, 48.5 against 46.0, and nearly tripled Codex.' },
+      { k:'agentlt', lab:'Agent Lightning', ttl:'Agent Lightning v1.0: Towards Harnessed Agentic RL',
+        loc:'Abstract, p1', id:'2608.17528', img:'agentlt.png',
+        says:'<b>Why it is hard.</b> The harness owns the interaction loop, so the trainer sees only a stream of request and response pairs. Reassembling those into training samples is the open problem.' },
+    ];
+    const boot = () => {
+      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+      let cur = 0;
+      const render = () => {
+        const d = D[cur];
+        r.innerHTML =
+          '<div class="pr-tabs" role="group" aria-label="Choose a paper">' +
+          D.map((x,i) => `<button type="button" class="pr-tab" data-i="${i}" aria-pressed="${i===cur}">${x.lab}</button>`).join('') +
+          '</div>' +
+          '<div class="pr-card"><div class="pr-head">' +
+          `<span class="pr-lab">${d.lab}</span><span class="pr-ttl">${d.ttl}</span>` +
+          `<span class="pr-loc">${d.loc} · <a href="https://arxiv.org/abs/${d.id}" target="_blank" rel="noopener">arXiv:${d.id}</a></span>` +
+          '</div>' +
+          `<div class="pr-plate"><img src="/papers/${d.img}" alt="Excerpt from ${d.ttl}, ${d.loc}" loading="lazy"></div>` +
+          `<div class="pr-says">${d.says}</div></div>` +
+          '<div class="pr-nt">Crops rendered from the official arXiv PDFs. Nothing is retouched or recomposed; the only edit is the crop rectangle. Follow any link to read the passage in context.</div>';
+        r.querySelectorAll('.pr-tab').forEach(b => b.addEventListener('click', () => {
+          cur = +b.dataset.i; render();
+        }));
+      };
+      render();
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+  })();
+</script>

@@ -1,0 +1,99 @@
+{
+  "historical_record": true,
+  "usage": "Dated experiment evidence; active reproduction settings are in deployment.json.",
+  "status": "native_explicit_tolerance_correction_requalification_pending",
+  "compute": {
+    "partition": "hopper-prod",
+    "training_gpus_per_arm": 2,
+    "whitebox_training_provider": "HF Jobs",
+    "whitebox_training_flavor": "h200x2",
+    "opencode_training_provider": "Slurm hopper-prod",
+    "trainer_gpus": 1,
+    "inference_gpus": 1,
+    "evaluation_gpus": 2,
+    "gpu_type": "H100",
+    "eval_tp": 1,
+    "eval_dp": 2,
+    "environment": "local native OpenCode service; existing native SETA HF Space for Whitebox",
+    "sandbox": "daytona"
+  },
+  "model": {
+    "id": "Qwen/Qwen3.5-2B",
+    "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc"
+  },
+  "data": {
+    "train_tasks": 1000,
+    "train_difficulty": {
+      "easy": 150,
+      "medium": 600,
+      "hard": 250
+    },
+    "test_tasks": 250,
+    "test_difficulty": {
+      "easy": 33,
+      "medium": 118,
+      "hard": 99
+    },
+    "task_manifests": "Same frozen manifests as configs/deployment.json"
+  },
+  "training": {
+    "learning_rate": 3e-06,
+    "num_generations": 8,
+    "save_steps": 50,
+    "max_steps": 1000,
+    "walltime_hours": 24,
+    "initialization": "pinned base; smoke checkpoints are disposable",
+    "opencode": {
+      "implementation": "native standalone OpenCode, not Harbor training",
+      "recipe": "same atomic AsyncGRPO recipe as original multi-harness run",
+      "max_staleness": 4,
+      "worker_ceiling": 32,
+      "max_outstanding_rollouts": 16,
+      "sandbox_budget": 16,
+      "smoke_job": "80549",
+      "prepared_main_plan": "experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-main-ready/plan.json"
+    },
+    "whitebox": {
+      "implementation": "native synchronous bash/SETA GRPO",
+      "sandbox_budget": 8,
+      "smoke_job": "6aa9a487f76d6a098a70e3d2",
+      "additional_local_smoke_job": "80555",
+      "additional_local_smoke_compute": "hopper-prod, two H100s; same portable source and frozen data",
+      "prepared_main_plan": "experiments/daytona_harness_comparison/logs/hf-20260915/hf-whitebox-main-ready/plan.json"
+    }
+  },
+  "evaluation": {
+    "metric": "pass@1",
+    "concurrency": 50,
+    "ramp": false,
+    "interval_steps": 100,
+    "opencode_native_baseline_cells": 250,
+    "opencode_training_checkpoint_harnesses": [
+      "opencode",
+      "claude-code",
+      "codex",
+      "mini-swe-agent"
+    ],
+    "opencode_training_checkpoint_cells": 1000,
+    "whitebox_training_checkpoint_cells": 250,
+    "separate_gpu_allocations": true,
+    "checkpoint_policy": "immutable completed weights; no optimizer or inference synchronization with trainer",
+    "sandbox_capacity_policy": "Reserve both trainers before admitting evals; serialize eval jobs if joint capacity is insufficient",
+    "retry_policy": "Only infrastructure failures without a grade; preserve first graded zero or one",
+    "remaining_work": "Native corrected optimizer/checkpoint requalification, HF checkpoint evaluation, late Trackio replay, final launch previews",
+    "compute_by_arm": {
+      "opencode": "independent hopper-prod 2 H100, TP1/DP2",
+      "whitebox": "independent HF a100-large, TP1/DP1"
+    }
+  },
+  "gates": {
+    "full_native_baseline": "passed: 21/250, 8.4% pass@1, 250/250 TiTO, zero ungraded attempts, job80514",
+    "whitebox_optimizer_save_remote_resume": "passed: 6aa9a487f76d6a098a70e3d2 completed all4 updates,3 nonzero-gradient; exact TiTO, changed weights, native optimizer state and remote restore verified",
+    "opencode_optimizer_save_remote_resume": "80549 passed earlier runtime; corrected explicit-zero-tolerance runtime is staging in local-opencode-smoke-v4 for requalification",
+    "local_checkpoint_eval_controller": "passed: OpenCode80565 (8/8 cells), Whitebox80576 (2/2 cells); independent TP1/DP2 H100s, exact TiTO, cleanup0",
+    "long_training_submitted": false,
+    "whitebox_local_optimizer_save_remote_resume": "passed:80555, all4updates,2nonzero-gradient updates, exact TiTO, changed weights, native optimizer state and remote restore; zero owned sandboxes remain",
+    "whitebox_hf_checkpoint_eval": "running: 6aa9af55f76d6a098a70e52d, A10080GB,250 fixed tests,pass@1,concurrency50",
+    "native_baseline_with_frozen_tolerances": "passed: deterministic rescore of all250 unchanged first responses;21correct,0changed grades; all1250 task grading parameters match"
+  }
+}

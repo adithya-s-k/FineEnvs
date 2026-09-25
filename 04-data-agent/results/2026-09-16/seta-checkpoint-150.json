@@ -1,0 +1,65 @@
+{
+  "status": {
+    "arm": "whitebox",
+    "phase": "checkpoint",
+    "started_at": 1789555915.8065052,
+    "passed": true,
+    "finished_at": 1789557493.4326816
+  },
+  "canonical_scores": {
+    "metric": "pass@1",
+    "arm": "whitebox",
+    "complete": true,
+    "graded_cells": 250,
+    "expected_cells": 250,
+    "harnesses": {
+      "whitebox_seta": {
+        "graded": 250,
+        "correct": 95.0,
+        "pass_at_1": 0.38,
+        "difficulty": {
+          "easy": {
+            "graded": 33,
+            "correct": 28.0,
+            "pass_at_1": 0.8484848484848485
+          },
+          "medium": {
+            "graded": 118,
+            "correct": 49.0,
+            "pass_at_1": 0.4152542372881356
+          },
+          "hard": {
+            "graded": 99,
+            "correct": 18.0,
+            "pass_at_1": 0.18181818181818182
+          }
+        }
+      }
+    },
+    "tito_pass": true,
+    "ungraded_attempts": 0,
+    "harness_versions": {
+      "whitebox_seta": {}
+    },
+    "harness_versions_match_baseline": true,
+    "comparison_ready": true,
+    "average_pass_at_1": 0.38,
+    "selection": "first graded attempt per fixed task/harness; infrastructure failures excluded and retried"
+  },
+  "checkpoint_evaluation": {
+    "source": "hf://buckets/HuggingEnvs/data-agent-daytona-artifacts/20260915-hf/jobs/train-whitebox-1789507273/run/checkpoint-150",
+    "manifest_sha256": "78252d1f78dc0109c0252d53e22d1bc2fd58d720f41164e3a8bae4c5d62bd8ea",
+    "step": 150,
+    "bundle_sha256": "f4a288eaafefddf3cb686eb89de184437a0496f75074a00f1903a9335dcd1a0d"
+  },
+  "services": {
+    "job_id": "6aaa7488f76d6a098a710836",
+    "public_vllm": "https://6aaa7488f76d6a098a710836--8000.hf.jobs",
+    "server": "http://127.0.0.1:8100",
+    "space": "https://huggingenvs-data-agent-seta-whitebox-env.hf.space",
+    "tp": 1,
+    "dp": 1,
+    "flavor": "a100-large"
+  },
+  "job_id": "6aaa7488f76d6a098a710836"
+}
