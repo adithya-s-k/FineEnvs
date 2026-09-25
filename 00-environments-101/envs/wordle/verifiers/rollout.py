@@ -73,7 +73,7 @@ def discover_tools(toolkit) -> tuple[list[dict], dict]:
     tools: list[dict] = []
     table: dict = {}
     for name, fn in inspect.getmembers(toolkit, predicate=inspect.ismethod):
-        if name.startswith("_") or name in {"reset", "cleanup", "set_answer"}:
+        if name.startswith("_") or name in {"reset", "cleanup"}:
             continue
         tools.append(method_to_openai_tool(name, fn))
         table[name] = fn

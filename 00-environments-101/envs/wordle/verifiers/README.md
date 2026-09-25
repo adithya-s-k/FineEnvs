@@ -13,7 +13,7 @@ In-process — no server. The `WordleToolkit` class exposes 2 tool methods that 
 | `guess(word: str)` | Submit a 5-letter word. Returns colored feedback (`🟩🟨⬛`). |
 | `get_history()` | View all previous guesses with their feedback. |
 
-Plus a `reward` property (set by `WordleGame` based on win / partial-credit) and `set_answer(answer)` to fix the target word for deterministic rollouts.
+Plus a `reward` property (set by `WordleGame` based on win / partial-credit). `reset(answer=...)` fixes the target word for deterministic rollouts, and TRL's `environment_factory` passes a dataset `answer` column there automatically. There is deliberately no public `set_answer`: TRL exposes every public method except `reset` as a tool, so the model could set the word and then guess it.
 
 ## How to consume it
 
