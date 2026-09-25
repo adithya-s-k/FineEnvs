@@ -1,0 +1,20 @@
+name: multilingual-ocr
+title: "Multilingual OCR"
+tagline: "Serve the complete Nayana corpus with indexed OpenEnv OCR, layout detection, Gemma-judged VQA, and prefetch."
+order: 5
+status: wip
+hub:
+  org: FineEnvs
+  datasets:
+    - Cognitive-Lab/NayanaOCR_Corpus_2025
+  spaces:
+    - FineEnvs/nayana-ocr-env
+  buckets:
+    - HuggingEnvs/NayanaOCR_Corpus_2025_bucket
+  models: []
+envs:
+  - name: nayana_ocr
+    summary: "Full-page and section OCR, six-class layout detection, MCQ and Gemma-judged descriptive VQA with indexed bucket access."
+    backend: http
+    frameworks:
+      openenv: {transport: http-websocket, verified: true, space: FineEnvs/nayana-ocr-env}

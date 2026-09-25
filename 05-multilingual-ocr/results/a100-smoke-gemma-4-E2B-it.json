@@ -1,0 +1,402 @@
+{
+  "status": "passed",
+  "smoke": true,
+  "steps": 4,
+  "training_loss": 0.27432083152234554,
+  "adapter_updated": true,
+  "reward_groups_without_variance": false,
+  "trained": {
+    "macro_reward": 0.2874868061214662,
+    "by_language_task": {
+      "fr/descriptive_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "judge_accepted": 0.0
+      },
+      "kn/mcq_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0,
+        "overlong": 0.0
+      },
+      "ko/page_ocr": {
+        "samples": 1,
+        "reward": 0.7709302325581396,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.036337209302325583
+      },
+      "ml/mcq_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0,
+        "overlong": 0.0
+      },
+      "mr/descriptive_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "judge_accepted": 0.0
+      },
+      "or/layout_detection": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0,
+        "mean_f1": 0.0
+      },
+      "ru/section_ocr": {
+        "samples": 1,
+        "reward": 0.797948717948718,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.002564102564102564
+      },
+      "te/section_ocr": {
+        "samples": 1,
+        "reward": 0.5473684210526316,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.3157894736842105
+      },
+      "zh/layout_detection": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0,
+        "mean_f1": 0.0
+      },
+      "zh/page_ocr": {
+        "samples": 1,
+        "reward": 0.7586206896551725,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.05172413793103448
+      }
+    },
+    "samples": [
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.fr.test.21579",
+        "language": "fr",
+        "family": "descriptive_vqa",
+        "block_id": "fr:190",
+        "prediction": "Les pierres mentionnées dans le texte sont des symboles ou des éléments dans le contexte de la description de la montagne de Dieu. Le texte parle de \"pierres\" dans le contexte de la montagne de Dieu, suggérant qu'elles font partie de cette structure ou de son apparence.",
+        "reward": 0.0,
+        "grading_policy_id": "d7169c5ab653515ca9160a3ad1d28025b3a991e63a1cbf135d70f27be0bef899",
+        "judge_accepted": false,
+        "correct": false,
+        "complete": false,
+        "no_contradiction": false,
+        "no_unsupported_claims": false,
+        "answers_question": false,
+        "no_grading_manipulation": true
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.kn.test.47041",
+        "language": "kn",
+        "family": "mcq_vqa",
+        "block_id": "kn:494",
+        "prediction": "B",
+        "reward": 0.0,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ko.test.2900",
+        "language": "ko",
+        "family": "page_ocr",
+        "block_id": "ko:31",
+        "prediction": "신학적 성찰위원회의 소집자 Wellspring\nCommunity의 부국장 및 부사장 호주 및\n뉴질랜드 협회 회장 신학 학교.\n\n클레이튼 스펜스 (Clayton Spence) 메이저 클레이튼\n스펜스 (Clayton Spence) 국립 교회 협의회의 구세군\n호주의 신학과 연합위원회와 NSW 애큐메니칼 협의회의\n신학적 성찰 포럼. 그남컴 Campusie Salvation Army\nNSW와 함께 선교사 그 나의, 그는 또한 군대 영토\n도덕의 일원이기도합니다. 사회 문제 협의회.\n\nMandy Tibbey MS Mandy Tibbey는 시드니\n변호사이며 NSW Ecumenical Council의\n성공회 후보 핵심 리더십 그룹. 그녀는 NSW Civil\n법 행정 재판소, 보호자, 상업 및 소비자 및 행정 집\n동단 기회 전문 정계에서 분열과 성공회 교회\n문제.\n\nAndré van Oudtshoorn revd dr André van\nOudtshoorn 비 종교적 인 교장 및 학부장입니다.\n복음주의 피스 성경 대학. 그는 성인 될 목사입니다.\n호주의 기독교 개혁 교회와 Scarborough Baptist\nChurch의 선임 목사.\n\nPaul Weaver Revd Paul Weaver는 동료 사제입니다.\n예평 성공회 교구. 그는 가장 긴 봉사 회원입니다 NSW\n애큐메니칼 협의회의 신학적 성찰 위원회 위원회 및 Taizé\n연락 담당관,",
+        "reward": 0.7709302325581396,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.036337209302325583,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ml.test.14926",
+        "language": "ml",
+        "family": "mcq_vqa",
+        "block_id": "ml:116",
+        "prediction": "C",
+        "reward": 0.0,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.mr.test.30582",
+        "language": "mr",
+        "family": "descriptive_vqa",
+        "block_id": "mr:274",
+        "prediction": "दिलेल्या मजकुरात **CESAR** नावाचा उल्लेख आहे, पण **CESAR चा उल्लेख करणारा मित्र कोण आहे आणि ते कोठे भेटले** याबद्दल कोणतीही माहिती दिलेली नाही.",
+        "reward": 0.0,
+        "grading_policy_id": "d7169c5ab653515ca9160a3ad1d28025b3a991e63a1cbf135d70f27be0bef899",
+        "judge_accepted": false,
+        "correct": false,
+        "complete": false,
+        "no_contradiction": false,
+        "no_unsupported_claims": false,
+        "answers_question": false,
+        "no_grading_manipulation": true
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.or.test.11856",
+        "language": "or",
+        "family": "layout_detection",
+        "block_id": "or:85",
+        "prediction": "[{\"box_2d\": [64, 102, 194, 813], \"label\": \"title\"}, {\"box_2d\": [346, 102, 553, 897], \"label\": \"text\"}, {\"box_2d\": [794, 102, 875, 897], \"label\": \"text\"}]",
+        "reward": 0.0,
+        "grading_policy_id": "layout-mean-f1-iou-50-95-v1",
+        "valid_format": false,
+        "mean_f1": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ru.test.45887",
+        "language": "ru",
+        "family": "section_ocr",
+        "block_id": "ru:511",
+        "prediction": "1. Удалить раздел 30 из счета ABF 2. Удалить раздел 32 из счета ABF 3. В частности, ограничивайте тестирование на наркотики и алкоголь работниками, работающими в операционном роли в пограничных силах Австралии и которые используют силу позицию или участвует в использовании завода или механизма. 4. Будьте более специфичными в отношении обстоятельств, при которых могут использоваться тесты на наркотики и алкоголь и как результаты могут быть использованы. В частности, счет должен исключить рецепт лекарства. 5. Представьте правила о процессах и процедурах для испытаний на наркотики и алкоголь, которые разработаны в консультации с сотрудниками и CPSU. 6. Удалить подраздел 55 (5) из счета ABF. 7. Будьте более конкретны в том, как и когда должны быть введены важные квалификации",
+        "reward": 0.797948717948718,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.002564102564102564,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.te.test.7324",
+        "language": "te",
+        "family": "section_ocr",
+        "block_id": "te:55",
+        "prediction": "DNS సంఖ్యల సాధనాల",
+        "reward": 0.5473684210526316,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.3157894736842105,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.zh.test.16085",
+        "language": "zh",
+        "family": "layout_detection",
+        "block_id": "zh:117",
+        "prediction": "[{\"box_2d\": [84, 153, 314, 664], \"label\": \"title\"}, {\"box_2d\": [334, 153, 631, 664], \"label\": \"text\"}, {\"box_2d\": [794, 153, 875, 411], \"label\": \"text\"}]",
+        "reward": 0.0,
+        "grading_policy_id": "layout-mean-f1-iou-50-95-v1",
+        "valid_format": false,
+        "mean_f1": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.zh.test.15936",
+        "language": "zh",
+        "family": "page_ocr",
+        "block_id": "zh:117",
+        "prediction": "获得免费的眼睛词典\n术语第六版\n\n医学院 - (3个简单提示)\n\n如何学习100+英语\n每天的语。英语词汇。PMP考试\n更改2021 | PMP考试新\n格式|新的PMP考试教学大纲\n和内容大纲|pmpwithray\n非小说文本功能",
+        "reward": 0.7586206896551725,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.05172413793103448,
+        "overlong": false
+      }
+    ]
+  },
+  "baseline": {
+    "macro_reward": 0.2877193642610011,
+    "by_language_task": {
+      "fr/descriptive_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "judge_accepted": 0.0
+      },
+      "kn/mcq_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0,
+        "overlong": 0.0
+      },
+      "ko/page_ocr": {
+        "samples": 1,
+        "reward": 0.7732558139534884,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.03343023255813953
+      },
+      "ml/mcq_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0,
+        "overlong": 0.0
+      },
+      "mr/descriptive_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "judge_accepted": 0.0
+      },
+      "or/layout_detection": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0,
+        "mean_f1": 0.0
+      },
+      "ru/section_ocr": {
+        "samples": 1,
+        "reward": 0.797948717948718,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.002564102564102564
+      },
+      "te/section_ocr": {
+        "samples": 1,
+        "reward": 0.5473684210526316,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.3157894736842105
+      },
+      "zh/layout_detection": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0,
+        "mean_f1": 0.0
+      },
+      "zh/page_ocr": {
+        "samples": 1,
+        "reward": 0.7586206896551725,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.05172413793103448
+      }
+    },
+    "samples": [
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.fr.test.21579",
+        "language": "fr",
+        "family": "descriptive_vqa",
+        "block_id": "fr:190",
+        "prediction": "Les pierres mentionnées dans le texte sont des pierres de feu.",
+        "reward": 0.0,
+        "grading_policy_id": "d7169c5ab653515ca9160a3ad1d28025b3a991e63a1cbf135d70f27be0bef899",
+        "judge_accepted": false,
+        "correct": false,
+        "complete": false,
+        "no_contradiction": false,
+        "no_unsupported_claims": false,
+        "answers_question": false,
+        "no_grading_manipulation": true
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.kn.test.47041",
+        "language": "kn",
+        "family": "mcq_vqa",
+        "block_id": "kn:494",
+        "prediction": "B",
+        "reward": 0.0,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ko.test.2900",
+        "language": "ko",
+        "family": "page_ocr",
+        "block_id": "ko:31",
+        "prediction": "신학적 성찰위원회의 소집자 Wellspring\nCommunity의 부국장 및 부사장 호주 및\n뉴질랜드 협회 회장 신학 학교.\n\n클레이튼 스펜스 (Clayton Spence) 메이저 클레이튼\n스펜스 (Clayton Spence) 국립 교회 협의회의 구세군\n호주의 신학과 연합위원회와 NSW 에큐메니칼 협의회의\n신학적 성찰 포럼. 그남컴 Campusie Salvation Army\nNSW와 함께 선교사 그 나의, 그는 또한 군대 영토\n도덕의 일원이기도합니다. 사회 문제 협의회.\n\nMandy Tibbey MS Mandy Tibbey는 시드니\n변호사이며 NSW Ecumenical Council의\n성공회 후보 핵심 리더십 그룹. 그녀는 NSW Civil\n법 행정 재판소, 보호자, 상업 및 소비자 및 행정 집\n동단 기회 전문 정계에서 분열과 성공회 교회\n문제.\n\nAndré van Oudtshoorn revd dr André van\nOudtshoorn 비 종교적 인 교장 및 학부장입니다.\n복음주의 피스 성경 대학. 그는 성인 될 목사입니다.\n호주의 기독교 개혁 교회와 Scarborough Baptist\nChurch의 선임 목사.\n\nPaul Weaver Revd Paul Weaver는 동료 사제입니다.\n예평 성공회 교구. 그는 가장 긴 봉사 회원입니다 NSW\n에큐메니칼 협의회의 신학적 성찰 위원회 위원회 및 Taizé\n연락 담당관,",
+        "reward": 0.7732558139534884,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.03343023255813953,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ml.test.14926",
+        "language": "ml",
+        "family": "mcq_vqa",
+        "block_id": "ml:116",
+        "prediction": "C",
+        "reward": 0.0,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.mr.test.30582",
+        "language": "mr",
+        "family": "descriptive_vqa",
+        "block_id": "mr:274",
+        "prediction": "दिलेल्या मजकुरात **CESAR** नावाचा उल्लेख आहे, परंतु **CESAR चा उल्लेख करणारा मित्र कोण आहे आणि ते कोठे भेटले** याबद्दल कोणतीही माहिती दिलेली नाही.",
+        "reward": 0.0,
+        "grading_policy_id": "d7169c5ab653515ca9160a3ad1d28025b3a991e63a1cbf135d70f27be0bef899",
+        "judge_accepted": false,
+        "correct": false,
+        "complete": false,
+        "no_contradiction": false,
+        "no_unsupported_claims": false,
+        "answers_question": false,
+        "no_grading_manipulation": true
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.or.test.11856",
+        "language": "or",
+        "family": "layout_detection",
+        "block_id": "or:85",
+        "prediction": "```json\n[{\"box_2d\": [64, 101, 194, 813], \"label\": \"title\"},\n{\"box_2d\": [346, 101, 554, 898], \"label\": \"text\"},\n{\"box_2d\": [794, 101, 883, 898], \"label\": \"text\"}]\n```",
+        "reward": 0.0,
+        "grading_policy_id": "layout-mean-f1-iou-50-95-v1",
+        "valid_format": false,
+        "mean_f1": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ru.test.45887",
+        "language": "ru",
+        "family": "section_ocr",
+        "block_id": "ru:511",
+        "prediction": "1. Удалить раздел 30 из счета ABF 2. Удалить раздел 32 из счета ABF 3. В частности, ограничивайте тестирование на наркотики и алкоголь работниками, работающими в операционном роли в пограничных силах Австралии и которые используют силу позицию или участвует в использовании завода или механизма. 4. Будьте более специфичными в отношении обстоятельств, при которых могут использоваться тесты на наркотики и алкоголь и как результаты могут быть использованы. В частности, счет должен исключить рецепт лекарства. 5. Представьте правила о процессах и процедурах для испытаний на наркотики и алкоголь, которые разработаны в консультации с сотрудниками и CPSU. 6. Удалить подраздел 55 (5) из счета ABF. 7. Будьте более конкретны в том, как и когда должны быть введены важные квалификации",
+        "reward": 0.797948717948718,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.002564102564102564,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.te.test.7324",
+        "language": "te",
+        "family": "section_ocr",
+        "block_id": "te:55",
+        "prediction": "DNS సంఖ్యల సాధనాల",
+        "reward": 0.5473684210526316,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.3157894736842105,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.zh.test.16085",
+        "language": "zh",
+        "family": "layout_detection",
+        "block_id": "zh:117",
+        "prediction": "[{\"box_2d\": [93, 143, 314, 664], \"label\": \"title\"}, {\"box_2d\": [334, 143, 633, 664], \"label\": \"text\"}, {\"box_2d\": [794, 163, 875, 411], \"label\": \"text\"}]",
+        "reward": 0.0,
+        "grading_policy_id": "layout-mean-f1-iou-50-95-v1",
+        "valid_format": false,
+        "mean_f1": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.zh.test.15936",
+        "language": "zh",
+        "family": "page_ocr",
+        "block_id": "zh:117",
+        "prediction": "获得免费的眼睛词典\n术语第六版\n\n医学院 - (3个简单提示)\n\n如何学习100+英语\n每天的语。英语词汇。PMP考试\n更改2021 | PMP考试新\n格式|新的PMP考试教学大纲\n和内容大纲|pmpwithray\n非小说文本功能",
+        "reward": 0.7586206896551725,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.05172413793103448,
+        "overlong": false
+      }
+    ]
+  },
+  "snapshot_id": "867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a",
+  "job_id": "6ab2e39952d0dbd7f1d8039d",
+  "job_url": "https://huggingface.co/jobs/AdithyaSK/6ab2e39952d0dbd7f1d8039d",
+  "lora_target_count": 82
+}
