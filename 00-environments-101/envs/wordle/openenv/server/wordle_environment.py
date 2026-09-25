@@ -44,6 +44,8 @@ class WordleEnvironment(MCPEnvironment):
 
     def __init__(self):
         self._game: Optional[WordleGame] = None
+        # the finished game whose reward has already gone out in an observation
+        self._rewarded_game: Optional[WordleGame] = None
         self._episode_id = str(uuid4())
         self._step_count = 0
 
@@ -156,10 +158,26 @@ class WordleEnvironment(MCPEnvironment):
         return self._with_game_outcome(await super().step_async(action, timeout_s=timeout_s, **kwargs))
 
     def _with_game_outcome(self, observation: Observation) -> Observation:
-        """Tell OpenEnv clients when the game is over: done=True and the game's reward."""
-        if self._game is not None and self._game.done:
+        """Tell OpenEnv clients when the game is over: done=True and the game's reward.
+
+        The reward is reported once, on the step that ends the game. An observation's reward is what
+        that step earned, so a guess or get_history after the end carries done=True and reward=None:
+        repeating the final reward there would count the win again for any client that sums
+        per-step rewards.
+
+        For a remote client this observation is the only place the reward arrives: over the
+        WebSocket, OpenEnv's State model keeps episode_id and step_count and drops the rest of the
+        state dict. So score an episode by its last non-null reward (or the sum; they agree).
+        state["reward"] is there for in-process use.
+        """
+        game = self._game
+        if game is not None and game.done:
             observation.done = True
-            observation.reward = float(self._game.reward)
+            if game is not self._rewarded_game:
+                observation.reward = float(game.reward)
+                self._rewarded_game = game
+            else:
+                observation.reward = None
         return observation
 
     @property
