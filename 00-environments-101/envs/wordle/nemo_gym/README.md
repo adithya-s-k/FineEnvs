@@ -13,7 +13,7 @@ A multi-turn Wordle environment, packaged using **[NeMo Gym](https://github.com/
 | `POST /get_history` | `{}` | Return the full guess history. |
 | `POST /verify` | NeMoGym verify schema | Post-episode reward computation. |
 
-Sessions are managed via cookies. Reward is **computed post-episode** by `/verify`, not per-call (Pattern 3 in the COMPARE doc).
+Sessions are managed via cookies. Reward is **computed post-episode** by `/verify`, not per-call (Pattern 3 in the COMPARE doc). It is 1.0 when a `guess` tool output is the game's win line and 0.0 otherwise; the model's own messages are not read, so writing "Correct" earns nothing.
 
 ## How to consume it
 
