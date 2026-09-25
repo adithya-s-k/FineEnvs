@@ -76,8 +76,45 @@ def test_guesses_after_the_game_ends_change_nothing():
     reward = _guess(wordle, "crane").reward
     obs = _guess(wordle, "slate")
     assert obs.done is True
-    assert obs.reward == pytest.approx(reward)
     assert wordle.state["reward"] == pytest.approx(reward)
+
+
+def test_the_final_reward_is_reported_once():
+    """Steps after the end earn nothing, so summing per-step rewards gives the game's reward exactly."""
+    wordle = WordleEnvironment()
+    wordle.reset(answer="crane")
+    rewards = [_guess(wordle, "slate").reward, _guess(wordle, "crane").reward]
+    after = [
+        _guess(wordle, "slate"),
+        wordle.step(CallToolAction(tool_name="get_history", arguments={})),
+    ]
+    assert all(obs.done is True for obs in after)
+    assert all(obs.reward is None for obs in after)
+    rewards += [obs.reward for obs in after]
+    assert sum(r for r in rewards if r is not None) == pytest.approx(
+        _expected_reward("crane", ["slate", "crane"])
+    )
+
+
+def test_a_new_game_reports_its_own_reward():
+    wordle = WordleEnvironment()
+    wordle.reset(answer="crane")
+    _guess(wordle, "crane")
+    wordle.step(CallToolAction(tool_name="reset_game", arguments={}))
+    answer = wordle._game.answer
+    obs = _guess(wordle, answer)
+    assert obs.done is True
+    assert obs.reward == pytest.approx(_expected_reward(answer, [answer]))
+
+
+def test_reset_starts_a_fresh_episode_that_reports_its_reward():
+    wordle = WordleEnvironment()
+    wordle.reset(answer="crane")
+    _guess(wordle, "crane")
+    wordle.reset(answer="crane")
+    obs = _guess(wordle, "crane")
+    assert obs.done is True
+    assert obs.reward == pytest.approx(_expected_reward("crane", ["crane"]))
 
 
 def test_async_step_reports_the_outcome_too():

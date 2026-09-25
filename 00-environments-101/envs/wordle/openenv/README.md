@@ -19,7 +19,7 @@ A guess returns a string like `'⬛🟨⬛⬛🟨 — 5 guesses remaining.'`:
 - 🟨 letter is in the word but wrong position
 - ⬛ letter is not in the word
 
-Episode ends after 6 guesses or a correct word. Last response includes `'Game over! The word was '<answer>'.'`. The step that ends the game returns `done=True` and `reward` set to `WordleGame.reward` (earlier steps: `done=False`, `reward=None`), so RL clients can score episodes without parsing the text. `reset(answer=...)` pins the hidden word, e.g. for fixed evaluation sets.
+Episode ends after 6 guesses or a correct word. Last response includes `'Game over! The word was '<answer>'.'`. The step that ends the game returns `done=True` and `reward` set to `WordleGame.reward` (earlier steps: `done=False`, `reward=None`), so RL clients can score episodes without parsing the text. The reward is reported once: any step after the end returns `done=True` with `reward=None`, so summing per-step rewards gives the game's reward, and `state["reward"]` holds it for clients that read it at the end. `reset(answer=...)` pins the hidden word, e.g. for fixed evaluation sets.
 
 ## How to consume it
 
