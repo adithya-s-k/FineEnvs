@@ -156,6 +156,21 @@ def test_parser_converts_dms_correctly():
     assert parsed.lon == pytest.approx(2.2944, abs=1e-3)
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "48°99'29\"N 2°17'40\"E",
+        "48°51'99\"N 2°17'40\"E",
+        "48°51'29\"N 2°77'40\"E",
+        "48°51'29\"N 2°17'99\"E",
+    ],
+)
+def test_parser_rejects_dms_minutes_and_seconds_over_sixty(text):
+    parsed = parse_guess(text)
+    assert not parsed.ok
+    assert "DMS" in parsed.note
+
+
 def test_parser_prefers_labelled_over_stray_numbers():
     # "2019, maybe 2021" is a decimal pair; the labelled coordinates must win.
     parsed = parse_guess("Captured 2019, maybe 2021. lat: 55.67 lon: 12.56")
