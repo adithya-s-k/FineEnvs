@@ -286,7 +286,7 @@ def start_run(body: RunRequest, request: Request):
     try:
         run = core.submit(u["name"], u["token"], {"id": v["id"], "domain": v["domain"], "title": v["short_title"],
                                                   "facets": v.get("facets")}, model, provider, judge,
-                          endpoint=endpoint, agent_key=agent_key, params=body.params.model_dump(exclude_defaults=True),
+                          endpoint=endpoint, agent_key=agent_key, params=body.params.model_dump(exclude_none=True),
                           visibility=body.visibility)
     except RuntimeError as e:
         raise HTTPException(429, str(e))
