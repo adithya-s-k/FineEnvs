@@ -10,11 +10,16 @@ download.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import pathlib
+import re
+import shutil
+import subprocess
 
 import pytest
+from openenv.core.env_server.mcp_types import CallToolAction
 
 from geoguesser_env.models import (
     EpisodeMode,
@@ -166,6 +171,29 @@ def test_parser_converts_dms_correctly():
     ],
 )
 def test_parser_rejects_dms_minutes_and_seconds_over_sixty(text):
+    parsed = parse_guess(text)
+    assert not parsed.ok
+    assert "DMS" in parsed.note
+
+
+def test_parser_routes_labelled_dms_through_dms_validation():
+    parsed = parse_guess("lat: 48°59'59\"N lon: 2°17'40\"E")
+    assert parsed.ok
+    assert parsed.source == "dms"
+    assert parsed.lat == pytest.approx(48.9997, abs=1e-3)
+    assert parsed.lon == pytest.approx(2.2944, abs=1e-3)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "lat: 48°60'00\"N lon: 2°17'40\"E",
+        "lat: 48°59'60\"N lon: 2°17'40\"E",
+        "lat: 48°59'59\"N lon: 2°60'00\"E",
+        "lat: 48°59'59\"N lon: 2°17'60\"E",
+    ],
+)
+def test_parser_rejects_labelled_dms_sixty_boundary(text):
     parsed = parse_guess(text)
     assert not parsed.ok
     assert "DMS" in parsed.note
@@ -529,6 +557,50 @@ def test_step_budget_exhaustion_ends_the_episode_without_a_guess():
     assert "over" in late_guess.feedback
 
 
+def _assert_terminal_mcp_result(result, env):
+    assert result.done
+    assert result.reward == 0.0
+    assert result.metadata["no_guess"] is True
+    assert result.metadata["country"] == env._task.country
+    assert result.metadata["task_id"] == env.state.task_id
+    assert result.metadata["true_lat"] == pytest.approx(env._task.truth[0])
+    assert result.metadata["true_lon"] == pytest.approx(env._task.truth[1])
+    assert result.metadata["score"] == 0.0
+    assert result.metadata["parsed_ok"] is False
+    assert result.result.structured_content["result"]
+    assert "Out of actions" in result.result.structured_content["result"]
+
+
+def test_mcp_sync_tool_call_propagates_exhausted_terminal_observation():
+    env = make_env(max_steps=1)
+    env.reset(task_index=0)
+
+    result = env.step(
+        CallToolAction(
+            tool_name="look",
+            arguments={"heading_deg": 0, "pitch_deg": 0, "fov_deg": 90},
+        )
+    )
+
+    _assert_terminal_mcp_result(result, env)
+
+
+def test_mcp_async_tool_call_propagates_exhausted_terminal_observation():
+    env = make_env(max_steps=1)
+    env.reset(task_index=0)
+
+    result = asyncio.run(
+        env.step_async(
+            CallToolAction(
+                tool_name="look",
+                arguments={"heading_deg": 0, "pitch_deg": 0, "fov_deg": 90},
+            )
+        )
+    )
+
+    _assert_terminal_mcp_result(result, env)
+
+
 def test_stepping_before_reset_is_an_error():
     env = make_env()
     with pytest.raises(RuntimeError):
@@ -624,16 +696,47 @@ def test_play_page_scores_one_guess_out_of_five_thousand():
     assert "load another episode" in page
 
 
-def test_play_page_reveals_any_terminal_observation():
+def test_play_page_terminal_guards_are_idempotent_without_browser():
     from geoguesser_env.server.gradio_ui import play_page_html
 
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node.js is unavailable; full DOM behavior needs a browser")
+
     page = play_page_html(1)
-    assert 'if (observation.done) {' in page
-    assert 'reveal(observation);' in page
-    assert 'else if (op === "pin" && guess)' in page
-    assert 'addStep("guess rejected"' not in page
-    assert '"Out of actions."' in page
-    assert '"no guess"' in page
+    helpers = []
+    for name in ("ggCanStep", "ggBeginReveal"):
+        match = re.search(rf"  function {name}\\(state\\) \\{{.*?\\n  \\}}", page, re.S)
+        assert match, f"{name} helper missing from play page"
+        helpers.append(match.group(0))
+    script = "\n".join(helpers) + """
+const state = {terminal: false, busy: false, ready: true};
+const firstReveal = ggBeginReveal(state);
+const secondReveal = ggBeginReveal(state);
+const canAfterReveal = ggCanStep(state);
+const busyState = {terminal: false, busy: true, ready: true};
+const notReadyState = {terminal: false, busy: false, ready: false};
+console.log(JSON.stringify({
+  firstReveal, secondReveal, canAfterReveal,
+  canWhenBusy: ggCanStep(busyState),
+  canWhenNotReady: ggCanStep(notReadyState)
+}));
+"""
+    completed = subprocess.run(
+        [node, "-e", script],
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    result = json.loads(completed.stdout)
+    assert result == {
+        "firstReveal": True,
+        "secondReveal": False,
+        "canAfterReveal": False,
+        "canWhenBusy": False,
+        "canWhenNotReady": False,
+    }
 
 
 def test_play_page_pad_hides_what_the_backend_cannot_do():
