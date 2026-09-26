@@ -104,6 +104,7 @@ class WordleGemEnv(Env):
     def step(self, action: str) -> Tuple[str, SupportsFloat, bool, bool, Dict[str, Any]]:
         """Parse action for guess word, submit to game, return observation + reward."""
         self.step_count += 1
+        already_done = self._game.done
 
         word = _extract_guess(action, lenient=self._lenient_parsing)
         if not word:
@@ -115,7 +116,7 @@ class WordleGemEnv(Env):
                 self.error_count += 1
 
         self.last_output = result
-        reward = self._game.reward
+        reward = 0.0 if already_done else self._game.reward
         terminated = self._game.done
         truncated = self.step_count >= self._max_turns and not terminated
 
