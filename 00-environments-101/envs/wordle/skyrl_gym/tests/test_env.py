@@ -49,3 +49,15 @@ def test_tagged_win_gets_the_game_reward():
     out = wordle.step("<guess>crane</guess>")
     assert _get(out, "done") is True
     assert _get(out, "reward") == pytest.approx(1.0 + 0.5 * (1 - 1 / 6))
+
+
+def test_step_after_done_does_not_pay_the_reward_again():
+    wordle = env.WordleSkyRLEnv(answer="crane")
+    wordle.init("prompt")
+    won = wordle.step("<guess>crane</guess>")
+    again = wordle.step("<guess>slate</guess>")
+    assert _get(won, "done") is True
+    assert _get(won, "reward") == pytest.approx(1.0 + 0.5 * (1 - 1 / 6))
+    assert _get(again, "done") is True
+    assert _get(again, "reward") == 0.0
+    assert _get(again, "observations")[0]["content"].startswith("The game is over")
