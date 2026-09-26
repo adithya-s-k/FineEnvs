@@ -1,5 +1,6 @@
 // Explore: domain cards, the treemap, search, facets and the task list.
-import { $, esc, fmt, vals, getJSONgz, storage } from "./util.js";
+import { $, esc, fmt, vals, getJSONgz, sk, progress, emptyState } from "./util.js";
+import { icon, DOMAIN_ICON } from "./icons.js";
 
 const CJK = /[㐀-鿿豈-﫿]/;
 const PAGE = 40;
@@ -34,9 +35,23 @@ export const domains = () => DOMS;
 function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return h >>> 0; }
 const order = (e) => ((e._rand ^ Math.floor(state.seed * 4294967295)) >>> 0);
 
+function skeleton() {
+  return `<div class="wrap">
+    <div class="ex-head"><div style="flex:1">${sk.line(28, 24)}<div style="height:10px"></div>${sk.line(52)}</div></div>
+    <div class="domains">${Array.from({ length: 6 }, () => sk.card(sk.line(50) + sk.line(35, 20) + sk.line(70))).join("")}</div>
+    <div class="panel" style="padding:16px;margin-bottom:18px">${sk.box(220)}</div>
+    <div class="layout"><div>${sk.lines(60, 90, 80, 70, 85, 60)}</div>
+      <div class="list">${Array.from({ length: 6 }, () => `<li>${sk.card(sk.line(30) + sk.line(90, 16) + sk.lines(100, 70))}</li>`).join("")}</div></div></div>`;
+}
+
 export async function mount(el, params) {
   root = el;
-  await load();
+  if (!DATA) {
+    el.innerHTML = skeleton();
+    try { await progress.wrap(load()); }
+    catch (e) { el.innerHTML = `<div class="wrap page">${emptyState("alert", "Couldn't load the environments", esc(e.message), `<button class="btn" onclick="location.reload()">${icon("refresh")}Try again</button>`)}</div>`; return; }
+    if (root !== el) return;
+  }
   if (params) {
     state.q = params.get("q") || "";
     state.dom = DOMS[params.get("d")] ? params.get("d") : null;
@@ -47,34 +62,34 @@ export async function mount(el, params) {
     });
   }
   el.innerHTML = `
-    <div class="wrap">
-      <section class="intro">
-        <p class="lede"><strong>${fmt.format(DATA.total)}</strong> environments an agent can be trained in, across <strong>5 domains</strong>,
-          each graded a different way. Browse them, open one to see everything inside it, and run a rollout with the model of your choice.</p>
-        <div class="domains" id="domains" role="tablist" aria-label="Domains"></div>
+    <div class="wrap fade-in">
+      <section class="ex-head">
+        <div><h1>RL environments</h1>
+          <p>Every task in Xiaomi's MiMo-V2.6 RL release. Open one to see exactly what the agent gets and how it is graded, then run a rollout with a model of your choice.</p></div>
       </section>
-      <section class="map-card" aria-label="Map of environments by category">
-        <div class="map-head"><h2 id="map-title"></h2><span class="hint">Block area = number of environments · click to filter</span></div>
+      <div class="domains" id="domains" role="tablist" aria-label="Domains"></div>
+      <details class="panel map-card" id="map-card" ${matchMedia("(max-width: 760px)").matches ? "" : "open"}>
+        <summary>${icon("chevronRight", 15, "chev")}<h2 id="map-title"></h2><span class="hint">Area is the number of environments. Click a block to filter.</span></summary>
         <div id="map" class="map"></div>
-      </section>
+      </details>
       <div class="toolbar" id="toolbar">
-        <div class="search">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M10 4a6 6 0 1 0 3.87 10.59l4.27 4.27 1.41-1.41-4.27-4.27A6 6 0 0 0 10 4zm0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/></svg>
-          <input id="q" type="search" placeholder="Search environments…  (press / )" autocomplete="off" spellcheck="false" aria-label="Search environments">
+        <div class="search">${icon("search", 16)}
+          <input id="q" type="search" placeholder="Search titles, briefs, categories…" autocomplete="off" spellcheck="false" aria-label="Search environments"><kbd>/</kbd>
         </div>
-        <button class="btn" id="surprise" type="button" title="Open a random task">🎲 Surprise me</button>
-        <button class="btn ghost only-mobile" id="open-filters" type="button">Filters</button>
+        <button class="btn" id="surprise" type="button" title="Open a random environment from the current results">${icon("shuffle", 15)}<span class="long">Random</span></button>
+        <button class="btn only-mobile" id="open-filters" type="button">${icon("filter", 15)}Filters<span id="nfilt"></span></button>
       </div>
       <div class="layout">
         <aside class="filters" id="filters" aria-label="Filters">
+          <div class="sheet-head"><b>Filters</b><button class="btn sm" id="close-filters" type="button">Done</button></div>
           <div class="filters-head"><span>Filters</span><button class="link" id="clear" type="button">Clear all</button></div>
           <div id="facets"></div>
         </aside>
         <section class="results" aria-live="polite">
-          <div class="results-head"><span id="count"></span><span class="muted sm" id="order-note"></span><div class="active" id="active"></div></div>
+          <div class="results-head"><span class="count" id="count"></span><span class="order" id="order-note"></span><div class="active" id="active"></div></div>
           <ol class="list" id="list"></ol>
           <div class="sentinel" id="sentinel"></div>
-          <p class="empty" id="empty" hidden>No environments match. Try fewer filters or a different word.</p>
+          <div id="empty" hidden>${emptyState("search", "No environments match", "Try fewer filters or a different word.", `<button class="btn" id="clear2" type="button">Clear search and filters</button>`)}</div>
         </section>
       </div>
     </div>`;
@@ -127,20 +142,22 @@ function run() {
   matches = ENVS.filter((e) => passes(e));
   if (scores) matches.sort((a, b) => (scores.get(b.id) ?? 0) - (scores.get(a.id) ?? 0));
   else matches.sort((a, b) => order(a) - order(b));
-  $("#order-note", root).textContent = scores ? "best match first" : "shuffled each visit";
+  $("#order-note", root).innerHTML = scores ? "best match first" : `${icon("shuffle", 13)}shuffled each visit`;
+  const nf = Object.values(state.sel).reduce((n, s) => n + s.size, 0);
+  $("#nfilt", root).textContent = nf ? ` (${nf})` : "";
   renderDomains(); renderFacets(); renderActive(); renderMap(); renderList(true); writeURL();
 }
 
 // ── domain cards ─────────────────────────────────────────────────────────────
 function renderDomains() {
   const inSearch = (d) => (searchIds ? ENVS.filter((e) => (!d || e.d === d) && searchIds.has(e.id)).length : null);
-  const cards = [{ id: null, name: "All domains", task: "Every environment in the release", verifier: "5 kinds", count: DATA.total }, ...DATA.domains];
+  const cards = [{ id: null, name: "All domains", verifier: "5 kinds of grader", count: DATA.total }, ...DATA.domains];
   $("#domains", root).innerHTML = cards.map((d) => {
     const hit = inSearch(d.id);
-    return `<button class="dom" role="tab" data-dom="${d.id ?? ""}" aria-selected="${state.dom === d.id}" style="--dc:${d.id ? `var(--c-${d.id})` : "var(--accent)"}">
-      <div class="name"><span class="dot"></span>${esc(d.name)}</div>
-      <div class="n">${fmt.format(hit ?? d.count)}${hit != null ? `<span class="of"> / ${fmt.format(d.count)}</span>` : ""}</div>
-      <div class="task">${esc(d.task)}</div><div class="ver">Graded by <b>${esc(d.verifier)}</b></div></button>`;
+    return `<button class="dom" role="tab" data-dom="${d.id ?? ""}" aria-selected="${state.dom === d.id}" style="--dc:${d.id ? `var(--c-${d.id})` : "var(--text)"}" title="${esc(d.task || "")}">
+      <span class="name">${icon(d.id ? DOMAIN_ICON[d.id] : "grid", 14)}${esc(d.name)}</span>
+      <span class="n">${fmt.format(hit ?? d.count)}${hit != null ? `<span class="of"> / ${fmt.format(d.count)}</span>` : ""}</span>
+      <span class="ver">${d.id ? `Graded by ${esc(d.verifier)}` : esc(d.verifier)}</span></button>`;
   }).join("");
 }
 
@@ -161,8 +178,8 @@ function renderFacets() {
     items = items.slice(0, limit);
     return `<div class="facet"><h3>${esc(label)}</h3>
       ${items.map(([v, c]) => `<button class="opt ${c ? "" : "zero"}" data-k="${esc(key)}" data-v="${esc(v)}" aria-pressed="${sel.has(v)}">
-        <span class="box"></span><span class="lab" title="${esc(v)}">${esc(v)}</span><span class="c">${fmt.format(c)}</span></button>`).join("")}
-      ${hidden || expanded.has(key) ? `<button class="link more" data-more="${esc(key)}">${expanded.has(key) ? "Show fewer" : `Show ${hidden} more`}</button>` : ""}</div>`;
+        <span class="box">${sel.has(v) ? icon("check", 11) : ""}</span><span class="lab" title="${esc(v)}">${esc(v)}</span><span class="c">${fmt.format(c)}</span></button>`).join("")}
+      ${hidden || expanded.has(key) ? `<button class="link more" data-more="${esc(key)}">${icon(expanded.has(key) ? "chevronDown" : "chevronRight", 13)}${expanded.has(key) ? "Show fewer" : `Show ${hidden} more`}</button>` : ""}</div>`;
   }).join("");
 }
 function toggle(key, v) {
@@ -177,7 +194,7 @@ function renderActive() {
   const labels = Object.fromEntries(facetsFor(state.dom));
   const pills = [];
   Object.entries(state.sel).forEach(([k, set]) => set.forEach((v) =>
-    pills.push(`<button class="pill" data-k="${esc(k)}" data-v="${esc(v)}"><span>${esc(labels[k] || k)}</span>${esc(v)}<i aria-hidden="true">×</i></button>`)));
+    pills.push(`<button class="pill" data-k="${esc(k)}" data-v="${esc(v)}"><span>${esc(labels[k] || k)}</span>${esc(v)}${icon("x", 13)}</button>`)));
   $("#active", root).innerHTML = pills.join("");
   $("#count", root).textContent = `${fmt.format(matches.length)} environment${matches.length === 1 ? "" : "s"}`;
 }
@@ -211,6 +228,7 @@ export function renderMap() {
   $("#map-title", root).textContent = state.dom
     ? `${DOMS[state.dom].name}, by ${DOMS[state.dom].facets.find(([k]) => k === DOMS[state.dom].main)[1].replace(" (mentioned)", "").toLowerCase()}`
     : "Everything, by domain and category";
+  if (!W || !H) return;   // the overview is collapsed
   const data = mapData();
   el.innerHTML = "";
   if (!data.children.length) { el.innerHTML = `<p class="empty">Nothing to map.</p>`; return; }
@@ -222,7 +240,7 @@ export function renderMap() {
     svg.selectAll("g.dh").data(h.children).join("g").attr("class", "cell dh").attr("transform", (d) => `translate(${d.x0},${d.y0})`).call((g) => {
       g.append("rect").attr("width", (d) => d.x1 - d.x0).attr("height", 18).attr("fill", "transparent").on("click", (_, d) => setDomain(d.data.dom));
       g.append("text").attr("class", "dname").attr("x", 1).attr("y", 13).attr("fill", (d) => cssVar(`--c-${d.data.dom}`))
-        .text((d) => (d.x1 - d.x0 > 70 ? `${d.data.name} · ${fmt.format(d.value)}` : d.x1 - d.x0 > 34 ? d.data.name : ""));
+        .text((d) => (d.x1 - d.x0 > 90 ? `${d.data.name} · ${fmt.format(d.value)}` : d.x1 - d.x0 > 34 ? d.data.name : ""));
     });
   }
   const leaves = h.leaves();
@@ -231,7 +249,7 @@ export function renderMap() {
   const g = svg.selectAll("g.leaf").data(leaves).join("g").attr("class", (d) => "cell leaf" + (sel && sel.size && !sel.has(d.data.name) ? " dim" : ""))
     .attr("transform", (d) => `translate(${d.x0},${d.y0})`);
   g.append("rect").attr("width", (d) => Math.max(0, d.x1 - d.x0)).attr("height", (d) => Math.max(0, d.y1 - d.y0)).attr("rx", 4)
-    .attr("fill", (d) => d3.interpolateRgb(surface, cssVar(`--c-${d.data.dom}`))(d.data.other ? 0.28 : 0.95 - 0.55 * (d.data.rank / Math.max(maxRank, 6))))
+    .attr("fill", (d) => d3.interpolateRgb(surface, cssVar(`--c-${d.data.dom}`))(d.data.other ? 0.42 : 0.95 - 0.38 * (d.data.rank / Math.max(maxRank, 6))))
     .on("click", (_, d) => clickCell(d.data))
     .on("mousemove", (ev, d) => tip(ev, `<b>${esc(d.data.name)}</b><br>${fmt.format(d.value)} environments · ${DOMS[d.data.dom].name}`))
     .on("mouseleave", () => tip());
@@ -243,7 +261,7 @@ export function renderMap() {
     const label = d.data.name.length > max ? d.data.name.slice(0, Math.max(1, max - 1)) + "…" : d.data.name;
     const t = d3.select(this);
     t.append("text").attr("class", "lbl").attr("x", 8).attr("y", 18).attr("fill", color).text(label);
-    if (hh > 42) t.append("text").attr("class", "num").attr("x", 8).attr("y", 34).attr("fill", color).text(fmt.format(d.value));
+    if (hh > 42) t.append("text").attr("class", "cnt").attr("x", 8).attr("y", 34).attr("fill", color).text(fmt.format(d.value));
   });
 }
 function clickCell(d) {
@@ -267,7 +285,6 @@ function tip(ev, html) {
 }
 
 // ── list ─────────────────────────────────────────────────────────────────────
-const CJKsafe = (s) => s;
 function terms() {
   if (!state.q) return [];
   if (CJK.test(state.q)) return [state.q.trim()];
@@ -282,12 +299,12 @@ function highlight(text) {
 function card(e) {
   const d = DOMS[e.d];
   const chips = d.facets.filter(([k]) => k !== d.main && k !== "source")
-    .flatMap(([k]) => vals(e.f[k]).filter((v) => !LEFTOVER.test(v)).slice(0, 2)).slice(0, 5);
-  const stats = e.n ? [`${e.n.systems} systems`, `${e.n.files} files`, `${e.n.checks} checks`] : [];
+    .flatMap(([k]) => vals(e.f[k]).filter((v) => !LEFTOVER.test(v)).slice(0, 2)).slice(0, 4);
+  const stats = e.n ? [[`${e.n.systems}`, "systems"], [`${e.n.files}`, "files"], [`${e.n.checks}`, "checks"]] : [];
   return `<li><a class="card" href="#/task/${encodeURIComponent(e.id)}" style="--dc:var(--c-${e.d})">
-    <div class="row1"><span class="dot"></span><span class="dn">${esc(d.name)}</span><span class="sep">/</span><span>${esc(vals(e.f[d.main]).join(", "))}</span></div>
-    <p class="t">${highlight(CJKsafe(e.t))}</p><p class="s">${highlight(e.s)}</p>
-    ${chips.length || stats.length ? `<div class="chips">${chips.map((c) => `<span class="chip">${esc(c)}</span>`).join("")}${stats.map((s) => `<span class="chip stat">${s}</span>`).join("")}</div>` : ""}
+    <div class="row1"><span class="dn">${icon(DOMAIN_ICON[e.d], 13)}${esc(d.name)}</span><span class="faint">/</span><span class="cat">${esc(vals(e.f[d.main]).join(", "))}</span></div>
+    <p class="t">${highlight(e.t)}</p><p class="s">${highlight(e.s)}</p>
+    ${chips.length || stats.length ? `<div class="chips">${chips.map((c) => `<span class="chip">${esc(c)}</span>`).join("")}${stats.map(([n, l]) => `<span class="chip outline"><b>${n}</b> ${l}</span>`).join("")}</div>` : ""}
   </a></li>`;
 }
 function renderList(reset) {
@@ -297,6 +314,7 @@ function renderList(reset) {
   list.insertAdjacentHTML("beforeend", next.map(card).join(""));
   shown += next.length;
   $("#empty", root).hidden = matches.length > 0;
+  $("#list", root).hidden = !matches.length;
 }
 
 function wire(el) {
@@ -310,7 +328,11 @@ function wire(el) {
     if (m) { expanded.has(m.dataset.more) ? expanded.delete(m.dataset.more) : expanded.add(m.dataset.more); renderFacets(); }
   });
   $("#active", el).addEventListener("click", (ev) => { const p = ev.target.closest(".pill"); if (p) toggle(p.dataset.k, p.dataset.v); });
-  $("#clear", el).addEventListener("click", () => { state.sel = {}; state.q = ""; $("#q", el).value = ""; state.dom = null; run(); });
+  const clearAll = () => { state.sel = {}; state.q = ""; $("#q", el).value = ""; state.dom = null; run(); };
+  $("#clear", el).addEventListener("click", clearAll);
+  $("#clear2", el).addEventListener("click", clearAll);
+  $("#close-filters", el).addEventListener("click", () => $("#filters", el).classList.remove("open"));
+  $("#map-card", el).addEventListener("toggle", () => renderMap());
   $("#surprise", el).addEventListener("click", () => {
     const pool = matches.length ? matches : ENVS;
     location.hash = "#/task/" + encodeURIComponent(pool[Math.floor(Math.random() * pool.length)].id);

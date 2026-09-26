@@ -1,4 +1,4 @@
-"""MiMo RL Environments Explorer: browse the tasks, run a rollout on one, watch it, see it graded.
+"""MiMo RL Environment Explorer: browse the tasks, run a rollout on one, watch it, see it graded.
 
     uv run uvicorn app.main:app --reload      # local: your HF token, traces in ./.local-runs
 """
@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from . import auth, catalog, config, models, previews, store
 from .runner import core
 
-app = FastAPI(title="MiMo RL Environments Explorer", docs_url="/api/docs")
+app = FastAPI(title="MiMo RL Environment Explorer", docs_url="/api/docs")
 app.include_router(auth.router)
 
 
@@ -24,9 +24,23 @@ app.include_router(auth.router)
 async def _revalidate(request: Request, call_next):
     """Code and styles revalidate on every load (cheap: ETag -> 304), so a deploy is never half-cached."""
     resp = await call_next(request)
-    if not request.url.path.startswith("/api/") and not request.url.path.endswith(".gz"):
+    if not request.url.path.startswith("/api/"):
         resp.headers.setdefault("Cache-Control", "no-cache")
     return resp
+
+
+@app.middleware("http")
+async def _same_origin_posts(request: Request, call_next):
+    """The session cookie is SameSite=None (it has to work in the huggingface.co iframe), so a state-changing
+    request must prove it came from this page: another site could otherwise start rollouts billed to you."""
+    if request.method not in ("GET", "HEAD", "OPTIONS") and request.url.path.startswith("/api/"):
+        origin = request.headers.get("origin")
+        host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+        if origin and origin.split("://", 1)[-1] != host:
+            return JSONResponse({"detail": "cross-site request refused"}, 403)
+        if not origin and request.headers.get("sec-fetch-site") not in (None, "same-origin", "none"):
+            return JSONResponse({"detail": "cross-site request refused"}, 403)
+    return await call_next(request)
 
 
 @app.on_event("startup")
@@ -41,7 +55,8 @@ def _startup() -> None:
 @app.get("/api/me")
 def me(request: Request):
     u = auth.current_user(request)
-    return {"user": auth.public(u), "local": config.LOCAL_MODE, "missing_scopes": (u or {}).get("missing_scopes", []),
+    return {"user": auth.public(u), "local": config.LOCAL_MODE, "oauth": not config.LOCAL_MODE,
+            "missing_scopes": (u or {}).get("missing_scopes", []),
             "storage": "local folder" if not config.STORAGE_DIR.as_posix().startswith("/data") else "private bucket"}
 
 

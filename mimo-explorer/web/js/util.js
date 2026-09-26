@@ -1,4 +1,5 @@
-// Shared helpers: DOM, formatting, API, markdown, modal.
+// Shared helpers: DOM, formatting, API, markdown, modal, loading states.
+import { icon, FILE_ICON } from "./icons.js";
 
 export const $ = (s, el = document) => el.querySelector(s);
 export const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -31,7 +32,7 @@ export async function api(path, opts = {}) {
 
 // Data ships gzipped (Spaces serve static files uncompressed); inflate in the browser.
 export async function getJSONgz(url) {
-  const res = await fetch(url);
+  const res = await fetch(url, { cache: "no-cache" });   // revalidate (a cheap 304), so a redeploy never serves stale data
   if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
   const buf = new Uint8Array(await res.arrayBuffer());
   if (buf[0] !== 0x1f || buf[1] !== 0x8b) return JSON.parse(new TextDecoder().decode(buf));
@@ -74,6 +75,7 @@ export function md(src) {
   const inline = (s) => esc(s)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[\s(])\*([^*\s][^*]*?)\*(?=[\s.,;:!?)]|$)/g, "$1<em>$2</em>")
     .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
   const flush = () => {
     if (para.length) { out.push(`<p>${inline(para.join(" "))}</p>`); para = []; }
@@ -115,7 +117,7 @@ export function md(src) {
   return out.join("");
 }
 
-export function toast(text, ms = 1800) {
+export function toast(text, ms = 2200) {
   const t = $("#toast");
   t.textContent = text;
   t.hidden = false;
@@ -123,49 +125,103 @@ export function toast(text, ms = 1800) {
   toast._t = setTimeout(() => (t.hidden = true), ms);
 }
 
-export function openModal(title, html, rawUrl) {
+// A thin bar across the top while something loads. Nested calls are counted, so it finishes once.
+let busy = 0, crawl = null;
+export const progress = {
+  start() {
+    const bar = $("#progress i");
+    if (!bar) return;
+    if (busy++ === 0) {
+      clearInterval(crawl);
+      bar.style.transition = "none"; bar.style.opacity = "1"; bar.style.width = "0";
+      requestAnimationFrame(() => { bar.style.transition = ""; bar.style.width = "30%"; });
+      crawl = setInterval(() => { const w = parseFloat(bar.style.width) || 0; if (w < 90) bar.style.width = w + (90 - w) * 0.08 + "%"; }, 250);
+    }
+  },
+  done() {
+    const bar = $("#progress i");
+    if (!bar || busy === 0 || --busy > 0) return;
+    clearInterval(crawl);
+    bar.style.width = "100%";
+    setTimeout(() => { if (!busy) { bar.style.opacity = "0"; setTimeout(() => { if (!busy) bar.style.width = "0"; }, 300); } }, 180);
+  },
+  async wrap(p) { this.start(); try { return await p; } finally { this.done(); } },
+};
+
+// Skeleton building blocks: widths are percentages, so they read as text rather than as boxes.
+export const sk = {
+  line: (w = 100, h = 12) => `<span class="sk line" style="width:${w}%;height:${h}px"></span>`,
+  lines: (...ws) => ws.map((w) => sk.line(w)).join(""),
+  box: (h, extra = "") => `<span class="sk" style="height:${h}px;${extra}"></span>`,
+  card: (inner) => `<div class="sk-card">${inner}</div>`,
+};
+
+let modalReturn = null;
+export function openModal(title, html, { raw, kind } = {}) {
+  modalReturn = document.activeElement;
   $("#modal-title").textContent = title;
+  $("#modal-icon").innerHTML = kind ? icon(FILE_ICON[kind] || kind, 16, "kind") : "";
   $("#modal-body").innerHTML = html;
   const open = $("#modal-open");
-  open.hidden = !rawUrl;
-  if (rawUrl) open.href = rawUrl;
+  open.hidden = !raw;
+  if (raw) { open.href = raw; open.innerHTML = `${icon("external", 14)}Open original`; }
   $("#modal").hidden = false;
   $("#scrim").hidden = false;
   document.body.classList.add("noscroll");
+  $("#modal-close").focus();
   return $("#modal-body");
 }
 export function closeModal() {
+  if ($("#modal").hidden && !$("#dialog-root").innerHTML) return;
   $("#modal").hidden = true;
   $("#scrim").hidden = true;
   $("#modal-body").innerHTML = "";
+  $("#dialog-root").innerHTML = "";
   document.body.classList.remove("noscroll");
+  if (modalReturn?.focus) modalReturn.focus();
+  modalReturn = null;
+}
+export function openDialog(html) {
+  modalReturn = document.activeElement;
+  const root = $("#dialog-root");
+  root.innerHTML = `<div class="dialog" role="dialog" aria-modal="true">${html}</div>`;
+  $("#scrim").hidden = false;
+  document.body.classList.add("noscroll");
+  return root.firstElementChild;
 }
 
+export const spinner = (cls = "") => `<span class="spinner ${cls}" aria-hidden="true"></span>`;
+export function emptyState(ic, title, text = "", action = "") {
+  return `<div class="empty-state">${icon(ic, 28)}<h3>${esc(title)}</h3>${text ? `<p>${text}</p>` : ""}${action}</div>`;
+}
+
+const NUM = /^-?[$€£]?\(?-?[\d,]*\.?\d+\)?%?$/;
 export function table(rows, { header = true, max = 200 } = {}) {
   if (!rows || !rows.length) return `<p class="muted">Empty.</p>`;
   const [head, ...body] = header ? rows : [null, ...rows];
   return `<div class="tbl"><table>${head ? `<thead><tr>${head.map((c) => `<th>${esc(c)}</th>`).join("")}</tr></thead>` : ""}
-    <tbody>${body.slice(0, max).map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    <tbody>${body.slice(0, max).map((r) => `<tr>${r.map((c) => `<td${NUM.test(String(c ?? "").trim()) && String(c ?? "").trim() ? ' class="num"' : ""}>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 
-export function statusPill(status, reward) {
-  const live = ["queued", "starting", "setup", "running", "verifying"].includes(status);
-  const label = { queued: "Queued", starting: "Starting sandbox", setup: "Setting up", running: "Agent running", verifying: "Grading",
-                  done: "Done", failed: "Failed", cancelled: "Cancelled", interrupted: "Interrupted" }[status] || status;
-  return `<span class="pill-status s-${esc(status)}${live ? " live" : ""}">${live ? '<i class="pulse"></i>' : ""}${esc(label)}</span>`;
+export const LIVE_STATUSES = ["queued", "starting", "setup", "running", "verifying"];
+const STATUS = { queued: ["Queued", "clock"], starting: ["Starting sandbox", "box"], setup: ["Setting up", "box"], running: ["Agent running", "terminal"],
+                 verifying: ["Grading", "scale"], done: ["Done", "check"], failed: ["Failed", "alert"], cancelled: ["Stopped", "stop"], interrupted: ["Interrupted", "alert"] };
+export function statusPill(status) {
+  const live = LIVE_STATUSES.includes(status);
+  const [label, ic] = STATUS[status] || [status, "info"];
+  return `<span class="status s-${esc(status)}${live ? " live" : ""}">${live ? '<i class="pulse"></i>' : icon(ic, 12)}${esc(label)}</span>`;
 }
 
+export const rewardClass = (r) => (r == null ? "none" : r >= 0.999 ? "full" : r > 0 ? "part" : "zero");
+export const rewardText = (r) => (r == null ? "–" : Number(r) % 1 === 0 ? Number(r).toFixed(0) : Number(r).toFixed(2));
 export function rewardBadge(reward, status) {
-  if (reward == null) return status === "done" ? `<span class="reward none">not scored</span>` : "";
-  const r = Number(reward);
-  const cls = r >= 0.999 ? "full" : r > 0 ? "part" : "zero";
-  return `<span class="reward ${cls}">${r % 1 === 0 ? r.toFixed(0) : r.toFixed(3)}</span>`;
+  if (reward == null) return status === "done" ? `<span class="reward none">not scored</span>` : `<span class="reward none">–</span>`;
+  return `<span class="reward ${rewardClass(reward)}" title="Reward ${Number(reward).toFixed(3)}">${rewardText(reward)}</span>`;
 }
 
 // A spreadsheet-like grid: column letters, row numbers, numbers right-aligned, formulas shown as formulas,
 // and runs of empty rows collapsed to one thin row.
 const colName = (i) => { let s = ""; i += 1; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
-const NUM = /^-?[$€£]?\(?-?[\d,]*\.?\d+\)?%?$/;
 export function sheetGrid(rows) {
   if (!rows || !rows.length) return `<p class="muted">Empty sheet.</p>`;
   const width = Math.max(...rows.map((r) => r.length));
@@ -178,6 +234,12 @@ export function sheetGrid(rows) {
     const empty = !r.slice(0, cols).some((c) => c !== "" && c != null);
     if (empty) { gap++; return; }
     if (gap) { out.push(`<tr class="gap"><th></th><td colspan="${cols}"></td></tr>`); gap = 0; }
+    // a lone text cell (a title or a section heading) spills across the empty cells to its right, as in Excel
+    const filled = r.slice(0, cols).filter((c) => c !== "" && c != null).length;
+    if (filled === 1 && r[0] !== "" && r[0] != null && !String(r[0]).startsWith("=") && cols > 1) {
+      out.push(`<tr><th>${n + 1}</th><td class="span" colspan="${cols}">${esc(r[0])}</td></tr>`);
+      return;
+    }
     out.push(`<tr><th>${n + 1}</th>${Array.from({ length: cols }, (_, i) => {
       const v = r[i] ?? "";
       const s = String(v);

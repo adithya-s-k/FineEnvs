@@ -456,11 +456,11 @@ def build_general(df, raw: Path, files: list[str]):
 
 # ── main ─────────────────────────────────────────────────────────────────────
 DOMAINS = {
-    "code": ("Code", "Fix real issues in real repos", "Executable tests", "prog"),
-    "webdev": ("Webdev", "Build a website from a brief", "Visual grading", "site"),
-    "cyber": ("Cyber", "Reproduce a real crash", "Rule checks", "crash"),
-    "music": ("Music", "Compose in ABC notation", "Rule checks", "family"),
-    "general": ("General", "Knowledge work in a simulated workplace", "Rubric judging", "industry"),
+    "code": ("Code", "Fix real issues in real repos", "hidden unit tests", "prog"),
+    "webdev": ("Webdev", "Build a website from a brief", "a vision judge", "site"),
+    "cyber": ("Cyber", "Reproduce a real crash", "reproducing the crash", "crash"),
+    "music": ("Music", "Compose in ABC notation", "a symbolic scorer", "family"),
+    "general": ("General", "Knowledge work in a simulated workplace", "a weighted rubric", "industry"),
 }
 FACET_LABELS = {
     "language": "Brief language", "prog": "Programming language", "crash": "Crash type", "project": "Project", "sanitizer": "Sanitizer",

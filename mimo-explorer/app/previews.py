@@ -74,30 +74,47 @@ def document(p: Path) -> dict:
 
 
 def slides(p: Path) -> dict:
+    """Each slide as a title plus its text, in reading order. The title is the title placeholder, or else the
+    largest text on the slide. Text repeated on most slides (logos, confidentiality footers) is pulled out and
+    shown once, and bare page labels ("01") are dropped, so each card shows what is different about that slide."""
+    from collections import Counter
+
     from pptx import Presentation
 
     prs = Presentation(p)
-    out = []
+    raw = []
     for i, s in enumerate(prs.slides, 1):
-        title, texts = "", []
         tshape = s.shapes.title
         tid = tshape.shape_id if tshape is not None else None
+        items, tables = [], []
         for sh in s.shapes:
+            if getattr(sh, "has_table", False) and sh.has_table:
+                tables.append([[c.text.strip() for c in r.cells] for r in list(sh.table.rows)[:12]])
+                continue
             if not sh.has_text_frame:
-                if getattr(sh, "has_table", False) and sh.has_table:
-                    texts.append(" | ".join(c.text for c in sh.table.rows[0].cells))
                 continue
             t = sh.text_frame.text.strip()
             if not t:
                 continue
-            if sh.shape_id == tid and not title:
-                title = t
-            else:
-                texts.append(t)
-        if not title and texts:   # untitled layouts: the first text box is the title in practice
-            title = texts.pop(0).split("\n")[0]
-        out.append({"n": i, "title": title, "text": texts[:30]})
-    return {"type": "slides", "slides": out[:60]}
+            sizes = [r.font.size.pt for para in sh.text_frame.paragraphs for r in para.runs if r.font.size]
+            items.append({"t": t, "size": max(sizes) if sizes else 0, "top": sh.top or 0, "left": sh.left or 0,
+                          "title": sh.shape_id == tid})
+        items.sort(key=lambda x: (x["top"], x["left"]))
+        raw.append((i, items, tables))
+    counts = Counter(x["t"] for _, items, _ in raw for x in {x["t"]: x for x in items}.values())
+    common = {t for t, c in counts.items() if len(raw) >= 3 and c >= max(3, 0.4 * len(raw))}
+    label = lambda t: len(t) <= 3 and (t.isdigit() or t.isupper())   # "01", "ADC"
+    out = []
+    for i, items, tables in raw:
+        keep = [x for x in items if x["t"] not in common and not label(x["t"])]
+        pick = next((x for x in keep if x["title"]), None) or max(
+            (x for x in keep if len(x["t"]) >= 4), key=lambda x: (x["size"], -x["top"]), default=None)
+        title = pick["t"].split("\n")[0] if pick else ""
+        texts = [x["t"] for x in keep if x is not pick]
+        if pick and "\n" in pick["t"]:
+            texts.insert(0, pick["t"].split("\n", 1)[1])
+        out.append({"n": i, "title": title, "text": texts[:30], "tables": tables})
+    return {"type": "slides", "slides": out[:60], "repeated": sorted(common, key=len)[:6]}
 
 
 def pdf_text(p: Path) -> dict:

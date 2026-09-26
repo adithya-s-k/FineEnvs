@@ -1,11 +1,12 @@
 // A searchable model picker: frontier models first, each row with provider, price, speed and context.
 import { esc } from "./util.js";
+import { icon } from "./icons.js";
 
 const short = (id) => id.split("/")[1] || id;
 const org = (id) => id.split("/")[0];
 const ctx = (n) => (n ? (n >= 1e6 ? `${(n / 1e6).toFixed(n % 1e6 ? 1 : 0)}M` : `${Math.round(n / 1000)}k`) : "");
 
-export function picker(host, { models, value, onChange, note }) {
+export function picker(host, { models, value, onChange, note, groupLabel }) {
   let current = models.find((m) => m.id === value) || models[0];
   let open = false, q = "", active = 0;
   host.classList.add("picker");
@@ -14,15 +15,15 @@ export function picker(host, { models, value, onChange, note }) {
     host.innerHTML = `
       <button type="button" class="pk-btn" aria-haspopup="listbox" aria-expanded="${open}">
         <span class="pk-name">${esc(short(current.id))}</span><span class="pk-org">${esc(org(current.id))}</span>
-        <span class="pk-price">$${current.input} / $${current.output}</span><span class="pk-caret">▾</span></button>
+        <span class="pk-price">$${current.input} / $${current.output}</span>${icon("chevronDown", 15)}</button>
       ${open ? `<div class="pk-pop" role="listbox">
-        <input class="pk-q" placeholder="Search ${models.length} models…" value="${esc(q)}" aria-label="Search models">
+        <div class="pk-search">${icon("search", 15)}<input class="pk-q" placeholder="Search ${models.length} models or providers…" value="${esc(q)}" aria-label="Search models"></div>
         <div class="pk-list">${list.length ? list.map((m, i) => `${i === 0 || m.featured !== list[i - 1].featured
-            ? `<div class="pk-group">${m.featured ? "Frontier" : "All with tool calling"}</div>` : ""}
+            ? `<div class="pk-group">${groupLabel || (m.featured ? "Frontier" : "All with tool calling")}</div>` : ""}
           <button type="button" class="pk-row${m.id === current.id ? " sel" : ""}${i === active ? " act" : ""}" data-id="${esc(m.id)}" role="option">
-            <span class="pk-name">${esc(short(m.id))}</span><span class="pk-org">${esc(org(m.id))}${m.vision ? ' · <b>vision</b>' : ""}</span>
-            <span class="pk-meta">${esc(m.provider)} · ${m.speed ? `${m.speed} tok/s · ` : ""}${ctx(m.context)} ctx</span>
-            <span class="pk-price">$${m.input} / $${m.output}</span></button>`).join("") : `<p class="muted sm">No model matches “${esc(q)}”.</p>`}</div>
+            <span class="pk-name">${esc(short(m.id))}${m.id === current.id ? icon("check", 13, "tick") : ""}</span><span class="pk-org">${esc(org(m.id))}${m.vision ? ' · <b>vision</b>' : ""}</span>
+            <span class="pk-meta">${esc(m.provider)}${m.speed ? ` · ${m.speed} tok/s` : ""}${m.context ? ` · ${ctx(m.context)} context` : ""}${m.note ? ` · ${esc(m.note)}` : ""}</span>
+            <span class="pk-price">$${m.input} / $${m.output}</span></button>`).join("") : `<p class="muted sm" style="padding:14px 8px">No model matches “${esc(q)}”.</p>`}</div>
         ${note ? `<p class="pk-note">${note}</p>` : ""}</div>` : ""}`;
     if (open) {
       const inp = host.querySelector(".pk-q");

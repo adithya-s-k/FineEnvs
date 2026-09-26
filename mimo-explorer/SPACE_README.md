@@ -1,5 +1,5 @@
 ---
-title: MiMo RL Environments Explorer
+title: MiMo RL Environment Explorer
 emoji: 🧭
 colorFrom: indigo
 colorTo: green
@@ -22,7 +22,7 @@ datasets:
   - XiaomiMiMo/MiMo-V2.6-RL-oss
 ---
 
-# MiMo RL Environments Explorer
+# MiMo RL Environment Explorer
 
 An unofficial explorer for [XiaomiMiMo/MiMo-V2.6-RL-oss](https://huggingface.co/datasets/XiaomiMiMo/MiMo-V2.6-RL-oss):
 7,780 RL environments across five domains. Browse them, open any task to see everything inside it, then
@@ -38,7 +38,8 @@ An unofficial explorer for [XiaomiMiMo/MiMo-V2.6-RL-oss](https://huggingface.co/
 
 ## Running a rollout
 
-Sign in with Hugging Face. A rollout runs on **your** account:
+Sign in with Hugging Face, or paste an access token (a write token, or a fine-grained one with the Inference Providers
+and Jobs permissions). A rollout runs on **your** account:
 
 - an **HF Sandbox** started from the task's own Docker image (CPU, about $0.01 an hour),
 - **OpenCode** as the agent harness, calling the model you pick through **HF Inference Providers**,
@@ -46,8 +47,8 @@ Sign in with Hugging Face. A rollout runs on **your** account:
   [mimoagent](https://github.com/XiaomiMiMo/mimoagent), vendored unchanged. Tasks graded by a model ask you to pick the judge.
 
 Nothing that grades a task (hidden tests, rubric answers, the expected crash) is in the sandbox while the agent works,
-and the agent has no web tools. Rollouts keep running if you close the page; find them under **My rollouts**.
-Traces are kept in a private bucket. Your token is never stored with them.
+and the agent has no web tools. Rollouts keep running if you close the page; find them under **Rollouts**.
+Traces are kept in a private bucket. Your token is never stored with them: it lives only in an encrypted cookie in your browser.
 
 Rewards here will not match Xiaomi's published numbers exactly: the harness is OpenCode rather than theirs, the judge
 is whichever model you pick, and Webdev uses their evaluation-mode grader (training used a group-relative ranking).
