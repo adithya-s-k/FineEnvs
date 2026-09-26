@@ -389,11 +389,18 @@ class Music:
         raw = catalog.rows()[r.run["task_id"]]
         r.update(flavor=None)
         r.phase("agent", detail=r.run["model"])
-        mid = f"{r.run['model']}:{r.run['provider']}" if r.run.get("provider") else r.run["model"]
+        base, key, mid = r.agent_api()
+        params = r.run.get("params") or {}
+        if r.run.get("endpoint"):
+            from .. import endpoints
+            base = endpoints.check_url(base)   # re-checked at call time: DNS can change after the test
         text, thinking, usage = "", "", {}
-        with httpx.stream("POST", f"{config.ROUTER}/chat/completions", timeout=600,
-                          headers={"Authorization": f"Bearer {r.token}"},
-                          json={"model": mid, "stream": True, "stream_options": {"include_usage": True}, "max_tokens": 32000,
+        with httpx.stream("POST", f"{base}/chat/completions", timeout=600,
+                          headers={"Authorization": f"Bearer {key}"} if key else {},
+                          json={"model": mid, "stream": True, "stream_options": {"include_usage": True},
+                                "max_tokens": params.get("max_tokens") or 32000,
+                                **({"temperature": params["temperature"]} if params.get("temperature") is not None else {}),
+                                **({"reasoning_effort": params["thinking"]} if params.get("thinking") not in (None, "default") else {}),
                                 "messages": [{"role": "user", "content": raw["prompt"]}]}) as resp:
             if resp.status_code != 200:
                 raise RuntimeError(f"model call failed: HTTP {resp.status_code} {resp.read()[:300]!r}")
@@ -466,3 +473,15 @@ class Music:
 
 
 ADAPTERS = {"code": Code(), "cyber": Cyber(), "general": General(), "webdev": Webdev(), "music": Music()}
+
+
+def run_defaults(task_id: str, domain: str) -> dict:
+    """The step cap and time limit a rollout gets unless the user changes them (the training harness's values)."""
+    if domain == "music":
+        return {"steps": None, "timeout_min": None, "max_tokens": 32000}
+    if domain == "general":
+        inst = (catalog.rows().get(task_id) or {}).get("instance") or {}
+        if inst.get("dataset_type") == "terminal_bench":
+            return {"steps": Terminal.steps, "timeout_min": round((float(inst.get("agent_timeout_sec") or 900) + 300) / 60), "max_tokens": None}
+    a = ADAPTERS[domain]
+    return {"steps": a.steps, "timeout_min": round(a.timeout / 60), "max_tokens": None}

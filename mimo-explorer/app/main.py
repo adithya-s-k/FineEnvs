@@ -11,9 +11,12 @@ import random
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from typing import Literal
 
-from . import auth, catalog, config, models, previews, store
+import httpx
+from pydantic import BaseModel, Field
+
+from . import auth, catalog, config, endpoints, models, previews, store
 from .runner import core
 
 app = FastAPI(title="MiMo RL Environment Explorer", docs_url="/api/docs")
@@ -69,7 +72,8 @@ def task(task_id: str):
         raise HTTPException(502, f"could not fetch this environment's files: {e}")
     if not v:
         raise HTTPException(404, "no such task")
-    return v
+    from .runner.domains import run_defaults
+    return {**v, "run_defaults": run_defaults(v["id"], v["domain"])}
 
 
 @app.get("/api/random")
@@ -121,11 +125,57 @@ def list_models():
 
 
 # ── rollouts ─────────────────────────────────────────────────────────────────
+class Endpoint(BaseModel):
+    base_url: str
+    model: str
+    api_key: str | None = None
+    price_in: float | None = Field(None, ge=0, le=1000)    # $ per 1M tokens, only for the cost shown
+    price_out: float | None = Field(None, ge=0, le=1000)
+
+
+class Params(BaseModel):
+    thinking: Literal["default", "none", "low", "medium", "high"] = "default"
+    temperature: float | None = Field(None, ge=0, le=2)
+    max_tokens: int | None = Field(None, ge=256, le=128000)
+    steps: int | None = Field(None, ge=1, le=1000)
+    timeout_min: int | None = Field(None, ge=2, le=120)
+
+
 class RunRequest(BaseModel):
     task_id: str
-    model: str
+    model: str | None = None
     provider: str | None = None
     judge: str | None = None
+    endpoint: Endpoint | None = None
+    params: Params = Params()
+
+
+class EndpointProbe(BaseModel):
+    base_url: str
+    api_key: str | None = None
+    model: str | None = None
+
+
+@app.post("/api/endpoints/models")
+def endpoint_models(body: EndpointProbe, request: Request):
+    auth.require_user(request)   # this server makes the call, so only for signed-in users
+    try:
+        return {"models": endpoints.list_models(body.base_url, body.api_key)}
+    except endpoints.EndpointError as e:
+        raise HTTPException(400, str(e))
+    except httpx.HTTPError as e:
+        raise HTTPException(400, f"Couldn't reach the endpoint: {type(e).__name__}")
+
+
+@app.post("/api/endpoints/test")
+def endpoint_test(body: EndpointProbe, request: Request):
+    auth.require_user(request)
+    try:
+        return endpoints.test(body.base_url, body.api_key, body.model or "")
+    except endpoints.EndpointError as e:
+        raise HTTPException(400, str(e))
+    except httpx.HTTPError as e:
+        raise HTTPException(400, f"Couldn't reach the endpoint: {type(e).__name__}")
 
 
 @app.post("/api/runs")
@@ -134,17 +184,30 @@ def start_run(body: RunRequest, request: Request):
     v = catalog.view(body.task_id)
     if not v or not v.get("runnable"):
         raise HTTPException(400, "this task cannot be run here")
-    m = models.get(body.model)
-    if not m or not m["tools"]:
-        raise HTTPException(400, "pick a model that supports tool calling")
-    provider = body.provider or m["provider"]
+    endpoint, agent_key = None, None
+    if body.endpoint:
+        try:
+            base = endpoints.check_url(body.endpoint.base_url)
+        except endpoints.EndpointError as e:
+            raise HTTPException(400, str(e))
+        endpoint = {"base_url": base, "host": httpx.URL(base).host, "price_in": body.endpoint.price_in,
+                    "price_out": body.endpoint.price_out}
+        model, provider, agent_key = body.endpoint.model.strip(), None, body.endpoint.api_key
+        if not model:
+            raise HTTPException(400, "enter the model name your endpoint expects")
+    else:
+        m = models.get(body.model or "")
+        if not m or not m["tools"]:
+            raise HTTPException(400, "pick a model that supports tool calling")
+        model, provider = body.model, body.provider or m["provider"]
     need = (v.get("verify") or {}).get("needs_judge")
     judge = body.judge if need else None
     if need and not judge:
         raise HTTPException(400, "this task is graded by a model: pick a judge")
     try:
         run = core.submit(u["name"], u["token"], {"id": v["id"], "domain": v["domain"], "title": v["short_title"],
-                                                  "facets": v.get("facets")}, body.model, provider, judge)
+                                                  "facets": v.get("facets")}, model, provider, judge,
+                          endpoint=endpoint, agent_key=agent_key, params=body.params.model_dump(exclude_defaults=True))
     except RuntimeError as e:
         raise HTTPException(429, str(e))
     return run

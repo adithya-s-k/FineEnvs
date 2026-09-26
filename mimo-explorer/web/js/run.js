@@ -68,6 +68,8 @@ function apply(el, st, d) {
   renderHead(el, st);
   renderPhases(el, st);
   appendTimeline(el, st, fresh);
+  // history appears at once; only steps that arrive while you watch slide in
+  if (!st.primed) { el.querySelectorAll("#rp-tl .ev").forEach((li) => li.classList.add("still")); st.primed = true; }
   renderGrade(el, st);
   renderCost(el, st);
   renderTail(el, st);
@@ -75,10 +77,18 @@ function apply(el, st, d) {
   if (st.follow && fresh.length && isLive(st.run)) $("#rp-tail", el).scrollIntoView({ behavior: "smooth", block: "end" });
 }
 
+// Built once and then only its text changes: re-rendering every second restarted the spinner and made it flicker.
 function renderTail(el, st) {
   const t = $("#rp-tail", el);
   if (!t) return;
-  t.innerHTML = isLive(st.run) ? `<ol class="timeline"><li class="ev ev-live"><span class="ei">${spinner()}</span><div class="eb">${esc(liveHint(st))}</div></li></ol>` : "";
+  if (!isLive(st.run)) { t.innerHTML = ""; return; }
+  let msg = $(".live-msg", t);
+  if (!msg) {
+    t.innerHTML = `<ol class="timeline"><li class="ev ev-live still"><span class="ei">${spinner()}</span><div class="eb"><span class="live-msg"></span></div><span class="ts"></span></li></ol>`;
+    msg = $(".live-msg", t);
+  }
+  const text = liveHint(st);
+  if (msg.textContent !== text) msg.textContent = text;
 }
 
 function liveHint(st) {
@@ -105,7 +115,8 @@ function renderHead(el, st) {
       <span class="when">${icon("clock", 13)}${dur(end - start)} · started ${ago(r.created_at)}</span></div>
     <h1><a href="#/task/${encodeURIComponent(r.task_id)}">${esc(r.title)}</a></h1>
     <div class="rp-bar"><div class="facts">
-      <span>${icon("cpu", 14)}<b>${esc(r.model.split("/")[1] || r.model)}</b> via ${esc(r.provider || "auto")}</span>
+      <span>${icon("cpu", 14)}<b>${esc(r.endpoint ? r.model : r.model.split("/")[1] || r.model)}</b> via ${r.endpoint ? `your endpoint <code>${esc(r.endpoint.host)}</code>` : esc(r.provider || "auto")}</span>
+      ${paramsText(r.params) ? `<span>${icon("gauge", 14)}${esc(paramsText(r.params))}</span>` : ""}
       ${r.judge ? `<span>${icon("scale", 14)}judge <b>${esc(r.judge.split("/")[1] || r.judge)}</b></span>` : ""}
       ${r.domain === "music" ? `<span>${icon("message", 14)}single model call</span>` : `<span>${icon("terminal", 14)}OpenCode</span>`}${r.flavor ? `<span>${icon("box", 14)}${esc(r.flavor)}</span>` : ""}</div>
       <div class="rp-actions"><a class="btn sm" href="#/task/${encodeURIComponent(r.task_id)}">${icon("file", 13)}View task</a>${action}</div></div>
@@ -150,7 +161,7 @@ function item(e, st) {
   const summary = (inner) => `<summary>${icon("chevronRight", 13, "chev")}${inner}</summary>`;
   switch (e.kind) {
     case "text": return row("ev-text", "message", t, `<div class="msg prose">${md(e.text)}</div>`);
-    case "thinking": return row("ev-think", "brain", t, `<details>${summary(`<b>Thinking</b><code>${e.chars.toLocaleString()} characters</code>`)}<pre class="code-block wrap">${esc(e.text)}</pre></details>`);
+    case "thinking": return row("ev-think", "brain", t, `<details>${summary(`<b>Thinking</b><span class="peek">${esc(e.text.replace(/\s+/g, " ").slice(0, 220))}</span>`)}<div class="thought">${esc(e.text)}</div></details>`);
     case "tool": {
       const inp = e.input || {};
       const head = inp.command || inp.filePath || inp.pattern || inp.path || e.title || Object.values(inp).map(String).join(" ").slice(0, 160);
@@ -175,6 +186,9 @@ function item(e, st) {
   }
 }
 
+const paramsText = (p) => !p ? "" : [p.thinking && p.thinking !== "default" && `thinking ${p.thinking === "none" ? "off" : p.thinking}`,
+  p.temperature != null && `temperature ${p.temperature}`, p.steps && `${p.steps} steps max`, p.timeout_min && `${p.timeout_min} min limit`,
+  p.max_tokens && `${p.max_tokens.toLocaleString()} max tokens`].filter(Boolean).join(" · ");
 const humanize = (id) => { const t = String(id || "").replace(/[_-]+/g, " ").trim(); return t.charAt(0).toUpperCase() + t.slice(1); };
 const prettyTool = (name) => { const parts = name.split("_"); return parts.length > 3 ? parts.slice(-3).join("_") : name; };
 
@@ -208,7 +222,7 @@ function renderGrade(el, st) {
     ${(g.checks || []).length ? `<ul class="gchecks">${g.checks.map((c) => `<li class="${c.passed === true ? "ok" : c.passed === false ? "bad" : "na"}">
       <span class="mk">${icon(c.passed === true ? "check" : c.passed === false ? "x" : "more", 14)}</span>
       <div><b>${esc(c.question || humanize(c.id))}</b>
-      ${c.tier || c.method ? `<span class="meta">${esc([c.tier, c.method === "llm" ? "model-judged" : c.method].filter(Boolean).join(" · "))}</span>` : ""}
+      ${c.tier || c.method === "llm" ? `<span class="meta">${esc([c.tier, c.method === "llm" && "model-judged"].filter(Boolean).join(" · "))}</span>` : ""}
       ${c.message ? `<p>${esc(String(c.message).slice(0, 300))}</p>` : ""}</div>
       ${c.score != null && c.passed == null ? `<span class="sc">${Number(c.score).toFixed(2)}</span>` : "<span></span>"}</li>`).join("")}</ul>` : ""}
     ${long ? `<details class="notes"><summary class="disclose">${icon("chevronRight", 14, "chev")}Judge's notes</summary><p>${esc(g.summary)}</p>
@@ -224,13 +238,13 @@ function renderCost(el, st) {
     <div class="big-cost">${money(c.total)}</div>
     <div class="cost-split"><i class="m" style="width:${((c.model || 0) / tot) * 100}%"></i><i class="s" style="width:${((c.sandbox || 0) / tot) * 100}%"></i></div>
     <div class="legend">
-      <div><span class="sw" style="background:var(--c-code)"></span><span>Model tokens</span><b>${money(c.model)}</b></div>
+      <div><span class="sw" style="background:var(--c-code)"></span><span>Model tokens</span><b>${r.endpoint && r.endpoint.price_in == null && r.endpoint.price_out == null ? '<span class="faint">not metered</span>' : money(c.model)}</b></div>
       <div><span class="sw" style="background:var(--c-cyber)"></span><span>Sandbox time</span><b>${money(c.sandbox)}</b></div>
       ${r.judge ? `<div><span class="sw" style="background:var(--surface-3)"></span><span>Judge calls</span><b class="faint">not metered</b></div>` : ""}
     </div>
     <dl class="kv sm"><dt>Tokens in</dt><dd class="num">${tokensShort((t.input || 0) + (t.cache_read || 0))}${t.cache_read ? ` <span class="faint">(${tokensShort(t.cache_read)} cached)</span>` : ""}</dd>
       <dt>Tokens out</dt><dd class="num">${tokensShort(t.output)}${t.reasoning ? ` <span class="faint">+ ${tokensShort(t.reasoning)} thinking</span>` : ""}</dd></dl>
-    <p class="fine">Billed to your Hugging Face account at ${esc(r.provider || "the provider")}'s price.</p></div>`;
+    <p class="fine">${r.endpoint ? `Tokens are billed by your endpoint (${esc(r.endpoint.host)}); the sandbox by Hugging Face.` : `Billed to your Hugging Face account at ${esc(r.provider || "the provider")}'s price.`}</p></div>`;
 }
 
 function onClick(st) {

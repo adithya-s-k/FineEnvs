@@ -298,6 +298,13 @@ async function previewTable(v, sys, tbl, label) {
 }
 
 // ── the run panel ────────────────────────────────────────────────────────────
+// Settings that are worth keeping between visits live in this browser. An endpoint's API key stays in this tab only.
+const LS = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+             set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } } };
+const SS = { get: (k) => { try { return sessionStorage.getItem(k) || ""; } catch { return ""; } },
+             set: (k, v) => { try { sessionStorage.setItem(k, v); } catch { /* private mode */ } } };
+const THINKING = [["default", "Model default"], ["none", "Off"], ["low", "Low"], ["medium", "Medium"], ["high", "High"]];
+
 async function runPanel(box, v) {
   const s = getSession();
   const inner = $(".panel-b", box);
@@ -312,45 +319,147 @@ async function runPanel(box, v) {
     return;
   }
   if (!alive) return;
+  const music = v.domain === "music";
   const need = v.verify?.needs_judge;
   const judges = need === "vision" ? cat.vision_judges : need === "text" ? cat.text_judges : [];
   const gaps = s.missing_scopes || [];
+  const d = v.run_defaults || {};
+  const ep = LS.get("byo", { base_url: "", model: "", price_in: "", price_out: "" });
+  const adv = LS.get("adv", { thinking: "default", temperature: "" });
+  const st = { source: LS.get("source", "hf"), probe: null };
   inner.innerHTML = `
-    <p class="intro">${v.domain === "music" ? "One model call, then Xiaomi's scorer. No sandbox." : "A fresh HF Sandbox from this task's image, OpenCode as the harness, then the task's own grader."}</p>
-    <div class="field"><span>Agent model</span><div id="rb-model"></div></div>
+    <p class="intro">${music ? "One model call, then Xiaomi's scorer. No sandbox." : "A fresh HF Sandbox from this task's image, OpenCode as the harness, then the task's own grader."}</p>
+    <div class="seg src" role="tablist" aria-label="Where the model runs">
+      <button type="button" data-src="hf">HF Inference Providers</button><button type="button" data-src="byo">Your endpoint</button></div>
+    <div class="field" data-pane="hf"><span>Agent model</span><div id="rb-model"></div></div>
+    <div class="byo" data-pane="byo">
+      <label class="field"><span>Base URL <em>any OpenAI-compatible API</em></span>
+        <input class="input mono" id="ep-url" placeholder="https://your-litellm.example.com/v1" value="${esc(ep.base_url)}" spellcheck="false" autocomplete="off"></label>
+      <label class="field"><span>API key <em>kept in this tab only</em></span>
+        <input class="input mono" id="ep-key" type="password" placeholder="sk-…" value="${esc(SS.get("byo-key"))}" spellcheck="false" autocomplete="off"></label>
+      <label class="field"><span>Model <button class="link" type="button" id="ep-load">${icon("refresh", 12)}Load models</button></span>
+        <input class="input mono" id="ep-model" list="ep-models" placeholder="gpt-5, claude-sonnet-5, openai/gpt-oss-120b…" value="${esc(ep.model)}" spellcheck="false" autocomplete="off">
+        <datalist id="ep-models"></datalist></label>
+      <div class="field"><span>Price per 1M tokens <em>optional, only for the cost shown</em></span>
+        <div class="pair"><input class="input" id="ep-pin" type="number" min="0" step="0.01" placeholder="input $" value="${esc(ep.price_in)}">
+          <input class="input" id="ep-pout" type="number" min="0" step="0.01" placeholder="output $" value="${esc(ep.price_out)}"></div></div>
+      <button class="btn block" type="button" id="ep-test">${icon("plug", 14)}Test connection</button>
+      <div id="ep-status"></div>
+      <p class="fine">Works with a LiteLLM proxy, vLLM, OpenAI, Together, OpenRouter and the like. The sandbox still runs on your
+        Hugging Face account, so you sign in with HF either way. The key is used for this rollout only and never stored on the server,
+        but the agent's own processes in the sandbox can see it: use a key you can revoke.</p>
+    </div>
     ${judges.length ? `<div class="field"><span>Judge model <em>${need === "vision" ? "scores a screenshot of the page" : "answers each rubric check"}</em></span><div id="rb-judge"></div></div>` : ""}
+    <details class="adv" id="rb-adv"><summary class="disclose">${icon("chevronRight", 14, "chev")}Advanced settings<span class="adv-sum" id="adv-sum"></span></summary>
+      <div class="adv-grid">
+        <label class="field"><span>Thinking</span><select class="input" id="p-think">${THINKING.map(([k, l]) => `<option value="${k}" ${adv.thinking === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+        <label class="field"><span>Temperature</span><input class="input" id="p-temp" type="number" min="0" max="2" step="0.1" placeholder="default" value="${esc(adv.temperature)}"></label>
+        ${music ? "" : `<label class="field"><span>Step cap</span><input class="input" id="p-steps" type="number" min="1" max="1000" placeholder="${d.steps}" value=""></label>
+        <label class="field"><span>Time limit, min</span><input class="input" id="p-time" type="number" min="2" max="120" placeholder="${d.timeout_min}" value=""></label>`}
+        <label class="field"><span>Max tokens${music ? "" : " / step"}</span><input class="input" id="p-max" type="number" min="256" max="128000" step="256" placeholder="${d.max_tokens || "default"}" value=""></label>
+      </div>
+      <p class="fine" style="text-align:left">Thinking is sent as <code>reasoning_effort</code>; "Off" disables it on models that support that.
+        ${music ? "" : `The step cap and time limit default to the values Xiaomi's training harness uses for this domain.`}</p>
+    </details>
     <div class="estimate" id="rb-est"></div>
     ${gaps.length ? `<div class="note-box warn">${icon("alert")}<span>Your sign-in may be missing <b>${esc(gaps.join(", "))}</b>. If the rollout fails to start, sign in again with a write token.</span></div>` : ""}
     ${s.user ? `<button class="btn primary lg block" id="rb-go">${icon("play", 15)}Run rollout</button>`
       : `<button class="btn primary lg block" type="button" data-signin>${icon("user", 15)}Sign in to run</button>`}
-    <p class="fine">Keeps running if you close this page; find it under <a href="#/runs">Rollouts</a>. Billed to ${s.user ? `<b>${esc(s.user.name)}</b>` : "your account"} on Hugging Face.</p>`;
+    <p class="fine">Keeps running if you close this page; find it under <a href="#/runs">Rollouts</a>. The sandbox is billed to ${s.user ? `<b>${esc(s.user.name)}</b>` : "your account"} on Hugging Face.</p>`;
+
   const def = cat.agents.some((m) => m.id === cat.default_agent) ? cat.default_agent : cat.agents[0]?.id;
-  const update = (m) => {
-    const [ti, to] = TYPICAL[v.domain];
-    const model = (ti * m.input + to * m.output) / 1e6;
-    const sandbox = v.domain === "music" ? 0 : (TYPICAL_MIN[v.domain] / 60) * ((cat.sandbox_price_per_hour || {})[v.domain === "webdev" ? "cpu-upgrade" : "cpu-basic"] ?? 0.01);
-    const tok = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : Math.round(n / 1e3) + "k");
-    $("#rb-est", box).innerHTML = `
-      <div class="row"><span>Model · ${tok(ti)} in, ${tok(to)} out</span><b>${money(model)}</b></div>
-      ${v.domain === "music" ? "" : `<div class="row"><span>Sandbox · ~${TYPICAL_MIN[v.domain]} min</span><b>${money(sandbox)}</b></div>`}
-      <div class="row total"><span>Typical ${esc(DOMAIN_NAME[v.domain])} rollout</span><b>~${money(model + sandbox)}</b></div>
-      ${v.domain === "general" || v.domain === "cyber" ? `<div class="why">Agents re-read their context every step, so input tokens dominate. A cheaper model makes a big difference here.</div>` : ""}`;
-  };
-  const sel = picker($("#rb-model", box), { models: cat.agents, value: def, onChange: update,
+  const sel = picker($("#rb-model", box), { models: cat.agents, value: def, onChange: () => update(),
     note: "Every model here supports tool calling. Prices are per million tokens, input / output, at the cheapest provider that can call tools." });
-  update(sel.model);
   const judgeSel = judges.length ? picker($("#rb-judge", box), { models: judges.map((j) => ({ ...j, featured: true })), value: judges[0].id, onChange: () => {}, groupLabel: "Tested judges",
     note: need === "vision" ? "Tested on a real render with Xiaomi's rubric. Judges disagree (0.34–0.87 on the same page), so compare webdev scores only between runs graded by the same judge." : "Tested on this dataset's real rubric prompt: each returned a usable verdict on every check." }) : null;
+  const val = (id) => { const e = $(id, box); return e ? e.value.trim() : ""; };
+  const num = (id) => { const x = val(id); return x === "" ? null : Number(x); };
+  const endpoint = () => ({ base_url: val("#ep-url"), api_key: val("#ep-key") || null, model: val("#ep-model"),
+                            price_in: num("#ep-pin"), price_out: num("#ep-pout") });
+  const params = () => {
+    const p = { thinking: val("#p-think") || "default" };
+    if (num("#p-temp") != null) p.temperature = num("#p-temp");
+    if (num("#p-max") != null) p.max_tokens = num("#p-max");
+    if (num("#p-steps") != null) p.steps = num("#p-steps");
+    if (num("#p-time") != null) p.timeout_min = num("#p-time");
+    return p;
+  };
+  const save = () => {
+    const e = endpoint();
+    LS.set("byo", { base_url: e.base_url, model: e.model, price_in: val("#ep-pin"), price_out: val("#ep-pout") });
+    SS.set("byo-key", val("#ep-key"));
+    LS.set("adv", { thinking: val("#p-think"), temperature: val("#p-temp") });
+  };
+  const tok = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : Math.round(n / 1e3) + "k");
+  const [ti, to] = TYPICAL[v.domain];
+  function update() {
+    save();
+    $$("[data-src]", box).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.src === st.source)));
+    $$("[data-pane]", box).forEach((p) => (p.hidden = p.dataset.pane !== st.source));
+    const p = params();
+    const changed = [p.thinking !== "default" && `thinking ${THINKING.find(([k]) => k === p.thinking)[1].toLowerCase()}`,
+      p.temperature != null && `temp ${p.temperature}`, p.steps && `${p.steps} steps`, p.timeout_min && `${p.timeout_min} min`, p.max_tokens && `${p.max_tokens} max tokens`].filter(Boolean);
+    $("#adv-sum", box).textContent = changed.length ? changed.join(" · ") : "";
+    let price;
+    if (st.source === "byo") {
+      const e = endpoint();
+      price = e.price_in != null || e.price_out != null ? [e.price_in || 0, e.price_out || 0] : null;
+    } else price = [sel.model.input, sel.model.output];
+    const minutes = p.timeout_min ? Math.min(p.timeout_min, TYPICAL_MIN[v.domain] || 0) : TYPICAL_MIN[v.domain];
+    const sandbox = music ? 0 : (minutes / 60) * ((cat.sandbox_price_per_hour || {})[v.domain === "webdev" ? "cpu-upgrade" : "cpu-basic"] ?? 0.01);
+    const model = price ? (ti * price[0] + to * price[1]) / 1e6 : null;
+    $("#rb-est", box).innerHTML = `
+      <div class="row"><span>Model · ${tok(ti)} in, ${tok(to)} out</span><b>${model == null ? "your provider's price" : money(model)}</b></div>
+      ${music ? "" : `<div class="row"><span>Sandbox · ~${minutes} min</span><b>${money(sandbox)}</b></div>`}
+      <div class="row total"><span>Typical ${esc(DOMAIN_NAME[v.domain])} rollout</span><b>${model == null ? `${money(sandbox)} + tokens` : `~${money(model + sandbox)}`}</b></div>
+      ${(v.domain === "general" || v.domain === "cyber") && st.source === "hf" ? `<div class="why">Agents re-read their context every step, so input tokens dominate. A cheaper model makes a big difference here.</div>` : ""}`;
+    const go = $("#rb-go", box);
+    if (go && !go.dataset.busy) {
+      const ready = st.source === "hf" || (st.probe?.ok && (music || st.probe.tools));
+      go.disabled = !ready;
+      go.title = ready ? "" : "Test the connection first";
+    }
+  }
+  const status = (kind, html) => { $("#ep-status", box).innerHTML = html ? `<div class="note-box ${kind}">${icon(kind === "err" ? "alert" : kind === "warn" ? "alert" : "check")}<span>${html}</span></div>` : ""; };
+  box.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-src]");
+    if (b) { st.source = b.dataset.src; LS.set("source", st.source); update(); return; }
+    if (e.target.closest("#ep-load")) {
+      const btn = $("#ep-load", box); btn.disabled = true;
+      try {
+        const r = await api("/api/endpoints/models", { method: "POST", body: { base_url: val("#ep-url"), api_key: val("#ep-key") || null } });
+        $("#ep-models", box).innerHTML = r.models.map((m) => `<option value="${esc(m)}">`).join("");
+        status("", ""); toast(`${r.models.length} models found. Start typing to pick one.`);
+        $("#ep-model", box).focus();
+      } catch (err) { status("err", esc(err.status === 401 ? "Sign in first: this server makes the call for you." : err.message)); }
+      btn.disabled = false; return;
+    }
+    if (e.target.closest("#ep-test")) {
+      const btn = $("#ep-test", box); btn.disabled = true; btn.innerHTML = `${spinner()}Testing…`;
+      try {
+        const r = await api("/api/endpoints/test", { method: "POST", body: { base_url: val("#ep-url"), api_key: val("#ep-key") || null, model: val("#ep-model") } });
+        st.probe = r;
+        status(r.tools || music ? "ok" : "warn", `${esc(r.detail)} <span class="faint">${r.ms} ms</span>${!r.tools && !music ? " Agents need tool calling, so this endpoint can't run this task." : ""}`);
+      } catch (err) { st.probe = null; status("err", esc(err.status === 401 ? "Sign in first: this server makes the test call for you." : err.message)); }
+      btn.disabled = false; btn.innerHTML = `${icon("plug", 14)}Test connection`; update(); return;
+    }
+  });
+  box.addEventListener("input", (e) => { if (e.target.closest(".byo") && !e.target.matches("#ep-pin, #ep-pout")) st.probe = null; update(); });
+  box.addEventListener("change", update);
+  update();
+
   const go = $("#rb-go", box);
   if (go) go.addEventListener("click", async () => {
-    go.disabled = true; go.innerHTML = `${spinner()}Starting…`;
+    go.disabled = true; go.dataset.busy = "1"; go.innerHTML = `${spinner()}Starting…`;
+    const body = { task_id: v.id, judge: judgeSel?.value || null, params: params() };
+    if (st.source === "byo") body.endpoint = endpoint(); else body.model = sel.value;
     try {
-      const run = await api("/api/runs", { method: "POST", body: { task_id: v.id, model: sel.value, judge: judgeSel?.value || null } });
+      const run = await api("/api/runs", { method: "POST", body });
       refreshActive();
       location.hash = `#/run/${run.id}`;
     } catch (e) {
       toast(e.message, 5000);
-      go.disabled = false; go.innerHTML = `${icon("play", 15)}Run rollout`;
+      delete go.dataset.busy; go.innerHTML = `${icon("play", 15)}Run rollout`; update();
       if (e.status === 401) document.querySelector("[data-signin]")?.click();
     }
   });

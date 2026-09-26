@@ -263,6 +263,32 @@ export function renderMap() {
     t.append("text").attr("class", "lbl").attr("x", 8).attr("y", 18).attr("fill", color).text(label);
     if (hh > 42) t.append("text").attr("class", "cnt").attr("x", 8).attr("y", 34).attr("fill", color).text(fmt.format(d.value));
   });
+  animateMap(svg, g, h, W, H);
+}
+
+// Drill-down motion: blocks that stay glide from where they were; new blocks grow out of the region they came
+// from (the domain you clicked), or out of their own centre. Layout and clicks are unchanged; this is only motion.
+let lastMap = null;
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+const leafKey = (d) => d.data.dom + "|" + d.data.name;
+function animateMap(svg, g, h, W, H) {
+  const now = { W, H, leaves: new Map(), doms: new Map() };
+  g.each((d) => now.leaves.set(leafKey(d), [d.x0, d.y0, d.x1 - d.x0, d.y1 - d.y0]));
+  (h.children || []).forEach((c) => now.doms.set(c.data.dom, [c.x0, c.y0, c.x1 - c.x0, c.y1 - c.y0]));
+  const prev = lastMap;
+  lastMap = now;
+  if (!prev || prev.W !== W || prev.H !== H || reduceMotion.matches) return;   // first paint or a resize: no motion
+  const T = d3.transition().duration(560).ease(d3.easeCubicInOut);
+  g.each(function (d) {
+    const to = [d.x0, d.y0, d.x1 - d.x0, d.y1 - d.y0];
+    const from = prev.leaves.get(leafKey(d)) || prev.doms.get(d.data.dom) || [to[0] + to[2] / 2, to[1] + to[3] / 2, 0, 0];
+    if (from.every((v, i) => Math.abs(v - to[i]) < 0.5)) return;
+    const sel = d3.select(this);
+    sel.attr("transform", `translate(${from[0]},${from[1]})`).transition(T).attr("transform", `translate(${to[0]},${to[1]})`);
+    sel.select("rect").attr("width", from[2]).attr("height", from[3]).transition(T).attr("width", to[2]).attr("height", to[3]);
+    sel.selectAll("text").attr("opacity", 0).transition(T).delay(260).duration(260).attr("opacity", 1);
+  });
+  svg.selectAll("g.dh").attr("opacity", 0).transition(T).delay(200).attr("opacity", 1);
 }
 function clickCell(d) {
   tip();
@@ -274,7 +300,8 @@ function clickCell(d) {
     if (!set.size) delete state.sel[dom.main];
   }
   run();
-  $("#toolbar", root).scrollIntoView({ behavior: "smooth", block: "start" });
+  // let the drill-down play, then bring the matching environments into view
+  setTimeout(() => $("#toolbar", root)?.scrollIntoView({ behavior: "smooth", block: "start" }), reduceMotion.matches ? 0 : 620);
 }
 function tip(ev, html) {
   const el = $("#tip");
