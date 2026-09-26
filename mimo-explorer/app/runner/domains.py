@@ -619,6 +619,10 @@ class Music:
                    for g, v in groups.items()]
         rejected = bool(res.get("reject"))
         total = res.get("total")
+        if total is None and not rejected:   # pipeline.compute_score: no total -> 0.0
+            r.emit("checks", reward=0.0, checks=gate + quality, summary="The scorer could not measure this piece (no total).")
+            r.phase("verify", "done", "reward 0.000")
+            return {"reward": 0.0}
         reward = 0.0 if rejected else max(0.0, min(1.0, float(total or 0) / 100.0))
         summary = ("Rejected by the validity gate: " + "; ".join(c["id"].lower() for c in gate if not c["passed"])
                    if rejected else f"human-likeness {total:.1f}/100")

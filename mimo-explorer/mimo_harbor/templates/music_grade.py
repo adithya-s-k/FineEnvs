@@ -52,4 +52,6 @@ gate = {"notation_errors": res.get("err", 0), "bad_bars": res.get("bar", 0), "bl
 total = res.get("total")
 if res.get("reject"):
     done(0.0, "Rejected by the validity gate", gate=gate, quality=total, groups=res.get("groups"))
-done(max(0.0, min(1.0, float(total or 0) / 100.0)), f"human-likeness {total:.1f}/100", gate=gate, groups=res.get("groups"))
+if total is None:   # pipeline.compute_score: no total -> 0.0
+    done(0.0, "The scorer could not measure this piece (no total).", gate=gate, groups=res.get("groups"))
+done(max(0.0, min(1.0, float(total) / 100.0)), f"human-likeness {total:.1f}/100", gate=gate, groups=res.get("groups"))
