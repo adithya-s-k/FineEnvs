@@ -161,3 +161,30 @@ export function rewardBadge(reward, status) {
   const cls = r >= 0.999 ? "full" : r > 0 ? "part" : "zero";
   return `<span class="reward ${cls}">${r % 1 === 0 ? r.toFixed(0) : r.toFixed(3)}</span>`;
 }
+
+// A spreadsheet-like grid: column letters, row numbers, numbers right-aligned, formulas shown as formulas,
+// and runs of empty rows collapsed to one thin row.
+const colName = (i) => { let s = ""; i += 1; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+const NUM = /^-?[$€£]?\(?-?[\d,]*\.?\d+\)?%?$/;
+export function sheetGrid(rows) {
+  if (!rows || !rows.length) return `<p class="muted">Empty sheet.</p>`;
+  const width = Math.max(...rows.map((r) => r.length));
+  let used = 0;
+  rows.forEach((r) => r.forEach((c, i) => { if (c !== "" && c != null) used = Math.max(used, i + 1); }));
+  const cols = Math.max(1, Math.min(width, used));
+  const out = [];
+  let gap = 0;
+  rows.forEach((r, n) => {
+    const empty = !r.slice(0, cols).some((c) => c !== "" && c != null);
+    if (empty) { gap++; return; }
+    if (gap) { out.push(`<tr class="gap"><th></th><td colspan="${cols}"></td></tr>`); gap = 0; }
+    out.push(`<tr><th>${n + 1}</th>${Array.from({ length: cols }, (_, i) => {
+      const v = r[i] ?? "";
+      const s = String(v);
+      const cls = s.startsWith("=") ? "fx" : NUM.test(s.trim()) && s.trim() ? "num" : "";
+      return `<td class="${cls}"${s.length > 40 ? ` title="${esc(s)}"` : ""}>${cls === "fx" ? `<span>ƒ</span>${esc(s)}` : esc(s)}</td>`;
+    }).join("")}</tr>`);
+  });
+  return `<div class="tbl sheet"><table><thead><tr><th></th>${Array.from({ length: cols }, (_, i) => `<th>${colName(i)}</th>`).join("")}</tr></thead>
+    <tbody>${out.join("")}</tbody></table></div>`;
+}

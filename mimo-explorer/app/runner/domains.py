@@ -22,6 +22,12 @@ from . import opencode
 VENDOR = Path(__file__).resolve().parents[1] / "vendor"
 
 
+def _msg(m: str) -> str:
+    """The General verifier labels model-judged checks in Chinese ("llm 3票" = 3 votes)."""
+    v = re.fullmatch(r"llm (\d+)票", (m or "").strip())
+    return (f"judged by the model ({v.group(1)} vote{'s' if v.group(1) != '1' else ''})" if v else m)
+
+
 def _tail(res, n: int = 4000) -> str:
     return ((res.stdout or "") + ("\n" + res.stderr if res.stderr else "")).strip()[-n:]
 
@@ -215,7 +221,7 @@ class General:
             sc = (items.get(cid) or {}).get("score", got.get("score"))
             checks.append({"id": cid, "passed": bool(got.get("passed")) if got else None, "score": sc,
                            "method": m.get("method"), "tier": m.get("tier"), "weight": m.get("weight"),
-                           "question": m.get("question"), "message": got.get("message") or (items.get(cid) or {}).get("detail", "")})
+                           "question": m.get("question"), "message": _msg(got.get("message") or (items.get(cid) or {}).get("detail", ""))})
         reward = detail.get("reward", detail.get("score"))
         err = detail.get("reward_error")
         r.emit("checks", reward=None if err else reward, checks=checks, error=err,
@@ -314,6 +320,15 @@ class Webdev:
         r.phase("agent", "done")
 
         r.phase("verify", detail=f"render + vision judge {r.run.get('judge')}")
+        listing = r.sh(f"cd {cwd}/dist 2>/dev/null && find . -type f | head -200").stdout or ""
+        delivered = [l[2:] for l in listing.splitlines() if l.startswith("./")]
+        r.emit("files", title="Delivered in dist/", files=delivered)
+        if "index.html" not in delivered:
+            msg = ("The agent delivered nothing to dist/." if not delivered
+                   else "dist/ has no index.html, so there is no page to open.")
+            r.emit("checks", reward=0.0, checks=[{"id": "delivered", "passed": False, "message": msg}], summary=msg)
+            r.phase("verify", "done", "reward 0.0")
+            return {"reward": 0.0}
         r.sandbox.files.write("/tmp/.shot.py", SHOT)
         res = r.sh(f"python3 /tmp/.shot.py file://{cwd}/dist/index.html", timeout=240)
         m = re.search(r"SHOT_B64:(\S+)", res.stdout or "")
@@ -375,10 +390,10 @@ class Music:
         r.update(flavor=None)
         r.phase("agent", detail=r.run["model"])
         mid = f"{r.run['model']}:{r.run['provider']}" if r.run.get("provider") else r.run["model"]
-        text, usage = "", {}
+        text, thinking, usage = "", "", {}
         with httpx.stream("POST", f"{config.ROUTER}/chat/completions", timeout=600,
                           headers={"Authorization": f"Bearer {r.token}"},
-                          json={"model": mid, "stream": True, "stream_options": {"include_usage": True}, "max_tokens": 16000,
+                          json={"model": mid, "stream": True, "stream_options": {"include_usage": True}, "max_tokens": 32000,
                                 "messages": [{"role": "user", "content": raw["prompt"]}]}) as resp:
             if resp.status_code != 200:
                 raise RuntimeError(f"model call failed: HTTP {resp.status_code} {resp.read()[:300]!r}")
@@ -389,14 +404,26 @@ class Music:
                 chunk = json.loads(line[6:])
                 usage = chunk.get("usage") or usage
                 for c in chunk.get("choices") or []:
-                    text += (c.get("delta") or {}).get("content") or ""
+                    delta = c.get("delta") or {}
+                    text += delta.get("content") or ""
+                    thinking += delta.get("reasoning_content") or delta.get("reasoning") or ""
                 if time.time() - last_emit > 2:
-                    r.emit("partial", text=text[-4000:], chars=len(text))
+                    r.emit("partial", text=text[-4000:], chars=len(text), thinking_chars=len(thinking))
                     last_emit = time.time()
                 r.check_cancel()
-        r.add_tokens({"input": usage.get("prompt_tokens"), "output": usage.get("completion_tokens")})
+        details = usage.get("completion_tokens_details") or {}
+        reasoning = int(details.get("reasoning_tokens") or 0)
+        r.add_tokens({"input": usage.get("prompt_tokens"), "output": (usage.get("completion_tokens") or 0) - reasoning,
+                      "reasoning": reasoning})
+        if thinking:
+            r.emit("thinking", text=thinking[-20000:], chars=len(thinking))
         r.emit("text", text=text)
         r.phase("agent", "done")
+        if not text.strip():
+            msg = ("The model spent its whole token budget thinking and never wrote the piece."
+                   if thinking or reasoning else "The model returned an empty answer.")
+            r.emit("checks", reward=0.0, checks=[{"id": "answer", "passed": False, "message": msg}], summary=msg)
+            return {"reward": 0.0}
 
         r.phase("verify", detail="abc2midi + 18 human-likeness features")
         abc = extract_abc(text)
@@ -408,16 +435,32 @@ class Music:
         store_abc = abc
         from .. import store
         store.write_artifact(r.id, "piece.abc", store_abc)
-        if res.get("skip") or res.get("reject"):
-            reason = res.get("skip") or f"rejected: {res.get('reject')}"
-            r.emit("checks", reward=0.0, checks=[{"id": "render", "passed": False, "message": str(reason)}], summary=str(reason))
+        if res.get("skip"):
+            msg = {"no_midi": "abc2midi could not turn the notation into MIDI."}.get(res["skip"], str(res["skip"]))
+            r.emit("checks", reward=0.0, checks=[{"id": "renders", "passed": False, "message": msg}], summary=msg)
             return {"reward": 0.0}
-        reward = max(0.0, min(1.0, float(res.get("total", 0)) / 100.0))
-        from ..vendor.music_scorer.score import SPEC
-        checks = [{"id": f, "score": res.get(f), "method": rule, "tier": grp, "passed": None,
-                   "message": f"{res.get(f)}" if res.get(f) is not None else ""} for f, rule, grp in SPEC if f in res]
-        groups = {k[3:]: v for k, v in res.items() if k.startswith("sc_")}
-        r.emit("checks", reward=reward, checks=checks, groups=groups, summary=f"human-likeness {res.get('total')}/100")
+        # Xiaomi's validity gate: any of these zeroes the piece before its quality counts
+        gate = [
+            {"id": "No notation errors", "passed": res.get("err", 0) == 0, "method": "gate",
+             "message": f"abc2midi reported {res.get('err', 0)} error(s)"},
+            {"id": "Bars add up", "passed": res.get("bar", 0) < 10, "method": "gate",
+             "message": f"{res.get('bar', 0)} bar(s) with the wrong length (10 or more rejects)"},
+            {"id": "No blank lines in the tune", "passed": not res.get("blank"), "method": "gate",
+             "message": "a blank line ends an ABC tune early" if res.get("blank") else "ok"},
+            {"id": "One instrument per MIDI channel", "passed": not res.get("ch_conflict"), "method": "gate",
+             "message": f"{res.get('ch_conflict', 0)} channel conflict(s)"},
+        ]
+        groups = res.get("groups") or {}
+        quality = [{"id": f"{g.capitalize()}", "score": round(float(v) / 100, 3) if v is not None else None, "method": "feature",
+                    "tier": "quality", "passed": None, "message": f"{v:.0f}/100" if isinstance(v, (int, float)) else ""}
+                   for g, v in groups.items()]
+        rejected = bool(res.get("reject"))
+        total = res.get("total")
+        reward = 0.0 if rejected else max(0.0, min(1.0, float(total or 0) / 100.0))
+        summary = ("Rejected by the validity gate: " + "; ".join(c["id"].lower() for c in gate if not c["passed"])
+                   if rejected else f"human-likeness {total:.1f}/100")
+        r.emit("checks", reward=reward, checks=gate + quality, summary=summary,
+               formula=f"quality {total:.1f}/100 would score {float(total) / 100:.3f}" if rejected and total is not None else None)
         r.phase("verify", "done", f"reward {reward:.3f}")
         return {"reward": reward}
 

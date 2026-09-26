@@ -127,9 +127,12 @@ class Rollout:
             self.update(status="cancelled", finished_at=time.time(), cost=self.cost_now())
             self.phase("done", "error", "cancelled")
         except Exception as e:  # noqa: BLE001
-            self.emit("error", text=f"{type(e).__name__}: {e}", trace=traceback.format_exc()[-3000:])
-            self.update(status="failed", error=f"{type(e).__name__}: {str(e)[:300]}", finished_at=time.time(),
-                        cost=self.cost_now())
+            if self.cancelled.is_set():   # killing the sandbox makes the blocked call fail: that is the cancel, not a crash
+                self.update(status="cancelled", finished_at=time.time(), cost=self.cost_now())
+            else:
+                self.emit("error", text=f"{type(e).__name__}: {e}", trace=traceback.format_exc()[-3000:])
+                self.update(status="failed", error=f"{type(e).__name__}: {str(e)[:300]}", finished_at=time.time(),
+                            cost=self.cost_now())
         finally:
             with self._lock:
                 self._flush()
@@ -152,7 +155,7 @@ class Rollout:
 # ── public API ───────────────────────────────────────────────────────────────
 def active_for(user: str) -> int:
     with _live_lock:
-        return sum(1 for r in _live.values() if r.run["user"] == user)
+        return sum(1 for r in _live.values() if r.run["user"] == user and not r.cancelled.is_set())
 
 
 def submit(user: str, token: str, task: dict, model: str, provider: str | None, judge: str | None) -> dict:
@@ -192,5 +195,8 @@ def cancel(run_id: str) -> bool:
     if r is None:
         return False
     r.cancelled.set()
-    threading.Thread(target=r.stop_sandbox, daemon=True).start()   # unblocks a long sandbox command
+    # Say so at once: the worker may sit in a blocking sandbox call for a while after the kill.
+    r.update(status="cancelled", finished_at=time.time(), cost=r.cost_now())
+    r.phase("done", "error", "stopped by you")
+    threading.Thread(target=r.stop_sandbox, daemon=True).start()
     return True

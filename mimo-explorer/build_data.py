@@ -57,7 +57,12 @@ def fetch() -> tuple[Path, list[str]]:
 # ── small helpers ────────────────────────────────────────────────────────────
 def clip(text: str, n: int) -> str:
     text = re.sub(r"\s+", " ", text).strip()
-    return text if len(text) <= n else text[: n - 1].rstrip() + "…"
+    if len(text) <= n:
+        return text
+    cut = text[: n - 1]
+    if " " in cut[n // 2:]:            # end on a whole word when there is one to end on
+        cut = cut[: cut.rfind(" ")]
+    return cut.rstrip(" ,;:-") + "…"
 
 
 def plain(text: str) -> str:
@@ -71,14 +76,24 @@ def plain(text: str) -> str:
 
 def first_sentence(text: str, n: int = 110) -> str:
     text = re.sub(r"^\s*(prompt|task)\s*:\s*", "", text.strip(), flags=re.I)
-    for line in text.splitlines():
-        line = line.strip().lstrip("#").strip().strip("*").strip()
-        if line:
+    lines = [l.strip().lstrip("#").strip().strip("*").strip() for l in text.splitlines()]
+    lines = [l for l in lines if l]
+    # skip greetings and stubs ("Hi,", "Hello team") in favour of the first line that says something
+    line = next((l for l in lines if len(l) >= 18 and not re.match(r"(?i)^(hi|hello|hey|dear|greetings)\b", l)),
+                lines[0] if lines else text)
+    # end of the first sentence, not the dot in "U.S." / "Inc." / "e.g."
+    end = None
+    for m in re.finditer(r"[.!?。！？](?=\s|$)", line):
+        before = line[:m.start()].rsplit(None, 1)[-1] if line[:m.start()].strip() else ""
+        if m.group() == "." and (re.fullmatch(r"(?:[A-Za-z]\.)+[A-Za-z]?", before) or before.lower() in ABBREV or len(before) == 1):
+            continue
+        if m.end() > 25:
+            end = m.end()
             break
-    else:
-        line = text
-    m = re.match(r"(.+?[.!?。！？])(\s|$)", line)
-    return clip(m.group(1) if m and len(m.group(1)) > 25 else line, n)
+    return clip(line[:end] if end else line, n)
+
+
+ABBREV = {"inc", "corp", "co", "ltd", "llc", "plc", "no", "mr", "ms", "mrs", "dr", "st", "vs", "etc", "jr", "sr", "fig", "approx"}
 
 
 def lang_of(text: str) -> str:

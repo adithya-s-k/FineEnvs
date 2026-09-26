@@ -229,7 +229,13 @@ def view(task_id: str) -> dict | None:
     det = detail(d).get(task_id, {})
     raw = rows().get(task_id, {})
     inst = raw.get("instance", {})
-    v = {"id": task_id, "domain": d, "title": rec["t"], "facets": rec["f"], "brief": det.get("brief") or raw.get("prompt", ""),
+    brief_text = det.get("brief") or raw.get("prompt", "")
+    try:
+        from build_data import first_sentence   # the same headline rule the index uses, just longer
+        headline = first_sentence(brief_text, 320) if d != "music" and d != "cyber" else rec["t"]
+    except Exception:  # noqa: BLE001
+        headline = rec["t"]
+    v = {"id": task_id, "domain": d, "title": headline, "short_title": rec["t"], "facets": rec["f"], "brief": det.get("brief") or raw.get("prompt", ""),
          "meta": det.get("meta", []), "image": image_for(task_id), "runnable": runnable(task_id)}
 
     if d == "code":

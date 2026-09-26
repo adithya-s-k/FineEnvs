@@ -1,0 +1,18 @@
+// Session state and the "N running" badge, shared by every view. No top-level await here: views import
+// this, and a module that waits at load time while a view imports it deadlocks the page.
+import { $, api } from "./util.js";
+
+let session = { user: null, local: false };
+export const getSession = () => session;
+export const setSession = (s) => { session = s; };
+
+export async function refreshActive() {
+  if (!session.user) return;
+  try {
+    const { runs } = await api("/api/runs");
+    const n = runs.filter((r) => ["queued", "starting", "setup", "running", "verifying"].includes(r.status)).length;
+    const b = $("#nav-active");
+    b.hidden = !n;
+    b.textContent = n ? `${n} running` : "";
+  } catch { /* offline: try again next tick */ }
+}

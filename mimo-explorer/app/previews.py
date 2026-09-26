@@ -29,15 +29,20 @@ def spreadsheet(p: Path) -> dict:
     import openpyxl
 
     wb = openpyxl.load_workbook(p, read_only=True, data_only=True)
+    # Formulas the file never had cached values for show as blanks in data_only mode; show the formula instead.
+    wf = openpyxl.load_workbook(p, read_only=True, data_only=False)
     sheets = []
-    for ws in wb.worksheets[:12]:
+    for ws, wsf in zip(wb.worksheets[:12], wf.worksheets[:12]):
         rows = []
-        for r in ws.iter_rows(max_row=ROWS, max_col=COLS, values_only=True):
-            rows.append([_cell(c) for c in r])
+        for r, rf in zip(ws.iter_rows(max_row=ROWS, max_col=COLS, values_only=True),
+                         wsf.iter_rows(max_row=ROWS, max_col=COLS, values_only=True)):
+            rows.append([_cell(c if c is not None else (f if isinstance(f, str) and f.startswith("=") else None))
+                         for c, f in zip(r, rf)])
         while rows and not any(rows[-1]):
             rows.pop()
         sheets.append({"name": ws.title, "rows": rows, "dims": ws.max_row and f"{ws.max_row} × {ws.max_column}"})
     wb.close()
+    wf.close()
     return {"type": "sheets", "sheets": sheets}
 
 
@@ -75,6 +80,8 @@ def slides(p: Path) -> dict:
     out = []
     for i, s in enumerate(prs.slides, 1):
         title, texts = "", []
+        tshape = s.shapes.title
+        tid = tshape.shape_id if tshape is not None else None
         for sh in s.shapes:
             if not sh.has_text_frame:
                 if getattr(sh, "has_table", False) and sh.has_table:
@@ -83,10 +90,12 @@ def slides(p: Path) -> dict:
             t = sh.text_frame.text.strip()
             if not t:
                 continue
-            if sh == getattr(s.shapes, "title", None) and not title:
+            if sh.shape_id == tid and not title:
                 title = t
             else:
                 texts.append(t)
+        if not title and texts:   # untitled layouts: the first text box is the title in practice
+            title = texts.pop(0).split("\n")[0]
         out.append({"n": i, "title": title, "text": texts[:30]})
     return {"type": "slides", "slides": out[:60]}
 

@@ -20,6 +20,15 @@ app = FastAPI(title="MiMo RL Environments Explorer", docs_url="/api/docs")
 app.include_router(auth.router)
 
 
+@app.middleware("http")
+async def _revalidate(request: Request, call_next):
+    """Code and styles revalidate on every load (cheap: ETag -> 304), so a deploy is never half-cached."""
+    resp = await call_next(request)
+    if not request.url.path.startswith("/api/") and not request.url.path.endswith(".gz"):
+        resp.headers.setdefault("Cache-Control", "no-cache")
+    return resp
+
+
 @app.on_event("startup")
 def _startup() -> None:
     config.STORAGE_DIR.mkdir(parents=True, exist_ok=True)
@@ -119,7 +128,7 @@ def start_run(body: RunRequest, request: Request):
     if need and not judge:
         raise HTTPException(400, "this task is graded by a model: pick a judge")
     try:
-        run = core.submit(u["name"], u["token"], {"id": v["id"], "domain": v["domain"], "title": v["title"],
+        run = core.submit(u["name"], u["token"], {"id": v["id"], "domain": v["domain"], "title": v["short_title"],
                                                   "facets": v.get("facets")}, body.model, provider, judge)
     except RuntimeError as e:
         raise HTTPException(429, str(e))
