@@ -102,6 +102,8 @@ def config_for(model: str, provider: str | None, steps: int, mcp: list[dict] | N
 def run(r, prompt: str, cwd: str, *, steps: int, timeout: float, user: str | None = None,
         home: str | None = None, mcp: list[dict] | None = None) -> str:
     """Run the agent to completion. Returns its final message."""
+    # the exact user message the agent starts from; OpenCode adds its own system prompt and tool definitions
+    r.emit("prompt", text=prompt, harness="opencode")
     if r.run.get("scripted") is not None:   # validation only (app/validate.py): a fixed probe instead of a model
         return _scripted(r, cwd, user)
     ep, params = r.run.get("endpoint"), r.run.get("params") or {}

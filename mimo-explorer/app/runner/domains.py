@@ -528,6 +528,7 @@ class Music:
         r.phase("agent", detail=r.run["model"])
         base, key, mid = r.agent_api()
         params = r.run.get("params") or {}
+        r.emit("prompt", text=raw["prompt"])   # the whole conversation: one user message, no system prompt
         if r.run.get("scripted") is not None:   # validation: score a fixed piece, no model call
             return self._score(r, raw, r.run.get("scripted_final", ""), "", {}, params)
         url, host_hdr, ext = f"{base}/chat/completions", {}, {}

@@ -178,6 +178,10 @@ function item(e, st) {
   const t = dur(e.t);
   const summary = (inner) => `<summary>${icon("chevronRight", 13, "chev")}${inner}</summary>`;
   switch (e.kind) {
+    case "prompt": return row("ev-prompt", "doc", t, `<details open>${summary(`<b>Instructions to the model</b><span class="peek">${(e.text || "").length.toLocaleString()} characters</span>`)}
+      <div class="prompt-text">${esc(e.text)}</div><p class="prompt-note">${e.harness === "opencode"
+        ? "The task's instructions, sent as the first user message. OpenCode adds its own system prompt and tool definitions."
+        : "The whole request: one user message, no system prompt."}</p></details>`);
     case "text": return row("ev-text", "message", t, `<div class="msg prose">${md(e.text)}</div>`);
     case "thinking": return row("ev-think", "brain", t, `<details>${summary(`<b>Thinking</b><span class="peek">${esc(e.text.replace(/\s+/g, " ").slice(0, 220))}</span>`)}<div class="thought">${esc(e.text)}</div></details>`);
     case "tool": {

@@ -644,6 +644,8 @@ select.input { appearance: none; padding-right: 30px; cursor: pointer;
 .ev-tool.bad > .ei { color: var(--err); border-color: color-mix(in srgb, var(--err) 40%, var(--border)); }
 .ev-think > .ei { color: var(--c-music); }
 .ev .peek { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--faint); font-size: 12.5px; font-style: italic; }
+.ev .prompt-text { margin: 10px 12px 0; padding: 12px 14px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 360px; overflow: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+.ev .prompt-note { margin: 8px 12px 12px; font-size: 12px; color: var(--faint); }
 .ev .thought { margin: 10px 12px 12px; font-size: 13px; line-height: 1.65; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 420px; overflow: auto; }
 .ev-diff > .ei { color: var(--c-code); }
 .ev-err > .ei { color: var(--err); border-color: color-mix(in srgb, var(--err) 40%, var(--border)); }
