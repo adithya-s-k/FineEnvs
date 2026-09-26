@@ -755,18 +755,18 @@ class GeoGuesserEnvironment(MCPEnvironment):
         if s.submitted:
             observation = self._base_observation()
             observation.done = True
-            observation.feedback = "The episode is over; the guess was already made."
+            observation.feedback = (
+                "Out of actions. The episode is over; it ended with no guess."
+                if s.ended_without_guess
+                else "The episode is over; the guess was already made."
+            )
             return observation
 
         if isinstance(action, GuessAction):
             return self._finish(action)
 
         if self._steps_remaining() <= 0:
-            observation = self._base_observation()
-            observation.feedback = (
-                "Out of actions. Call submit_guess with your best estimate."
-            )
-            return observation
+            return self._finish_without_guess()
 
         if isinstance(action, LookAction):
             s.heading_deg = action.heading_deg
@@ -778,7 +778,7 @@ class GeoGuesserEnvironment(MCPEnvironment):
                 f"Facing {s.heading_deg % 360:.0f} deg, {s.fov_deg:.0f} deg field of "
                 f"view. {self._steps_remaining()} actions left."
             )
-            return observation
+            return self._maybe_finish_without_guess(observation)
 
         if isinstance(action, PanAction):
             s.heading_deg = (s.heading_deg + action.delta_deg) % 360
@@ -788,7 +788,7 @@ class GeoGuesserEnvironment(MCPEnvironment):
                 f"Turned to {s.heading_deg:.0f} deg. "
                 f"{self._steps_remaining()} actions left."
             )
-            return observation
+            return self._maybe_finish_without_guess(observation)
 
         if isinstance(action, ZoomAction):
             s.fov_deg = action.fov_deg
@@ -798,7 +798,7 @@ class GeoGuesserEnvironment(MCPEnvironment):
                 f"Field of view now {s.fov_deg:.0f} deg. "
                 f"{self._steps_remaining()} actions left."
             )
-            return observation
+            return self._maybe_finish_without_guess(observation)
 
         if isinstance(action, MoveAction):
             new_index, travelled = self._backend.step_along(
@@ -811,7 +811,7 @@ class GeoGuesserEnvironment(MCPEnvironment):
                     f"Cannot go {action.direction} - the captured road ends here. "
                     f"{self._steps_remaining()} actions left."
                 )
-                return observation
+                return self._maybe_finish_without_guess(observation)
             s.frame_index = new_index
             s.total_moved_meters += travelled
             observation = self._render_view_observation()
@@ -821,7 +821,7 @@ class GeoGuesserEnvironment(MCPEnvironment):
                 f"({s.total_moved_meters:.0f} m total). "
                 f"{self._steps_remaining()} actions left."
             )
-            return observation
+            return self._maybe_finish_without_guess(observation)
 
         if isinstance(action, PinAction):
             previous = (s.pins[-1]["lat"], s.pins[-1]["lon"]) if s.pins else None
@@ -845,7 +845,7 @@ class GeoGuesserEnvironment(MCPEnvironment):
             observation.feedback = (
                 f"{description} {self._steps_remaining()} actions left."
             )
-            return observation
+            return self._maybe_finish_without_guess(observation)
 
         if isinstance(action, ViewMapAction):
             s.n_maps += 1
@@ -860,7 +860,7 @@ class GeoGuesserEnvironment(MCPEnvironment):
                 f"{action.span_deg * 2:.0f} deg across. "
                 f"{self._steps_remaining()} actions left."
             )
-            return observation
+            return self._maybe_finish_without_guess(observation)
 
         if isinstance(action, MeasureAction):
             # Free, because it is arithmetic on two coordinates the agent
@@ -877,9 +877,52 @@ class GeoGuesserEnvironment(MCPEnvironment):
             observation.feedback = f"{km:.0f} km between those two points."
             if s.n_free >= self._max_free_calls:
                 observation.feedback += " Free-tool budget spent; this now costs."
-            return observation
+            return self._maybe_finish_without_guess(observation)
 
         raise TypeError(f"Unsupported action type: {type(action).__name__}")
+
+    def _maybe_finish_without_guess(
+        self, observation: GeoGuesserObservation
+    ) -> GeoGuesserObservation:
+        if self._steps_remaining() <= 0:
+            return self._finish_without_guess(observation)
+        return observation
+
+    def _finish_without_guess(
+        self, observation: GeoGuesserObservation | None = None
+    ) -> GeoGuesserObservation:
+        """End an exhausted episode with the documented no-guess reward."""
+        s = self._state
+        s.submitted = True
+        s.ended_without_guess = True
+        true_lat, true_lon = self._task.truth
+        observation = observation or self._base_observation()
+        observation.done = True
+        observation.reward = 0.0
+        observation.score = 0.0
+        observation.parsed_ok = False
+        observation.true_lat = true_lat
+        observation.true_lon = true_lon
+        observation.action_cost = self._cost()
+        observation.feedback = (
+            f"{observation.feedback.rstrip()} Out of actions. "
+            "Episode ended with no guess. Scored 0."
+        ).strip()
+        observation.metadata = {
+            **self._metadata(),
+            "no_guess": True,
+            "country": self._task.country,
+            "task_index": self._state.task_index,
+            "task_id": self._state.task_id,
+            "sequence_id": self._task.sequence_id,
+            "attribution": self._task.attribution,
+            "n_looks": s.n_looks,
+            "n_maps": s.n_maps,
+            "n_pins": s.n_pins,
+            "n_moves": s.n_moves,
+            "total_moved_meters": s.total_moved_meters,
+        }
+        return observation
 
     def _finish(self, action: GuessAction) -> GeoGuesserObservation:
         """Score the final guess and end the episode."""
