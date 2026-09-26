@@ -205,13 +205,19 @@ for (const theme of ['light', 'dark']) for (const w of [390, 768, 1280, 1920]) {
     if (theme === 'light' && (w === 390 || w === 768) && /#\/$|s3k_0000|001406|0d8314$|community$/.test(h))
       await p.screenshot({ path: `${SHOTS}/ui-${w}${h.replace(/[#/?=]+/g, '_').slice(0, 26)}.png` });
   }
-  if (w === 390 && theme === 'light') {   // phone-only interactions
-    await go(p, '#/', 1200);
+  if (w === 390 && theme === 'light') {   // phone-only interactions, from a fresh load (the layout pass force-opened every section)
+    await go(p, '#/', 300); await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(1200);
     ok('phone: the overview map starts collapsed', !(await p.getAttribute('#map-card', 'open')));
     await p.click('#open-filters'); await p.waitForTimeout(400);
     ok('phone: filters open as a bottom sheet', await p.evaluate(() => document.querySelector('.filters').classList.contains('open')));
-    await p.click('#close-filters'); await p.waitForTimeout(400);
-    ok('phone: Done closes the sheet', await p.evaluate(() => !document.querySelector('.filters').classList.contains('open')));
+    ok('phone: the sheet has a backdrop and locks the page', await p.isVisible('#sheet-scrim') && await p.evaluate(() => document.body.classList.contains('noscroll')));
+    ok('phone: the sheet reaches the bottom of the screen', await p.evaluate(() => Math.abs(document.querySelector('.filters').getBoundingClientRect().bottom - innerHeight) < 2));
+    ok('phone: facet sections start folded', (await p.$$('.filters .facet[open]')).length === 0);
+    await p.click('.filters .facet summary'); await p.click('.filters .facet[open] .opt:not(.zero)'); await p.waitForTimeout(400);
+    ok('phone: the sheet button shows the result count', /Show [\d,]+ environments/.test(await p.textContent('#show-results')));
+    await p.click('#show-results'); await p.waitForTimeout(400);
+    ok('phone: Show results closes the sheet and unlocks the page', await p.evaluate(() => !document.querySelector('.filters').classList.contains('open') && !document.body.classList.contains('noscroll')));
+    ok('phone: the list starts on the first screen', await p.evaluate(() => document.querySelector('#list').getBoundingClientRect().top + scrollY < 400));
     ok('phone: brand text hidden, logo kept', !(await p.isVisible('.brand .name')) && await p.isVisible('.logo'));
   }
   ok(`${theme} ${w}px: no JavaScript errors`, p.errors.length === 0, p.errors.slice(0, 3).join(' | '));

@@ -81,10 +81,12 @@ export async function mount(el, params) {
         <button class="btn only-mobile" id="open-filters" type="button">${icon("filter", 15)}Filters<span id="nfilt"></span></button>
       </div>
       <div class="layout">
+        <div class="sheet-scrim" id="sheet-scrim" hidden></div>
         <aside class="filters" id="filters" aria-label="Filters">
-          <div class="sheet-head"><b>Filters</b><button class="btn sm" id="close-filters" type="button">Done</button></div>
+          <div class="sheet-head"><b>Filters</b><button class="icon-btn" id="close-filters" type="button" aria-label="Close filters">${icon("x", 18)}</button></div>
           <div class="filters-head"><span>Filters</span><button class="link" id="clear" type="button">Clear all</button></div>
           <div id="facets"></div>
+          <div class="sheet-foot"><button class="btn" id="clear3" type="button">Clear</button><button class="btn primary grow" id="show-results" type="button">Show results</button></div>
         </aside>
         <section class="results" aria-live="polite">
           <div class="results-head"><span class="count" id="count"></span><span class="order" id="order-note"></span><div class="active" id="active"></div></div>
@@ -101,7 +103,7 @@ export async function mount(el, params) {
   run();
 }
 
-export function unmount() { if (observer) observer.disconnect(); observer = null; }
+export function unmount() { if (observer) observer.disconnect(); observer = null; document.body.classList.remove("noscroll"); }
 
 function writeURL() {
   const p = new URLSearchParams();
@@ -176,15 +178,19 @@ function renderFacets() {
     const ordinal = ORDINAL[key];
     let items = [...counts.entries()].sort(ordinal ? (a, b) => ordinal(a[0]) - ordinal(b[0])
       : (a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
-    const limit = expanded.has(key) ? Infinity : 8;
+    const limit = expanded.has(key) ? Infinity : (phone() ? 5 : 8);
     const hidden = Math.max(0, items.length - limit);
     items = items.slice(0, limit);
-    return `<div class="facet"><h3>${esc(label)}</h3>
+    // sections fold: on a phone only the ones in use start open, so the sheet isn't one long scroll
+    const open = facetOpen.has(key) ? facetOpen.get(key) : (!phone() || sel.size > 0);
+    return `<details class="facet" data-facet="${esc(key)}" ${open ? "open" : ""}><summary><h3>${esc(label)}</h3>${sel.size ? `<span class="fsel">${sel.size} selected</span>` : ""}${icon("chevronDown", 14, "chev")}</summary>
       ${items.map(([v, c]) => `<button class="opt ${c ? "" : "zero"}" data-k="${esc(key)}" data-v="${esc(v)}" aria-pressed="${sel.has(v)}">
         <span class="box">${sel.has(v) ? icon("check", 11) : ""}</span><span class="lab" title="${esc(v)}">${esc(v)}</span><span class="c">${fmt.format(c)}</span></button>`).join("")}
-      ${hidden || expanded.has(key) ? `<button class="link more" data-more="${esc(key)}">${icon(expanded.has(key) ? "chevronDown" : "chevronRight", 13)}${expanded.has(key) ? "Show fewer" : `Show ${hidden} more`}</button>` : ""}</div>`;
+      ${hidden || expanded.has(key) ? `<button class="link more" data-more="${esc(key)}">${icon(expanded.has(key) ? "chevronDown" : "chevronRight", 13)}${expanded.has(key) ? "Show fewer" : `Show ${hidden} more`}</button>` : ""}</details>`;
   }).join("");
 }
+const facetOpen = new Map();
+const phone = () => matchMedia("(max-width: 760px)").matches;
 function toggle(key, v) {
   if (key === "d") { const id = DATA.domains.find((d) => d.name === v)?.id; if (id) { setDomain(id); return; } }
   const set = (state.sel[key] ||= new Set());
@@ -200,6 +206,8 @@ function renderActive() {
     pills.push(`<button class="pill" data-k="${esc(k)}" data-v="${esc(v)}"><span>${esc(labels[k] || k)}</span>${esc(v)}${icon("x", 13)}</button>`)));
   $("#active", root).innerHTML = pills.join("");
   $("#count", root).textContent = `${fmt.format(matches.length)} environment${matches.length === 1 ? "" : "s"}`;
+  const sr = $("#show-results", root);
+  if (sr) sr.textContent = `Show ${fmt.format(matches.length)} environment${matches.length === 1 ? "" : "s"}`;
 }
 
 // ── map ──────────────────────────────────────────────────────────────────────
@@ -365,13 +373,24 @@ function wire(el) {
   const clearAll = () => { state.sel = {}; state.q = ""; $("#q", el).value = ""; state.dom = null; run(); };
   $("#clear", el).addEventListener("click", clearAll);
   $("#clear2", el).addEventListener("click", clearAll);
-  $("#close-filters", el).addEventListener("click", () => $("#filters", el).classList.remove("open"));
+  const sheet = (on) => {
+    $("#filters", el).classList.toggle("open", on);
+    $("#sheet-scrim", el).hidden = !on;
+    document.body.classList.toggle("noscroll", on);
+  };
+  $("#close-filters", el).addEventListener("click", () => sheet(false));
+  $("#show-results", el).addEventListener("click", () => { sheet(false); $("#toolbar", el).scrollIntoView({ block: "start" }); });
+  $("#sheet-scrim", el).addEventListener("click", () => sheet(false));
+  $("#clear3", el).addEventListener("click", () => { state.sel = {}; run(); });
+  el.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("#filters", el).classList.contains("open")) sheet(false); });
+  $("#facets", el).addEventListener("toggle", (e) => { const d = e.target.closest?.("[data-facet]"); if (d) facetOpen.set(d.dataset.facet, d.open); }, true);
+  if (phone()) $("#q", el).placeholder = "Search environments…";
   $("#map-card", el).addEventListener("toggle", () => renderMap());
   $("#surprise", el).addEventListener("click", () => {
     const pool = matches.length ? matches : ENVS;
     location.hash = "#/task/" + encodeURIComponent(pool[Math.floor(Math.random() * pool.length)].id);
   });
-  $("#open-filters", el).addEventListener("click", () => $("#filters", el).classList.toggle("open"));
+  $("#open-filters", el).addEventListener("click", () => sheet(true));
   observer = new IntersectionObserver((es) => {
     if (es.some((x) => x.isIntersecting) && shown < matches.length && autoLoaded < AUTO_PAGES) { autoLoaded++; renderList(false); }
   }, { rootMargin: "600px" });
