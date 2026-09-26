@@ -85,6 +85,7 @@ class WordleSkyRLEnv(BaseTextEnv):
     def step(self, action: str) -> BaseTextEnvStepOutput:
         """Process model text — extract guess word and submit to game."""
         self.turns += 1
+        already_done = self._game.done
 
         word = _extract_guess(action, lenient=self._lenient_parsing)
         if not word:
@@ -96,7 +97,7 @@ class WordleSkyRLEnv(BaseTextEnv):
                 self.error_count += 1
 
         self.last_output = result
-        reward = self._game.reward
+        reward = 0.0 if already_done else self._game.reward
         done = self._game.done or self.turns >= self.max_turns
 
         return BaseTextEnvStepOutput(
