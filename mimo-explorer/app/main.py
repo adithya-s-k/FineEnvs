@@ -5,8 +5,10 @@
 
 from __future__ import annotations
 
+import json
 import mimetypes
 import random
+from functools import lru_cache
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
@@ -16,7 +18,7 @@ from typing import Literal
 import httpx
 from pydantic import BaseModel, Field
 
-from . import auth, catalog, config, endpoints, models, previews, store
+from . import auth, catalog, config, endpoints, models, previews, store, version
 from .runner import core
 
 app = FastAPI(title="MiMo RL Environment Explorer", docs_url="/api/docs")
@@ -59,6 +61,7 @@ def _startup() -> None:
 def me(request: Request):
     u = auth.current_user(request)
     return {"user": auth.public(u), "local": config.LOCAL_MODE, "oauth": not config.LOCAL_MODE,
+            "version": version.app_version(), "source": version.source_hash(),
             "missing_scopes": (u or {}).get("missing_scopes", []),
             "storage": "local folder" if not config.STORAGE_DIR.as_posix().startswith("/data") else "private bucket"}
 
@@ -107,6 +110,39 @@ def task_preview(task_id: str, path: str):
     return previews.preview(p)
 
 
+def _repo_snapshot(task_id: str) -> dict:
+    import gzip
+
+    if "/" in task_id or ".." in task_id:
+        raise HTTPException(404, "no such task")
+    p = config.STORAGE_DIR / "repo-snapshots" / f"{task_id}.json.gz"
+    if not p.is_file():
+        raise HTTPException(404, "this repository has not been snapshotted yet")
+    return _read_snapshot(str(p), p.stat().st_mtime)
+
+
+@lru_cache(maxsize=32)
+def _read_snapshot(path: str, mtime: float) -> dict:
+    import gzip
+
+    return json.loads(gzip.decompress(open(path, "rb").read()))
+
+
+@app.get("/api/tasks/{task_id}/repo")
+def task_repo(task_id: str):
+    """The repository inside a Code task's image: files, base commit, upstream, history truncation."""
+    d = _repo_snapshot(task_id)
+    return {k: d.get(k) for k in ("base", "remote", "history_truncated", "files", "cwd", "taken_at")}
+
+
+@app.get("/api/tasks/{task_id}/repo/file")
+def task_repo_file(task_id: str, path: str):
+    d = _repo_snapshot(task_id)
+    if path not in d.get("texts", {}):
+        raise HTTPException(404, "no preview for this file")
+    return {"path": path, "text": d["texts"][path]}
+
+
 @app.get("/api/tasks/{task_id}/systems/{system}/{table}")
 def system_table(task_id: str, system: str, table: str, limit: int = 50):
     try:
@@ -148,6 +184,7 @@ class RunRequest(BaseModel):
     judge: str | None = None
     endpoint: Endpoint | None = None
     params: Params = Params()
+    visibility: Literal["public", "private"] = "public"
 
 
 class EndpointProbe(BaseModel):
@@ -207,7 +244,8 @@ def start_run(body: RunRequest, request: Request):
     try:
         run = core.submit(u["name"], u["token"], {"id": v["id"], "domain": v["domain"], "title": v["short_title"],
                                                   "facets": v.get("facets")}, model, provider, judge,
-                          endpoint=endpoint, agent_key=agent_key, params=body.params.model_dump(exclude_defaults=True))
+                          endpoint=endpoint, agent_key=agent_key, params=body.params.model_dump(exclude_defaults=True),
+                          visibility=body.visibility)
     except RuntimeError as e:
         raise HTTPException(429, str(e))
     return run
@@ -215,30 +253,97 @@ def start_run(body: RunRequest, request: Request):
 
 @app.get("/api/runs")
 def list_runs(request: Request, task_id: str | None = None):
+    """Your own rollouts only, public and private."""
     u = auth.current_user(request)
     if not u:
         return {"runs": []}
-    return {"runs": store.list_runs(user=u["name"], task_id=task_id)}
+    return {"runs": [_owner_view(r) for r in store.list_runs(user=u["name"], task_id=task_id)]}
 
 
-def _own(request: Request, run_id: str) -> dict:
+# ── visibility ───────────────────────────────────────────────────────────────
+# A public rollout is shown to everyone WITHOUT who ran it: the public projection drops the user, sandbox ids and
+# a custom endpoint's URL, and scrubs the owner's username out of every string in the trace. Private rollouts are
+# visible to their owner only and 404 for everyone else. Rollouts from before visibility existed stay private.
+PUBLIC_FIELDS = ("id", "task_id", "domain", "title", "facets", "model", "provider", "judge", "status", "reward",
+                 "reward_error", "tokens", "cost", "created_at", "started_at", "finished_at", "flavor", "harness",
+                 "params", "image", "provenance", "phase")
+
+
+def _is_public(run: dict) -> bool:
+    return run.get("visibility") == "public"
+
+
+def _scrub(value, name: str):
+    if isinstance(value, str):
+        return value.replace(name, "[user]") if name and len(name) > 2 else value
+    if isinstance(value, dict):
+        return {k: _scrub(v, name) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_scrub(v, name) for v in value]
+    return value
+
+
+def _public_view(run: dict) -> dict:
+    out = {k: run.get(k) for k in PUBLIC_FIELDS if k in run}
+    ep = run.get("endpoint")
+    if ep:   # which kind of model it was, and its settings, but never where it is served from
+        out["endpoint"] = {"custom": True, "price_in": ep.get("price_in"), "price_out": ep.get("price_out")}
+    if run.get("error"):
+        out["error"] = run["error"]
+    out["visibility"] = "public"
+    return _scrub(out, run.get("user") or "")
+
+
+def _owner_view(run: dict) -> dict:
+    return {**{k: v for k, v in run.items() if k not in ("scripted", "scripted_final")}, "is_owner": True,
+            "visibility": run.get("visibility") or "private"}
+
+
+def _visible(request: Request, run_id: str) -> tuple[dict, bool]:
+    """(run, is_owner) if this person may see the rollout, else 404."""
     u = auth.current_user(request)
     try:
         run = store.get(run_id)
     except ValueError:
         run = None
-    if not run or not u or run.get("user") != u["name"]:
+    if run and u and run.get("user") == u["name"]:
+        return run, True
+    if run and _is_public(run):
+        return run, False
+    raise HTTPException(404, "no such rollout")
+
+
+def _own(request: Request, run_id: str) -> dict:
+    run, owner = _visible(request, run_id)
+    if not owner:
         raise HTTPException(404, "no such rollout")
     return run
 
 
 @app.get("/api/runs/{run_id}")
 def get_run(run_id: str, request: Request, after: int = 0):
-    run = _own(request, run_id)
+    run, owner = _visible(request, run_id)
     live = core.live(run_id)
     if live is not None:
         run = {**run, **live.run, "cost": live.cost_now()}
-    return {"run": run, "events": core.events(run_id, after), "live": live is not None}
+    events = core.events(run_id, after)
+    if owner:
+        return {"run": _owner_view(run), "events": events, "live": live is not None}
+    return {"run": _public_view(run), "events": _scrub(events, run.get("user") or ""), "live": live is not None}
+
+
+class Visibility(BaseModel):
+    visibility: Literal["public", "private"]
+
+
+@app.post("/api/runs/{run_id}/visibility")
+def set_visibility(run_id: str, body: Visibility, request: Request):
+    _own(request, run_id)
+    live = core.live(run_id)
+    if live is not None:
+        live.run["visibility"] = body.visibility
+    store.update(run_id, visibility=body.visibility)
+    return {"visibility": body.visibility}
 
 
 @app.post("/api/runs/{run_id}/cancel")
@@ -247,9 +352,98 @@ def cancel_run(run_id: str, request: Request):
     return {"cancelled": core.cancel(run_id)}
 
 
+# still running, or stopped before it said anything: not useful to anyone else yet
+HIDDEN_STATES = {"queued", "starting", "setup", "running", "verifying", "interrupted", "cancelled"}
+
+
+def _stats(runs: list[dict]) -> dict:
+    scored = [r for r in runs if r.get("reward") is not None and r.get("status") == "done"]
+    hist = [0] * 10
+    for r in scored:
+        hist[min(9, int(float(r["reward"]) * 10))] += 1
+    by: dict[str, list[float]] = {}
+    for r in scored:
+        key = r.get("model") or "?"
+        by.setdefault(key, []).append(float(r["reward"]))
+    models_ = sorted(({"model": m, "custom": any(x.get("endpoint") for x in runs if x.get("model") == m), "runs": len(v),
+                       "mean": round(sum(v) / len(v), 4), "best": max(v), "full": sum(x >= 0.999 for x in v)}
+                      for m, v in by.items()), key=lambda x: (-x["mean"], -x["runs"]))
+    return {"runs": len(runs), "scored": len(scored), "mean": round(sum(float(r["reward"]) for r in scored) / len(scored), 4) if scored else None,
+            "full": sum(float(r["reward"]) >= 0.999 for r in scored), "histogram": hist, "by_model": models_}
+
+
+@app.get("/api/tasks/{task_id}/rollouts")
+def task_rollouts(task_id: str, limit: int = 50, offset: int = 0):
+    """Everyone's public rollouts on one task, anonymous, with the spread of rewards."""
+    runs = [r for r in store.list_runs(task_id=task_id, public=True, limit=100000) if r.get("status") not in HIDDEN_STATES]
+    page = runs[offset:offset + min(limit, 200)]
+    return {"stats": _stats(runs), "runs": [_public_view(r) for r in page], "total": len(runs)}
+
+
+def _band(r: dict) -> str:
+    rw = r.get("reward")
+    if rw is None or r.get("status") != "done":
+        return "unscored"
+    return "full" if rw >= 0.999 else "zero" if rw <= 0 else "partial"
+
+
+@app.get("/api/community")
+def community(domain: str | None = None, model: str | None = None, served: str | None = None, judge: str | None = None,
+              reward: str | None = None, thinking: str | None = None, q: str | None = None, sort: str = "new",
+              limit: int = 50, offset: int = 0):
+    """Public rollouts across all tasks, filtered every way a reader might want, and how each model does."""
+    everyone = [r for r in store.list_runs(public=True, limit=100000) if r.get("status") not in HIDDEN_STATES]
+    def served_by(r):
+        return "own endpoint" if r.get("endpoint") else (r.get("provider") or "auto")
+    def keep(r):
+        if domain and r.get("domain") != domain: return False
+        if model and r.get("model") != model: return False
+        if served and served_by(r) != served: return False
+        if judge and (r.get("judge") or "") != judge: return False
+        if reward and _band(r) != reward: return False
+        if thinking and ((r.get("params") or {}).get("thinking") or "default") != thinking: return False
+        if q and q.lower() not in f"{r.get('title', '')} {r.get('task_id', '')}".lower(): return False
+        return True
+    runs = [r for r in everyone if keep(r)]
+    key = {"reward_desc": lambda r: -(r.get("reward") if r.get("reward") is not None else -1),
+           "reward_asc": lambda r: (r.get("reward") if r.get("reward") is not None else 2),
+           "cost_asc": lambda r: (r.get("cost") or {}).get("total", 0), "cost_desc": lambda r: -(r.get("cost") or {}).get("total", 0)}.get(sort)
+    if key:
+        runs.sort(key=key)
+    def counts(f):
+        c: dict[str, int] = {}
+        for r in everyone:
+            v = f(r)
+            if v:
+                c[v] = c.get(v, 0) + 1
+        return sorted(c.items(), key=lambda kv: -kv[1])
+    facets = {"domain": counts(lambda r: r.get("domain")), "model": counts(lambda r: r.get("model")), "served": counts(served_by),
+              "judge": counts(lambda r: r.get("judge")), "reward": counts(_band),
+              "thinking": counts(lambda r: (r.get("params") or {}).get("thinking") or "default")}
+    return {"stats": _stats(runs), "facets": facets, "total": len(runs), "tasks": len({r["task_id"] for r in runs}),
+            "runs": [_public_view(r) for r in runs[offset:offset + min(limit, 200)]]}
+
+
+@app.get("/api/community/tasks")
+def community_tasks():
+    """Per task: how many public rollouts, and how they scored. Tasks absent here have none yet."""
+    out: dict[str, dict] = {}
+    for r in store.list_runs(public=True, limit=100000):
+        if r.get("status") in HIDDEN_STATES:
+            continue
+        t = out.setdefault(r["task_id"], {"runs": 0, "scored": 0, "sum": 0.0, "best": None, "last": 0})
+        t["runs"] += 1
+        t["last"] = max(t["last"], r.get("created_at") or 0)
+        if r.get("reward") is not None and r.get("status") == "done":
+            t["scored"] += 1; t["sum"] += float(r["reward"])
+            t["best"] = max(t["best"] if t["best"] is not None else 0, float(r["reward"]))
+    return {"tasks": {k: {"runs": v["runs"], "mean": round(v["sum"] / v["scored"], 4) if v["scored"] else None, "best": v["best"],
+                          "last": v["last"]} for k, v in out.items()}}
+
+
 @app.get("/api/runs/{run_id}/artifacts/{name}")
 def artifact(run_id: str, name: str, request: Request):
-    _own(request, run_id)
+    _visible(request, run_id)
     data = store.read_artifact(run_id, name)
     if data is None:
         raise HTTPException(404, "no such artifact")

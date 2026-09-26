@@ -1,7 +1,7 @@
 // Task page: one scrolling page built from sections, an outline to jump between them, and a run panel.
 // Each section builder returns null when the task has nothing for it, so every domain gets only what applies.
 import { $, $$, api, esc, md, money, ago, bytes, openModal, table, sheetGrid, statusPill, rewardBadge, toast, DOMAIN_NAME, vals,
-  sk, spinner, emptyState, progress } from "./util.js";
+  sk, spinner, emptyState, progress, confetti, PUBLIC_NOTE, PRIVATE_NOTE, reportUrl, visibilityBadge, rewardClass, rewardText } from "./util.js";
 import { icon, DOMAIN_ICON, FILE_ICON } from "./icons.js";
 import { getSession, refreshActive } from "./session.js";
 import { picker } from "./picker.js";
@@ -45,7 +45,7 @@ export async function mount(el, id) {
   }
   if (!alive) return;
   getModels().catch(() => {});   // start fetching models while the page renders
-  const sections = [brief, systems, workspace, setup, grading, rollouts].map((f) => f(v)).filter(Boolean);
+  const sections = [brief, systems, workspace, repository, setup, grading, community, rollouts].map((f) => f(v)).filter(Boolean);
   el.innerHTML = `
     <div class="wrap page tp fade-in" style="--dc:var(--c-${v.domain})">
       <nav class="crumbs" aria-label="Breadcrumb"><a href="#/">Environments</a>${icon("chevronRight", 13)}
@@ -63,6 +63,8 @@ export async function mount(el, id) {
   wire(el, v);
   runPanel($("#runbox", el), v);
   loadRollouts(el, v);
+  loadCommunity(el, v);
+  loadRepository(el, v);
 }
 
 function header(v) {
@@ -80,7 +82,8 @@ function header(v) {
     <div class="kick"><span class="badge">${icon(DOMAIN_ICON[v.domain], 13)}${esc(DOMAIN_NAME[v.domain])}</span>${chips.map((c) => `<span class="chip">${esc(c)}</span>`).join("")}</div>
     <h1>${esc(v.title)}</h1>
     <div class="facts">${facts.map(([i, f]) => `<span>${icon(i, 14)}${f}</span>`).join("")}
-      <button class="link" data-copy>${icon("link", 14)}Copy link</button></div>
+      <button class="link" data-copy>${icon("link", 14)}Copy link</button>
+      <a class="link" href="${reportUrl({ task: v })}" target="_blank" rel="noopener">${icon("flag", 14)}Report an issue with this task</a></div>
   </header>`;
 }
 
@@ -146,7 +149,7 @@ function setup(v) {
   if (e.cpus) rows.push(["Resources", `${e.cpus} CPU · ${e.memory_mb} MB · internet ${e.internet ? "on" : "off"}`]);
   if (e.tags) rows.push(["Tags", e.tags.join(", ")]);
   const how = {
-    code: "Git history is hidden while the agent works, so the fix cannot be read out of later commits.",
+    code: "The repository is at the task's base commit with its git history truncated there (if an image's history isn't, .git is hidden while the agent works), and build leftovers that could leak the fix are cleaned up first.",
     cyber: "The agent runs as an unprivileged user. It gets the project source, a prebuilt fuzz binary and submit.sh; the verifier runs as root.",
     general: "The agent is an unprivileged user in the workspace. The systems' databases and code are root-only, so MCP is the only way in.",
     webdev: "Node, pnpm, Playwright and Chromium are in the image; the agent builds however it likes and delivers to dist/.",
@@ -156,7 +159,7 @@ function setup(v) {
   return {
     id: "setup", nav: "Sandbox", icon: "box", title: "How the sandbox is set up",
     html: `${rows.length ? `<dl class="kv">${rows.map(([k, x]) => `<dt>${esc(k)}</dt><dd><code>${esc(x)}</code></dd>`).join("")}</dl>` : ""}
-      ${how ? `<div class="note-box" style="margin-top:14px">${icon("shield")}<span>${esc(how)} Web tools are off for the agent, and curl, wget and git fetch are blocked in its shell.</span></div>` : ""}`,
+      ${how ? `<div class="note-box" style="margin-top:14px">${icon("shield")}<span>${esc(how)} ${v.domain === "webdev" ? "Web search and fetch tools are off." : "Web search and fetch tools are off, and the sites where answers live (code hosting, bug trackers, search engines) are unreachable from the sandbox; everything else, including local services, works as usual."}</span></div>` : ""}`,
   };
 }
 
@@ -215,9 +218,151 @@ function grading(v) {
 }
 
 function rollouts() {
-  return { id: "runs", nav: "Your rollouts", icon: "list", title: "Your rollouts on this task",
+  return { id: "runs", nav: "Your rollouts", icon: "list", title: "Your rollouts on this task", note: "public and private",
     html: `<div id="task-runs"><div class="loading-row">${spinner()}Loading your rollouts…</div></div>` };
 }
+
+function repository(v) {
+  if (v.domain !== "code") return null;
+  return { id: "repo", nav: "Repository", icon: "folder", title: "The repository", note: "as the agent finds it, at the task's base commit",
+    html: `<div id="task-repo"><div class="loading-row">${spinner()}Loading the repository…</div></div>` };
+}
+
+// Code tasks: a snapshot of the repository inside the task image (file tree, base commit, small text files).
+async function loadRepository(el, v) {
+  const box = $("#task-repo", el);
+  if (!box) return;
+  let d;
+  try { d = await api(`/api/tasks/${encodeURIComponent(v.id)}/repo`); }
+  catch (e) {
+    box.innerHTML = e.status === 404
+      ? `<p class="muted sm">This repository hasn't been indexed yet. It lives inside the task image (<code>${esc((v.environment || {}).image || "")}</code>); snapshots are added in batches.</p>`
+      : `<p class="err-text sm">${esc(e.message)}</p>`;
+    return;
+  }
+  if (!box.isConnected) return;
+  // a nested tree built from the flat file list; folders render their children only when opened
+  const root = { dirs: {}, files: [] };
+  for (const f of d.files) {
+    const parts = f.path.split("/");
+    let node = root;
+    for (const part of parts.slice(0, -1)) node = (node.dirs[part] ||= { dirs: {}, files: [] });
+    node.files.push({ ...f, name: parts[parts.length - 1] });
+  }
+  const count = (n) => n.files.length + Object.values(n.dirs).reduce((s, x) => s + count(x), 0);
+  const html = (node, prefix) => {
+    const dirs = Object.keys(node.dirs).sort((a, b) => a.localeCompare(b));
+    const files = [...node.files].sort((a, b) => a.name.localeCompare(b.name));
+    return dirs.map((name) => `<li><button class="rt-dir" data-dir="${esc(prefix + name)}" aria-expanded="false">${icon("chevronRight", 13, "chev")}${icon("folder", 14)}<span>${esc(name)}</span><em>${count(node.dirs[name])}</em></button><ul hidden></ul></li>`).join("")
+      + files.map((f) => `<li><button class="rt-file${f.preview ? "" : " dim"}" data-path="${esc(f.path)}" title="${esc(f.path)}${f.preview ? "" : " (no preview: binary or larger than 200 KB)"}">${icon("file", 13)}<span>${esc(f.name)}</span><em>${bytes(f.size)}</em></button></li>`).join("");
+  };
+  const nodeAt = (path) => path.split("/").reduce((n, part) => n && n.dirs[part], root);
+  const readme = d.files.find((f) => /^readme(\.[a-z]+)?$/i.test(f.path) && f.preview);
+  box.innerHTML = `
+    <div class="cm-stats">
+      <div class="stat"><span>Files</span><b>${d.files.length.toLocaleString()}</b></div>
+      <div class="stat"><span>Base commit</span><b><code>${esc((d.base || "").slice(0, 10))}</code></b></div>
+      ${d.remote ? `<div class="stat"><span>Upstream</span><b style="font-size:12.5px">${esc(d.remote.replace(/^https?:\/\//, "").replace(/\.git$/, ""))}</b></div>` : ""}
+      <div class="stat"><span>History</span><b>${d.history_truncated ? "truncated at base" : "not truncated, hidden from the agent"}</b></div></div>
+    <div class="rt">
+      <div class="rt-side"><div class="rt-search">${icon("search", 14)}<input id="repo-q" placeholder="Go to file…" autocomplete="off" spellcheck="false"></div>
+        <ul class="rt-tree" id="rt-tree">${html(root, "")}</ul></div>
+      <div class="rt-view" id="rt-view"><div class="empty-state">${icon("file", 26)}<p>Pick a file to read it.</p></div></div>
+    </div>
+    <p class="fine" style="text-align:left;margin-top:10px">${esc(d.cwd || "")} in the task image, as the agent finds it. Text files up to 200 KB open here; the hidden tests only arrive at grading.</p>`;
+  const tree = $("#rt-tree", box), view = $("#rt-view", box);
+  const open = async (path) => {
+    $$(".rt-file.on", box).forEach((b) => b.classList.remove("on"));
+    box.querySelector(`.rt-file[data-path="${CSS.escape(path)}"]`)?.classList.add("on");
+    const meta = d.files.find((f) => f.path === path);
+    view.innerHTML = `<div class="rt-head"><code>${esc(path)}</code><span>${bytes(meta?.size)}</span></div><div class="rt-body">${sk.lines(90, 70, 85, 60, 95, 75)}</div>`;
+    if (!meta?.preview) { $(".rt-body", view).innerHTML = `<p class="muted sm" style="padding:14px">No preview: this file is binary or larger than 200 KB.</p>`; return; }
+    try {
+      const f = await api(`/api/tasks/${encodeURIComponent(v.id)}/repo/file?path=${encodeURIComponent(path)}`);
+      const lines = f.text.split("\n");
+      $(".rt-body", view).innerHTML = `<pre class="rt-code"><code>${lines.map((l, i) => `<span class="ln">${i + 1}</span>${esc(l)}`).join("\n")}</code></pre>`;
+    } catch (err) { $(".rt-body", view).innerHTML = `<p class="err-text sm" style="padding:14px">${esc(err.message)}</p>`; }
+  };
+  const expand = (btn, force) => {
+    const ul = btn.nextElementSibling;
+    const on = force ?? btn.getAttribute("aria-expanded") !== "true";
+    if (on && !ul.childElementCount) ul.innerHTML = html(nodeAt(btn.dataset.dir), btn.dataset.dir + "/");
+    btn.setAttribute("aria-expanded", String(on));
+    ul.hidden = !on;
+  };
+  tree.addEventListener("click", (e) => {
+    const dir = e.target.closest(".rt-dir");
+    if (dir) return expand(dir);
+    const file = e.target.closest(".rt-file");
+    if (file && !file.classList.contains("dim")) open(file.dataset.path);
+  });
+  let t;
+  $("#repo-q", box).addEventListener("input", (e) => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      const q = e.target.value.trim().toLowerCase();
+      if (!q) { tree.innerHTML = html(root, ""); return; }
+      const hits = d.files.filter((f) => f.path.toLowerCase().includes(q)).slice(0, 300);
+      tree.innerHTML = hits.length ? hits.map((f) => `<li><button class="rt-file${f.preview ? "" : " dim"}" data-path="${esc(f.path)}" title="${esc(f.path)}">${icon("file", 13)}<span>${esc(f.path)}</span><em>${bytes(f.size)}</em></button></li>`).join("")
+        : `<li class="muted sm" style="padding:10px">No file matches.</li>`;
+    }, 120);
+  });
+  if (readme) open(readme.path);
+}
+
+function community() {
+  return { id: "community", nav: "Community", icon: "users", title: "Community rollouts on this task", note: "public rollouts, shown without who ran them",
+    html: `<div id="task-community"><div class="loading-row">${spinner()}Loading community rollouts…</div></div>` };
+}
+
+// Every public rollout of this task: how rewards spread, how each model does, and the runs themselves.
+async function loadCommunity(el, v, offset = 0) {
+  const box = $("#task-community", el);
+  let d;
+  try { d = await api(`/api/tasks/${encodeURIComponent(v.id)}/rollouts?limit=30&offset=${offset}`); }
+  catch (e) { box.innerHTML = `<p class="err-text sm">${esc(e.message)}</p>`; return; }
+  if (!box.isConnected) return;
+  const s = d.stats;
+  if (!d.total) {
+    box.innerHTML = `<p class="muted sm">No public rollouts yet. Run one and keep it public: it appears here for everyone, without your name.</p>`;
+    return;
+  }
+  const peak = Math.max(1, ...s.histogram);
+  const rows = (runs) => runs.map((r) => `<a class="runrow" href="#/run/${esc(r.id)}">${rewardBadge(r.reward, r.status)}
+      <span class="m">${esc(r.endpoint ? r.model : r.model.split("/")[1] || r.model)}${r.endpoint ? ' <span class="chip">own endpoint</span>' : ""}</span>
+      <span class="c sm-hide">${esc(paramsShort(r.params))}</span><span class="c">${money((r.cost || {}).total)}</span><span class="w2">${ago(r.created_at)}</span>
+      ${icon("chevronRight", 14)}</a>`).join("");
+  if (offset === 0) {
+    box.innerHTML = `
+      <div class="cm-stats">
+        <div class="stat"><span>Public rollouts</span><b>${s.runs}</b></div>
+        <div class="stat"><span>Mean reward</span><b>${s.mean == null ? "–" : s.mean.toFixed(2)}</b></div>
+        <div class="stat"><span>Full marks</span><b>${s.full} of ${s.scored}</b></div>
+        <div class="stat"><span>Models tried</span><b>${s.by_model.length}</b></div></div>
+      <div class="cm-grid">
+        <div><div class="sec-label">Reward spread</div>
+          <div class="hist" title="Rollouts per reward band">${s.histogram.map((n, i) => `<i style="height:${Math.round((n / peak) * 100)}%" title="${(i / 10).toFixed(1)}–${((i + 1) / 10).toFixed(1)}: ${n}"></i>`).join("")}</div>
+          <div class="hist-axis"><span>0</span><span>0.5</span><span>1</span></div></div>
+        <div><div class="sec-label">By model</div>
+          <table class="mtable"><thead><tr><th>Model</th><th>Runs</th><th>Mean</th><th>Best</th></tr></thead><tbody>
+          ${s.by_model.slice(0, 8).map((m) => `<tr><td title="${esc(m.model)}">${esc(m.model.split("/")[1] || m.model)}${m.custom ? ' <span class="chip">own endpoint</span>' : ""}</td><td>${m.runs}</td>
+            <td><span class="bar" style="width:${Math.round(m.mean * 48)}px"></span>${m.mean.toFixed(2)}</td><td>${rewardText(m.best)}</td></tr>`).join("")}</tbody></table></div>
+      </div>
+      <div class="sec-label" style="margin-top:18px">Rollouts</div>
+      <div class="runlist cm-list" id="cm-rows">${rows(d.runs)}</div>
+      <div class="more-row" id="cm-more" ${d.total > d.runs.length ? "" : "hidden"}><span class="muted sm">Showing ${d.runs.length} of ${d.total}</span>
+        <button class="btn" type="button">Load more</button></div>`;
+    $("#cm-more button", box)?.addEventListener("click", () => loadCommunity(el, v, $$("#cm-rows .runrow", box).length));
+  } else {
+    $("#cm-rows", box).insertAdjacentHTML("beforeend", rows(d.runs));
+    const n = $$("#cm-rows .runrow", box).length;
+    $("#cm-more", box).hidden = n >= d.total;
+    $("#cm-more span", box).textContent = `Showing ${n} of ${d.total}`;
+  }
+}
+
+const paramsShort = (p) => !p ? "" : [p.thinking && p.thinking !== "default" && `thinking ${p.thinking === "none" ? "off" : p.thinking}`,
+  p.temperature != null && `t=${p.temperature}`, p.steps && `${p.steps} steps`].filter(Boolean).join(" · ");
 
 const disclose = (label, inner) => `<details style="margin-top:12px"><summary class="disclose">${icon("chevronRight", 14, "chev")}${esc(label)}</summary>${inner}</details>`;
 const fmtNum = (x) => (x == null ? "" : Math.abs(x) >= 100 ? x.toFixed(0) : Math.abs(x) >= 1 ? x.toFixed(2) : x.toFixed(3));
@@ -328,7 +473,7 @@ async function runPanel(box, v) {
   const d = v.run_defaults || {};
   const ep = LS.get("byo", { base_url: "", model: "", price_in: "", price_out: "" });
   const adv = LS.get("adv", { thinking: "default", temperature: "" });
-  const st = { source: LS.get("source", "hf"), probe: null };
+  const st = { source: LS.get("source", "hf"), probe: null, visibility: "public" };   // public unless you choose otherwise, every time
   inner.innerHTML = `
     <p class="intro">${music ? "One model call, then Xiaomi's scorer. No sandbox." : "A fresh HF Sandbox from this task's image, OpenCode as the harness, then the task's own grader."}</p>
     <div class="seg src" role="tablist" aria-label="Where the model runs">
@@ -364,10 +509,13 @@ async function runPanel(box, v) {
         ${music ? "" : `The step cap and time limit default to the values Xiaomi's training harness uses for this domain.`}</p>
     </details>
     <div class="estimate" id="rb-est"></div>
+    <div class="field vis"><span>Visibility</span>
+      <div class="seg" role="group" aria-label="Who can see this rollout"><button type="button" data-vis="public">${icon("globe", 13)}Public</button><button type="button" data-vis="private">${icon("shield", 13)}Private</button></div>
+      <p class="fine" id="vis-note" style="text-align:left"></p></div>
     ${gaps.length ? `<div class="note-box warn">${icon("alert")}<span>Your sign-in may be missing <b>${esc(gaps.join(", "))}</b>. If the rollout fails to start, sign in again with a write token.</span></div>` : ""}
     ${s.user ? `<button class="btn primary lg block" id="rb-go">${icon("play", 15)}Run rollout</button>`
       : `<button class="btn primary lg block" type="button" data-signin>${icon("user", 15)}Sign in to run</button>`}
-    <p class="fine">Keeps running if you close this page; find it under <a href="#/runs">Rollouts</a>. The sandbox is billed to ${s.user ? `<b>${esc(s.user.name)}</b>` : "your account"} on Hugging Face.</p>`;
+    <p class="fine">Keeps running if you close this page; find it under <a href="#/runs">My rollouts</a>. The sandbox is billed to ${s.user ? `<b>${esc(s.user.name)}</b>` : "your account"} on Hugging Face.</p>`;
 
   const def = cat.agents.some((m) => m.id === cat.default_agent) ? cat.default_agent : cat.agents[0]?.id;
   const sel = picker($("#rb-model", box), { models: cat.agents, value: def, onChange: () => update(),
@@ -398,6 +546,8 @@ async function runPanel(box, v) {
     save();
     $$("[data-src]", box).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.src === st.source)));
     $$("[data-pane]", box).forEach((p) => (p.hidden = p.dataset.pane !== st.source));
+    $$("[data-vis]", box).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.vis === st.visibility)));
+    $("#vis-note", box).textContent = st.visibility === "public" ? PUBLIC_NOTE : PRIVATE_NOTE;
     const p = params();
     const changed = [p.thinking !== "default" && `thinking ${THINKING.find(([k]) => k === p.thinking)[1].toLowerCase()}`,
       p.temperature != null && `temp ${p.temperature}`, p.steps && `${p.steps} steps`, p.timeout_min && `${p.timeout_min} min`, p.max_tokens && `${p.max_tokens} max tokens`].filter(Boolean);
@@ -424,6 +574,12 @@ async function runPanel(box, v) {
   }
   const status = (kind, html) => { $("#ep-status", box).innerHTML = html ? `<div class="note-box ${kind}">${icon(kind === "err" ? "alert" : kind === "warn" ? "alert" : "check")}<span>${html}</span></div>` : ""; };
   box.addEventListener("click", async (e) => {
+    const vb = e.target.closest("[data-vis]");
+    if (vb) {
+      const was = st.visibility; st.visibility = vb.dataset.vis; update();
+      if (was === "private" && st.visibility === "public") { const r = vb.getBoundingClientRect(); confetti(r.left + r.width / 2, r.top); toast("Thank you for sharing with the community"); }
+      return;
+    }
     const b = e.target.closest("[data-src]");
     if (b) { st.source = b.dataset.src; LS.set("source", st.source); update(); return; }
     if (e.target.closest("#ep-load")) {
@@ -453,7 +609,7 @@ async function runPanel(box, v) {
   const go = $("#rb-go", box);
   if (go) go.addEventListener("click", async () => {
     go.disabled = true; go.dataset.busy = "1"; go.innerHTML = `${spinner()}Starting…`;
-    const body = { task_id: v.id, judge: judgeSel?.value || null, params: params() };
+    const body = { task_id: v.id, judge: judgeSel?.value || null, params: params(), visibility: st.visibility };
     if (st.source === "byo") body.endpoint = endpoint(); else body.model = sel.value;
     try {
       const run = await api("/api/runs", { method: "POST", body });
@@ -473,7 +629,7 @@ async function loadRollouts(el, v) {
   try {
     const { runs } = await api(`/api/runs?task_id=${encodeURIComponent(v.id)}`);
     if (!box.isConnected) return;
-    box.innerHTML = runs.length ? `<div class="runlist">${runs.map((r) => `<a class="runrow" href="#/run/${esc(r.id)}">${statusPill(r.status)}
+    box.innerHTML = runs.length ? `<div class="runlist">${runs.map((r) => `<a class="runrow" href="#/run/${esc(r.id)}">${statusPill(r.status)}${visibilityBadge(r.visibility)}
       <span class="m">${esc(r.model.split("/")[1] || r.model)}</span>${rewardBadge(r.reward, r.status)}<span class="c">${money((r.cost || {}).total)}</span><span class="w2">${ago(r.created_at)}</span></a>`).join("")}</div>`
       : `<p class="muted sm">None yet. Pick a model and run one.</p>`;
   } catch (e) { box.innerHTML = `<p class="err-text sm">${esc(e.message)}</p>`; }

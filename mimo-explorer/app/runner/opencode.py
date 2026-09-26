@@ -56,6 +56,9 @@ def install(r) -> str:
     version = (res.stdout or "").strip().splitlines()[-1:] or ["?"]
     if res.exit_code != 0:
         raise RuntimeError("could not install OpenCode in the sandbox: " + (res.stderr or res.stdout or "")[-300:])
+    prov = r.run.get("provenance") or {}
+    if prov:   # what actually ran, not only what was pinned
+        r.update(provenance={**prov, "harness": {**prov.get("harness", {}), "installed": version[0]}})
     return version[0]
 
 

@@ -50,6 +50,22 @@ Nothing that grades a task (hidden tests, rubric answers, the expected crash) is
 and the agent has no web tools. Rollouts keep running if you close the page; find them under **Rollouts**.
 Traces are kept in a private bucket. Your token is never stored with them: it lives only in an encrypted cookie in your browser.
 
+## Rollouts and the community
+
+Rollouts are **public by default**: they appear on their task and under **Community** for everyone, shown without
+who ran them, with the model, provider (or "own endpoint"), judge, settings and the exact versions that produced
+them. You can make any rollout private from its page, and private rollouts are visible only to you. **My rollouts**
+always shows only your own.
+
+Public rollouts help everyone compare models on the same tasks and learn from real traces. With that in mind, they
+may later be released as an open dataset, for example as SFT or RL traces, with the same anonymisation. Private
+rollouts are never included.
+
+Something off? Please [open a discussion](https://huggingface.co/spaces/FineEnvs/MiMo-RL-Envs-Explorer/discussions).
+To work on the explorer itself, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Built by Hugging Face and the FineEnvs team.
+
 Rewards here will not match Xiaomi's published numbers exactly: the harness is OpenCode rather than theirs, the judge
 is whichever model you pick, and Webdev uses their evaluation-mode grader (training used a group-relative ranking).
 

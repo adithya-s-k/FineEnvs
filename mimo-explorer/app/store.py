@@ -29,12 +29,20 @@ def _dir(run_id: str) -> Path:
     return RUNS / run_id
 
 
+def _write_json(path: Path, doc: dict) -> None:
+    """Write-then-rename, so a crash mid-write never leaves a truncated run.json (the run would vanish)."""
+    tmp = path.with_name(f".{path.name}.{threading.get_ident()}.tmp")
+    tmp.write_text(json.dumps(doc, ensure_ascii=False, indent=1))
+    tmp.replace(path)
+
+
 def create(run: dict) -> dict:
     d = _dir(run["id"])
     d.mkdir(parents=True, exist_ok=False)
     run = {**run, "created_at": time.time(), "updated_at": time.time()}
-    (d / "run.json").write_text(json.dumps(run, ensure_ascii=False, indent=1))
+    _write_json(d / "run.json", run)
     (d / "events.jsonl").touch()
+    _index_put(run)
     return run
 
 
@@ -50,7 +58,8 @@ def update(run_id: str, **fields) -> dict:
     with _lock(run_id):
         run = get(run_id) or {}
         run.update(fields, updated_at=time.time())
-        (_dir(run_id) / "run.json").write_text(json.dumps(run, ensure_ascii=False, indent=1))
+        _write_json(_dir(run_id) / "run.json", run)
+        _index_put(run)
         return run
 
 
@@ -91,15 +100,39 @@ def read_artifact(run_id: str, name: str) -> bytes | None:
         return None
 
 
-def list_runs(user: str | None = None, task_id: str | None = None, limit: int = 200) -> list[dict]:
-    if not RUNS.is_dir():
-        return []
-    runs = []
-    for d in RUNS.iterdir():
-        r = get(d.name) if d.is_dir() else None
-        if not r or (user and r.get("user") != user) or (task_id and r.get("task_id") != task_id):
-            continue
-        runs.append(r)
+# An in-memory index of every run record, read from disk once. On the Space the store is a mounted bucket, where
+# reading every run.json per request would be slow; every write above also updates the index.
+_index: dict[str, dict] | None = None
+_index_lock = threading.Lock()
+
+
+def _load_index() -> dict[str, dict]:
+    global _index
+    with _index_lock:
+        if _index is None:
+            idx = {}
+            if RUNS.is_dir():
+                for d in RUNS.iterdir():
+                    r = get(d.name) if d.is_dir() and not d.name.startswith(".") else None
+                    if r and r.get("id"):
+                        idx[r["id"]] = r
+            _index = idx
+        return _index
+
+
+def _index_put(run: dict) -> None:
+    if run.get("id"):
+        idx = _load_index()
+        with _index_lock:
+            idx[run["id"]] = run
+
+
+def list_runs(user: str | None = None, task_id: str | None = None, limit: int = 200, public: bool | None = None,
+              domain: str | None = None, model: str | None = None) -> list[dict]:
+    runs = [r for r in list(_load_index().values())
+            if (not user or r.get("user") == user) and (not task_id or r.get("task_id") == task_id)
+            and (public is None or (r.get("visibility") == "public") == public)
+            and (not domain or r.get("domain") == domain) and (not model or r.get("model") == model)]
     runs.sort(key=lambda r: r.get("created_at", 0), reverse=True)
     return runs[:limit]
 

@@ -1,5 +1,5 @@
 // Rollouts: everything you've started, live or finished. Refreshes itself while anything is running.
-import { $, api, esc, money, dur, ago, statusPill, rewardBadge, DOMAIN_NAME, LIVE_STATUSES, sk, emptyState } from "./util.js";
+import { $, api, esc, money, dur, ago, statusPill, rewardBadge, DOMAIN_NAME, LIVE_STATUSES, sk, emptyState, visibilityBadge } from "./util.js";
 import { icon, DOMAIN_ICON } from "./icons.js";
 import { getSession } from "./session.js";
 
@@ -7,7 +7,7 @@ let timer = null, alive = true;
 const FAILED = ["failed", "cancelled", "interrupted"];
 export function unmount() { alive = false; clearTimeout(timer); }
 
-const head = (stats = "") => `<div class="page-h"><div><h1>Rollouts</h1><p>Everything you've run. They keep going when you close the page.</p></div>${stats}</div>`;
+const head = (stats = "") => `<div class="page-h"><div><h1>My rollouts</h1><p>Only yours, public and private. They keep going when you close the page. Everyone's public rollouts are under <a class="u" href="#/community">Community</a>.</p></div>${stats}</div>`;
 
 export async function mount(el) {
   alive = true;
@@ -52,7 +52,7 @@ export async function mount(el) {
 function row(r) {
   const end = r.finished_at || Date.now() / 1000;
   return `<a class="rs-row" href="#/run/${esc(r.id)}" style="--dc:var(--c-${r.domain})">
-    <span class="rs-status">${statusPill(r.status)}</span>
+    <span class="rs-status">${statusPill(r.status)} ${visibilityBadge(r.visibility)}</span>
     <span class="rs-task"><b>${esc(r.title)}</b><em><span class="dot"></span>${esc(DOMAIN_NAME[r.domain])} · ${esc(r.task_id)}</em></span>
     <span class="rs-model">${esc(r.model.split("/")[1] || r.model)}</span>
     <span class="rs-reward">${rewardBadge(r.reward, r.status)}</span>

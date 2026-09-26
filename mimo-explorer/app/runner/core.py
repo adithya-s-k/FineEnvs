@@ -23,7 +23,7 @@ import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
-from .. import config, models, store
+from .. import catalog, config, models, store, version
 
 _pool = ThreadPoolExecutor(max_workers=config.MAX_ACTIVE_ROLLOUTS, thread_name_prefix="rollout")
 _live: dict[str, "Rollout"] = {}
@@ -32,6 +32,9 @@ _live_lock = threading.Lock()
 
 # key-shaped: a known prefix, then a run with an uppercase letter or a digit (code names like hf_raise_for_status don't match)
 SECRET_RE = re.compile(r"\b(hf_|sk-|sk_|api_key=|Bearer )(?=[A-Za-z0-9\-]*[A-Z0-9])[A-Za-z0-9\-]{4,}(?![a-z_])")
+
+
+ACTIVE_STATES = {"queued", "starting", "setup", "running", "verifying"}
 
 
 class Cancelled(Exception):
@@ -209,7 +212,8 @@ def active_for(user: str) -> int:
 
 
 def submit(user: str, token: str, task: dict, model: str, provider: str | None, judge: str | None,
-           endpoint: dict | None = None, agent_key: str | None = None, params: dict | None = None) -> dict:
+           endpoint: dict | None = None, agent_key: str | None = None, params: dict | None = None,
+           visibility: str = "public") -> dict:
     if active_for(user) >= config.MAX_ACTIVE_PER_USER:
         raise RuntimeError(f"You already have {config.MAX_ACTIVE_PER_USER} rollouts running. Wait for one to finish.")
     with _live_lock:
@@ -220,6 +224,9 @@ def submit(user: str, token: str, task: dict, model: str, provider: str | None, 
         "user": user, "task_id": task["id"], "domain": task["domain"], "title": task["title"],
         "facets": task.get("facets"), "model": model, "provider": provider, "judge": judge,
         "status": "queued", "harness": "opencode", "endpoint": endpoint, "params": params or {},
+        "visibility": "private" if visibility == "private" else "public",
+        "image": catalog.image_for(task["id"]) if task["domain"] != "music" else None,
+        "provenance": version.provenance(),
     })
     r = Rollout(run, token, agent_key)
     with _live_lock:

@@ -1,5 +1,6 @@
 // A rollout, live: phases across the top, the agent's steps as a timeline, and the grade when it lands.
-import { $, api, esc, md, money, dur, ago, tokensShort, statusPill, toast, DOMAIN_NAME, LIVE_STATUSES, rewardClass, rewardText, sk, spinner, emptyState } from "./util.js";
+import { $, api, esc, md, money, dur, ago, tokensShort, statusPill, toast, DOMAIN_NAME, LIVE_STATUSES, rewardClass, rewardText, sk, spinner, emptyState,
+  confetti, openDialog, closeModal, visibilityBadge, PRIVATE_NOTE, reportUrl } from "./util.js";
 import { icon, DOMAIN_ICON } from "./icons.js";
 import { refreshActive } from "./session.js";
 
@@ -26,7 +27,7 @@ export async function mount(el, id) {
   try { first = await api(`/api/runs/${encodeURIComponent(id)}`); }
   catch (e) {
     if (!alive) return;
-    el.innerHTML = `<div class="wrap page">${emptyState("search", "Rollout not found", e.status === 404 ? "It may belong to another account, or the link is wrong." : esc(e.message),
+    el.innerHTML = `<div class="wrap page">${emptyState("search", "Rollout not found", e.status === 404 ? "It may be private, or the link is wrong." : esc(e.message),
       `<a class="btn" href="#/runs">${icon("arrowLeft")}Your rollouts</a>`)}</div>`;
     return;
   }
@@ -40,7 +41,8 @@ export async function mount(el, id) {
         <div class="tools-right"><button class="btn sm ghost" id="rp-expand" type="button">Expand all</button>
         <label class="switch" id="rp-follow-wrap"><input type="checkbox" id="rp-follow" checked> Follow live</label></div></div>
         <ol class="timeline" id="rp-tl"></ol><div id="rp-tail"></div></div>
-      <aside class="rp-side"><section class="panel grade" id="rp-grade"></section><section class="panel costcard" id="rp-cost"></section></aside>
+      <aside class="rp-side"><section class="panel grade" id="rp-grade"></section><section class="panel costcard" id="rp-cost"></section>
+        <section class="panel meta-card" id="rp-meta"></section></aside>
     </div></div>`;
   $("#rp-follow", el).addEventListener("change", (e) => (st.follow = e.target.checked));
   $("#rp-expand", el).addEventListener("click", (e) => {
@@ -62,6 +64,13 @@ export async function mount(el, id) {
 
 function apply(el, st, d) {
   st.run = d.run;
+  if (!st.navSet) {   // someone else's public rollout belongs to Community, not to My rollouts
+    st.navSet = true;
+    const mine = !!d.run.is_owner;
+    document.querySelectorAll("[data-nav]").forEach((a) => a.classList.toggle("on", a.dataset.nav === (mine ? "runs" : "community")));
+    const c = el.querySelector(".crumbs a");
+    if (c && !mine) { c.href = "#/community"; c.textContent = "Community"; }
+  }
   const fresh = d.events.filter((e) => e.i >= st.after);
   st.events.push(...fresh);
   st.after = st.events.length ? st.events[st.events.length - 1].i + 1 : st.after;
@@ -72,8 +81,10 @@ function apply(el, st, d) {
   if (!st.primed) { el.querySelectorAll("#rp-tl .ev").forEach((li) => li.classList.add("still")); st.primed = true; }
   renderGrade(el, st);
   renderCost(el, st);
+  renderMeta(el, st);
   renderTail(el, st);
   $("#rp-follow-wrap", el).hidden = !isLive(st.run);
+  if (!st.run.is_owner) $("#rp-cost .fine", el)?.remove();
   if (st.follow && fresh.length && isLive(st.run)) $("#rp-tail", el).scrollIntoView({ behavior: "smooth", block: "end" });
 }
 
@@ -107,11 +118,17 @@ function renderHead(el, st) {
   const r = st.run;
   if (!r) return;
   const start = r.started_at || r.created_at, end = r.finished_at || Date.now() / 1000;
-  const action = isLive(r)
+  const owner = !!r.is_owner;
+  const action = !owner ? `<a class="btn sm primary" href="#/task/${encodeURIComponent(r.task_id)}">${icon("play", 13)}Run it yourself</a>`
+    : isLive(r)
     ? (st.stopping ? `<button class="btn danger sm" disabled>${spinner()}Stopping</button>` : `<button class="btn danger sm" id="rp-cancel">${icon("stop", 13)}Stop</button>`)
     : `<a class="btn sm primary" href="#/task/${encodeURIComponent(r.task_id)}">${icon("refresh", 13)}Run again</a>`;
+  const vis = owner
+    ? `<button class="btn sm" id="rp-vis" type="button" title="Change who can see this rollout">${icon(r.visibility === "public" ? "shield" : "globe", 13)}Make ${r.visibility === "public" ? "private" : "public"}</button>`
+    : "";
   $("#rp-head", el).innerHTML = `
-    <div class="kick"><span class="badge" style="--dc:var(--c-${r.domain})">${icon(DOMAIN_ICON[r.domain], 13)}${esc(DOMAIN_NAME[r.domain])}</span>${statusPill(r.status)}
+    <div class="kick"><span class="badge" style="--dc:var(--c-${r.domain})">${icon(DOMAIN_ICON[r.domain], 13)}${esc(DOMAIN_NAME[r.domain])}</span>${statusPill(r.status)}${visibilityBadge(r.visibility)}
+      ${owner ? "" : '<span class="when">shared anonymously</span>'}
       <span class="when">${icon("clock", 13)}${dur(end - start)} · started ${ago(r.created_at)}</span></div>
     <h1><a href="#/task/${encodeURIComponent(r.task_id)}">${esc(r.title)}</a></h1>
     <div class="rp-bar"><div class="facts">
@@ -119,7 +136,8 @@ function renderHead(el, st) {
       ${paramsText(r.params) ? `<span>${icon("gauge", 14)}${esc(paramsText(r.params))}</span>` : ""}
       ${r.judge ? `<span>${icon("scale", 14)}judge <b>${esc(r.judge.split("/")[1] || r.judge)}</b></span>` : ""}
       ${r.domain === "music" ? `<span>${icon("message", 14)}single model call</span>` : `<span>${icon("terminal", 14)}OpenCode</span>`}${r.flavor ? `<span>${icon("box", 14)}${esc(r.flavor)}</span>` : ""}</div>
-      <div class="rp-actions"><a class="btn sm" href="#/task/${encodeURIComponent(r.task_id)}">${icon("file", 13)}View task</a>${action}</div></div>
+      <div class="rp-actions"><a class="btn sm ghost" href="${reportUrl({ run: r })}" target="_blank" rel="noopener" title="Report an issue with this rollout">${icon("flag", 13)}Report</a>${vis}
+        <a class="btn sm" href="#/task/${encodeURIComponent(r.task_id)}">${icon("file", 13)}View task</a>${action}</div></div>
     ${r.error ? `<div class="note-box err">${icon("alert")}<span>${esc(r.error)}</span></div>` : ""}`;
 }
 
@@ -247,8 +265,58 @@ function renderCost(el, st) {
     <p class="fine">${r.endpoint ? `Tokens are billed by your endpoint (${esc(r.endpoint.host)}); the sandbox by Hugging Face.` : `Billed to your Hugging Face account at ${esc(r.provider || "the provider")}'s price.`}</p></div>`;
 }
 
+async function setVisibility(el, st, to, btn) {
+  try {
+    await api(`/api/runs/${encodeURIComponent(st.id)}/visibility`, { method: "POST", body: { visibility: to } });
+    st.run.visibility = to;
+    renderHead(el, st);
+    if (to === "public") {
+      const r = (btn || $("#rp-vis", el))?.getBoundingClientRect();
+      confetti(r ? r.left + r.width / 2 : innerWidth / 2, r ? r.top : innerHeight / 3);
+      toast("Public: thank you for sharing with the community");
+    } else toast("Private: only you can see this rollout");
+  } catch (e) { toast(e.message); }
+}
+
+function renderMeta(el, st) {
+  const r = st.run, p = r.params || {}, pv = r.provenance || {};
+  const row = (k, v) => (v == null || v === "" ? "" : `<dt>${k}</dt><dd>${v}</dd>`);
+  const code = (v) => `<code>${esc(v)}</code>`;
+  const think = { none: "off", low: "low", medium: "medium", high: "high" }[p.thinking] || "model default";
+  $("#rp-meta", el).innerHTML = `<div class="panel-h"><h3>${icon("info", 14)}Run details</h3></div><div class="panel-b"><dl class="kv sm">
+    ${row("Model", code(r.model))}
+    ${row("Served by", r.endpoint ? "an OpenAI-compatible endpoint the runner brought" + (r.endpoint.host && r.is_owner ? ` (${code(r.endpoint.host)})` : "") : esc(r.provider || "HF router auto"))}
+    ${row("Judge", r.judge ? code(r.judge) : "")}
+    ${row("Thinking", esc(think))}
+    ${row("Temperature", p.temperature != null ? esc(p.temperature) : "model default")}
+    ${r.domain === "music" ? row("Max tokens", esc(p.max_tokens || p.max_tokens_used || 100000)) : row("Step cap", esc(p.steps || "task default")) + row("Time limit", p.timeout_min ? esc(p.timeout_min + " min") : "task default") + row("Max tokens / step", esc(p.max_tokens || "default"))}
+    ${row("Harness", r.domain === "music" ? "single model call" : `OpenCode ${esc(pv.harness?.installed || pv.harness?.version || "")}`)}
+    ${row("Sandbox", r.flavor ? esc(r.flavor) : "")}
+    ${row("Image", r.image ? code(r.image.replace("docker.io/", "")) : "")}
+    ${row("Explorer", pv.app ? `v${esc(pv.app.version)} · ${code(pv.app.source)}` : "")}
+    ${row("Dataset", pv.dataset ? `${esc(pv.dataset.repo)}${pv.dataset.revision ? " @ " + code(pv.dataset.revision.slice(0, 10)) : ""}` : "")}
+    ${row("Reference", pv.reference ? Object.entries(pv.reference).map(([k, v]) => `${esc(k.split("/")[1])} ${code(v)}`).join(" · ") : "")}
+    ${row("Rollout id", code(r.id))}
+  </dl></div>`;
+}
+
 function onClick(st) {
   return async (ev) => {
+    const vb = ev.target.closest("#rp-vis");
+    if (vb) {
+      const el = vb.closest(".rp");
+      if (st.run.visibility === "public") {
+        const dlg = openDialog(`<div class="dialog-h"><div><h2>Make this rollout private?</h2><p>${esc(PRIVATE_NOTE)}</p></div>
+          <button class="icon-btn" type="button" data-close aria-label="Close">${icon("x", 18)}</button></div>
+          <div class="dialog-b"><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" data-close>Keep it public</button>
+          <button class="btn primary" id="vis-go">Make private</button></div></div>`);
+        dlg.addEventListener("click", async (e) => {
+          if (e.target.closest("[data-close]")) closeModal();
+          if (e.target.closest("#vis-go")) { closeModal(); await setVisibility(el, st, "private"); }
+        });
+      } else await setVisibility(el, st, "public", vb);
+      return;
+    }
     const b = ev.target.closest("#rp-cancel");
     if (!b) return;
     st.stopping = true;

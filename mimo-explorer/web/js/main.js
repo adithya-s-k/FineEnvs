@@ -5,7 +5,7 @@ import * as explore from "./explore.js";
 import { getSession, setSession, refreshActive } from "./session.js";
 
 let current = null;
-const VIEWS = { task: () => import("./task.js"), run: () => import("./run.js"), runs: () => import("./runs.js") };
+const VIEWS = { task: () => import("./task.js"), run: () => import("./run.js"), runs: () => import("./runs.js"), community: () => import("./community.js") };
 const framed = window.top !== window.self;
 
 function parse(hash) {
@@ -13,6 +13,7 @@ function parse(hash) {
   const m = path.match(/^\/(task|run)\/(.+)$/);
   if (m) return { name: m[1], arg: decodeURIComponent(m[2]), qs };
   if (/^\/runs\/?$/.test(path)) return { name: "runs", qs };
+  if (/^\/community\/?$/.test(path)) return { name: "community", qs };
   return { name: "explore", qs };
 }
 
@@ -23,21 +24,23 @@ async function route() {
   if (current?.unmount) current.unmount();
   current = null;
   closeModal();
-  const inRuns = name === "run" || name === "runs";
-  document.querySelectorAll("[data-nav]").forEach((a) => a.classList.toggle("on", (a.dataset.nav === "runs") === inRuns));
+  const tab = name === "runs" || name === "run" ? "runs" : name === "community" ? "community" : "explore";
+  document.querySelectorAll("[data-nav]").forEach((a) => a.classList.toggle("on", a.dataset.nav === tab));
   window.scrollTo(0, 0);
   progress.start();
   try {
     const mod = name === "explore" ? explore : await VIEWS[name]();
     if (token !== routing) return;
     current = mod;
-    await mod.mount($("#view"), name === "explore" ? (qs ? new URLSearchParams(qs) : null) : arg);
+    await mod.mount($("#view"), name === "explore" ? (qs ? new URLSearchParams(qs) : null) : name === "community" ? qs : arg);
   } finally { progress.done(); }
 }
 
 // ── account ──────────────────────────────────────────────────────────────────
 async function loadSession() {
   try { setSession(await api("/api/me")); } catch { setSession({ user: null }); }
+  const v = getSession();
+  if (v.version) $("#foot-version").innerHTML = `v${esc(v.version)} · <code title="source hash">${esc(v.source || "")}</code>`;
   renderAccount();
 }
 
@@ -56,6 +59,7 @@ function renderAccount() {
       <div class="menu-h"><b>${esc(u.name)}</b><span>${esc(via)}</span></div>
       <a href="#/runs" role="menuitem">${icon("list")}Your rollouts</a>
       <a href="https://huggingface.co/settings/billing" target="_blank" rel="noopener" role="menuitem">${icon("coins")}Billing on Hugging Face</a>
+      <a href="https://huggingface.co/spaces/FineEnvs/MiMo-RL-Envs-Explorer/discussions" target="_blank" rel="noopener" role="menuitem">${icon("flag")}Report an issue</a>
       <button type="button" data-signin role="menuitem">${icon("key")}Use a different token</button>
       ${u.via === "local" ? "" : `<button type="button" data-signout role="menuitem">${icon("logout")}Sign out</button>`}
     </div></div>`;
