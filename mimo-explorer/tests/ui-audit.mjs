@@ -166,9 +166,17 @@ const noOverflow = (p) => p.evaluate(() => document.documentElement.scrollWidth 
 
   // community
   await go(p, '#/community', 1500);
-  ok('community: leaderboard and rollouts', (await p.$$('.mtable tbody tr')).length > 0 && (await p.$$('#cm-rows .runrow')).length > 0);
-  await p.selectOption('[data-f="reward"]', 'partial'); await p.waitForTimeout(800);
+  ok('community: overview, leaderboard and rollout cards', (await p.$$('.cm-tile')).length === 5 && (await p.$$('.cm-heat tbody tr')).length > 0 && (await p.$$('#cm-rows .cm-card')).length > 0);
+  ok('community: no failed or unscored rollouts shown', !(await p.textContent('#cm-rows')).includes('not scored'));
+  await p.click('.cm-more > summary'); await p.selectOption('[data-f="reward"]', 'partial'); await p.waitForTimeout(800);
   ok('community: reward filter narrows and lands in the URL', /reward=partial/.test(await p.evaluate(() => location.hash)));
+  ok('community: active filters show as removable chips', await p.isVisible('[data-unset="reward"]'));
+  await p.click('#cm-clear'); await p.waitForTimeout(600);
+  const hcell = await p.$('[data-cell]');
+  if (hcell) { await hcell.click(); await p.waitForTimeout(700); ok('community: a leaderboard cell filters by model and domain', /model=.*domain=|domain=.*model=/.test(await p.evaluate(() => location.hash))); }
+  await p.click('[data-layout="list"]'); await p.waitForTimeout(600);
+  ok('community: list layout', (await p.$$('#cm-rows .runrow')).length > 0);
+  await p.click('[data-layout="grid"]'); await p.waitForTimeout(600);
   await p.click('#cm-clear'); await p.waitForTimeout(600);
   await p.click('[data-view="tasks"]'); await p.waitForTimeout(2500);
   ok('community tasks: untried tasks listed by default', (await p.$$('#ct-rows .runrow')).length === 40 && /not tried yet/.test(await p.textContent('#cm-top')));

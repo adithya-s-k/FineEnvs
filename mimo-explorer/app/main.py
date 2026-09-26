@@ -444,8 +444,12 @@ def _stats(runs: list[dict]) -> dict:
     models_ = sorted(({"model": m, "custom": any(x.get("endpoint") for x in runs if x.get("model") == m), "runs": len(v),
                        "mean": round(sum(v) / len(v), 4), "best": max(v), "full": sum(x >= 0.999 for x in v)}
                       for m, v in by.items()), key=lambda x: (-x["mean"], -x["runs"]))
+    cells: dict[str, dict[str, list[float]]] = {}
+    for r in scored:
+        cells.setdefault(r.get("model") or "?", {}).setdefault(r.get("domain") or "?", []).append(float(r["reward"]))
+    matrix = {m: {d: {"mean": round(sum(v) / len(v), 4), "runs": len(v)} for d, v in ds.items()} for m, ds in cells.items()}
     return {"runs": len(runs), "scored": len(scored), "mean": round(sum(float(r["reward"]) for r in scored) / len(scored), 4) if scored else None,
-            "full": sum(float(r["reward"]) >= 0.999 for r in scored), "histogram": hist, "by_model": models_}
+            "full": sum(float(r["reward"]) >= 0.999 for r in scored), "histogram": hist, "by_model": models_, "matrix": matrix}
 
 
 @app.get("/api/tasks/{task_id}/rollouts")
@@ -496,8 +500,15 @@ def community(domain: str | None = None, model: str | None = None, served: str |
     facets = {"domain": counts(lambda r: r.get("domain")), "model": counts(lambda r: r.get("model")), "served": counts(served_by),
               "judge": counts(lambda r: r.get("judge")), "reward": counts(_band),
               "thinking": counts(lambda r: (r.get("params") or {}).get("thinking") or "default")}
+    covered: dict[str, set] = {}
+    for r in everyone:
+        covered.setdefault(r.get("domain"), set()).add(r["task_id"])
+    coverage = {d["id"]: {"tasks": len(covered.get(d["id"], ())), "total": d["count"], "runs": sum(1 for r in everyone if r.get("domain") == d["id"])}
+                for d in catalog.index()["domains"]}
+    page = runs[offset:offset + min(limit, 200)]
     return {"stats": _stats(runs), "facets": facets, "total": len(runs), "tasks": len({r["task_id"] for r in runs}),
-            "runs": [_public_view(r) for r in runs[offset:offset + min(limit, 200)]]}
+            "coverage": coverage, "all_tasks": sum(d["count"] for d in catalog.index()["domains"]),
+            "runs": [{**_public_view(r), "shot": r.get("domain") == "webdev" and store.has_artifact(r["id"], "screenshot.jpg")} for r in page]}
 
 
 @app.get("/api/community/tasks")

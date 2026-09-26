@@ -91,6 +91,15 @@ def write_artifact(run_id: str, name: str, data: str | bytes) -> None:
     p.write_bytes(data if isinstance(data, bytes) else data.encode())
 
 
+def has_artifact(run_id: str, name: str) -> bool:
+    if "/" in name or ".." in name:
+        return False
+    try:
+        return (_dir(run_id) / name).stat().st_size > 0
+    except (FileNotFoundError, ValueError):
+        return False
+
+
 def read_artifact(run_id: str, name: str) -> bytes | None:
     if "/" in name or ".." in name:
         return None
