@@ -173,3 +173,13 @@ def test_eval_summary_with_nothing_graded_has_no_score(tmp_path, monkeypatch):
     assert summary["ungraded"] == 3
     assert summary["pass@1"] is None
     assert summary["by_tier"] == {}
+
+
+def test_python_fence_tags_are_matched_whatever_their_case_or_version(monkeypatch):
+    rollout = load_script("rollout")
+    program = "print('42')"
+    for fence in ["python", "py", "Python", "PYTHON", "python3", "Python3", ""]:
+        assert rollout.extract_code(f"Here is the program.\n```{fence}\n{program}\n```\n") == program, fence
+    # the last block still wins, and a non-Python block is not taken for the program
+    assert rollout.extract_code("```Python\nprint('draft')\n```\nthen\n```python3\nprint('final')\n```") == "print('final')"
+    assert rollout.extract_code("```bash\nls\n```") != "ls"

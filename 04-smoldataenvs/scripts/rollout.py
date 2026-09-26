@@ -50,7 +50,7 @@ def build_prompt(row: dict) -> list[dict]:
     ]
 
 
-CODE_RE = re.compile(r"```(?:python|py)?\s*\n(.*?)```", re.S)
+CODE_RE = re.compile(r"```(?:python3?|py)?\s*\n(.*?)```", re.S | re.I)
 
 
 def extract_code(completion: str | list[dict]) -> str:
