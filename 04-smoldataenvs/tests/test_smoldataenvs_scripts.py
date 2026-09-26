@@ -28,7 +28,7 @@ def load_script(name: str):
             pass
 
 
-def test_leading_pipe_and_greater_than_answers_are_values_but_commands_are_flagged(monkeypatch):
+def test_leading_greater_than_answers_are_values_but_commands_and_pipes_are_flagged(monkeypatch):
     rollout = load_script("rollout")
 
     class Runner:
@@ -47,15 +47,16 @@ def test_leading_pipe_and_greater_than_answers_are_values_but_commands_are_flagg
 
     monkeypatch.setattr(rollout, "grade", fake_grade)
 
-    for answer in [">50K", "> 2 Years", "| priority"]:
+    for answer in [">50K", "> 2 Years", ">40hrs"]:
         result = rollout.rollout(Runner(f"notes\n{answer}\n"), row, "```python\nprint('ok')\n```")
         assert result["reward"] == 1.0
         assert result["prediction"] == answer
         assert result["stderr"] == ""
 
-    assert seen_predictions == [">50K", "> 2 Years", "| priority"]
+    assert seen_predictions == [">50K", "> 2 Years", ">40hrs"]
 
-    for command_line in ["echo >50K", "printf '2'", "2 > answer.txt", "cat answer.txt", "$(cat answer.txt)"]:
+    for command_line in ["echo >50K", "printf '2'", "2 > answer.txt", "cat answer.txt", "$(cat answer.txt)",
+                         "| 2.14", "| /tmp/2.14", "2.14 | tee answer.txt"]:
         result = rollout.rollout(Runner(command_line), row, "```python\nprint('ok')\n```")
         assert result == {
             "reward": 0.0,
@@ -67,7 +68,6 @@ def test_leading_pipe_and_greater_than_answers_are_values_but_commands_are_flagg
 
 def test_reward_cache_is_tied_to_completion_list_object_not_reused_id(monkeypatch):
     train_grpo = load_script("train_grpo")
-    train_grpo._cache = None
     monkeypatch.setattr(train_grpo, "id", lambda _obj: 7, raising=False)
 
     calls = []
@@ -135,3 +135,41 @@ def test_eval_summary_writes_none_rewards_as_ungraded(tmp_path, monkeypatch):
         "by_tier": {"easy": 1.0, "medium": 0.0},
     }
     assert [record["reward"] for record in payload["records"]] == [None, 1.0, 0.0]
+
+
+def test_eval_summary_with_nothing_graded_has_no_score(tmp_path, monkeypatch):
+    eval_pass1 = load_script("eval_pass1")
+
+    rows = [
+        {"task_id": f"t{i}", "difficulty_tier": "easy", "answer": "A", "reward_mode": "exact", "atol": 0.0, "rtol": 0.0,
+         "bucket_prefix": "p", "files": [], "question": "q"}
+        for i in range(3)
+    ]
+
+    class FakeDatasetModule:
+        @staticmethod
+        def load_dataset(dataset, split):
+            return rows
+
+    class Runner:
+        def close(self):
+            pass
+
+    def fake_rollout(runner, row, completion):
+        return {"reward": None, "ran": 0.0, "prediction": "", "stderr": "sandbox unavailable"}
+
+    out_path = tmp_path / "eval_results.json"
+    monkeypatch.setitem(sys.modules, "datasets", FakeDatasetModule)
+    monkeypatch.setattr(eval_pass1, "SandboxRunner", Runner)
+    monkeypatch.setattr(eval_pass1, "rollout", fake_rollout)
+    monkeypatch.setattr(eval_pass1.sys, "argv", ["eval_pass1.py", "--dry-run"])
+    monkeypatch.setenv("DRY_RUN_TASKS", "3")
+    monkeypatch.setattr(eval_pass1, "OUT", str(out_path))
+
+    eval_pass1.main()
+
+    summary = json.loads(out_path.read_text())["summary"]
+    assert summary["n"] == 0
+    assert summary["ungraded"] == 3
+    assert summary["pass@1"] is None
+    assert summary["by_tier"] == {}

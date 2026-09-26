@@ -125,13 +125,13 @@ def main() -> None:
         runner.close()
 
     scored = [r["reward"] for r in records if r["reward"] is not None]
-    overall = sum(scored) / max(1, len(scored))
+    overall = sum(scored) / len(scored) if scored else None  # nothing graded: no score, not 0
     summary = {
         "model": MODEL,
         "split": SPLIT,
         "n": len(scored),
         "ungraded": len(records) - len(scored),
-        "pass@1": round(overall, 4),
+        "pass@1": round(overall, 4) if overall is not None else None,
         "by_tier": {k: round(sum(v) / len(v), 4) for k, v in sorted(by_tier.items())},
     }
     print("\n" + json.dumps(summary, indent=2))
@@ -144,7 +144,10 @@ def main() -> None:
 
         trackio.init(project="smoldataenvs", name=f"eval-{MODEL.split('/')[-1]}-{SPLIT}",
                      space_id=os.environ["TRACKIO_SPACE"])
-        trackio.log({"pass@1": overall, **{f"pass@1/{k}": v for k, v in summary["by_tier"].items()}})
+        metrics = {f"pass@1/{k}": v for k, v in summary["by_tier"].items()}
+        if overall is not None:
+            metrics["pass@1"] = overall
+        trackio.log(metrics)
         trackio.finish()
 
 
