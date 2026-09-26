@@ -26,7 +26,7 @@ from app import catalog
 
 from . import images, source
 
-ADAPTER_VERSION = "1.0.0"
+ADAPTER_VERSION = "1.1.0"
 HERE = Path(__file__).parent
 TPL = HERE / "templates"
 VENDOR = HERE.parent / "app" / "vendor"
@@ -255,15 +255,38 @@ class Task:
         out["task.toml"] = self._toml(hc).encode()
         return out
 
+    def _labels(self) -> tuple[str, str | None, str | None, list[str]]:
+        """(title, category, difficulty, keywords) from the explorer's catalog index (web/data/index.json.gz), so
+        Harbor tooling such as the Harbor Visualiser can show and filter tasks."""
+        e = catalog.record(self.id) or {}
+        f = e.get("f") or {}
+        title = (e.get("t") or self.id).strip()
+        cat_key = {"code": "prog", "cyber": "project", "general": "industry", "terminal": "industry",
+                   "webdev": "site", "music": "family"}[self.kind]
+        category = f.get(cat_key)
+        category = category[0] if isinstance(category, list) else category
+        tier = f.get("tier")
+        difficulty = tier if tier and tier != "Unrated" else None
+        words = [self.kind]
+        for v in f.values():
+            for x in (v if isinstance(v, list) else [v]):
+                if isinstance(x, str) and x and x not in ("Unspecified", "None named", "Unrated") and x not in words:
+                    words.append(x)
+        words += [t for t in (self.inst.get("tags") or []) if t not in words]
+        return title, category, difficulty, words
+
     def _toml(self, healthcheck: str) -> str:
         cpus, mem, *rest = getattr(self, "resources", RESOURCES[self.kind]) + (None,)
         storage = rest[0] if rest else None
+        title, category, difficulty, words = self._labels()
+        self.meta.update({"title": title, "keywords": words, **({"category": category} if category else {}),
+                          **({"difficulty": difficulty} if difficulty else {})})
         m = {"source_dataset": source.DATASET, "source_revision": source.REVISION, "source_id": self.id,
              "domain": self.kind, "adapter": f"mimo_harbor {ADAPTER_VERSION}", "reference_step_limit": STEPS[self.kind],
              "reference_harness": "XiaomiMiMo/verl a2ad9f6 + XiaomiMiMo/mimoagent 467f0a1", **self.meta}
         L = ['schema_version = "1.4"', "",
              "[task]", f"name = {_toml_str('mimo-v2.6-rl/' + slug(self.id))}",
-             f"description = {_toml_str(f'MiMo-V2.6-RL {self.kind} task {self.id}')}",
+             f"description = {_toml_str(title[:300])}",
              f"keywords = {json.dumps(['mimo-v2.6-rl', self.kind])}", "",
              "[metadata]"]
         for k in sorted(m):
