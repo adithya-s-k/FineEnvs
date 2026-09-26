@@ -706,9 +706,20 @@ def test_play_page_terminal_guards_are_idempotent_without_browser():
     page = play_page_html(1)
     helpers = []
     for name in ("ggCanStep", "ggBeginReveal"):
-        match = re.search(rf"  function {name}\\(state\\) \\{{.*?\\n  \\}}", page, re.S)
-        assert match, f"{name} helper missing from play page"
-        helpers.append(match.group(0))
+        start = page.find(f"function {name}(state)")
+        assert start != -1, f"{name} helper missing from play page"
+        brace = page.find("{", start)
+        depth = 0
+        for end in range(brace, len(page)):
+            if page[end] == "{":
+                depth += 1
+            elif page[end] == "}":
+                depth -= 1
+                if depth == 0:
+                    helpers.append(page[start : end + 1])
+                    break
+        else:
+            raise AssertionError(f"{name} helper body is incomplete")
     script = "\n".join(helpers) + """
 const state = {terminal: false, busy: false, ready: true};
 const firstReveal = ggBeginReveal(state);

@@ -25,6 +25,7 @@ from typing import Any
 
 from fastmcp import FastMCP
 from openenv.core.env_server.mcp_environment import MCPEnvironment
+from openenv.core.env_server.mcp_types import CallToolAction, CallToolObservation
 from openenv.core.env_server.types import Action, Observation
 
 from ..models import (
@@ -208,6 +209,7 @@ class GeoGuesserEnvironment(MCPEnvironment):
         self._state = GeoGuesserState()
         self._task = None
         self._rng = random.Random()
+        self._last_mcp_observation: GeoGuesserObservation | None = None
 
         mcp = FastMCP("geoguesser_env")
         self._register_tools(mcp)
@@ -364,11 +366,15 @@ class GeoGuesserEnvironment(MCPEnvironment):
                     pitch_deg: Vertical angle; positive looks up.
                     fov_deg: Field of view; smaller values zoom in.
                 """
-                return self._apply(
-                    LookAction(
-                        heading_deg=heading_deg, pitch_deg=pitch_deg, fov_deg=fov_deg
+                return self._mcp_feedback(
+                    self._apply(
+                        LookAction(
+                            heading_deg=heading_deg,
+                            pitch_deg=pitch_deg,
+                            fov_deg=fov_deg,
+                        )
                     )
-                ).feedback
+                )
 
             @mcp.tool
             def pan(delta_deg: float) -> str:
@@ -377,7 +383,9 @@ class GeoGuesserEnvironment(MCPEnvironment):
                 Args:
                     delta_deg: Degrees to turn.
                 """
-                return self._apply(PanAction(delta_deg=delta_deg)).feedback
+                return self._mcp_feedback(
+                    self._apply(PanAction(delta_deg=delta_deg))
+                )
 
             @mcp.tool
             def zoom(fov_deg: float) -> str:
@@ -386,7 +394,7 @@ class GeoGuesserEnvironment(MCPEnvironment):
                 Args:
                     fov_deg: New field of view in degrees.
                 """
-                return self._apply(ZoomAction(fov_deg=fov_deg)).feedback
+                return self._mcp_feedback(self._apply(ZoomAction(fov_deg=fov_deg)))
 
         if self._navigational():
 
@@ -398,9 +406,9 @@ class GeoGuesserEnvironment(MCPEnvironment):
                     direction: Either "forward" or "backward".
                     meters: Requested distance in metres.
                 """
-                return self._apply(
-                    MoveAction(direction=direction, meters=meters)
-                ).feedback
+                return self._mcp_feedback(
+                    self._apply(MoveAction(direction=direction, meters=meters))
+                )
 
         if self._can_gather():
             self._register_map_tools(mcp)
@@ -426,9 +434,11 @@ class GeoGuesserEnvironment(MCPEnvironment):
                     4 the map adds roads, urban areas and town names, which is
                     how you aim within a city rather than at its centre.
             """
-            return self._apply(
-                PinAction(lat=lat, lon=lon, label=label or None, span_deg=span_deg)
-            ).feedback
+            return self._mcp_feedback(
+                self._apply(
+                    PinAction(lat=lat, lon=lon, label=label or None, span_deg=span_deg)
+                )
+            )
 
         @mcp.tool
         def view_map(lat: float, lon: float, span_deg: float = 7.0) -> str:
@@ -439,9 +449,9 @@ class GeoGuesserEnvironment(MCPEnvironment):
                 lon: Longitude at the centre of the view.
                 span_deg: Half-width of the window in degrees.
             """
-            return self._apply(
-                ViewMapAction(lat=lat, lon=lon, span_deg=span_deg)
-            ).feedback
+            return self._mcp_feedback(
+                self._apply(ViewMapAction(lat=lat, lon=lon, span_deg=span_deg))
+            )
 
         @mcp.tool
         def list_pins() -> str:
@@ -517,7 +527,57 @@ class GeoGuesserEnvironment(MCPEnvironment):
                     reasoning=reasoning or None,
                 )
             )
-            return observation.feedback
+            return self._mcp_feedback(observation)
+
+    def _mcp_feedback(self, observation: GeoGuesserObservation) -> str:
+        self._last_mcp_observation = observation
+        return observation.feedback
+
+    @staticmethod
+    def _terminal_mcp_metadata(
+        observation: GeoGuesserObservation,
+    ) -> dict[str, Any]:
+        return {
+            **(observation.metadata or {}),
+            "feedback": observation.feedback,
+            "distance_km": observation.distance_km,
+            "score": observation.score,
+            "action_cost": observation.action_cost,
+            "true_lat": observation.true_lat,
+            "true_lon": observation.true_lon,
+            "parsed_ok": observation.parsed_ok,
+        }
+
+    def _propagate_mcp_terminal(
+        self, call: CallToolObservation
+    ) -> CallToolObservation:
+        observation = self._last_mcp_observation
+        self._last_mcp_observation = None
+        if observation is not None and observation.done and call.error is None:
+            call.done = True
+            call.reward = observation.reward
+            call.metadata = self._terminal_mcp_metadata(observation)
+        return call
+
+    def _handle_call_tool(
+        self,
+        action: CallToolAction,
+        timeout_s: float | None = None,
+    ) -> CallToolObservation:
+        self._last_mcp_observation = None
+        return self._propagate_mcp_terminal(
+            super()._handle_call_tool(action, timeout_s=timeout_s)
+        )
+
+    async def _async_handle_call_tool(
+        self,
+        action: CallToolAction,
+        timeout_s: float | None = None,
+    ) -> CallToolObservation:
+        self._last_mcp_observation = None
+        return self._propagate_mcp_terminal(
+            await super()._async_handle_call_tool(action, timeout_s=timeout_s)
+        )
 
     # -- lifecycle ---------------------------------------------------------
 

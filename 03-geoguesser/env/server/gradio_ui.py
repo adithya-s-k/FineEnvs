@@ -414,12 +414,33 @@ _TEMPLATE = r"""<!doctype html>
   let viewer = null, map = null, guessMarker = null, truthMarker = null;
   let lineAdded = false, guess = null, taskIndex = 0, compass = 0;
   let taskMeta = null, frameIndex = 0;
-  let total = 0, played = 0, busy = false, cost = 0;
+  let total = 0, played = 0, busy = false, cost = 0, terminal = false;
 
   const DIRS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   const fmt = (la, lo) => la.toFixed(4) + ", " + lo.toFixed(4);
   const yaw = () => (viewer ? ((viewer.getYaw() % 360) + 360) % 360 : 0);
   const hfov = () => (viewer ? viewer.getHfov() : 90);
+
+  function ggCanStep(state) {
+    return !state.terminal && !state.busy && state.ready;
+  }
+
+  function ggBeginReveal(state) {
+    if (state.terminal) return false;
+    state.terminal = true;
+    return true;
+  }
+
+  function canStepNow() {
+    return ggCanStep({ terminal: terminal, busy: busy, ready: ready });
+  }
+
+  function beginTerminalReveal() {
+    const state = { terminal: terminal };
+    const shouldReveal = ggBeginReveal(state);
+    terminal = state.terminal;
+    return shouldReveal;
+  }
 
   // ---- the environment, over the same WebSocket session API a client uses --
   // Plain REST /step builds a fresh environment per request, so a stateful
@@ -600,7 +621,7 @@ _TEMPLATE = r"""<!doctype html>
   }
 
   function step(op, data, label, waitingFor) {
-    if (busy || !ready) return;
+    if (!canStepNow()) return;
     setBusy(true, waitingFor);
     send("step", Object.assign({ op: op }, data), function (observation) {
       setBusy(false);
@@ -743,11 +764,13 @@ _TEMPLATE = r"""<!doctype html>
     return {
       busy: busy,
       ready: ready,
+      terminal: terminal,
       pendingHandler: !!pending,
       socket: socket ? socket.readyState : null,
       steps: document.querySelectorAll('#steps .step').length,
     };
   };
+  window.__ggUiGuards = { canStep: ggCanStep, beginReveal: ggBeginReveal };
 
   /**
    * Half-width of the visible map, in degrees.
@@ -809,6 +832,7 @@ _TEMPLATE = r"""<!doctype html>
   };
 
   function reveal(observation) {
+    if (!beginTerminalReveal()) return;
     const hasDistance = observation.distance_km !== null &&
       observation.distance_km !== undefined;
     const km = hasDistance ? observation.distance_km : null;
@@ -882,6 +906,7 @@ _TEMPLATE = r"""<!doctype html>
 
   function clearRound() {
     guess = null;
+    terminal = false;
     setBusy(false);
     if (guessMarker) { guessMarker.remove(); guessMarker = null; }
     if (truthMarker) { truthMarker.remove(); truthMarker = null; }

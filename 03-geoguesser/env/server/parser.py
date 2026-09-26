@@ -27,9 +27,9 @@ _DMS = re.compile(
 )
 
 _LABELLED = re.compile(
-    r"lat(?:itude)?\s*[:=]\s*(-?\d{1,3}(?:\.\d+)?)"
+    r"lat(?:itude)?\s*[:=]\s*(-?\d{1,3}(?:\.\d+)?)(?!\s*[°d])"
     r".{0,40}?"
-    r"lon(?:g|gitude)?\s*[:=]\s*(-?\d{1,3}(?:\.\d+)?)",
+    r"lon(?:g|gitude)?\s*[:=]\s*(-?\d{1,3}(?:\.\d+)?)(?!\s*[°d])",
     re.IGNORECASE | re.DOTALL,
 )
 
