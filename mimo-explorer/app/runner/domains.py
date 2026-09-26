@@ -544,8 +544,10 @@ class Music:
                     **({"temperature": params["temperature"]} if params.get("temperature") is not None else {}),
                     **({"reasoning_effort": params["thinking"]} if params.get("thinking") not in (None, "default") else {}),
                     "messages": [{"role": "user", "content": raw["prompt"]}]}
-            with httpx.stream("POST", url, timeout=900, json=body, extensions=ext,
-                              headers={**host_hdr, **({"Authorization": f"Bearer {key}"} if key else {})}) as resp:
+            # a Client, not httpx.stream(): only Client.stream takes `extensions`, which carries the pinned TLS name
+            with httpx.Client(timeout=900) as client, client.stream(
+                    "POST", url, json=body, extensions=ext,
+                    headers={**host_hdr, **({"Authorization": f"Bearer {key}"} if key else {})}) as resp:
                 if resp.status_code != 200:
                     err = resp.read()[:400].decode(errors="replace")
                     if resp.status_code in (400, 422) and n + 1 < len(budgets):
