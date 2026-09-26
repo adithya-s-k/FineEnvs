@@ -81,3 +81,15 @@ def test_tagged_win_gets_the_game_reward():
     obs, reward, terminated, truncated, info = wordle.step("<guess>crane</guess>")
     assert terminated and info["won"]
     assert reward == pytest.approx(1.0 + 0.5 * (1 - 1 / 6))
+
+
+def test_step_after_done_does_not_pay_the_reward_again():
+    wordle = env.WordleGemEnv(answer="crane")
+    wordle.reset()
+    _obs, reward, terminated, truncated, _info = wordle.step("<guess>crane</guess>")
+    obs, again, term_again, trunc_again, _info = wordle.step("<guess>slate</guess>")
+    assert terminated and not truncated
+    assert reward == pytest.approx(1.0 + 0.5 * (1 - 1 / 6))
+    assert obs.startswith("The game is over")
+    assert term_again and not trunc_again
+    assert again == 0.0
