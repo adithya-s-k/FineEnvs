@@ -32,12 +32,21 @@ TEXT_JUDGES = [
     {"id": "moonshotai/Kimi-K3", "note": "frontier, agrees with the majority"},
     {"id": "deepseek-ai/DeepSeek-V4-Pro", "note": "frontier, more lenient"},
 ]
+# Measured on a real webdev render with Xiaomi's vision rubric (45 vision models on the router, two passes).
+# These returned a usable verdict both times and scored near the median (~0.70). Judges disagree a lot
+# (0.34-0.87 on the same page) and the rubric runs at temperature 1.0, so compare scores per judge.
 VISION_JUDGES = [
-    {"id": "moonshotai/Kimi-K3", "note": "frontier, vision"},
-    {"id": "thinkingmachines/Inkling", "note": "fast, vision"},
-    {"id": "Qwen/Qwen3.8-27B", "note": "fast, vision"},
-    {"id": "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp", "note": "vision"},
+    {"id": "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8", "note": "fastest (~4s), near the median"},
+    {"id": "moonshotai/Kimi-K2.7-Code", "note": "fast (~7s), near the median"},
+    {"id": "Qwen/Qwen3.8-27B", "note": "fastest (~4s), slightly strict"},
+    {"id": "deepseek-ai/DeepSeek-V4.1-Flash", "note": "fast, slightly strict"},
+    {"id": "moonshotai/Kimi-K3", "note": "frontier, slow (~1 min)"},
 ]
+
+
+def _p(x):
+    """Provider prices arrive as floats with noise (5.999999999999999); keep four significant digits."""
+    return None if x is None else float(f"{float(x):.4g}")
 
 
 def _fetch() -> list[dict]:
@@ -57,11 +66,11 @@ def _fetch() -> list[dict]:
             "provider": pick["provider"],
             "tools": bool(tools),
             "vision": "image" in (arch.get("input_modalities") or []),
-            "input": price.get("input"), "output": price.get("output"),
+            "input": _p(price.get("input")), "output": _p(price.get("output")),
             "context": pick.get("context_length"), "speed": round(pick.get("throughput") or 0),
             "latency_ms": round(pick.get("first_token_latency_ms") or 0),
-            "providers": [{"name": p["provider"], "input": (p.get("pricing") or {}).get("input"),
-                           "output": (p.get("pricing") or {}).get("output"), "tools": bool(p.get("supports_tools")),
+            "providers": [{"name": p["provider"], "input": _p((p.get("pricing") or {}).get("input")),
+                           "output": _p((p.get("pricing") or {}).get("output")), "tools": bool(p.get("supports_tools")),
                            "speed": round(p.get("throughput") or 0)} for p in live],
             "featured": m["id"] in FEATURED,
         })

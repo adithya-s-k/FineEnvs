@@ -347,7 +347,7 @@ class Webdev:
         store.write_artifact(r.id, "screenshot.jpg", jpg)
         r.emit("image", name="screenshot.jpg", width=im.width, height=im.height)
 
-        judge = r.run.get("judge") or "moonshotai/Kimi-K3"
+        judge = r.run.get("judge") or "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
         content = [{"type": "image_url", "image_url": {"url": "data:image/jpeg;base64," + base64.b64encode(jpg).decode()}},
                    {"type": "text", "text": build_prompt().format(query=raw["prompt"][:4000])}]
         verdict, last = None, ""

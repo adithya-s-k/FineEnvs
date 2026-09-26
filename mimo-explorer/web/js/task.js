@@ -2,10 +2,13 @@
 // Each section builder returns null when the task has nothing for it, so every domain gets only what applies.
 import { $, $$, api, esc, md, money, ago, bytes, openModal, table, sheetGrid, statusPill, rewardBadge, toast, DOMAIN_NAME, vals } from "./util.js";
 import { getSession, refreshActive } from "./session.js";
+import { picker } from "./picker.js";
 
 let modelsP = null;
 const getModels = () => (modelsP ||= api("/api/models"));
-const TYPICAL = { code: [40e3, 4e3], cyber: [250e3, 12e3], general: [400e3, 20e3], webdev: [150e3, 20e3], music: [1e3, 8e3] };
+// Tokens (input, output) of the test rollouts per domain. Agents re-send their whole context every step, so
+// input dominates: a General task read ~1.2M input tokens against ~20k written.
+const TYPICAL = { code: [100e3, 3e3], cyber: [1.2e6, 30e3], general: [1.2e6, 20e3], webdev: [60e3, 20e3], music: [500, 6e3] };
 const GLYPH = { spreadsheet: "▦", document: "¶", pdf: "▤", slides: "▭", image: "◩", web: "◎", text: "≡", archive: "◫", other: "•" };
 let spy = null;
 
@@ -134,7 +137,8 @@ function grading(v) {
   let body = `<p class="lead">${esc(g.summary)}</p>`;
   if (g.steps) body += `<ol class="steps">${g.steps.map((s) => `<li>${md(s).replace(/^<p>|<\/p>$/g, "")}</li>`).join("")}</ol>`;
   if (g.kind === "tests") {
-    body += `<h4>Hidden tests</h4>${table([["File", "Added", "Removed", ""], ...g.files.map((f) => [f.path, `+${f.added}`, `−${f.removed}`, f.new ? "new file" : ""])])}`;
+    body += `<h4>Hidden tests</h4><div class="tbl"><table><thead><tr><th>File</th><th>Lines</th><th></th></tr></thead><tbody>${g.files.map((f) =>
+      `<tr><td><code>${esc(f.path)}</code></td><td class="pm"><span class="a">+${f.added}</span> <span class="d">−${f.removed}</span></td><td>${f.new ? '<span class="chip">new</span>' : ""}</td></tr>`).join("")}</tbody></table></div>`;
     if (g.script) body += `<details class="code"><summary>Test command script</summary><pre><code>${esc(g.script)}</code></pre></details>`;
     if (g.patch) body += `<details class="code"><summary>Full hidden test patch (${g.patch.length.toLocaleString()} chars)</summary><pre class="diff">${diffHtml(g.patch)}</pre></details>`;
   }
@@ -164,7 +168,7 @@ function grading(v) {
     g.features.forEach((f) => (groups[f.group] ||= []).push(f));
     body += `<p class="muted sm">Before any of this counts, the piece must pass a validity gate: no notation errors, fewer than 10 bars of the wrong length, no blank lines in the tune, one instrument per MIDI channel.</p>
       <div class="feat-groups">${Object.entries(groups).map(([gname, fs]) => `<div class="fg"><h4>${esc(gname)}</h4>
-      ${fs.map((f) => `<div class="feat"><code>${esc(f.name)}</code><span>${f.rule === "band" ? "within the human range" : f.rule === "high" ? "the higher the better" : "the lower the better"}</span>
+      ${fs.map((f) => `<div class="feat"><b>${esc(f.label || f.name)}</b><span>${f.rule === "band" ? "within the human range" : f.rule === "high" ? "the higher the better" : "the lower the better"} · <code>${esc(f.name)}</code></span>
         ${f.band ? `<em>${fmtNum(f.band[0])} – ${fmtNum(f.band[1])}</em>` : ""}</div>`).join("")}</div>`).join("")}</div>`;
   }
   return { id: "grading", nav: "Grading", title: "How it is graded", note: g.needs_judge ? `needs a ${g.needs_judge} judge model` : "no model in the loop", html: body };
@@ -251,37 +255,33 @@ async function runPanel(box, v) {
   try { cat = await getModels(); } catch (e) { box.innerHTML = `<h3>Run a rollout</h3><p class="empty">Models unavailable: ${esc(e.message)}</p>`; return; }
   const need = v.verify?.needs_judge;
   const judges = need === "vision" ? cat.vision_judges : need === "text" ? cat.text_judges : [];
-  const featured = cat.agents.filter((m) => m.featured), rest = cat.agents.filter((m) => !m.featured);
-  const opt = (m) => `<option value="${esc(m.id)}">${esc(m.id.split("/")[1])} — $${m.input}/$${m.output}</option>`;
   box.innerHTML = `
     <h3>Run a rollout</h3>
     <p class="muted sm">${v.domain === "music" ? "One model call, then Xiaomi's scorer." : "A fresh HF Sandbox from this task's image, OpenCode as the harness, then this task's own grader."}</p>
-    <label class="fld"><span>Agent model</span>
-      <select id="rb-model"><optgroup label="Frontier">${featured.map(opt).join("")}</optgroup><optgroup label="All with tool calling">${rest.map(opt).join("")}</optgroup></select></label>
-    <div class="minfo" id="rb-minfo"></div>
-    ${judges.length ? `<label class="fld"><span>Judge model <em>${need === "vision" ? "looks at a screenshot" : "grades the rubric"}</em></span>
-      <select id="rb-judge">${judges.map((j) => `<option value="${esc(j.id)}">${esc(j.id.split("/")[1])} — ${esc(j.note)}</option>`).join("")}</select></label>` : ""}
+    <div class="fld"><span>Agent model</span><div id="rb-model"></div></div>
+    ${judges.length ? `<div class="fld"><span>Judge model <em>${need === "vision" ? "looks at a screenshot of the page" : "answers each rubric check"}</em></span><div id="rb-judge"></div></div>` : ""}
     <div class="estimate" id="rb-est"></div>
     ${s.user ? `<button class="btn primary block" id="rb-go">Run rollout</button>`
       : `<a class="btn primary block" href="/login" ${window.top !== window.self ? 'target="_blank" rel="noopener"' : ""}>Sign in with Hugging Face to run</a>`}
     <p class="muted xs">It keeps running if you close this page. Find it under <a href="#/runs">My rollouts</a>. Billed to ${s.user ? `<b>${esc(s.user.name)}</b>` : "your account"} on Hugging Face.</p>`;
-  const sel = $("#rb-model", box);
-  sel.value = cat.agents.some((m) => m.id === cat.default_agent) ? cat.default_agent : cat.agents[0]?.id;
-  const update = () => {
-    const m = cat.agents.find((x) => x.id === sel.value);
-    if (!m) return;
-    $("#rb-minfo", box).innerHTML = `<span>${esc(m.provider)}</span><span>$${m.input} in · $${m.output} out /1M</span>${m.speed ? `<span>${m.speed} tok/s</span>` : ""}${m.context ? `<span>${Math.round(m.context / 1000)}k ctx</span>` : ""}`;
+  const def = cat.agents.some((m) => m.id === cat.default_agent) ? cat.default_agent : cat.agents[0]?.id;
+  const update = (m) => {
     const [ti, to] = TYPICAL[v.domain];
     const est = (ti * m.input + to * m.output) / 1e6;
-    $("#rb-est", box).innerHTML = `Typical cost for a ${DOMAIN_NAME[v.domain]} rollout with this model: <b>~${money(est)}</b>${v.domain !== "music" ? " + sandbox time (about $0.01/h)" : ""}. Long tasks can use several times that.`;
+    $("#rb-est", box).innerHTML = `A typical ${DOMAIN_NAME[v.domain]} rollout with this model: <b>~${money(est)}</b>
+      <span class="muted">(${(ti / 1e6 >= 1 ? (ti / 1e6).toFixed(1) + "M" : Math.round(ti / 1e3) + "k")} tokens in, ${Math.round(to / 1e3)}k out)</span>${v.domain !== "music" ? ", plus sandbox time at about $0.01 an hour" : ""}.
+      ${v.domain === "general" || v.domain === "cyber" ? "Long agent loops re-read their context every step, so input tokens dominate: a cheaper model makes a big difference here." : ""}`;
   };
-  sel.addEventListener("change", update);
-  update();
+  const sel = picker($("#rb-model", box), { models: cat.agents, value: def, onChange: update,
+    note: "Every model here supports tool calling. Prices are per million tokens, input / output, at the cheapest provider that can call tools." });
+  update(sel.model);
+  const judgeSel = judges.length ? picker($("#rb-judge", box), { models: judges.map((j) => ({ ...j, featured: true })), value: judges[0].id, onChange: () => {},
+    note: need === "vision" ? "Tested on a real render with Xiaomi's rubric. Judges disagree (0.34–0.87 on the same page), so compare webdev scores only between runs graded by the same judge." : "Tested on this dataset's real rubric prompt: each returned a usable verdict on every check." }) : null;
   const go = $("#rb-go", box);
   if (go) go.addEventListener("click", async () => {
     go.disabled = true; go.textContent = "Starting…";
     try {
-      const run = await api("/api/runs", { method: "POST", body: { task_id: v.id, model: sel.value, judge: $("#rb-judge", box)?.value || null } });
+      const run = await api("/api/runs", { method: "POST", body: { task_id: v.id, model: sel.value, judge: judgeSel?.value || null } });
       refreshActive();
       location.hash = `#/run/${run.id}`;
     } catch (e) {

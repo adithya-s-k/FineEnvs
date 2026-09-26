@@ -74,6 +74,22 @@ def plain(text: str) -> str:
     return re.sub(r"^\s*[-*•]\s+", "", text, flags=re.M)
 
 
+def snippet(text: str, title: str, n: int = 280) -> str:
+    """The brief after its headline, so a card does not say the same sentence twice."""
+    body = re.sub(r"\s+", " ", plain(text)).strip()
+    stem = title.rstrip("…").strip()
+    at = body.find(stem) if stem else -1
+    if 0 <= at < 60:                       # the headline, possibly after a greeting
+        end = at + len(stem)
+        if title.endswith("…"):            # it was cut: carry on from the end of that sentence
+            m = re.search(r"[.!?。！？](\s|$)", body[end:])
+            end = end + m.end() if m else len(body)
+        rest = body[end:].lstrip(" .,;:!?。，；：！？")
+        if len(rest) > 30:
+            body = rest
+    return clip(body, n)
+
+
 def first_sentence(text: str, n: int = 110) -> str:
     text = re.sub(r"^\s*(prompt|task)\s*:\s*", "", text.strip(), flags=re.I)
     lines = [l.strip().lstrip("#").strip().strip("*").strip() for l in text.splitlines()]
@@ -151,9 +167,10 @@ def build_code(df):
         )
         language = langs.most_common(1)[0][0] if langs else "Unknown"
         eid = j["instance_id"]
+        title = first_sentence(re.sub(r"^\[[A-Z]+\]\s*", "", text))
         index.append({
-            "id": eid, "d": "code", "t": first_sentence(re.sub(r"^\[[A-Z]+\]\s*", "", text)),
-            "s": clip(plain(text), 280), "f": {"prog": language},
+            "id": eid, "d": "code", "t": title,
+            "s": snippet(re.sub(r"^\[[A-Z]+\]\s*", "", text), title), "f": {"prog": language},
         })
         detail[eid] = {
             "brief": text,
@@ -246,7 +263,7 @@ def build_webdev(df):
         language = lang_name(lang_of(text))
         eid = j["instance_id"]
         index.append({
-            "id": eid, "d": "webdev", "t": first_sentence(text), "s": clip(plain(text), 280),
+            "id": eid, "d": "webdev", "t": first_sentence(text), "s": snippet(text, first_sentence(text)),
             "f": {"site": site, "framework": fws, "style": styles or ["None named"], "language": language},
         })
         detail[eid] = {
@@ -334,7 +351,7 @@ def build_music(df):
         style, family = MUSIC_STYLE.get(tag, (tag or "Unknown", "Other"))
         key = music_key(text)
         index.append({
-            "id": eid, "d": "music", "t": f"{style} in {key}" if key else style, "s": clip(plain(text), 280),
+            "id": eid, "d": "music", "t": f"{style} in {key}" if key else style, "s": snippet(text, f"{style} in {key}" if key else style),
             "f": {"family": family, "style": style, "meter": str(e.get("meter") or "?"),
                   "voices": f"{voices} voice{'s' if voices != 1 else ''}", "tempo": tempo(e.get("bpm")),
                   "language": lang_name(e.get("lang") or lang_of(text))},
@@ -389,7 +406,7 @@ def build_general(df, raw: Path, files: list[str]):
             sub = j.get("subcategory") or ""
             index.append({
                 "id": eid, "d": "general",
-                "t": clip(j.get("display_description") or first_sentence(text), 120), "s": clip(plain(text), 280),
+                "t": clip(j.get("display_description") or first_sentence(text), 120), "s": snippet(text, clip(j.get("display_description") or first_sentence(text), 120)),
                 "f": {"industry": "Terminal tasks", "source": "Terminal-bench style",
                       "tier": "Unrated", "language": lang_name(lang_of(text))},
             })
@@ -420,7 +437,7 @@ def build_general(df, raw: Path, files: list[str]):
 
         industry = INDUSTRY.get(slug, slug.replace("_", " ").capitalize())
         index.append({
-            "id": eid, "d": "general", "t": first_sentence(text, 120), "s": clip(plain(text), 280),
+            "id": eid, "d": "general", "t": first_sentence(text, 120), "s": snippet(text, first_sentence(text, 120)),
             "f": {"industry": industry, "source": "Simulated workplace", "tier": f"Tier {tier[1:]}",
                   "language": lang_name(lang)},
             "n": {"systems": len(systems), "files": len(workspace), "checks": len(rubric)},

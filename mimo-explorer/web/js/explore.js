@@ -5,6 +5,8 @@ const CJK = /[㐀-鿿豈-﫿]/;
 const PAGE = 40;
 const MAP_TOP = { code: 7, webdev: 9, cyber: 7, music: 9, general: 9 };
 const LEFTOVER = /^(Other|Unknown|unknown|None named|Unspecified|Unrated)$/;
+const num = (v) => { const m = String(v).match(/\d+/); return m ? +m[0] : 99; };
+const ORDINAL = { tier: num, voices: num, tempo: (v) => (/^Slow/.test(v) ? 0 : /^Moderate/.test(v) ? 1 : /^Fast/.test(v) ? 2 : 3), meter: (v) => ["2/4", "3/4", "4/4", "6/8", "7/8"].indexOf(v) };
 
 let DATA, DOMS, ENVS, SEARCH;
 const state = { q: "", dom: null, sel: {}, seed: Math.random() };
@@ -150,7 +152,10 @@ function renderFacets() {
     const sel = state.sel[key] || new Set();
     sel.forEach((v) => { if (!counts.has(v)) counts.set(v, 0); });
     if (counts.size <= 1 && !sel.size && key !== "d") return "";
-    let items = [...counts.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+    // ordinal facets keep their natural order (Tier 1 → 5, 1 voice → 6, slow → fast); the rest go by count
+    const ordinal = ORDINAL[key];
+    let items = [...counts.entries()].sort(ordinal ? (a, b) => ordinal(a[0]) - ordinal(b[0])
+      : (a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
     const limit = expanded.has(key) ? Infinity : 8;
     const hidden = Math.max(0, items.length - limit);
     items = items.slice(0, limit);

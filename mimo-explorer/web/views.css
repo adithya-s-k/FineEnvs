@@ -295,3 +295,30 @@ pre.diff .da { color: var(--c-general); } pre.diff .dd { color: var(--c-webdev);
 .notes { margin-top: 12px; font-size: 13px; }
 .notes summary { cursor: pointer; font-weight: 500; }
 .notes p { margin: 8px 0 0; line-height: 1.6; overflow-wrap: anywhere; }
+
+.pm .a { color: var(--c-general); } .pm .d { color: var(--c-webdev); } .pm { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.feat b { font-weight: 500; font-size: 13px; } .feat span code { font-size: 11px; color: var(--faint); }
+
+/* model picker */
+.picker { position: relative; }
+.pk-btn { width: 100%; display: grid; grid-template-columns: 1fr auto auto; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left;
+  padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; }
+.pk-btn:hover, .pk-btn[aria-expanded="true"] { border-color: var(--border-strong); }
+.pk-btn .pk-name { font-weight: 600; font-size: 14px; }
+.pk-btn .pk-org { grid-row: 2; font-size: 11.5px; color: var(--faint); }
+.pk-btn .pk-price { grid-row: span 2; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pk-caret { grid-row: span 2; color: var(--faint); font-size: 12px; }
+.pk-pop { position: absolute; z-index: 30; right: 0; width: 420px; max-width: calc(100vw - 32px); top: calc(100% + 6px); background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: 12px; box-shadow: var(--shadow-lg); padding: 8px; }
+.pk-q { width: 100%; height: 36px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); padding: 0 10px; font: inherit; font-size: 13.5px; outline: none; }
+.pk-list { max-height: 340px; overflow: auto; margin-top: 6px; }
+.pk-group { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); padding: 8px 8px 4px; }
+.pk-row { width: 100%; display: grid; grid-template-columns: 1fr auto; column-gap: 8px; text-align: left; padding: 7px 8px; border: 0; border-radius: 8px; background: none; cursor: pointer; }
+.pk-row:hover, .pk-row.act { background: var(--surface-2); }
+.pk-row.sel { box-shadow: inset 2px 0 0 var(--dc, var(--text)); }
+.pk-row .pk-name, .pk-btn .pk-name { font-size: 13.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pk-btn .pk-name { font-weight: 600; }
+.pk-row .pk-org, .pk-row .pk-meta { font-size: 11.5px; color: var(--faint); grid-column: 1; }
+.pk-row .pk-org b { color: var(--c-music); font-weight: 600; }
+.pk-row .pk-price { grid-row: 1 / span 3; grid-column: 2; align-self: center; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pk-note { font-size: 11.5px; color: var(--faint); margin: 8px 6px 2px; line-height: 1.45; }

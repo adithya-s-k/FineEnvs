@@ -221,6 +221,19 @@ WEBDEV_DIMS = [
 ]
 
 
+MUSIC_FEATURE = {
+    "note_len_entropy": "Variety of note lengths", "ioi_mean": "Average gap between note onsets",
+    "rhythm_surprisal": "How surprising the rhythm is", "note_density": "Notes per beat",
+    "qualified_note_rate": "Share of well-formed notes", "n_chan": "Instruments in use",
+    "polyphony_rate": "How often several notes sound at once", "polyphony_mean": "Average notes sounding together",
+    "roughness_p90": "Harshness of the densest chords", "harmonicity_mean": "How consonant the harmony is",
+    "key_certainty": "How clearly it sits in one key", "local_key_certainty": "Key clarity, phrase by phrase",
+    "pitch_in_scale": "Notes that belong to the key", "pitch_min": "Lowest note", "pitch_range": "Range from lowest to highest note",
+    "voice_leading_cost": "How smoothly the voices move", "self_similarity": "Repetition and variation",
+    "tension_peaks": "Build-ups and releases",
+}
+
+
 def view(task_id: str) -> dict | None:
     rec = record(task_id)
     if not rec:
@@ -297,7 +310,7 @@ def view(task_id: str) -> dict | None:
                        "compared with the range human music occupies. No model judges it.",
             "spec": {"bpm": e.get("bpm"), "meter": e.get("meter"), "bars": e.get("length"), "voices": e.get("nvoice_want"),
                      "style": rec["f"].get("style"), "language": e.get("lang")},
-            "features": [{"name": f, "rule": rule, "group": grp,
+            "features": [{"name": f, "label": MUSIC_FEATURE.get(f, f), "rule": rule, "group": grp,
                           "band": [ref[f].get("p10"), ref[f].get("p90")] if f in ref else None} for f, rule, grp in SPEC],
         }
         v["environment"] = {"sandbox": False}
