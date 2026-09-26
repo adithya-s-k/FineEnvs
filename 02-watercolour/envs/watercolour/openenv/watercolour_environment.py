@@ -267,9 +267,15 @@ class WatercolourEnvironment(
         )
         self._task = task
         self._episode_seed = seed
-        self._episode_revisions = int(kwargs.get("revisions") or self._revisions)
+        revisions = kwargs.get("revisions")
+        self._episode_revisions = int(
+            self._revisions if revisions is None else revisions
+        )
         self._state.revisions_used = 0
-        self._episode_references = int(kwargs.get("references") or self._references)
+        references = kwargs.get("references")
+        self._episode_references = int(
+            self._references if references is None else references
+        )
         self._episode_return_image = bool(
             self._return_image
             if kwargs.get("return_image") is None

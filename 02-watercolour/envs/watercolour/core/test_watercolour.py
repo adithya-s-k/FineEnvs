@@ -497,6 +497,17 @@ class TestTheTwoRewardPaths:
 class TestRevisions:
     """The multi-turn episode, and the guarantee that it changes nothing by default."""
 
+    def test_reset_can_set_zero_references_and_revisions(self):
+        env = WatercolourEnvironment(
+            subject="two ripe plums",
+            enable_judge=False,
+            references=4,
+            revisions=2,
+        )
+        env.reset(references=0, revisions=0)
+        assert env._episode_references == 0
+        assert env._episode_revisions == 0
+
     def test_the_default_episode_is_still_one_shot(self):
         # Six runs trained against a single-shot episode and the reward was only
         # ever measured against that shape. Revisions are opt-in so none of that
