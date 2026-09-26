@@ -93,3 +93,18 @@ def test_step_after_done_does_not_pay_the_reward_again():
     assert obs.startswith("The game is over")
     assert term_again and not trunc_again
     assert again == 0.0
+
+
+def test_step_after_turn_budget_truncation_does_not_submit_or_pay_reward():
+    wordle = env.WordleGemEnv(answer="crane")
+    wordle.reset()
+    for _ in range(6):
+        _obs, _reward, terminated, truncated, _info = wordle.step("not a guess")
+    assert not terminated and truncated
+    assert wordle._game.guesses == []
+
+    _obs, reward, terminated, truncated, _info = wordle.step("<guess>crane</guess>")
+
+    assert not terminated and truncated
+    assert reward == 0.0
+    assert wordle._game.guesses == []

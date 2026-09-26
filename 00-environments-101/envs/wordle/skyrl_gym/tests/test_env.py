@@ -61,3 +61,18 @@ def test_step_after_done_does_not_pay_the_reward_again():
     assert _get(again, "done") is True
     assert _get(again, "reward") == 0.0
     assert _get(again, "observations")[0]["content"].startswith("The game is over")
+
+
+def test_step_after_turn_budget_done_does_not_submit_or_pay_reward():
+    wordle = env.WordleSkyRLEnv(answer="crane")
+    wordle.init("prompt")
+    for _ in range(6):
+        out = wordle.step("not a guess")
+    assert _get(out, "done") is True
+    assert wordle._game.guesses == []
+
+    again = wordle.step("<guess>crane</guess>")
+
+    assert _get(again, "done") is True
+    assert _get(again, "reward") == 0.0
+    assert wordle._game.guesses == []
