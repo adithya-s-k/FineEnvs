@@ -138,6 +138,14 @@ class LatexOCRRubric:
         target_norm = normalize_latex(target)
         target_canon = _strip_all_whitespace(target_norm)
 
+        if not target_canon:
+            return GradeResult(
+                reward=0.0,
+                exact_match=False,
+                char_error_rate=1.0,
+                length_factor=1.0,
+            )
+
         exact = pred_canon == target_canon
 
         # Length guard: penalize predictions whose RAW length (measured before whitespace is
@@ -161,11 +169,8 @@ class LatexOCRRubric:
                 length_factor=0.0,
             )
 
-        if not target_canon:
-            cer = 0.0 if not pred_canon else 1.0
-        else:
-            distance = levenshtein(pred_canon, target_canon)
-            cer = min(1.0, distance / max(len(pred_canon), len(target_canon)))
+        distance = levenshtein(pred_canon, target_canon)
+        cer = min(1.0, distance / max(len(pred_canon), len(target_canon)))
 
         similarity = 1.0 - cer
         reward = (1.0 - self.exact_weight) * similarity + self.exact_weight * float(
