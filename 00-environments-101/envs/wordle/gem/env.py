@@ -66,6 +66,8 @@ class WordleGemEnv(Env):
         self.last_output = ""
         self.step_count = 0
         self.error_count = 0
+        self._episode_done = False
+        self._episode_truncated = False
 
     def reset(self, seed: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
         """Reset: create new game, return instruction."""
@@ -74,6 +76,8 @@ class WordleGemEnv(Env):
         self.last_output = ""
         self.step_count = 0
         self.error_count = 0
+        self._episode_done = False
+        self._episode_truncated = False
 
         # Pick answer
         if self._answer:
@@ -103,6 +107,22 @@ class WordleGemEnv(Env):
 
     def step(self, action: str) -> Tuple[str, SupportsFloat, bool, bool, Dict[str, Any]]:
         """Parse action for guess word, submit to game, return observation + reward."""
+        if self._episode_done:
+            result = (
+                f"The game is over. The word was '{self._game.answer}'."
+                if self._game.done
+                else "The episode is over."
+            )
+            self.last_output = result
+            info = {
+                "step_count": self.step_count,
+                "error_count": self.error_count,
+                "last_output": self.last_output,
+                "won": self._game.won,
+                "suffix": "Game over.",
+            }
+            return result, 0.0, self._game.done, self._episode_truncated, info
+
         self.step_count += 1
         already_done = self._game.done
 
@@ -119,6 +139,9 @@ class WordleGemEnv(Env):
         reward = 0.0 if already_done else self._game.reward
         terminated = self._game.done
         truncated = self.step_count >= self._max_turns and not terminated
+        if terminated or truncated:
+            self._episode_done = True
+            self._episode_truncated = truncated
 
         info = {
             "step_count": self.step_count,
