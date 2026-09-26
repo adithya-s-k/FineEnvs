@@ -1,0 +1,23 @@
+# Project manifest. `tools/build_index.py` renders the root README table.
+name: wordle
+title: "Wordle"
+tagline: "Train against the cheapest multi-turn env in this repo, with a GRPO loop that can tell a failed group from a collapsed one."
+order: 4
+status: trained   # CPU ablation + GeoGuesser reanalysis; LLM GRPO recipe unrun on GPU
+
+hub:
+  org: HuggingEnvs
+
+envs:
+  - name: wordle
+    summary: "Multi-turn Wordle on the 2,309-word answer list. Observation never names the answer. Reward can be sparse or information gain."
+    backend: none
+    tools: 1
+    frameworks:
+      inprocess:
+        transport: in-process
+        verified: true
+
+results:
+  eval: "200-word alphabetical holdout, greedy tiny policy"
+  note: "Numbers in README.md come from train/tiny_grpo.py and train/analyse_geoguesser.py. The Qwen recipe is train/grpo_wordle.py; it has not been spent on a GPU in this contribution."
