@@ -43,7 +43,14 @@ Write one Python program in a ```python block, then stop.
 
 def build_prompt(row: dict) -> list[dict]:
     """The one prompt shape, so training and eval cannot drift apart."""
-    files = "\n".join(f"- {f}" for f in row["files"])
+    if row["files"]:
+        files = "\n".join(f"- {f}" for f in row["files"])
+    else:
+        files = (
+            "- No file names were provided by the dataset. The data is still staged in "
+            "/home/user/input; list /home/user/input first, for example with "
+            "os.listdir('/home/user/input'), then read the discovered files."
+        )
     return [
         {"role": "system", "content": SYSTEM},
         {"role": "user", "content": PROMPT.format(question=row["question"], files=files)},
