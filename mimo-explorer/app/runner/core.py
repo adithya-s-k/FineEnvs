@@ -16,6 +16,7 @@ The user's token is held here for the rollout's lifetime only. It never reaches 
 
 from __future__ import annotations
 
+import json
 import re
 import secrets
 import threading
@@ -168,18 +169,26 @@ class Rollout:
         self.check_cancel()
         return self.sandbox.run(cmd, shell=True, check=False, timeout=timeout, **kw)
 
-    def settle_thinking(self) -> None:
-        """Some models take no thinking level at all (Kimi-K2-Instruct answers HTTP 400 to reasoning_effort=low). Ask
-        once with a tiny request; if the level is refused, run with thinking off rather than fail the rollout."""
+    def settle_model(self) -> None:
+        """Check, with tiny requests, that the model takes this rollout's settings, and adjust rather than fail.
+
+        Some models take no thinking level at all (Kimi-K2-Instruct answers HTTP 400 to reasoning_effort=low): run
+        those with thinking off. A provider that caps replies below the agent's output limit gets its own cap."""
         p = self.run.get("params") or {}
-        eff = p.get("thinking")
-        if eff not in ("low", "medium", "high"):
-            return
         base, key, mid = self.agent_api()
-        if _effort_refused(base, key, mid, eff, bool(self.run.get("endpoint"))):
-            self.update(params={**p, "thinking": "none", "thinking_requested": eff})
+        byo = bool(self.run.get("endpoint"))
+        eff = p.get("thinking")
+        if eff in ("low", "medium", "high") and _refused(base, key, mid, byo, {"reasoning_effort": eff}, r"reason|think|effort"):
+            p = {**p, "thinking": "none", "thinking_requested": eff}
+            self.update(params=p)
             self.log(f"{self.run['model']} doesn't take a thinking level (it refused reasoning_effort={eff}), "
                      "so this rollout runs with thinking off.")
+        if self.run["domain"] != "music" and not p.get("max_tokens"):
+            from .opencode import OUTPUT_LIMIT
+            if _refused(base, key, mid, byo, {"max_tokens": OUTPUT_LIMIT}, r"token|length|context|max"):
+                self.update(params={**p, "output_limit": 32000})
+                self.log(f"The provider doesn't allow {OUTPUT_LIMIT:,}-token replies for this model; "
+                         "the agent's replies are capped at 32,000 tokens.")
 
     def execute(self) -> None:
         from .domains import ADAPTERS
@@ -187,7 +196,7 @@ class Rollout:
         adapter = ADAPTERS[self.run["domain"]]
         try:
             self.update(status="starting", started_at=time.time())
-            self.settle_thinking()
+            self.settle_model()
             result = adapter.run(self)
             self.update(status="done", reward=result.get("reward"), reward_error=result.get("error"),
                         finished_at=time.time(), cost=self.cost_now())
@@ -270,16 +279,17 @@ def submit(user: str, token: str, task: dict, model: str, provider: str | None, 
     return run
 
 
-_effort_cache: dict[tuple, bool] = {}
+_refusals: dict[tuple, bool] = {}
 
 
-def _effort_refused(base: str, key: str | None, mid: str, eff: str, byo: bool) -> bool:
-    k = (base, mid, eff)
-    if k not in _effort_cache:
+def _refused(base: str, key: str | None, mid: str, byo: bool, extra: dict, about: str) -> bool:
+    """Does the model answer HTTP 400/422, about `about`, to a two-word request carrying `extra`? Cached."""
+    k = (base, mid, json.dumps(extra, sort_keys=True))
+    if k not in _refusals:
         import httpx
 
         from .. import endpoints
-        body = {"model": mid, "max_tokens": 16, "reasoning_effort": eff, "messages": [{"role": "user", "content": "Say OK."}]}
+        body = {"model": mid, "max_tokens": 16, **extra, "messages": [{"role": "user", "content": "Say OK."}]}
         try:
             if byo:   # the user's endpoint: pinned connection, capped reply
                 r = endpoints.request("POST", f"{base}/chat/completions", key, timeout=60, json=body)
@@ -288,11 +298,11 @@ def _effort_refused(base: str, key: str | None, mid: str, eff: str, byo: bool) -
                                headers={"Authorization": f"Bearer {key}"} if key else {})
         except Exception:
             return False   # can't tell; let the rollout itself report a real connection problem
-        refused = r.status_code in (400, 422) and bool(re.search(r"reason|think|effort", r.text, re.I))
+        refused = r.status_code in (400, 422) and bool(re.search(about, r.text, re.I))
         if r.status_code in (200, 400, 422):   # only cache real answers, not rate limits or outages
-            _effort_cache[k] = refused
+            _refusals[k] = refused
         return refused
-    return _effort_cache[k]
+    return _refusals[k]
 
 
 def by_cap(cap: str) -> Rollout | None:

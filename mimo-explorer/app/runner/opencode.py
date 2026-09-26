@@ -62,6 +62,16 @@ def install(r) -> str:
     return version[0]
 
 
+# Per-reply output ceiling. mimoagent's example_configs/opencode.yaml runs OpenCode with output_limit 65536, unlocked
+# past OpenCode's own 32000 through OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX. At 32000 a model that thinks at length
+# can spend the whole reply thinking, get cut off before its first tool call, and end the session with nothing done.
+OUTPUT_LIMIT = 65536
+
+
+def output_limit(params: dict) -> int:
+    return params.get("max_tokens") or params.get("output_limit") or OUTPUT_LIMIT
+
+
 def config_for(model: str, provider: str | None, steps: int, mcp: list[dict] | None = None,
                endpoint: dict | None = None, params: dict | None = None, proxy: str | None = None) -> dict:
     """With `proxy` (the Space), every model call goes to this server's per-rollout proxy and the sandbox holds no
@@ -82,8 +92,7 @@ def config_for(model: str, provider: str | None, steps: int, mcp: list[dict] | N
     entry = next(iter(next(iter(prov.values()))["models"].values()))
     if params.get("thinking") and params["thinking"] != "default":
         entry["options"] = {"reasoningEffort": params["thinking"]}   # sent as reasoning_effort ("none" turns it off)
-    if params.get("max_tokens"):
-        entry["limit"] = {"context": 1_000_000, "output": params["max_tokens"]}
+    entry["limit"] = {"context": 1_000_000, "output": output_limit(params)}
     build = {"steps": steps}
     if params.get("temperature") is not None:
         build["temperature"] = params["temperature"]
@@ -126,8 +135,8 @@ def run(r, prompt: str, cwd: str, *, steps: int, timeout: float, user: str | Non
              "OPENCODE_DISABLE_MODELS_FETCH": "1", "OPENCODE_DISABLE_AUTOUPDATE": "1", "OPENCODE_DISABLE_LSP_DOWNLOAD": "1",
              "OPENCODE_DISABLE_SHARE": "1", "XDG_DATA_HOME": f"{xdg}/data", "XDG_CONFIG_HOME": f"{xdg}/config",
              "XDG_CACHE_HOME": f"{xdg}/cache", "XDG_STATE_HOME": f"{xdg}/state"}
-    if (params.get("max_tokens") or 0) > 32000:   # upstream silently caps output at 32k otherwise
-        flags["OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX"] = str(params["max_tokens"])
+    if output_limit(params) > 32000:   # upstream silently caps output at 32k otherwise
+        flags["OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX"] = str(output_limit(params))
     token_env = "" if proxy else 'HF_TOKEN="$HF_TOKEN" '
     env = f"env {key_env}{token_env}HOME={home or '$HOME'} " + " ".join(f"{k}={v}" for k, v in flags.items())
     # --thinking streams the model's reasoning as its own events, so the trace shows why, not only what;
@@ -190,7 +199,14 @@ def _event(r, line: str, texts: list[str]) -> None:
         tok = {"input": t.get("input"), "output": t.get("output"), "reasoning": t.get("reasoning"),
                "cache_read": cache.get("read"), "cache_write": cache.get("write")}
         r.add_tokens(tok)
-        r.emit("step", tokens=tok, cost=r.cost_now()["model"])
+        reason = part.get("reason")
+        r.emit("step", tokens=tok, cost=r.cost_now()["model"], reason=reason)
+        limit = output_limit(r.run.get("params") or {})
+        if reason == "length" or (tok["output"] or 0) + (tok["reasoning"] or 0) >= limit * 0.99:
+            r.update(truncated=True)
+            r.emit("error", text=f"The model's reply hit the {limit:,}-token output limit before it finished "
+                                 f"({tok['reasoning'] or 0:,} tokens of it thinking). A cut-off reply has no tool call, "
+                                 "so OpenCode ends the session there, as it does in Xiaomi's harness.")
     elif typ == "error":
         err = ev.get("error") or part
         r.emit("error", text=(err.get("data") or {}).get("message") or json.dumps(err)[:800]
