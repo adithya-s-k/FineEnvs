@@ -450,6 +450,7 @@ const LS = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?
              set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } } };
 const SS = { get: (k) => { try { return sessionStorage.getItem(k) || ""; } catch { return ""; } },
              set: (k, v) => { try { sessionStorage.setItem(k, v); } catch { /* private mode */ } } };
+const DEFAULT_THINKING = "low";   // long agent runs with full thinking are slow and costly; low keeps most of the gain
 const THINKING = [["default", "Model default"], ["none", "Off"], ["low", "Low"], ["medium", "Medium"], ["high", "High"]];
 
 async function runPanel(box, v) {
@@ -472,7 +473,7 @@ async function runPanel(box, v) {
   const gaps = s.missing_scopes || [];
   const d = v.run_defaults || {};
   const ep = LS.get("byo", { base_url: "", model: "", price_in: "", price_out: "" });
-  const adv = LS.get("adv", { thinking: "default", temperature: "" });
+  const adv = LS.get("adv2", { thinking: DEFAULT_THINKING, temperature: "" });
   const st = { source: LS.get("source", "hf"), probe: null, visibility: "public" };   // public unless you choose otherwise, every time
   inner.innerHTML = `
     <p class="intro">${music ? "One model call, then Xiaomi's scorer. No sandbox." : "A fresh HF Sandbox from this task's image, OpenCode as the harness, then the task's own grader."}</p>
@@ -527,7 +528,7 @@ async function runPanel(box, v) {
   const endpoint = () => ({ base_url: val("#ep-url"), api_key: val("#ep-key") || null, model: val("#ep-model"),
                             price_in: num("#ep-pin"), price_out: num("#ep-pout") });
   const params = () => {
-    const p = { thinking: val("#p-think") || "default" };
+    const p = { thinking: val("#p-think") || DEFAULT_THINKING };
     if (num("#p-temp") != null) p.temperature = num("#p-temp");
     if (num("#p-max") != null) p.max_tokens = num("#p-max");
     if (num("#p-steps") != null) p.steps = num("#p-steps");
@@ -538,7 +539,7 @@ async function runPanel(box, v) {
     const e = endpoint();
     LS.set("byo", { base_url: e.base_url, model: e.model, price_in: val("#ep-pin"), price_out: val("#ep-pout") });
     SS.set("byo-key", val("#ep-key"));
-    LS.set("adv", { thinking: val("#p-think"), temperature: val("#p-temp") });
+    LS.set("adv2", { thinking: val("#p-think"), temperature: val("#p-temp") });
   };
   const tok = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : Math.round(n / 1e3) + "k");
   const [ti, to] = TYPICAL[v.domain];
@@ -549,7 +550,7 @@ async function runPanel(box, v) {
     $$("[data-vis]", box).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.vis === st.visibility)));
     $("#vis-note", box).textContent = st.visibility === "public" ? PUBLIC_NOTE : PRIVATE_NOTE;
     const p = params();
-    const changed = [p.thinking !== "default" && `thinking ${THINKING.find(([k]) => k === p.thinking)[1].toLowerCase()}`,
+    const changed = [p.thinking !== DEFAULT_THINKING && `thinking ${THINKING.find(([k]) => k === p.thinking)[1].toLowerCase()}`,
       p.temperature != null && `temp ${p.temperature}`, p.steps && `${p.steps} steps`, p.timeout_min && `${p.timeout_min} min`, p.max_tokens && `${p.max_tokens} max tokens`].filter(Boolean);
     $("#adv-sum", box).textContent = changed.length ? changed.join(" · ") : "";
     let price;

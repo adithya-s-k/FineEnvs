@@ -9,6 +9,7 @@ import json
 import mimetypes
 import os
 import random
+import time
 from functools import lru_cache
 
 from fastapi import FastAPI, HTTPException, Request
@@ -198,7 +199,7 @@ class Endpoint(BaseModel):
 
 
 class Params(BaseModel):
-    thinking: Literal["default", "none", "low", "medium", "high"] = "default"
+    thinking: Literal["default", "none", "low", "medium", "high"] = "low"
     temperature: float | None = Field(None, ge=0, le=2)
     max_tokens: int | None = Field(None, ge=256, le=128000)
     steps: int | None = Field(None, ge=1, le=1000)
@@ -378,9 +379,10 @@ def get_run(run_id: str, request: Request, after: int = 0):
     if live is not None:
         run = {**run, **live.run, "cost": live.cost_now()}
     events = core.events(run_id, after)
+    stream = dict(live.stream, age=round(time.time() - live.stream["since"], 1)) if live is not None and live.stream else None
     if owner:
-        return {"run": _owner_view(run), "events": events, "live": live is not None}
-    return {"run": _public_view(run), "events": _scrub(events, _private_strings(run)), "live": live is not None}
+        return {"run": _owner_view(run), "events": events, "live": live is not None, "stream": stream}
+    return {"run": _public_view(run), "events": _scrub(events, _private_strings(run)), "live": live is not None, "stream": stream}
 
 
 class Visibility(BaseModel):
@@ -543,10 +545,36 @@ async def llm_proxy(cap: str, request: Request):
         await client.aclose()
         return JSONResponse({"error": {"message": f"upstream unreachable: {type(e).__name__}"}}, 502)
 
+    async def relay():
+        # OpenCode reports a step only once the whole reply is in, which for a long file can take minutes. Counting
+        # what streams past here lets the rollout page show the model is still writing, and how much.
+        s = r.stream = {"since": time.time(), "text": 0, "thinking": 0, "tool": 0}
+        buf = b""
+        try:
+            async for chunk in resp.aiter_bytes():
+                yield chunk
+                buf += chunk
+                *lines, buf = buf.split(b"\n")
+                for line in lines:
+                    if not line.startswith(b"data: {"):
+                        continue
+                    try:
+                        choices = json.loads(line[6:]).get("choices") or []
+                    except ValueError:
+                        continue
+                    for c in choices:
+                        d = c.get("delta") or {}
+                        s["text"] += len(d.get("content") or "")
+                        s["thinking"] += len(d.get("reasoning_content") or d.get("reasoning") or "")
+                        s["tool"] += sum(len((t.get("function") or {}).get("arguments") or "") for t in d.get("tool_calls") or [])
+        finally:
+            if r.stream is s:
+                r.stream = None
+
     async def close():
         await resp.aclose()
         await client.aclose()
-    return StreamingResponse(resp.aiter_bytes(), status_code=resp.status_code,
+    return StreamingResponse(relay(), status_code=resp.status_code,
                              media_type=resp.headers.get("content-type", "application/json"), background=BackgroundTask(close))
 
 

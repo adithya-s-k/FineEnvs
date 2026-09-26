@@ -51,6 +51,7 @@ class Rollout:
         self.agent_key = agent_key   # a bring-your-own endpoint's key: memory only, like the HF token
         # what the sandbox gets instead of credentials (see config.PUBLIC_URL): valid while this rollout is live
         self.cap = secrets.token_urlsafe(32)
+        self.stream: dict | None = None   # the model reply streaming through the proxy right now, counted as it goes
         self.events: list[dict] = store.read_events(self.id)
         self._pending: list[dict] = []
         self._last_flush = time.time()
@@ -81,7 +82,7 @@ class Rollout:
         with self._lock:
             self.events.append(ev)
             self._pending.append(ev)
-            if time.time() - self._last_flush > 1.0 or kind in ("phase", "checks", "error"):
+            if time.time() - self._last_flush > 1.0 or kind in ("phase", "checks", "error", "prompt"):
                 self._flush()
 
     def _flush(self) -> None:
@@ -167,12 +168,26 @@ class Rollout:
         self.check_cancel()
         return self.sandbox.run(cmd, shell=True, check=False, timeout=timeout, **kw)
 
+    def settle_thinking(self) -> None:
+        """Some models take no thinking level at all (Kimi-K2-Instruct answers HTTP 400 to reasoning_effort=low). Ask
+        once with a tiny request; if the level is refused, run with thinking off rather than fail the rollout."""
+        p = self.run.get("params") or {}
+        eff = p.get("thinking")
+        if eff not in ("low", "medium", "high"):
+            return
+        base, key, mid = self.agent_api()
+        if _effort_refused(base, key, mid, eff, bool(self.run.get("endpoint"))):
+            self.update(params={**p, "thinking": "none", "thinking_requested": eff})
+            self.log(f"{self.run['model']} doesn't take a thinking level (it refused reasoning_effort={eff}), "
+                     "so this rollout runs with thinking off.")
+
     def execute(self) -> None:
         from .domains import ADAPTERS
 
         adapter = ADAPTERS[self.run["domain"]]
         try:
             self.update(status="starting", started_at=time.time())
+            self.settle_thinking()
             result = adapter.run(self)
             self.update(status="done", reward=result.get("reward"), reward_error=result.get("error"),
                         finished_at=time.time(), cost=self.cost_now())
@@ -253,6 +268,31 @@ def submit(user: str, token: str, task: dict, model: str, provider: str | None, 
         _caps[r.cap] = r
     _pool.submit(r.execute)
     return run
+
+
+_effort_cache: dict[tuple, bool] = {}
+
+
+def _effort_refused(base: str, key: str | None, mid: str, eff: str, byo: bool) -> bool:
+    k = (base, mid, eff)
+    if k not in _effort_cache:
+        import httpx
+
+        from .. import endpoints
+        body = {"model": mid, "max_tokens": 16, "reasoning_effort": eff, "messages": [{"role": "user", "content": "Say OK."}]}
+        try:
+            if byo:   # the user's endpoint: pinned connection, capped reply
+                r = endpoints.request("POST", f"{base}/chat/completions", key, timeout=60, json=body)
+            else:
+                r = httpx.post(f"{base}/chat/completions", json=body, timeout=60,
+                               headers={"Authorization": f"Bearer {key}"} if key else {})
+        except Exception:
+            return False   # can't tell; let the rollout itself report a real connection problem
+        refused = r.status_code in (400, 422) and bool(re.search(r"reason|think|effort", r.text, re.I))
+        if r.status_code in (200, 400, 422):   # only cache real answers, not rate limits or outages
+            _effort_cache[k] = refused
+        return refused
+    return _effort_cache[k]
 
 
 def by_cap(cap: str) -> Rollout | None:

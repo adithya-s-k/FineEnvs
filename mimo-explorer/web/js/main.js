@@ -24,6 +24,8 @@ async function route() {
   if (current?.unmount) current.unmount();
   current = null;
   closeModal();
+  const tip = document.getElementById("tip");   // a hovered chart cell removed by navigation never fires mouseleave
+  if (tip) tip.hidden = true;
   const tab = name === "runs" || name === "run" ? "runs" : name === "community" ? "community" : "explore";
   document.querySelectorAll("[data-nav]").forEach((a) => a.classList.toggle("on", a.dataset.nav === tab));
   window.scrollTo(0, 0);

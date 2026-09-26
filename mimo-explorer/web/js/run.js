@@ -64,6 +64,7 @@ export async function mount(el, id) {
 
 function apply(el, st, d) {
   st.run = d.run;
+  st.stream = d.stream;
   if (!st.navSet) {   // someone else's public rollout belongs to Community, not to My rollouts
     st.navSet = true;
     const mine = !!d.run.is_owner;
@@ -110,6 +111,14 @@ function liveHint(st) {
   if (s === "verifying") return "Grading…";
   const last = st.events[st.events.length - 1];
   if (last?.kind === "partial") return `Writing… ${last.chars.toLocaleString()} characters${last.thinking_chars ? `, ${last.thinking_chars.toLocaleString()} thinking` : ""}`;
+  const sm = st.stream;
+  if (sm) {
+    const n = sm.text + sm.thinking + sm.tool;
+    if (!n) return `Waiting for the model's reply · ${dur(sm.age)}`;
+    const parts = [sm.thinking && `${sm.thinking.toLocaleString()} thinking`, sm.text && `${sm.text.toLocaleString()} message`,
+      sm.tool && `${sm.tool.toLocaleString()} in a tool call`].filter(Boolean);
+    return `The model is writing · ${n.toLocaleString()} characters so far (${parts.join(", ")}) · ${dur(sm.age)}`;
+  }
   const since = last ? Math.max(0, (Date.now() / 1000 - (st.run.started_at || st.run.created_at)) - last.t) : 0;
   return since > 45 ? `The model is working · ${dur(since)} since the last step. Long files take a while to write.` : "The model is working…";
 }
