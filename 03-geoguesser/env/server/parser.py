@@ -27,9 +27,9 @@ _DMS = re.compile(
 )
 
 _LABELLED = re.compile(
-    r"lat(?:itude)?\s*[:=]\s*(-?\d{1,3}(?:\.\d+)?)(?!\s*[°d])"
+    r"lat(?:itude)?\s*[:=]\s*(-?\d{1,3}(?:\.\d*)?)(?![\d.])"
     r".{0,40}?"
-    r"lon(?:g|gitude)?\s*[:=]\s*(-?\d{1,3}(?:\.\d+)?)(?!\s*[°d])",
+    r"lon(?:g|gitude)?\s*[:=]\s*(-?\d{1,3}(?:\.\d*)?)(?![\d.])",
     re.IGNORECASE | re.DOTALL,
 )
 
@@ -114,16 +114,15 @@ def parse_guess(response: str) -> ParsedGuess:
     haystacks.append((response, "body"))
 
     for text, origin in haystacks:
-        for pattern, name in ((_JSON_ISH, "json"), (_LABELLED, "labelled")):
-            m = pattern.search(text)
-            if m:
-                lat, lon = float(m.group(1)), float(m.group(2))
-                if _valid(lat, lon):
-                    src = name if origin == "body" else "tag"
-                    return ParsedGuess(lat, lon, src)
-                return ParsedGuess(
-                    None, None, "none", f"Coordinates out of range: {lat}, {lon}."
-                )
+        m = _JSON_ISH.search(text)
+        if m:
+            lat, lon = float(m.group(1)), float(m.group(2))
+            if _valid(lat, lon):
+                src = "json" if origin == "body" else "tag"
+                return ParsedGuess(lat, lon, src)
+            return ParsedGuess(
+                None, None, "none", f"Coordinates out of range: {lat}, {lon}."
+            )
 
         dms = _DMS.findall(text)
         if len(dms) >= 2:
@@ -141,6 +140,16 @@ def parse_guess(response: str) -> ParsedGuess:
                 lon = _dms_to_decimal(*lon_m)
                 if _valid(lat, lon):
                     return ParsedGuess(lat, lon, "dms")
+
+        m = _LABELLED.search(text)
+        if m:
+            lat, lon = float(m.group(1)), float(m.group(2))
+            if _valid(lat, lon):
+                src = "labelled" if origin == "body" else "tag"
+                return ParsedGuess(lat, lon, src)
+            return ParsedGuess(
+                None, None, "none", f"Coordinates out of range: {lat}, {lon}."
+            )
 
         m = _DECIMAL_PAIR.search(text)
         if m:
