@@ -79,6 +79,11 @@ def _dms_to_decimal(deg: str, minute: str | None, sec: str | None, hemi: str) ->
     return -value if hemi.upper() in ("S", "W") else value
 
 
+def _valid_dms(match: tuple[str, str | None, str | None, str]) -> bool:
+    _, minute, sec, _ = match
+    return float(minute or 0) < 60 and float(sec or 0) < 60
+
+
 def parse_guess(response: str) -> ParsedGuess:
     """
     Pull a coordinate pair out of a model reply.
@@ -125,6 +130,13 @@ def parse_guess(response: str) -> ParsedGuess:
             lat_m = next((d for d in dms if d[3].upper() in ("N", "S")), None)
             lon_m = next((d for d in dms if d[3].upper() in ("E", "W")), None)
             if lat_m and lon_m:
+                if not _valid_dms(lat_m) or not _valid_dms(lon_m):
+                    return ParsedGuess(
+                        None,
+                        None,
+                        "none",
+                        "Invalid DMS coordinates: minutes and seconds must be < 60.",
+                    )
                 lat = _dms_to_decimal(*lat_m)
                 lon = _dms_to_decimal(*lon_m)
                 if _valid(lat, lon):
