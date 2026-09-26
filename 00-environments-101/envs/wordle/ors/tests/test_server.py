@@ -61,7 +61,8 @@ def test_a_guess_after_a_loss_cannot_turn_it_into_a_win():
         lost = env.guess(GuessInput(word=word))
     out = env.guess(GuessInput(word="crane"))
     assert out.finished is True
-    assert out.reward == pytest.approx(lost.reward)
+    assert lost.reward == pytest.approx(_expected("crane", words))
+    assert out.reward is None
     assert "Correct" not in out.blocks[0].text
 
 
