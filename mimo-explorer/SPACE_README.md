@@ -3,10 +3,16 @@ title: MiMo RL Environments Explorer
 emoji: 🧭
 colorFrom: indigo
 colorTo: green
-sdk: static
+sdk: docker
+app_port: 7860
 pinned: false
 license: apache-2.0
-short_description: Browse and search the 7,780 MiMo-V2.6 RL environments
+short_description: Explore the MiMo-V2.6 RL environments and run rollouts
+hf_oauth: true
+hf_oauth_expiration_minutes: 1440
+hf_oauth_scopes:
+  - inference-api
+  - jobs
 tags:
   - reinforcement-learning
   - rl-environments
@@ -19,32 +25,38 @@ datasets:
 # MiMo RL Environments Explorer
 
 An unofficial explorer for [XiaomiMiMo/MiMo-V2.6-RL-oss](https://huggingface.co/datasets/XiaomiMiMo/MiMo-V2.6-RL-oss):
-7,780 RL environments across five domains, each checked a different way.
+7,780 RL environments across five domains. Browse them, open any task to see everything inside it, then
+**run a rollout** with a model of your choice and watch it get graded.
 
-| Domain | Environments | The task | Checked by | Browse by |
-|---|---:|---|---|---|
-| Code | 2,698 | Fix real issues in real repos | Executable tests | programming language |
-| Webdev | 2,093 | Build a website from a brief | Visual grading | site type, framework, style, brief language |
-| Cyber | 1,000 | Reproduce a real crash (ARVO) | Rule checks | crash type, project, sanitizer |
-| Music | 1,000 | Compose in ABC notation | Rule checks | family, style, meter, voices, tempo |
-| General | 989 | Knowledge work in a simulated workplace | Rubric judging | industry, tier, brief language |
+| Domain | Environments | The task | Graded by |
+|---|---:|---|---|
+| Code | 2,698 | Fix a real issue in a real repo | Hidden tests |
+| Webdev | 2,093 | Build a website from a brief | A vision model on a full-page render |
+| Cyber | 1,000 | Reproduce a real crash (ARVO) | A root-owned server: must crash in the expected function |
+| Music | 1,000 | Compose in ABC notation | 18 "human-likeness" features, no model |
+| General | 989 | Knowledge work in a simulated workplace | Rule checks and model-judged rubric checks |
 
-Search everything, filter by category, or click a block in the map. Open an environment for its full
-brief and what makes it tick: the mock enterprise systems (MCP servers) and workspace files of a
-General environment, the files a Code task's tests touch, the crash a Cyber task reproduces.
+## Running a rollout
 
-## How the categories are made
-Most come straight from the dataset's metadata. Where it has none, they are derived:
+Sign in with Hugging Face. A rollout runs on **your** account:
 
-- **Code language** is the language of the files each task's test patch touches.
-- **General industry and tier** are encoded in each environment's id (`s3k_<n>_<industry>_<lang>_<tier>_rl_<n>`).
-- **Webdev site type, framework and style** are read from the brief's own wording and labelled "mentioned".
-  The site type is the earliest specific kind of site the brief names.
-- **Music styles** are the dataset's own tags, translated from Chinese and grouped into families.
+- an **HF Sandbox** started from the task's own Docker image (CPU, about $0.01 an hour),
+- **OpenCode** as the agent harness, calling the model you pick through **HF Inference Providers**,
+- then the task's **own grader**: Xiaomi's reference code from [verl](https://github.com/XiaomiMiMo/verl) and
+  [mimoagent](https://github.com/XiaomiMiMo/mimoagent), vendored unchanged. Tasks graded by a model ask you to pick the judge.
 
-Rubric questions are shown with their tier and weight. Their answers (`pass_anchor`, `gold_answer`) are not.
+Nothing that grades a task (hidden tests, rubric answers, the expected crash) is in the sandbox while the agent works,
+and the agent has no web tools. Rollouts keep running if you close the page; find them under **My rollouts**.
+Traces are kept in a private bucket. Your token is never stored with them.
 
-## Rebuild
+Rewards here will not match Xiaomi's published numbers exactly: the harness is OpenCode rather than theirs, the judge
+is whichever model you pick, and Webdev uses their evaluation-mode grader (training used a group-relative ranking).
+
+## Run it yourself
+
 ```bash
-uv run build_data.py      # fetches the dataset and writes data/
+git clone https://github.com/adithya-s-k/FineEnvs && cd FineEnvs/mimo-explorer
+uv run uvicorn app.main:app      # uses your HF token; traces go to ./.local-runs
 ```
+
+Source: [adithya-s-k/FineEnvs/mimo-explorer](https://github.com/adithya-s-k/FineEnvs/tree/mimo-explorer-rollouts/mimo-explorer).
