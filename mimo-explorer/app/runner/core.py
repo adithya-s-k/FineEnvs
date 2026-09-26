@@ -16,6 +16,7 @@ The user's token is held here for the rollout's lifetime only. It never reaches 
 
 from __future__ import annotations
 
+import re
 import threading
 import time
 import traceback
@@ -27,6 +28,10 @@ from .. import config, models, store
 _pool = ThreadPoolExecutor(max_workers=config.MAX_ACTIVE_ROLLOUTS, thread_name_prefix="rollout")
 _live: dict[str, "Rollout"] = {}
 _live_lock = threading.Lock()
+
+
+# key-shaped: a known prefix, then a run with an uppercase letter or a digit (code names like hf_raise_for_status don't match)
+SECRET_RE = re.compile(r"\b(hf_|sk-|sk_|api_key=|Bearer )(?=[A-Za-z0-9\-]*[A-Z0-9])[A-Za-z0-9\-]{4,}(?![a-z_])")
 
 
 class Cancelled(Exception):
@@ -50,8 +55,22 @@ class Rollout:
         self.model_cost = 0.0
 
     # ── events ───────────────────────────────────────────────────────────────
+    def _redact(self, v):
+        """Nothing secret reaches a trace: the user's HF token, an endpoint key, or anything shaped like one
+        (the General verifier, for one, prints the first characters of its judge key)."""
+        if isinstance(v, str):
+            for secret in (self.token, self.agent_key):
+                if secret:
+                    v = v.replace(secret, "[redacted]")
+            return SECRET_RE.sub(lambda m: m.group(1) + "[redacted]", v)
+        if isinstance(v, dict):
+            return {k: self._redact(x) for k, x in v.items()}
+        if isinstance(v, list):
+            return [self._redact(x) for x in v]
+        return v
+
     def emit(self, kind: str, **data) -> None:
-        ev = {"i": len(self.events), "t": round(time.time() - self.t0, 2), "kind": kind, **data}
+        ev = {"i": len(self.events), "t": round(time.time() - self.t0, 2), "kind": kind, **self._redact(data)}
         with self._lock:
             self.events.append(ev)
             self._pending.append(ev)
@@ -93,6 +112,7 @@ class Rollout:
                 "total": round(self.model_cost + judge + sandbox, 5)}
 
     def update(self, **fields) -> None:
+        fields = self._redact(fields)
         self.run.update(fields)
         store.update(self.id, **fields)
 

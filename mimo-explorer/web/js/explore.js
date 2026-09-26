@@ -3,7 +3,8 @@ import { $, esc, fmt, vals, getJSONgz, sk, progress, emptyState } from "./util.j
 import { icon, DOMAIN_ICON } from "./icons.js";
 
 const CJK = /[㐀-鿿豈-﫿]/;
-const PAGE = 40;
+const PAGE = 30;
+const AUTO_PAGES = 3;   // pages that load by themselves as you scroll; after that a button, so the footer stays reachable
 const MAP_TOP = { code: 7, webdev: 9, cyber: 7, music: 9, general: 9 };
 const LEFTOVER = /^(Other|Unknown|unknown|None named|Unspecified|Unrated)$/;
 const num = (v) => { const m = String(v).match(/\d+/); return m ? +m[0] : 99; };
@@ -11,7 +12,7 @@ const ORDINAL = { tier: num, voices: num, tempo: (v) => (/^Slow/.test(v) ? 0 : /
 
 let DATA, DOMS, ENVS, SEARCH;
 const state = { q: "", dom: null, sel: {}, seed: Math.random() };
-let matches = [], shown = 0, searchIds = null, root = null, observer = null;
+let matches = [], shown = 0, searchIds = null, root = null, observer = null, autoLoaded = 0;
 const expanded = new Set();
 
 export async function load() {
@@ -89,6 +90,8 @@ export async function mount(el, params) {
           <div class="results-head"><span class="count" id="count"></span><span class="order" id="order-note"></span><div class="active" id="active"></div></div>
           <ol class="list" id="list"></ol>
           <div class="sentinel" id="sentinel"></div>
+          <div class="more-row" id="more-row" hidden><span class="muted sm" id="more-count"></span>
+            <button class="btn" id="more" type="button">Load more</button></div>
           <div id="empty" hidden>${emptyState("search", "No environments match", "Try fewer filters or a different word.", `<button class="btn" id="clear2" type="button">Clear search and filters</button>`)}</div>
         </section>
       </div>
@@ -336,12 +339,16 @@ function card(e) {
 }
 function renderList(reset) {
   const list = $("#list", root);
-  if (reset) { list.innerHTML = ""; shown = 0; }
+  if (reset) { list.innerHTML = ""; shown = 0; autoLoaded = 0; }
   const next = matches.slice(shown, shown + PAGE);
   list.insertAdjacentHTML("beforeend", next.map(card).join(""));
   shown += next.length;
   $("#empty", root).hidden = matches.length > 0;
   $("#list", root).hidden = !matches.length;
+  const left = matches.length - shown;
+  $("#more-row", root).hidden = left <= 0 || autoLoaded < AUTO_PAGES;
+  $("#more-count", root).textContent = `Showing ${fmt.format(shown)} of ${fmt.format(matches.length)}`;
+  $("#more", root).textContent = `Load ${fmt.format(Math.min(PAGE, left))} more`;
 }
 
 function wire(el) {
@@ -365,7 +372,10 @@ function wire(el) {
     location.hash = "#/task/" + encodeURIComponent(pool[Math.floor(Math.random() * pool.length)].id);
   });
   $("#open-filters", el).addEventListener("click", () => $("#filters", el).classList.toggle("open"));
-  observer = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting) && shown < matches.length) renderList(false); }, { rootMargin: "600px" });
+  observer = new IntersectionObserver((es) => {
+    if (es.some((x) => x.isIntersecting) && shown < matches.length && autoLoaded < AUTO_PAGES) { autoLoaded++; renderList(false); }
+  }, { rootMargin: "600px" });
+  $("#more", el).addEventListener("click", () => renderList(false));
   observer.observe($("#sentinel", el));
 }
 

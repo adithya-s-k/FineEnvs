@@ -22,15 +22,16 @@ FEATURED = ["moonshotai/Kimi-K3", "zai-org/GLM-5.3", "deepseek-ai/DeepSeek-V4-Pr
             "Qwen/Qwen3.5-397B-A17B", "deepseek-ai/DeepSeek-V4.1-Flash", "zai-org/GLM-5.3-Flash"]
 DEFAULT_AGENT = "zai-org/GLM-5.3"
 
-# Judges measured on the real General verifier prompt (see README): all returned a parseable verdict
-# on every check, and the fast ones agreed with each other. Reasoning-first models were dropped: they
-# often spend the judge's 4k-token budget thinking and return no verdict, which masks the reward.
+# Judges measured on the real General verifier prompts, English and Chinese. The verifier needs each reply keyed by
+# the check's id; a reply keyed otherwise (gpt-oss-120b sometimes echoes the prompt's placeholder "检查点id") is no
+# verdict, and after one retry the whole rollout goes unscored. Reasoning-first models were dropped: they often spend
+# the judge's 4k-token budget thinking and return nothing.
 TEXT_JUDGES = [
-    {"id": "openai/gpt-oss-120b", "note": "fastest (~1s a check), agrees with the majority"},
-    {"id": "zai-org/GLM-5.3-Flash", "note": "fast, agrees with the majority"},
-    {"id": "thinkingmachines/Inkling", "note": "fast, agrees with the majority"},
-    {"id": "moonshotai/Kimi-K3", "note": "frontier, agrees with the majority"},
-    {"id": "deepseek-ai/DeepSeek-V4-Pro", "note": "frontier, more lenient"},
+    {"id": "thinkingmachines/Inkling", "note": "most reliable in our tests (14/14 usable verdicts), fast"},
+    {"id": "moonshotai/Kimi-K3", "note": "14/14 usable verdicts, frontier"},
+    {"id": "deepseek-ai/DeepSeek-V4-Pro", "note": "14/14 usable verdicts, more lenient"},
+    {"id": "zai-org/GLM-5.3-Flash", "note": "13/14 usable verdicts, fast"},
+    {"id": "openai/gpt-oss-120b", "note": "fastest, but 12/14: some rollouts go unscored"},
 ]
 # Measured on a real webdev render with Xiaomi's vision rubric (45 vision models on the router, two passes).
 # These returned a usable verdict both times and scored near the median (~0.70). Judges disagree a lot

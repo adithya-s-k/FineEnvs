@@ -177,13 +177,15 @@ function grading(v) {
       .map(([k, val]) => `<div class="stat"><span>${k}</span><b>${val}</b></div>`).join("")}</div>`;
   }
   if (g.kind === "rubric") {
-    const tot = g.checks.reduce((s, c) => s + (c.weight || 0), 0) || 1;
-    const top = Math.max(...g.checks.map((c) => c.weight || 0)) || 1;
+    // verify.py counts a check with no weight as weight 1 (weights are relative, not percentages)
+    const wt = (c) => (c.weight == null ? 1 : Number(c.weight));
+    const tot = g.checks.reduce((s, c) => s + wt(c), 0) || 1;
+    const top = Math.max(...g.checks.map(wt)) || 1;
     body += `<div class="sec-label" style="margin-top:18px">${g.checks.length} checks, weighted</div><ol class="checks">${g.checks.map((c) => {
-      const pct = Math.round(((c.weight || 0) / tot) * 100);
+      const pct = Math.round((wt(c) / tot) * 100);
       return `<li><div class="ck-top"><span class="tier t-${esc(c.tier)}">${esc(c.tier || "")}</span>
       <span>${c.method === "llm" ? "judged by a model" : "checked by code"}</span>
-      <span class="w" title="Share of the reward"><i><b style="width:${Math.round(((c.weight || 0) / top) * 100)}%"></b></i>${pct}%</span></div>
+      <span class="w" title="Share of the reward"><i><b style="width:${Math.round((wt(c) / top) * 100)}%"></b></i>${pct}%</span></div>
       <p>${esc(c.question || c.id)}</p></li>`; }).join("")}</ol><p class="muted xs" style="margin-top:10px">The answer each check expects is not shown.</p>`;
   }
   if (g.kind === "terminal") {

@@ -121,11 +121,14 @@ DESC = re.compile(r"^(?P<san>\S+):\s+(?P<kind>\S+)\s+in function `(?P<fn>[^`]+)`
 
 
 def cyber_expected(desc: str) -> dict:
-    """Parsed exactly as mimoagent's `_parse_description` does, for server_arvo's expected_func.json."""
-    m = DESC.match(desc.strip())
-    if not m:
-        raise ValueError(f"cannot parse crash description: {desc!r}")
-    return {"function": m["fn"], "file": m["file"], "sanitizer": m["san"], "error_type": m["kind"], "max_submits": 0}
+    """mimoagent's `_parse_description` (environments/datasets/arvo.py), verbatim, for server_arvo's expected_func.json."""
+    func_m = re.search(r"in function `([^`]+)`", desc)
+    file_m = re.search(r"in file `([^`]+)`", desc)
+    san_m = re.match(r"(\S+):\s+(\S+)", desc)
+    if not func_m:
+        raise ValueError(f"cannot parse function from description: {desc!r}")
+    return {"function": func_m.group(1), "file": file_m.group(1) if file_m else "",
+            "sanitizer": san_m.group(1) if san_m else "", "error_type": san_m.group(2) if san_m else "", "max_submits": 0}
 
 
 def patch_files(patch: str) -> list[dict]:
