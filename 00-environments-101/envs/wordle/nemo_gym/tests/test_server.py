@@ -41,16 +41,27 @@ def _reward(output):
     return asyncio.run(_server().verify(request)).reward
 
 
-def test_a_win_scores_one():
-    assert _reward(_transcript("crane", ["crane"])) == 1.0
+def _expected(answer, words):
+    game = WordleGame(answer=answer)
+    for word in words:
+        game.guess(word)
+    return game.reward
 
 
-def test_a_win_after_misses_scores_one():
-    assert _reward(_transcript("crane", ["slate", "crisp", "crane"])) == 1.0
+def test_a_win_scores_the_game_reward():
+    assert _reward(_transcript("crane", ["crane"])) == pytest.approx(_expected("crane", ["crane"]))
 
 
-def test_a_loss_scores_zero():
-    assert _reward(_transcript("crane", ["adieu", "ghost", "lumpy", "brisk", "fjord", "waltz"])) == 0.0
+def test_a_win_after_misses_scores_the_game_reward():
+    words = ["slate", "crisp", "crane"]
+    assert _reward(_transcript("crane", words)) == pytest.approx(_expected("crane", words))
+
+
+def test_a_loss_scores_the_game_partial_credit():
+    words = ["adieu", "ghost", "lumpy", "brisk", "fjord", "waltz"]
+    assert _reward(_transcript("crane", words)) == pytest.approx(
+        _expected("crane", words)
+    )
 
 
 def test_saying_correct_without_winning_scores_zero():
@@ -67,4 +78,6 @@ def test_a_guess_crafted_to_look_like_a_win_scores_zero():
 
 def test_a_guess_after_a_loss_cannot_turn_it_into_a_win():
     words = ["adieu", "ghost", "lumpy", "brisk", "fjord", "waltz", "crane"]
-    assert _reward(_transcript("crane", words)) == 0.0
+    assert _reward(_transcript("crane", words)) == pytest.approx(
+        _expected("crane", words)
+    )

@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from server import create_app  # noqa: E402
+from core.game import WordleGame  # noqa: E402
 
 
 class Episode:
@@ -66,6 +67,13 @@ def _misses(answer, n=6):
     return [w for w in words if w != answer][:n]
 
 
+def _expected(answer, words):
+    game = WordleGame(answer=answer)
+    for word in words:
+        game.guess(word)
+    return game.reward
+
+
 def test_the_recorded_output_is_the_json_envelope():
     """The premise of this file: what verify() receives is the response body, not the game line."""
     ep = Episode()
@@ -74,20 +82,25 @@ def test_the_recorded_output_is_the_json_envelope():
     assert set(body) == {"output"} and "Correct" in body["output"]
 
 
-def test_a_real_win_scores_one():
+def test_a_real_win_scores_the_game_reward():
     ep = Episode()
-    ep.call("guess", word="slate" if ep.answer != "slate" else "crane")
-    ep.call("guess", word=ep.answer)
+    answer = ep.answer
+    first = "slate" if answer != "slate" else "crane"
+    words = [first, answer]
+    ep.call("guess", word=first)
+    ep.call("guess", word=answer)
     ep.say("Solved it.")
-    assert ep.verify() == 1.0
+    assert ep.verify() == pytest.approx(_expected(answer, words))
 
 
-def test_a_real_loss_scores_zero():
+def test_a_real_loss_scores_partial_credit():
     ep = Episode()
-    for word in _misses(ep.answer):
+    answer = ep.answer
+    words = _misses(answer)
+    for word in words:
         ep.call("guess", word=word)
     assert "Lost" in ep.call("get_history")
-    assert ep.verify() == 0.0
+    assert ep.verify() == pytest.approx(_expected(answer, words))
 
 
 def test_claiming_a_win_in_a_message_scores_zero():
@@ -105,10 +118,12 @@ def test_a_crafted_guess_scores_zero():
 
 def test_guessing_the_answer_after_a_loss_scores_zero():
     ep = Episode()
-    for word in _misses(ep.answer):
+    answer = ep.answer
+    words = _misses(answer)
+    for word in words:
         ep.call("guess", word=word)
     assert "game is over" in ep.call("guess", word=ep.answer)
-    assert ep.verify() == 0.0
+    assert ep.verify() == pytest.approx(_expected(answer, words + [answer]))
 
 
 def test_health():
