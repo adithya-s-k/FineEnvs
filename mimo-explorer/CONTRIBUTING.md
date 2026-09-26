@@ -127,6 +127,9 @@ Cyber answer is unreadable, a fixture page renders and gets judged, a valid tune
 sandbox time on your account (a few cents for the sample). A real rollout with a cheap model (GLM-5.3-Flash is
 a good one) is the final check.
 
+For the interface, `tests/ui-audit.mjs` (Playwright) clicks through every view like a person would, then checks
+every page for sideways scroll and errors at 390, 768, 1280 and 1920 px in both themes. Its header says what it needs.
+
 ## Adding a domain
 
 Write an adapter class in `app/runner/domains.py` with `steps`, `timeout` and `run(r)`. It starts the sandbox,

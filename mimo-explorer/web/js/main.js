@@ -32,7 +32,10 @@ async function route() {
     const mod = name === "explore" ? explore : await VIEWS[name]();
     if (token !== routing) return;
     current = mod;
-    await mod.mount($("#view"), name === "explore" ? (qs ? new URLSearchParams(qs) : null) : name === "community" ? qs : arg);
+    // a fresh container per page: views attach their listeners to it, so none survive into the next page
+    const old = $("#view"), view = old.cloneNode(false);
+    old.replaceWith(view);
+    await mod.mount(view, name === "explore" ? (qs ? new URLSearchParams(qs) : null) : name === "community" ? qs : arg);
   } finally { progress.done(); }
 }
 
