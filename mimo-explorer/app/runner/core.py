@@ -17,6 +17,7 @@ The user's token is held here for the rollout's lifetime only. It never reaches 
 from __future__ import annotations
 
 import re
+import secrets
 import threading
 import time
 import traceback
@@ -27,6 +28,7 @@ from .. import catalog, config, models, store, version
 
 _pool = ThreadPoolExecutor(max_workers=config.MAX_ACTIVE_ROLLOUTS, thread_name_prefix="rollout")
 _live: dict[str, "Rollout"] = {}
+_caps: dict[str, "Rollout"] = {}   # model-proxy capability -> its rollout, while it runs
 _live_lock = threading.Lock()
 
 
@@ -47,6 +49,8 @@ class Rollout:
         self.id = run["id"]
         self.token = token
         self.agent_key = agent_key   # a bring-your-own endpoint's key: memory only, like the HF token
+        # what the sandbox gets instead of credentials (see config.PUBLIC_URL): valid while this rollout is live
+        self.cap = secrets.token_urlsafe(32)
         self.events: list[dict] = store.read_events(self.id)
         self._pending: list[dict] = []
         self._last_flush = time.time()
@@ -62,7 +66,7 @@ class Rollout:
         """Nothing secret reaches a trace: the user's HF token, an endpoint key, or anything shaped like one
         (the General verifier, for one, prints the first characters of its judge key)."""
         if isinstance(v, str):
-            for secret in (self.token, self.agent_key):
+            for secret in (self.token, self.agent_key, getattr(self, "cap", None)):
                 if secret:
                     v = v.replace(secret, "[redacted]")
             return SECRET_RE.sub(lambda m: m.group(1) + "[redacted]", v)
@@ -131,7 +135,7 @@ class Rollout:
         self.update(flavor=flavor)
         t = time.time()
         self.sandbox = Sandbox.create(image=image, flavor=flavor, idle_timeout=config.SANDBOX_IDLE_TIMEOUT,
-                                      forward_hf_token=True, token=self.token, start_timeout=900,
+                                      forward_hf_token=not config.PUBLIC_URL, token=self.token, start_timeout=900,
                                       labels={"app": "mimo-explorer", "run": self.id})
         self.update(sandbox_id=self.sandbox.id)
         self.phase("sandbox", "done", f"ready in {time.time() - t:.0f}s")
@@ -144,6 +148,19 @@ class Rollout:
             return ep["base_url"], self.agent_key, self.run["model"]
         mid = f"{self.run['model']}:{self.run['provider']}" if self.run.get("provider") else self.run["model"]
         return config.ROUTER, self.token, mid
+
+    def llm_base(self) -> str | None:
+        """The OpenAI-compatible base URL the sandbox should use, or None to call the provider directly."""
+        return f"{config.PUBLIC_URL}/api/llm/{self.cap}/v1" if config.PUBLIC_URL else None
+
+    def upstream(self, model: str) -> tuple[str, str | None] | None:
+        """For the model proxy: (base URL, key) for a model this rollout may call, else None."""
+        base, key, mid = self.agent_api()
+        if model == mid:
+            return base, key
+        if self.run.get("judge") and model == self.run["judge"]:
+            return config.ROUTER, self.token
+        return None
 
     def sh(self, cmd: str, timeout: float = 600, **kw):
         """Run a shell command in the sandbox; never raises on a non-zero exit."""
@@ -176,6 +193,8 @@ class Rollout:
                 self._flush()
             self.stop_sandbox()
             self.agent_key = None
+            with _live_lock:
+                _caps.pop(self.cap, None)
             with _live_lock:
                 _live.pop(self.id, None)
 
@@ -231,8 +250,15 @@ def submit(user: str, token: str, task: dict, model: str, provider: str | None, 
     r = Rollout(run, token, agent_key)
     with _live_lock:
         _live[r.id] = r
+        _caps[r.cap] = r
     _pool.submit(r.execute)
     return run
+
+
+def by_cap(cap: str) -> Rollout | None:
+    with _live_lock:
+        r = _caps.get(cap)
+    return r if r is not None and not r.cancelled.is_set() else None
 
 
 def live(run_id: str) -> Rollout | None:
@@ -253,6 +279,8 @@ def cancel(run_id: str) -> bool:
     if r is None:
         return False
     r.cancelled.set()
+    with _live_lock:
+        _caps.pop(r.cap, None)
     # Say so at once: the worker may sit in a blocking sandbox call for a while after the kill.
     r.update(status="cancelled", finished_at=time.time(), cost=r.cost_now())
     r.phase("done", "error", "stopped by you")

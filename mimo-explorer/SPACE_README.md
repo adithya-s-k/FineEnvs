@@ -48,7 +48,7 @@ and Jobs permissions). A rollout runs on **your** account:
 
 Nothing that grades a task (hidden tests, rubric answers, the expected crash) is in the sandbox while the agent works,
 and the agent has no web tools. Rollouts keep running if you close the page; find them under **Rollouts**.
-Traces are kept in a private bucket. Your token is never stored with them: it lives only in an encrypted cookie in your browser.
+Traces are kept in a private bucket. Your token is never stored with them: it lives only in an encrypted cookie in your browser, and the sandbox never sees it (model calls go through a per-rollout proxy). See [SECURITY.md](SECURITY.md).
 
 ## Rollouts and the community
 

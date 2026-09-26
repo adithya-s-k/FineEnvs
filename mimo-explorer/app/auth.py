@@ -13,6 +13,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
 import secrets
 import time
 from urllib.parse import urlencode
@@ -21,7 +22,7 @@ import httpx
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from . import config
 
@@ -66,8 +67,28 @@ def _cookie_user(request: Request) -> dict | None:
     return data if data.get("exp", 0) > time.time() else None
 
 
+TRUST_NETWORK = os.environ.get("MIMO_TRUST_NETWORK") == "1"
+
+
+def _is_loopback(request: Request) -> bool:
+    import ipaddress
+    # a browser on this machine talks to us directly; forwarding headers mean a proxy is in between (or someone
+    # spoofing one, which uvicorn's --proxy-headers would otherwise believe), so the peer isn't provably local
+    if any(h in request.headers for h in ("x-forwarded-for", "x-real-ip", "forwarded")):
+        return False
+    try:
+        return ipaddress.ip_address((request.client.host if request.client else "") or "").is_loopback
+    except ValueError:
+        return False
+
+
 def current_user(request: Request) -> dict | None:
-    return _cookie_user(request) or (_local_user() if config.LOCAL_MODE else None)
+    """Locally, the machine's own token signs in only requests from this machine (a browser on it, or
+    `docker run -p 127.0.0.1:...` with MIMO_TRUST_NETWORK=1): anyone else on the network has to sign in."""
+    u = _cookie_user(request)
+    if u or not config.LOCAL_MODE:
+        return u
+    return _local_user() if (_is_loopback(request) or TRUST_NETWORK) else None
 
 
 def require_user(request: Request) -> dict:
@@ -99,6 +120,8 @@ def login(request: Request):
     for s, t in list(_states.items()):
         if now - t > 600:
             _states.pop(s, None)
+    if len(_states) > 5000:   # an unauthenticated route: don't let it grow without bound
+        raise HTTPException(429, "Too many sign-ins in progress. Try again in a few minutes.")
     state = secrets.token_urlsafe(24)
     _states[state] = now
     q = urlencode({"client_id": config.OAUTH_CLIENT_ID, "redirect_uri": _redirect_uri(request), "response_type": "code",
@@ -130,7 +153,7 @@ def callback(request: Request, code: str = "", state: str = ""):
 
 # ── access token ─────────────────────────────────────────────────────────────
 class TokenLogin(BaseModel):
-    token: str
+    token: str = Field(max_length=300)
 
 
 def _token_gaps(access: dict) -> list[str]:
@@ -166,13 +189,6 @@ def token_login(body: TokenLogin):
                          "missing_scopes": gaps})
     return _issue(resp, {"token": token, "name": me["name"], "avatar": me.get("avatarUrl"), "via": "token",
                          "exp": time.time() + config.SESSION_DAYS * 86400, "missing_scopes": gaps})
-
-
-@router.get("/logout")
-def logout():
-    resp = RedirectResponse("/")
-    resp.delete_cookie(COOKIE, samesite="none", secure=True, path="/")
-    return resp
 
 
 @router.post("/api/logout")

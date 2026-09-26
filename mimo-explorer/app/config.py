@@ -23,6 +23,10 @@ OAUTH_CLIENT_ID = os.environ.get("OAUTH_CLIENT_ID", "")
 OAUTH_CLIENT_SECRET = os.environ.get("OAUTH_CLIENT_SECRET", "")
 OPENID_PROVIDER_URL = os.environ.get("OPENID_PROVIDER_URL", "https://huggingface.co")
 SPACE_HOST = os.environ.get("SPACE_HOST", "")
+# Where a sandbox can reach this server. When set (always on a Space), sandboxes never hold the user's HF token or
+# endpoint key: model and judge calls go through /api/llm/<per-rollout capability>. Locally a remote sandbox can't
+# reach your machine, so the token is forwarded into it instead (set MIMO_PUBLIC_URL to a tunnel to avoid that).
+PUBLIC_URL = (os.environ.get("MIMO_PUBLIC_URL") or (f"https://{SPACE_HOST}" if SPACE_HOST else "")).rstrip("/")
 LOCAL_MODE = not OAUTH_CLIENT_ID
 # `jobs` runs the sandbox on the user's account, `inference-api` calls Inference Providers as them.
 OAUTH_SCOPES = ["openid", "profile", "inference-api", "jobs"]

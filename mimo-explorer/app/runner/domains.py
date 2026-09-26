@@ -297,8 +297,9 @@ class General:
             r.sh(f"chown agent:agent {shlex.quote(man['cwd'])}/answer.md")
         self._push(r, root, [(u["source"], u["target"]) for u in man["verifier"]["uploads"]], "verifier")
         judge = r.run.get("judge") or "thinkingmachines/Inkling"
-        env = {"GA_JUDGE_KEY": "$HF_TOKEN", "GA_JUDGE_MODEL": judge, "GA_JUDGE_API": "chat",
-               "GA_JUDGE_URL": config.ROUTER, "VERIFY_DETERMINISTIC": "1", "VERIFY_AGENT_JUDGE": "1"}
+        proxy = r.llm_base()   # on the Space the judge goes through the rollout's proxy: no token in the sandbox
+        env = {"GA_JUDGE_KEY": "proxied" if proxy else "$HF_TOKEN", "GA_JUDGE_MODEL": judge, "GA_JUDGE_API": "chat",
+               "GA_JUDGE_URL": proxy or config.ROUTER, "VERIFY_DETERMINISTIC": "1", "VERIFY_AGENT_JUDGE": "1"}
         exports = " ".join(f'{k}="{v}"' for k, v in env.items())
         rf = man["verifier"].get("reward_file") or "/logs/verifier/reward.json"
         rd = man["verifier"].get("reward_detail_file") or "/logs/verifier/reward_detail.json"
@@ -529,9 +530,10 @@ class Music:
         params = r.run.get("params") or {}
         if r.run.get("scripted") is not None:   # validation: score a fixed piece, no model call
             return self._score(r, raw, r.run.get("scripted_final", ""), "", {}, params)
-        if r.run.get("endpoint"):
+        url, host_hdr, ext = f"{base}/chat/completions", {}, {}
+        if r.run.get("endpoint"):   # the user's own endpoint: connect to the address that was checked
             from .. import endpoints
-            base = endpoints.check_url(base)   # re-checked at call time: DNS can change after the test
+            url, host_hdr, ext = endpoints.pinned(f"{endpoints.check_url(base)}/chat/completions")
         text, thinking, usage = "", "", {}
         # verl recipes/design/config/music.yaml: response_length 100000. Providers that cap output lower refuse
         # such a request outright, so step down rather than fail the rollout on a limit.
@@ -541,8 +543,8 @@ class Music:
                     **({"temperature": params["temperature"]} if params.get("temperature") is not None else {}),
                     **({"reasoning_effort": params["thinking"]} if params.get("thinking") not in (None, "default") else {}),
                     "messages": [{"role": "user", "content": raw["prompt"]}]}
-            with httpx.stream("POST", f"{base}/chat/completions", timeout=900, json=body,
-                              headers={"Authorization": f"Bearer {key}"} if key else {}) as resp:
+            with httpx.stream("POST", url, timeout=900, json=body, extensions=ext,
+                              headers={**host_hdr, **({"Authorization": f"Bearer {key}"} if key else {})}) as resp:
                 if resp.status_code != 200:
                     err = resp.read()[:400].decode(errors="replace")
                     if resp.status_code in (400, 422) and n + 1 < len(budgets):

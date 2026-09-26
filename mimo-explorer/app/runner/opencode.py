@@ -63,17 +63,20 @@ def install(r) -> str:
 
 
 def config_for(model: str, provider: str | None, steps: int, mcp: list[dict] | None = None,
-               endpoint: dict | None = None, params: dict | None = None) -> dict:
+               endpoint: dict | None = None, params: dict | None = None, proxy: str | None = None) -> dict:
+    """With `proxy` (the Space), every model call goes to this server's per-rollout proxy and the sandbox holds no
+    credential at all; the capability in the URL is the only secret, and it dies with the rollout."""
     params = params or {}
-    if endpoint:   # your own OpenAI-compatible endpoint; the key arrives as AGENT_API_KEY
+    if endpoint:   # your own OpenAI-compatible endpoint; without the proxy, the key arrives as AGENT_API_KEY
         mid, prov = model, {"byo": {"npm": "@ai-sdk/openai-compatible", "name": "Your endpoint",
-                                    "options": {"baseURL": endpoint["base_url"], "apiKey": "{env:AGENT_API_KEY}"},
+                                    "options": {"baseURL": proxy or endpoint["base_url"],
+                                                "apiKey": "proxied" if proxy else "{env:AGENT_API_KEY}"},
                                     "models": {model: {"name": model, "tool_call": True}}}}
         ref = f"byo/{model}"
     else:
         mid = f"{model}:{provider}" if provider else model
         prov = {"hf": {"npm": "@ai-sdk/openai-compatible", "name": "Hugging Face Inference Providers",
-                       "options": {"baseURL": config.ROUTER, "apiKey": "{env:HF_TOKEN}"},
+                       "options": {"baseURL": proxy or config.ROUTER, "apiKey": "proxied" if proxy else "{env:HF_TOKEN}"},
                        "models": {mid: {"name": model, "tool_call": True}}}}
         ref = f"hf/{mid}"
     entry = next(iter(next(iter(prov.values()))["models"].values()))
@@ -104,12 +107,13 @@ def run(r, prompt: str, cwd: str, *, steps: int, timeout: float, user: str | Non
     ep, params = r.run.get("endpoint"), r.run.get("params") or {}
     steps = params.get("steps") or steps
     timeout = params["timeout_min"] * 60 if params.get("timeout_min") else timeout
-    cfg = config_for(r.run["model"], r.run.get("provider"), steps, mcp, ep, params)
+    proxy = r.llm_base()
+    cfg = config_for(r.run["model"], r.run.get("provider"), steps, mcp, ep, params, proxy)
     r.sandbox.files.write("/tmp/opencode.json", json.dumps(cfg))
     r.sandbox.files.write("/tmp/prompt.txt", prompt)
     r.sh("chmod 644 /tmp/opencode.json /tmp/prompt.txt")
     key_env = ""
-    if ep:
+    if ep and not proxy:
         # a root-only file, read by the root shell when it builds the command: the key is never on a command line
         r.sandbox.files.write("/root/.agent_key", r.agent_key or "")
         r.sh("chmod 600 /root/.agent_key")
@@ -122,7 +126,8 @@ def run(r, prompt: str, cwd: str, *, steps: int, timeout: float, user: str | Non
              "XDG_CACHE_HOME": f"{xdg}/cache", "XDG_STATE_HOME": f"{xdg}/state"}
     if (params.get("max_tokens") or 0) > 32000:   # upstream silently caps output at 32k otherwise
         flags["OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX"] = str(params["max_tokens"])
-    env = f"env {key_env}HF_TOKEN=\"$HF_TOKEN\" HOME={home or '$HOME'} " + " ".join(f"{k}={v}" for k, v in flags.items())
+    token_env = "" if proxy else 'HF_TOKEN="$HF_TOKEN" '
+    env = f"env {key_env}{token_env}HOME={home or '$HOME'} " + " ".join(f"{k}={v}" for k, v in flags.items())
     # --thinking streams the model's reasoning as its own events, so the trace shows why, not only what;
     # --title skips the extra model call that would otherwise name the session
     inner = f'{env} opencode run --format json --thinking --auto --title mimo-rollout "$(cat /tmp/prompt.txt)"'
@@ -146,7 +151,7 @@ def run(r, prompt: str, cwd: str, *, steps: int, timeout: float, user: str | Non
     try:
         res = r.sh(cmd, timeout=timeout, on_stdout=on_out, on_stderr=on_err)
     finally:
-        if ep:
+        if ep and not proxy:
             r.sandbox.run("rm -f /root/.agent_key", shell=True, check=False, timeout=30)
     if buf[0].strip():
         _event(r, buf[0], texts)

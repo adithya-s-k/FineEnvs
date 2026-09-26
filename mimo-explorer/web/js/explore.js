@@ -50,7 +50,7 @@ export async function mount(el, params) {
   if (!DATA) {
     el.innerHTML = skeleton();
     try { await progress.wrap(load()); }
-    catch (e) { el.innerHTML = `<div class="wrap page">${emptyState("alert", "Couldn't load the environments", esc(e.message), `<button class="btn" onclick="location.reload()">${icon("refresh")}Try again</button>`)}</div>`; return; }
+    catch (e) { el.innerHTML = `<div class="wrap page">${emptyState("alert", "Couldn't load the environments", esc(e.message), `<button class="btn" id="reload" type="button">${icon("refresh")}Try again</button>`)}</div>`; $("#reload", el)?.addEventListener("click", () => location.reload()); return; }
     if (root !== el) return;
   }
   if (params) {

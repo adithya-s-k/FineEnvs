@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import mimetypes
+import os
 import random
 from functools import lru_cache
 
@@ -31,6 +32,30 @@ async def _revalidate(request: Request, call_next):
     resp = await call_next(request)
     if not request.url.path.startswith("/api/"):
         resp.headers.setdefault("Cache-Control", "no-cache")
+    return resp
+
+
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "[::1]", "::1"} | {h.strip() for h in os.environ.get("MIMO_ALLOWED_HOSTS", "").split(",") if h.strip()}
+CSP = ("default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+       "font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self'; frame-src 'self'; object-src 'none'; "
+       "base-uri 'none'; form-action 'self'; frame-ancestors 'self' https://huggingface.co https://*.hf.space")
+
+
+@app.middleware("http")
+async def _security(request: Request, call_next):
+    """Locally, only answer to localhost: a web page could otherwise DNS-rebind its own name to 127.0.0.1 and drive
+    this server (and the machine's HF token) from the browser. Everywhere: the usual security headers."""
+    if config.LOCAL_MODE:
+        host = (request.headers.get("host") or "").rsplit(":", 1)[0] if not (request.headers.get("host") or "").startswith("[") \
+            else (request.headers.get("host") or "").split("]")[0] + "]"
+        if host not in LOCAL_HOSTS:
+            return JSONResponse({"detail": "host not allowed (set MIMO_ALLOWED_HOSTS to serve under another name)"}, 403)
+    resp = await call_next(request)
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    resp.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
+    if not request.url.path.startswith("/api/"):
+        resp.headers.setdefault("Content-Security-Policy", CSP)
     return resp
 
 
@@ -161,10 +186,13 @@ def list_models():
 
 
 # ── rollouts ─────────────────────────────────────────────────────────────────
+SAFE_NAME = r"^[A-Za-z0-9._:/@+\-]{1,200}$"   # model ids: letters, digits and the punctuation real ids use
+
+
 class Endpoint(BaseModel):
-    base_url: str
-    model: str
-    api_key: str | None = None
+    base_url: str = Field(max_length=500)
+    model: str = Field(pattern=SAFE_NAME)
+    api_key: str | None = Field(None, max_length=500)
     price_in: float | None = Field(None, ge=0, le=1000)    # $ per 1M tokens, only for the cost shown
     price_out: float | None = Field(None, ge=0, le=1000)
 
@@ -178,24 +206,37 @@ class Params(BaseModel):
 
 
 class RunRequest(BaseModel):
-    task_id: str
-    model: str | None = None
-    provider: str | None = None
-    judge: str | None = None
+    task_id: str = Field(max_length=200)
+    model: str | None = Field(None, pattern=SAFE_NAME)
+    provider: str | None = Field(None, pattern=SAFE_NAME)
+    judge: str | None = Field(None, pattern=SAFE_NAME)
     endpoint: Endpoint | None = None
     params: Params = Params()
     visibility: Literal["public", "private"] = "public"
 
 
 class EndpointProbe(BaseModel):
-    base_url: str
-    api_key: str | None = None
-    model: str | None = None
+    base_url: str = Field(max_length=500)
+    api_key: str | None = Field(None, max_length=500)
+    model: str | None = Field(None, pattern=SAFE_NAME)
+
+
+_probes: dict[str, list[float]] = {}
+
+
+def _probe_limit(user: str) -> None:
+    """This server makes the call, so cap how often one account can have it do so."""
+    import time as _t
+    now = _t.time()
+    hits = [t for t in _probes.get(user, []) if now - t < 600]
+    if len(hits) >= 30:
+        raise HTTPException(429, "Too many endpoint checks. Wait a few minutes.")
+    _probes[user] = hits + [now]
 
 
 @app.post("/api/endpoints/models")
 def endpoint_models(body: EndpointProbe, request: Request):
-    auth.require_user(request)   # this server makes the call, so only for signed-in users
+    _probe_limit(auth.require_user(request)["name"])   # this server makes the call, so only for signed-in users
     try:
         return {"models": endpoints.list_models(body.base_url, body.api_key)}
     except endpoints.EndpointError as e:
@@ -206,7 +247,7 @@ def endpoint_models(body: EndpointProbe, request: Request):
 
 @app.post("/api/endpoints/test")
 def endpoint_test(body: EndpointProbe, request: Request):
-    auth.require_user(request)
+    _probe_limit(auth.require_user(request)["name"])
     try:
         return endpoints.test(body.base_url, body.api_key, body.model or "")
     except endpoints.EndpointError as e:
@@ -273,14 +314,24 @@ def _is_public(run: dict) -> bool:
     return run.get("visibility") == "public"
 
 
-def _scrub(value, name: str):
+def _scrub(value, secrets_: list[str] | str):
+    if isinstance(secrets_, str):
+        secrets_ = [secrets_] if secrets_ and len(secrets_) > 2 else []
     if isinstance(value, str):
-        return value.replace(name, "[user]") if name and len(name) > 2 else value
+        for x in secrets_:
+            value = value.replace(x, "[redacted]" if "." in x or "/" in x else "[user]")
+        return value
     if isinstance(value, dict):
-        return {k: _scrub(v, name) for k, v in value.items()}
+        return {k: _scrub(v, secrets_) for k, v in value.items()}
     if isinstance(value, list):
-        return [_scrub(v, name) for v in value]
+        return [_scrub(v, secrets_) for v in value]
     return value
+
+
+def _private_strings(run: dict) -> list[str]:
+    """What must never show publicly: the owner's name, and where their own endpoint lives."""
+    ep = run.get("endpoint") or {}
+    return [x for x in (run.get("user"), ep.get("base_url"), ep.get("host")) if x and len(x) > 2]
 
 
 def _public_view(run: dict) -> dict:
@@ -291,7 +342,7 @@ def _public_view(run: dict) -> dict:
     if run.get("error"):
         out["error"] = run["error"]
     out["visibility"] = "public"
-    return _scrub(out, run.get("user") or "")
+    return _scrub(out, _private_strings(run))
 
 
 def _owner_view(run: dict) -> dict:
@@ -329,7 +380,7 @@ def get_run(run_id: str, request: Request, after: int = 0):
     events = core.events(run_id, after)
     if owner:
         return {"run": _owner_view(run), "events": events, "live": live is not None}
-    return {"run": _public_view(run), "events": _scrub(events, run.get("user") or ""), "live": live is not None}
+    return {"run": _public_view(run), "events": _scrub(events, _private_strings(run)), "live": live is not None}
 
 
 class Visibility(BaseModel):
@@ -447,7 +498,56 @@ def artifact(run_id: str, name: str, request: Request):
     data = store.read_artifact(run_id, name)
     if data is None:
         raise HTTPException(404, "no such artifact")
-    return Response(data, media_type=mimetypes.guess_type(name)[0] or "application/octet-stream")
+    return Response(data, media_type=mimetypes.guess_type(name)[0] or "application/octet-stream",
+                    headers={"Content-Security-Policy": "sandbox", "X-Content-Type-Options": "nosniff"})
+
+
+# ── the model proxy ──────────────────────────────────────────────────────────
+# On the Space, a sandbox holds no credential: OpenCode (and the General verifier's judge) call this route with a
+# per-rollout capability in the path. It works only while that rollout is live, only for the rollout's own agent
+# model and judge, and this server adds the user's token or endpoint key on the way out.
+@app.post("/api/llm/{cap}/v1/chat/completions")
+async def llm_proxy(cap: str, request: Request):
+    import asyncio
+
+    from starlette.background import BackgroundTask
+    from starlette.responses import StreamingResponse
+
+    r = core.by_cap(cap)
+    if r is None:
+        return JSONResponse({"error": {"message": "unknown or finished rollout"}}, 404)
+    raw = await request.body()
+    if len(raw) > 20_000_000:
+        return JSONResponse({"error": {"message": "request too large"}}, 413)
+    try:
+        body = json.loads(raw)
+    except ValueError:
+        return JSONResponse({"error": {"message": "invalid JSON"}}, 400)
+    up = r.upstream(str(body.get("model") or ""))
+    if up is None:
+        return JSONResponse({"error": {"message": "this rollout may not call that model"}}, 403)
+    base, key = up
+    url = f"{base}/chat/completions"
+    headers = {"Content-Type": "application/json", **({"Authorization": f"Bearer {key}"} if key else {})}
+    ext = {}
+    if r.run.get("endpoint") and base != config.ROUTER:   # the user's own endpoint: connect to the address we checked
+        try:
+            url, host, ext = await asyncio.to_thread(endpoints.pinned, url)
+        except endpoints.EndpointError as e:
+            return JSONResponse({"error": {"message": str(e)}}, 502)
+        headers.update(host)
+    client = httpx.AsyncClient(timeout=httpx.Timeout(900, connect=30), follow_redirects=False)
+    try:
+        resp = await client.send(client.build_request("POST", url, content=raw, headers=headers, extensions=ext), stream=True)
+    except httpx.HTTPError as e:
+        await client.aclose()
+        return JSONResponse({"error": {"message": f"upstream unreachable: {type(e).__name__}"}}, 502)
+
+    async def close():
+        await resp.aclose()
+        await client.aclose()
+    return StreamingResponse(resp.aiter_bytes(), status_code=resp.status_code,
+                             media_type=resp.headers.get("content-type", "application/json"), background=BackgroundTask(close))
 
 
 # ── the site ─────────────────────────────────────────────────────────────────

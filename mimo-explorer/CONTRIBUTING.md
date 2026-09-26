@@ -17,8 +17,9 @@ uv run uvicorn app.main:app --port 8000     # http://localhost:8000
 ```
 
 Locally there is no OAuth app: your own Hugging Face token (`HF_TOKEN` or `hf auth login`) is the signed-in user,
-rollouts run on your account, and traces go to `./.local-runs`. `docker build -t mimo . && docker run -p 7860:7860 mimo`
-runs the same image the Space runs.
+rollouts run on your account, and traces go to `./.local-runs`. The same image the Space runs:
+`docker build -t mimo . && docker run -p 127.0.0.1:7860:7860 -e HF_TOKEN -e MIMO_TRUST_NETWORK=1 mimo`.
+Read [SECURITY.md](SECURITY.md) before exposing it beyond your own machine.
 
 ## How a rollout works
 
@@ -103,6 +104,8 @@ which opens each task's image as a sandbox; nothing in them comes from the hidde
   If a grader needs a fix, fix it around the vendored file, not inside it.
 * **"Not scored" is never 0.** If the testbed, the judge or the render fails, the reward is `None` and the page says
   why. Averaging infrastructure failures in as zeros misreads results; Xiaomi's harness masks them the same way.
+* **Sandboxes hold no credential on the Space.** Model and judge calls go through `/api/llm/<capability>`; don't
+  add code that puts a token or key into a sandbox when `config.PUBLIC_URL` is set.
 * **Nothing secret reaches a trace.** Tokens and endpoint keys are held in memory for the rollout only, and every
   event passes through the redaction in `Rollout._redact`. Never log a request header or an environment dump.
 * **Public means anonymous.** The public view of a rollout (`_public_view` in `app/main.py`) has no user, no sandbox
