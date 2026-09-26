@@ -471,6 +471,10 @@ async function runPanel(box, v) {
   const need = v.verify?.needs_judge;
   const judges = need === "vision" ? cat.vision_judges : need === "text" ? cat.text_judges : [];
   const gaps = s.missing_scopes || [];
+  // say it before the run, not after: a sandbox can't start without prepaid credit (Music needs no sandbox)
+  const bill = s.billing || {};
+  const noCredit = !music && s.user && (bill.can_pay === false || bill.refused_at);
+  const BILLING = `<a href="https://huggingface.co/settings/billing" target="_blank" rel="noopener">huggingface.co/settings/billing</a>`;
   const d = v.run_defaults || {};
   const ep = LS.get("byo", { base_url: "", model: "", price_in: "", price_out: "" });
   const adv = LS.get("adv2", { thinking: DEFAULT_THINKING, temperature: "" });
@@ -514,7 +518,11 @@ async function runPanel(box, v) {
       <div class="seg" role="group" aria-label="Who can see this rollout"><button type="button" data-vis="public">${icon("globe", 13)}Public</button><button type="button" data-vis="private">${icon("shield", 13)}Private</button></div>
       <p class="fine" id="vis-note" style="text-align:left"></p></div>
     ${gaps.length ? `<div class="note-box warn">${icon("alert")}<span>Your sign-in may be missing <b>${esc(gaps.join(", "))}</b>. If the rollout fails to start, sign in again with a write token.</span></div>` : ""}
-    ${s.user ? `<button class="btn primary lg block" id="rb-go">${icon("play", 15)}Run rollout</button>`
+    ${noCredit ? `<div class="note-box warn" id="rb-credit">${icon("alert")}<span>${bill.refused_at
+      ? `Your last rollout couldn't start because your Hugging Face account had no prepaid credit for sandboxes. Add credit at ${BILLING}, then run again.`
+      : `Your Hugging Face account can't pay for sandboxes yet, so a rollout would stop before it starts. Add prepaid credit at ${BILLING} first.`}
+      Nothing is charged for a rollout that can't start.</span></div>` : ""}
+    ${s.user ? `<button class="btn ${noCredit ? "" : "primary"} lg block" id="rb-go">${icon("play", 15)}${noCredit ? "Run anyway" : "Run rollout"}</button>`
       : `<button class="btn primary lg block" type="button" data-signin>${icon("user", 15)}Sign in to run</button>`}
     <p class="fine">Keeps running if you close this page; find it under <a href="#/runs">My rollouts</a>. The sandbox is billed to ${s.user ? `<b>${esc(s.user.name)}</b>` : "your account"} on Hugging Face.</p>`;
 

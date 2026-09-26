@@ -91,6 +91,30 @@ def current_user(request: Request) -> dict | None:
     return _local_user() if (_is_loopback(request) or TRUST_NETWORK) else None
 
 
+_billing_cache: dict[str, tuple[float, dict]] = {}
+
+
+def billing(u: dict) -> dict:
+    """{"can_pay": bool | None, "mode": "prepaid" | ...} from the Hub for this account, cached for 5 minutes."""
+    token = u.get("token")
+    if not token:
+        return {"can_pay": None}
+    key = u["name"]
+    hit = _billing_cache.get(key)
+    if hit and time.time() - hit[0] < 300:
+        return hit[1]
+    try:
+        r = httpx.get(f"{config.OPENID_PROVIDER_URL}/api/whoami-v2", headers={"Authorization": f"Bearer {token}"}, timeout=10)
+        me = r.json() if r.status_code == 200 else {}
+    except (httpx.HTTPError, ValueError):
+        me = {}
+    out = {"can_pay": me.get("canPay"), "mode": me.get("billingMode")}
+    if len(_billing_cache) > 5000:
+        _billing_cache.clear()
+    _billing_cache[key] = (time.time(), out)
+    return out
+
+
 def require_user(request: Request) -> dict:
     u = current_user(request)
     if not u:

@@ -89,7 +89,28 @@ def me(request: Request):
     return {"user": auth.public(u), "local": config.LOCAL_MODE, "oauth": not config.LOCAL_MODE,
             "version": version.app_version(), "source": version.source_hash(),
             "missing_scopes": (u or {}).get("missing_scopes", []),
+            "billing": _billing(u),
             "storage": "local folder" if not config.STORAGE_DIR.as_posix().startswith("/data") else "private bucket"}
+
+
+CREDIT_REFUSED = "no prepaid credit for sandboxes"
+
+
+def _billing(u: dict | None) -> dict | None:
+    """Whether this account looks able to pay for sandboxes, so the run panel can say so before a run, not after.
+    `can_pay` is the Hub's own flag; `refused_at` is when this account's latest sandbox rollout was turned away for
+    missing credit (the Hub's flag can't see an empty prepaid balance), cleared by any later sandbox that started."""
+    if not u:
+        return None
+    b = auth.billing(u)
+    refused = None
+    for r in store.list_runs(user=u["name"], limit=30):
+        if r.get("domain") == "music":
+            continue
+        if CREDIT_REFUSED in (r.get("error") or ""):
+            refused = r.get("created_at")
+        break
+    return {**b, "refused_at": refused}
 
 
 # ── tasks ────────────────────────────────────────────────────────────────────
@@ -311,8 +332,14 @@ PUBLIC_FIELDS = ("id", "task_id", "domain", "title", "facets", "model", "provide
                  "params", "image", "provenance", "phase")
 
 
+def _shareable(run: dict) -> bool:
+    """Only rollouts that finished and were graded reach Community: a run that never started (no credit, no
+    sandbox) or couldn't be scored says nothing about the task or the model."""
+    return run.get("status") == "done" and run.get("reward") is not None
+
+
 def _is_public(run: dict) -> bool:
-    return run.get("visibility") == "public"
+    return run.get("visibility") == "public" and _shareable(run)
 
 
 def _scrub(value, secrets_: list[str] | str):
@@ -405,10 +432,6 @@ def cancel_run(run_id: str, request: Request):
     return {"cancelled": core.cancel(run_id)}
 
 
-# still running, or stopped before it said anything: not useful to anyone else yet
-HIDDEN_STATES = {"queued", "starting", "setup", "running", "verifying", "interrupted", "cancelled"}
-
-
 def _stats(runs: list[dict]) -> dict:
     scored = [r for r in runs if r.get("reward") is not None and r.get("status") == "done"]
     hist = [0] * 10
@@ -428,7 +451,7 @@ def _stats(runs: list[dict]) -> dict:
 @app.get("/api/tasks/{task_id}/rollouts")
 def task_rollouts(task_id: str, limit: int = 50, offset: int = 0):
     """Everyone's public rollouts on one task, anonymous, with the spread of rewards."""
-    runs = [r for r in store.list_runs(task_id=task_id, public=True, limit=100000) if r.get("status") not in HIDDEN_STATES]
+    runs = [r for r in store.list_runs(task_id=task_id, public=True, limit=100000) if _shareable(r)]
     page = runs[offset:offset + min(limit, 200)]
     return {"stats": _stats(runs), "runs": [_public_view(r) for r in page], "total": len(runs)}
 
@@ -445,7 +468,7 @@ def community(domain: str | None = None, model: str | None = None, served: str |
               reward: str | None = None, thinking: str | None = None, q: str | None = None, sort: str = "new",
               limit: int = 50, offset: int = 0):
     """Public rollouts across all tasks, filtered every way a reader might want, and how each model does."""
-    everyone = [r for r in store.list_runs(public=True, limit=100000) if r.get("status") not in HIDDEN_STATES]
+    everyone = [r for r in store.list_runs(public=True, limit=100000) if _shareable(r)]
     def served_by(r):
         return "own endpoint" if r.get("endpoint") else (r.get("provider") or "auto")
     def keep(r):
@@ -482,7 +505,7 @@ def community_tasks():
     """Per task: how many public rollouts, and how they scored. Tasks absent here have none yet."""
     out: dict[str, dict] = {}
     for r in store.list_runs(public=True, limit=100000):
-        if r.get("status") in HIDDEN_STATES:
+        if not _shareable(r):
             continue
         t = out.setdefault(r["task_id"], {"runs": 0, "scored": 0, "sum": 0.0, "best": None, "last": 0})
         t["runs"] += 1

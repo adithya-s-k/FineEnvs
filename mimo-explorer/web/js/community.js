@@ -7,7 +7,7 @@ import * as explore from "./explore.js";
 let alive = false;
 export function unmount() { alive = false; }
 
-const REWARD = [["", "Any reward"], ["full", "Full marks"], ["partial", "Partial"], ["zero", "Zero"], ["unscored", "Not scored / failed"]];
+const REWARD = [["", "Any reward"], ["full", "Full marks"], ["partial", "Partial"], ["zero", "Zero"]];
 const THINK = { default: "model default", none: "off", low: "low", medium: "medium", high: "high" };
 const SORT = [["new", "Newest"], ["reward_desc", "Highest reward"], ["reward_asc", "Lowest reward"], ["cost_asc", "Cheapest"], ["cost_desc", "Most expensive"]];
 const short = (m) => (m || "").split("/")[1] || m || "";
