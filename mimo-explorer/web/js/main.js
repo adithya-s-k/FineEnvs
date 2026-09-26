@@ -39,7 +39,7 @@ function renderAccount() {
     // Inside the huggingface.co iframe, sign-in must open at the top level (third-party cookies).
     const framed = window.top !== window.self;
     el.innerHTML = `<a class="btn primary sm" href="/login" ${framed ? 'target="_blank" rel="noopener"' : ""}>
-      <img src="https://huggingface.co/front/assets/huggingface_logo-noborder.svg" alt="" width="16" height="16"> Sign in with Hugging Face</a>`;
+      <img src="https://huggingface.co/front/assets/huggingface_logo-noborder.svg" alt="" width="16" height="16"> Sign in<span class="long"> with Hugging Face</span></a>`;
     return;
   }
   el.innerHTML = `<div class="acct"><img src="${esc(u.avatar || "")}" alt="" width="26" height="26"><span>${esc(u.name)}</span>
