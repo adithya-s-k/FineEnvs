@@ -47,10 +47,12 @@ if _parent not in sys.path:
 
 from core.game import WordleGame, TASKS
 
-# What WordleGame.guess returns on a win, and nothing else: five green squares, then the
-# announcement. An invalid guess echoes the model's word back, so matching the whole line (not a
-# substring) is what keeps a crafted guess from producing something that reads as a win.
-WIN_LINE = re.compile(r"🟩{5} — Correct! The word was '[a-z]{5}'\. Solved in \d+ guesses\.")
+# What WordleGame.guess returns, and nothing else. Invalid guesses echo the model's word back, so
+# matching whole lines (not substrings) keeps crafted guesses from producing text that reads as a win.
+WIN_LINE = re.compile(r"🟩{5} — Correct! The word was '[a-z]{5}'\. Solved in (?P<guesses>\d+) guesses\.")
+FEEDBACK_LINE = re.compile(r"(?P<feedback>[🟩🟨⬛]{5}) — .*")
+LOSS_LINE = re.compile(r"(?P<feedback>[🟩🟨⬛]{5}) — Game over! The word was '[a-z]{5}'\.")
+DEFAULT_MAX_GUESSES = WordleGame().max_guesses
 
 
 def _tool_text(output: Any) -> str:
@@ -161,12 +163,22 @@ class WordleResourcesServer(SimpleResourcesServer):
         the ToolResponse JSON ({"output": "..."}), so that envelope is unwrapped first.
         """
         reward = 0.0
+        best_greens = 0
         for item in body.response.output:
             if getattr(item, "type", None) != "function_call_output":
                 continue
             output = _tool_text(getattr(item, "output", ""))
-            if WIN_LINE.fullmatch(output.strip()):
-                reward = 1.0
+            text = output.strip()
+            feedback_match = FEEDBACK_LINE.fullmatch(text)
+            if feedback_match:
+                best_greens = max(best_greens, feedback_match.group("feedback").count("🟩"))
+            win_match = WIN_LINE.fullmatch(text)
+            if win_match:
+                guesses = int(win_match.group("guesses"))
+                reward = 1.0 + max(0.0, 0.5 * (1.0 - guesses / DEFAULT_MAX_GUESSES))
+                break
+            if LOSS_LINE.fullmatch(text):
+                reward = 0.1 * best_greens
                 break
 
         return BaseVerifyResponse(**body.model_dump(), reward=reward)
