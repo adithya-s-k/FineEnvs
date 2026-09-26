@@ -51,7 +51,7 @@ function renderAccount() {
   const el = $("#account");
   const s = getSession(), u = s.user;
   if (!u) {
-    el.innerHTML = `<button class="btn primary signin" type="button" data-signin>${icon("user", 15)}Sign in<span class="long"> to run rollouts</span></button>`;
+    el.innerHTML = `<button class="btn primary signin" type="button" data-signin aria-label="Sign in to run rollouts">${icon("user", 15)}<span class="txt">Sign in</span><span class="long"> to run rollouts</span></button>`;
     return;
   }
   const via = { oauth: "Signed in with Hugging Face", token: "Signed in with an access token", local: "Using this machine's HF token" }[u.via] || "";

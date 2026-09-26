@@ -843,3 +843,16 @@ a.rs-row:hover { background: var(--surface-2); }
 .cm-filters .search .ic { left: 10px; }
 .cm-filters .search input { padding-left: 32px; height: 34px; }
 #cm-view { margin-bottom: 14px; }
+@media (max-width: 480px) {
+  .signin .txt { display: none; }
+  .signin { padding: 0 10px; }
+  .nav a { padding: 0 6px; }
+  .top-inner { gap: 8px; }
+}
+@media (max-width: 360px) {
+  :root { --gutter: 12px; }
+  .logo { width: 26px; height: 26px; }
+  .nav a { padding: 0 5px; font-size: 13px; }
+  .top-inner { gap: 6px; }
+  .icon-btn { width: 30px; }
+}

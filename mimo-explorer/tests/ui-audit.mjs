@@ -217,6 +217,18 @@ for (const theme of ['light', 'dark']) for (const w of [390, 768, 1280, 1920]) {
   ok(`${theme} ${w}px: no JavaScript errors`, p.errors.length === 0, p.errors.slice(0, 3).join(' | '));
   await p.context().close();
 }
+// ── signed out, the narrowest phones: the header carries a Sign in button instead of the avatar ─────────
+for (const w of [320, 360, 390]) {
+  const ctx = await b.newContext({ viewport: { width: w, height: 800 } });
+  await ctx.route('**/api/me', (r) => r.fulfill({ json: { user: null, local: false, oauth: true, version: '1.0.0', source: 'test', missing_scopes: [] } }));
+  const p = await ctx.newPage();
+  for (const h of ['#/', '#/community', '#/task/s3k_0000_accounting_audit_tax_en_t1_rl_008', '#/runs', '#/run/' + OWN_RUN]) {
+    await p.goto(BASE + '/' + h, { waitUntil: 'networkidle' }); await p.waitForTimeout(900);
+    ok(`signed out ${w}px ${h}: no sideways scroll`, await noOverflow(p));
+  }
+  ok(`signed out ${w}px: the Sign in button is reachable`, await p.isVisible('#account [data-signin]'));
+  await ctx.close();
+}
 await b.close();
 
 const failed = results.filter((r) => !r.pass);
