@@ -490,6 +490,30 @@ def test_step_budget_blocks_further_gathering():
     assert "Out of actions" in observation.feedback
 
 
+def test_step_budget_exhaustion_ends_the_episode_without_a_guess():
+    env = make_env(max_steps=1)
+    env.reset(task_index=0)
+
+    exhausted = env.step(to_wire(LookAction(heading_deg=0)))
+    assert exhausted.done
+    assert exhausted.reward == 0.0
+    assert exhausted.score == 0.0
+    assert exhausted.parsed_ok is False
+    assert exhausted.true_lat == pytest.approx(env._task.truth[0])
+    assert exhausted.true_lon == pytest.approx(env._task.truth[1])
+    assert exhausted.metadata["no_guess"] is True
+    assert exhausted.metadata["country"] == env._task.country
+    assert exhausted.metadata["task_index"] == env.state.task_index
+    assert exhausted.metadata["task_id"] == env.state.task_id
+    assert env.state.submitted
+
+    true_lat, true_lon = env._task.truth
+    late_guess = env.step(to_wire(GuessAction(lat=true_lat, lon=true_lon)))
+    assert late_guess.done
+    assert late_guess.reward is None
+    assert "over" in late_guess.feedback
+
+
 def test_stepping_before_reset_is_an_error():
     env = make_env()
     with pytest.raises(RuntimeError):
@@ -583,6 +607,18 @@ def test_play_page_scores_one_guess_out_of_five_thousand():
     assert f"MAX_POINTS = {MAX_POINTS_PER_ROUND}" in page
     assert "ROUNDS" not in page
     assert "load another episode" in page
+
+
+def test_play_page_reveals_any_terminal_observation():
+    from geoguesser_env.server.gradio_ui import play_page_html
+
+    page = play_page_html(1)
+    assert 'if (observation.done) {' in page
+    assert 'reveal(observation);' in page
+    assert 'else if (op === "pin" && guess)' in page
+    assert 'addStep("guess rejected"' not in page
+    assert '"Out of actions."' in page
+    assert '"no guess"' in page
 
 
 def test_play_page_pad_hides_what_the_backend_cannot_do():
