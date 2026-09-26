@@ -109,7 +109,7 @@ def mark_interrupted() -> int:
     n = 0
     for r in list_runs(limit=100000):
         if r.get("status") in ACTIVE:
-            update(r["id"], status="interrupted", error="The Space restarted while this rollout was running.")
+            update(r["id"], status="interrupted", error="The server restarted while this rollout was running, so it stopped. Run it again.")
             n += 1
     return n
 

@@ -145,9 +145,9 @@ class Rollout:
             if self.cancelled.is_set():   # killing the sandbox makes the blocked call fail: that is the cancel, not a crash
                 self.update(status="cancelled", finished_at=time.time(), cost=self.cost_now())
             else:
-                self.emit("error", text=f"{type(e).__name__}: {e}", trace=traceback.format_exc()[-3000:])
-                self.update(status="failed", error=f"{type(e).__name__}: {str(e)[:300]}", finished_at=time.time(),
-                            cost=self.cost_now())
+                msg = friendly(e) or f"{type(e).__name__}: {str(e)[:300]}"
+                self.emit("error", text=msg, trace=traceback.format_exc()[-3000:])
+                self.update(status="failed", error=msg, finished_at=time.time(), cost=self.cost_now())
         finally:
             with self._lock:
                 self._flush()
@@ -166,6 +166,20 @@ class Rollout:
         except Exception:  # it idles out on its own anyway
             pass
         self.sandbox = None
+
+
+def friendly(e: Exception) -> str | None:
+    """The Hub errors people actually hit, said so they know what to do."""
+    status = getattr(getattr(e, "response", None), "status_code", None)
+    text = str(e)
+    if status == 402 or "402 Payment Required" in text:
+        return ("Your Hugging Face account has no prepaid credit for sandboxes, so none could start. Add credit at "
+                "https://huggingface.co/settings/billing and run again. Nothing was charged.")
+    if status in (401, 403) and "/api/jobs" in text:
+        return ("Your sign-in isn't allowed to start sandboxes. Sign in again and allow Jobs, or use a write token.")
+    if status == 429:
+        return "Hugging Face is rate-limiting sandbox starts for your account. Wait a minute and run again."
+    return None
 
 
 # ── public API ───────────────────────────────────────────────────────────────

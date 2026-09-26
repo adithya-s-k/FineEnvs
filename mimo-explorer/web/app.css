@@ -202,6 +202,7 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .loading-row { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; padding: 12px 0; }
 i.pulse { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; animation: pulse 1.4s ease-in-out infinite; }
 .fade-in { animation: rise .22s ease both; }
+.boot { display: grid; place-items: center; min-height: 60vh; animation: fade .4s ease .25s both; }
 
 /* ── cards and sections ─────────────────────────────────────────────── */
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); }
