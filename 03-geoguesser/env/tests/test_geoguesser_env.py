@@ -177,11 +177,11 @@ def test_parser_rejects_dms_minutes_and_seconds_over_sixty(text):
 
 
 def test_parser_routes_labelled_dms_through_dms_validation():
-    parsed = parse_guess("lat: 48°59'59\"N lon: 2°17'40\"E")
+    parsed = parse_guess("lat: 48°59'59\"N lon: 12°17'40\"E")
     assert parsed.ok
     assert parsed.source == "dms"
     assert parsed.lat == pytest.approx(48.9997, abs=1e-3)
-    assert parsed.lon == pytest.approx(2.2944, abs=1e-3)
+    assert parsed.lon == pytest.approx(12.2944, abs=1e-3)
 
 
 @pytest.mark.parametrize(
@@ -197,6 +197,31 @@ def test_parser_rejects_labelled_dms_sixty_boundary(text):
     parsed = parse_guess(text)
     assert not parsed.ok
     assert "DMS" in parsed.note
+
+
+def test_parser_keeps_full_decimal_tokens_before_unit_words():
+    parsed = parse_guess("lat: 55.67 degrees, lon: 12.56 degrees")
+    assert parsed.ok
+    assert parsed.source == "labelled"
+    assert (parsed.lat, parsed.lon) == (55.67, 12.56)
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("lat: 55.67 lon: 12.56", (55.67, 12.56)),
+        ("latitude=55.67 longitude=12.56", (55.67, 12.56)),
+        ("lat: -16.4897, lon: -68.1193", (-16.4897, -68.1193)),
+        ("latitude: 0 longitude: 0", (0.0, 0.0)),
+        ("lat: 89.999 lon: 179.999", (89.999, 179.999)),
+        ("lat: 12.9 degrees north, lon: 77.5 degrees east", (12.9, 77.5)),
+    ],
+)
+def test_parser_labelled_decimals_match_complete_number_tokens(text, expected):
+    parsed = parse_guess(text)
+    assert parsed.ok
+    assert parsed.source == "labelled"
+    assert (parsed.lat, parsed.lon) == expected
 
 
 def test_parser_prefers_labelled_over_stray_numbers():
