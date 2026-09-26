@@ -1,0 +1,3 @@
+.local-runs/
+__pycache__/
+.venv/

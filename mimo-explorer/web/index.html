@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MiMo RL Environments Explorer</title>
+  <meta name="description" content="Browse the 7,780 RL environments in XiaomiMiMo/MiMo-V2.6-RL-oss, run a rollout on HF Sandboxes with a model from HF Inference Providers, and watch it get graded.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/views.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-inner">
+      <a class="brand" href="#/">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h1>MiMo RL Environments</h1>
+          <p class="sub">Explore, run and grade · unofficial</p>
+        </div>
+      </a>
+      <nav class="nav" aria-label="Main">
+        <a href="#/" data-nav="explore">Explore</a>
+        <a href="#/runs" data-nav="runs">My rollouts <span class="count" id="nav-active" hidden></span></a>
+      </nav>
+      <div class="top-right">
+        <button class="icon-btn" id="theme" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+        </button>
+        <div id="account"></div>
+      </div>
+    </div>
+  </header>
+  <div class="costbar" id="costbar">
+    <div class="wrap costbar-inner">
+      <span><b>Rollouts run on your Hugging Face account.</b> Each one gets its own HF Sandbox (CPU, about $0.01 an hour) and calls
+        the model you pick through <a href="https://huggingface.co/inference/models" target="_blank" rel="noopener">HF Inference Providers</a>
+        at that provider's price. A typical rollout costs a few cents to about a dollar in tokens; the live cost is shown as it runs.</span>
+      <button class="link" id="costbar-close" type="button" aria-label="Dismiss">Dismiss</button>
+    </div>
+  </div>
+
+  <main id="view"></main>
+
+  <div class="scrim" id="scrim" hidden></div>
+  <div class="modal" id="modal" role="dialog" aria-modal="true" hidden>
+    <div class="modal-bar"><span id="modal-title"></span><span class="grow"></span>
+      <a class="btn ghost sm" id="modal-open" target="_blank" rel="noopener" hidden>Open raw ↗</a>
+      <button class="icon-btn" id="modal-close" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+  <div class="tooltip" id="tip" hidden></div>
+  <div class="toast" id="toast" hidden></div>
+
+  <footer class="wrap foot">
+    Data: <a href="https://huggingface.co/datasets/XiaomiMiMo/MiMo-V2.6-RL-oss" target="_blank" rel="noopener">XiaomiMiMo/MiMo-V2.6-RL-oss</a> (Apache-2.0).
+    Graders are Xiaomi's own (<a href="https://github.com/XiaomiMiMo/verl" target="_blank" rel="noopener">verl</a>,
+    <a href="https://github.com/XiaomiMiMo/mimoagent" target="_blank" rel="noopener">mimoagent</a>); the harness here is OpenCode.
+    Rubric answers are never shown. Built by <a href="https://huggingface.co/FineEnvs" target="_blank" rel="noopener">FineEnvs</a>.
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/minisearch@7.1.1/dist/umd/index.min.js"></script>
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
