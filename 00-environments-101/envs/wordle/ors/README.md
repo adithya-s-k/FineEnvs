@@ -13,7 +13,7 @@ The ORS server registers two `@tool`-decorated methods:
 | `guess(word: str)` | Submit a 5-letter word. Returns colored feedback (`🟩🟨⬛`). Per-call `reward`. |
 | `get_history()` | List all previous guesses with feedback. |
 
-Tasks are bundled with the env: 50 hand-crafted answers in the `train` split, each shaped as `Task(task_spec={"task": "...", "answer": "<word>"})`. Reward arrives **per tool call** as `ToolOutput.reward`, with `finished=True` set on win/loss.
+Tasks are bundled with the env: 50 hand-crafted answers in the `train` split, each shaped as `Task(task_spec={"task": "...", "answer": "<word>"})`. Reward arrives **per tool call** as `ToolOutput.reward`, with `finished=True` set on win/loss. The terminal reward is paid once; later calls after the game is over keep `finished=True` but return `reward=None`.
 
 ## How to consume it
 

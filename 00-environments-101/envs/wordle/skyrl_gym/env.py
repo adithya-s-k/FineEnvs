@@ -70,6 +70,7 @@ class WordleSkyRLEnv(BaseTextEnv):
         self.last_output = ""
         self.error_count = 0
         self.turns = 0
+        self._episode_done = False
 
     def init(self, prompt) -> Tuple[Any, Dict]:
         """Initialize episode. Creates fresh WordleGame."""
@@ -80,11 +81,31 @@ class WordleSkyRLEnv(BaseTextEnv):
         self.last_output = ""
         self.turns = 0
         self.error_count = 0
+        self._episode_done = False
         return prompt, {"max_turns": self.max_turns, "answer": self._game.answer}
 
     def step(self, action: str) -> BaseTextEnvStepOutput:
         """Process model text — extract guess word and submit to game."""
+        if self._episode_done:
+            result = (
+                f"The game is over. The word was '{self._game.answer}'."
+                if self._game.done
+                else "The episode is over."
+            )
+            self.last_output = result
+            return BaseTextEnvStepOutput(
+                observations=[{"role": "user", "content": result}],
+                reward=0.0,
+                done=True,
+                metadata={
+                    "turns": self.turns,
+                    "errors": self.error_count,
+                    "won": self._game.won,
+                },
+            )
+
         self.turns += 1
+        already_done = self._game.done
 
         word = _extract_guess(action, lenient=self._lenient_parsing)
         if not word:
@@ -96,8 +117,10 @@ class WordleSkyRLEnv(BaseTextEnv):
                 self.error_count += 1
 
         self.last_output = result
-        reward = self._game.reward
+        reward = 0.0 if already_done else self._game.reward
         done = self._game.done or self.turns >= self.max_turns
+        if done:
+            self._episode_done = True
 
         return BaseTextEnvStepOutput(
             observations=[{"role": "user", "content": result}],

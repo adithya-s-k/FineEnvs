@@ -61,8 +61,19 @@ def test_a_guess_after_a_loss_cannot_turn_it_into_a_win():
         lost = env.guess(GuessInput(word=word))
     out = env.guess(GuessInput(word="crane"))
     assert out.finished is True
-    assert out.reward == pytest.approx(lost.reward)
+    assert lost.reward == pytest.approx(_expected("crane", words))
+    assert out.reward is None
     assert "Correct" not in out.blocks[0].text
+
+
+def test_a_guess_after_a_win_does_not_pay_the_reward_again():
+    env = _env()
+    won = env.guess(GuessInput(word="crane"))
+    out = env.guess(GuessInput(word="slate"))
+    assert won.finished is True
+    assert won.reward == pytest.approx(_expected("crane", ["crane"]))
+    assert out.finished is True
+    assert out.reward is None
 
 
 def test_tools_before_setup_report_no_game():

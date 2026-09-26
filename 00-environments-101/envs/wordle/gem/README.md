@@ -3,6 +3,7 @@
 A multi-turn Wordle environment, packaged using **[GEM](https://github.com/axon-rl/gem)** (in-process Gymnasium-style framework).
 
 In-process — no server. `step()` returns the classic Gymnasium 5-tuple `(obs, reward, terminated, truncated, info)`.
+The terminal reward is returned once on the step that ends the game; later calls after `terminated=True` return `reward=0.0`.
 
 ## What this environment exposes
 
