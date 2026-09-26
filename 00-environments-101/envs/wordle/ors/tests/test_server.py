@@ -65,6 +65,16 @@ def test_a_guess_after_a_loss_cannot_turn_it_into_a_win():
     assert "Correct" not in out.blocks[0].text
 
 
+def test_a_guess_after_a_win_does_not_pay_the_reward_again():
+    env = _env()
+    won = env.guess(GuessInput(word="crane"))
+    out = env.guess(GuessInput(word="slate"))
+    assert won.finished is True
+    assert won.reward == pytest.approx(_expected("crane", ["crane"]))
+    assert out.finished is True
+    assert out.reward is None
+
+
 def test_tools_before_setup_report_no_game():
     env = WordleORS(task_spec={"answer": "crane"})
     assert env.guess(GuessInput(word="crane")).finished is False
