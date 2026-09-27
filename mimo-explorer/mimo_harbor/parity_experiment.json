@@ -1,0 +1,114 @@
+[
+ {
+  "adapter_name": "mimo-v2.6-rl",
+  "agent": "opencode@1.18.32 (mimo_opencode)",
+  "model": "zai-org/GLM-5.3 via deepinfra, reasoning_effort low",
+  "date": "2026-09-27",
+  "adapted_benchmark_size": 7780,
+  "parity_benchmark_size": 36,
+  "number_of_runs": 3,
+  "notes": "Original side: the MiMo RL Environment Explorer runner (Xiaomi's harness: XiaomiMiMo/verl a2ad9f6 + mimoagent 467f0a1). Parity subset: 6 tasks per dataset, fixed by sha256(task id) (--split parity). Same agent version, model, provider, thinking level, step limits, 65,536-token replies, judges (Inkling, Llama-4-Maverick) and sandbox flavors on both sides. Per-run score = mean reward over the tasks that side scored; trials that failed for infrastructure reasons (sandbox API timeouts) were rerun, and arvo_49407 run 1 failed on both sides (the agent starved a 2-vCPU sandbox) and is excluded on both. Music differs by design: one completion on the original side, up to 4 write-only steps in Harbor.",
+  "original_parity_repo": "https://github.com/adithya-s-k/FineEnvs/tree/mimo-explorer-rollouts/mimo-explorer",
+  "adapter_pr": [],
+  "dataset_pr": [],
+  "parity_pr": [],
+  "metrics": [
+   {
+    "benchmark_name": "MiMo-V2.6-RL Code",
+    "metric": "mean reward",
+    "original": "0.556 ± 0.056",
+    "harbor": "0.556 ± 0.056",
+    "original_runs": [
+     0.6667,
+     0.5,
+     0.5
+    ],
+    "harbor_runs": [
+     0.6667,
+     0.5,
+     0.5
+    ]
+   },
+   {
+    "benchmark_name": "MiMo-V2.6-RL Cyber",
+    "metric": "mean reward",
+    "original": "0.822 ± 0.011",
+    "harbor": "0.833 ± 0.096",
+    "original_runs": [
+     0.8,
+     0.8333,
+     0.8333
+    ],
+    "harbor_runs": [
+     1.0,
+     0.6667,
+     0.8333
+    ]
+   },
+   {
+    "benchmark_name": "MiMo-V2.6-RL General",
+    "metric": "mean reward",
+    "original": "0.844 ± 0.008",
+    "harbor": "0.844 ± 0.024",
+    "original_runs": [
+     0.8423,
+     0.8315,
+     0.8591
+    ],
+    "harbor_runs": [
+     0.8899,
+     0.8107,
+     0.8315
+    ]
+   },
+   {
+    "benchmark_name": "MiMo-V2.6-RL Music",
+    "metric": "mean reward",
+    "original": "0.111 ± 0.063",
+    "harbor": "0.317 ± 0.093",
+    "original_runs": [
+     0.0,
+     0.1135,
+     0.2193
+    ],
+    "harbor_runs": [
+     0.1382,
+     0.4493,
+     0.3633
+    ]
+   },
+   {
+    "benchmark_name": "MiMo-V2.6-RL Terminal",
+    "metric": "mean reward",
+    "original": "0.278 ± 0.056",
+    "harbor": "0.111 ± 0.056",
+    "original_runs": [
+     0.3333,
+     0.3333,
+     0.1667
+    ],
+    "harbor_runs": [
+     0.1667,
+     0.1667,
+     0.0
+    ]
+   },
+   {
+    "benchmark_name": "MiMo-V2.6-RL Webdev",
+    "metric": "mean reward",
+    "original": "0.749 ± 0.049",
+    "harbor": "0.738 ± 0.054",
+    "original_runs": [
+     0.6505,
+     0.8033,
+     0.7933
+    ],
+    "harbor_runs": [
+     0.7994,
+     0.6306,
+     0.7852
+    ]
+   }
+  ]
+ }
+]

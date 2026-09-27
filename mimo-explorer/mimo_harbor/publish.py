@@ -104,6 +104,29 @@ def index_row(d: Path, kind: str) -> dict:
     return row
 
 
+PARITY = Path(__file__).with_name("parity_experiment.json")
+
+
+def parity_row(kind: str) -> str:
+    if not PARITY.exists():
+        return "  (parity results not recorded yet)"
+    m = next((x for x in json.loads(PARITY.read_text())[0]["metrics"] if x["benchmark_name"].lower().endswith(kind)), None)
+    if not m:
+        return "  (no parity row for this dataset)"
+    f = lambda xs: ", ".join(f"{x:.3f}" for x in xs)
+    return ("  | | Mean reward (mean ± SEM, 3 runs) | Runs |\n  |---|---:|---|\n"
+            f"  | Xiaomi's harness (explorer) | {m['original']} | {f(m['original_runs'])} |\n"
+            f"  | Harbor | {m['harbor']} | {f(m['harbor_runs'])} |" + PARITY_NOTE.get(kind, ""))
+
+
+PARITY_NOTE = {
+    "music": ("\n\n  Harbor passes the validity gate more often (7 of 18 pieces vs 4 of 18). That fits Music's one intended "
+              "difference: here the agent writes its reply to a file over up to 4 steps, where the original is a single completion."),
+    "terminal": ("\n\n  Each task is all or nothing, and outcomes flip in both directions on both sides; with six tasks the gap is "
+                 "within noise."),
+}
+
+
 def card(kind: str, n: int, rows: list[dict]) -> str:
     title, short, body, tags = INFO[kind]
     rid = repo_id(kind)
@@ -203,9 +226,13 @@ Deviations from the reference, and why, are listed in the adapter's README.
 - All 7,780 tasks across the six datasets load with Harbor's task loader and pass the adapter's static checks
   (digest-pinned images, setup payload equal to its readable copy, rubrics only under `tests/`).
 - With Harbor's no-op agent every dataset scores 0 and every verifier runs to completion: no free rewards.
-- One task per dataset was run end to end with GLM-5.3 both in Harbor and in the
-  [explorer]({EXPLORER}), which runs Xiaomi's harness; the results match (see the adapter's `parity.md`).
-  A full parity study over repeated runs has not been done yet.
+- **Parity with Xiaomi's harness.** Following Harbor's parity procedure, the 36-task parity subset (6 per dataset)
+  was run 3 times on each side with the same agent (OpenCode 1.18.32), model (GLM-5.3 via deepinfra, thinking low),
+  step limits, judges and sandboxes, in Harbor and in the [explorer]({EXPLORER}), which runs Xiaomi's harness. The score ranges overlap for all six datasets. For this one:
+
+{parity_row(kind)}
+
+  Full results, per-task outcomes and notes are in `parity.md` and `parity_experiment.json`.
 
 ## Credits
 
@@ -243,6 +270,8 @@ def stage(src: Path, dst: Path, kind: str) -> None:
         "description": f"MiMo-V2.6-RL {INFO[kind][0]}: {len(rows)} Harbor tasks",
         "tasks": [{"name": r["task_id"], "path": r["task_path"]} for r in rows]}], indent=1) + "\n")
     shutil.copy2(src / kind / "MANIFEST.json", out / "manifest.json")
+    for f in ("parity.md", "parity_experiment.json"):
+        shutil.copy2(Path(__file__).with_name(f), out / f)
     (out / "jobs").mkdir()
     import yaml
     head = (f"# MiMo-V2.6-RL {kind} on Harbor with the reference agent settings.\n"
