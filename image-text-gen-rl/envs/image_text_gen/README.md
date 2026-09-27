@@ -30,8 +30,8 @@ target, so neither can bend its reading toward the answer. Broken or non-letter 
 
 **Reward.** Text accuracy is 1 − CER of the transcription span closest to the target, taken from the
 best reading. Each malformed glyph, counted from the worst reading, multiplies the score by 0.8.
-Spurious text beyond a 2-character tolerance costs up to 0.3 (most lenient reading). Wrong letter
-case costs 10%. Invalid or blank images score 0 without a provider call. Provider failures assign
+Unrequested text costs 0.05 per character beyond 2, up to 0.5, whatever the target's length; words
+the prompt names outside its quoted target are excused. Wrong letter case costs 10%. Invalid or blank images score 0 without a provider call. Provider failures assign
 **no** reward and leave the episode open for a retry.
 
 `/manifest` reports the pinned dataset revision, split counts, scoring policy and verifier models;

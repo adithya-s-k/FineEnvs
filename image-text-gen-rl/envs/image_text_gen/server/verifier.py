@@ -55,7 +55,7 @@ class VerifierModel:
 # Chosen by train/calibrate_verifier.py over 11 hosted VLMs on 280 labelled renders
 # (results/verifier-calibration.md). Gemma 4 31B was the most literal reader: 95% exact,
 # no repaired typos, 90% of broken glyphs marked and none silently repaired. The best Qwen
-# partner kept the pair's reward error at 0.0068 for ~$0.18 per 1k images; the best
+# partner kept the pair's reward error at 0.0065 (v2 scoring) for ~$0.18 per 1k images; the best
 # all-Qwen pair had 2.7x that error and gave full reward to twice as many defects.
 DEFAULT_MODELS = (
     VerifierModel("google/gemma-4-31B-it", "deepinfra"),

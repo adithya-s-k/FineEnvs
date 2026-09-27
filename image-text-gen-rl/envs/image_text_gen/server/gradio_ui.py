@@ -54,11 +54,18 @@ class Playground:
         m = result.metrics
         if m.get("invalid_image"):
             return f"### Reward: 0.000\nInvalid image: {result.metadata.get('error')}", [], m
-        verdict = "Exact match" if m["exact_match"] else "Not an exact match"
+        if m["clean_render"]:
+            verdict = "Clean render"
+        elif m["exact_match"]:
+            verdict = f"Target exact · {m['extra_chars']} unrequested characters"
+        else:
+            verdict = "Target not exact"
         summary = (
             f"### Reward: {result.reward:.3f}\n**{verdict}** · text accuracy "
             f"{m['text_accuracy']:.1%} · malformed glyphs {m['malformed_glyphs']} · "
-            f"extra characters {m['extra_chars']} · case {'matches' if m['case_match'] else 'differs'}"
+            f"unrequested characters {m['extra_chars']} (−{m['extra_penalty']:.2f})"
+            + (f" · prompt text excused {m['prompt_text_chars']}" if m["prompt_text_chars"] else "")
+            + f" · case {'matches' if m['case_match'] else 'differs'}"
         )
         rows = [
             [t.get("model", ""), t.get("text", ""), f"{t.get('text_accuracy', 0):.1%}",
@@ -108,7 +115,7 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
                 score_button = gr.Button("Score image", variant="primary")
                 result = gr.Markdown("")
                 readings = gr.Dataframe(
-                    headers=["Verifier", "Transcription", "Accuracy", "Malformed", "Extra"],
+                    headers=["Verifier", "Transcription", "Accuracy", "Malformed", "Unrequested"],
                     label="Blind transcriptions", wrap=True, interactive=False,
                 )
                 with gr.Accordion("Scoring details", open=False):
@@ -132,7 +139,8 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
                 "The image is resized so its long side is 1536 px, then each verifier model "
                 "transcribes it literally, marking broken glyphs with `�`. Text accuracy is "
                 "1 − CER of the closest span to the target (best verifier). Each malformed glyph "
-                "(worst verifier) multiplies the score by 0.8; text beyond the target costs up to "
-                "0.3; wrong letter case costs 10%. Provider failures assign no reward."
+                "(worst verifier) multiplies the score by 0.8. Text the prompt did not ask for costs "
+                "0.05 per character beyond 2, up to 0.5 (words the prompt names elsewhere are "
+                "excused); wrong letter case costs 10%. Provider failures assign no reward."
             )
     return demo

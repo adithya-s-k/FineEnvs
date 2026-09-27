@@ -12,7 +12,7 @@ from .scoring import POLICY, combine
 
 PUBLIC_READING_FIELDS = (
     "model", "provider", "text", "truncated", "cached", "latency_s",
-    "text_accuracy", "malformed_glyphs", "extra_chars", "span",
+    "text_accuracy", "malformed_glyphs", "extra_chars", "prompt_text_chars", "span",
 )
 
 
@@ -94,13 +94,13 @@ class ImageTextGenEnvironment(Environment):
             )
         if info["blank"]:
             readings = [{"model": "blank-image", "text": "", "cached": False}]
-            reward, metrics, scored = combine(self._task["target_text"], [""])
+            reward, metrics, scored = combine(self._task["target_text"], [""], self._task["prompt"])
         else:
             # VerifierUnavailable propagates: no reward, and step_count stays 0 so the
             # caller can retry this step without resetting.
             readings = verifier.transcribe(png, info)
             reward, metrics, scored = combine(
-                self._task["target_text"], [r["text"] for r in readings]
+                self._task["target_text"], [r["text"] for r in readings], self._task["prompt"]
             )
         self._state.step_count = 1
         transcriptions = [

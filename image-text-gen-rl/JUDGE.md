@@ -24,19 +24,28 @@ extend it over letters glued to either end (so "Julyy" is not "July" plus stray 
 
 * `text_accuracy = 1 − Levenshtein(target, span) / len(target)`
 * `malformed_glyphs` = U+FFFD inside the span
-* `extra_chars` = non-space characters outside the span
+* `extra_chars` = characters of **unrequested** tokens outside the span. A token is excused when all
+  its words occur in the prompt outside the quoted target (e.g. "Stuart Hamm" in *Sheet music for
+  "Outbound & Beyond" by Stuart Hamm*); punctuation-only tokens are ignored; a token with a
+  malformed glyph is never excused. Excused characters are reported as `prompt_text_chars`.
 * `case_match` = no edits that vanish when both sides are lowercased
 
-Across readings: text from the **best** reading, malformed glyphs from the **worst**, extra text from
-the **most lenient**.
+The matched span never begins or ends on a space, so a reading that misses the target's last letter
+cannot swallow the next word. Across readings: text from the **best** reading, malformed glyphs from
+the **worst**, unrequested text from the most lenient reading **among those that located the
+target** (text accuracy within 0.1 of the best).
 
 ```
-reward = clip(text_accuracy · 0.8^malformed − 0.3 · min(1, max(0, extra − 2) / max(len(target), 10)), 0, 1)
+reward = clip(text_accuracy · 0.8^malformed − 0.5 · min(1, max(0, extra − 2) / 10), 0, 1)
          · (0.9 if case differs else 1)
 ```
 
+Five gibberish characters cost 0.15 and twelve or more cost 0.5, whatever the target's length.
+`exact_match` means the target itself is exact; `clean_render` additionally requires no malformed
+glyphs and at most 2 unrequested characters.
+
 Invalid images (not PNG/JPEG/WebP, sides < 64 px, > 16.7 MP, > 8 MiB) and flat single-colour images
-score 0 without a provider call. The policy name `blind-transcription-v1` and a `grading_policy_id`
+score 0 without a provider call. The policy name `blind-transcription-v2` and a `grading_policy_id`
 (hash of prompts, models, extras and decoding) are returned with every step and in `/manifest`.
 
 ## Failures
@@ -52,9 +61,9 @@ longer than 60 s gets `Verifier busy`. Readings are cached in-process by `(polic
 
 `train/calibrate_verifier.py` renders real test targets in seven labelled variants and has every
 candidate read them through this exact prompt and client. The 2026-09-27 sweep (280 images, 11
-models) is summarised in [`results/README.md`](./results/README.md): the selected pair has reward MAE
-0.0068 against the literal truth, ranks the clean render above its defect 97.1% of the time, and
-gives full reward to 7 of 240 defective renders. Re-run it before changing models or the prompt:
+models, re-scored under `blind-transcription-v2`) is summarised in [`results/README.md`](./results/README.md):
+the selected pair has reward MAE 0.0065 against the literal truth, ranks the clean render above its
+defect 97.5% of the time, and gives full reward to 6 of 240 defective renders. Re-run it before changing models or the prompt:
 
 ```bash
 ../../launch image-text-gen-rl --exec python image-text-gen-rl/train/calibrate_verifier.py \

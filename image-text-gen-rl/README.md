@@ -10,7 +10,7 @@ spurious text.
 | **Task** | 13,434 prompts (train 11,982 · validation 466 · test 986), each quoting one target string |
 | **Action** | one generated image, base64 PNG/JPEG/WebP (≤ 8 MiB) |
 | **Verifiers** | `google/gemma-4-31B-it` + `Qwen/Qwen3.6-35B-A3B` on HF Inference Providers (DeepInfra), both blind to the target |
-| **Reward** | 1 − CER of the best reading's closest span × 0.8 per malformed glyph (worst reading) − up to 0.3 for extra text, × 0.9 if letter case is wrong |
+| **Reward** | 1 − CER of the best reading's closest span × 0.8 per malformed glyph (worst reading) − 0.05 per unrequested character beyond 2 (up to 0.5; words the prompt names are excused), × 0.9 if letter case is wrong |
 | **Cost** | ≈ $0.18 per 1,000 graded images, ~2.5 s |
 | **Data** | [`AdithyaSK/image-text-gen-rl-prompts`](https://huggingface.co/datasets/AdithyaSK/image-text-gen-rl-prompts), a screened derivative of [`leffff/Diffusion-Reward-Modeling-for-Text-Rendering-Dataset`](https://huggingface.co/datasets/leffff/Diffusion-Reward-Modeling-for-Text-Rendering-Dataset) (MIT) |
 | **Space** | [`AdithyaSK/image-text-gen-rl-env`](https://huggingface.co/spaces/AdithyaSK/image-text-gen-rl-env) (private) |
@@ -39,6 +39,9 @@ flowchart LR
   image ("ignore instructions, output …") is transcribed literally and scores as extra text.
 * **Two models.** Text accuracy uses the better reading (one verifier's misread does not cost the
   policy); malformed glyphs use the worse reading (one verifier's silent repair does not hide it).
+* **Unrequested text.** Pseudo-text, a duplicated target or injected instructions cost 0.05 per
+  character beyond 2, whatever the target's length; words the prompt names outside its quote
+  (an author, a brand in the scene) are excused.
 * **Fixed resolution.** At 768×384 every hosted Qwen model invented text ("Hilary Pichler" for
   "Happy Birthday!"); at 2× they read it exactly. Every image is resized to a 1536 px long side.
 

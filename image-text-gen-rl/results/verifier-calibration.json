@@ -1,5 +1,6 @@
 {
   "created": "2026-09-27T08:18:25Z",
+  "rescored_with": "blind-transcription-v2",
   "images": 280,
   "targets": 40,
   "variants": [
@@ -11,7 +12,6 @@
     "malformed_glyph",
     "extra_text"
   ],
-  "scoring": "blind-transcription-v1",
   "selected": [
     "google/gemma-4-31B-it:deepinfra",
     "Qwen/Qwen3.6-35B-A3B:deepinfra"
@@ -39,7 +39,7 @@
       "malformed_hit": 0.575,
       "malformed_repair": 0.125,
       "false_malformed": 0.0,
-      "reward_mae": 0.0157,
+      "reward_mae": 0.0165,
       "p50_latency_s": 3.26,
       "usd_per_1k_images": 0.622
     },
@@ -52,7 +52,7 @@
       "malformed_hit": 0.475,
       "malformed_repair": 0.25,
       "false_malformed": 0.0,
-      "reward_mae": 0.0199,
+      "reward_mae": 0.02,
       "p50_latency_s": 1.81,
       "usd_per_1k_images": 0.12
     },
@@ -65,7 +65,7 @@
       "malformed_hit": 0.45,
       "malformed_repair": 0.4,
       "false_malformed": 0.0,
-      "reward_mae": 0.0203,
+      "reward_mae": 0.0211,
       "p50_latency_s": 1.68,
       "usd_per_1k_images": 0.68
     },
@@ -78,7 +78,7 @@
       "malformed_hit": 0.275,
       "malformed_repair": 0.425,
       "false_malformed": 0.0,
-      "reward_mae": 0.0243,
+      "reward_mae": 0.0245,
       "p50_latency_s": 1.71,
       "usd_per_1k_images": 0.53
     },
@@ -91,7 +91,7 @@
       "malformed_hit": 0.35,
       "malformed_repair": 0.425,
       "false_malformed": 0.0,
-      "reward_mae": 0.025,
+      "reward_mae": 0.0251,
       "p50_latency_s": 2.64,
       "usd_per_1k_images": 0.33
     },
@@ -104,7 +104,7 @@
       "malformed_hit": 0.05,
       "malformed_repair": 0.55,
       "false_malformed": 0.0,
-      "reward_mae": 0.0325,
+      "reward_mae": 0.0326,
       "p50_latency_s": 1.93,
       "usd_per_1k_images": 0.314
     },
@@ -117,7 +117,7 @@
       "malformed_hit": 0.05,
       "malformed_repair": 0.475,
       "false_malformed": 0.0,
-      "reward_mae": 0.0327,
+      "reward_mae": 0.0328,
       "p50_latency_s": 2.07,
       "usd_per_1k_images": 0.548
     },
@@ -130,7 +130,7 @@
       "malformed_hit": 0.025,
       "malformed_repair": 0.575,
       "false_malformed": 0.0,
-      "reward_mae": 0.0336,
+      "reward_mae": 0.0337,
       "p50_latency_s": 1.63,
       "usd_per_1k_images": 0.247
     },
@@ -143,7 +143,7 @@
       "malformed_hit": 0.4,
       "malformed_repair": 0.45,
       "false_malformed": 0.0,
-      "reward_mae": 0.0383,
+      "reward_mae": 0.0377,
       "p50_latency_s": 2.64,
       "usd_per_1k_images": 0.4
     },
@@ -156,7 +156,7 @@
       "malformed_hit": 0.05,
       "malformed_repair": 0.5,
       "false_malformed": 0.0,
-      "reward_mae": 0.0386,
+      "reward_mae": 0.0383,
       "p50_latency_s": 1.91,
       "usd_per_1k_images": 0.346
     }
@@ -167,8 +167,8 @@
         "google/gemma-4-31B-it:deepinfra",
         "zai-org/GLM-4.6V-Flash:novita"
       ],
-      "reward_mae": 0.0037,
-      "clean_ranked_above_defect": 0.967,
+      "reward_mae": 0.0041,
+      "clean_ranked_above_defect": 0.971,
       "defects_given_full_reward": 4,
       "defect_images": 240
     },
@@ -176,8 +176,8 @@
       "verifiers": [
         "google/gemma-4-31B-it:deepinfra"
       ],
-      "reward_mae": 0.0061,
-      "clean_ranked_above_defect": 0.963,
+      "reward_mae": 0.0046,
+      "clean_ranked_above_defect": 0.967,
       "defects_given_full_reward": 1,
       "defect_images": 240
     },
@@ -186,17 +186,7 @@
         "google/gemma-4-31B-it:deepinfra",
         "Qwen/Qwen3.6-35B-A3B:deepinfra"
       ],
-      "reward_mae": 0.0068,
-      "clean_ranked_above_defect": 0.971,
-      "defects_given_full_reward": 7,
-      "defect_images": 240
-    },
-    {
-      "verifiers": [
-        "google/gemma-4-31B-it:deepinfra",
-        "Qwen/Qwen3.5-397B-A17B:deepinfra"
-      ],
-      "reward_mae": 0.0073,
+      "reward_mae": 0.0065,
       "clean_ranked_above_defect": 0.975,
       "defects_given_full_reward": 6,
       "defect_images": 240
@@ -204,19 +194,19 @@
     {
       "verifiers": [
         "google/gemma-4-31B-it:deepinfra",
-        "Qwen/Qwen3-VL-235B-A22B-Instruct:deepinfra"
+        "Qwen/Qwen3.5-397B-A17B:deepinfra"
       ],
-      "reward_mae": 0.0083,
-      "clean_ranked_above_defect": 0.963,
-      "defects_given_full_reward": 6,
+      "reward_mae": 0.0071,
+      "clean_ranked_above_defect": 0.979,
+      "defects_given_full_reward": 5,
       "defect_images": 240
     },
     {
       "verifiers": [
         "google/gemma-4-31B-it:deepinfra",
-        "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8:novita"
+        "Qwen/Qwen3-VL-235B-A22B-Instruct:deepinfra"
       ],
-      "reward_mae": 0.0086,
+      "reward_mae": 0.0081,
       "clean_ranked_above_defect": 0.963,
       "defects_given_full_reward": 5,
       "defect_images": 240
@@ -224,11 +214,21 @@
     {
       "verifiers": [
         "google/gemma-4-31B-it:deepinfra",
+        "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8:novita"
+      ],
+      "reward_mae": 0.0084,
+      "clean_ranked_above_defect": 0.963,
+      "defects_given_full_reward": 4,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "google/gemma-4-31B-it:deepinfra",
         "Qwen/Qwen3.6-27B:deepinfra"
       ],
-      "reward_mae": 0.0089,
-      "clean_ranked_above_defect": 0.958,
-      "defects_given_full_reward": 10,
+      "reward_mae": 0.0086,
+      "clean_ranked_above_defect": 0.963,
+      "defects_given_full_reward": 9,
       "defect_images": 240
     },
     {
@@ -236,9 +236,9 @@
         "google/gemma-4-31B-it:deepinfra",
         "Qwen/Qwen3.5-27B:deepinfra"
       ],
-      "reward_mae": 0.0093,
-      "clean_ranked_above_defect": 0.963,
-      "defects_given_full_reward": 9,
+      "reward_mae": 0.009,
+      "clean_ranked_above_defect": 0.967,
+      "defects_given_full_reward": 8,
       "defect_images": 240
     },
     {
@@ -246,9 +246,9 @@
         "google/gemma-4-31B-it:deepinfra",
         "Qwen/Qwen3-VL-30B-A3B-Instruct:deepinfra"
       ],
-      "reward_mae": 0.0098,
-      "clean_ranked_above_defect": 0.963,
-      "defects_given_full_reward": 9,
+      "reward_mae": 0.0096,
+      "clean_ranked_above_defect": 0.967,
+      "defects_given_full_reward": 8,
       "defect_images": 240
     },
     {
@@ -256,9 +256,9 @@
         "google/gemma-4-31B-it:deepinfra",
         "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp:deepinfra"
       ],
-      "reward_mae": 0.0113,
-      "clean_ranked_above_defect": 0.896,
-      "defects_given_full_reward": 21,
+      "reward_mae": 0.0109,
+      "clean_ranked_above_defect": 0.908,
+      "defects_given_full_reward": 19,
       "defect_images": 240
     },
     {
@@ -266,7 +266,7 @@
         "zai-org/GLM-4.6V-Flash:novita",
         "Qwen/Qwen3.6-35B-A3B:deepinfra"
       ],
-      "reward_mae": 0.0114,
+      "reward_mae": 0.0115,
       "clean_ranked_above_defect": 0.963,
       "defects_given_full_reward": 9,
       "defect_images": 240
@@ -288,7 +288,7 @@
       ],
       "reward_mae": 0.0143,
       "clean_ranked_above_defect": 0.883,
-      "defects_given_full_reward": 24,
+      "defects_given_full_reward": 23,
       "defect_images": 240
     },
     {
@@ -297,7 +297,7 @@
         "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8:novita"
       ],
       "reward_mae": 0.0147,
-      "clean_ranked_above_defect": 0.933,
+      "clean_ranked_above_defect": 0.938,
       "defects_given_full_reward": 12,
       "defect_images": 240
     },
@@ -307,7 +307,7 @@
         "Qwen/Qwen3-VL-235B-A22B-Instruct:deepinfra"
       ],
       "reward_mae": 0.0154,
-      "clean_ranked_above_defect": 0.929,
+      "clean_ranked_above_defect": 0.933,
       "defects_given_full_reward": 13,
       "defect_images": 240
     }
@@ -317,10 +317,19 @@
       "Qwen/Qwen3.6-35B-A3B:deepinfra",
       "Qwen/Qwen3.5-397B-A17B:deepinfra"
     ],
-    "reward_mae": 0.0181,
+    "reward_mae": 0.0182,
     "clean_ranked_above_defect": 0.938,
     "defects_given_full_reward": 15,
     "defect_images": 240
+  },
+  "selected_pair_mean_reward_by_variant": {
+    "clean": 1.0,
+    "typo_swap": 0.853,
+    "missing_char": 0.924,
+    "doubled_char": 0.929,
+    "wrong_case": 0.9,
+    "malformed_glyph": 0.758,
+    "extra_text": 0.782
   },
   "excluded_after_pilot": {
     "moonshotai/Kimi-K2.5:deepinfra": "empty readings on 36% of pilot images; highest cost",

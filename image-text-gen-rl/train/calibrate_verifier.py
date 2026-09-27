@@ -98,6 +98,7 @@ def build_images(targets, seed):
                                      font_path=font)
             png, info = prepare(encode_image(image))
             items.append({"task_id": task["task_id"], "target": task["target_text"],
+                          "prompt": task["prompt"],
                           "variant": variant, "expected": expected, "font": font,
                           "png": png, "info": info})
     return items
@@ -109,8 +110,8 @@ def judge_reading(item, text):
     reading = score_reading(target, text)
     row = {
         "literal_exact": literal,
-        "reward": combine(target, [text])[0],
-        "expected_reward": combine(target, [expected])[0],
+        "reward": combine(target, [text], item["prompt"])[0],
+        "expected_reward": combine(target, [expected], item["prompt"])[0],
     }
     if variant in TYPO_VARIANTS:
         row["repaired_typo"] = normalise(target).lower() in normalise(text).lower() and not literal
@@ -177,7 +178,7 @@ def pair_scores(items, per_model, routes):
             ra, rb = per_model[a][i], per_model[b][i]
             if "error" in ra or "error" in rb:
                 continue
-            value = combine(item["target"], [ra["text"], rb["text"]])[0]
+            value = combine(item["target"], [ra["text"], rb["text"]], item["prompt"])[0]
             errors.append(abs(value - ra["expected_reward"]))
             by_task[item["task_id"]][item["variant"]] = value
         for variants in by_task.values():
@@ -229,6 +230,7 @@ def main():
         "pairs": pairs[:15],
         "readings": [
             {"task_id": it["task_id"], "variant": it["variant"], "target": it["target"],
+             "prompt": it["prompt"],
              "expected": it["expected"], "font": it["font"],
              "by_model": {route: {k: v for k, v in rows[i].items()
                                   if k in ("text", "error", "reward", "latency_s")}
