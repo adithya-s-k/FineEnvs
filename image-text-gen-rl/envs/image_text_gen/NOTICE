@@ -1,0 +1,8 @@
+Image text generation RL environment
+Copyright 2026 Adithya S K. Environment source code is licensed under Apache-2.0 (see LICENSE).
+
+Task prompts and target texts come from leffff/Diffusion-Reward-Modeling-for-Text-Rendering-Dataset
+(https://huggingface.co/datasets/leffff/Diffusion-Reward-Modeling-for-Text-Rendering-Dataset),
+revision 0ec4bce48b13570f95609a32fe72c38c40b39c33, by leffff, licensed MIT. The served, screened
+derivative is AdithyaSK/image-text-gen-rl-prompts (MIT). Task data is mounted or downloaded at
+runtime and is not bundled in this image; data/exclusions.json lists screened-out source row IDs.

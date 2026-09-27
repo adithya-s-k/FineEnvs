@@ -1,0 +1,8 @@
+spec_version: 1
+name: image_text_gen
+type: space
+runtime: fastapi
+app: image_text_gen.server.app:create_server
+port: 8000
+description: Text rendering for image generators. The policy submits an image for a prompt; blind Qwen VL transcriptions from HF Inference Providers score it against the quoted target, penalising malformed glyphs and spurious text.
+version: "0.1.0"

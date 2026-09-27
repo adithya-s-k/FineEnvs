@@ -1,0 +1,329 @@
+{
+  "created": "2026-09-27T08:18:25Z",
+  "images": 280,
+  "targets": 40,
+  "variants": [
+    "clean",
+    "typo_swap",
+    "missing_char",
+    "doubled_char",
+    "wrong_case",
+    "malformed_glyph",
+    "extra_text"
+  ],
+  "scoring": "blind-transcription-v1",
+  "selected": [
+    "google/gemma-4-31B-it:deepinfra",
+    "Qwen/Qwen3.6-35B-A3B:deepinfra"
+  ],
+  "models": [
+    {
+      "route": "google/gemma-4-31B-it:deepinfra",
+      "answered": 280,
+      "errors": 0,
+      "literal_exact": 0.95,
+      "repaired_typo": 0.0,
+      "malformed_hit": 0.9,
+      "malformed_repair": 0.0,
+      "false_malformed": 0.0,
+      "reward_mae": 0.0046,
+      "p50_latency_s": 2.54,
+      "usd_per_1k_images": 0.063
+    },
+    {
+      "route": "zai-org/GLM-4.6V-Flash:novita",
+      "answered": 280,
+      "errors": 0,
+      "literal_exact": 0.875,
+      "repaired_typo": 0.0083,
+      "malformed_hit": 0.575,
+      "malformed_repair": 0.125,
+      "false_malformed": 0.0,
+      "reward_mae": 0.0157,
+      "p50_latency_s": 3.26,
+      "usd_per_1k_images": 0.622
+    },
+    {
+      "route": "Qwen/Qwen3.6-35B-A3B:deepinfra",
+      "answered": 280,
+      "errors": 0,
+      "literal_exact": 0.8429,
+      "repaired_typo": 0.025,
+      "malformed_hit": 0.475,
+      "malformed_repair": 0.25,
+      "false_malformed": 0.0,
+      "reward_mae": 0.0199,
+      "p50_latency_s": 1.81,
+      "usd_per_1k_images": 0.12
+    },
+    {
+      "route": "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8:novita",
+      "answered": 280,
+      "errors": 0,
+      "literal_exact": 0.8321,
+      "repaired_typo": 0.0083,
+      "malformed_hit": 0.45,
+      "malformed_repair": 0.4,
+      "false_malformed": 0.0,
+      "reward_mae": 0.0203,
+      "p50_latency_s": 1.68,
+      "usd_per_1k_images": 0.68
+    },
+    {
+      "route": "Qwen/Qwen3.5-397B-A17B:deepinfra",
+      "answered": 280,
+      "errors": 0,
+      "literal_exact": 0.8286,
+      "repaired_typo": 0.025,
+      "malformed_hit": 0.275,
+      "malformed_repair": 0.425,
+      "false_malformed": 0.0,
+      "reward_mae": 0.0243,
+      "p50_latency_s": 1.71,
+      "usd_per_1k_images": 0.53
+    },
+    {
+      "route": "Qwen/Qwen3-VL-235B-A22B-Instruct:deepinfra",
+      "answered": 280,
+      "errors": 0,
+      "literal_exact": 0.8393,
+      "repaired_typo": 0.0167,
+      "malformed_hit": 0.35,
+      "malformed_repair": 0.425,
+      "false_malformed": 0.0,
+      "reward_mae": 0.025,
+      "p50_latency_s": 2.64,
+      "usd_per_1k_images": 0.33
+    },
+    {
+      "route": "Qwen/Qwen3.5-27B:deepinfra",
+      "answered": 280,
+      "errors": 0,
+      "literal_exact": 0.7714,
+      "repaired_typo": 0.05,
+      "malformed_hit": 0.05,
+      "malformed_repair": 0.55,
+      "false_malformed": 0.0,
+      "reward_mae": 0.0325,
+      "p50_latency_s": 1.93,
+      "usd_per_1k_images": 0.314
+    },
+    {
+      "route": "Qwen/Qwen3.6-27B:deepinfra",
+      "answered": 280,
+      "errors": 0,
+      "literal_exact": 0.7714,
+      "repaired_typo": 0.0583,
+      "malformed_hit": 0.05,
+      "malformed_repair": 0.475,
+      "false_malformed": 0.0,
+      "reward_mae": 0.0327,
+      "p50_latency_s": 2.07,
+      "usd_per_1k_images": 0.548
+    },
+    {
+      "route": "Qwen/Qwen3-VL-30B-A3B-Instruct:deepinfra",
+      "answered": 280,
+      "errors": 0,
+      "literal_exact": 0.7464,
+      "repaired_typo": 0.0417,
+      "malformed_hit": 0.025,
+      "malformed_repair": 0.575,
+      "false_malformed": 0.0,
+      "reward_mae": 0.0336,
+      "p50_latency_s": 1.63,
+      "usd_per_1k_images": 0.247
+    },
+    {
+      "route": "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp:deepinfra",
+      "answered": 280,
+      "errors": 0,
+      "literal_exact": 0.7607,
+      "repaired_typo": 0.1333,
+      "malformed_hit": 0.4,
+      "malformed_repair": 0.45,
+      "false_malformed": 0.0,
+      "reward_mae": 0.0383,
+      "p50_latency_s": 2.64,
+      "usd_per_1k_images": 0.4
+    },
+    {
+      "route": "Qwen/Qwen3.8-27B:deepinfra",
+      "answered": 280,
+      "errors": 0,
+      "literal_exact": 0.7143,
+      "repaired_typo": 0.175,
+      "malformed_hit": 0.05,
+      "malformed_repair": 0.5,
+      "false_malformed": 0.0,
+      "reward_mae": 0.0386,
+      "p50_latency_s": 1.91,
+      "usd_per_1k_images": 0.346
+    }
+  ],
+  "pairs": [
+    {
+      "verifiers": [
+        "google/gemma-4-31B-it:deepinfra",
+        "zai-org/GLM-4.6V-Flash:novita"
+      ],
+      "reward_mae": 0.0037,
+      "clean_ranked_above_defect": 0.967,
+      "defects_given_full_reward": 4,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "google/gemma-4-31B-it:deepinfra"
+      ],
+      "reward_mae": 0.0061,
+      "clean_ranked_above_defect": 0.963,
+      "defects_given_full_reward": 1,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "google/gemma-4-31B-it:deepinfra",
+        "Qwen/Qwen3.6-35B-A3B:deepinfra"
+      ],
+      "reward_mae": 0.0068,
+      "clean_ranked_above_defect": 0.971,
+      "defects_given_full_reward": 7,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "google/gemma-4-31B-it:deepinfra",
+        "Qwen/Qwen3.5-397B-A17B:deepinfra"
+      ],
+      "reward_mae": 0.0073,
+      "clean_ranked_above_defect": 0.975,
+      "defects_given_full_reward": 6,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "google/gemma-4-31B-it:deepinfra",
+        "Qwen/Qwen3-VL-235B-A22B-Instruct:deepinfra"
+      ],
+      "reward_mae": 0.0083,
+      "clean_ranked_above_defect": 0.963,
+      "defects_given_full_reward": 6,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "google/gemma-4-31B-it:deepinfra",
+        "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8:novita"
+      ],
+      "reward_mae": 0.0086,
+      "clean_ranked_above_defect": 0.963,
+      "defects_given_full_reward": 5,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "google/gemma-4-31B-it:deepinfra",
+        "Qwen/Qwen3.6-27B:deepinfra"
+      ],
+      "reward_mae": 0.0089,
+      "clean_ranked_above_defect": 0.958,
+      "defects_given_full_reward": 10,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "google/gemma-4-31B-it:deepinfra",
+        "Qwen/Qwen3.5-27B:deepinfra"
+      ],
+      "reward_mae": 0.0093,
+      "clean_ranked_above_defect": 0.963,
+      "defects_given_full_reward": 9,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "google/gemma-4-31B-it:deepinfra",
+        "Qwen/Qwen3-VL-30B-A3B-Instruct:deepinfra"
+      ],
+      "reward_mae": 0.0098,
+      "clean_ranked_above_defect": 0.963,
+      "defects_given_full_reward": 9,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "google/gemma-4-31B-it:deepinfra",
+        "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp:deepinfra"
+      ],
+      "reward_mae": 0.0113,
+      "clean_ranked_above_defect": 0.896,
+      "defects_given_full_reward": 21,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "zai-org/GLM-4.6V-Flash:novita",
+        "Qwen/Qwen3.6-35B-A3B:deepinfra"
+      ],
+      "reward_mae": 0.0114,
+      "clean_ranked_above_defect": 0.963,
+      "defects_given_full_reward": 9,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "zai-org/GLM-4.6V-Flash:novita",
+        "Qwen/Qwen3.5-397B-A17B:deepinfra"
+      ],
+      "reward_mae": 0.0142,
+      "clean_ranked_above_defect": 0.95,
+      "defects_given_full_reward": 12,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "google/gemma-4-31B-it:deepinfra",
+        "Qwen/Qwen3.8-27B:deepinfra"
+      ],
+      "reward_mae": 0.0143,
+      "clean_ranked_above_defect": 0.883,
+      "defects_given_full_reward": 24,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "zai-org/GLM-4.6V-Flash:novita",
+        "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8:novita"
+      ],
+      "reward_mae": 0.0147,
+      "clean_ranked_above_defect": 0.933,
+      "defects_given_full_reward": 12,
+      "defect_images": 240
+    },
+    {
+      "verifiers": [
+        "zai-org/GLM-4.6V-Flash:novita",
+        "Qwen/Qwen3-VL-235B-A22B-Instruct:deepinfra"
+      ],
+      "reward_mae": 0.0154,
+      "clean_ranked_above_defect": 0.929,
+      "defects_given_full_reward": 13,
+      "defect_images": 240
+    }
+  ],
+  "best_qwen_only_pair": {
+    "verifiers": [
+      "Qwen/Qwen3.6-35B-A3B:deepinfra",
+      "Qwen/Qwen3.5-397B-A17B:deepinfra"
+    ],
+    "reward_mae": 0.0181,
+    "clean_ranked_above_defect": 0.938,
+    "defects_given_full_reward": 15,
+    "defect_images": 240
+  },
+  "excluded_after_pilot": {
+    "moonshotai/Kimi-K2.5:deepinfra": "empty readings on 36% of pilot images; highest cost",
+    "MiniMaxAI/MiniMax-M3:deepinfra": "8.8 s median latency"
+  }
+}

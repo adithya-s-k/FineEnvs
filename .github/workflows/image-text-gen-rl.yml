@@ -1,0 +1,24 @@
+name: Image Text Gen RL
+on:
+  pull_request:
+    paths: ['image-text-gen-rl/**', '.github/workflows/image-text-gen-rl.yml']
+  push:
+    branches: [main, codex/image-text-gen-rl]
+    paths: ['image-text-gen-rl/**', '.github/workflows/image-text-gen-rl.yml']
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Unit tests (offline, fixture verifier)
+        run: uv run --frozen --project image-text-gen-rl/envs/image_text_gen --extra dev pytest image-text-gen-rl/envs/image_text_gen/tests -q
+      - name: HTTP and WebSocket smoke (offline fixtures)
+        run: uv run --frozen --project image-text-gen-rl/envs/image_text_gen image-text-gen-smoke
+      - name: Lint
+        run: uv run --frozen --project image-text-gen-rl/envs/image_text_gen --extra dev ruff check image-text-gen-rl

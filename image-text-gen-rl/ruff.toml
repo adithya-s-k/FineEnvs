@@ -1,0 +1,1 @@
+extend = "envs/image_text_gen/pyproject.toml"

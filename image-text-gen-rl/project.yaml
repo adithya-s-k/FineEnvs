@@ -1,0 +1,22 @@
+name: image-text-gen-rl
+title: "Image Text Generation RL"
+tagline: "Teach text-to-image models to spell: blind VLM transcription rewards served through OpenEnv."
+order: 99          # unnumbered while the experiment is in progress
+status: wip
+
+hub:
+  org: AdithyaSK   # this experiment lives under the user account, not the FineEnvs org
+  spaces:
+    - AdithyaSK/image-text-gen-rl-env
+  buckets:
+    - AdithyaSK/image-text-gen-rl
+  datasets:
+    - leffff/Diffusion-Reward-Modeling-for-Text-Rendering-Dataset
+  models: []
+
+envs:
+  - name: image_text_gen
+    summary: "Prompt -> one generated image -> reward from blind Gemma 4 + Qwen3.6 transcriptions."
+    backend: http
+    frameworks:
+      openenv: {transport: http-websocket, space: AdithyaSK/image-text-gen-rl-env, verified: false}

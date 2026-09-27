@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openenv-image-text-gen"
+version = "0.1.0"
+description = "Text-rendering RL for image generators: a blind two-model Qwen VL transcription reward served through OpenEnv"
+requires-python = ">=3.11,<3.14"
+license = "Apache-2.0"
+dependencies = [
+  "openenv==0.4.2",
+  "huggingface-hub==1.31.0",
+  "Pillow>=11,<13",
+  "rapidfuzz>=3.14,<4",
+  "requests>=2.32,<3",
+  "gradio>=6,<7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "ruff>=0.12,<1"]
+
+[project.scripts]
+image-text-gen-server = "image_text_gen.server.app:main"
+image-text-gen-smoke = "image_text_gen.smoke:main"
+
+[tool.setuptools]
+packages = ["image_text_gen", "image_text_gen.data", "image_text_gen.server"]
+package-dir = {image_text_gen = "."}
+
+[tool.setuptools.package-data]
+image_text_gen = ["openenv.yaml", "LICENSE", "NOTICE", "data/exclusions.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B"]

@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.ipynb_checkpoints/
+
+# Generated run outputs, calibration readings, audit pulls and credentials. Committed
+# summaries live in results/.
+artifacts/
+.env
+.env.*
