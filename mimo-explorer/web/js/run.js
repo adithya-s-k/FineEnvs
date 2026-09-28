@@ -146,6 +146,7 @@ function renderHead(el, st) {
       ${r.judge ? `<span>${icon("scale", 14)}judge <b>${esc(r.judge.split("/")[1] || r.judge)}</b></span>` : ""}
       ${r.domain === "music" ? `<span>${icon("message", 14)}single model call</span>` : `<span>${icon("terminal", 14)}OpenCode</span>`}${r.flavor ? `<span>${icon("box", 14)}${esc(r.flavor)}</span>` : ""}</div>
       <div class="rp-actions"><a class="btn sm ghost" href="${reportUrl({ run: r })}" target="_blank" rel="noopener" title="Report an issue with this rollout">${icon("flag", 13)}Report</a>${vis}
+        <a class="btn sm" href="#/compare/${encodeURIComponent(r.task_id)}?r=${encodeURIComponent(r.id)}" title="Compare with other rollouts of this task">${icon("columns", 13)}Compare</a>
         <a class="btn sm" href="#/task/${encodeURIComponent(r.task_id)}">${icon("file", 13)}View task</a>${action}</div></div>
     ${r.error ? `<div class="note-box err">${icon("alert")}<span>${esc(r.error)}</span></div>` : ""}`;
 }
@@ -181,6 +182,21 @@ function appendTimeline(el, st, events) {
   else if (empty) empty.remove();
 }
 
+// A whole trace as timeline rows, for pages that show several at once (the comparison). `skip` leaves out kinds
+// the page shows elsewhere, such as the prompt when every rollout got the same one.
+export function traceHtml(id, events, { skip = [] } = {}) {
+  const st = { id, phase: null };
+  let steps = 0;
+  const html = events.map((e) => {
+    if (e.kind === "phase" && e.status === "start") st.phase = e.name;
+    if (skip.includes(e.kind)) return "";
+    const h = item(e, st);
+    if (h && (e.kind === "tool" || e.kind === "text")) steps++;
+    return h;
+  }).join("");
+  return { html, steps };
+}
+
 const row = (cls, ic, t, body) => `<li class="ev ${cls}"><span class="ei">${icon(ic, 14)}</span><div class="eb">${body}</div><span class="ts">${t}</span></li>`;
 
 function item(e, st) {
@@ -196,7 +212,7 @@ function item(e, st) {
     case "tool": {
       const inp = e.input || {};
       const head = inp.command || inp.filePath || inp.pattern || inp.path || e.title || Object.values(inp).map(String).join(" ").slice(0, 160);
-      const mcp = !(e.tool in TOOL_ICON) && /_/.test(e.tool || "");
+      const mcp = isMcpTool(e.tool);
       const cls = `ev-tool${mcp ? " mcp" : ""}${e.status === "error" ? " bad" : ""}`;
       return row(cls, mcp ? "plug" : TOOL_ICON[e.tool] || "terminal", t, `<details>${summary(`<b>${esc(mcp ? prettyTool(e.tool) : e.tool)}</b>
         <code>${esc(String(head).split("\n")[0].slice(0, 200))}</code>${e.ms >= 1000 ? `<span class="ms">${dur(e.ms / 1000)}</span>` : ""}`)}
@@ -221,9 +237,10 @@ const paramsText = (p) => !p ? "" : [p.thinking && p.thinking !== "default" && `
   p.temperature != null && `temperature ${p.temperature}`, p.steps && `${p.steps} steps max`, p.timeout_min && `${p.timeout_min} min limit`,
   p.max_tokens && `${p.max_tokens.toLocaleString()} max tokens`].filter(Boolean).join(" · ");
 const humanize = (id) => { const t = String(id || "").replace(/[_-]+/g, " ").trim(); return t.charAt(0).toUpperCase() + t.slice(1); };
-const prettyTool = (name) => { const parts = name.split("_"); return parts.length > 3 ? parts.slice(-3).join("_") : name; };
+export const prettyTool = (name) => { const parts = name.split("_"); return parts.length > 3 ? parts.slice(-3).join("_") : name; };
+export const isMcpTool = (name) => !(name in TOOL_ICON) && /_/.test(name || "");
 
-function diffHtml(text) {
+export function diffHtml(text) {
   return (text || "").split("\n").slice(0, 3000).map((l) => {
     const c = l.startsWith("+++") || l.startsWith("---") || l.startsWith("diff ") ? "dh" : l.startsWith("+") ? "da" : l.startsWith("-") ? "dd" : l.startsWith("@@") ? "dc" : "";
     return `<span class="${c}">${esc(l)}</span>`;

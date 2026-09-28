@@ -128,7 +128,12 @@ sandbox time on your account (a few cents for the sample). A real rollout with a
 a good one) is the final check.
 
 For the interface, `tests/ui-audit.mjs` (Playwright) clicks through every view like a person would, then checks
-every page for sideways scroll and errors at 390, 768, 1280 and 1920 px in both themes. Its header says what it needs.
+every page for sideways scroll and errors at 390, 768, 1280 and 1920 px in both themes. Its header says what it needs,
+including a task with three of your own finished rollouts for the comparison checks (`CMP_TASK`, `CMP_RUNS`).
+
+The comparison (`web/js/compare.js`, `#/compare/<task>?r=a,b,c`) reads only `/api/runs/{id}` and the task's rollout
+lists, so it shows exactly what the rollout page would. Positions in `r=` are the letters: `?r=a,,c` keeps C as C after
+B is removed, so a rollout keeps its letter and colour. Its colours are `--s1` to `--s4` in `web/app.css`.
 
 ## Adding a domain
 

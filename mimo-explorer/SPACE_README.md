@@ -57,6 +57,10 @@ who ran them, with the model, provider (or "own endpoint"), judge, settings and 
 them. You can make any rollout private from its page, and private rollouts are visible only to you. **My rollouts**
 always shows only your own.
 
+To **compare** rollouts of one task, tick two to four of them on the task page, or press Compare on a rollout. They sit
+side by side: settings, time, tokens and cost; the grade check by check; what each agent delivered; which tools it
+used; and the traces. A comparison link shows each viewer only the rollouts they may see.
+
 Public rollouts help everyone compare models on the same tasks and learn from real traces. With that in mind, they
 may later be released as an open dataset, for example as SFT or RL traces, with the same anonymisation. Private
 rollouts are never included.

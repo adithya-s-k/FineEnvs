@@ -5,12 +5,13 @@ import * as explore from "./explore.js";
 import { getSession, setSession, refreshActive } from "./session.js";
 
 let current = null;
-const VIEWS = { task: () => import("./task.js"), run: () => import("./run.js"), runs: () => import("./runs.js"), community: () => import("./community.js") };
+const VIEWS = { task: () => import("./task.js"), run: () => import("./run.js"), runs: () => import("./runs.js"), community: () => import("./community.js"),
+                compare: () => import("./compare.js") };
 const framed = window.top !== window.self;
 
 function parse(hash) {
   const [path, qs] = hash.replace(/^#/, "").split("?");
-  const m = path.match(/^\/(task|run)\/(.+)$/);
+  const m = path.match(/^\/(task|run|compare)\/(.+)$/);
   if (m) return { name: m[1], arg: decodeURIComponent(m[2]), qs };
   if (/^\/runs\/?$/.test(path)) return { name: "runs", qs };
   if (/^\/community\/?$/.test(path)) return { name: "community", qs };
@@ -26,7 +27,7 @@ async function route() {
   closeModal();
   const tip = document.getElementById("tip");   // a hovered chart cell removed by navigation never fires mouseleave
   if (tip) tip.hidden = true;
-  const tab = name === "runs" || name === "run" ? "runs" : name === "community" ? "community" : "explore";
+  const tab = name === "runs" || name === "run" ? "runs" : name === "community" || name === "compare" ? "community" : "explore";
   document.querySelectorAll("[data-nav]").forEach((a) => a.classList.toggle("on", a.dataset.nav === tab));
   window.scrollTo(0, 0);
   progress.start();
@@ -37,7 +38,8 @@ async function route() {
     // a fresh container per page: views attach their listeners to it, so none survive into the next page
     const old = $("#view"), view = old.cloneNode(false);
     old.replaceWith(view);
-    await mod.mount(view, name === "explore" ? (qs ? new URLSearchParams(qs) : null) : name === "community" ? qs : arg);
+    await mod.mount(view, name === "explore" ? (qs ? new URLSearchParams(qs) : null) : name === "community" ? qs
+      : name === "compare" ? { task: arg, qs } : arg);
   } finally { progress.done(); }
 }
 

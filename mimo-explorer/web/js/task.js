@@ -59,7 +59,9 @@ export async function mount(el, id) {
         <aside class="tp-side"><div class="panel runbox" id="runbox"><div class="panel-h"><h3>${icon("play", 14)}Run a rollout</h3></div>
           <div class="panel-b"><div class="loading-row">${spinner()}Loading models from Inference Providers…</div></div></div></aside>
       </div>
+      <div class="cmp-bar" id="cmp-bar" role="region" aria-label="Compare the selected rollouts" hidden></div>
     </div>`;
+  picked = new Set();
   wire(el, v);
   runPanel($("#runbox", el), v);
   loadRollouts(el, v);
@@ -328,10 +330,10 @@ async function loadCommunity(el, v, offset = 0) {
     return;
   }
   const peak = Math.max(1, ...s.histogram);
-  const rows = (runs) => runs.map((r) => `<a class="runrow" href="#/run/${esc(r.id)}">${rewardBadge(r.reward, r.status)}
+  const rows = (runs) => runs.map((r) => pickable(r, `<a class="runrow" href="#/run/${esc(r.id)}">${rewardBadge(r.reward, r.status)}
       <span class="m">${esc(r.endpoint ? r.model : r.model.split("/")[1] || r.model)}${r.endpoint ? ' <span class="chip">own endpoint</span>' : ""}</span>
       <span class="c sm-hide">${esc(paramsShort(r.params))}</span><span class="c">${money((r.cost || {}).total)}</span><span class="w2">${ago(r.created_at)}</span>
-      ${icon("chevronRight", 14)}</a>`).join("");
+      ${icon("chevronRight", 14)}</a>`)).join("");
   if (offset === 0) {
     box.innerHTML = `
       <div class="cm-stats">
@@ -348,7 +350,7 @@ async function loadCommunity(el, v, offset = 0) {
           ${s.by_model.slice(0, 8).map((m) => `<tr><td title="${esc(m.model)}">${esc(m.model.split("/")[1] || m.model)}${m.custom ? ' <span class="chip">own endpoint</span>' : ""}</td><td>${m.runs}</td>
             <td><span class="bar" style="width:${Math.round(m.mean * 48)}px"></span>${m.mean.toFixed(2)}</td><td>${rewardText(m.best)}</td></tr>`).join("")}</tbody></table></div>
       </div>
-      <div class="sec-label" style="margin-top:18px">Rollouts</div>
+      <div class="sec-label" style="margin-top:18px">Rollouts${d.total > 1 || getSession().user ? '<span class="hint">tick two or more to compare them</span>' : ""}</div>
       <div class="runlist cm-list" id="cm-rows">${rows(d.runs)}</div>
       <div class="more-row" id="cm-more" ${d.total > d.runs.length ? "" : "hidden"}><span class="muted sm">Showing ${d.runs.length} of ${d.total}</span>
         <button class="btn" type="button">Load more</button></div>`;
@@ -359,6 +361,28 @@ async function loadCommunity(el, v, offset = 0) {
     $("#cm-more", box).hidden = n >= d.total;
     $("#cm-more span", box).textContent = `Showing ${n} of ${d.total}`;
   }
+  syncPicks(el, v);
+}
+
+// ── picking rollouts to compare ──────────────────────────────────────────────
+// Both lists on this page (yours, and the community's) feed one selection; a public rollout of yours is in both, so
+// its two checkboxes move together. The order you tick them in is the order of the comparison's A, B, C, D.
+const COMPARE_MAX = 4;   // compare.js MAX
+let picked = new Set();
+const pickable = (r, row) => `<div class="runsel"><label class="pick" title="Select to compare">
+  <input type="checkbox" data-cmp="${esc(r.id)}" aria-label="Select this rollout to compare"></label>${row}</div>`;
+
+function syncPicks(el, v) {
+  const full = picked.size >= COMPARE_MAX;
+  $$("[data-cmp]", el).forEach((c) => { c.checked = picked.has(c.dataset.cmp); c.disabled = full && !c.checked; c.closest(".pick").title = c.disabled ? `Up to ${COMPARE_MAX} at once` : "Select to compare"; });
+  const bar = $("#cmp-bar", el);
+  if (!bar) return;
+  bar.hidden = !picked.size;
+  const n = picked.size;
+  bar.innerHTML = `<span><b>${n}</b> selected${n < 2 ? " · pick one more to compare" : ""}</span>
+    <button class="btn sm ghost" type="button" data-cmp-clear>Clear</button>
+    ${n >= 2 ? `<a class="btn sm primary" href="#/compare/${encodeURIComponent(v.id)}?r=${[...picked].map(encodeURIComponent).join(",")}">${icon("columns", 13)}Compare ${n}</a>`
+      : `<button class="btn sm primary" type="button" disabled>${icon("columns", 13)}Compare</button>`}`;
 }
 
 const paramsShort = (p) => !p ? "" : [p.thinking && p.thinking !== "default" && `thinking ${p.thinking === "none" ? "off" : p.thinking}`,
@@ -384,6 +408,13 @@ function wire(el, v) {
     if (f) return previewFile(v, f.dataset.path, f.dataset.kind);
     const t = ev.target.closest(".tbl-btn");
     if (t) return previewTable(v, t.dataset.sys, t.dataset.table, t.dataset.label);
+    if (ev.target.closest("[data-cmp-clear]")) { picked.clear(); syncPicks(el, v); }
+  });
+  el.addEventListener("change", (ev) => {
+    const c = ev.target.closest("[data-cmp]");
+    if (!c) return;
+    if (c.checked) picked.add(c.dataset.cmp); else picked.delete(c.dataset.cmp);
+    syncPicks(el, v);
   });
   const links = new Map($$("[data-jump]", el).map((a) => [a.dataset.jump, a]));
   spy = new IntersectionObserver((es) => es.forEach((e) => {
@@ -638,8 +669,9 @@ async function loadRollouts(el, v) {
   try {
     const { runs } = await api(`/api/runs?task_id=${encodeURIComponent(v.id)}`);
     if (!box.isConnected) return;
-    box.innerHTML = runs.length ? `<div class="runlist">${runs.map((r) => `<a class="runrow" href="#/run/${esc(r.id)}">${statusPill(r.status)}${visibilityBadge(r.visibility)}
-      <span class="m">${esc(r.model.split("/")[1] || r.model)}</span>${rewardBadge(r.reward, r.status)}<span class="c">${money((r.cost || {}).total)}</span><span class="w2">${ago(r.created_at)}</span></a>`).join("")}</div>`
+    box.innerHTML = runs.length ? `<div class="runlist">${runs.map((r) => pickable(r, `<a class="runrow" href="#/run/${esc(r.id)}">${statusPill(r.status)}${visibilityBadge(r.visibility)}
+      <span class="m">${esc(r.model.split("/")[1] || r.model)}</span>${rewardBadge(r.reward, r.status)}<span class="c">${money((r.cost || {}).total)}</span><span class="w2">${ago(r.created_at)}</span></a>`)).join("")}</div>`
       : `<p class="muted sm">None yet. Pick a model and run one.</p>`;
+    syncPicks(el, v);
   } catch (e) { box.innerHTML = `<p class="err-text sm">${esc(e.message)}</p>`; }
 }

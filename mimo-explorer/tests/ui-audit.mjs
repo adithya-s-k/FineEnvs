@@ -10,6 +10,9 @@ const BASE = process.argv[2] || 'http://localhost:8742';
 const SHOTS = process.argv[3] || '/tmp';
 const OWN_RUN = process.env.OWN_RUN || '20260926-180342-0d8314';      // a finished public webdev rollout of the local user
 const OTHER_RUN = process.env.OTHER_RUN || '20260926-180342-0d83ff';  // the same, owned by someone else
+// a task with at least three finished rollouts of the local user, for the comparison
+const CMP_TASK = process.env.CMP_TASK || 'format-code-task-001590';
+const CMP_RUNS = process.env.CMP_RUNS || '20260926-133727-48e5cf,20260926-161405-d52e73,20260926-162235-4f47e5';
 const results = [];
 const ok = (name, cond, detail = '') => { results.push({ name, pass: !!cond, detail }); };
 
@@ -145,8 +148,39 @@ const noOverflow = (p) => p.evaluate(() => document.documentElement.scrollWidth 
   await p.click('.rt-file'); await p.waitForTimeout(1200);
   ok('repository: go-to-file and the viewer with line numbers', (await p.$$('.rt-code .ln')).length > 5);
 
+  // compare: pick rollouts on the task page, then work the comparison
+  await go(p, '#/task/' + CMP_TASK, 2500);
+  const picks = await p.$$('#task-runs [data-cmp]');
+  ok('compare: every rollout on the task page has a checkbox', picks.length >= 3, String(picks.length));
+  await picks[0].click(); await p.waitForTimeout(150);
+  ok('compare: one pick asks for another', await p.isVisible('#cmp-bar') && await p.isDisabled('#cmp-bar button.primary'));
+  await picks[1].click(); await picks[2].click(); await p.waitForTimeout(150);
+  await p.click('#cmp-bar a.primary'); await p.waitForTimeout(2500);
+  const letters = () => p.$$eval('.cmp-col .cmp-tag', (t) => t.map((x) => x.textContent.trim()).join(''));
+  ok('compare: opens with A, B and C', /#\/compare\//.test(await p.evaluate(() => location.hash)) && (await letters()) === 'ABC');
+  ok('compare: summary, grade, output, how they worked and traces', (await p.$$eval('.cmp-sec', (s) => s.map((x) => x.id).join(' '))) === 'cmp-summary cmp-grade cmp-outcome cmp-work cmp-traces');
+  ok('compare: the chart is drawn', await p.isVisible('#cmp-chart svg'));
+  const shown = () => p.$$eval('#cmp-summary tbody tr:not(.grp)', (r) => r.filter((x) => getComputedStyle(x).display !== 'none').length);
+  const all = await shown();
+  await p.click('#cmp-same'); await p.waitForTimeout(150);
+  const differ = await shown();
+  ok('compare: "Hide rows that match" leaves only the differences', differ > 0 && differ < all, `${differ} of ${all}`);
+  await p.click('[data-metric="cost"]'); await p.waitForTimeout(200);
+  ok('compare: the chart switches to cost', /Model cost/.test(await p.getAttribute('#cmp-chart svg', 'aria-label')));
+  await p.click('[data-remove="1"]'); await p.waitForTimeout(400);
+  ok('compare: removing B keeps A and C, and the link keeps the gap', (await letters()) === 'AC' && /r=[^,]+,,/.test(await p.evaluate(() => location.hash)));
+  await p.click('.cmp-add summary'); await p.waitForTimeout(200);
+  await p.click('.cmp-add [data-add]:not([disabled])'); await p.waitForTimeout(1500);
+  ok('compare: adding from the list fills the empty B', (await letters()) === 'ABC');
+  await p.click('.cmp-add summary'); await p.waitForTimeout(150); await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+  ok('compare: Escape closes the list', !(await p.$('.cmp-add[open]')));
+  await p.click('.cmp-toc [data-jump="traces"]'); await p.waitForTimeout(900);
+  ok('compare: the slim bar follows once the cards scroll away', await p.isVisible('#cmp-strip.on') && (await p.$$('#cmp-strip .cmp-chip')).length === 3);
+  ok('compare: traces side by side', (await p.$$eval('.cmp-tcol', (c) => c.filter((x) => getComputedStyle(x).display !== 'none').length)) === 3);
+
   // own rollout page
   await go(p, '#/run/' + OWN_RUN, 2000);
+  ok('run page: Compare opens the comparison with this rollout', (await p.getAttribute('.rp-actions a[href*="#/compare/"]', 'href')).endsWith('?r=' + OWN_RUN));
   ok('run page: stepper, timeline, grade, cost and details', (await p.$$('.step')).length === 5 && (await p.$$('#rp-tl .ev')).length > 2 && await p.isVisible('.big') && await p.isVisible('.big-cost') && /Harness/.test(await p.textContent('#rp-meta')));
   ok('run page: screenshot in the grade card', await p.isVisible('.grade .shot img'));
   await p.click('#rp-expand'); await p.waitForTimeout(200);
@@ -198,7 +232,8 @@ const noOverflow = (p) => p.evaluate(() => document.documentElement.scrollWidth 
 
 // ── every width and theme: layout ────────────────────────────────────────────
 const PAGES = ['#/', '#/task/s3k_0000_accounting_audit_tax_en_t1_rl_008', '#/task/format-code-task-001406', '#/task/dasyn_260630_00886',
-  '#/task/music-gK-0216', '#/task/arvo_42480818', '#/run/' + OWN_RUN, '#/run/' + OTHER_RUN, '#/runs', '#/community', '#/community?view=tasks'];
+  '#/task/music-gK-0216', '#/task/arvo_42480818', '#/run/' + OWN_RUN, '#/run/' + OTHER_RUN, '#/runs', '#/community', '#/community?view=tasks',
+  `#/compare/${CMP_TASK}?r=${CMP_RUNS}`];
 for (const theme of ['light', 'dark']) for (const w of [390, 768, 1280, 1920]) {
   const p = await page(w, theme);
   for (const h of PAGES) {
@@ -223,6 +258,12 @@ for (const theme of ['light', 'dark']) for (const w of [390, 768, 1280, 1920]) {
     ok('phone: Show results closes the sheet and unlocks the page', await p.evaluate(() => !document.querySelector('.filters').classList.contains('open') && !document.body.classList.contains('noscroll')));
     ok('phone: the list starts on the first screen', await p.evaluate(() => document.querySelector('#list').getBoundingClientRect().top + scrollY < 400));
     ok('phone: brand text hidden, logo kept', !(await p.isVisible('.brand .name')) && await p.isVisible('.logo'));
+    await go(p, `#/compare/${CMP_TASK}?r=${CMP_RUNS}`, 2500);
+    const cols = () => p.$$eval('.cmp-tcol', (c) => c.filter((x) => getComputedStyle(x).display !== 'none').map((x) => x.dataset.col).join(''));
+    ok('phone compare: one trace at a time, behind tabs', await p.isVisible('.cmp-tabs') && (await cols()) === '0');
+    await p.click('.cmp-tabs [data-tab="1"]'); await p.waitForTimeout(200);
+    ok('phone compare: a tab switches the trace', (await cols()) === '1');
+    ok('phone compare: rollout cards two to a row', await p.evaluate(() => { const c = [...document.querySelectorAll('.cmp-col')]; return c.length > 1 && c[0].getBoundingClientRect().top === c[1].getBoundingClientRect().top; }));
   }
   ok(`${theme} ${w}px: no JavaScript errors`, p.errors.length === 0, p.errors.slice(0, 3).join(' | '));
   await p.context().close();
@@ -232,7 +273,7 @@ for (const w of [320, 360, 390]) {
   const ctx = await b.newContext({ viewport: { width: w, height: 800 } });
   await ctx.route('**/api/me', (r) => r.fulfill({ json: { user: null, local: false, oauth: true, version: '1.0.0', source: 'test', missing_scopes: [] } }));
   const p = await ctx.newPage();
-  for (const h of ['#/', '#/community', '#/task/s3k_0000_accounting_audit_tax_en_t1_rl_008', '#/runs', '#/run/' + OWN_RUN]) {
+  for (const h of ['#/', '#/community', '#/task/s3k_0000_accounting_audit_tax_en_t1_rl_008', '#/runs', '#/run/' + OWN_RUN, `#/compare/${CMP_TASK}?r=${CMP_RUNS}`]) {
     await p.goto(BASE + '/' + h, { waitUntil: 'networkidle' }); await p.waitForTimeout(900);
     ok(`signed out ${w}px ${h}: no sideways scroll`, await noOverflow(p));
   }
