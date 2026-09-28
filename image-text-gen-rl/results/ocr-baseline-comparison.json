@@ -1,0 +1,144 @@
+{
+  "source": "train/compare_ocr_baseline.py on the 280 calibration renders",
+  "readers": {
+    "paddleocr": "2.9.1 (paddlepaddle 2.6.2, default English, CPU, HF Jobs)",
+    "easyocr": "1.7.2 (CPU, HF Jobs)",
+    "env": "google/gemma-4-31B-it + Qwen/Qwen3.6-35B-A3B, blind-transcription-v2"
+  },
+  "totals": {
+    "images": 280,
+    "defect_images": 240,
+    "defects_given_full_reward": {
+      "paddleocr + edit distance": 28,
+      "easyocr + edit distance": 25,
+      "paddleocr + env scoring": 1,
+      "easyocr + env scoring": 2,
+      "gemma + qwen (env)": 6
+    },
+    "clean_mean_reward": {
+      "paddleocr + edit distance": 0.977,
+      "easyocr + edit distance": 0.913,
+      "paddleocr + env scoring": 0.982,
+      "easyocr + env scoring": 0.912,
+      "gemma + qwen (env)": 1.0
+    },
+    "mae_vs_literal_truth": {
+      "paddleocr + edit distance": 0.101,
+      "easyocr + edit distance": 0.144,
+      "paddleocr + env scoring": 0.048,
+      "easyocr + env scoring": 0.1,
+      "gemma + qwen (env)": 0.007
+    },
+    "clean_ranked_above_its_defect": {
+      "paddleocr + edit distance": 0.808,
+      "easyocr + edit distance": 0.708,
+      "paddleocr + env scoring": 0.917,
+      "easyocr + env scoring": 0.792,
+      "gemma + qwen (env)": 0.975
+    },
+    "literal_exact": {
+      "paddleocr": 0.632,
+      "easyocr": 0.496
+    }
+  },
+  "by_variant": {
+    "clean": {
+      "images": 40,
+      "truth_reward": 1.0,
+      "env_mean": 1.0,
+      "env_full": 1.0,
+      "paddleocr_literal": 0.775,
+      "paddleocr_read_as_target": 0.775,
+      "paddleocr_edit_mean": 0.977,
+      "paddleocr_edit_full": 0.775,
+      "easyocr_literal": 0.65,
+      "easyocr_read_as_target": 0.65,
+      "easyocr_edit_mean": 0.913,
+      "easyocr_edit_full": 0.65
+    },
+    "typo_swap": {
+      "images": 40,
+      "truth_reward": 0.849,
+      "env_mean": 0.853,
+      "env_full": 0.025,
+      "paddleocr_literal": 0.825,
+      "paddleocr_read_as_target": 0.0,
+      "paddleocr_edit_mean": 0.811,
+      "paddleocr_edit_full": 0.0,
+      "easyocr_literal": 0.575,
+      "easyocr_read_as_target": 0.0,
+      "easyocr_edit_mean": 0.783,
+      "easyocr_edit_full": 0.0
+    },
+    "missing_char": {
+      "images": 40,
+      "truth_reward": 0.924,
+      "env_mean": 0.924,
+      "env_full": 0.0,
+      "paddleocr_literal": 0.75,
+      "paddleocr_read_as_target": 0.0,
+      "paddleocr_edit_mean": 0.884,
+      "paddleocr_edit_full": 0.0,
+      "easyocr_literal": 0.625,
+      "easyocr_read_as_target": 0.0,
+      "easyocr_edit_mean": 0.859,
+      "easyocr_edit_full": 0.0
+    },
+    "doubled_char": {
+      "images": 40,
+      "truth_reward": 0.925,
+      "env_mean": 0.929,
+      "env_full": 0.05,
+      "paddleocr_literal": 0.825,
+      "paddleocr_read_as_target": 0.0,
+      "paddleocr_edit_mean": 0.897,
+      "paddleocr_edit_full": 0.0,
+      "easyocr_literal": 0.525,
+      "easyocr_read_as_target": 0.0,
+      "easyocr_edit_mean": 0.814,
+      "easyocr_edit_full": 0.0
+    },
+    "wrong_case": {
+      "images": 40,
+      "truth_reward": 0.903,
+      "env_mean": 0.9,
+      "env_full": 0.025,
+      "paddleocr_literal": 0.625,
+      "paddleocr_read_as_target": 0.675,
+      "paddleocr_edit_mean": 0.974,
+      "paddleocr_edit_full": 0.675,
+      "easyocr_literal": 0.5,
+      "easyocr_read_as_target": 0.6,
+      "easyocr_edit_mean": 0.884,
+      "easyocr_edit_full": 0.6
+    },
+    "malformed_glyph": {
+      "images": 40,
+      "truth_reward": 0.74,
+      "env_mean": 0.758,
+      "env_full": 0.05,
+      "paddleocr_literal": 0.0,
+      "paddleocr_read_as_target": 0.025,
+      "paddleocr_edit_mean": 0.887,
+      "paddleocr_edit_full": 0.025,
+      "easyocr_literal": 0.0,
+      "easyocr_read_as_target": 0.025,
+      "easyocr_edit_mean": 0.833,
+      "easyocr_edit_full": 0.025
+    },
+    "extra_text": {
+      "images": 40,
+      "truth_reward": 0.781,
+      "env_mean": 0.782,
+      "env_full": 0.0,
+      "paddleocr_literal": 0.625,
+      "paddleocr_read_as_target": 0.0,
+      "paddleocr_edit_mean": 0.475,
+      "paddleocr_edit_full": 0.0,
+      "easyocr_literal": 0.6,
+      "easyocr_read_as_target": 0.0,
+      "easyocr_edit_mean": 0.443,
+      "easyocr_edit_full": 0.0
+    }
+  }
+}

@@ -2,6 +2,7 @@
 
 | File | What it is |
 |---|---|
+| `ocr-baseline-comparison.json` | Conventional OCR (PaddleOCR 2.9.1, EasyOCR 1.7.2) + edit distance vs the environment on the same 280 renders (`train/compare_ocr_baseline.py`). |
 | `verifier-calibration.json` | Summary of the 280-image verifier sweep, re-scored under `blind-transcription-v2` behind the default verifier pair: per-model literal accuracy, typo/glyph repair rates, reward error, latency and cost, and the best pairs under the current scoring. Full readings: `artifacts/calibration-40.json` (ignored; copied to the bucket). |
 
 ## Verifier calibration (2026-09-27)
@@ -45,3 +46,20 @@ charges a fixed 0.05 per unrequested character beyond 2 (details in `JUDGE.md`).
 The default keeps one Qwen reader at ~$0.18 per 1k images; GLM is 4x the cost, slower and served
 by one provider. **Caveat:** these are clean typographic renders. Agreement on real diffusion
 output (busy scenes, stylised lettering, pseudo-text) is not yet measured.
+
+## Conventional OCR as the reward (2026-09-28)
+
+Same 280 renders, read by PaddleOCR 2.9.1 and EasyOCR 1.7.2 on HF Jobs (CPU) and scored with the
+simple reward, 1 − edit distance / length (case- and space-insensitive):
+
+| Reader + reward | Clean ranked above its defect | Defects given full reward | Error vs literal truth |
+|---|---:|---:|---:|
+| PaddleOCR + edit distance | 0.808 | 28 / 240 | 0.101 |
+| EasyOCR + edit distance | 0.708 | 25 / 240 | 0.144 |
+| PaddleOCR + environment scoring | 0.917 | 1 / 240 | 0.048 |
+| **Gemma 4 31B + Qwen3.6-35B (environment)** | **0.975** | **6 / 240** | **0.007** |
+
+OCR rarely auto-corrects (a typo came back as the correct word 0 / 120 times). It fails by misreading
+correct renders (PaddleOCR read 77.5% of clean renders exactly, EasyOCR 65%),
+by having no symbol for a broken glyph (which then costs about one edit, like a typo), and, with the usual
+reward, by ignoring case. Clean Pillow renders only; diffusion outputs not yet measured.
