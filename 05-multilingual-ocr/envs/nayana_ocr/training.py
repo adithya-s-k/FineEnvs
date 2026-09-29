@@ -64,6 +64,18 @@ class AssetCache:
             return image.convert("RGB")
 
 
+# A handful of corpus pages decode far above the pixel guard -- 7016x9934 and
+# 14044x9934 are both real. The evalset builder already draws spares and replaces
+# them; the training stream had no such guard, so one such page reaching a rollout
+# raised out of reset and killed a run at step 45 with no checkpoint written.
+UNRENDERABLE_PAGE_SIGNALS = ("exceeds max_pixels", "trainer pixel budget")
+
+
+def unrenderable_page(error):
+    text = str(error)
+    return any(signal in text for signal in UNRENDERABLE_PAGE_SIGNALS)
+
+
 class TrainingEnvironment:
     # TRL exposes public methods as tools; only reset is needed for this one-step task.
     def __init__(self, url, cache, snapshot_id):
@@ -71,19 +83,36 @@ class TrainingEnvironment:
         self.cache = cache
         self.snapshot_id = snapshot_id
         self.task_id = None
+        # What the sampler asked for, which is what the reward must be routed against
+        # even when the page behind it could not be rendered and a spare stood in.
+        self.requested_task_id = None
+        self.substitutions = 0
 
-    def reset(self, task_id, **kwargs):
-        observation = self.client.reset(task_id=task_id).observation
-        if (
-            observation.task_id != task_id
-            or observation.snapshot_id != self.snapshot_id
-        ):
-            raise RuntimeError("Rollout task or snapshot changed")
-        self.task_id = task_id
-        return [
-            {"type": "image", "image": self.cache.image(observation)},
-            {"type": "text", "text": observation.prompt},
-        ]
+    def reset(self, task_id, spare_task_ids=(), **kwargs):
+        candidates = [task_id, *(spare_task_ids or ())]
+        for index, candidate in enumerate(candidates):
+            try:
+                observation = self.client.reset(task_id=candidate).observation
+                if (
+                    observation.task_id != candidate
+                    or observation.snapshot_id != self.snapshot_id
+                ):
+                    raise RuntimeError("Rollout task or snapshot changed")
+                image = self.cache.image(observation)
+            except Exception as error:
+                # Only an unrenderable page is substitutable. Anything else is a real
+                # failure and must abort the step rather than silently pick another task.
+                if not unrenderable_page(error) or index == len(candidates) - 1:
+                    raise
+                continue
+            self.requested_task_id = task_id
+            self.task_id = candidate
+            self.substitutions += index > 0
+            return [
+                {"type": "image", "image": image},
+                {"type": "text", "text": observation.prompt},
+            ]
+        raise RuntimeError(f"No renderable page among {len(candidates)} candidates")
 
     def _close(self):
         self.client.close()
@@ -136,7 +165,7 @@ def env_reward(completions, environments, task_id, **kwargs):
     for completion, environment, expected in zip(
         completions, environments, task_id, strict=True
     ):
-        if environment.task_id != expected:
+        if environment.requested_task_id != expected:
             raise RuntimeError("Reward was routed to the wrong rollout task")
         result = step_with_judge_retry(environment.client, completion_text(completion))
         if (

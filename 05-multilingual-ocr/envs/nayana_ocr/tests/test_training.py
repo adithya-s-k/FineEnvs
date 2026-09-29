@@ -26,9 +26,104 @@ def test_balance_is_independent_of_discovery_order_and_rejects_missing_groups():
 def test_reward_rejects_misrouted_group_before_scoring():
     class WrongTask:
         task_id = "different"
+        requested_task_id = "different"
 
     with pytest.raises(RuntimeError, match="wrong rollout task"):
         env_reward(["B"], [WrongTask()], ["requested"])
+
+
+def test_reward_routes_on_the_requested_task_not_the_substituted_one():
+    # A spare stood in for an unrenderable page: the rollout ran a different task than
+    # the sampler named, and the reward still belongs to the row that was asked for.
+    class Substituted:
+        task_id = "spare"
+        requested_task_id = "requested"
+
+    with pytest.raises(RuntimeError, match="wrong rollout task"):
+        env_reward(["B"], [Substituted()], ["somebody-else"])
+
+
+class FakeClient:
+    """Reset fails for pages the pixel guard rejects, as the real server does."""
+
+    def __init__(self, unrenderable, snapshot_id="snap"):
+        self.unrenderable = set(unrenderable)
+        self.snapshot_id = snapshot_id
+        self.attempts = []
+
+    def reset(self, task_id):
+        self.attempts.append(task_id)
+        if task_id in self.unrenderable:
+            raise RuntimeError(
+                f"Server error: {task_id}: 7016x9934 exceeds max_pixels=50000000"
+            )
+        observation = type(
+            "Observation",
+            (),
+            {
+                "task_id": task_id,
+                "snapshot_id": self.snapshot_id,
+                "prompt": f"prompt for {task_id}",
+                "asset_sha256": "0" * 64,
+            },
+        )()
+        return type("Result", (), {"observation": observation})()
+
+    def close(self):
+        pass
+
+
+def environment_with(client):
+    from nayana_ocr.training import TrainingEnvironment
+
+    environment = TrainingEnvironment.__new__(TrainingEnvironment)
+    environment.client = client
+    environment.cache = type("Cache", (), {"image": staticmethod(lambda o: "image")})()
+    environment.snapshot_id = client.snapshot_id
+    environment.task_id = None
+    environment.requested_task_id = None
+    environment.substitutions = 0
+    return environment
+
+
+def test_reset_substitutes_a_spare_for_an_unrenderable_page():
+    client = FakeClient(unrenderable={"bad"})
+    environment = environment_with(client)
+    content = environment.reset("bad", spare_task_ids=["also-bad-later", "good"])
+    assert client.attempts == ["bad", "also-bad-later"]
+    assert environment.task_id == "also-bad-later"
+    assert environment.requested_task_id == "bad"
+    assert environment.substitutions == 1
+    assert content[1]["text"] == "prompt for also-bad-later"
+
+
+def test_reset_prefers_the_requested_task_and_records_no_substitution():
+    client = FakeClient(unrenderable=set())
+    environment = environment_with(client)
+    environment.reset("good", spare_task_ids=["spare"])
+    assert client.attempts == ["good"]
+    assert environment.task_id == environment.requested_task_id == "good"
+    assert environment.substitutions == 0
+
+
+def test_reset_does_not_substitute_for_an_unrelated_failure():
+    class Broken(FakeClient):
+        def reset(self, task_id):
+            self.attempts.append(task_id)
+            raise RuntimeError("Server error: judge unreachable")
+
+    client = Broken(unrenderable=set())
+    environment = environment_with(client)
+    with pytest.raises(RuntimeError, match="judge unreachable"):
+        environment.reset("task", spare_task_ids=["spare"])
+    assert client.attempts == ["task"]
+
+
+def test_reset_raises_when_every_candidate_is_unrenderable():
+    client = FakeClient(unrenderable={"a", "b"})
+    environment = environment_with(client)
+    with pytest.raises(RuntimeError, match="exceeds max_pixels"):
+        environment.reset("a", spare_task_ids=["b"])
 
 
 @pytest.mark.parametrize("mode", ["map", "iterable"])
@@ -93,3 +188,8 @@ def assert_trl_groups(tmp_path, dataset):
         assert batch[0]["task_id"] == batch[1]["task_id"]
         assert batch[2]["task_id"] == batch[3]["task_id"]
         assert batch[0]["task_id"] != batch[2]["task_id"]
+        # reset() can only substitute if the spares survive TRL's batching alongside
+        # the task they stand in for.
+        for row in batch:
+            assert row["spare_task_ids"]
+            assert row["task_id"] not in row["spare_task_ids"]

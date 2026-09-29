@@ -11,7 +11,12 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from nayana_ocr.client import connect
-from nayana_ocr.corpus_training import BlockTaskStream, CorpusAPI, build_corpus_dataset
+from nayana_ocr.corpus_training import (
+    SPARES,
+    BlockTaskStream,
+    CorpusAPI,
+    build_corpus_dataset,
+)
 from nayana_ocr.data.evalset import load as load_evalset
 from nayana_ocr.data.evalset import subsample as subsample_evalset
 from nayana_ocr.data.schema import FAMILIES
@@ -107,9 +112,25 @@ def _iterate_rows(rows):
     yield from rows
 
 
+def with_spares(rows):
+    """Offer each task a few stand-ins, for the pages the pixel guard rejects."""
+    rows = list(rows)
+    return [
+        {
+            **row,
+            "spare_task_ids": [
+                rows[(position + offset) % len(rows)]["task_id"]
+                for offset in range(1, min(SPARES, len(rows)))
+            ],
+        }
+        for position, row in enumerate(rows)
+    ]
+
+
 def build_dataset(rows, mode):
     from datasets import Dataset, IterableDataset
 
+    rows = with_spares(rows)
     if mode == "iterable":
         # Stream small metadata records from a fixed order. TRL owns G-fold repetition.
         return IterableDataset.from_generator(_iterate_rows, gen_kwargs={"rows": rows})
