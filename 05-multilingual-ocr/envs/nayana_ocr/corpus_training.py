@@ -8,6 +8,10 @@ import requests
 
 from .data.schema import FAMILIES, canonical_json
 
+# Candidates offered per task when its page cannot be rendered. Unrenderable pages run
+# about 0.4% of the corpus, so three spares put a step's failure odds near 3e-8.
+SPARES = 4
+
 
 class CorpusAPI:
     def __init__(self, url, snapshot_id=None):
@@ -185,9 +189,19 @@ class BlockTaskStream:
                     ).hexdigest()
                 )
                 rng.shuffle(rows)
-                for row in rows[self.task_offset - start :]:
+                for position, row in enumerate(
+                    rows[self.task_offset - start :], self.task_offset - start
+                ):
                     self.task_offset += 1
-                    yield row
+                    # Spares come from the chunk already in hand, so an unrenderable
+                    # page costs a substitution rather than another round trip.
+                    yield {
+                        **row,
+                        "spare_task_ids": [
+                            rows[(position + offset) % len(rows)]["task_id"]
+                            for offset in range(1, min(SPARES, len(rows)))
+                        ],
+                    }
             self.block_index += 1
             self.task_offset = 0
 
