@@ -42,5 +42,11 @@ else
     fi
 fi
 
+if [ -x /opt/review/bin/uvicorn ]; then
+    echo "💬 Starting review API (REVIEW_MODE=${REVIEW_MODE:-off})..."
+    ( cd /app/review && /opt/review/bin/uvicorn server:app --host 127.0.0.1 --port 7861 \
+        --proxy-headers --forwarded-allow-ips 127.0.0.1 ) &
+fi
+
 echo "🌐 Starting nginx on port 8080..."
 exec nginx -g 'daemon off;'

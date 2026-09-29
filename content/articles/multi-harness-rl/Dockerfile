@@ -108,6 +108,15 @@ RUN set -e; \
       echo "⏭️  All exports disabled"; \
     fi
 
+# ----- Review API: comments on the article, stored in a Hugging Face bucket -----
+# Off unless the REVIEW_MODE Space variable is "on". See review/server.py.
+COPY review/requirements.txt /tmp/review-requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv && \
+    python3 -m venv /opt/review && \
+    /opt/review/bin/pip install --no-cache-dir -r /tmp/review-requirements.txt && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+COPY review/ /app/review/
+
 # ----- Nginx configuration -----
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY entrypoint.sh /entrypoint.sh

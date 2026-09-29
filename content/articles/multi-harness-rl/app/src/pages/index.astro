@@ -442,5 +442,22 @@ const links: Array<{ label: string; url: string; icon?: string }> =
         }
       });
     </script>
+    <script is:inline>
+      // Review mode: only with ?review (it sticks for the tab until "Exit"). The published page
+      // never loads the review layer, and the server refuses it unless REVIEW_MODE is on.
+      (() => {
+        let on = false;
+        try {
+          const q = new URLSearchParams(location.search);
+          if (q.get("review") === "off") sessionStorage.removeItem("mhrl-review");
+          else if (q.has("review")) sessionStorage.setItem("mhrl-review", "1");
+          on = sessionStorage.getItem("mhrl-review") === "1";
+        } catch (e) { on = /[?&]review\b/.test(location.search); }
+        if (!on) return;
+        const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/review/review.css";
+        const s = document.createElement("script"); s.src = "/review/review.js"; s.defer = true;
+        document.head.append(l, s);
+      })();
+    </script>
   </body>
 </html>

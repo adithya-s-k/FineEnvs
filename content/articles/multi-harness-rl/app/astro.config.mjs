@@ -45,6 +45,17 @@ export default defineConfig({
   devToolbar: {
     enabled: false
   },
+  // In development, the review API (review/server.py) runs on its own port; in the Space nginx
+  // proxies the same paths.
+  vite: {
+    server: {
+      proxy: {
+        // Keep the browser's host, so sign-in redirects come back through this dev server.
+        '/api/review': { target: 'http://127.0.0.1:7861', changeOrigin: false, xfwd: true },
+        '/oauth': { target: 'http://127.0.0.1:7861', changeOrigin: false, xfwd: true },
+      },
+    },
+  },
   markdown: {
     shikiConfig: {
       themes: {
