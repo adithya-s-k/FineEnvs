@@ -25,6 +25,8 @@ INTEGER_OPTIONS = (
     "train_per_group",
     "eval_per_group",
     "eval_limit",
+    "save_steps",
+    "save_total_limit",
     "max_steps",
     "num_generations",
     "max_completion_length",
@@ -38,6 +40,8 @@ class Config:
     env_url: str = ""
     eval_split: str = ""
     eval_limit: int = 0
+    save_steps: int = 25
+    save_total_limit: int = 0
     model: str = "google/gemma-4-E2B-it"
     model_revision: str = ""
     languages: tuple[str, ...] = ("en_us", "hi_in")
@@ -304,8 +308,10 @@ def run(config):
                 trackio_space_id=config.trackio_space or None,
                 logging_steps=1,
                 save_strategy="no" if config.smoke else "steps",
-                save_steps=min(25, config.max_steps),
-                save_total_limit=2,
+                save_steps=min(config.save_steps, config.max_steps),
+                # Keeping only the last few discards the curve. A run whose point is
+                # to show how reward moves has to keep the checkpoints it moved through.
+                save_total_limit=config.save_total_limit or None,
                 run_name=config.run_name,
             ),
         )
