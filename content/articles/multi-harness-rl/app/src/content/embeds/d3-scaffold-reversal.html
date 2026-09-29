@@ -30,7 +30,7 @@
       const HN = [
         {k:'H1', t:'Minimal',  s:'no compression, verbose tools, no retries'},
         {k:'H2', t:'Improved', s:'compressed context, minimal tools, retries'},
-        {k:'H3', t:'Full',     s:'H2 plus self-checks, drift checks, rollback'},
+        {k:'H3', t:'Full',     s:'improved, plus self-checks, drift checks, rollback'},
       ];
       const R = [
         {n:'GLM-5.1',   v:[52.5, 56.5, 65.5], c:0},
@@ -65,7 +65,7 @@
         // one column per harness configuration
         HN.forEach((h,i) => {
           s += `<line x1="${x(i)}" y1="${M.t-26}" x2="${x(i)}" y2="${M.t+ih}" stroke="${bd}" stroke-opacity=".5"/>`;
-          s += `<text x="${x(i)}" y="${M.t-34}" text-anchor="middle" font-size="${fs+1}" font-weight="700" fill="${tx}" font-family="ui-monospace,Menlo,monospace">${h.k} ${h.t}</text>`;
+          s += `<text x="${x(i)}" y="${M.t-34}" text-anchor="middle" font-size="${fs+1}" font-weight="700" fill="${tx}" font-family="ui-monospace,Menlo,monospace">${h.t}</text>`;
         });
 
         // the winner of each column, which is a different model every time
@@ -95,7 +95,7 @@
           });
         });
 
-        // H1 and H2 carry bare numbers; H3 carries the model name, so the reader
+        // The minimal and improved columns carry bare numbers; the full column carries the model name, so the reader
         // never has to match a colour to the legend to follow a line across.
         [0,1].forEach(i => {
           colLabels[i].forEach(({row, y:ly, v}) => {
@@ -115,7 +115,7 @@
           `<div class="lg"><div class="lg-t">Legend</div>` +
           R.map(q => `<span class="k"><span class="sw" style="background:${P(q.c)}"></span>${q.n}</span>`).join('') +
           `<div class="lg-t" style="margin-top:8px">The three configurations</div>` +
-          HN.map(h => `<span class="k"><strong>${h.k}</strong> ${h.s}</span>`).join('') +
+          HN.map(h => `<span class="k"><strong>${h.t}</strong> ${h.s}</span>`).join('') +
           `</div><div class="nt">Three models that sit within 3 points of each other on a public coding leaderboard, run across three harness configurations under matched conditions: same task subset, same container, same 50-step budget, same timeout. <strong>Each model is best under a different configuration.</strong> Changing the harness moves GLM-5.1 by 13.0 points; changing the model inside a fixed harness moves scores by 2.5 to 5.0. The authors count six ranking reversals across the nine model-pair/harness-pair comparisons, and harness-induced variance 7.8 times model-induced variance. Source: Table 2, Stop Comparing LLM Agents Without Disclosing the Harness.</div>`;
       };
       draw();

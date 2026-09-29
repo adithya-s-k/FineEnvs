@@ -132,7 +132,7 @@
         // A line chart for one panel. `series` is [{c, dash, label, pts:[{x,y,hollow,t}]}].
         const lineChart = (W, Ht, series, o = {}) => {
           const small = !!o.small, unit = o.unit || '';
-          const m = { l: small ? 34 : 46, r: small ? 8 : 12, t: 10, b: small ? 20 : 34 };
+          const m = { l: small ? 34 : (o.ylabel ? 60 : 46), r: small ? 8 : 12, t: 10, b: small ? 20 : 34 };
           // Raw per-step series are noise around the smoothed line; fit the axis to the line.
           const vals = series.filter(s => !s.raw).flatMap(s => s.pts.map(p => p.y));
           const [y0, y1] = o.range || fit(vals, .12, o.floor0);
@@ -147,6 +147,8 @@
           });
           (small ? [0, 500, 1000] : [0, 200, 400, 600, 800, 1000]).forEach(v => s += `<text x="${X(v)}" y="${Ht-m.b+14}" text-anchor="${small && v === 1000 ? 'end' : small && v === 0 ? 'start' : 'middle'}" font-size="${small?9.5:10.5}" fill="${mu}">${v}</text>`);
           if (!small) s += `<text x="${(m.l + W - m.r)/2}" y="${Ht-5}" text-anchor="middle" font-size="10.5" fill="${mu}">training step</text>`;
+          if (!small && o.ylabel) { const cy = m.t + (Ht - m.t - m.b) / 2;
+            s += `<text x="13" y="${cy}" transform="rotate(-90 13 ${cy})" text-anchor="middle" font-size="10.5" fill="${mu}">${esc(o.ylabel)}</text>`; }
           s += `<g clip-path="url(#${id})">`;
           // End labels are placed after the lines and nudged apart when two runs finish close together.
           const ends = [];
@@ -259,15 +261,16 @@
           // Pass@1 across checkpoints: overall and per harness.
           curve: () => {
             const runs = cfg.runs || ['lfm_harbor_opencode','lfm_harbor_multi'];
-            r.innerHTML = panels(evalSeries(runs, null), (hk) => evalSeries(runs, hk), { unit:'%', aria:'Pass@1 over training steps', height: 260 })
+            r.innerHTML = panels(evalSeries(runs, null), (hk) => evalSeries(runs, hk), { unit:'%', aria:'Pass@1 over training steps', height: 260, ylabel: 'pass@1 on the test set' })
               + legend(runs.map(k => [RUN[k].c(), RUN[k].short, RUN[k].dash]),
                 cfg.note || 'Top: all 1,000 test cells. Below: the 250 cells of each harness. Hollow points are checkpoints where a few cells were never graded.');
           },
 
           // Final checkpoint, per harness: accuracy, or efficiency on matched successes.
           final: () => {
-            const opts = ['Pass@1', 'Fewer tool calls', 'Fewer output tokens', 'Fewer input tokens'];
-            const key = [null, 'tool_sav', 'out_sav', 'in_sav'][sel];
+            // Pass@1 only: the tool-call and token savings at step 1,000 are the last row of the
+            // savings heatmap further down, so a second copy here would repeat it.
+            const opts = ['Pass@1'], key = null;
             const W = Math.max(320, r.clientWidth), narrow = W < 560;
             const base = D.evals.lfm_harbor_multi.points[0].h;
             const fin = (k) => D.evals[k].points.find(p => p.step === 1000).h;
@@ -299,10 +302,7 @@
             s += `</svg>`;
             const leg = key ? [[RUN.lfm_harbor_opencode.c(), RUN.lfm_harbor_opencode.short], [RUN.lfm_harbor_multi.c(), RUN.lfm_harbor_multi.short]]
                             : [[V('--muted-color','#999'), 'LFM base model'], [RUN.lfm_harbor_opencode.c(), RUN.lfm_harbor_opencode.short], [RUN.lfm_harbor_multi.c(), RUN.lfm_harbor_multi.short]];
-            r.innerHTML = chips(opts) + s + legend(leg, key
-              ? 'Change against the base model, counted on the tasks both of them solved. Higher means the trained model used less. A bar below zero means it used more.'
-              : 'Pass@1 at step 1,000 under each harness, next to the base model.');
-            bindChips();
+            r.innerHTML = s + legend(leg, 'Pass@1 at step 1,000 under each harness, next to the base model.');
           },
 
           // LFM efficiency across checkpoints: overall and per harness.
@@ -318,7 +318,7 @@
               'Drop in tool calls against the base model, counted only on tasks both the base model and the checkpoint solved.',
               'Mean generated tokens per graded task, summed over every model call.',
               'Mean prompt tokens per graded task, summed over every model call. History is counted again on each call.'];
-            r.innerHTML = chips(opts) + panels(main, per, { unit, aria: opts[sel] + ' over training' })
+            r.innerHTML = chips(opts) + panels(main, per, { unit, aria: opts[sel] + ' over training', ylabel: opts[sel].toLowerCase() })
               + legend(runs.map(k => [RUN[k].c(), RUN[k].short]), notes[sel]);
             bindChips();
           },
@@ -345,7 +345,7 @@
               });
               return main;
             };
-            const mainChart = () => lineChart(Math.max(320, r.clientWidth), 270, mainSeries(), { unit: '', aria: opts[sel] + ' during training', endLabels: true });
+            const mainChart = () => lineChart(Math.max(320, r.clientWidth), 270, mainSeries(), { unit: '', aria: opts[sel] + ' during training', endLabels: true, ylabel: opts[sel].toLowerCase() });
             const sLabel = () => smooth <= 1 ? 'off, raw steps' : `${smooth}-step average`;
             // The small charts use the test set, which every run was evaluated on under all four
             // harnesses every 100 steps. Training data would only cover the harnesses a run trained in.
@@ -407,7 +407,7 @@
               'Mean tool calls per training rollout in 100-step windows. The small charts split the LFM runs by the harness each rollout used.',
               'Share of training rollouts with a correct answer. For Qwen this is the reward itself.',
               'Mean training reward. Qwen’s is correctness alone. LFM’s adds the tool bonus, so it sits slightly above its correctness.'];
-            r.innerHTML = chips(opts) + panels(main, per, { unit: '', aria: opts[sel] + ' during training' })
+            r.innerHTML = chips(opts) + panels(main, per, { unit: '', aria: opts[sel] + ' during training', ylabel: opts[sel].toLowerCase() })
               + legend(runs.map(k => [RUN[k].c(), RUN[k].short, RUN[k].dash]), notes[sel]);
             bindChips();
           },

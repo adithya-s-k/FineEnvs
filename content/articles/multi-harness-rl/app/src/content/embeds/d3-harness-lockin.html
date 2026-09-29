@@ -33,9 +33,9 @@
         {harness:'Kimi-CLI',       task:'T-Bench 2.0',  seen:false},
       ];
       const ROWS = [
-        {n:'Scale-SWE',    sub:'trained in one harness',    v:[64.0, null, null, null, null], star:[1,0,0,0,0], c:3},
-        {n:'OpenSWE-32B',  sub:'trained in one harness',    v:[62.4, 54.9, 28.7, 3.6,  0.0 ], star:[1,0,0,0,0], c:3},
-        {n:'Orchard-SWE',  sub:'trained across harnesses',  v:[62.1, 64.3, 51.0, 45.0, 20.1], star:[0,0,0,0,0], c:0},
+        {n:'Scale-SWE',    sub:'fine-tuned in OpenHands',    v:[64.0, null, null, null, null], star:[1,0,0,0,0], c:3},
+        {n:'OpenSWE-32B',  sub:'fine-tuned in two harnesses',    v:[62.4, 54.9, 28.7, 3.6,  0.0 ], star:[1,0,0,0,0], c:3},
+        {n:'Orchard-SWE',  sub:'fine-tuned in two, RL in one',  v:[62.1, 64.3, 51.0, 45.0, 20.1], star:[0,0,0,0,0], c:0},
       ];
 
       const draw = () => {
@@ -114,10 +114,10 @@
 
         r.innerHTML = s +
           `<div class="lg"><div class="lg-t">Legend</div>` +
-          `<span class="k"><span class="sw" style="background:${P(3)}"></span>trained inside a single harness</span>` +
-          `<span class="k"><span class="sw" style="background:${P(0)}"></span>trained across several harnesses</span>` +
+          `<span class="k"><span class="sw" style="background:${P(3)}"></span>trained with one or two harnesses</span>` +
+          `<span class="k"><span class="sw" style="background:${P(0)}"></span>Orchard, trained with the harness varied</span>` +
           `<span class="k">bars share one 0–70% scale</span>` +
-          `</div><div class="nt">Moving OpenSWE-32B off OpenHands, the harness it was trained in, onto mini-swe-agent costs 7.5 points. Moving it onto Kimi-CLI, which it had never seen, costs 58.8 and leaves 3.6. Scale-SWE does not degrade at all; away from its own harness it stops emitting valid tool calls, so there is no score to report. Orchard, trained across harnesses, stays inside a 19-point band and keeps 20.1 on a benchmark in a harness it never trained against.</div>`;
+          `</div><div class="nt">Moving OpenSWE-32B off OpenHands, the harness the paper treats as its native one, onto mini-swe-agent costs 7.5 points. Moving it onto Kimi-CLI, which none of the three systems trained on, costs 58.8 and leaves 3.6. Scale-SWE does not degrade at all; away from its own harness it stops emitting valid tool calls, so there is no score to report. Orchard stays inside a 19-point band and keeps 20.1 on a benchmark in a harness it never trained against.</div>`;
       };
       draw();
       if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }

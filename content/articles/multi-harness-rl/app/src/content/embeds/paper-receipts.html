@@ -72,7 +72,7 @@
         says:'<b>And it is measured.</b> 62.4% on the harness it trained in, 3.6% on one it had never seen. A multi-harness model holds a 45.0 to 64.3 band instead.' },
       { k:'openforge', lab:'OpenForgeRL', ttl:'OpenForgeRL: Train Harness-native Agents in Any Environment',
         loc:'Table 5, p9', id:'2607.21557', img:'openforge.png',
-        says:'<b>Diversity is not a tax.</b> Training on three harnesses beat training on one even on that one’s home turf, 48.5 against 46.0, and nearly tripled Codex.' },
+        says:'<b>Diversity is not a tax.</b> Training on three harnesses beat training on one even on that one’s home turf, 48.5 against 46.0, and almost doubled the Codex score.' },
       { k:'agentlt', lab:'Agent Lightning', ttl:'Agent Lightning v1.0: Towards Harnessed Agentic RL',
         loc:'Abstract, p1', id:'2608.17528', img:'agentlt.png',
         says:'<b>Why it is hard.</b> The harness owns the interaction loop, so the trainer sees only a stream of request and response pairs. Reassembling those into training samples is the open problem.' },
@@ -128,7 +128,7 @@
 
       const show = (i, { focusTab = false } = {}) => {
         cur = (i + D.length) % D.length;
-        const d = D[cur], href = d.href || `https://arxiv.org/abs/${d.id}`, src = d.src || `arXiv:${d.id}`;
+        const d = D[cur], href = d.href || `https://huggingface.co/papers/${d.id}`, src = d.src || `arXiv:${d.id}`;
         tabs.forEach((b, j) => {
           const on = j === cur;
           b.setAttribute('aria-selected', String(on));

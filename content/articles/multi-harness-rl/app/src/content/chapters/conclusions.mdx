@@ -2,9 +2,9 @@
 
 *Results as of the run audit on 24 September 2026.*
 
-The question behind this work was whether you can take a small open model and train it inside the
-harnesses people actually use, Claude Code, Codex, OpenCode, without changing them. With the setup
-in this article, you can. The capture proxy sits between the harness and the model, records the exact
+We started by asking whether a small open model can be trained inside the harnesses people actually
+use, such as Claude Code, Codex and OpenCode, without modifying the harnesses. With the setup in this
+article, it can. The capture proxy sits between the harness and the model, records the exact
 tokens, and hands the trainer something it can learn from. Harbor supplies the tasks and the
 sandboxes. Pick a model, pick a harness, pick a sandbox, and train.
 
@@ -12,7 +12,8 @@ sandboxes. Pick a model, pick a harness, pick a sandbox, and train.
 our test tasks under Mini-SWE-Agent and 33% under Claude Code, with the same weights. If you ship an
 open model and evaluate it in one harness, you are describing one point on that spread.
 
-**Gains follow the training harness.** The LFM runs gained ten and twelve points. The model trained
+**Gains follow the training harness.** On the held-out test set, averaged over the four harnesses,
+pass@1 rose by 10 points for the OpenCode-only LFM run and by 12 for the multi-harness run. The model trained
 only in OpenCode ended strongest in OpenCode. The model trained across four harnesses ended stronger
 under Claude Code and Codex. It is slightly ahead overall, by less than the noise, and its gains are
 spread across more of the harnesses people use.
@@ -20,7 +21,7 @@ spread across more of the harnesses people use.
 **The reward shapes tool use.** Rewarding only the final answer left Qwen with no reason to stop
 exploring, and a lot of our Qwen compute went into steps where every rollout scored the same. A small
 bonus for solving tasks in fewer tool calls changed LFM's behaviour. The multi-harness model solved
-more tasks while making about a third fewer calls on the ones it already could, and both runs kept
+more tasks while making 31% fewer calls on the ones it already could, and both runs kept
 learning from groups where every rollout was already correct.
 
 **Exact tokens are only the starting point.** They make the update match what the model generated.
@@ -28,11 +29,17 @@ The Qwen runs had exact tokens and still peaked and fell back, one while its ans
 evaluation allowed and the other while it kept working without submitting. Output budgets and reward
 design shaped how those runs ended.
 
-**Steps are a poor unit of comparison.** Two runs with the same 1,000 steps saw different numbers of
-tasks and processed nearly three times as many tokens, in part because of how one harness rewrites
-its history. Any comparison between harness mixes has to account for that.
+**Steps are a poor unit of comparison.** The two LFM runs took the same 1,000 steps, but the
+multi-harness run saw more distinct tasks and processed nearly three times as many tokens, partly
+because Claude Code rewrites its history as it goes. Any comparison between harness mixes has to account for that.
 
 The next runs we want are an LFM run without the efficiency bonus, several
 seeds per setup, harness mixes compared at equal token exposure, and larger models. All of it runs on
 the same open stack, so if you have a harness, a task set or a trainer of your own, you can plug it in
 and try.
+
+### Acknowledgements
+
+Thanks to [Sergio Paniego Blanco](https://huggingface.co/sergiopaniego), [Joel Niklaus](https://huggingface.co/joelniklaus) and [Leonie Monigatti](https://huggingface.co/iamleonie) for reviewing drafts of this
+article. Their comments reshaped its structure and caught several claims that did not match their
+sources.
