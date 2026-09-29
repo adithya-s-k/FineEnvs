@@ -31,6 +31,8 @@ class Config:
     env_url: str = ""
     evalset: str = ""
     eval_limit: int = 0
+    save_steps: int = 25
+    save_total_limit: int = 0
     lora_target_modules: tuple[str, ...] = ()
     source_root: str = ""
     cache_dir: str = ""
@@ -94,6 +96,8 @@ INTEGER_OPTIONS = (
     "prefetch_blocks",
     "max_pixels",
     "eval_limit",
+    "save_steps",
+    "save_total_limit",
     "seed",
 )
 
@@ -461,8 +465,10 @@ def run(config):
                 accelerator_config={"dispatch_batches": False},
                 logging_steps=1,
                 save_strategy="steps",
-                save_steps=min(25, config.max_steps),
-                save_total_limit=2,
+                save_steps=min(config.save_steps, config.max_steps),
+                # Keeping only the last few discards the curve. A run whose point is
+                # to show how reward moves has to keep the checkpoints it moved through.
+                save_total_limit=config.save_total_limit or None,
                 report_to="trackio" if config.trackio_space else "none",
                 trackio_space_id=config.trackio_space or None,
                 run_name=config.run_name,
