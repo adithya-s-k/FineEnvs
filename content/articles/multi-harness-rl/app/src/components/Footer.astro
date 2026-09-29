@@ -187,6 +187,40 @@ const isPaper = template === "paper";
 
       const movedNotes = moveIntoFooter(footnotesEl, "Footnotes");
 
+      // Each chapter is its own MDX file, so each builds its own bibliography. Merge them into one
+      // list: one entry per source, sorted by author as APA expects, with the back links combined.
+      const lists = Array.from(target.querySelectorAll("ol.references"));
+      if (lists.length > 1) {
+        const byId = new Map();
+        const backs = new Map();
+        lists.forEach((ol) => ol.querySelectorAll(":scope > li").forEach((li) => {
+          const key = li.id || li.textContent.trim().slice(0, 160);
+          const links = Array.from(li.querySelectorAll("small.backrefs a[href^='#']")).map((a) => a.getAttribute("href"));
+          backs.set(key, (backs.get(key) || []).concat(links));
+          if (!byId.has(key)) byId.set(key, li);
+        }));
+        byId.forEach((li, key) => {
+          const hrefs = Array.from(new Set(backs.get(key) || []));
+          const small = li.querySelector("small.backrefs");
+          if (!small || hrefs.length < 2) return;
+          small.textContent = "back: ";
+          hrefs.forEach((href, i) => {
+            const a = document.createElement("a");
+            a.href = href; a.setAttribute("aria-label", "Back to citation"); a.textContent = String(i + 1);
+            small.appendChild(a);
+            if (i < hrefs.length - 1) small.appendChild(document.createTextNode(", "));
+          });
+        });
+        const merged = Array.from(byId.values()).sort((x, y) => x.textContent.trim().localeCompare(y.textContent.trim(), "en", { sensitivity: "base" }));
+        const keep = lists[0];
+        keep.replaceChildren(...merged);
+        lists.slice(1).forEach((ol) => {
+          const wrap = ol.parentElement;
+          ol.remove();
+          if (wrap && wrap !== target && !wrap.contains(keep) && !wrap.textContent.trim()) wrap.remove();
+        });
+      }
+
       if (movedRefs || movedNotes) {
         footer.dataset.processed = "true";
       }
