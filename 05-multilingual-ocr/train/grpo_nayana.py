@@ -4,6 +4,7 @@ import argparse
 import json
 import math
 import os
+import time
 from collections import defaultdict
 from contextlib import ExitStack
 from dataclasses import asdict, dataclass
@@ -153,13 +154,20 @@ def evaluate(trainer, rows, url, cache, max_tokens):
     checkpointing = model.is_gradient_checkpointing
     was_cache = model.config.use_cache
     samples, groups = [], defaultdict(list)
+    started = time.monotonic()
+    # Without this the phase is silent, and a slow evaluation is indistinguishable from
+    # a hung one — which cost a real run an hour of guessing.
+    print(f"evaluating {len(rows)} tasks", flush=True)
     try:
         model.eval()
         if checkpointing:
             model.gradient_checkpointing_disable()
         model.config.use_cache = True
         with connect(url) as client:
-            for row in rows:
+            for index, row in enumerate(rows, 1):
+                if index == 1 or index % 10 == 0:
+                    rate = index / max(time.monotonic() - started, 1e-9)
+                    print(f"  eval {index}/{len(rows)} ({rate:.2f} task/s)", flush=True)
                 observation = client.reset(task_id=row["task_id"]).observation
                 prediction = generate(model, processor, observation, cache, max_tokens)
                 result = step_with_judge_retry(client, prediction)
