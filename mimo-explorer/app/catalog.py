@@ -23,7 +23,7 @@ import threading
 from functools import lru_cache
 from pathlib import Path
 
-from . import config
+from . import config, judges
 
 _lock = threading.Lock()
 _env_locks: dict[str, threading.Lock] = {}
@@ -267,6 +267,9 @@ def view(task_id: str) -> dict | None:
             "test_command": inst.get("test_command"), "timeout_s": inst.get("verifier_timeout_sec"),
             "files": files, "script": patch_file_text(patch, "mimo_test_command.sh"),
             "patch": patch if len(patch) < 400_000 else None,
+            "formula": "reward = 1 if the test command exits 0, otherwise 0",
+            "not_scored": "The hidden tests can't be applied, or the files they touch can't be reset: a testbed "
+                          "problem, not the model's.",
         }
         v["environment"] = {"cwd": inst.get("cwd"), "image": image_for(task_id)}
 
@@ -282,9 +285,10 @@ def view(task_id: str) -> dict | None:
                        "real fuzz target on it as a separate user. Reward 1 only if it crashes in the expected function.",
             "expected": exp,
             "steps": ["Agent explores the source in /home/agent/src and writes a PoC file",
-                      "Agent runs `bash submit.sh <poc>` (as many times as it likes)",
+                      "Agent runs `bash submit.sh <poc>` (as many times as it likes; the last submission is graded)",
                       "The server runs /home/agent/binary on the PoC under the sanitizer, as user `verify`",
                       f"Reward = 1 if it crashes and the first application frame is `{exp.get('function', '?')}`"],
+            "formula": "reward = 1 if the last PoC crashes in the expected function, otherwise 0",
         }
         v["links"] = [{"label": "OSS-Fuzz issue", "url": f"https://issues.oss-fuzz.com/issues/{num}"}] if num else []
         v["environment"] = {"cwd": "/home/agent", "image": image_for(task_id)}
@@ -300,11 +304,14 @@ def view(task_id: str) -> dict | None:
             "formula": "score = mean(visual, brief fulfilment, asset quality); visual = mean of the first five",
             "note": "This is Xiaomi's evaluation-mode grader. Training used a group-relative ranking, which has no meaning for a single rollout.",
             "needs_judge": "vision",
+            "judge": judges.webdev(raw.get("prompt", "")),
+            "not_scored": "The page can't be rendered (not a bad page), or the judge can't be reached. A missing "
+                          "dist/index.html scores 0.",
         }
         v["environment"] = {"cwd": inst.get("cwd"), "image": image_for(task_id), "deliver": f"{inst.get('cwd', '')}/dist"}
 
     elif d == "music":
-        from .vendor.music_scorer.score import SPEC
+        from .vendor.music_scorer.score import SPEC, W
         ref = json.loads((Path(__file__).parent / "vendor" / "music_scorer" / "baselines" / "ref_full4k.json").read_text())
         e = raw.get("extra", {})
         v["verify"] = {
@@ -315,6 +322,19 @@ def view(task_id: str) -> dict | None:
                      "style": rec["f"].get("style"), "language": e.get("lang")},
             "features": [{"name": f, "label": MUSIC_FEATURE.get(f, f), "rule": rule, "group": grp,
                           "band": [ref[f].get("p10"), ref[f].get("p90")] if f in ref else None} for f, rule, grp in SPEC],
+            # score.score(): each feature 0-1 by its curve, averaged per group, groups weighted by W
+            "weights": {g: round(w / sum(W.values()), 4) for g, w in W.items()},
+            "formula": "score = 100 × (0.85 × weighted mean of the six groups + 0.15 × histogram similarity); "
+                       "reward = score / 100",
+            "curves": {
+                "band": "Full credit between the 10th and 90th percentile of human pieces, falling linearly outside "
+                        "(to 0 at twice the gap to the 5th or 95th percentile).",
+                "high": "Full credit from the 75th percentile up, falling linearly to 0 at the 5th.",
+                "low": "Full credit up to the 25th percentile, falling linearly to 0 at the 95th.",
+            },
+            "histograms": "How close the piece's pitch-class, interval and note-length histograms are to human music's "
+                          "(1 minus the mean Jensen-Shannon divergence ÷ 0.5, floored at 0).",
+            "not_scored": "Never: a piece that can't be read or measured scores 0.",
         }
         v["environment"] = {"sandbox": False}
 
@@ -327,6 +347,8 @@ def view(task_id: str) -> dict | None:
                        "anti-tamper check, then pytest. Reward 1 if every test passes.",
             "files": [{"path": k, "size": len(tf[k]) * 3 // 4} for k in tf],
             "script": dec.get("test.sh"), "tests": dec.get("test_outputs.py"),
+            "formula": "reward = the value test.sh writes to /logs/verifier/reward.txt: 1 if every test passes, otherwise 0",
+            "not_scored": "The tests crash before grading (reward.txt holds -1) or write no reward.",
         }
         v["environment"] = {"cwd": inst.get("cwd"), "image": image_for(task_id), "cpus": inst.get("cpus"),
                             "memory_mb": inst.get("memory_mb"), "internet": inst.get("allow_internet"),
@@ -334,7 +356,21 @@ def view(task_id: str) -> dict | None:
 
     elif d == "general":
         v.update(general_view(task_id))
+    v["prompt"] = agent_prompt(task_id, d, v["brief"])
     return v
+
+
+def agent_prompt(task_id: str, domain: str, brief: str) -> dict | None:
+    """The agent's first message, from the same code the runner sends it with."""
+    from .runner import domains
+
+    try:
+        p = domains.agent_prompt(task_id, domain)
+    except Exception:  # noqa: BLE001 - a task the runner can't prepare still has a page
+        return None
+    # the page shows the brief above; the prompt folds the task part away only when it is that same text
+    p["task_is_brief"] = all(t.strip() == (brief or "").strip() for k, t in p["parts"] if k == "task")
+    return p
 
 
 def general_view(task_id: str) -> dict:
@@ -353,8 +389,12 @@ def general_view(task_id: str) -> dict:
                      "kind": KIND.get(f.suffix.lower().lstrip("."), "other")}
                     for f in ws.rglob("*") if f.is_file()), key=lambda x: (x["kind"], x["path"]))
     meta = json.loads((root / "verifier_meta.json").read_text())
+    # never pass_anchor, gold_answer or check_code: the answers, and the code that holds them
     checks = [{"id": it.get("id"), "tier": it.get("tier"), "method": it.get("method"), "weight": it.get("weight"),
-               "question": it.get("question", "")} for it in meta.get("items", [])]
+               "question": it.get("question", ""),   # not `description`: on code checks it states the expected end state
+               "files": (it.get("files") or []) if it.get("method") == "llm" else []} for it in meta.get("items", [])]
+    judged = next((c for c in checks if c["method"] == "llm"), None)
+    vpy = root / "verify.py"
     return {
         "systems": systems, "files": files,
         "verify": {
@@ -362,7 +402,24 @@ def general_view(task_id: str) -> dict:
             "summary": "When the agent finishes, its final answer and the systems' databases are checked. Rule checks run "
                        "code against the data; LLM checks ask a judge model one yes/no question each. Reward = weighted "
                        "share of checks passed.",
-            "checks": checks, "needs_judge": "text" if any(c["method"] == "llm" for c in checks) else None,
+            "checks": checks, "needs_judge": "text" if judged else None,
+            "formula": "reward = Σ weight × score ÷ Σ weight, over every check (a check without a weight counts 1)",
+            "rules": [
+                "A model-judged check is its own judge call: one question, its expected answer, and the text extracted "
+                "from the files it names (up to 20,000 characters per file, with any cut marked).",
+                "The judge answers 0 or 1. There is no partial credit, and evidence that is missing or cut off where the "
+                "answer should be scores 0.",
+                "A code check runs against the systems' databases and the workspace after the agent finishes, and "
+                "scores from 0 to 1.",
+                "A check counts as passed at a score of 1. Tiers say how much a check matters to the task's author; "
+                "only the weights enter the formula.",
+            ],
+            "shape": {"input": meta.get("input"), "act": meta.get("act")},
+            "judge": judges.general(vpy.read_text(), judged, (judged or {}).get("files") or []) if judged and vpy.exists() else None,
+            "grader": "Each task ships its grader in verify.py (the same file in all 925 tasks). It first looks for Xiaomi's "
+                      "internal grader (synthesis.office_gen), which is not part of the release, and otherwise runs the "
+                      "self-contained one described here.",
+            "not_scored": "The judge can't be reached, or one of the task's systems stops responding.",
         },
         "environment": {"cwd": man.get("cwd"), "image": image_for(task_id), "ports": man.get("wait_ports")},
     }

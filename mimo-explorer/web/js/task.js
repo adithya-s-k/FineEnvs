@@ -1,6 +1,6 @@
 // Task page: one scrolling page built from sections, an outline to jump between them, and a run panel.
 // Each section builder returns null when the task has nothing for it, so every domain gets only what applies.
-import { $, $$, api, esc, md, money, ago, bytes, openModal, table, sheetGrid, statusPill, rewardBadge, toast, DOMAIN_NAME, vals,
+import { $, $$, api, esc, fmt, md, money, ago, bytes, openModal, table, sheetGrid, statusPill, rewardBadge, toast, DOMAIN_NAME, vals,
   sk, spinner, emptyState, progress, confetti, PUBLIC_NOTE, PRIVATE_NOTE, reportUrl, visibilityBadge, rewardClass, rewardText } from "./util.js";
 import { icon, DOMAIN_ICON, FILE_ICON } from "./icons.js";
 import { getSession, refreshActive } from "./session.js";
@@ -45,7 +45,7 @@ export async function mount(el, id) {
   }
   if (!alive) return;
   getModels().catch(() => {});   // start fetching models while the page renders
-  const sections = [brief, systems, workspace, repository, setup, grading, community, rollouts].map((f) => f(v)).filter(Boolean);
+  const sections = [brief, agentPrompt, systems, workspace, repository, setup, grading, community, rollouts].map((f) => f(v)).filter(Boolean);
   el.innerHTML = `
     <div class="wrap page tp fade-in" style="--dc:var(--c-${v.domain})">
       <nav class="crumbs" aria-label="Breadcrumb"><a href="#/">Environments</a>${icon("chevronRight", 13)}
@@ -100,10 +100,34 @@ function brief(v) {
   }
   const meta = (v.meta || []).filter(([, x]) => x && String(x).length < 200 && !/^(none named|unspecified|unknown|n\/a|none)$/i.test(String(x).trim()));
   return {
-    id: "brief", nav: "The task", icon: "message", title: "The task", note: "exactly what the agent receives",
+    id: "brief", nav: "The task", icon: "message", title: "The task", note: v.prompt?.task_is_brief ? "word for word, inside the agent prompt below" : "",
     html: `${spec}<div class="prose">${md(v.brief)}</div>
       ${meta.length ? `<div class="brief-meta"><dl class="kv">${meta.map(([k, x]) => `<dt>${esc(k)}</dt><dd>${esc(x)}</dd>`).join("")}</dl></div>` : ""}
       ${v.links?.length ? `<div class="brief-links">${v.links.map((l) => `<a class="btn sm" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}${icon("external", 13)}</a>`).join("")}</div>` : ""}`,
+  };
+}
+
+function agentPrompt(v) {
+  const p = v.prompt;
+  if (!p?.parts?.length) return null;
+  const chars = p.parts.reduce((n, [, t]) => n + t.length, 0);
+  const rows = [p.harness
+    ? ["Harness", `OpenCode ${esc(p.harness.version)}, which adds its own system prompt and tool definitions`]
+    : ["Harness", "None. One chat completion: this message is the whole conversation, with no system prompt and no tools"]];
+  if (p.harness) rows.push(["Tools", `OpenCode's own${v.systems?.length ? `, plus the tools of the ${v.systems.length} systems over MCP` : ""}; web search and web fetch are denied`]);
+  if (p.steps) rows.push(["Step limit", `${fmt.format(p.steps)} model calls`]);
+  if (p.timeout_min) rows.push(["Time limit", `${p.timeout_min} minutes`]);
+  if (p.max_tokens) rows.push(["Reply length", `up to ${fmt.format(p.max_tokens)} tokens${p.harness ? " per model call" : ""}`]);
+  const body = p.parts.map(([kind, text]) => kind === "task" && p.task_is_brief
+    ? `<button class="pr-task" type="button" data-pr-expand title="Show it here">‹the task above, ${fmt.format(text.length)} characters›</button><span hidden>${esc(text)}</span>`
+    : esc(text)).join("");
+  return {
+    id: "prompt", nav: "Agent prompt", icon: "doc", title: "Agent prompt", note: "the first message, exactly as sent",
+    html: `<dl class="kv">${rows.map(([k, x]) => `<dt>${k}</dt><dd>${x}</dd>`).join("")}</dl>
+      <div class="pr-h"><span class="sec-label">The message · ${fmt.format(chars)} characters</span>
+        <button class="btn sm" type="button" data-pr-copy>${icon("copy", 13)}Copy</button></div>
+      <pre class="code-block wrap pr">${body}</pre>
+      <p class="muted xs" style="margin-top:8px">Limits are the training harness's defaults; the run panel can change them.</p>`,
   };
 }
 
@@ -165,11 +189,18 @@ function setup(v) {
   };
 }
 
+const SHAPE_IN = { both: "the systems' databases and the workspace files", db: "the systems' databases", workspace: "the workspace files" };
+const SHAPE_ACT = { none: "change nothing: its final answer is what gets graded", mutate_db: "update records in the systems' databases",
+  edit_workspace: "edit files in the workspace", both: "update the databases and edit workspace files" };
+const pre = (t) => `<pre class="code-block wrap"><code>${esc(t)}</code></pre>`;
+const pct = (x) => `${Math.round(x * 100)}%`;
+
 function grading(v) {
   const g = v.verify;
   if (!g) return null;
   let body = `<p class="lead">${esc(g.summary)}</p>`;
   if (g.steps) body += `<ol class="steps">${g.steps.map((s) => `<li><span>${md(s).replace(/^<p>|<\/p>$/g, "")}</span></li>`).join("")}</ol>`;
+  if (g.formula) body += `<p class="formula"><code>${esc(g.formula)}</code></p>`;
   if (g.kind === "tests") {
     body += `<div class="sec-label" style="margin-top:18px">Hidden tests</div><div class="tbl"><table><thead><tr><th>File</th><th>Lines</th><th></th></tr></thead><tbody>${g.files.map((f) =>
       `<tr><td><code>${esc(f.path)}</code></td><td class="pm"><span class="a">+${f.added}</span> <span class="d">−${f.removed}</span></td><td>${f.new ? '<span class="chip">new</span>' : ""}</td></tr>`).join("")}</tbody></table></div>`;
@@ -182,6 +213,9 @@ function grading(v) {
       .map(([k, val]) => `<div class="stat"><span>${k}</span><b>${val}</b></div>`).join("")}</div>`;
   }
   if (g.kind === "rubric") {
+    const shape = [["Facts come from", SHAPE_IN[g.shape?.input]], ["The agent must", SHAPE_ACT[g.shape?.act]]].filter(([, x]) => x);
+    if (shape.length) body += `<dl class="kv" style="margin-top:14px">${shape.map(([k, x]) => `<dt>${k}</dt><dd>${esc(x)}</dd>`).join("")}</dl>`;
+    if (g.rules) body += `<ul class="rules">${g.rules.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>`;
     // verify.py counts a check with no weight as weight 1 (weights are relative, not percentages)
     const wt = (c) => (c.weight == null ? 1 : Number(c.weight));
     const tot = g.checks.reduce((s, c) => s + wt(c), 0) || 1;
@@ -189,9 +223,22 @@ function grading(v) {
     body += `<div class="sec-label" style="margin-top:18px">${g.checks.length} checks, weighted</div><ol class="checks">${g.checks.map((c) => {
       const pct = Math.round((wt(c) / tot) * 100);
       return `<li><div class="ck-top"><span class="tier t-${esc(c.tier)}">${esc(c.tier || "")}</span>
-      <span>${c.method === "llm" ? "judged by a model" : "checked by code"}</span>
+      <span>${c.method === "llm" ? `judged by a model${c.files?.length ? ` · reads ${esc(c.files.join(", "))}` : ""}` : "checked by code"}</span>
       <span class="w" title="Share of the reward"><i><b style="width:${Math.round((wt(c) / top) * 100)}%"></b></i>${pct}%</span></div>
       <p>${esc(c.question || c.id)}</p></li>`; }).join("")}</ol><p class="muted xs" style="margin-top:10px">The answer each check expects is not shown.</p>`;
+    const bare = g.checks.filter((c) => c.weight == null);
+    if (bare.length && bare.length < g.checks.length) {
+      const set = g.checks.filter((c) => c.weight != null).reduce((s, c) => s + Number(c.weight), 0);
+      body += `<p class="muted xs" style="margin-top:6px">The weights given add up to ${set.toFixed(2).replace(/\.?0+$/, "")}, and ${bare.length === 1 ? "one check has none" : `${bare.length} checks have none`}.
+        verify.py counts a missing weight as 1, so ${bare.length === 1 ? "that check decides" : "those checks decide"} ${pct(bare.length / tot)} of the reward.</p>`;
+    }
+    const j = g.judge;
+    if (j) {
+      const how = `<p class="muted xs" style="margin:8px 0">The judge gets one such message per model-judged check. This is the one for <code>${esc(j.check)}</code>, with the expected answer withheld.</p>`;
+      if (j.english) body += disclose("The judge prompt, in English", how + pre(j.english));
+      body += disclose("The judge prompt as sent, in Chinese", (j.english ? "" : how) + pre(j.original));
+    }
+    if (g.grader) body += `<p class="muted xs" style="margin-top:10px">${esc(g.grader)}</p>`;
   }
   if (g.kind === "terminal") {
     body += `<div class="sec-label" style="margin-top:18px">Hidden test files</div>${table([["File", "Size"], ...g.files.map((f) => [f.path, bytes(f.size)])])}`;
@@ -204,18 +251,29 @@ function grading(v) {
       const ds = g.dims.filter((d) => d.group === key);
       return ds.length ? `<div class="rpart"><div class="rpart-h"><b>${name}</b><span>⅓ of the score${how ? ` · ${how}` : ""}</span></div>
         <dl>${ds.map((d) => `<div><dt>${esc(d.label)}</dt><dd>${esc(d.desc)}</dd></div>`).join("")}</dl></div>` : "";
-    }).join("")}</div>
-      <p class="muted xs" style="margin-top:12px">${esc(g.note)}</p>`;
+    }).join("")}</div>`;
+    const j = g.judge;
+    if (j?.rules) body += `<div class="sec-label">The judge's instructions</div><ul class="rules" style="margin-top:0">${j.rules.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>`;
+    if (j?.bands) body += disclose("Scoring bands for each criterion, from the judge prompt", `<div class="bands">${g.dims.map((d) => j.bands[d.key]
+      ? `<div><b>${esc(d.label)}</b><ol>${j.bands[d.key].map((t, i) => `<li><span>${j.edges[i]}</span><span>${esc(t)}</span></li>`).join("")}</ol></div>` : "").join("")}</div>`);
+    if (j?.why) body += `<div class="sec-label">Why these weights</div><ul class="rules" style="margin-top:0">${j.why.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>`;
+    body += `<div class="sec-label">In training</div><p class="sm muted">${esc(j?.training || g.note)}</p>`;
+    if (j?.original) body += disclose("The judge prompt as sent, in Chinese, with this task's brief", `<p class="muted xs" style="margin:8px 0">Sent with the full-page screenshot. The brief is cut to its first ${fmt.format(j.query_cap)} characters.</p>${pre(j.original)}`);
   }
   if (g.kind === "music") {
     const groups = {};
     g.features.forEach((f) => (groups[f.group] ||= []).push(f));
     body += `<div class="note-box gated">${icon("alert")}<span><b>Validity gate first.</b> No notation errors, fewer than 10 bars of the wrong length, no blank lines in the tune,
       and one instrument per MIDI channel. A piece that fails any of these scores 0.</span></div>
-      <div class="feat-groups">${Object.entries(groups).map(([gname, fs]) => `<div><div class="sec-label">${esc(gname)}</div>
+      <div class="feat-groups">${Object.entries(groups).map(([gname, fs]) => `<div><div class="sec-label">${esc(gname)}${g.weights?.[gname] != null ? ` · ${pct(g.weights[gname])}` : ""}</div>
       ${fs.map((f) => `<div class="feat"><b>${esc(f.label || f.name)}</b><span>${f.rule === "band" ? "within the human range" : f.rule === "high" ? "the higher the better" : "the lower the better"} · <code>${esc(f.name)}</code></span>
         ${f.band ? `<em>${fmtNum(f.band[0])} – ${fmtNum(f.band[1])}</em>` : ""}</div>`).join("")}</div>`).join("")}</div>`;
+    if (g.curves) body += `<div class="sec-label">How a feature scores</div><dl class="kv">${[["Within the human range", g.curves.band], ["The higher the better", g.curves.high],
+      ["The lower the better", g.curves.low], ["Histogram similarity", g.histograms]].filter(([, x]) => x).map(([k, x]) => `<dt>${k}</dt><dd>${esc(x)}</dd>`).join("")}</dl>
+      <p class="muted xs" style="margin-top:8px">Group weights are the share of the 85% that the six groups make up together.</p>`;
   }
+  if (g.not_scored) body += `<dl class="kv" style="margin-top:16px"><dt>Not scored</dt><dd>${esc(g.not_scored)}${/^Never/.test(g.not_scored) ? "" : " A rollout that isn't scored has no reward, rather than 0."}</dd></dl>`;
+  body += `<p class="xs" style="margin-top:14px"><a href="#/rewards">Every kind of task side by side, and how the rubrics are built across the dataset</a></p>`;
   return { id: "grading", nav: "Grading", icon: "scale", title: "How it is graded", note: g.needs_judge ? `needs a ${g.needs_judge} judge model` : "no model in the loop", html: body };
 }
 
@@ -404,6 +462,12 @@ function wire(el, v) {
     const j = ev.target.closest("[data-jump]");
     if (j) { ev.preventDefault(); $(`#sec-${j.dataset.jump}`, el).scrollIntoView({ behavior: "smooth", block: "start" }); return; }
     if (ev.target.closest("[data-copy]")) { try { await navigator.clipboard.writeText(location.href); toast("Link copied"); } catch { toast("Copy the address bar"); } return; }
+    const fold = ev.target.closest("[data-pr-expand]");
+    if (fold) { fold.nextElementSibling.hidden = false; fold.remove(); return; }
+    if (ev.target.closest("[data-pr-copy]")) {
+      try { await navigator.clipboard.writeText(v.prompt.parts.map(([, t]) => t).join("")); toast("Message copied"); } catch { toast("Couldn't copy"); }
+      return;
+    }
     const f = ev.target.closest(".file");
     if (f) return previewFile(v, f.dataset.path, f.dataset.kind);
     const t = ev.target.closest(".tbl-btn");

@@ -6,6 +6,8 @@ export const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 export const fmt = new Intl.NumberFormat("en-US");
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 export const vals = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
+// Rollouts graded before the runner translated it carry the General verifier's own label ("llm 3票" = 3 votes).
+export const checkMsg = (m) => String(m ?? "").replace(/^llm (\d+)票$/, (_, n) => `judged by the model (${n} vote${n === "1" ? "" : "s"})`);
 export const DOMAIN_NAME = { code: "Code", webdev: "Webdev", cyber: "Cyber", music: "Music", general: "General" };
 
 export const storage = {

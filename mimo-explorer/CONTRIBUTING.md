@@ -137,9 +137,23 @@ B is removed, so a rollout keeps its letter and colour. Its colours are `--s1` t
 
 ## Adding a domain
 
-Write an adapter class in `app/runner/domains.py` with `steps`, `timeout` and `run(r)`. It starts the sandbox,
-sets it up, calls `opencode.run`, grades, emits one `checks` event and returns `{"reward": ...}`. Register it in
-`ADAPTERS`, give the task page a `verify` kind in `app/catalog.py`, and add its health check to `app/validate.py`.
+Write an adapter class in `app/runner/domains.py` with `steps`, `timeout`, `message(task_id)` and `run(r)`.
+`message` returns the agent's first message as `[kind, text]` parts (`template` or `task`); `run` sends exactly
+`_joined(self.message(...))`, and the task page's "Agent prompt" shows the same parts, so what a reader sees is what
+the agent got. `run` starts the sandbox, sets it up, calls `opencode.run`, grades, emits one `checks` event and returns
+`{"reward": ...}`. Register it in `ADAPTERS`, give the task page a `verify` kind in `app/catalog.py` (with its
+`formula` and `not_scored`), and add its health check to `app/validate.py`.
+
+## Reward design on the page
+
+Each task's Grading section shows the formula, when a rollout is not scored, and the judge's prompt where there is one;
+`#/rewards` has the same for every kind of task, plus counts over all General rubrics (`web/data/rewards.json.gz`,
+rebuilt with `uv run build_data.py --rewards`).
+
+The judge prompts (`app/judges.py`) are shown as sent, in Chinese, next to an English translation. Each translation is
+tied to the SHA-256 of the original it translates: if the vendored rubric or the dataset's `verify.py` changes, the
+page shows the original alone until the translation is updated. Anything that holds an answer never reaches the page:
+`pass_anchor`, `gold_answer`, `check_code`, and the `description` of code checks (it states the expected end state).
 
 ## Community data
 

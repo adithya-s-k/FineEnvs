@@ -6,7 +6,7 @@ import { getSession, setSession, refreshActive } from "./session.js";
 
 let current = null;
 const VIEWS = { task: () => import("./task.js"), run: () => import("./run.js"), runs: () => import("./runs.js"), community: () => import("./community.js"),
-                compare: () => import("./compare.js") };
+                compare: () => import("./compare.js"), rewards: () => import("./rewards.js") };
 const framed = window.top !== window.self;
 
 function parse(hash) {
@@ -15,6 +15,7 @@ function parse(hash) {
   if (m) return { name: m[1], arg: decodeURIComponent(m[2]), qs };
   if (/^\/runs\/?$/.test(path)) return { name: "runs", qs };
   if (/^\/community\/?$/.test(path)) return { name: "community", qs };
+  if (/^\/rewards\/?$/.test(path)) return { name: "rewards" };
   return { name: "explore", qs };
 }
 
@@ -27,7 +28,7 @@ async function route() {
   closeModal();
   const tip = document.getElementById("tip");   // a hovered chart cell removed by navigation never fires mouseleave
   if (tip) tip.hidden = true;
-  const tab = name === "runs" || name === "run" ? "runs" : name === "community" || name === "compare" ? "community" : "explore";
+  const tab = name === "runs" || name === "run" ? "runs" : name === "community" || name === "compare" ? "community" : name === "rewards" ? "rewards" : "explore";
   document.querySelectorAll("[data-nav]").forEach((a) => a.classList.toggle("on", a.dataset.nav === tab));
   window.scrollTo(0, 0);
   progress.start();

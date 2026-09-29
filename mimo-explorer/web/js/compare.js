@@ -1,7 +1,7 @@
 // Compare rollouts of one task side by side: the settings and what they cost, the grade check by check, what each
 // agent produced, how it worked, and the traces. It reads the same endpoints as the rollout page, so it shows exactly
 // what this viewer may see: a private rollout in a shared link stays hidden from everyone but its owner.
-import { $, $$, api, esc, md, money, dur, ago, tokensShort, statusPill, rewardBadge, DOMAIN_NAME, LIVE_STATUSES, sk, emptyState, toast, fmt,
+import { $, $$, api, esc, checkMsg, md, money, dur, ago, tokensShort, statusPill, rewardBadge, DOMAIN_NAME, LIVE_STATUSES, sk, emptyState, toast, fmt,
   progress, visibilityBadge } from "./util.js";
 import { icon, DOMAIN_ICON } from "./icons.js";
 import { getSession } from "./session.js";
@@ -350,7 +350,7 @@ function grade(runs) {
   const cell = (c) => !c ? `<span class="faint">–</span>`
     : `<span class="cmp-ck ${c.passed === true ? "ok" : c.passed === false ? "bad" : "na"}">${icon(c.passed === true ? "check" : c.passed === false ? "x" : "more", 13)}${
       c.score != null && c.passed == null ? Number(c.score).toFixed(2) : c.score != null ? `${c.passed ? "Pass" : "Fail"} · ${Number(c.score).toFixed(2)}` : c.passed === true ? "Pass" : c.passed === false ? "Fail" : "–"}</span>
-      ${c.message ? `<span class="cmp-msg" title="${esc(c.message)}">${esc(String(c.message).slice(0, 160))}</span>` : ""}`;
+      ${c.message ? `<span class="cmp-msg" title="${esc(checkMsg(c.message))}">${esc(checkMsg(c.message).slice(0, 160))}</span>` : ""}`;
   const rows = [
     { label: "Reward", cells: runs.map((x) => rewardBadge(x.run.reward, x.run.status)) },
     // the summary is worth a row only where it adds to the checks (a lone test check already says "6 passed")

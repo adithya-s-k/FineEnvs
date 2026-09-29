@@ -34,6 +34,17 @@ def _tail(res, n: int = 4000) -> str:
     return ((res.stdout or "") + ("\n" + res.stderr if res.stderr else "")).strip()[-n:]
 
 
+def _parts(template: str, task: str, **fmt) -> list[list[str]]:
+    """The agent's first message as `[kind, text]` parts: the harness template around `{task}`, and the task.
+    Joined (`_joined`), they are exactly what the agent is sent; the task page shows the same parts."""
+    before, after = template.split("{task}")
+    return [p for p in (["template", before.format(**fmt)], ["task", task], ["template", after.format(**fmt)]) if p[1]]
+
+
+def _joined(parts: list[list[str]]) -> str:
+    return "".join(text for _, text in parts)
+
+
 # ── Code: fix a real issue; graded by hidden tests ───────────────────────────
 # mimoagent environments/datasets/opensource_code.py + base.py, with verl's code configs (config/agent/code/*.yaml):
 # step_limit 500, anti_hack_cleanup on, "Fix the following issue:" as the instruction.
@@ -104,6 +115,9 @@ class Code:
     steps, timeout = 500, 3600
     prompt = "Fix the following issue:\n\n{task}"
 
+    def message(self, task_id: str) -> list[list[str]]:
+        return _parts(self.prompt, catalog.rows()[task_id]["prompt"])
+
     def run(self, r) -> dict:
         raw = catalog.rows()[r.run["task_id"]]
         inst = raw["instance"]
@@ -134,7 +148,7 @@ class Code:
         r.phase("setup", "done", f"base {base[:10]}{' · .git hidden' if stash else ''} · OpenCode {version}")
 
         r.phase("agent", detail=r.run["model"])
-        opencode.run(r, self.prompt.format(task=raw["prompt"]), cwd, steps=self.steps, timeout=self.timeout)
+        opencode.run(r, _joined(self.message(r.run["task_id"])), cwd, steps=self.steps, timeout=self.timeout)
         r.phase("agent", "done")
 
         r.phase("verify", detail="hidden tests")
@@ -177,6 +191,9 @@ class Cyber:
     prompt = ("You are a security researcher. Your working directory is /home/agent.\n"
               "You can use bash, read, write, and edit tools to interact with the system.\n\n{task}")
 
+    def message(self, task_id: str) -> list[list[str]]:
+        return _parts(self.prompt, catalog.rows()[task_id]["prompt"])
+
     def run(self, r) -> dict:
         raw = catalog.rows()[r.run["task_id"]]
         exp = catalog.cyber_expected(raw["instance"].get("description") or raw["prompt"])
@@ -192,7 +209,7 @@ class Cyber:
         r.phase("setup", "done", f"expecting {exp['error_type']} in {exp['function']} · OpenCode {version}")
 
         r.phase("agent", detail=r.run["model"])
-        opencode.run(r, self.prompt.format(task=raw["prompt"]), "/home/agent", steps=self.steps, timeout=self.timeout,
+        opencode.run(r, _joined(self.message(r.run["task_id"])), "/home/agent", steps=self.steps, timeout=self.timeout,
                      user="agent", home="/home/agent")
         r.phase("agent", "done")
 
@@ -227,6 +244,13 @@ class General:
     steps, timeout = 500, 3600   # verl config/agent/general/s3k.yaml: step_limit 500
     prompt = ("You are an agent, your current working directory is {cwd}.\n\n"
               "You can use the tools available to you to interact with the computer to assist the user in completing tasks.\n\n{task}")
+
+    def message(self, task_id: str) -> list[list[str]]:
+        if catalog.rows()[task_id]["instance"].get("dataset_type") == "terminal_bench":
+            return Terminal().message(task_id)
+        root = catalog.env_dir(task_id)
+        man = json.loads((root / "manifest.json").read_text())
+        return _parts(self.prompt, (root / "instruction.md").read_text(), cwd=man["cwd"])
 
     def _push(self, r, root: Path, pairs: list[tuple[str, str]], name: str) -> None:
         buf = io.BytesIO()
@@ -278,7 +302,7 @@ class General:
         r.phase("setup", "done", f"{len(man['mcp_servers'])} MCP systems up · OpenCode {version}")
 
         r.phase("agent", detail=r.run["model"])
-        final = opencode.run(r, self.prompt.format(cwd=man["cwd"], task=(root / "instruction.md").read_text()), man["cwd"],
+        final = opencode.run(r, _joined(self.message(tid)), man["cwd"],
                              steps=self.steps, timeout=self.timeout, user="agent", home="/home/agent", mcp=man["mcp_servers"])
         r.phase("agent", "done")
 
@@ -351,6 +375,10 @@ class Terminal:
     `bash /tests/test.sh` writes /logs/verifier/reward.txt, and "-1" there is the verifier's crash sentinel."""
     steps = 500
 
+    def message(self, task_id: str) -> list[list[str]]:
+        inst = catalog.rows()[task_id]["instance"]
+        return _parts(General.prompt, inst["problem_statement"], cwd=inst.get("cwd") or "/app")
+
     def run(self, r) -> dict:
         tid = r.run["task_id"]
         inst = catalog.rows()[tid]["instance"]
@@ -364,8 +392,7 @@ class Terminal:
         r.phase("setup", "done", f"OpenCode {version}")
 
         r.phase("agent", detail=r.run["model"])
-        prompt = General.prompt.format(cwd=cwd, task=inst["problem_statement"])
-        opencode.run(r, prompt, cwd, steps=self.steps, timeout=float(inst.get("agent_timeout_sec") or 900) + 300)
+        opencode.run(r, _joined(self.message(tid)), cwd, steps=self.steps, timeout=float(inst.get("agent_timeout_sec") or 900) + 300)
         r.phase("agent", "done")
 
         r.phase("verify", detail="hidden tests")
@@ -422,6 +449,13 @@ class Terminal:
 class Webdev:
     steps, timeout = 64, 1800   # verl config/agent/design/webdev-eval.yaml: step_limit 64
 
+    def message(self, task_id: str) -> list[list[str]]:
+        raw = catalog.rows()[task_id]
+        cwd = raw["instance"].get("cwd") or "/workspace"
+        tmpl = (VENDOR / "webdev" / "agent_prompt.txt").read_text()
+        return [["template", tmpl.replace("{{cwd}}", cwd) + "\n\nBuild a website for the following request:\n\n"],
+                ["task", raw["prompt"]]]
+
     def run(self, r) -> dict:
         from ..vendor.webdev.eval_rubric import build_prompt
         from ..vendor.webdev.verdict import parse_verdict
@@ -436,10 +470,8 @@ class Webdev:
         version = opencode.install(r)   # no answer-leak blocklist here: there is no answer to leak, and npm/CDNs are fair game
         r.phase("setup", "done", f"deliver to {cwd}/dist · OpenCode {version}")
 
-        tmpl = (VENDOR / "webdev" / "agent_prompt.txt").read_text()
-        prompt = tmpl.replace("{{cwd}}", cwd) + "\n\nBuild a website for the following request:\n\n" + raw["prompt"]
         r.phase("agent", detail=r.run["model"])
-        opencode.run(r, prompt, cwd, steps=self.steps, timeout=self.timeout)
+        opencode.run(r, _joined(self.message(r.run["task_id"])), cwd, steps=self.steps, timeout=self.timeout)
         r.phase("agent", "done")
 
         r.phase("verify", detail=f"render + vision judge {r.run.get('judge')}")
@@ -519,6 +551,9 @@ class Webdev:
 
 # ── Music: one completion, no sandbox; graded by feature distance to human music ──
 class Music:
+    def message(self, task_id: str) -> list[list[str]]:
+        return [["task", catalog.rows()[task_id]["prompt"]]]   # the whole conversation: one user message
+
     def run(self, r) -> dict:
         import httpx
         from ..vendor.music_scorer.pipeline import do, extract_abc
@@ -633,6 +668,15 @@ class Music:
 
 
 ADAPTERS = {"code": Code(), "cyber": Cyber(), "general": General(), "webdev": Webdev(), "music": Music()}
+
+
+def agent_prompt(task_id: str, domain: str) -> dict:
+    """The agent's first message in parts, and the limits it runs under: the task page's "Agent prompt"."""
+    d = run_defaults(task_id, domain)
+    return {"parts": ADAPTERS[domain].message(task_id),
+            "harness": None if domain == "music" else {"name": "OpenCode", "version": opencode.VERSION},
+            "steps": d["steps"], "timeout_min": d["timeout_min"],
+            "max_tokens": d["max_tokens"] if domain == "music" else opencode.OUTPUT_LIMIT}
 
 
 def run_defaults(task_id: str, domain: str) -> dict:

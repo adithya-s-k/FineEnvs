@@ -198,6 +198,24 @@ const noOverflow = (p) => p.evaluate(() => document.documentElement.scrollWidth 
   ok("someone else's rollout: read-only, anonymous", !(await p.$('#rp-vis')) && !(await p.$('#rp-cancel')) && /shared anonymously/.test(await p.textContent('#rp-head')) && /Run it yourself/.test(await p.textContent('.rp-actions')));
   ok("someone else's rollout: nav and breadcrumb point to Community", (await p.getAttribute('[data-nav="community"]', 'class')).includes('on') && (await p.textContent('.crumbs a')) === 'Community');
 
+  // reward design: the agent prompt, each domain's grading detail, the dataset page
+  await go(p, '#/task/s3k_0000_accounting_audit_tax_en_t1_rl_008', 2000);
+  ok('task: agent prompt with the harness and its limits', await p.isVisible('#sec-prompt') && /OpenCode/.test(await p.textContent('#sec-prompt')) && /500 model calls/.test(await p.textContent('#sec-prompt')));
+  const folded = (await p.innerText('#sec-prompt pre')).length;   // innerText: the folded task is hidden, not absent
+  await p.click('#sec-prompt [data-pr-expand]'); await p.waitForTimeout(200);
+  ok('task: the folded task opens inside the prompt', !(await p.$('#sec-prompt [data-pr-expand]')) && (await p.innerText('#sec-prompt pre')).length > folded + 500);
+  ok('task: General grading has the formula, the rules and the judge prompt', /Σ weight × score/.test(await p.textContent('#sec-grading')) && (await p.$$('#sec-grading .rules li')).length >= 4 && /judge prompt, in English/.test(await p.textContent('#sec-grading')));
+  ok('task: a check without a weight is called out with its share', /decides 50% of the reward/.test(await p.textContent('#sec-grading')));
+  ok('task: no expected answer anywhere on the page', await p.evaluate(() => !/Ground truth|pass_anchor|gold_answer|check_code/.test(document.body.innerHTML)));
+  await go(p, '#/task/dasyn_260630_00886', 1500);
+  ok('task: Webdev grading has the judge instructions, 35 bands and training', (await p.$$('#sec-grading .bands ol li')).length === 35 && /In training/.test(await p.textContent('#sec-grading')));
+  await go(p, '#/task/music-gK-0216', 1500);
+  ok('task: Music grading has the group weights and curves', /rhythm · 22%/i.test(await p.textContent('#sec-grading')) && /Histogram similarity/.test(await p.textContent('#sec-grading')));
+  await go(p, '#/rewards', 1500);
+  ok('reward design: nav tab, six kinds of task, the rubric counts', (await p.getAttribute('[data-nav="rewards"]', 'class')).includes('on') && (await p.$$('.rw-tbl tbody tr')).length === 6 && /5,125 across 925 tasks/.test(await p.textContent('#rw-body')));
+  await p.click('.rw-tbl tbody tr a'); await p.waitForTimeout(1500);
+  ok('reward design: an example opens its task', /#\/task\//.test(await p.evaluate(() => location.hash)) && await p.isVisible('#sec-grading'));
+
   // community
   await go(p, '#/community', 1500);
   ok('community: figures, leaderboard and rollouts', (await p.$$('.cm-figs > div')).length === 5 && (await p.$$('.cm-lb tbody tr')).length > 0 && (await p.$$('#cm-rows .runrow')).length > 0);
@@ -232,7 +250,7 @@ const noOverflow = (p) => p.evaluate(() => document.documentElement.scrollWidth 
 
 // ── every width and theme: layout ────────────────────────────────────────────
 const PAGES = ['#/', '#/task/s3k_0000_accounting_audit_tax_en_t1_rl_008', '#/task/format-code-task-001406', '#/task/dasyn_260630_00886',
-  '#/task/music-gK-0216', '#/task/arvo_42480818', '#/run/' + OWN_RUN, '#/run/' + OTHER_RUN, '#/runs', '#/community', '#/community?view=tasks',
+  '#/task/music-gK-0216', '#/task/arvo_42480818', '#/run/' + OWN_RUN, '#/run/' + OTHER_RUN, '#/runs', '#/community', '#/community?view=tasks', '#/rewards',
   `#/compare/${CMP_TASK}?r=${CMP_RUNS}`];
 for (const theme of ['light', 'dark']) for (const w of [390, 768, 1280, 1920]) {
   const p = await page(w, theme);
@@ -273,7 +291,7 @@ for (const w of [320, 360, 390]) {
   const ctx = await b.newContext({ viewport: { width: w, height: 800 } });
   await ctx.route('**/api/me', (r) => r.fulfill({ json: { user: null, local: false, oauth: true, version: '1.0.0', source: 'test', missing_scopes: [] } }));
   const p = await ctx.newPage();
-  for (const h of ['#/', '#/community', '#/task/s3k_0000_accounting_audit_tax_en_t1_rl_008', '#/runs', '#/run/' + OWN_RUN, `#/compare/${CMP_TASK}?r=${CMP_RUNS}`]) {
+  for (const h of ['#/', '#/community', '#/rewards', '#/task/s3k_0000_accounting_audit_tax_en_t1_rl_008', '#/runs', '#/run/' + OWN_RUN, `#/compare/${CMP_TASK}?r=${CMP_RUNS}`]) {
     await p.goto(BASE + '/' + h, { waitUntil: 'networkidle' }); await p.waitForTimeout(900);
     ok(`signed out ${w}px ${h}: no sideways scroll`, await noOverflow(p));
   }

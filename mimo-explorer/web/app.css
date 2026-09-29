@@ -858,6 +858,7 @@ a.rs-row:hover { background: var(--surface-2); }
 .cm-filters .search input { padding-left: 32px; height: 34px; }
 #cm-view { margin-bottom: 14px; }
 @media (max-width: 480px) {
+  .nav a[data-nav="rewards"] { display: none; }   /* four tabs don't fit; the footer and every Grading section link to it */
   .signin .txt { display: none; }
   .signin { padding: 0 10px; }
   .nav a { padding: 0 6px; }
@@ -1111,3 +1112,24 @@ a.rs-row:hover { background: var(--surface-2); }
   .cmp-chart-bar .seg { margin-left: 0; }
   .cmp-bar { bottom: 12px; gap: 6px; padding-left: 12px; }
 }
+
+/* ── reward design: formulas, rules, judge prompts, the agent prompt ── */
+.formula { margin: 14px 0 0; font-size: 13px; }
+.formula code { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 3px 8px; display: inline-block; overflow-wrap: anywhere; }
+.rules { margin: 12px 0 0; padding-left: 18px; display: grid; gap: 5px; font-size: 13px; line-height: 1.55; color: var(--muted); }
+.bands { display: grid; gap: 14px; margin: 8px 0 4px; }
+.bands b { font-size: 13px; font-weight: 500; }
+.bands ol { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 3px; }
+.bands li { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; font-size: 12.5px; color: var(--muted); }
+.bands li span:first-child { color: var(--faint); font-variant-numeric: tabular-nums; }
+.pr-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0 8px; }
+.pr-h .sec-label { margin: 0; }
+.pr-task { font: inherit; color: var(--faint); background: var(--surface-3); border: 0; border-radius: 4px; padding: 0 4px; cursor: pointer; }
+.pr-task:hover { color: var(--text); }
+.rw-tbl { max-height: none; }
+.rw-tbl table { width: 100%; min-width: 960px; }
+.rw-tbl th, .rw-tbl td { max-width: none; }
+.rw-tbl td:first-child, .rw-tbl .nw { white-space: nowrap; overflow-wrap: normal; }
+.rw-tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
+.rw-dom { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
+.rw-dom .ic { color: var(--faint); }

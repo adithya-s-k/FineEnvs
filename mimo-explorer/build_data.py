@@ -10,6 +10,9 @@
 Writes site/data/, gzipped (Spaces serve static files uncompressed, so the page inflates them itself):
     index.json.gz      one small record per environment: what search, filters and the map need
     <domain>.json.gz   full briefs and domain-specific detail, fetched when an environment is opened
+    rewards.json.gz    counts behind the Reward design page (how General's rubrics are built)
+
+    uv run build_data.py --rewards        # only rewards.json.gz (needs just the rubric files)
 
 Rubric *questions* are kept; `pass_anchor` and `gold_answer` are not. They are the answers,
 and a browsing tool is not the place to hand them out.
@@ -454,6 +457,48 @@ def build_general(df, raw: Path, files: list[str]):
     return index, detail
 
 
+# ── reward design ────────────────────────────────────────────────────────────
+def build_rewards(raw: Path) -> dict:
+    """How General's rubrics are built, across the dataset. Counts only: no question, answer or code."""
+    import statistics
+
+    metas = [json.loads(p.read_text()) for p in sorted((raw / "general" / "envs").glob("*/verifier_meta.json"))]
+    C = collections.Counter
+    per_task, judge_share, files = [], [], C()
+    method, tier, mix, inp, act = C(), C(), C(), C(), C()
+    weighted = mixed = mixed_heavy = 0
+    for m in metas:
+        items = m.get("items") or []
+        per_task.append(len(items))
+        kinds = {i.get("method") for i in items}
+        mix["judge_only" if kinds == {"llm"} else "code_only" if kinds == {"rule"} else "both"] += 1
+        weighted += any(i.get("weight") is not None for i in items)
+        w = lambda i: float(i.get("weight") if i.get("weight") is not None else 1)   # noqa: E731 - verify.py's default
+        total = sum(w(i) for i in items) or 1
+        # weights written as shares of 1 next to a check with none, which verify.py counts as a full 1
+        bare = [i for i in items if i.get("weight") is None]
+        if bare and len(bare) < len(items):
+            mixed += 1
+            mixed_heavy += sum(w(i) for i in bare) / total >= 0.4
+        judge_share.append(sum(w(i) for i in items if i.get("method") == "llm") / total)
+        inp[m.get("input") or "unknown"] += 1
+        act[m.get("act") or "unknown"] += 1
+        for i in items:
+            method[i.get("method") or "unknown"] += 1
+            tier[i.get("tier") or "unknown"] += 1
+            if i.get("method") == "llm":
+                files.update(Path(f).name for f in i.get("files") or [])
+    return {"general": {
+        "tasks": len(metas), "checks": sum(per_task),
+        "per_task": {"min": min(per_task), "median": statistics.median(per_task), "max": max(per_task)},
+        "method": dict(method), "tier": dict(tier), "mix": dict(mix), "weighted_tasks": weighted,
+        "mixed_weights": mixed, "mixed_heavy": mixed_heavy,
+        "judge_share_median": round(statistics.median(judge_share), 3),
+        "input": dict(inp), "act": dict(act), "judged_files": files.most_common(6),
+        "uses_gates": sum(any(i.get("gate") for i in m.get("items") or []) or bool(m.get("src_protect")) for m in metas),
+    }}
+
+
 # ── main ─────────────────────────────────────────────────────────────────────
 DOMAINS = {
     "code": ("Code", "Fix real issues in real repos", "hidden unit tests", "prog"),
@@ -483,6 +528,15 @@ def write(path: Path, doc) -> None:
 
 
 def main() -> None:
+    if "--rewards" in sys.argv:
+        from huggingface_hub import snapshot_download
+
+        raw = Path(os.environ.get("RAW_DIR") or snapshot_download(
+            REPO, repo_type="dataset", allow_patterns=["general/envs/*/verifier_meta.json"]))
+        OUT.mkdir(parents=True, exist_ok=True)
+        write(OUT / "rewards.json.gz", build_rewards(raw))
+        print(f"rewards  written to {OUT / 'rewards.json.gz'}")
+        return
     raw, files = fetch()
     frames = {d: pd.read_parquet(raw / p) for d, p in PARQUETS.items()}
     built = {
@@ -509,6 +563,7 @@ def main() -> None:
 
     index_doc = {"source": REPO, "total": len(everything), "domains": domains, "envs": everything}
     write(OUT / "index.json.gz", index_doc)
+    write(OUT / "rewards.json.gz", build_rewards(raw))
     print(f"index    {len(everything):5} envs  {(OUT / 'index.json.gz').stat().st_size / 1e6:.2f} MB gz")
 
 

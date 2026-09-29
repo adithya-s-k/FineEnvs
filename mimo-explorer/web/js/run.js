@@ -1,5 +1,5 @@
 // A rollout, live: phases across the top, the agent's steps as a timeline, and the grade when it lands.
-import { $, api, esc, md, money, dur, ago, tokensShort, statusPill, toast, DOMAIN_NAME, LIVE_STATUSES, rewardClass, rewardText, sk, spinner, emptyState,
+import { $, api, esc, checkMsg, md, money, dur, ago, tokensShort, statusPill, toast, DOMAIN_NAME, LIVE_STATUSES, rewardClass, rewardText, sk, spinner, emptyState,
   confetti, openDialog, closeModal, visibilityBadge, PRIVATE_NOTE, reportUrl } from "./util.js";
 import { icon, DOMAIN_ICON } from "./icons.js";
 import { refreshActive } from "./session.js";
@@ -261,6 +261,10 @@ function renderGrade(el, st) {
   const long = (g.summary || "").length > 180;
   const zh = /[一-鿿]/.test(g.summary || "");
   const cls = rewardClass(rw);
+  // General rubric checks: each one's share of the reward (verify.py counts a missing weight as 1)
+  const rubric = (g.checks || []).some((c) => c.method === "llm" || c.method === "rule");
+  const wt = (c) => (c.weight == null ? 1 : Number(c.weight));
+  const wsum = rubric ? g.checks.reduce((n, c) => n + wt(c), 0) || 1 : 1;
   box.innerHTML = `${h}<div class="panel-b">
     ${src ? `<a class="shot" href="${src}" target="_blank" rel="noopener" title="Open the full-page render"><img src="${src}" alt="What the judge saw"></a>` : ""}
     <div class="score"><span class="big ${cls}">${rewardText(rw)}</span><span class="of">reward, out of 1</span></div>
@@ -270,9 +274,10 @@ function renderGrade(el, st) {
     ${(g.checks || []).length ? `<ul class="gchecks">${g.checks.map((c) => `<li class="${c.passed === true ? "ok" : c.passed === false ? "bad" : "na"}">
       <span class="mk">${icon(c.passed === true ? "check" : c.passed === false ? "x" : "more", 14)}</span>
       <div><b>${esc(c.question || humanize(c.id))}</b>
-      ${c.tier || c.method === "llm" ? `<span class="meta">${esc([c.tier, c.method === "llm" && "model-judged"].filter(Boolean).join(" · "))}</span>` : ""}
-      ${c.message ? `<p>${esc(String(c.message).slice(0, 300))}</p>` : ""}</div>
+      ${c.tier || c.method === "llm" ? `<span class="meta">${esc([c.tier, c.method === "llm" && "model-judged", rubric && `${Math.round((wt(c) / wsum) * 100)}% of the reward`].filter(Boolean).join(" · "))}</span>` : ""}
+      ${c.message ? `<p>${esc(checkMsg(c.message).slice(0, 300))}</p>` : ""}</div>
       ${c.score != null && c.passed == null ? `<span class="sc">${Number(c.score).toFixed(2)}</span>` : "<span></span>"}</li>`).join("")}</ul>` : ""}
+    ${(g.checks || []).some((c) => c.method === "llm") ? `<p class="xs faint" style="margin-top:8px">The task's grader keeps each check's verdict, not the judge's reasoning.</p>` : ""}
     ${long ? `<details class="notes"><summary class="disclose">${icon("chevronRight", 14, "chev")}Judge's notes</summary><p>${esc(g.summary)}</p>
       ${zh ? `<p class="xs faint">In Chinese because Xiaomi's grading rubric is written in Chinese; it is used unchanged so scores stay comparable with theirs.</p>` : ""}</details>` : ""}
   </div>`;
