@@ -1,0 +1,180 @@
+<div class="sft-rl" style="width:100%;margin:14px 0;"></div>
+<style>
+  .sft-rl { position: relative; }
+  .sft-rl svg { display:block; width:100%; height:auto; overflow:visible; }
+  .sft-rl .sr-bars { display:flex; flex-wrap:wrap; gap:6px 18px; margin-bottom:10px; }
+  .sft-rl .sr-bar { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+  .sft-rl .sr-bar > span { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-color); margin-right:2px; }
+  .sft-rl .sr-chip { appearance:none; cursor:pointer; font:inherit; font-size:12px; line-height:1; padding:6px 11px;
+    border-radius:999px; border:1px solid var(--border-color); background:transparent; color:var(--muted-color); }
+  .sft-rl .sr-chip:hover { color:var(--text-color); }
+  .sft-rl .sr-chip[aria-pressed="true"] { color:var(--text-color); border-color:var(--text-color); font-weight:600; }
+  .sft-rl .sr-chip:focus-visible { outline:2px solid var(--text-color); outline-offset:2px; }
+  .sft-rl .lg { display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px; margin-top:10px; font-size:12px; color:var(--muted-color); }
+  .sft-rl .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .sft-rl .k { display:inline-flex; align-items:center; gap:7px; }
+  .sft-rl .sw { width:14px; height:14px; border-radius:3px; border:1.5px solid; box-sizing:border-box; }
+  .sft-rl .dot { width:12px; height:12px; border-radius:50%; border:1.5px solid; box-sizing:border-box; }
+  .sft-rl .nt { margin-top:8px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'sft-rl';
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let r = scriptEl ? scriptEl.previousElementSibling : null;
+      while (r && !(r.classList && r.classList.contains(C))) r = r.previousElementSibling;
+      if (!r) { const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true'); r = n[n.length-1]; }
+      if (!r || r.dataset.mounted === 'true') return;
+      r.dataset.mounted = 'true';
+
+      let host = r; while (host && !host.getAttribute?.('data-config')) host = host.parentElement;
+      let cfg = {}; try { cfg = JSON.parse(host?.getAttribute('data-config') || '{}'); } catch (e) {}
+      const view = cfg.view || 'map';
+
+      const V = (k, f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      // Same colours as the RL charts: hue is the training data (OpenCode only or all four harnesses),
+      // fill is the method (SFT light with an outline, RL solid).
+      const hue = (d) => d === 'opencode' ? P(0) : d === 'multi' ? P(3) : V('--muted-color', '#999');
+      const SHORT = { base: 'Base', sft_opencode: 'OpenCode SFT', sft_multi: 'Multi-harness SFT', rl_opencode: 'OpenCode RL', rl_multi: 'Multi-harness RL' };
+      const LOGO = { 'opencode':'opencode.svg', 'claude-code':'claude-code.svg', 'codex':'codex.png', 'mini-swe-agent':'swe-agent.svg' };
+      const pct = (v) => `${v > 0 ? '' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)}%`;
+
+      const grab = async (f) => {
+        for (const u of ['/data/'+f, 'assets/data/'+f, '../assets/data/'+f]) {
+          try { const x = await fetch(u, {cache:'no-cache'}); if (x.ok) return await x.json(); } catch(e) {}
+        }
+        throw new Error('could not load '+f);
+      };
+      const legend = (note, noBase) => {
+        const mu = V('--muted-color', '#999');
+        const box = (c, solid) => `<span class="sw" style="border-color:${c};background:${solid ? c : `color-mix(in srgb, ${c} 22%, transparent)`}"></span>`;
+        return `<div class="lg"><div class="lg-t">Legend</div>`
+          + (noBase ? '' : `<span class="k">${box(mu, false)}Base model</span>`)
+          + `<span class="k">${box(P(0), false)}OpenCode SFT</span>`
+          + `<span class="k">${box(P(3), false)}Multi-harness SFT</span>`
+          + `<span class="k">${box(P(0), true)}OpenCode RL</span>`
+          + `<span class="k">${box(P(3), true)}Multi-harness RL</span>`
+          + `</div>` + (note ? `<div class="nt">${note}</div>` : '');
+      };
+
+      grab('sft-vs-rl.json').then(D => {
+        const H = D.harnesses, HL = D.harness_labels, R = D.runs;
+        let metric = 0, epoch = 2;
+
+        const views = {
+          // Overall pass@1 against tool-call savings, one point per run.
+          map: () => {
+            const W = Math.max(320, r.clientWidth), narrow = W < 520;
+            const Ht = narrow ? 300 : 340, m = { l: 50, r: 16, t: 14, b: 44 };
+            const x0 = 36, x1 = 58, y0 = -5, y1 = 35;
+            const X = (v) => m.l + (v - x0) / (x1 - x0) * (W - m.l - m.r);
+            const Y = (v) => Ht - m.b - (v - y0) / (y1 - y0) * (Ht - m.t - m.b);
+            const mu = V('--muted-color','#888'), tx = V('--text-color','#111'), bd = V('--border-color','rgba(128,128,128,.3)');
+            let s = `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="Overall pass@1 against fewer tool calls for the LFM base model, two SFT runs and two RL runs">`;
+            for (let v = 36; v <= 58; v += 2) {
+              if (narrow && v % 4) continue;
+              s += `<line x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${Ht-m.b}" stroke="${bd}" stroke-dasharray="2 4"/>`;
+              s += `<text x="${X(v)}" y="${Ht-m.b+15}" text-anchor="middle" font-size="10.5" fill="${mu}">${v}%</text>`;
+            }
+            for (let v = 0; v <= 30; v += 10) {
+              s += `<line x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${bd}" stroke-dasharray="${v ? '2 4' : ''}"/>`;
+              s += `<text x="${m.l-6}" y="${Y(v)+3.5}" text-anchor="end" font-size="10.5" fill="${mu}">${v}%</text>`;
+            }
+            s += `<line x1="${X(R.base.pass.overall)}" x2="${X(R.base.pass.overall)}" y1="${m.t}" y2="${Ht-m.b}" stroke="${mu}" stroke-opacity=".5"/>`;
+            s += `<text x="${(W+m.l)/2}" y="${Ht-6}" text-anchor="middle" font-size="11.5" fill="${tx}">Pass@1, all 1,000 test cells →</text>`;
+            s += `<text transform="translate(12,${(Ht-m.b+m.t)/2}) rotate(-90)" text-anchor="middle" font-size="11.5" fill="${tx}">Fewer tool calls than base →</text>`;
+            // Epoch 1 → epoch 2 for the two SFT runs.
+            [['sft_opencode_e1','sft_opencode_e2'], ['sft_multi_e1','sft_multi_e2']].forEach(([a, b]) => {
+              const c = hue(R[b].data), A = R[a], B = R[b];
+              s += `<line x1="${X(A.pass.overall)}" y1="${Y(A.savings.overall)}" x2="${X(B.pass.overall)}" y2="${Y(B.savings.overall)}" stroke="${c}" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+              s += `<circle cx="${X(A.pass.overall)}" cy="${Y(A.savings.overall)}" r="3.5" fill="${V('--surface-bg','#fff')}" stroke="${c}" stroke-width="1.5"><title>${esc(A.label)}: ${A.pass.overall.toFixed(1)}% pass@1, ${pct(A.savings.overall)} fewer calls (n=${A.savings.n})</title></circle>`;
+              s += `<text x="${X(A.pass.overall)}" y="${Y(A.savings.overall) + (a === 'sft_multi_e1' ? -8 : 15)}" text-anchor="middle" font-size="10" fill="${mu}">epoch 1</text>`;
+            });
+            // Label side per point, chosen so the five labels never overlap.
+            const pts = [
+              ['base', 'base', 'right', 13],
+              ['sft_opencode_e2', 'sft_opencode', 'right', 14],
+              ['sft_multi_e2', 'sft_multi', 'right', 4],
+              ['rl_opencode', 'rl_opencode', 'right', 4],
+              ['rl_multi', 'rl_multi', 'left', 4],
+            ];
+            pts.forEach(([k, name, side, dy]) => {
+              const d = R[k], c = hue(d.data), x = X(d.pass.overall), y = Y(d.savings.overall);
+              const solid = d.method === 'rl';
+              s += `<circle cx="${x}" cy="${y}" r="7" fill="${solid ? c : `color-mix(in srgb, ${c} 25%, ${V('--surface-bg','#fff')})`}" stroke="${c}" stroke-width="2"><title>${esc(d.label)}: ${d.pass.overall.toFixed(1)}% pass@1, ${pct(d.savings.overall)} fewer calls on ${d.savings.n} shared successes</title></circle>`;
+              const lx = side === 'left' ? x - 12 : x + 12;
+              s += `<text x="${lx}" y="${y + dy}" text-anchor="${side === 'left' ? 'end' : 'start'}" font-size="${narrow ? 10.5 : 11.5}" font-weight="600" fill="${tx}">${esc(SHORT[name])}</text>`;
+              s += `<text x="${lx}" y="${y + dy + 13}" text-anchor="${side === 'left' ? 'end' : 'start'}" font-size="10.5" fill="${mu}">${d.pass.overall.toFixed(1)}%${k === 'base' ? '' : `, ${pct(d.savings.overall)} calls`}</text>`;
+            });
+            s += `</svg>`;
+            r.innerHTML = s + legend(cfg.note || 'Filled points: epoch 2 for SFT, and the best checkpoint for RL (step 900 for OpenCode only, step 700 for multi-harness). Hollow points are the SFT runs after epoch 1. Fewer tool calls is counted on the task and harness pairs both the base model and the run solved.');
+          },
+
+          // Per harness: pass@1 or tool-call savings, for all five models.
+          harness: () => {
+            const opts = ['Pass@1', 'Fewer tool calls'];
+            const W = Math.max(320, r.clientWidth), narrow = W < 600;
+            const keys = ['base', `sft_opencode_e${epoch}`, `sft_multi_e${epoch}`, 'rl_opencode', 'rl_multi'].filter(k => metric === 0 || k !== 'base');
+            const groups = ['overall', ...H];
+            const val = (k, g) => metric === 0 ? R[k].pass[g] : (g === 'overall' ? R[k].savings.overall : R[k].savings[g][0]);
+            const nOf = (k, g) => g === 'overall' ? R[k].savings.n : R[k].savings[g][1];
+            const lo = metric === 0 ? 0 : -20, hi = metric === 0 ? 70 : 60;
+            const Ht = 280, m = { l: 40, r: 8, t: 18, b: 46 };
+            const Y = (v) => Ht - m.b - (v - lo) / (hi - lo) * (Ht - m.t - m.b);
+            const gw = (W - m.l - m.r) / groups.length, n = keys.length, gap = narrow ? 2 : 3;
+            const bw = Math.min(24, (gw - (narrow ? 8 : 18) - (n - 1) * gap) / n);
+            const mu = V('--muted-color','#888'), tx = V('--text-color','#111'), bd = V('--border-color','rgba(128,128,128,.3)'), bg = V('--surface-bg','#fff');
+            let s = `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="${esc(opts[metric])} by harness for the base model, two SFT runs and two RL runs">`;
+            for (let v = lo; v <= hi; v += 10) {
+              s += `<line x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${bd}" stroke-dasharray="${v ? '2 4' : ''}"/>`;
+              s += `<text x="${m.l-6}" y="${Y(v)+3.5}" text-anchor="end" font-size="10.5" fill="${mu}">${v < 0 ? '−' + (-v) : v}%</text>`;
+            }
+            groups.forEach((g, gi) => {
+              const gx = m.l + gi * gw + (gw - n * bw - (n - 1) * gap) / 2;
+              keys.forEach((k, j) => {
+                const d = R[k], v = val(k, g), c = hue(d.data), solid = d.method === 'rl';
+                const x = gx + j * (bw + gap), y = Y(Math.max(0, v)), y0 = Y(Math.min(0, v));
+                const fill = d.method === 'base' ? `color-mix(in srgb, ${c} 45%, ${bg})` : solid ? c : `color-mix(in srgb, ${c} 22%, ${bg})`;
+                const tip = metric === 0 ? `${d.label}: ${v.toFixed(1)}% pass@1` : `${d.label}: ${pct(v)} fewer calls on ${nOf(k, g)} shared successes`;
+                s += `<rect x="${x}" y="${Math.min(y, y0)}" width="${bw}" height="${Math.max(1, Math.abs(y0 - y))}" rx="2.5" fill="${fill}" stroke="${c}" stroke-width="${solid || d.method === 'base' ? 0 : 1.2}"><title>${esc(tip)}</title></rect>`;
+                if (!narrow) s += `<text x="${x + bw/2}" y="${v >= 0 ? y - 4 : y0 + 11}" text-anchor="middle" font-size="9.5" fill="${tx}" fill-opacity=".8">${Math.round(v)}</text>`;
+              });
+              const cx = m.l + gi * gw + gw / 2;
+              if (g !== 'overall') s += `<rect x="${cx-9}" y="${Ht-m.b+7}" width="18" height="18" rx="5" fill="#fcfcfd"/><image href="/logos/${LOGO[g]}" x="${cx-6.5}" y="${Ht-m.b+9.5}" width="13" height="13"/>`;
+              s += `<text x="${cx}" y="${g === 'overall' ? Ht-m.b+20 : Ht-6}" text-anchor="middle" font-size="${narrow ? 10 : 11.5}" font-weight="${g === 'overall' ? 700 : 500}" fill="${tx}">${esc(g === 'overall' ? 'Overall' : (narrow && g === 'mini-swe-agent' ? 'Mini-SWE' : HL[g]))}</text>`;
+              if (gi) s += `<line x1="${m.l + gi*gw}" x2="${m.l + gi*gw}" y1="${m.t}" y2="${Ht-m.b}" stroke="${bd}" stroke-opacity=".6"/>`;
+            });
+            s += `</svg>`;
+            const bar = `<div class="sr-bars"><div class="sr-bar" role="group" aria-label="Metric"><span>Metric</span>`
+              + opts.map((o, i) => `<button type="button" class="sr-chip" data-m="${i}" aria-pressed="${i === metric}">${o}</button>`).join('')
+              + `</div><div class="sr-bar" role="group" aria-label="SFT checkpoint"><span>SFT</span>`
+              + [2, 1].map(e => `<button type="button" class="sr-chip" data-e="${e}" aria-pressed="${e === epoch}">Epoch ${e}</button>`).join('') + `</div></div>`;
+            const note = metric === 0
+              ? 'Pass@1 on the 250 test tasks under each harness. RL is at its best checkpoint: step 900 for OpenCode only, step 700 for multi-harness. The base model has 998 of 1,000 cells graded.'
+              : 'Percent fewer tool calls than the base model, on the task and harness pairs both solved. Hover a bar for the number of pairs. Negative means more calls.';
+            r.innerHTML = bar + s + legend(note, metric === 1);
+            r.querySelectorAll('.sr-chip').forEach(b => b.addEventListener('click', () => {
+              if (b.dataset.m != null) metric = +b.dataset.m; else epoch = +b.dataset.e;
+              draw(); r.querySelector(`.sr-chip[data-${b.dataset.m != null ? 'm' : 'e'}="${b.dataset.m ?? b.dataset.e}"]`)?.focus();
+            }));
+          },
+        };
+        const draw = () => (views[view] || views.map)();
+        draw();
+        let w = r.clientWidth;
+        if (window.ResizeObserver) new ResizeObserver(() => { if (Math.abs(r.clientWidth - w) > 4) { w = r.clientWidth; draw(); } }).observe(r);
+        new MutationObserver(draw).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+      }).catch(e => { r.innerHTML = `<div class="nt">Could not load the SFT and RL results (${esc(e.message)}).</div>`; });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+    else boot();
+  })();
+</script>

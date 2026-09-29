@@ -233,28 +233,64 @@
           // Two real GRPO groups from the LFM multi-harness run, scored both ways.
           group: () => {
             const opts = D.example_groups.map(g => g.label);
-            const g = D.example_groups[sel], R = g.rollouts;
-            const qR = R.map(x => x.correct), lR = R.map(x => x.reward);
+            const g = D.example_groups[sel];
+            // Sort by tool calls, fewest first, so the bonus's effect reads left to right.
+            const R = g.rollouts.map((x, i) => ({ ...x, i })).sort((a, b) => a.calls - b.calls || b.correct - a.correct);
             // GRPO's advantage: distance from the group mean, in group standard deviations.
             const adv = (rs) => { const mu = rs.reduce((a,b)=>a+b,0)/rs.length; const sd = Math.sqrt(rs.reduce((a,b)=>a+(b-mu)**2,0)/rs.length);
               return rs.map(x => sd < 1e-9 ? 0 : (x - mu) / sd); };
-            const qa = adv(qR), la = adv(lR), mx = Math.max(2, ...qa.map(Math.abs), ...la.map(Math.abs));
-            const cq = V('--muted-color','#999'), cl = P(0);
-            const bar = (a, c) => { const hpx = Math.abs(a) / mx * 27; return `<div class="av" title="advantage ${a.toFixed(2)}"><i style="background:${c};height:${Math.max(hpx, a ? 2 : 0)}px;${a >= 0 ? `bottom:50%` : `top:50%`}"></i></div>`; };
-            const h = chips(opts)
-              + `<div class="gr">`
-              + `<div class="lab"><b>Rollout</b>answer · tool calls</div>` + R.map(x => `<div class="ro ${x.correct ? 'ok' : 'no'}"><b>${x.correct ? '✓' : '✗'}</b>${x.calls} calls</div>`).join('')
-              + `<div class="sep"></div>`
-              + `<div class="lab"><b>Qwen reward</b>correctness only</div>` + qR.map(v => `<div class="rw">${v}</div>`).join('')
-              + `<div class="lab">advantage</div>` + qa.map(a => bar(a, cq)).join('')
-              + `<div class="sep"></div>`
-              + `<div class="lab"><b>LFM reward</b>with the tool bonus</div>` + lR.map(v => `<div class="rw">${v ? v.toFixed(3) : '0'}</div>`).join('')
-              + `<div class="lab">advantage</div>` + la.map(a => bar(a, cl)).join('')
-              + `</div>`;
+            const qa = adv(R.map(x => x.correct)), la = adv(R.map(x => x.reward));
+            const mx = Math.max(1.5, ...qa.map(Math.abs), ...la.map(Math.abs));
+            const W = Math.max(320, r.clientWidth), narrow = W < 560;
+            const m = { l: narrow ? 74 : 132, r: 6 }, cw = (W - m.l - m.r) / R.length, bw = Math.min(34, cw * .56);
+            const mu = V('--muted-color','#888'), tx = V('--text-color','#111'), bd = V('--border-color','rgba(128,128,128,.3)');
+            const up = P(0), dn = P(3), cx = (j) => m.l + j * cw + cw / 2;
+            const maxCalls = Math.max(...R.map(x => x.calls));
+            const topH = 92, panH = narrow ? 118 : 132, gap = 18, Ht = topH + 2 * panH + gap + 30;
+            let s = `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="Eight rollouts of one task sorted by tool calls, with the GRPO advantage each gets under correctness only and under correctness plus the tool bonus">`;
+            // Rollouts: answer and a bar for the tool calls it took.
+            s += `<text x="0" y="16" font-size="${narrow ? 11 : 12}" font-weight="700" fill="${tx}">Rollouts</text>`;
+            s += `<text x="0" y="31" font-size="${narrow ? 10 : 11}" fill="${mu}">${narrow ? 'by tool calls' : 'sorted by tool calls'}</text>`;
+            R.forEach((x, j) => {
+              const c = x.correct ? up : dn, bh = x.calls / maxCalls * 44, y0 = 72;
+              s += `<rect x="${cx(j) - bw/2}" y="${y0 - bh}" width="${bw}" height="${bh}" rx="2.5" fill="${mu}" fill-opacity=".28"/>`;
+              s += `<text x="${cx(j)}" y="${y0 - bh - 5}" text-anchor="middle" font-size="${narrow ? 10 : 11}" fill="${tx}">${x.calls}</text>`;
+              s += `<circle cx="${cx(j)}" cy="${y0 + 11}" r="8" fill="${c}" fill-opacity=".16" stroke="${c}"/>`;
+              s += `<text x="${cx(j)}" y="${y0 + 15}" text-anchor="middle" font-size="11" font-weight="700" fill="${c}">${x.correct ? '✓' : '✗'}</text>`;
+            });
+            if (!narrow) s += `<text x="0" y="62" font-size="10.5" fill="${mu}">tool calls</text><text x="0" y="87" font-size="10.5" fill="${mu}">answer</text>`;
+            // One panel of advantages. Bars share one scale across both panels.
+            const panel = (y, title, sub, a, rewards, isQwen) => {
+              const mid = y + panH / 2 + 4, k = (panH / 2 - 22) / mx;
+              let o = `<line x1="0" x2="${W - m.r}" y1="${y}" y2="${y}" stroke="${bd}"/>`;
+              o += `<text x="0" y="${y + 18}" font-size="${narrow ? 11 : 12}" font-weight="700" fill="${tx}">${esc(title)}</text>`;
+              o += `<text x="0" y="${y + 33}" font-size="${narrow ? 10 : 11}" fill="${mu}">${esc(sub)}</text>`;
+              if (!narrow) o += `<text x="${m.l - 10}" y="${mid - 6}" text-anchor="end" font-size="10.5" fill="${up}">↑ pushed up</text><text x="${m.l - 10}" y="${mid + 14}" text-anchor="end" font-size="10.5" fill="${dn}">↓ pushed down</text>`;
+              o += `<line x1="${m.l}" x2="${W - m.r}" y1="${mid}" y2="${mid}" stroke="${mu}" stroke-opacity=".6"/>`;
+              const flat = a.every(v => Math.abs(v) < 1e-9);
+              if (flat) {
+                o += `<text x="${(m.l + W - m.r) / 2}" y="${mid - 15}" text-anchor="middle" font-size="${narrow ? 10.5 : 12}" fill="${tx}">${narrow ? 'Every advantage is 0: no signal' : 'Every rollout scores 1, so every advantage is 0 and this group teaches nothing'}</text>`;
+              }
+              a.forEach((v, j) => {
+                const h = Math.abs(v) * k, c = v >= 0 ? up : dn;
+                const tip = `rollout with ${R[j].calls} calls, ${R[j].correct ? 'correct' : 'wrong'}: reward ${isQwen ? R[j].correct : rewards[j].toFixed(3)}, advantage ${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(2)}`;
+                if (!flat) {
+                  o += `<rect x="${cx(j) - bw/2}" y="${v >= 0 ? mid - h : mid}" width="${bw}" height="${Math.max(h, 1.5)}" rx="2.5" fill="${c}" fill-opacity=".9"><title>${esc(tip)}</title></rect>`;
+                  o += `<text x="${cx(j)}" y="${v >= 0 ? mid - h - 5 : mid + h + 12}" text-anchor="middle" font-size="${narrow ? 9.5 : 10.5}" font-weight="600" fill="${tx}">${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(narrow ? 1 : 2)}</text>`;
+                } else {
+                  o += `<circle cx="${cx(j)}" cy="${mid}" r="3" fill="${mu}"><title>${esc(tip)}</title></circle>`;
+                }
+                if (!narrow) o += `<text x="${cx(j)}" y="${y + panH - 2}" text-anchor="middle" font-size="9.5" fill="${mu}">r = ${isQwen ? R[j].correct : (rewards[j] ? rewards[j].toFixed(3) : '0')}</text>`;
+              });
+              return o;
+            };
+            s += panel(topH + 6, 'Correctness only', 'the Qwen reward', qa, null, true);
+            s += panel(topH + 6 + panH + gap, 'With the tool bonus', 'the LFM reward', la, R.map(x => x.reward), false);
+            s += `</svg>`;
             const note = sel === 0
-              ? `All eight solved this hard ${esc(HL[g.harness])} task (training step ${g.step}). With correctness alone every rollout scores 1, so every advantage is zero and the group teaches nothing. With the bonus, the rollouts that needed 4 calls are pushed up and the one that needed 10 is pushed down.`
-              : `Half of this group solved a medium ${esc(HL[g.harness])} task (training step ${g.step}). Both rewards push the correct rollouts up. With the bonus, the correct answer that took 16 calls gains the least, and the wrong answer that stopped after 3 calls still scores 0.`;
-            r.innerHTML = h + legend([[cq, 'Qwen: correctness only'], [cl, 'LFM: correctness plus tool bonus']], note + ' Advantage is how far each reward sits from the group’s average, in standard deviations. It is what GRPO trains on.');
+              ? `All eight solved this hard ${esc(HL[g.harness])} task (training step ${g.step}). With correctness alone the group gives no signal. With the bonus, the two rollouts that took 4 calls are pushed up most and the one that took 10 is pushed down most.`
+              : `Half of this group solved a medium ${esc(HL[g.harness])} task (training step ${g.step}). Both rewards push the correct rollouts up and the wrong ones down. With the bonus, the correct rollout that took 16 calls is pushed up a little less than the others, and a wrong answer gets nothing for stopping early.`;
+            r.innerHTML = chips(opts) + s + `<div class="nt">${note} Advantage is how far a rollout's reward sits from the group's average, in standard deviations; GRPO makes the pushed-up rollouts more likely. <i>r</i> is the reward.</div>`;
             bindChips();
           },
 
@@ -421,6 +457,8 @@
           }, { threshold: .3 });
           io.observe(r);
         } else { seen = true; reveal('none'); }
+        // Colours are read when drawing, so redraw when the reader switches theme.
+        new MutationObserver(() => draw('none')).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
         if ('ResizeObserver' in window) { let t, w0 = r.clientWidth; new ResizeObserver(() => { if (Math.abs(r.clientWidth - w0) < 2) return; w0 = r.clientWidth; clearTimeout(t); t = setTimeout(() => draw('none'), 100); }).observe(r); }
       }).catch(e => { r.innerHTML = `<pre style="color:#c33;font-size:12px">${esc(e.message)}</pre>`; });
     };

@@ -29,4 +29,5 @@ works](#openenv), and [what happened when we used it](#training-small-models-acr
 train two small open models, [Qwen3.5-2B](https://huggingface.co/Qwen/Qwen3.5-2B) and [LFM2.5-2.6B](https://huggingface.co/LiquidAI/LFM2.5-2.6B), across four harnesses at once.
 Trained across all four, LFM2.5-2.6B went from solving 42% of held-out tasks to 54%, averaged over
 the four harnesses, and used 31% fewer tool calls on the tasks it already solved. The same
-model trained in OpenCode alone improved mostly in OpenCode.
+model trained in OpenCode alone improved mostly in OpenCode. We also compare RL with supervised
+fine-tuning on a larger model's successful rollouts, which helped less.

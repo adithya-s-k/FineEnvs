@@ -7,8 +7,9 @@ import Note from "../../components/Note.astro";
 We trained two small open models with the setup from the previous chapter:
 [Qwen3.5-2B](https://huggingface.co/Qwen/Qwen3.5-2B) and
 [LFM2.5-2.6B](https://huggingface.co/LiquidAI/LFM2.5-2.6B). Most of this chapter is about LFM,
-where both the scores and the tool use moved the most. The Qwen runs, and what they taught us, are in
-a collapsible section at the end.
+where both the scores and the tool use moved the most, and it ends by comparing the LFM RL runs with
+supervised fine-tuning on a larger model's rollouts. The Qwen runs, and what they taught us, are in a
+collapsible section at the end.
 
 ### Setup
 
@@ -109,8 +110,8 @@ harness.
 The models differ in other ways too, and there was no LFM run without the bonus, so we cannot say
 the bonus caused it on its own.
 
-The rest of this chapter covers only the single- and multi-harness comparison for LFM2.5-2.6B. The
-Qwen3.5-2B runs are in a collapsible section at the end.
+The rest of this chapter covers the single- and multi-harness comparison for LFM2.5-2.6B, then SFT
+against RL on the same model. The Qwen3.5-2B runs are in a collapsible section at the end.
 
 ### Training curves
 
@@ -206,6 +207,105 @@ Claude Code rewrites its own history as it goes, so each of its rollouts became 
 rows, each carrying its own copy of the context, while the other harnesses averaged about one. With
 one seed per run and unequal exposure, the comparison between the two runs is observational.
 
+### SFT vs RL
+
+RL is not the only way to learn from a harness. The capture that gives RL its exact tokens also
+records whole trajectories, so a larger model's successful runs can be used for supervised
+fine-tuning (SFT). We tried this on LFM2.5-2.6B to see how far imitation gets next to the RL runs
+above.
+
+#### The experiment
+
+We ran [Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) as a teacher on SmolDataEnvs training
+tasks in all four harnesses, through the same OpenEnv and Harbor setup, with sandboxes on
+[Daytona](https://www.daytona.io). Each task got up to three attempts per harness, and we kept the
+first one the verifier graded correct. That gave 3,189 successful rollouts from 888 tasks, 377 medium
+and 511 hard.
+
+Every assistant turn in a rollout becomes one training example. The conversation up to that turn,
+tool outputs included, is the context, and the loss is on the next assistant response only. The
+examples are tokenized with LFM's own chat template, not the teacher's.
+
+We trained two SFT models from the same LFM2.5-2.6B base as the RL runs:
+
+- **OpenCode SFT** on the 801 OpenCode rollouts, 4,825 examples.
+- **Multi-harness SFT** on all 3,189 rollouts, 17,929 examples, shuffled together with no balancing
+  between harnesses.
+
+Both are full fine-tunes with TRL's SFT trainer for two epochs, at a learning rate of 3e-6 and an
+effective batch size of 8. Each epoch is evaluated on the same 1,000 test cells as the RL runs.
+
+The data is public as [SmolDataEnvs-multiharness-sft](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-multiharness-sft).
+It has one config per harness, an `all` config with the four together, and configs already tokenized
+for LFM2.5-2.6B and Qwen3.5-2B, next to a [training script](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-multiharness-sft/blob/main/train_sft.py).
+The raw teacher rollouts are in [qwen38-27b-harbor-rollouts](https://huggingface.co/datasets/AdithyaSK/qwen38-27b-harbor-rollouts).
+
+The two methods learn from different things:
+
+| | SFT | RL |
+|---|---|---|
+| Learns from | the teacher's successful rollouts | its own rollouts |
+| Training signal | the teacher's next response | correctness, plus the tool-call bonus |
+| Rewards fewer tool calls | no | yes |
+| Training tasks (OpenCode / multi-harness) | 801 / 888 | 555 / 626 |
+| Supervised tokens, whole run | 1.2M / 8.2M | 12.5M / 18.7M |
+| Training time | 1.5 h / 6.5 h | 32 h / 46 h |
+
+The SFT times are the trainer's own loop and leave out collecting the teacher's rollouts, which took
+a 27B model through all four harnesses.
+
+#### Results
+
+<HtmlEmbed
+  src="d3-sft-vs-rl.html"
+  config={{ view: "map" }}
+  title="SFT and RL on LFM2.5-2.6B"
+  desc="Overall pass@1 against how many fewer tool calls each model makes than the base model."
+  frameless
+/>
+
+For RL we use each run's best checkpoint on the test set: step 900 for OpenCode only and step 700
+for multi-harness. Choosing on the test set flatters RL slightly, but both are within half a point of
+their step-1,000 scores.
+
+**RL ends ahead of both SFT runs.** Multi-harness RL reaches 54.6%. The better SFT model, OpenCode
+SFT, reaches 47.5%, and multi-harness SFT 43.1%, 11.5 points below the RL model trained in the same
+four harnesses.
+
+**OpenCode SFT looks like a smaller OpenCode RL.** Almost all of its gain is in OpenCode, from 33.6%
+to 51.6%, close to OpenCode RL's 56.0%. Under Claude Code it stays where the base model was, 33.2%,
+and under Mini-SWE-Agent it drops a little, from 62.1% to 58.8%. Training in one harness mostly
+helped that harness, by imitation or by RL.
+
+**Multi-harness SFT spreads the gain, then loses it in Mini-SWE-Agent.** It improves under Claude
+Code (33.2 → 42.4%), Codex (40.0 → 46.8%) and OpenCode (33.6 → 38.0%). Under Mini-SWE-Agent it falls
+from 62.1% to 45.2%, which cancels the rest, so overall it ends at 43.1%, within the noise of the base
+model's 42.2%. After the first epoch it was below the base model, at 38.3%, with OpenCode down to
+22.4%. Multi-harness RL improved under all four, Mini-SWE-Agent included. We have not yet worked out
+why SFT hurt Mini-SWE-Agent.
+
+<HtmlEmbed
+  src="d3-sft-vs-rl.html"
+  config={{ view: "harness" }}
+  title="SFT and RL on LFM2.5-2.6B, by harness"
+  desc="Pass@1 or fewer tool calls under each harness. Switch the SFT bars between epoch 1 and epoch 2."
+  frameless
+/>
+
+**SFT cuts tool calls without being rewarded for it.** SFT has no efficiency term, yet on the tasks
+both it and the base model solved, multi-harness SFT makes 24.2% fewer tool calls, with fewer calls
+under every harness. OpenCode SFT makes 8.5% fewer overall, but more than the base model under Claude
+Code (10.5% more) and Mini-SWE-Agent (4.8% more). RL shows the same pattern: training across the four
+harnesses cut calls everywhere, 26.7% for multi-harness RL at step 700 and 31.1% by step 1,000, and
+training in OpenCode alone cut them unevenly.
+
+**What this comparison can't tell us.** The two SFT runs differ in more than the harness mix. The
+multi-harness run has about seven times the supervised tokens and nearly four times the steps. SFT
+and RL also differ in objective, data source, task pool and compute, and each setup ran once. These
+are observations, not a ranking of methods. The runs we want next are SFT followed by RL against RL
+from the base model, harness mixes compared on the 692 tasks the teacher solved in all four
+harnesses, and SFT mixes with equal supervised tokens per harness.
+
 <Accordion title="The Qwen3.5-2B runs, and what they taught us">
 
 #### The runs
@@ -284,6 +384,7 @@ not learn answers that evaluation would cut off.
 
 - [Training comparison dashboard](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio): every training curve and checkpoint evaluation.
 - [Harbor environment](https://huggingface.co/spaces/FineEnvs/data-agent-blackbox-harbor-env) and [standalone OpenCode environment](https://huggingface.co/spaces/FineEnvs/data-agent-blackbox-opencode-env): the environment servers used in training.
+- [SmolDataEnvs-multiharness-sft](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-multiharness-sft): the SFT data, per harness and pre-tokenized for LFM2.5-2.6B and Qwen3.5-2B, with a training script.
 - [OpenEnv #1036](https://github.com/huggingface/OpenEnv/pull/1036) for the capture proxy and Harbor integration, and [TRL #6947](https://github.com/huggingface/trl/pull/6947) for the trainer side.
 
 <Note variant="info" title="Bigger runs are coming">
