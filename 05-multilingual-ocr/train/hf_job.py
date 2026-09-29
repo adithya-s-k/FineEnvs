@@ -57,6 +57,11 @@ def main():
     )
     parser.add_argument("--prepare-max-bytes", type=int, default=8_000_000_000)
     parser.add_argument(
+        "--output-root",
+        help="Directory to write the run into, e.g. a bucket mounted read-write at "
+        "/outputs. Defaults to the container's ephemeral /tmp, which is lost on exit.",
+    )
+    parser.add_argument(
         "--artifact-repo",
         help="Optional personal dataset repo for run outputs; no publication by default",
     )
@@ -86,8 +91,15 @@ def main():
                 parser.error(f"No evaluation set {args.evalset!r} in this revision")
             extra += ["--evalset", str(evalset_path)]
         project = root / "envs" / "nayana_ocr"
-        run = directory / "run"
-        run.mkdir()
+        # Checkpoints belong on durable storage while they are being written, not in
+        # the container. --artifact-repo uploads in a finally, which a timeout kill or an
+        # OOM never reaches; a mounted bucket has the weights the moment they are saved.
+        run = (
+            Path(args.output_root) / args.revision
+            if args.output_root
+            else directory / "run"
+        )
+        run.mkdir(parents=True, exist_ok=True)
         (run / "source.json").write_text(
             f'{{"repo":"{args.repo}","revision":"{args.revision}"}}\n'
         )
