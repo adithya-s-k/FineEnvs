@@ -35,6 +35,11 @@ def main():
         default="env-smoke",
     )
     parser.add_argument("--source-root", help="Attached fleurs bucket mount")
+    parser.add_argument(
+        "--output-root",
+        help="Directory to write the run into, e.g. a bucket mounted read-write at "
+        "/outputs. Defaults to the container's ephemeral /tmp, which is lost on exit.",
+    )
     parser.add_argument("--artifact-repo")
     args, extra = parser.parse_known_args()
     if not re.fullmatch(r"[0-9a-f]{40}", args.revision):
@@ -54,8 +59,15 @@ def main():
                 archive.extractall(source)
         root = next(source.iterdir()) / "06-multilingual-asr"
         project = root / "envs" / "multilingual_asr"
-        run = directory / "run"
-        run.mkdir()
+        # Checkpoints belong on durable storage while they are being written, not in
+        # the container. --artifact-repo uploads in a finally, which a timeout kill or an
+        # OOM never reaches; a mounted bucket has the weights the moment they are saved.
+        run = (
+            Path(args.output_root) / args.revision
+            if args.output_root
+            else directory / "run"
+        )
+        run.mkdir(parents=True, exist_ok=True)
         (run / "source.json").write_text(
             f'{{"repo":"{args.repo}","revision":"{args.revision}"}}\n'
         )
