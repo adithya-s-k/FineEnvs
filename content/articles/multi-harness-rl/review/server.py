@@ -1,9 +1,9 @@
-"""Review comments for the article, stored on the Space's persistent disk.
+"""Review comments for the article, stored on a storage bucket mounted in the Space.
 
 The article is a static site served by nginx. This small API runs next to it, behind nginx at
 /api/review/, and adds one thing: reviewers can sign in with Hugging Face, select text or a figure,
-and leave a comment. Each thread is one JSON file under COMMENTS_DIR, which defaults to the Space's
-persistent storage at /data, so comments survive restarts and redeploys.
+and leave a comment. Each thread is one JSON file under COMMENTS_DIR, which defaults to a folder on the
+storage bucket mounted at /data, so comments survive restarts and redeploys.
 
 Two modes, set with the REVIEW_MODE Space variable:
 - off (default): the published article. Every review endpoint answers 404 and the page never loads
@@ -14,7 +14,7 @@ Two modes, set with the REVIEW_MODE Space variable:
 Configuration (Space variables):
     REVIEW_MODE    "on" to accept comments, anything else to stay published
     REVIEWERS      comma-separated Hugging Face usernames allowed to read and write comments
-    COMMENTS_DIR   folder for the threads, default /data/review-comments (Space persistent storage)
+    COMMENTS_DIR   folder for the threads, default /data/review-comments (the mounted bucket)
 
 The Space owner can also export and import every thread with their Hugging Face token in an
 Authorization header (see review/pull_comments.py). The token is only used to check who is calling.
@@ -70,11 +70,11 @@ class Store:
         self.error = ""
 
     def ready(self) -> bool:
-        """Create the folder if we can, and refuse a /data that is not the persistent volume."""
-        # Without persistent storage a root container can still create /data, but on the temporary
+        """Create the folder if we can, and refuse a /data that is not a mounted volume."""
+        # Without a mounted bucket a root container can still create /data, but on the temporary
         # disk, where every comment would vanish at the next restart.
         if str(self.root).startswith("/data/") and not os.path.ismount("/data") and os.environ.get("ALLOW_EPHEMERAL") != "1":
-            self.error = "Persistent storage is not enabled on this Space, so comments cannot be saved yet."
+            self.error = "No storage bucket is mounted at /data on this Space, so comments cannot be saved yet."
             return False
         try:
             self.root.mkdir(parents=True, exist_ok=True)
@@ -85,7 +85,7 @@ class Store:
             return True
         except OSError as e:
             self.error = (f"Cannot write comments to {self.root} ({e.strerror}). "
-                          "Enable persistent storage in the Space settings.")
+                          "Mount a storage bucket at /data (read & write) in the Space settings.")
             return False
 
     def load(self) -> None:

@@ -76,8 +76,8 @@ showing on the published page.
   Space owner and the usernames in `REVIEWERS` can read or write, and only the owner can accept or
   reject a suggestion. **Exit** (or `?review=off`) goes back to the published view.
 
-Threads are stored one JSON file each under `/data/review-comments/threads/`, on the Space's
-persistent storage (enable it in the Space settings). To read them all at once:
+Threads are stored one JSON file each under `/data/review-comments/threads/`, on the private bucket
+`AdithyaSK/multi-harness-rl-review`, mounted at `/data` (Space settings → Storage Buckets). To read them all at once:
 
 ```bash
 uv run --with huggingface_hub python review/pull_comments.py   # writes review/.pulled/comments.md (git-ignored)

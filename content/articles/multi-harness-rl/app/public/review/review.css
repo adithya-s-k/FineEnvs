@@ -99,7 +99,7 @@ span.rv-probe { display: inline; width: 0; }
 
 figure.rv-fig { position: relative; }
 figure.rv-fig.rv-fig-active { outline: 2px solid rgba(214,160,30,.8); outline-offset: 4px; border-radius: 10px; }
-.rv-fig-btn { position: absolute; top: 6px; right: 6px; z-index: 5; appearance: none; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+.rv-fig-btn { position: absolute; top: 6px; right: 6px; z-index: 20; /* above the embed title bar (z-index 10) */ appearance: none; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
   display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid rgb(78,165,183);
   background: var(--surface-bg, #fff); color: rgb(78,165,183); opacity: .88; }
 .rv-fig-btn:hover { opacity: 1; }
