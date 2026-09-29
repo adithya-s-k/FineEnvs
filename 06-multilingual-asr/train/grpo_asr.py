@@ -52,6 +52,8 @@ class Config:
     seed: int = 42
     output_dir: str = "artifacts/local-run"
     run_name: str = "asr-grpo"
+    trackio_space: str = ""
+    resume: str = ""
     smoke: bool = False
 
     def validate(self):
@@ -238,7 +240,13 @@ def run(config):
         print(f"LoRA targets: {len(targets)} modules, e.g. {targets[:2]}", flush=True)
 
         metadata = {
-            "config": asdict(config),
+            # Where a run resumed from and where it reported to say nothing about what
+            # was trained, and would make two identical runs look different.
+            "config": {
+                k: v
+                for k, v in asdict(config).items()
+                if k not in {"resume", "trackio_space", "run_name"}
+            },
             "model_revision": revision,
             "lora_target_modules": targets,
             "manifest": manifest,
@@ -289,9 +297,15 @@ def run(config):
                 temperature=0.9,
                 seed=config.seed,
                 bf16=True,
-                report_to=[],
+                # A run of any length has to survive losing its machine, and has to be
+                # watchable while it is going. A smoke keeps neither: it is two minutes
+                # long and writing checkpoints would only slow it down.
+                report_to="trackio" if config.trackio_space else "none",
+                trackio_space_id=config.trackio_space or None,
                 logging_steps=1,
-                save_strategy="no",
+                save_strategy="no" if config.smoke else "steps",
+                save_steps=min(25, config.max_steps),
+                save_total_limit=2,
                 run_name=config.run_name,
             ),
         )
@@ -308,7 +322,7 @@ def run(config):
             for name, p in trainer.model.named_parameters()
             if p.requires_grad
         }
-        result = trainer.train()
+        result = trainer.train(resume_from_checkpoint=config.resume or None)
         changed = any(
             not torch.equal(before[name], p.detach().cpu())
             for name, p in trainer.model.named_parameters()
@@ -385,6 +399,14 @@ def main():
         "--output-dir", default=os.environ.get("OUTPUT_DIR", Config.output_dir)
     )
     parser.add_argument("--run-name", default=Config.run_name)
+    parser.add_argument(
+        "--trackio-space",
+        default="",
+        help="Trackio Space to stream metrics to; without it the run reports nowhere",
+    )
+    parser.add_argument(
+        "--resume", default="", help="Checkpoint directory to continue from"
+    )
     parser.add_argument("--smoke", action="store_true")
     args = vars(parser.parse_args())
     # An explicit flag wins; --smoke only fills what the caller left unset.
