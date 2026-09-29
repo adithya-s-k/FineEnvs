@@ -301,6 +301,8 @@
       if ('IntersectionObserver' in window) {
         new IntersectionObserver((es) => { visible = es.some(e => e.isIntersecting); }, { threshold: .25 }).observe(r);
       } else visible = true;
+      // Colours are read when drawing, so redraw when the reader switches theme.
+      new MutationObserver(() => { lastPopKey = ''; draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
       if ('ResizeObserver' in window) {
         let t; new ResizeObserver(() => { clearTimeout(t); t = setTimeout(() => { lastPopKey = ''; draw(); }, 100); }).observe(r);
       } else window.addEventListener('resize', () => { lastPopKey = ''; draw(); });

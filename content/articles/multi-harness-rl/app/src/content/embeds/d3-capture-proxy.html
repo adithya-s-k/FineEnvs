@@ -270,6 +270,8 @@
         new IntersectionObserver((es) => { visible = es.some(e => e.isIntersecting); },
           { rootMargin:'80px' }).observe(r);
       }
+      // Colours are read when drawing, so redraw when the reader switches theme.
+      new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
       if ('ResizeObserver' in window) {
         let t; new ResizeObserver(() => { clearTimeout(t); t = setTimeout(draw, 120); }).observe(r);
       } else window.addEventListener('resize', draw);

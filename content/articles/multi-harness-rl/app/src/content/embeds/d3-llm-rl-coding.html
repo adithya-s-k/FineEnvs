@@ -647,7 +647,7 @@
               // The other parallel rollouts also "finish" with the group — stop their animation.
               setTimeout(() => {
                 updates += 1;
-                statEls.updates.textContent = String(updates);
+                if (statEls.updates) statEls.updates.textContent = String(updates);
                 agentBox.classList.add('flash');
                 setTimeout(() => agentBox.classList.remove('flash'), 800);
                 running = false;
@@ -679,7 +679,7 @@
         pauseAll();
         clearAll();
         updates = 0;
-        statEls.updates.textContent = '0';
+        if (statEls.updates) statEls.updates.textContent = '0';
       });
       speedInput.addEventListener('input', () => {
         speed = parseFloat(speedInput.value);

@@ -54,6 +54,8 @@
           `<span class="k"><span class="sw" style="background:${c2}"></span>per rollout, so harness and sandbox are arguments rather than deployment settings</span></div>`;
       };
       draw();
+      // Colours are read when drawing, so redraw when the reader switches theme.
+      new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
       if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
       else window.addEventListener('resize', draw);
     };

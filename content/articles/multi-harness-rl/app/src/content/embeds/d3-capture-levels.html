@@ -46,6 +46,8 @@
         r.innerHTML = s + `<div class="nt">An endpoint missing the token-id flags still returns text, a 200 and plausible usage numbers, so the proxy does not take the configuration on trust. It probes each engine the first time it sees it and grades it. Anything below tokens still runs, but only for evaluation, and asking it for training data raises an error.</div>`;
       };
       draw();
+      // Colours are read when drawing, so redraw when the reader switches theme.
+      new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
       if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
       else window.addEventListener('resize', draw);
     };

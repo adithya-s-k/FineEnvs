@@ -148,6 +148,8 @@
         if ('IntersectionObserver' in window) {
           new IntersectionObserver((es) => { visible = es.some(e => e.isIntersecting); }, { threshold: .35 }).observe(r);
         } else visible = true;
+        // Colours are read when drawing, so redraw when the reader switches theme.
+        new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
         if ('ResizeObserver' in window) { let tm; new ResizeObserver(() => { clearTimeout(tm); tm = setTimeout(draw, 100); }).observe(r); }
       }).catch(e => { r.innerHTML = `<pre style="color:#c33;font-size:12px">${esc(e.message)}</pre>`; });
     };

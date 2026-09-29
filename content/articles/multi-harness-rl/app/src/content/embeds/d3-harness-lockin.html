@@ -120,6 +120,8 @@
           `</div><div class="nt">Moving OpenSWE-32B off OpenHands, the harness the paper treats as its native one, onto mini-swe-agent costs 7.5 points. Moving it onto Kimi-CLI, which none of the three systems trained on, costs 58.8 and leaves 3.6. Scale-SWE does not degrade at all; away from its own harness it stops emitting valid tool calls, so there is no score to report. Orchard stays inside a 19-point band and keeps 20.1 on a benchmark in a harness it never trained against.</div>`;
       };
       draw();
+      // Colours are read when drawing, so redraw when the reader switches theme.
+      new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
       if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
       else window.addEventListener('resize', draw);
     };
