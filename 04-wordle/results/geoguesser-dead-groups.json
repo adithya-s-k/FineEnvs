@@ -1,0 +1,66 @@
+{
+  "model": {
+    "median_km": 1226.0,
+    "p_never_submit": 0.295,
+    "mean_cost": 0.13,
+    "group": 8,
+    "tasks": 20000,
+    "independent_p_all_never_submit": 5.7355639689187866e-05,
+    "scoring_py_frac_zero_subtract": 0.385
+  },
+  "game_subtract": {
+    "groups": 20000,
+    "frac_dead": 0.0643,
+    "frac_live": 0.9357,
+    "frac_cliff": 0.0642,
+    "frac_collapse": 0.0001,
+    "median_grpo_scale": 6.514707176147861,
+    "p95_grpo_scale": 10000.0,
+    "p99_grpo_scale": 10000.0
+  },
+  "mixture_multiply": {
+    "groups": 20000,
+    "frac_dead": 0.0001,
+    "frac_live": 0.9999,
+    "frac_cliff": 0.0,
+    "frac_collapse": 0.0001,
+    "median_grpo_scale": 4.458237896294374,
+    "p95_grpo_scale": 15.423835922973165,
+    "p99_grpo_scale": 30.556773431039698
+  },
+  "run1_near_collapse_mixture": {
+    "groups": 20000,
+    "frac_dead": 0.0,
+    "frac_live": 1.0,
+    "frac_cliff": 0.0,
+    "frac_collapse": 0.0,
+    "median_grpo_scale": 276.8690682483714,
+    "p95_grpo_scale": 461.07641462200024,
+    "p99_grpo_scale": 606.7896721374563
+  },
+  "run1_identical_guess": {
+    "groups": 20000,
+    "frac_dead": 1.0,
+    "frac_live": 0.0,
+    "frac_cliff": 0.0,
+    "frac_collapse": 1.0,
+    "median_grpo_scale": 10000.0,
+    "p95_grpo_scale": 10000.0,
+    "p99_grpo_scale": 10000.0
+  },
+  "dynamic_sampling_game_subtract": {
+    "already_live": 0.9357,
+    "recovered_on_resample": 0.01875,
+    "still_dead_after_one_resample": 0.04555,
+    "frac_dead_after_one_resample": 0.04555
+  },
+  "dynamic_sampling_mixture_multiply": {
+    "already_live": 0.9999,
+    "recovered_on_resample": 0.0001,
+    "still_dead_after_one_resample": 0.0,
+    "frac_dead_after_one_resample": 0.0
+  },
+  "episode_frac_never_submit": 0.29511875,
+  "episode_frac_zero_game_subtract": 0.40926875,
+  "episode_frac_zero_mixture_multiply": 0.29511875
+}
