@@ -31,6 +31,8 @@ Use `--model lfm` for **LiquidAI/LFM2.5-2.6B**, or `--model qwen` for **Qwen/Qwe
 
 TiTO means *tokens in, tokens out*: training uses the inference engine's actual token IDs and logprobs rather than reconstructing them from text. A rewritten conversation can produce several training rows from one rollout. A task, rollout, training row and optimizer step are therefore different units.
 
+Both blackbox modes implement OpenEnv's `fetch_training_trace()` contract. The producer selects agent calls and supplies explicit masks; TRL receives the engine IDs unchanged. Partial masks and zero-masked agent turns survive. The worker supplies sampling before the factory starts a session. Native tool counts are carried as structured reward metadata, separately from token eligibility.
+
 Synchronous GRPO waits for its batch of tool rollouts. AsyncGRPO collects rollouts while training proceeds, with a bounded amount of policy staleness. A group whose rollouts all have the same reward supplies no relative learning signal. Successful execution alone does not establish useful learning.
 
 ## The shared experiment
@@ -57,7 +59,7 @@ reward = correctness × (1 + 0.1 × 15 / (15 + tool_calls))
 
 For example, a correct answer using 15 calls earns `1.05`; an incorrect answer earns `0`. Zero or unverified tool counts receive no bonus. Infrastructure failures remain ungraded. Evaluation reports correctness separately from shaped reward and tool/token usage.
 
-The full schedule contains two passes and stops at 1,000 updates or schedule exhaustion, whichever comes first. The 100-step pilot retains the same schedule and training settings but stops at 100 updates. Neither setting guarantees that every scheduled task is consumed. The committed-group audit records what async training actually used.
+The full schedule contains two passes and stops at 1,000 updates or schedule exhaustion, whichever comes first. The 100-step pilot retains the same schedule and training settings but stops at 100 updates. Neither setting guarantees that every scheduled task is consumed. The committed-group audit records what async training actually used. For whitebox, 16 rollouts per update divided by 8 rollouts per task means 2 unique prompts per update. Its 2,000 scheduled prompts therefore allow 1,000 updates; custom step limits are capped at schedule exhaustion.
 
 ## Start small, then scale
 

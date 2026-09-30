@@ -311,3 +311,27 @@ def test_hf_source_bundle_omits_local_state(tmp_path):
     paths = [str(p.relative_to(tmp_path)) for p in tmp_path.rglob("*")]
     assert "configs/runtime-lock.json" in paths
     assert not any(p.startswith((".env", ".runtime", "runs", "prepared")) for p in paths)
+
+
+def test_runtime_patch_restore_handles_fresh_clone_and_preserves_edits(tmp_path):
+    import subprocess
+    from runtime.patches import apply_trl, restore_trl
+    root = tmp_path / "checkout"
+    root.mkdir()
+    restore_trl(root)  # A --no-checkout clone has no worktree files yet.
+    path = root / "trl/experimental/async_grpo/async_grpo_trainer.py"
+    path.parent.mkdir(parents=True)
+    original = 'attn_implementation="kernels-community/flash-attn3",\n'
+    path.write_text(original)
+    subprocess.run(["git", "init", "-q", str(root)], check=True)
+    subprocess.run(["git", "-C", str(root), "add", "."], check=True)
+    subprocess.run(["git", "-C", str(root), "-c", "user.name=Test", "-c", "user.email=test@example.org",
+                    "commit", "-qm", "Initial"], check=True)
+    apply_trl(root)
+    restore_trl(root)
+    assert path.read_text() == original
+    apply_trl(root)
+    edited = path.read_text() + "# local user change\n"
+    path.write_text(edited)
+    restore_trl(root)
+    assert path.read_text() == edited

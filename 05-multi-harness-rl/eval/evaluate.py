@@ -110,7 +110,8 @@ def evaluate(cfg, data, server, vllm, *, limit=None, checkpoint="baseline", max_
     write_json(identity_path, {"sha256": signature, **identity})
     # Both blackbox policies use the same four Harbor evaluation harnesses.
     factory = Factory({**cfg, "mode": "multi-harness"}, data, server, vllm, groups,
-                      Path(cfg["output"]) / "trials", split="test") if cfg["mode"] != "whitebox" else None
+                      Path(cfg["output"]) / "trials", split="test",
+                      sampling={k: cfg[k] for k in ("temperature", "top_p", "top_k")}) if cfg["mode"] != "whitebox" else None
 
     def one(item):
         group_id, group = item

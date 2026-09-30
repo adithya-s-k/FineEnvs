@@ -1,5 +1,6 @@
 """AsyncGRPO with atomic rollout admission and a finite, resumable task schedule."""
 import json
+from functools import partial
 import os
 from pathlib import Path
 
@@ -47,12 +48,9 @@ def train(cfg, data, server, vllm, resume=None):
     factory = Factory(cfg, data, server, vllm, groups, output / "trials")
     dataset = Dataset.from_list(factory.rows())
     tokenizer = tokenizer_for(cfg)
-    selector = None
-    if cfg["mode"] == "opencode":
-        from data_agent_env import opencode_agent_turns
-        selector = opencode_agent_turns
-    worker = Worker(harness_session_factory=factory, harness_adapter=None,
-        train_turn_fn=None, agent_turn_fn=selector, fork_threshold_tokens=0, rollout_reward_fn=rollout_reward,
+    factory_builder = partial(Factory, cfg, data, server, vllm, groups, output / "trials")
+    worker = Worker(harness_session_factory=factory_builder, harness_adapter=None,
+        lossless_capture=True, rollout_reward_fn=rollout_reward,
         model_name=cfg["profile"]["id"], processing_class=tokenizer, dataset=dataset, reward_funcs=[],
         num_generations=cfg["num_generations"], max_inflight_tasks=cfg["max_inflight"],
         max_outstanding_rollouts=cfg["max_outstanding_rollouts"], vllm_server_url=vllm,

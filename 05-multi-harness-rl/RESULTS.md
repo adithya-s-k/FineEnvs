@@ -1,6 +1,6 @@
 # Current results
 
-These are the checks and pilot results for the pinned, non-thinking recipe. The 100-step comparisons are still in progress. Earlier experiment scores are kept on the [archived branch](https://github.com/adithya-s-k/FineEnvs/tree/archive/data-agent-experiments-20260930/04-data-agent).
+These are the checks and pilot results for the non-thinking recipe. Two blackbox pilots completed 100 updates and evaluation; the whitebox pilot stopped at step 31 after an HTTP read timeout. Those pilots used the previous runtime pins. The merged-contract smoke qualification is recorded separately in [VALIDATION.md](VALIDATION.md). Earlier experiment scores are kept on the [archived branch](https://github.com/adithya-s-k/FineEnvs/tree/archive/data-agent-experiments-20260930/04-data-agent).
 
 ## Completed checks
 
@@ -15,17 +15,17 @@ The Harbor reload smoke solved 5/8 pairs on two medium tasks. This is a function
 
 ## LFM 100-step pilots
 
-Snapshot: **2026-09-30 10:20 UTC**. Each pilot uses the same 25 held-out tasks (3 easy, 12 medium, 10 hard), baseline evaluation, 100 training updates, saves at 50/100 and final evaluation. Evaluation concurrency is 35. Blackbox evaluations have 100 task/harness pairs; whitebox has 25 native episodes.
+Snapshot: **2026-09-30 17:45 UTC**, read from the saved bucket summaries. Each pilot uses the same 25 held-out tasks (3 easy, 12 medium, 10 hard), baseline evaluation, 100 training updates, saves at 50/100 and final evaluation. Evaluation concurrency is 35. Blackbox evaluations have 100 task/harness pairs; whitebox has 25 native episodes.
 
-| Mode | Baseline pass@1 | Optimizer step (metrics) | Learning signal observed? |
-|---|---|---:|---|
-| Native OpenCode | 24/100 = 24% | 10 | Yes: step 9 reward 0.126 and gradient norm 3.50 |
-| Harbor multi-harness | 17/100 = 17% | 8 | Yes: step 8 reward 0.598 and gradient norm 2.70 |
-| Whitebox SETA | 7/25 = 28% | 5 | No reward contrast in its first five updates |
+| Mode | Baseline pass@1 | Checkpoint-100 pass@1 | Training status |
+|---|---|---|---|
+| Native OpenCode | 24/100 = 24% | 20/100 = 20% | Completed 100 updates |
+| Harbor multi-harness | 17/100 = 17% | 32/100 = 32% | Completed 100 updates |
+| Whitebox SETA | 7/25 = 28% | Not available | Stopped at step 31; HTTP read timeout |
 
-All three jobs were running at this check. The whitebox save failure in its earlier smoke was traced to missing TRL package metadata and corrected before this pilot. The running jobs use immutable uploaded source snapshots; later tutorial edits do not modify them.
+Scores come from complete `baseline/eval/summary.json` and `checkpoint-100/eval/summary.json` files. These are separate stochastic baseline samples at temperature 0.8, so the initial 24% versus 17% difference is not a training effect. Whitebox uses a different native evaluation interface. With only 25 tasks per harness, treat changes as pilot observations, not evidence of a reliable model ranking.
 
-Baseline scores above come from complete `baseline/eval/summary.json` files downloaded from the bucket, not minute-by-minute progress counts. The two blackbox pilots independently sampled the same untrained model at temperature 0.8; these are separate stochastic samples, so their difference cannot be attributed to training. Whitebox uses a different native evaluation interface. No checkpoint-100 result exists yet, and these early updates do not establish a rising reward curve.
+The jobs used immutable uploaded source snapshots; the new contract migration does not modify these results. The whitebox timeout remains a limitation of that earlier pilot, not a completed 100-step comparison.
 
 | Baseline evaluation harness | Native OpenCode pilot | Harbor pilot |
 |---|---:|---:|
@@ -44,13 +44,13 @@ Our test and pilot outputs use bucket `FineEnvs/data-agent-daytona-artifacts`, u
 - `pilot-lfm-multi-harness-v2`
 - `pilot-lfm-whitebox-v1`
 
-Each prefix contains `pilot.json`, `baseline/`, `train/`, `checkpoint-100/` and, after completion, `comparison.json`. Checkpoints contain model weights, optimizer and RNG state. Logs include local Trackio data, scalar metrics and rollout/audit evidence. Bucket access requires permission; job links may also require an HF login. No public trained-model artifact is claimed for these unfinished pilots.
+Each prefix contains `pilot.json`, `baseline/`, `train/`, `checkpoint-100/` and, after completion, `comparison.json`. Checkpoints contain model weights, optimizer and RNG state. Logs include local Trackio data, scalar metrics and rollout/audit evidence. Bucket access requires permission; job links may also require an HF login. No public trained-model artifact is claimed for these pilots.
 
 The [historical Trackio Space](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio) does not automatically contain these new pilots. Their current config keeps Trackio offline in the bucket. Follow the HF job logs for live progress. The tutorial explains how to enable your own online Trackio Space.
 
 ## Remaining checks
 
-- Finish the pilots and compare complete baseline/checkpoint-100 results.
+- Complete a whitebox 100-step pilot with the updated runtime. The earlier pilot failed before checkpoint 50.
 - Confirm sustained learning signal, especially in native OpenCode and whitebox.
 - Test separate evaluation jobs reading newly saved bucket checkpoints before enabling a long-run watcher. The completed smoke tested reload within one job.
 - Treat Qwen HF execution and hardware combinations not tested here as needing their own smoke.

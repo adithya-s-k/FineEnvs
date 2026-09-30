@@ -63,6 +63,17 @@ def config(path=None, **overrides):
     return result
 
 
+def whitebox_step_limit(cfg, task_count):
+    rollouts_per_update = cfg["batch_size"] * cfg["gradient_accumulation_steps"]
+    if rollouts_per_update % cfg["num_generations"]:
+        raise ValueError("Whitebox update must contain complete GRPO groups")
+    tasks_per_update = rollouts_per_update // cfg["num_generations"]
+    available = task_count // tasks_per_update
+    if not available:
+        raise ValueError("Whitebox schedule is smaller than one update")
+    return min(cfg["max_steps"], available)
+
+
 def task_rows(split):
     rows = json.loads((ROOT / "data" / f"{split}.json").read_text())
     if len({r["name"] for r in rows}) != len(rows):

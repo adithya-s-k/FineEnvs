@@ -7,7 +7,7 @@ from datasets import Dataset
 from trl import GRPOConfig, GRPOTrainer
 from whitebox_bash import white_box_bash_env
 
-from recipe import schedule, task_rows, write_json
+from recipe import schedule, task_rows, whitebox_step_limit, write_json
 from runtime.models import tokenizer_for
 from train.logging_utils import Checkpoints, Logs, publish_checkpoint
 from train.generation import protect_generation
@@ -52,7 +52,7 @@ def train(cfg, data, server, vllm, resume=None):
              "split": "train", "index": g["task_index"]} for g in groups]
     args = GRPOConfig(output_dir=str(output), learning_rate=cfg["learning_rate"],
         lr_scheduler_type="constant", warmup_steps=0, beta=0.0, loss_type="dapo",
-        max_steps=cfg["max_steps"], num_train_epochs=1, shuffle_dataset=False,
+        max_steps=whitebox_step_limit(cfg, len(groups)), num_train_epochs=1, shuffle_dataset=False,
         num_generations=cfg["num_generations"], per_device_train_batch_size=1,
         gradient_accumulation_steps=cfg["batch_size"] * cfg["gradient_accumulation_steps"],
         max_completion_length=cfg["max_completion_length"], max_tool_calling_iterations=cfg["agent_step_limit"] - 1,

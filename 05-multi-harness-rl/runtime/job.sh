@@ -7,7 +7,7 @@ uv venv --python 3.12 .venv
 export PATH="$PWD/.venv/bin:$PATH"
 if [[ "$1" == "watch" ]]; then
     shift
-    uv pip install --python .venv/bin/python huggingface_hub==1.24.0
+    uv pip install --python .venv/bin/python huggingface_hub==1.29.0
     exec python3 eval/watch.py "$@"
 fi
 python3 runtime/bootstrap.py

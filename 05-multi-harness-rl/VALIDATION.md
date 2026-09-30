@@ -2,7 +2,18 @@
 
 This page records what we tested for the pinned, non-thinking recipe. [RESULTS.md](RESULTS.md) has the pilot scores and progress; [REPRODUCE.md](REPRODUCE.md) has the commands.
 
-## Automated checks
+## Merged contract update (30 September)
+
+The recipe now pins merged [OpenEnv #1280](https://github.com/huggingface/OpenEnv/pull/1280) and the updated [TRL #6947](https://github.com/huggingface/trl/pull/6947). The previous GPU results below used the earlier pins and are retained as historical evidence.
+
+- 43 CPU checks cover the updated recipe, including native partial/zero masks, invalid captures, correctness plus efficiency through the typed TRL worker, and the whitebox update budget against TRL's sampler.
+- The TRL integration passed 51 contract/reconciliation checks against the merged producer.
+- Fresh-clone bootstrap and repeat-bootstrap handling are tested. User edits are preserved; only the recipe's known attention patch is removed before updating TRL.
+- HF A100 training and checkpoint-reload smokes are running for all three modes. Results will be recorded here after completion.
+
+Execution status, typed execution limits and structured tool outcomes in OpenEnv remain follow-up API work from the TRL review. The recipe uses explicit per-session turn/time budgets and verified native tool counts; it does not claim the broader session API is complete.
+
+## Earlier automated checks
 
 - 29 tests passed with the downloaded runtime and prepared tasks.
 - A clean CPU-only checkout passed 25 tests. Four integration tests skip until the runtime and tasks are downloaded.
@@ -61,7 +72,7 @@ The task lists contain 1,000 training tasks and 250 test tasks, with no task, no
 
 - Train revision: `4719635555de1666f374d847baebb500d368e493`.
 - Test revision: `b130595b579fc6026ad5762925a9a3b40e72f5bb`.
-- OpenEnv: `4f4c85fb9038f43efc2f51858a27638277f16355`, including partial-mask validation.
+- Current OpenEnv: `86a180ede21e044f7929b9a7783ad83aa67d83a3`. Earlier GPU qualification used `4f4c85fb9038f43efc2f51858a27638277f16355`.
 - Other source revisions and archive hashes: [runtime-lock.json](configs/runtime-lock.json).
 - Python dependencies: [requirements.lock](requirements.lock).
 
@@ -69,6 +80,6 @@ Compared with the old staged task files, 302 selected training tasks now use the
 
 ## Still to check
 
-The three LFM 100-step pilots are in progress. Checkpoint-100 scores and sustained learning remain unverified. HF same-job reload has passed, but a separate evaluation job loading newly saved bucket checkpoints still needs testing before relying on the long-run watcher. Qwen HF execution and other hardware combinations need their own smoke.
+The earlier blackbox pilots completed: Harbor 17% to 32% and native OpenCode 24% to 20%, each over 100 held-out pairs. Whitebox stopped at step 31 after an HTTP read timeout. See [RESULTS.md](RESULTS.md); these results do not establish sustained learning or qualify the new pins. HF same-job reload has passed, but a separate evaluation job loading newly saved bucket checkpoints still needs testing before relying on the long-run watcher. Qwen HF execution and other hardware combinations need their own smoke.
 
 This PR contains the recipe, tests and evidence links. Large artifacts remain in the HF bucket or ignored local run directories.

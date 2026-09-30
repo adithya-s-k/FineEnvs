@@ -46,9 +46,28 @@ class Session:
     def result(self):
         return getattr(self.inner, "result", getattr(self.inner, "_result", None))
 
-    def fetch_proxy_trace(self):
-        self.trace = self.inner.fetch_proxy_trace()
-        return self.trace
+    def wait_for_completion(self, timeout_s=None):
+        return self.inner.wait_for_completion(timeout_s)
+
+    def fetch_training_trace(self):
+        trace = self.inner.fetch_training_trace()
+        calls, error = self.tool_usage()
+        inputs = {"tool_calls": calls, "tool_count_error": error,
+                  "weight": self.cfg["efficiency_weight"], "budget": self.cfg["tool_budget"]}
+        for turn in trace.turns:
+            turn.metadata["recipe_reward_inputs"] = inputs
+        return trace
+
+    def tool_usage(self):
+        result = self.result
+        if result is None:
+            return None, None
+        if self.cfg["mode"] == "opencode":
+            return result.metadata.get("verified_native_actions"), None
+        try:
+            return atif_count(self.trial_root / result.trial_name / "agent/trajectory.json"), None
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            return None, type(exc).__name__
 
     def verify(self, transcript, final_state=None):
         from openenv.core.harness import VerifyResult
@@ -56,24 +75,15 @@ class Session:
         original = self.inner.verify(transcript, final_state)
         result = self.result
         correctness = original.env_reward
-        calls, error = None, None
-        if result is not None:
-            if self.cfg["mode"] == "opencode":
-                value = result.correctness
-                correctness = None if value is None else float(value >= 1)
-                calls = result.metadata.get("verified_native_actions")
-            else:
-                try:
-                    calls = atif_count(self.trial_root / result.trial_name / "agent/trajectory.json")
-                except (OSError, ValueError, KeyError, TypeError) as exc:
-                    error = type(exc).__name__
+        if self.cfg["mode"] == "opencode" and result is not None:
+            value = result.correctness
+            correctness = None if value is None else float(value >= 1)
+        calls, error = self.tool_usage()
         shaped = reward(correctness, calls, verified=calls is not None,
                         weight=self.cfg["efficiency_weight"], budget=self.cfg["tool_budget"])
         record = {**self.evidence, "correctness": correctness, "tool_calls": calls,
                   "tool_count_verified": calls is not None, "tool_count_error": error,
                   "reward": shaped, "bonus": None if shaped is None else shaped - correctness}
-        if getattr(self, "trace", None):
-            self.trace[0]["recipe_reward"] = record
         write_json(Path(self.cfg["output"]) / "rollouts" / f'{self.evidence["episode_id"]}.json', record)
         return VerifyResult(env_reward=correctness, done=original.done, metrics={**original.metrics, **record},
                             artifacts=original.artifacts)
@@ -82,13 +92,16 @@ class Session:
 def rollout_reward(outcome):
     if not outcome.trace:
         return None
-    return outcome.trace[0]["recipe_reward"]["reward"]
+    inputs = outcome.trace[0]["metadata"]["recipe_reward_inputs"]
+    return reward(outcome.env_reward, inputs["tool_calls"], verified=inputs["tool_calls"] is not None,
+                  weight=inputs["weight"], budget=inputs["budget"])
 
 
 class Factory:
-    def __init__(self, cfg, data, server, vllm, groups, trial_root, split="train"):
+    def __init__(self, cfg, data, server, vllm, groups, trial_root, split="train", *, sampling=None):
         self.cfg, self.data, self.server, self.vllm = cfg, str(data), server, vllm
         self.groups, self.trial_root, self.split = groups, str(trial_root), split
+        self.sampling = sampling
         manifest = json.loads((Path(data) / f"{split}_manifest.json").read_text())
         self.tasks = sorted(manifest["tasks"], key=lambda row: row["name"])
         self.instructions = [(Path(data) / "datasets" / split / "tasks" / r["name"] / "instruction.md").read_text()
@@ -107,7 +120,9 @@ class Factory:
         instruction = self.instructions[index]
         if _instruction_of(task).strip() != instruction.strip():
             raise ValueError("Prompt and frozen task schedule disagree")
-        sampling = {k: self.cfg[k] for k in ("temperature", "top_p", "top_k")}
+        sampling = self.sampling
+        if sampling is None:
+            raise ValueError("Training factory requires the worker sampling policy")
         if self.cfg["mode"] == "opencode":
             from data_agent_env import DataAgentEnv
             from data_agent_env.harness import DataAgentSession

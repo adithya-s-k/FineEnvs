@@ -52,10 +52,10 @@
   },
   "trl": {
     "repo": "adithya-s-k/trl",
-    "revision": "3cb8efdd8586f1eb1b4d4f9b346f9bdad7e86bb4"
+    "revision": "173f37e9dca9a8d7aecf75c9076f63dbfc853899"
   },
   "openenv": {
     "repo": "huggingface/OpenEnv",
-    "revision": "4f4c85fb9038f43efc2f51858a27638277f16355"
+    "revision": "86a180ede21e044f7929b9a7783ad83aa67d83a3"
   }
 }

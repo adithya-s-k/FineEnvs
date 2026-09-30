@@ -3,7 +3,7 @@ torch==2.11.0
 vllm==0.25.1
 transformers==5.14.1
 datasets==5.0.0
-huggingface_hub==1.24.0
+huggingface_hub==1.29.0
 accelerate==1.14.0
 bitsandbytes==0.49.2
 kernels==0.15.2

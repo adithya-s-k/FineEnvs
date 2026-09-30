@@ -52,6 +52,10 @@ def bootstrap(local_archive=None, local_trl=None, local_openenv=None):
             run("git", "-C", target, "cat-file", "-e", entry["revision"])
         except subprocess.CalledProcessError:
             run("git", "-C", target, "fetch", "origin", entry["revision"])
+        if name == "trl":
+            sys.path.insert(0, str(ROOT))
+            from runtime.patches import restore_trl
+            restore_trl(target)
         run("git", "-C", target, "checkout", "--detach", entry["revision"])
     packages = RUNTIME / "packages"
     packages.mkdir(exist_ok=True)
