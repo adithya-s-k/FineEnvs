@@ -2,9 +2,11 @@
 import argparse
 import json
 from pathlib import Path
+import subprocess
+import sys
 import time
 
-from recipe import digest, eval_rows, mean, task_rows, write_json
+from recipe import ROOT, digest, eval_rows, mean, task_rows, write_json
 from runtime.checkpoints import make_ready
 
 
@@ -16,7 +18,8 @@ def pilot(args, cfg):
     root.mkdir(parents=True, exist_ok=True)
     limit = args.limit if args.limit is not None else 25
     selected = eval_rows(task_rows("test"), limit, stratified=True, seed=cfg["seed"])
-    identity = {"config": cfg, "eval_tasks": selected}
+    preflight = bool(getattr(args, "preflight_smoke", False))
+    identity = {"config": cfg, "eval_tasks": selected, **({"preflight_smoke": True} if preflight else {})}
     signature = digest(identity)
     manifest = root / "pilot.json"
     state = json.loads(manifest.read_text()) if manifest.exists() else {
@@ -26,7 +29,8 @@ def pilot(args, cfg):
     if args.resume and not state["phases"].get("baseline", {}).get("complete"):
         raise ValueError("Resume requires this pilot's completed baseline")
 
-    for phase in ("baseline", "train", "checkpoint-100"):
+    phases = (["preflight"] if preflight else []) + ["baseline", "train", "checkpoint-100"]
+    for phase in phases:
         if state["phases"].get(phase, {}).get("complete"):
             continue
         entry = {"complete": False, "started_at": time.time()}
@@ -41,6 +45,19 @@ def pilot(args, cfg):
         current.smoke_eval = False
         phase_cfg = {**cfg, "output": str(root / phase), "run_name": cfg["run_name"] + "-" + phase}
         try:
+            if phase == "preflight":
+                path = root / "preflight-config.json"
+                write_json(path, phase_cfg)
+                subprocess.run([sys.executable, str(ROOT / "run.py"), "smoke", "--config", str(path),
+                                "--data", str(args.data.resolve()), "--smoke-eval", "--limit", "2",
+                                "--concurrency", "4"], check=True)
+                report = json.loads((root / "preflight/reload-eval/eval/summary.json").read_text())
+                if not report["complete"]:
+                    raise ValueError("Preflight reload evaluation is incomplete")
+                entry.update(complete=True, evaluation=report, finished_at=time.time())
+                write_json(manifest, state)
+                print(json.dumps({"pilot": cfg["run_name"], "phase": phase, "status": "complete"}), flush=True)
+                continue
             if current.resume:
                 make_ready(current.resume)
             if phase == "checkpoint-100":

@@ -27,6 +27,7 @@ def parser():
     p.add_argument("--concurrency", type=int)
     p.add_argument("--limit", type=int, help="Eval tasks per harness; omit for all 250")
     p.add_argument("--smoke-eval", action="store_true", help="Reload the smoke checkpoint for two tasks per harness")
+    p.add_argument("--preflight-smoke", action="store_true", help="Gate a pilot on a two-update training and reload smoke")
     p.add_argument("--server", help="External URL, or a local bind URL; owned services default to unused ports")
     p.add_argument("--vllm-url")
     p.add_argument("--capture-port", type=int)
@@ -152,6 +153,8 @@ def launch_local(args, cfg):
 
 def main():
     args = parser().parse_args()
+    if args.preflight_smoke and args.action != "pilot":
+        raise ValueError("--preflight-smoke requires the pilot action")
     if args.smoke_eval and (args.action != "smoke" or args.external_services):
         raise ValueError("--smoke-eval requires a smoke with job-local services")
     if args.external_services and (not args.server or not args.vllm_url):

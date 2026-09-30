@@ -57,11 +57,14 @@ def main():
     p.add_argument("--concurrency", type=int, default=35)
     p.add_argument("--limit", type=int)
     p.add_argument("--smoke-eval", action="store_true")
+    p.add_argument("--preflight-smoke", action="store_true")
     p.add_argument("--max-active-evals", type=int, default=1)
     p.add_argument("--submit", action="store_true")
     args = p.parse_args()
     if args.smoke_eval and args.action != "smoke":
         p.error("--smoke-eval requires the smoke action")
+    if args.preflight_smoke and args.action != "pilot":
+        p.error("--preflight-smoke requires the pilot action")
     if Path(args.run_name).name != args.run_name or args.run_name in {".", ".."}:
         p.error("run-name must be a single directory name")
     output = str(Path("/outputs" if args.backend == "hf" else args.output_root.resolve()) / args.run_name)
@@ -69,6 +72,8 @@ def main():
              "--output", output, "--concurrency", str(args.concurrency)]
     if args.smoke_eval:
         flags.append("--smoke-eval")
+    if args.preflight_smoke:
+        flags.append("--preflight-smoke")
     if args.config:
         path = args.config
         if args.backend == "hf" and not str(path).startswith("/outputs/"):

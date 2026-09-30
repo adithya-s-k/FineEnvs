@@ -9,6 +9,7 @@ uv venv --python 3.12
 source .venv/bin/activate
 uv pip install -r requirements.lock
 python runtime/bootstrap.py
+uv pip install --no-deps --no-build-isolation -e .runtime/trl
 python prepare.py
 python -m pytest -q tests
 python run.py plan --model lfm --mode multi-harness
@@ -66,6 +67,8 @@ done
 ```
 
 These commands are dry runs; add `--submit` when ready. Use `--model qwen` with distinct names for Qwen. `--limit 25` selects the same seeded subset for every mode and checkpoint: 3 easy, 12 medium, 10 hard. That gives 100 pairs per blackbox eval and 25 episodes per whitebox eval. Use `--limit 250` for the full test set. Small subsets are noisy; 100 training steps do not guarantee an improvement.
+
+Add `--preflight-smoke` for a mode/hardware combination that has not passed its HF training and reload smoke. The pilot proceeds only if that two-update check passes. Keep the flag when resuming that pilot. The entrypoint installs the pinned TRL checkout without changing locked dependencies; this also supplies package metadata needed by whitebox checkpoint saving.
 
 Each output contains `pilot.json`, `baseline/`, `train/`, `checkpoint-100/` and a final `comparison.json`. The report includes per-harness pass@1, matched-success tool/token savings, first/last 20-update reward means and zero/nonzero gradient counts. Raw logs, task IDs and offline Trackio remain available. An incomplete baseline stops the pilot before training. To resume, use the same name/config plus `--resume /outputs/RUN_NAME/train/checkpoint-50`; completed phases are retained. The 12-hour cap is a limit, not an ETA.
 

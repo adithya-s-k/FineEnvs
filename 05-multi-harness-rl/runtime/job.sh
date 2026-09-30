@@ -12,5 +12,6 @@ if [[ "$1" == "watch" ]]; then
 fi
 python3 runtime/bootstrap.py
 uv pip install --python .venv/bin/python -r requirements.lock
+uv pip install --python .venv/bin/python --no-deps --no-build-isolation -e .runtime/trl
 python3 prepare.py
 exec python3 run.py "$@"

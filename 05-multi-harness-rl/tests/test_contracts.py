@@ -146,6 +146,16 @@ def test_pilot_stops_on_incomplete_baseline_and_preserves_full_training_config(t
     state = json.loads((Path(cfg["output"]) / "pilot.json").read_text())
     assert not state["phases"]["baseline"]["complete"]
     assert "train" not in state["phases"]
+    cfg["output"] = str(tmp_path / "failed-preflight")
+    args.preflight_smoke, args.data = True, tmp_path
+    def failed_preflight(*a, **kw):
+        raise runtime.pilot.subprocess.CalledProcessError(1, "smoke")
+    monkeypatch.setattr(runtime.pilot.subprocess, "run", failed_preflight)
+    with pytest.raises(runtime.pilot.subprocess.CalledProcessError):
+        runtime.pilot.pilot(args, cfg)
+    state = json.loads((Path(cfg["output"]) / "pilot.json").read_text())
+    assert not state["phases"]["preflight"]["complete"]
+    assert "baseline" not in state["phases"]
 
 
 def test_native_means_native():
