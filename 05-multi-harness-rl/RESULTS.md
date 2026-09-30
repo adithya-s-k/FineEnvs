@@ -1,6 +1,6 @@
 # Current results
 
-These are qualification results for this pinned, non-thinking recipe. They do not establish that a 100-step run improves either model. Earlier experiment scores are kept on the [archived branch](https://github.com/adithya-s-k/FineEnvs/tree/archive/data-agent-experiments-20260930/04-data-agent).
+These are the checks and pilot results for the pinned, non-thinking recipe. The 100-step comparisons are still in progress. Earlier experiment scores are kept on the [archived branch](https://github.com/adithya-s-k/FineEnvs/tree/archive/data-agent-experiments-20260930/04-data-agent).
 
 ## Completed checks
 
@@ -38,7 +38,7 @@ The 10:17 UTC artifact sample contains 2 correct answers among 51 native OpenCod
 
 ## Locate an artifact
 
-Our qualification outputs use bucket `FineEnvs/data-agent-daytona-artifacts`, under these run prefixes:
+Our test and pilot outputs use bucket `FineEnvs/data-agent-daytona-artifacts`, under these run prefixes:
 
 - `pilot-lfm-opencode-v2`
 - `pilot-lfm-multi-harness-v2`
@@ -48,11 +48,11 @@ Each prefix contains `pilot.json`, `baseline/`, `train/`, `checkpoint-100/` and,
 
 The [historical Trackio Space](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio) does not automatically contain these new pilots. Their current config keeps Trackio offline in the bucket. Follow the HF job logs for live progress. The tutorial explains how to enable your own online Trackio Space.
 
-## Remaining qualification
+## Remaining checks
 
 - Finish the pilots and compare complete baseline/checkpoint-100 results.
 - Confirm sustained learning signal, especially in native OpenCode and whitebox.
-- Qualify separate evaluation jobs reading newly saved bucket checkpoints before enabling a long-run watcher. The completed smoke tested reload within one job.
+- Test separate evaluation jobs reading newly saved bucket checkpoints before enabling a long-run watcher. The completed smoke tested reload within one job.
 - Treat Qwen HF execution and hardware combinations not tested here as needing their own smoke.
 
 Detailed pins, failure diagnoses, test counts and original smoke evidence are in [VALIDATION.md](VALIDATION.md).

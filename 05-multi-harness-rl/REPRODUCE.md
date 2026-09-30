@@ -1,12 +1,13 @@
 # Run SmolDataEnv RL
 
-Start from a checkout containing this example:
+Check out the example branch:
 
 ```bash
-cd 05-multi-harness-rl
+git clone --branch 05-multi-harness-rl https://github.com/adithya-s-k/FineEnvs.git
+cd FineEnvs/05-multi-harness-rl
 ```
 
-Pick **HF Jobs** if you want the container to install and prepare everything. Pick **local/Slurm** if you already have a compatible GPU machine. Both use the same code, fixed tasks and model revisions. The current branch is local until published; the commands assume you already have its files.
+Pick **HF Jobs** if you want the container to install and prepare everything. Pick **local/Slurm** if you already have a compatible GPU machine. Both use the same code, fixed tasks and model revisions.
 
 ## 1. What you need
 

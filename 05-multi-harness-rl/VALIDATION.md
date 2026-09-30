@@ -1,84 +1,74 @@
-# Qualification notes
+# Validation
 
-This is a new non-thinking recipe. Historical training results are not its baseline.
+This page records what we tested for the pinned, non-thinking recipe. [RESULTS.md](RESULTS.md) has the pilot scores and progress; [REPRODUCE.md](REPRODUCE.md) has the commands.
 
-## Data and runtime
+## Automated checks
 
-- Public Hub preparation passed for all 1,000 training tasks and 250 test tasks. Instruction hashes match the fixed selection; the corrected numeric-only grader is checked for every task.
-- Train revision: `4719635555de1666f374d847baebb500d368e493`. Test revision: `b130595b579fc6026ad5762925a9a3b40e72f5bb`.
-- Compared with the old staged files, 302 training tasks now use the JSON reward wrapper. Task metadata also changed. The test instructions and grader did not change.
-- OpenEnv is pinned to public commit `4f4c85fb9038f43efc2f51858a27638277f16355`, including partial-mask validation. No unpublished OpenEnv checkout is required.
-- TRL, native environment sources and file hashes are in `configs/runtime-lock.json`. The Python dependency set resolves successfully; `requirements.lock` records the resolved versions.
+- 29 tests passed with the downloaded runtime and prepared tasks.
+- A clean CPU-only checkout passed 25 tests. Four integration tests skip until the runtime and tasks are downloaded.
+- HF submission plans and `run.py plan` work without PyTorch installed.
+- Shell syntax, Python compilation, documentation links and the repository index passed.
 
-## Checks on 30 September 2026
+Tests cover task identity, train/test separation, reward calculation, token/logprob alignment, partial masks, checkpoint integrity, resume, config overrides and pilot failure handling. They also check that the uploaded source excludes credentials and local run artifacts.
 
-| Check | Result |
-|---|---|
-| CPU contracts and fetched-runtime integration | 22 passed, including Ampere attention selection |
-| Clean, minimal CI environment | 17 passed; four runtime checks skipped without fetched dependencies |
-| Native OpenEnv to TRL partial mask | `[1, 0]` preserved |
-| Native LFM checkpoint handoff | Both initial smoke checkpoints saved; file hashes verified |
-| Corrected four-harness reload eval | 8/8 pairs graded; all token checks passed; four correct answers |
-| Qwen whitebox training | Two updates and both checkpoints saved; second update had reward contrast and nonzero gradient |
-| Qwen whitebox token audit | Both batches passed; 68 captured calls in total |
-| Corrected non-thinking HTTP and streaming replies | Passed for LFM and Qwen |
-| Both models, all three training modes | All six completed two updates and saved both checkpoints |
-| Whitebox checkpoint reload eval | 2/2 tasks graded; one correct answer |
-| Async checkpoint resume | Resumed step 1 to 2; committed group 0 was not replayed |
-| HF Jobs setup | Fresh Python 3.12 environment, locked installation and all 1,250 tasks prepared successfully |
-| HF Jobs native OpenCode GPU smoke | A100 completed two steps; both saved checkpoint inventories match the bucket |
-| HF Jobs Harbor smoke and reload eval | Completed two training steps; checkpoint reload graded 8/8 pairs with TiTO and verified tool counts |
+## Local GPU tests
 
-| Model | Mode | Local smoke wall time | Nonzero gradient observed? |
-|---|---|---|---|
-| Qwen3.5-2B | Whitebox | 10m 26s | Yes |
-| Qwen3.5-2B | Native OpenCode | 8m 35s | No reward contrast in this sample |
-| Qwen3.5-2B | Harbor multi-harness | 9m 07s | Yes |
-| LFM2.5-2.6B | Whitebox | 6m 37s | No reward contrast in this sample |
-| LFM2.5-2.6B | Native OpenCode | 9m 30s | No reward contrast in this sample |
-| LFM2.5-2.6B | Harbor multi-harness | 13m 01s | Yes |
+Both models completed two optimizer updates and saved both checkpoints in all three modes.
 
-Wall time includes model loading, sandbox setup, two updates, saving and cleanup. Smoke batches use two rollouts and low concurrency, not the full training batch or eval concurrency 35. Local smokes use the existing cluster runtime; the separate HF check qualifies a fresh installation from the lockfile.
+| Model | Mode | Total time | Nonzero gradient observed? | Slurm job |
+|---|---|---|---|---|
+| Qwen3.5-2B | Whitebox | 10m 26s | Yes | `92750` |
+| Qwen3.5-2B | Native OpenCode | 8m 35s | No reward contrast in this sample | `92753` |
+| Qwen3.5-2B | Harbor | 9m 07s | Yes | `92760` |
+| LFM2.5-2.6B | Whitebox | 6m 37s | No reward contrast in this sample | `92759` |
+| LFM2.5-2.6B | Native OpenCode | 9m 30s | No reward contrast in this sample | `92752` |
+| LFM2.5-2.6B | Harbor | 13m 01s | Yes | `92751` |
 
-The initial LFM smoke exposed a serving error: the reasoning parser classified tool-call text as reasoning, leaving Claude Code with empty assistant replies. Non-thinking serving now omits that parser. Claude Code subsequently emitted native tool calls, and a Harbor OpenCode rollout produced correctness `1` with nine calls and shaped reward `1.0625`. Initial LFM smoke scores must not be reused as a baseline.
+These times include startup, sandbox work, training, saving and cleanup. Smokes use two rollouts per group and low concurrency; they do not measure full-run throughput.
 
-Other fixes found by the smokes: job-specific ports on shared Slurm nodes, explicit HF login forwarding to Harbor task staging, the SDK's typed bucket mount, explicit tool-response templates, the whitebox cache-reset response, and the text context limit on Qwen's outer model config. The pinned base image has Python 3.11; the HF entrypoint now creates its own Python 3.12 environment before installing the lockfile.
+Additional checks passed:
 
-## Evidence
+- Whitebox token audits matched 68 engine calls per model.
+- LFM checkpoint evaluation graded 8/8 task/harness pairs with valid token capture (job `92757`).
+- Qwen whitebox checkpoint evaluation graded 2/2 tasks (job `92821`).
+- Async resume continued from step 1 to step 2 without replaying committed group 0 (job `92822`).
+- The OpenEnv-to-TRL adapter preserved the partial completion mask `[1, 0]`.
 
-Local smoke artifacts are ignored under `runs/qualification/`: configuration, service logs, rollout reward records, `token-audit.jsonl`, local Trackio data and checkpoints. CPU logs are `cpu-tests-final.log` and `ci-tests.log`; public data preparation is `prepare-hub.log` and `prepared-hub/`.
+Local evidence is kept under ignored `runs/qualification/`, including service logs, reward records, token audits and checkpoints.
 
-- Qwen whitebox: `qwen-whitebox-v5`, Slurm job `92750`.
-- Corrected LFM Harbor: `lfm-multi-harness-v4`, job `92751`.
-- Corrected native OpenCode: `lfm-opencode-v4` / `qwen-opencode-v1`, jobs `92752` / `92753`.
-- Corrected LFM reload evaluation: `lfm-nonthinking-eval-v2`, job `92757`.
-- LFM whitebox / Qwen Harbor: jobs `92759` / `92760`.
-- Whitebox checkpoint eval: `qwen-whitebox-v5-eval`, job `92821`.
-- Async resume: `lfm-native-resume-v1`, job `92822`. Only optimizer step 2 was executed; the new admission record contains group 2, while the restored state retains group 0.
-- [HF setup check](https://huggingface.co/jobs/FineEnvs/6abcb82f031314b696343d7d): completed with the corrected Python 3.12 bootstrap.
-- [H200 GPU smoke](https://huggingface.co/jobs/FineEnvs/6abcb8c8031314b696343daf): canceled after remaining queued for hardware.
-- [A100 native OpenCode smoke](https://huggingface.co/jobs/FineEnvs/6abcc3d9031314b6963440a0): completed. Runtime from container start to finish was 10m 05s; the trainer reported 335.3s. Both optimizer steps had zero reward contrast and zero gradient, so this confirms execution rather than learning improvement. Six completed rollout records had verified native tool counts. Both checkpoints include model, optimizer and RNG state; all 13 recorded file sizes match the persistent bucket. Byte hashes and cross-job reload remain unverified for this checkpoint. Evidence downloaded to `runs/qualification/hf-a100-native-v1/`.
-- [A100 Harbor smoke](https://huggingface.co/jobs/FineEnvs/6abcc72d031314b696344167): two-step multi-harness training followed by checkpoint-2 reload evaluation on two tasks × four harnesses, concurrency four, 45-minute cap. Completed with `--smoke-eval` in 21m 17s overall; training took 627.9s. Both updates had zero reward contrast and zero gradient. Checkpoint 2 was hashed and reloaded with restarted services. All eight evaluation pairs graded on their first attempt, with TiTO and verified tool counts: OpenCode 1/2, Claude Code 1/2, Codex 1/2, Mini-SWE-Agent 2/2. These two medium tasks are a smoke, not a benchmark. Evidence is under `runs/qualification/hf-a100-harbor-v1/`. This tests all four evaluation adapters, while two training steps alone need not consume all four harnesses. The new orchestration has 19 passing CPU contract checks, including aborting reload after training failure.
+## HF Jobs tests
 
-The native and Harbor HF execution smokes passed. A same-job reload does not qualify a separate evaluation job reading the bucket; that handoff remains a separate check. Neither HF training sample had reward contrast, so a positive-gradient HF check also remains before claiming learning validation. Then collect a fresh non-thinking baseline on the fixed 250-task test set. A tiny smoke establishes execution, not benchmark performance or throughput at concurrency 35.
+| Test | Result | Evidence |
+|---|---|---|
+| Fresh installation | Python 3.12, locked dependencies and all 1,250 tasks prepared | [Setup job](https://huggingface.co/jobs/FineEnvs/6abcb82f031314b696343d7d) |
+| Native OpenCode on A100 | Two steps; both checkpoint file inventories match the bucket | [Native smoke](https://huggingface.co/jobs/FineEnvs/6abcc3d9031314b6963440a0) |
+| Harbor on A100 | Two steps; checkpoint 2 reloaded; 8/8 eval pairs passed capture checks and graded on the first attempt | [Harbor smoke](https://huggingface.co/jobs/FineEnvs/6abcc72d031314b696344167) |
+| Whitebox on A100 | Two-step preflight and reload eval passed before its pilot started | [Whitebox pilot](https://huggingface.co/jobs/FineEnvs/6abcd472031314b696344457) |
 
-## 100-step pilot launch
+Native OpenCode took 10m 05s overall, including 335.3s in the trainer. Harbor took 21m 17s overall, including 627.9s in the trainer. Both standalone blackbox smokes had zero reward contrast. The later pilots produced nonzero gradients; their current progress is in [RESULTS.md](RESULTS.md).
 
-Selected scope: LFM only, all three modes, 25 fixed held-out tasks (3 easy, 12 medium, 10 hard). Baseline and checkpoint-100 evaluations use the same task IDs. Each blackbox evaluation has 100 pairs; whitebox has 25 episodes. Save at 50/100, eval concurrency 35, eight rollouts per group, unchanged full training batches and LR. Phases run sequentially inside one HF allocation, bounded to 12 hours. Slurm plans use the same command with two GPUs and the same time cap.
+## Fixes found during testing
 
-- [Native OpenCode pilot](https://huggingface.co/jobs/FineEnvs/6abcd384031314b69634440b), `pilot-lfm-opencode-v2`: submitted.
-- [Harbor multi-harness pilot](https://huggingface.co/jobs/FineEnvs/6abcd3874c46ef19870359af), `pilot-lfm-multi-harness-v2`: submitted.
-- [Whitebox HF qualification](https://huggingface.co/jobs/FineEnvs/6abcd28f4c46ef1987035955): failed saving step 1 because the fresh environment lacked TRL package metadata. Training and token auditing had reached the update. The entrypoint now installs the pinned checkout with `--no-deps --no-build-isolation`; package metadata was verified in a clean Python environment.
-- [Whitebox pilot](https://huggingface.co/jobs/FineEnvs/6abcd472031314b696344457), `pilot-lfm-whitebox-v1`: submitted with `--preflight-smoke`. It must finish two training updates and reload eval before starting the baseline/100-step phases; any failed qualification stops the job.
+- **Hidden tool calls:** the LFM reasoning parser swallowed tool-call text. Non-thinking serving now omits that parser and checks visible streaming and ordinary replies. Earlier smoke scores from that setup are superseded.
+- **A100 attention:** the pinned async trainer hardcoded FlashAttention 3. A checked adapter selects FlashAttention 2 on Ampere while preserving packed-sequence boundaries.
+- **Fresh HF installation:** the image contains Python 3.11. The entrypoint creates Python 3.12 and installs the pinned TRL checkout, including metadata needed for whitebox checkpoint saving.
+- **Whitebox compatibility:** explicit response templates, Qwen's text context limit and an empty successful cache-reset response needed handling.
+- **Shared-node startup:** job-specific ports, HF login forwarding and the typed bucket mount were tested in the live smokes.
 
-The first two pilot submissions were canceled while still scheduling, then replaced with copies that print phase and scalar progress in HF logs. No training progress was discarded. Configurations, scalar logs, local Trackio and phase reports live under each run prefix in `FineEnvs/data-agent-daytona-artifacts`. No Slurm pilot has been submitted.
+## Data and source versions
 
-Pilot checks: 23 CPU contracts passed, plus the four fetched-runtime integration checks. Coverage includes fixed stratification, preserving original task catalog indices, stopping on incomplete baseline, retaining normal training batches, phase resume and Slurm time limits. A comparison fixture verifies repeated-step deduplication and matched-success tool/token savings. Actual baseline/100-step results are pending.
+The task lists contain 1,000 training tasks and 250 test tasks, with no task, notebook or instruction-hash overlap. Preparation verifies every instruction and the corrected numeric-only grader.
 
-## Tutorial audit, 30 September 2026
+- Train revision: `4719635555de1666f374d847baebb500d368e493`.
+- Test revision: `b130595b579fc6026ad5762925a9a3b40e72f5bb`.
+- OpenEnv: `4f4c85fb9038f43efc2f51858a27638277f16355`, including partial-mask validation.
+- Other source revisions and archive hashes: [runtime-lock.json](configs/runtime-lock.json).
+- Python dependencies: [requirements.lock](requirements.lock).
 
-The beginner path now separates lightweight CPU-only HF submission from full local GPU installation. The launcher defaults to the bucket owner's namespace, preserves model/mode/concurrency settings from custom config files unless explicitly overridden, validates the config before submission, and rejects single-GPU allocations. Small config overlays inherit pinned defaults. No active job source or hyperparameter was changed by this audit.
+Compared with the old staged task files, 302 selected training tasks now use the JSON reward wrapper. Instructions and the corrected grader match; metadata changed. Historical results need to be checked against each run's actual data and serving configuration.
 
-Checks: 29 tests passed against the fetched runtime. A clean copied checkout in a CPU-only client environment passed 25 contracts, with four runtime checks skipped as intended. HF submission plans and `run.py plan` work without PyTorch. Shell syntax, source compilation, the repository index and relative documentation links were checked. The original source archive and ignored experimental artifacts remain intact.
+## Still to check
 
-The pilot baselines and current gradient evidence were downloaded from the bucket and summarized in [RESULTS.md](RESULTS.md). All three pilots were running; whitebox had passed its corrected preflight. Detailed audit snapshots remain ignored under `runs/qualification/tutorial-audit/`, `tutorial-audit-status.json` and `tutorial-audit-results.json`. No checkpoint-100 result is claimed.
+The three LFM 100-step pilots are in progress. Checkpoint-100 scores and sustained learning remain unverified. HF same-job reload has passed, but a separate evaluation job loading newly saved bucket checkpoints still needs testing before relying on the long-run watcher. Qwen HF execution and other hardware combinations need their own smoke.
+
+This PR contains the recipe, tests and evidence links. Large artifacts remain in the HF bucket or ignored local run directories.

@@ -71,7 +71,7 @@ There is **no Space to deploy** for these runs. OpenEnv lives inside the GPU job
 
 ## Find the code
 
-| Path | Read it when you want to… |
+| Path | What it does |
 |---|---|
 | `configs/default.json` | Inspect model pins and shared hyperparameters |
 | `run.py`, `runtime/launch.py` | Run locally, submit to HF Jobs or inspect a Slurm command |
@@ -81,7 +81,7 @@ There is **no Space to deploy** for these runs. OpenEnv lives inside the GPU job
 | `eval/evaluate.py` | Inspect pass@1, coverage and per-harness results |
 | `eval/watch.py` | Submit separate evaluations for full training checkpoints |
 | `prepare.py`, `data/` | Inspect the exact task selection and dataset checks |
-| `configs/runtime-lock.json`, `runtime/patches.py` | Audit pinned dependencies and their small adaptations |
+| `configs/runtime-lock.json`, `runtime/patches.py` | Inspect pinned dependencies and compatibility fixes |
 
 `runtime/bootstrap.py` downloads the pinned TRL/OpenEnv sources and 45 existing runtime files into ignored `.runtime/`. It checks the archive file hashes. You do not need the original experiment workspace. Prepared tasks, checkpoints, caches and credentials are not committed.
 
