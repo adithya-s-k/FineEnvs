@@ -61,3 +61,15 @@ Local smoke artifacts are ignored under `runs/qualification/`: configuration, se
 - [A100 Harbor smoke](https://huggingface.co/jobs/FineEnvs/6abcc72d031314b696344167): two-step multi-harness training followed by checkpoint-2 reload evaluation on two tasks × four harnesses, concurrency four, 45-minute cap. Completed with `--smoke-eval` in 21m 17s overall; training took 627.9s. Both updates had zero reward contrast and zero gradient. Checkpoint 2 was hashed and reloaded with restarted services. All eight evaluation pairs graded on their first attempt, with TiTO and verified tool counts: OpenCode 1/2, Claude Code 1/2, Codex 1/2, Mini-SWE-Agent 2/2. These two medium tasks are a smoke, not a benchmark. Evidence is under `runs/qualification/hf-a100-harbor-v1/`. This tests all four evaluation adapters, while two training steps alone need not consume all four harnesses. The new orchestration has 19 passing CPU contract checks, including aborting reload after training failure.
 
 The native and Harbor HF execution smokes passed. A same-job reload does not qualify a separate evaluation job reading the bucket; that handoff remains a separate check. Neither HF training sample had reward contrast, so a positive-gradient HF check also remains before claiming learning validation. Then collect a fresh non-thinking baseline on the fixed 250-task test set. A tiny smoke establishes execution, not benchmark performance or throughput at concurrency 35.
+
+## 100-step pilot launch
+
+Selected scope: LFM only, all three modes, 25 fixed held-out tasks (3 easy, 12 medium, 10 hard). Baseline and checkpoint-100 evaluations use the same task IDs. Each blackbox evaluation has 100 pairs; whitebox has 25 episodes. Save at 50/100, eval concurrency 35, eight rollouts per group, unchanged full training batches and LR. Phases run sequentially inside one HF allocation, bounded to 12 hours. Slurm plans use the same command with two GPUs and the same time cap.
+
+- [Native OpenCode pilot](https://huggingface.co/jobs/FineEnvs/6abcd384031314b69634440b), `pilot-lfm-opencode-v2`: submitted.
+- [Harbor multi-harness pilot](https://huggingface.co/jobs/FineEnvs/6abcd3874c46ef19870359af), `pilot-lfm-multi-harness-v2`: submitted.
+- [Whitebox HF qualification](https://huggingface.co/jobs/FineEnvs/6abcd28f4c46ef1987035955): two updates plus reload eval, running before the whitebox pilot is launched.
+
+The first two pilot submissions were canceled while still scheduling, then replaced with copies that print phase and scalar progress in HF logs. No training progress was discarded. Configurations, scalar logs, local Trackio and phase reports live under each run prefix in `FineEnvs/data-agent-daytona-artifacts`. No Slurm pilot has been submitted.
+
+Pilot checks: 23 CPU contracts passed, plus the four fetched-runtime integration checks. Coverage includes fixed stratification, preserving original task catalog indices, stopping on incomplete baseline, retaining normal training batches, phase resume and Slurm time limits. A comparison fixture verifies repeated-step deduplication and matched-success tool/token savings. Actual baseline/100-step results are pending.
