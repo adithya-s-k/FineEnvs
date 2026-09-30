@@ -30,6 +30,7 @@ INTEGER_OPTIONS = (
     "save_total_limit",
     "max_steps",
     "num_generations",
+    "gradient_accumulation_steps",
     "max_completion_length",
     "seed",
 )
@@ -52,6 +53,10 @@ class Config:
     eval_per_group: int = 2
     max_steps: int = 20
     num_generations: int = 4
+    # TRL fills a batch with one prompt's generations, so without accumulation every
+    # optimizer step sees exactly one task. Eight hundred such steps moved 31 of 150
+    # held-out predictions and half of those went backwards: the gradient was noise.
+    gradient_accumulation_steps: int = 1
     max_completion_length: int = 256
     learning_rate: float = 1e-5
     seed: int = 42
@@ -68,6 +73,8 @@ class Config:
             raise ValueError("Provide exactly one of --corpus or --env-url")
         if self.num_generations < 2:
             raise ValueError("GRPO needs at least two generations per group")
+        if self.gradient_accumulation_steps < 1:
+            raise ValueError("Use at least one accumulation step")
         if min(self.max_steps, self.train_per_group, self.eval_per_group) < 1:
             raise ValueError("Use positive limits")
         if set(self.families) - set(FAMILIES):
@@ -303,6 +310,9 @@ def run(config):
                 },
                 num_generations=config.num_generations,
                 per_device_train_batch_size=config.num_generations,
+                # Distinct prompts per optimizer step, each scored over
+                # num_generations completions.
+                gradient_accumulation_steps=config.gradient_accumulation_steps,
                 max_completion_length=config.max_completion_length,
                 max_steps=config.max_steps,
                 learning_rate=config.learning_rate,
