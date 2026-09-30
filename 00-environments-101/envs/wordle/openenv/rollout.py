@@ -27,7 +27,7 @@ from openenv.core.mcp_client import MCPToolClient
 REPO_ROOT = Path(__file__).resolve().parents[3]
 load_dotenv(REPO_ROOT / ".env")
 
-ENV_URL = os.environ.get("OPENENV_URL", "https://AdithyaSK-wordle-openenv.hf.space")
+ENV_URL = os.environ.get("OPENENV_URL", "https://fineenvs-wordle-openenv.hf.space")
 MODEL = os.environ.get("ROLLOUT_MODEL", "Qwen/Qwen3-Coder-480B-A35B-Instruct:together")
 MAX_TURNS = int(os.environ.get("MAX_TURNS", "8"))   # 6 guesses + a couple of slack turns
 
