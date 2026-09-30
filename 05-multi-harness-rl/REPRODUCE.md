@@ -51,7 +51,33 @@ python runtime/launch.py hf eval --model lfm --mode multi-harness \
   --bucket FineEnvs/YOUR_BUCKET --concurrency 35
 ```
 
-For online Trackio, set `trackio_space_id` in `configs/default.json` before submission. Logs and offline Trackio data remain in the bucket regardless. Use `hf jobs ps` and `hf jobs logs JOB_ID` to monitor. The new HF container path still needs an actual GPU Job smoke; a successful local smoke alone does not qualify it.
+For online Trackio, set `trackio_space_id` in `configs/default.json` before submission. Logs and offline Trackio data remain in the bucket regardless. Use `hf jobs ps` and `hf jobs logs JOB_ID` to monitor. Native OpenCode and Harbor passed HF A100 smokes; check `VALIDATION.md` for the remaining qualifications.
+
+## 100-step pilot
+
+The `pilot` action runs baseline eval, training to step 100, then checkpoint-100 eval in one allocation. Services restart between phases, so evaluation does not compete with training. It keeps the normal batch size, eight rollouts, LR `3e-6`, reward and task schedule; only the step ceiling and evaluation size change. Checkpoints save at 50 and 100. Do not start the separate eval watcher for these pilots.
+
+```bash
+for mode in whitebox opencode multi-harness; do
+  python runtime/launch.py hf pilot --model lfm --mode "$mode" \
+    --run-name "pilot-lfm-$mode-v1" --bucket FineEnvs/YOUR_BUCKET \
+    --flavor a100x4 --timeout 12h --limit 25 --concurrency 35
+done
+```
+
+These commands are dry runs; add `--submit` when ready. Use `--model qwen` with distinct names for Qwen. `--limit 25` selects the same seeded subset for every mode and checkpoint: 3 easy, 12 medium, 10 hard. That gives 100 pairs per blackbox eval and 25 episodes per whitebox eval. Use `--limit 250` for the full test set. Small subsets are noisy; 100 training steps do not guarantee an improvement.
+
+Each output contains `pilot.json`, `baseline/`, `train/`, `checkpoint-100/` and a final `comparison.json`. The report includes per-harness pass@1, matched-success tool/token savings, first/last 20-update reward means and zero/nonzero gradient counts. Raw logs, task IDs and offline Trackio remain available. An incomplete baseline stops the pilot before training. To resume, use the same name/config plus `--resume /outputs/RUN_NAME/train/checkpoint-50`; completed phases are retained. The 12-hour cap is a limit, not an ETA.
+
+The Slurm equivalent uses the same phases and configuration, with two GPUs:
+
+```bash
+python runtime/launch.py slurm pilot --partition YOUR_GPU_PARTITION \
+  --model lfm --mode multi-harness --run-name pilot-lfm-multi-harness-v1 \
+  --timeout 12h --limit 25 --concurrency 35
+```
+
+Use a local checkpoint path for Slurm resume. Inspect the plan, then add `--submit`. No additional watcher, Space or Slurm job is required for the pilot.
 
 ## 3. Slurm or a local two-GPU machine
 

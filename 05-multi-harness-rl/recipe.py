@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import random
 from pathlib import Path
 import uuid
 
@@ -58,6 +59,26 @@ def task_rows(split):
     return rows
 
 
+def eval_rows(rows, limit=None, *, stratified=False, seed=0):
+    rows = sorted(rows, key=lambda row: row["name"])
+    if limit is None:
+        return rows
+    if not 1 <= limit <= len(rows):
+        raise ValueError("Eval limit must fit the fixed test set")
+    if not stratified:
+        return rows[:limit]
+    strata = {d: [r for r in rows if r["difficulty"] == d] for d in sorted({r["difficulty"] for r in rows})}
+    exact = {d: limit * len(group) / len(rows) for d, group in strata.items()}
+    counts = {d: int(n) for d, n in exact.items()}
+    for d in sorted(strata, key=lambda d: (-(exact[d] - counts[d]), d))[:limit - sum(counts.values())]:
+        counts[d] += 1
+    rng = random.Random(seed)
+    selected = []
+    for d, group in strata.items():
+        selected.extend(rng.sample(group, counts[d]))
+    return sorted(selected, key=lambda row: row["name"])
+
+
 def schedule(cfg, rows):
     catalog = {name: i for i, name in enumerate(sorted(r["name"] for r in rows))}
     harnesses = cfg["harnesses"] if cfg["mode"] == "multi-harness" else [cfg["mode"]]
@@ -100,6 +121,7 @@ def summary(records, expected):
             "pass_at_1": successes / len(graded) if graded else None,
             "coverage": len(graded) / expected if expected else 0,
             "complete": len(graded) == expected,
+            "mean_shaped_reward": mean(r.get("reward") for r in graded),
             "mean_tool_calls": mean(r.get("tool_calls") for r in graded),
             "mean_generated_tokens": mean(r.get("generated_tokens") for r in graded)}
 

@@ -72,6 +72,82 @@ def test_frozen_data_and_rotation():
         assert a["task_name"] == b["task_name"] and a["harness"] != b["harness"]
 
 
+def test_pilot_subset_is_fixed_and_covers_difficulty():
+    from recipe import eval_rows
+    rows = task_rows("test")
+    chosen = eval_rows(rows, 25, stratified=True)
+    assert chosen == eval_rows(rows[::-1], 25, stratified=True)
+    assert Counter(r["difficulty"] for r in chosen) == {"easy": 3, "medium": 12, "hard": 10}
+    assert len({r["name"] for r in chosen}) == 25
+    assert eval_rows(rows, 250, stratified=True) == eval_rows(rows)
+    with pytest.raises(ValueError):
+        eval_rows(rows, 0)
+
+
+def test_slurm_uses_the_requested_allocation_limit():
+    from runtime.launch import slurm_time
+    assert slurm_time("12h") == "12:00:00"
+    assert slurm_time("45m") == "00:45:00"
+    with pytest.raises(ValueError):
+        slurm_time("0h")
+
+
+def test_eval_subset_retains_original_catalog_indices(tmp_path, monkeypatch):
+    import importlib
+    evaluator = importlib.import_module("eval.evaluate")
+    from recipe import eval_rows
+    rows = sorted(task_rows("test"), key=lambda r: r["name"])
+    chosen = eval_rows(rows, 25, stratified=True)
+    seen = []
+    monkeypatch.setattr(evaluator, "Factory", lambda cfg, data, server, vllm, groups, *a, **k: SimpleNamespace(groups=groups))
+    def episode(factory, i):
+        group = factory.groups[i]
+        assert rows[group["task_index"]]["name"] == group["task_name"]
+        seen.append(group["task_name"])
+        return {"correctness": 0}
+    monkeypatch.setattr(evaluator, "blackbox_episode", episode)
+    monkeypatch.setitem(sys.modules, "trackio", SimpleNamespace(init=lambda **kw: SimpleNamespace(log=lambda *a, **k: None, finish=lambda: None)))
+    cfg = {**config(), "output": str(tmp_path), "run_name": "subset-test", "eval_selection": "stratified"}
+    result = evaluator.evaluate(cfg, tmp_path, "unused", "unused", limit=25)
+    assert result["graded"] == 100
+    assert set(seen) == {r["name"] for r in chosen}
+
+
+def test_pilot_stops_on_incomplete_baseline_and_preserves_full_training_config(tmp_path, monkeypatch):
+    import run
+    import runtime.pilot
+    import runtime.checkpoints
+    calls = []
+    args = SimpleNamespace(limit=25, resume=None)
+    cfg = {**config(mode="multi-harness"), "output": str(tmp_path), "run_name": "pilot-test"}
+    def fake_launch(a, c):
+        calls.append((a.action, c))
+        output = Path(c["output"])
+        if a.action == "train":
+            write_json(output / "checkpoint-100/checkpoint.saved.json", {"step": 100})
+        else:
+            write_json(output / "eval/summary.json", {"complete": True})
+    monkeypatch.setattr(run, "launch_local", fake_launch)
+    monkeypatch.setattr(runtime.pilot, "make_ready", lambda p: None)
+    monkeypatch.setattr(runtime.pilot, "comparison", lambda *a: {"complete": True})
+    runtime.pilot.pilot(args, cfg)
+    assert [a for a, _ in calls] == ["eval", "train", "eval"]
+    train_cfg = calls[1][1]
+    assert (train_cfg["max_steps"], train_cfg["save_steps"], train_cfg["num_generations"], train_cfg["batch_size"]) == (100, 50, 8, 4)
+    calls.clear()
+    runtime.pilot.pilot(args, cfg)
+    assert not calls
+    cfg["output"] = str(tmp_path / "failed")
+    def incomplete(a, c):
+        write_json(Path(c["output"]) / "eval/summary.json", {"complete": False})
+    monkeypatch.setattr(run, "launch_local", incomplete)
+    with pytest.raises(ValueError, match="complete evaluation"):
+        runtime.pilot.pilot(args, cfg)
+    state = json.loads((Path(cfg["output"]) / "pilot.json").read_text())
+    assert not state["phases"]["baseline"]["complete"]
+    assert "train" not in state["phases"]
+
+
 def test_native_means_native():
     assert {g["harness"] for g in schedule(config(mode="opencode"), task_rows("train"))} == {"opencode"}
 

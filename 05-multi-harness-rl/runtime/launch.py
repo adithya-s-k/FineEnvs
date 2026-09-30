@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import re
 import shlex
 import shutil
 import subprocess
@@ -12,6 +13,14 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from recipe import MODES, write_json
+
+
+def slurm_time(value):
+    match = re.fullmatch(r"([1-9][0-9]*)([hms])", value)
+    if not match:
+        raise ValueError("Timeout must be a positive duration such as 12h or 40m")
+    seconds = int(match[1]) * {"h": 3600, "m": 60, "s": 1}[match[2]]
+    return f"{seconds // 3600:02}:{seconds // 60 % 60:02}:{seconds % 60:02}"
 
 
 def stage(destination):
@@ -30,7 +39,7 @@ def stage(destination):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("backend", choices=["hf", "slurm"])
-    p.add_argument("action", choices=["train", "eval", "smoke", "watch"])
+    p.add_argument("action", choices=["train", "eval", "smoke", "pilot", "watch"])
     p.add_argument("--model", choices=["lfm", "qwen"], default="lfm")
     p.add_argument("--config", type=Path)
     p.add_argument("--mode", choices=MODES, default="multi-harness")
@@ -112,7 +121,7 @@ def main():
                        "--backend", "slurm", "--partition", args.partition, "--data", str(args.data.resolve()),
                        "--concurrency", str(args.concurrency), "--max-active", str(args.max_active_evals), "--submit"]
         submit = ["sbatch", "--parsable", "--partition", args.partition, "--nodes=1", "--gpus=2",
-                  "--cpus-per-task=16", "--mem=192G", "--time=24:00:00", "--job-name", args.run_name,
+                  "--cpus-per-task=16", "--mem=192G", "--time=" + slurm_time(args.timeout), "--job-name", args.run_name,
                   "--output", str(args.output_root / (args.run_name + "-%j.log")), "--wrap", shlex.join(command)]
         if args.action == "watch":
             submit.remove("--gpus=2")

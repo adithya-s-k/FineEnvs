@@ -12,6 +12,8 @@ This is a focused successor to the archived `04-data-agent` experiment. Start wi
 
 The OpenEnv server runs **inside each training or evaluation job**. Daytona runs the isolated task containers. No environment Space is needed. Training and evaluation use separate GPU allocations, inference engines and environment processes; they still share your sandbox quota and storage bandwidth.
 
+For initial qualification, the [100-step pilot](REPRODUCE.md#100-step-pilot) runs baseline evaluation, training and checkpoint evaluation sequentially in one allocation. It uses the same training configuration and a fixed evaluation subset, with a final comparison report.
+
 ## Shared experiment
 
 | Setting | Value |

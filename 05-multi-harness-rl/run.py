@@ -15,7 +15,7 @@ from recipe import ROOT, MODES, config, write_json
 
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("action", choices=["plan", "train", "eval", "smoke", "environment", "_train", "_eval"])
+    p.add_argument("action", choices=["plan", "train", "eval", "smoke", "pilot", "environment", "_train", "_eval"])
     p.add_argument("--config", type=Path)
     p.add_argument("--model", choices=["lfm", "qwen"])
     p.add_argument("--mode", choices=MODES)
@@ -151,6 +151,11 @@ def main():
     cfg = config(args.config, model=args.model, mode=args.mode, eval_concurrency=args.concurrency)
     name = args.run_name or cfg.get("run_name") or f'{cfg["model"]}-{cfg["mode"]}-{time.strftime("%Y%m%d-%H%M%S")}'
     cfg.update(run_name=name, output=str((args.output or Path(cfg.get("output", ROOT / "runs" / name))).resolve()))
+    if args.action == "pilot":
+        if args.external_services or args.checkpoint:
+            raise ValueError("Pilot owns its services; use --resume only for a saved pilot training checkpoint")
+        from runtime.pilot import pilot
+        return pilot(args, cfg)
     if args.action == "smoke":
         cfg.update(max_steps=2, save_steps=1, eval_steps=1, num_generations=2,
                    max_inflight=4, max_outstanding_rollouts=4, batch_size=1, gradient_accumulation_steps=2)

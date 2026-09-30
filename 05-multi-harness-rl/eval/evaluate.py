@@ -6,7 +6,7 @@ from pathlib import Path
 import time
 import uuid
 
-from recipe import digest, summary, task_rows, write_json
+from recipe import digest, eval_rows, reward, summary, task_rows, write_json
 from train.adapters import Factory
 
 
@@ -79,7 +79,9 @@ def whitebox_episode(cfg, server, vllm, index):
         correctness = env.get_reward()
         if not math.isfinite(correctness):
             raise ValueError("Ungraded whitebox episode")
-        return {"correctness": float(correctness >= 1), "tool_calls": calls,
+        correctness = float(correctness >= 1)
+        shaped = reward(correctness, calls, verified=True, weight=cfg["efficiency_weight"], budget=cfg["tool_budget"])
+        return {"correctness": correctness, "tool_calls": calls, "tool_count_verified": True, "reward": shaped,
                 "generated_tokens": generated, "prompt_tokens": inputs}
     finally:
         try:
@@ -94,10 +96,11 @@ def evaluate(cfg, data, server, vllm, *, limit=None, checkpoint="baseline", max_
     out = Path(cfg["output"]) / "eval"
     out.mkdir(parents=True, exist_ok=True)
     tasks = sorted(task_rows("test"), key=lambda row: row["name"])
-    selected = tasks[:limit] if limit else tasks
+    selected = eval_rows(tasks, limit, stratified=cfg.get("eval_selection") == "stratified", seed=cfg["seed"])
+    indices = {row["name"]: i for i, row in enumerate(tasks)}
     harnesses = ["whitebox"] if cfg["mode"] == "whitebox" else cfg["harnesses"]
-    groups = [{"task_name": row["name"], "task_index": i, "harness": h}
-              for i, row in enumerate(selected) for h in harnesses]
+    groups = [{"task_name": row["name"], "task_index": indices[row["name"]], "harness": h}
+              for row in selected for h in harnesses]
     identity = {"model": cfg["profile"], "checkpoint": str(checkpoint), "tasks": selected,
                 "harnesses": harnesses, "template": cfg["profile"]["template"], "config": cfg}
     signature = digest(identity)
