@@ -58,6 +58,8 @@ class Config:
     # held-out predictions and half of those went backwards: the gradient was noise.
     gradient_accumulation_steps: int = 1
     max_completion_length: int = 256
+    # Longest FLEURS kn_in validation clip is 28.7s; 30 truncates nothing there.
+    audio_seconds: float = 30.0
     learning_rate: float = 1e-5
     seed: int = 42
     output_dir: str = "artifacts/local-run"
@@ -286,7 +288,7 @@ def run(config):
         )
 
         processor = AutoProcessor.from_pretrained(config.model, revision=revision)
-        cache = AssetCache(url)
+        cache = AssetCache(url, pad_seconds=config.audio_seconds)
 
         # TRL calls the factory once per parallel environment and owns the pool, so
         # this returns a single session rather than a list of them.
@@ -425,6 +427,13 @@ def main():
     parser.add_argument("--lora-target-modules", nargs="+", default=[])
     for name in INTEGER_OPTIONS:
         parser.add_argument("--" + name.replace("_", "-"), type=int, default=None)
+    parser.add_argument(
+        "--audio-seconds",
+        type=float,
+        default=Config.audio_seconds,
+        help="pad every clip to this span so a batch shares one feature shape; "
+        "0 disables padding and only works when a batch holds one task",
+    )
     parser.add_argument("--learning-rate", type=float, default=Config.learning_rate)
     parser.add_argument(
         "--output-dir", default=os.environ.get("OUTPUT_DIR", Config.output_dir)
