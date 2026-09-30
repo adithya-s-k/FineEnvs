@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "visible_rl_runs": 7,
+  "rl_records_preserved": 11643,
+  "archived_sft_records_preserved": 12806,
+  "total_records": 24449,
+  "all_evaluation_points_retained": true,
+  "plot_rows": [
+    1,
+    512,
+    511,
+    513,
+    512,
+    706,
+    695
+  ]
+}

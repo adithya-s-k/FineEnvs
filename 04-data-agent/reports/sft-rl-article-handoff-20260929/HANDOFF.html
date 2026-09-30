@@ -1,0 +1,1021 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SFT and RL article handoff</title><style>body{font:16px/1.6 system-ui,sans-serif;max-width:1450px;margin:36px auto;padding:0 28px;color:#172638}h1,h2,h3{line-height:1.25}h2{margin-top:42px;border-top:1px solid #dce4ee;padding-top:20px}table{border-collapse:collapse;font-size:13px;width:100%;margin:20px 0}th,td{padding:9px;border:1px solid #dce4ee;text-align:left}th{background:#edf4fc}tr:nth-child(even){background:#f8fafc}code{background:#eef1f5;padding:2px 4px}a{color:#185c9b;overflow-wrap:anywhere}li{margin:7px 0}</style></head><body><h1>Article handoff: SFT and RL across agent harnesses</h1>
+<p>Prepared 29 September 2026 from accepted results through 28 September. This is an evidence packet for updating the existing article, not a claim that all methods were compared under identical training conditions. No images are embedded. The HTML version contains the same text and semantic tables.</p>
+<h2>Start here</h2>
+<p>Extend the article from multi-harness RL to <strong>learning from and through agent harnesses</strong>: supervised imitation of successful teacher traces, then a comparison with the existing online RL experiments. Preserve the OpenEnv/Harbor/TiTO explanation and the earlier RL findings. Add the SFT evidence without replacing or rewriting the recorded RL history.</p>
+<p>The central result is model-dependent. Qwen3.5-2B benefits strongly from multi-harness SFT: 14.6% baseline → 30.9% after one epoch → 32.7% after two. LFM2.5-2.6B improves with OpenCode-only SFT to 47.5%, but multi-harness SFT reaches only 43.1%, close to its approximately 42.2% baseline. LFM multi-harness RL retains the strongest final correctness at 54.2% and reduces native tool calls by 31.1% on baseline-matched successes. Multi-harness SFT also reduces tool use across all four harnesses in both models, despite having no explicit efficiency reward.</p>
+<p><strong>Training objectives must be stated prominently:</strong> Qwen RL used correctness reward only. LFM RL used correctness plus a tool-efficiency bonus. SFT used demonstration imitation with token-level cross-entropy. Tool efficiency is an evaluation measurement for every method, not a shared training objective.</p>
+<p>The latest OpenCode-only and multi-harness SFT runs are complete: two epochs for both models, with all eight checkpoint evaluations graded at 1,000/1,000. The older 907-task bash SFT evaluations remain incomplete. The full 4,677-demonstration bash SFT evaluations are complete but have disclosed test overlap.</p>
+<h2>1. Evaluation protocol and definitions</h2>
+<ul>
+<li>Fixed test cohort: 250 tasks, evaluated independently with OpenCode, Claude Code, Codex and Mini-SWE-Agent. One selected graded rollout per task/harness pair, pass@1; 1,000 cells per checkpoint.</li>
+<li>Difficulty per harness: 33 easy, 118 medium, 99 hard. Across four harnesses: 132, 472 and 396 cells respectively. Do not describe those as 1,000 unique tasks.</li>
+<li>Completed overall scores are averages over those 1,000 binary correctness outcomes. Infrastructure failures are retried, not counted as wrong answers. These operational retries are not pass@k sampling, but retry history remains a comparability limitation.</li>
+<li>Student SFT evaluations use temperature 0.8, at most 4,096 output tokens per model call, a 17-call/agent-step budget, and a 600-second agent timeout. Qwen evaluates with thinking disabled; LFM retains its qualified native serving configuration. Both reload the actual saved student checkpoint.</li>
+<li>SFT evaluation jobs initially use concurrency 100 on separate GPUs. LFM epoch-1 recovery used a fresh allocation at concurrency 10. Concurrency is a throughput setting, not the sample count.</li>
+<li>TiTO checks passed for all completed OpenCode and multi-harness SFT evaluations. This establishes the recorded capture checks, not statistical significance or a guarantee of task success.</li>
+<li>Qwen Harbor baseline: 146/1,000 = 14.6%. Native OpenCode has its own historical baseline, 15.9%, and a different serving path. LFM baseline: 421/998 = 42.184%, with two Mini-SWE-Agent grades missing. Preserve that qualification.</li>
+</ul>
+<h2>2. All SFT and selected RL outcomes</h2>
+<p>E1/E2 mean completed SFT epochs. RL best means the highest <strong>complete</strong> aggregate checkpoint observed on this evaluation set; final means step 1,000. Best is retrospective test-set selection, not an independently chosen validation checkpoint. Every per-harness value in an RL row comes from that same checkpoint.</p>
+<p><code>*</code> = incomplete evaluation, graded subset only. <code>†</code> = test overlap. Blank values would mean unavailable, never zero.</p>
+<h3>Qwen3.5-2B</h3>
+<table>
+<thead>
+<tr>
+  <th>Run</th>
+  <th>Graded</th>
+  <th>Overall</th>
+  <th>OpenCode</th>
+  <th>Claude Code</th>
+  <th>Codex</th>
+  <th>Mini-SWE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Pretrained baseline</td>
+  <td>1000/1,000</td>
+  <td>14.6%</td>
+  <td>10.8%</td>
+  <td>16.8%</td>
+  <td>16.4%</td>
+  <td>14.4%</td>
+</tr>
+<tr>
+  <td>OpenCode SFT · 801 rollouts / E1</td>
+  <td>1000/1,000</td>
+  <td>28.4%</td>
+  <td>30.0%</td>
+  <td>27.6%</td>
+  <td>31.2%</td>
+  <td>24.8%</td>
+</tr>
+<tr>
+  <td>OpenCode SFT · 801 rollouts / E2</td>
+  <td>1000/1,000</td>
+  <td>26.5%</td>
+  <td>26.0%</td>
+  <td>30.4%</td>
+  <td>27.2%</td>
+  <td>22.4%</td>
+</tr>
+<tr>
+  <td>Multi-harness SFT · 3,189 rollouts / E1</td>
+  <td>1000/1,000</td>
+  <td>30.9%</td>
+  <td>29.6%</td>
+  <td>33.6%</td>
+  <td>32.8%</td>
+  <td>27.6%</td>
+</tr>
+<tr>
+  <td>Multi-harness SFT · 3,189 rollouts / E2</td>
+  <td>1000/1,000</td>
+  <td>32.7%</td>
+  <td>29.6%</td>
+  <td>36.4%</td>
+  <td>33.6%</td>
+  <td>31.2%</td>
+</tr>
+<tr>
+  <td>Harbor OpenCode RL / best, 700</td>
+  <td>1000/1,000</td>
+  <td>39.5%</td>
+  <td>40.0%</td>
+  <td>46.4%</td>
+  <td>37.2%</td>
+  <td>34.4%</td>
+</tr>
+<tr>
+  <td>Harbor OpenCode RL / final, 1000</td>
+  <td>1000/1,000</td>
+  <td>26.4%</td>
+  <td>22.0%</td>
+  <td>30.8%</td>
+  <td>32.4%</td>
+  <td>20.4%</td>
+</tr>
+<tr>
+  <td>Harbor multi-harness RL / best, 500</td>
+  <td>1000/1,000</td>
+  <td>37.0%</td>
+  <td>32.8%</td>
+  <td>44.8%</td>
+  <td>39.2%</td>
+  <td>31.2%</td>
+</tr>
+<tr>
+  <td>Harbor multi-harness RL / final, 1000</td>
+  <td>1000/1,000</td>
+  <td>26.3%</td>
+  <td>5.6%</td>
+  <td>38.8%</td>
+  <td>24.8%</td>
+  <td>36.0%</td>
+</tr>
+<tr>
+  <td>Native OpenCode RL / best = final, 1000</td>
+  <td>1000/1,000</td>
+  <td>29.8%</td>
+  <td>20.4%</td>
+  <td>33.2%</td>
+  <td>29.6%</td>
+  <td>36.0%</td>
+</tr>
+<tr>
+  <td>Hard-task RL continuation / 1000 *</td>
+  <td>924/1,000</td>
+  <td>26.0%</td>
+  <td>17.3%</td>
+  <td>40.0%</td>
+  <td>38.9%</td>
+  <td>9.6%</td>
+</tr>
+</tbody>
+</table>
+<h3>LFM2.5-2.6B</h3>
+<table>
+<thead>
+<tr>
+  <th>Run</th>
+  <th>Graded</th>
+  <th>Overall</th>
+  <th>OpenCode</th>
+  <th>Claude Code</th>
+  <th>Codex</th>
+  <th>Mini-SWE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Pretrained baseline *</td>
+  <td>998/1,000</td>
+  <td>42.2%</td>
+  <td>33.6%</td>
+  <td>33.2%</td>
+  <td>40.0%</td>
+  <td>62.1%</td>
+</tr>
+<tr>
+  <td>Bash SFT · 907 tasks / E1 *</td>
+  <td>999/1,000</td>
+  <td>41.7%</td>
+  <td>35.2%</td>
+  <td>26.1%</td>
+  <td>44.4%</td>
+  <td>61.2%</td>
+</tr>
+<tr>
+  <td>Bash SFT · 907 tasks / E2 *</td>
+  <td>850/1,000</td>
+  <td>46.6%</td>
+  <td>39.4%</td>
+  <td>30.9%</td>
+  <td>47.4%</td>
+  <td>67.6%</td>
+</tr>
+<tr>
+  <td>Bash SFT · full 4,677 / E1 †</td>
+  <td>1000/1,000</td>
+  <td>41.3%</td>
+  <td>39.2%</td>
+  <td>32.0%</td>
+  <td>34.4%</td>
+  <td>59.6%</td>
+</tr>
+<tr>
+  <td>Bash SFT · full 4,677 / E2 †</td>
+  <td>1000/1,000</td>
+  <td>40.8%</td>
+  <td>38.0%</td>
+  <td>24.0%</td>
+  <td>35.6%</td>
+  <td>65.6%</td>
+</tr>
+<tr>
+  <td>OpenCode SFT · 801 rollouts / E1</td>
+  <td>1000/1,000</td>
+  <td>45.1%</td>
+  <td>51.2%</td>
+  <td>28.8%</td>
+  <td>42.4%</td>
+  <td>58.0%</td>
+</tr>
+<tr>
+  <td>OpenCode SFT · 801 rollouts / E2</td>
+  <td>1000/1,000</td>
+  <td>47.5%</td>
+  <td>51.6%</td>
+  <td>33.2%</td>
+  <td>46.4%</td>
+  <td>58.8%</td>
+</tr>
+<tr>
+  <td>Multi-harness SFT · 3,189 rollouts / E1</td>
+  <td>1000/1,000</td>
+  <td>38.3%</td>
+  <td>22.4%</td>
+  <td>40.8%</td>
+  <td>42.4%</td>
+  <td>47.6%</td>
+</tr>
+<tr>
+  <td>Multi-harness SFT · 3,189 rollouts / E2</td>
+  <td>1000/1,000</td>
+  <td>43.1%</td>
+  <td>38.0%</td>
+  <td>42.4%</td>
+  <td>46.8%</td>
+  <td>45.2%</td>
+</tr>
+<tr>
+  <td>Harbor OpenCode RL / best, 900</td>
+  <td>1000/1,000</td>
+  <td>52.4%</td>
+  <td>56.0%</td>
+  <td>43.6%</td>
+  <td>48.4%</td>
+  <td>61.6%</td>
+</tr>
+<tr>
+  <td>Harbor OpenCode RL / final, 1000</td>
+  <td>1000/1,000</td>
+  <td>52.3%</td>
+  <td>58.0%</td>
+  <td>42.0%</td>
+  <td>43.2%</td>
+  <td>66.0%</td>
+</tr>
+<tr>
+  <td>Harbor multi-harness RL / best, 700</td>
+  <td>1000/1,000</td>
+  <td>54.6%</td>
+  <td>51.2%</td>
+  <td>48.8%</td>
+  <td>53.6%</td>
+  <td>64.8%</td>
+</tr>
+<tr>
+  <td>Harbor multi-harness RL / final, 1000</td>
+  <td>1000/1,000</td>
+  <td>54.2%</td>
+  <td>49.6%</td>
+  <td>48.8%</td>
+  <td>53.6%</td>
+  <td>64.8%</td>
+</tr>
+</tbody>
+</table>
+<h3>What can be said from these scores</h3>
+<ul>
+<li>Qwen multi-harness SFT E2 is +18.1 percentage points above baseline and +6.2 points above OpenCode-only SFT E2. Compared with the best OpenCode SFT epoch, the gap is +4.3 points. Both SFT variants improve every evaluation harness over the Qwen base model.</li>
+<li>Qwen multi-harness SFT E2 (32.7%) exceeds final Harbor OpenCode RL (26.4%) and final Harbor multi-harness RL (26.3%). It remains below best Harbor OpenCode RL (39.5%) and best Harbor multi-harness RL (37.0%). Do not hide the peak-to-final RL decline or use these observations to claim SFT is categorically better.</li>
+<li>LFM OpenCode-only SFT E2 is 47.5%, about +5.3 points above its provisional baseline. LFM multi-harness SFT E2 is 43.1%, about +0.9 points above baseline and 4.4 points below OpenCode SFT E2. The approximately 0.9-point change is not established as statistically reliable.</li>
+<li>LFM multi-harness SFT recovers from 38.3% at E1 to 43.1% at E2. Improvements over baseline occur in OpenCode, Claude Code and Codex; Mini-SWE falls from approximately 62.1% to 45.2%. The overall number hides that imbalance.</li>
+<li>LFM multi-harness RL finishes at 54.2%, versus 52.3% for OpenCode RL, 47.5% for OpenCode SFT and 43.1% for multi-harness SFT. Relative to multi-harness SFT E2, the final RL gap is 11.1 points. These methods differ in objective, data exposure and budget.</li>
+<li>Full bash SFT reaches 41.3% at E1 and 40.8% at E2 despite using more demonstrations. Its overlap and different task distribution prevent a clean held-out or data-scaling claim. The older 907-task E2 result (46.6% on 850 cells) must not be ranked as a complete result.</li>
+</ul>
+<h2>3. Tool efficiency, measured alongside correctness</h2>
+<p>For each checkpoint, match task/harness pairs solved correctly by both the baseline and checkpoint. Count native ATIF agent tool invocations with valid unique tool-call IDs. A tool invocation is not a model turn or the number of shell commands inside a tool call. All graded rows used in this packet had native count coverage; missing/unverifiable trajectories would be excluded rather than assigned zero.</p>
+<p><code>tool-call savings (%) = 100 × (1 − sum(checkpoint calls) / sum(baseline calls))</code></p>
+<p>Positive means fewer calls; negative means more. This is a ratio of summed calls on matched successes, not an average of per-task percentage changes. Matched subsets vary by checkpoint, so this is conditional efficiency, not the total cost of solving the full test set. SFT did not optimize this metric directly.</p>
+<h3>Qwen3.5-2B tool use</h3>
+<table>
+<thead>
+<tr>
+  <th>Run</th>
+  <th>Matched pairs</th>
+  <th>Base mean calls</th>
+  <th>Run mean calls</th>
+  <th>Savings</th>
+  <th>OC savings / n</th>
+  <th>Claude savings / n</th>
+  <th>Codex savings / n</th>
+  <th>Mini-SWE savings / n</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Pretrained baseline</td>
+  <td>146</td>
+  <td>9.98</td>
+  <td>9.98</td>
+  <td>+0.0%</td>
+  <td>+0.0% / 27</td>
+  <td>+0.0% / 42</td>
+  <td>+0.0% / 41</td>
+  <td>+0.0% / 36</td>
+</tr>
+<tr>
+  <td>OpenCode SFT · 801 rollouts / E1</td>
+  <td>94</td>
+  <td>9.72</td>
+  <td>6.40</td>
+  <td>+34.1%</td>
+  <td>+38.9% / 16</td>
+  <td>+25.2% / 22</td>
+  <td>+36.6% / 35</td>
+  <td>+33.3% / 21</td>
+</tr>
+<tr>
+  <td>OpenCode SFT · 801 rollouts / E2</td>
+  <td>93</td>
+  <td>9.95</td>
+  <td>6.97</td>
+  <td>+29.9%</td>
+  <td>+49.6% / 14</td>
+  <td>+16.4% / 29</td>
+  <td>+44.1% / 28</td>
+  <td>+15.9% / 22</td>
+</tr>
+<tr>
+  <td>Multi-harness SFT · 3,189 rollouts / E1</td>
+  <td>107</td>
+  <td>9.83</td>
+  <td>4.62</td>
+  <td>+53.0%</td>
+  <td>+42.5% / 19</td>
+  <td>+35.4% / 32</td>
+  <td>+60.8% / 34</td>
+  <td>+63.6% / 22</td>
+</tr>
+<tr>
+  <td>Multi-harness SFT · 3,189 rollouts / E2</td>
+  <td>108</td>
+  <td>9.75</td>
+  <td>4.50</td>
+  <td>+53.8%</td>
+  <td>+43.0% / 15</td>
+  <td>+41.9% / 34</td>
+  <td>+62.3% / 33</td>
+  <td>+58.0% / 26</td>
+</tr>
+<tr>
+  <td>Harbor OpenCode RL / best, 700</td>
+  <td>123</td>
+  <td>9.61</td>
+  <td>12.41</td>
+  <td>-29.2%</td>
+  <td>-133.8% / 21</td>
+  <td>-33.6% / 38</td>
+  <td>-14.4% / 36</td>
+  <td>+2.3% / 28</td>
+</tr>
+<tr>
+  <td>Harbor OpenCode RL / final, 1000</td>
+  <td>91</td>
+  <td>9.64</td>
+  <td>14.56</td>
+  <td>-51.1%</td>
+  <td>-203.6% / 13</td>
+  <td>-50.7% / 29</td>
+  <td>-21.3% / 27</td>
+  <td>-37.1% / 22</td>
+</tr>
+<tr>
+  <td>Harbor multi-harness RL / best, 500</td>
+  <td>119</td>
+  <td>9.58</td>
+  <td>14.90</td>
+  <td>-55.5%</td>
+  <td>-112.5% / 17</td>
+  <td>-126.9% / 38</td>
+  <td>-52.1% / 37</td>
+  <td>+22.3% / 27</td>
+</tr>
+<tr>
+  <td>Harbor multi-harness RL / final, 1000</td>
+  <td>80</td>
+  <td>10.15</td>
+  <td>10.95</td>
+  <td>-7.9%</td>
+  <td>-166.7% / 1</td>
+  <td>-61.4% / 34</td>
+  <td>-10.1% / 22</td>
+  <td>+43.5% / 23</td>
+</tr>
+<tr>
+  <td>Native OpenCode RL / best = final, 1000</td>
+  <td>112</td>
+  <td>10.11</td>
+  <td>8.46</td>
+  <td>+16.3%</td>
+  <td>+29.7% / 22</td>
+  <td>+31.2% / 30</td>
+  <td>-8.9% / 24</td>
+  <td>+16.9% / 36</td>
+</tr>
+<tr>
+  <td>Hard-task RL continuation / 1000 *</td>
+  <td>78</td>
+  <td>9.45</td>
+  <td>15.71</td>
+  <td>-66.2%</td>
+  <td>-113.6% / 9</td>
+  <td>-123.8% / 27</td>
+  <td>-49.0% / 35</td>
+  <td>+16.3% / 7</td>
+</tr>
+</tbody>
+</table>
+<h3>LFM2.5-2.6B tool use</h3>
+<table>
+<thead>
+<tr>
+  <th>Run</th>
+  <th>Matched pairs</th>
+  <th>Base mean calls</th>
+  <th>Run mean calls</th>
+  <th>Savings</th>
+  <th>OC savings / n</th>
+  <th>Claude savings / n</th>
+  <th>Codex savings / n</th>
+  <th>Mini-SWE savings / n</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Pretrained baseline *</td>
+  <td>421</td>
+  <td>7.68</td>
+  <td>7.68</td>
+  <td>+0.0%</td>
+  <td>+0.0% / 84</td>
+  <td>+0.0% / 83</td>
+  <td>+0.0% / 100</td>
+  <td>+0.0% / 154</td>
+</tr>
+<tr>
+  <td>Bash SFT · 907 tasks / E1 *</td>
+  <td>289</td>
+  <td>7.64</td>
+  <td>7.83</td>
+  <td>-2.4%</td>
+  <td>+1.8% / 45</td>
+  <td>-29.5% / 41</td>
+  <td>+11.3% / 70</td>
+  <td>-3.7% / 133</td>
+</tr>
+<tr>
+  <td>Bash SFT · 907 tasks / E2 *</td>
+  <td>282</td>
+  <td>7.49</td>
+  <td>7.59</td>
+  <td>-1.3%</td>
+  <td>-10.5% / 46</td>
+  <td>-17.4% / 43</td>
+  <td>+12.0% / 66</td>
+  <td>-1.5% / 127</td>
+</tr>
+<tr>
+  <td>Bash SFT · full 4,677 / E1 †</td>
+  <td>283</td>
+  <td>7.37</td>
+  <td>7.23</td>
+  <td>+1.9%</td>
+  <td>-2.6% / 51</td>
+  <td>-14.6% / 47</td>
+  <td>+24.1% / 59</td>
+  <td>-2.0% / 126</td>
+</tr>
+<tr>
+  <td>Bash SFT · full 4,677 / E2 †</td>
+  <td>284</td>
+  <td>7.30</td>
+  <td>7.41</td>
+  <td>-1.5%</td>
+  <td>-12.0% / 55</td>
+  <td>-28.1% / 34</td>
+  <td>+19.6% / 61</td>
+  <td>-3.5% / 134</td>
+</tr>
+<tr>
+  <td>OpenCode SFT · 801 rollouts / E1</td>
+  <td>310</td>
+  <td>7.50</td>
+  <td>6.45</td>
+  <td>+14.0%</td>
+  <td>+26.2% / 67</td>
+  <td>-2.0% / 43</td>
+  <td>+36.9% / 77</td>
+  <td>-1.5% / 123</td>
+</tr>
+<tr>
+  <td>OpenCode SFT · 801 rollouts / E2</td>
+  <td>309</td>
+  <td>7.34</td>
+  <td>6.72</td>
+  <td>+8.5%</td>
+  <td>+17.1% / 61</td>
+  <td>-10.5% / 46</td>
+  <td>+31.7% / 80</td>
+  <td>-4.8% / 122</td>
+</tr>
+<tr>
+  <td>Multi-harness SFT · 3,189 rollouts / E1</td>
+  <td>255</td>
+  <td>7.20</td>
+  <td>5.50</td>
+  <td>+23.5%</td>
+  <td>+22.6% / 28</td>
+  <td>+20.4% / 57</td>
+  <td>+44.3% / 69</td>
+  <td>+11.0% / 101</td>
+</tr>
+<tr>
+  <td>Multi-harness SFT · 3,189 rollouts / E2</td>
+  <td>276</td>
+  <td>7.18</td>
+  <td>5.44</td>
+  <td>+24.2%</td>
+  <td>+18.0% / 46</td>
+  <td>+27.1% / 57</td>
+  <td>+41.8% / 74</td>
+  <td>+10.8% / 99</td>
+</tr>
+<tr>
+  <td>Harbor OpenCode RL / best, 900</td>
+  <td>342</td>
+  <td>7.47</td>
+  <td>6.49</td>
+  <td>+13.2%</td>
+  <td>+34.9% / 73</td>
+  <td>+7.3% / 62</td>
+  <td>+18.2% / 79</td>
+  <td>+3.4% / 128</td>
+</tr>
+<tr>
+  <td>Harbor OpenCode RL / final, 1000</td>
+  <td>337</td>
+  <td>7.32</td>
+  <td>6.49</td>
+  <td>+11.4%</td>
+  <td>+36.4% / 74</td>
+  <td>-9.6% / 55</td>
+  <td>+23.6% / 71</td>
+  <td>+2.1% / 137</td>
+</tr>
+<tr>
+  <td>Harbor multi-harness RL / best, 700</td>
+  <td>361</td>
+  <td>7.57</td>
+  <td>5.55</td>
+  <td>+26.7%</td>
+  <td>+31.4% / 68</td>
+  <td>+19.2% / 71</td>
+  <td>+46.8% / 88</td>
+  <td>+14.8% / 134</td>
+</tr>
+<tr>
+  <td>Harbor multi-harness RL / final, 1000</td>
+  <td>356</td>
+  <td>7.43</td>
+  <td>5.12</td>
+  <td>+31.1%</td>
+  <td>+32.8% / 66</td>
+  <td>+28.3% / 69</td>
+  <td>+53.0% / 89</td>
+  <td>+16.2% / 132</td>
+</tr>
+</tbody>
+</table>
+<h3>Efficiency observations worth highlighting</h3>
+<ul>
+<li>Qwen multi-harness SFT E2: mean native calls decrease 9.75 → 4.50 on 108 matched successful pairs, a 53.8% saving. Savings are positive for every harness. This accompanies a large correctness gain over baseline.</li>
+<li>LFM multi-harness SFT E2: 7.18 → 5.44 calls on 276 pairs, a 24.2% saving. All four harnesses show positive savings. It is more efficient conditionally, but correctness remains substantially below LFM multi-harness RL.</li>
+<li>LFM OpenCode SFT E2 saves 8.5% overall but increases calls under Claude Code (10.5% more) and Mini-SWE (4.8% more). Its higher correctness than mixed SFT therefore comes with weaker and less uniform tool savings.</li>
+<li>LFM final multi-harness RL: 7.43 → 5.12 calls on 356 pairs, a 31.1% saving, with positive savings in all four harnesses. OpenCode-only RL saves 11.4% overall but uses 9.6% more calls under Claude Code.</li>
+<li>Qwen Harbor RL often uses more calls on matched successes. It was trained on correctness only, so do not describe this as a failed tool-efficiency reward. Qwen native OpenCode RL has its own baseline and saves 16.3% overall.</li>
+<li>Some Qwen RL per-harness cells have very small samples. Final Harbor multi-harness RL under OpenCode has only one matched successful pair; its percentage is not a robust population claim. Show n, and avoid highlighting that cell as a general trend.</li>
+<li>Efficiency differences between Qwen and LFM do not isolate an architectural effect: baseline behavior, training objectives and cohorts differ. Native action counts are verified, but the semantic size of one tool call also differs by harness.</li>
+</ul>
+<h2>4. SFT data, preparation and recipe</h2>
+<p>Two independently initialized base models were used: <code>Qwen/Qwen3.5-2B</code> at <code>15852e8c16360a2fea060d615a32b45270f8a8fc</code> and <code>LiquidAI/LFM2.5-2.6B</code> at <code>654f9463ce32b05d0429d76fe1f580b27d4c1ac0</code>. The full bash run started fresh, not from the 907-task checkpoint. Multi-harness SFT also started fresh, not from OpenCode SFT.</p>
+<table>
+<thead>
+<tr>
+  <th>Variant</th>
+  <th>Source and selection</th>
+  <th>Examples and weighting</th>
+  <th>Epoch checkpoints</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>LFM bash, matched</td>
+  <td>FineEnvs/SmolDataEnvs-sft; 907 available tasks matched to the original LFM RL pool, 376 medium / 531 hard</td>
+  <td>907 conversations; assistant-only loss</td>
+  <td>114, 228</td>
+</tr>
+<tr>
+  <td>LFM bash, full</td>
+  <td>All 4,677 demonstrations: 1,402 easy / 2,640 medium / 635 hard</td>
+  <td>Full corpus, including disclosed test overlap</td>
+  <td>585, 1,170</td>
+</tr>
+<tr>
+  <td>OpenCode teacher SFT, both models</td>
+  <td>801 successful OpenCode rollouts from 801 tasks: 356 medium / 445 hard</td>
+  <td>4,825 assistant-turn examples</td>
+  <td>604, 1,208</td>
+</tr>
+<tr>
+  <td>Multi-harness teacher SFT, both models</td>
+  <td>3,189 successful rollouts from 888 tasks: 377 medium / 511 hard</td>
+  <td>17,929 assistant-turn examples</td>
+  <td>2,242, 4,484</td>
+</tr>
+</tbody>
+</table>
+<p>The teacher source is <code>AdithyaSK/qwen38-27b-harbor-rollouts</code>, pinned at <code>3d826b6854acdb4e4918e5047cdf9f70eb38602e</code>, collected with Qwen3.8-27B. Mixed data: OpenCode 801 rollouts / 4,825 turns; Claude Code 781 / 4,581; Codex 797 / 4,078; Mini-SWE-Agent 810 / 4,445. There are 692 tasks with successful published traces in all four harnesses, a possible matched subset for a future controlled study. Four successful credential-containing source rollouts were excluded from publication; do not reintroduce them.</p>
+<p>Teacher token IDs and behavior logprobs are not student SFT targets. The actual runs used student-specific rendered messages, input IDs and completion masks. Exact model-specific labels were checked against native TRL preparation over the full mixed corpus. Tool responses and earlier history are context, with only the current assistant completion supervised. Qwen training preserves reasoning when present in the teacher response; evaluation still disables thinking as in its baseline. LFM's training-only prefix adjustment is removed when saving its original inference template.</p>
+<p>Common recipe: TRL SFT, full parameter fine-tuning, two epochs, LR 3e-6 constant, per-device batch 1, gradient accumulation 8, BF16, paged AdamW 8-bit, gradient checkpointing, seed 42, no packing and no truncation. Save every 50 updates plus epoch boundaries; evaluate E1 and E2. The teacher-trace runs use completion-only cross-entropy; bash runs use assistant-only cross-entropy.</p>
+<p>Multi-harness SFT shuffles turn records with standard completion-token loss. It does not balance tasks, rollouts or harnesses. Long answers and multi-turn rollouts contribute more supervised tokens. The 1,000-task RL pool is not the same as the 888 successful-demonstration tasks; these are not identical-data experiments.</p>
+<h3>Measured SFT training, not queue-time estimates</h3>
+<table>
+<thead>
+<tr>
+  <th>Run</th>
+  <th>Tasks / examples</th>
+  <th>Epoch steps</th>
+  <th>GPU job</th>
+  <th>Trainer runtime</th>
+  <th>First 50 loss</th>
+  <th>Last 50 loss</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>LFM bash SFT, matched 907</td>
+  <td>907 / 907</td>
+  <td>114/228</td>
+  <td>86340</td>
+  <td>9.5 min</td>
+  <td>0.544</td>
+  <td>0.397</td>
+</tr>
+<tr>
+  <td>LFM bash SFT, full 4,677</td>
+  <td>4677 / 4677</td>
+  <td>585/1170</td>
+  <td>86367</td>
+  <td>45.5 min</td>
+  <td>0.519</td>
+  <td>0.337</td>
+</tr>
+<tr>
+  <td>LFM OpenCode SFT</td>
+  <td>801 / 4825</td>
+  <td>604/1208</td>
+  <td>86427</td>
+  <td>88.3 min</td>
+  <td>0.400</td>
+  <td>0.279</td>
+</tr>
+<tr>
+  <td>Qwen OpenCode SFT</td>
+  <td>801 / 4825</td>
+  <td>604/1208</td>
+  <td>86429</td>
+  <td>71.4 min</td>
+  <td>0.282</td>
+  <td>0.215</td>
+</tr>
+<tr>
+  <td>LFM multi-harness SFT</td>
+  <td>888 / 17929</td>
+  <td>2242/4484</td>
+  <td>86472</td>
+  <td>386.8 min</td>
+  <td>0.908</td>
+  <td>0.585</td>
+</tr>
+<tr>
+  <td>Qwen multi-harness SFT</td>
+  <td>888 / 17929</td>
+  <td>2242/4484</td>
+  <td>86473</td>
+  <td>318.8 min</td>
+  <td>0.513</td>
+  <td>0.380</td>
+</tr>
+</tbody>
+</table>
+<p>All six SFT trainers reached epoch 2. Logged training losses and gradient norms were finite. These losses are from different target distributions and must not be ranked across datasets. The runtimes are the trainer-reported train-loop times; they exclude queueing, most preparation and evaluation, and are not an end-to-end cost comparison.</p>
+<p>Teacher-trace prepared token volumes per corpus pass:</p>
+<table>
+<thead>
+<tr>
+  <th>Student</th>
+  <th>OpenCode input tokens</th>
+  <th>OpenCode supervised tokens</th>
+  <th>Mixed input tokens</th>
+  <th>Mixed supervised tokens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>LFM</td>
+  <td>39,730,621</td>
+  <td>588,577</td>
+  <td>168,836,025</td>
+  <td>4,098,011</td>
+</tr>
+<tr>
+  <td>Qwen</td>
+  <td>42,179,296</td>
+  <td>610,720</td>
+  <td>177,276,678</td>
+  <td>4,361,348</td>
+</tr>
+</tbody>
+</table>
+<p>These are serialized per-example input lengths, including repeated history, rather than distinct text tokens. Mixed SFT has roughly seven times the supervised target tokens of OpenCode SFT, not simply a different harness label. No claim of equal compute or exposure is justified.</p>
+<p>The mixed-data pipeline initially failed before production training because a JSONL reader split embedded Unicode line separators. Reading physical lines fixed six affected records in each student file without removing or changing data. Qwen's reasoning-prefix mismatch was also caught before production and resolved with per-example template settings. Full-corpus label audits and save/resume/evaluation smokes passed before the successful runs. Final model checks confirmed changed weights. Evaluation retries preserved previous grades; transient failures should not be described as model errors.</p>
+<h2>5. RL context to preserve</h2>
+<p>Qwen's original three async runs used a 1,000-task pool (150 easy / 600 medium / 250 hard), but 1,000 optimizer steps did not guarantee full coverage. Observed distinct tasks were 482 for Harbor multi-harness, 523 for Harbor OpenCode-only and 566 for native OpenCode. They used correctness only. The source reports document different resume histories and rollout filtering.</p>
+<p>LFM OpenCode-only and multi-harness RL used a fresh base model and a pool of 1,000 tasks (400 medium / 600 hard), with an explicit two-pass schedule and a 1,000-update cap. A multi-harness group uses one harness for that scheduled task, not all four harnesses per update. Configured recipe: AsyncGRPO, LR 3e-6, eight generations, max in-flight 32, staleness 4, batch 4 / accumulation 4, BF16, paged AdamW 8-bit, a 40,960-token packing budget and atomic rollout admission. A trainer GPU and separate inference GPU were allocated per run. The configured two-pass schedule is not itself evidence of complete realized task coverage.</p>
+<p>LFM reward: <code>correctness × (1 + 0.1 × 15 / (15 + native_tool_calls))</code>, with no bonus for an unverified count. The tested implementation also withholds the efficiency bonus when the count is zero. Incorrect answers get no bonus. The primary evaluation score remains binary correctness; do not substitute the shaped training reward for pass@1.</p>
+<p>Both RL families saved every 50 updates and evaluated scheduled 100-step checkpoints; extra resume/diagnostic checkpoints exist. Best and final comparisons use only completed eligible evaluations. Historical deployment, allocation and transport configurations changed, so do not infer exact executed settings solely from an old planned config's <code>status</code> field.</p>
+<p>Earlier Qwen findings remain relevant: the multi-harness decline starts after step 500; the documented task-repetition resume bug occurs after step 684 and cannot explain the initial decline. The earlier report records increasing output truncation and 35–58% of updates with no fresh reward-contrast gradient. These are observed associations and accounting issues, not proven explanations of the SFT results or of LFM behavior.</p>
+<p>A Qwen hard-task continuation from checkpoint 500 remains a separate, incomplete local evaluation cohort: its latest local step-1,000 score is 26.0% on 924/1,000 grades. Do not merge it into the original Qwen RL curve or present it as a successful hard-task curriculum. SETA native-bash-only evaluation uses a different protocol and is not included in the four-harness aggregates here.</p>
+<h2>6. Difficulty breakdown for completed SFT and selected RL</h2>
+<p>Values are averages over available graded cells within each difficulty. The full-dataset bash SFT overlap flag still applies. Per-checkpoint raw counts and definitions remain in the linked source JSONs.</p>
+<h3>Qwen3.5-2B</h3>
+<table>
+<thead>
+<tr>
+  <th>Run</th>
+  <th>Easy</th>
+  <th>Medium</th>
+  <th>Hard</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>OpenCode SFT · 801 rollouts / E1</td>
+  <td>59.8%</td>
+  <td>30.9%</td>
+  <td>14.9%</td>
+</tr>
+<tr>
+  <td>OpenCode SFT · 801 rollouts / E2</td>
+  <td>63.6%</td>
+  <td>29.7%</td>
+  <td>10.4%</td>
+</tr>
+<tr>
+  <td>Multi-harness SFT · 3,189 rollouts / E1</td>
+  <td>71.2%</td>
+  <td>33.7%</td>
+  <td>14.1%</td>
+</tr>
+<tr>
+  <td>Multi-harness SFT · 3,189 rollouts / E2</td>
+  <td>73.5%</td>
+  <td>34.1%</td>
+  <td>17.4%</td>
+</tr>
+<tr>
+  <td>Harbor OpenCode RL / best, 700</td>
+  <td>71.2%</td>
+  <td>44.5%</td>
+  <td>23.0%</td>
+</tr>
+<tr>
+  <td>Harbor OpenCode RL / final, 1000</td>
+  <td>59.1%</td>
+  <td>30.3%</td>
+  <td>10.9%</td>
+</tr>
+<tr>
+  <td>Harbor multi-harness RL / best, 500</td>
+  <td>72.7%</td>
+  <td>44.3%</td>
+  <td>16.4%</td>
+</tr>
+<tr>
+  <td>Harbor multi-harness RL / final, 1000</td>
+  <td>42.4%</td>
+  <td>32.6%</td>
+  <td>13.4%</td>
+</tr>
+<tr>
+  <td>Native OpenCode RL / best = final, 1000</td>
+  <td>59.8%</td>
+  <td>35.8%</td>
+  <td>12.6%</td>
+</tr>
+</tbody>
+</table>
+<h3>LFM2.5-2.6B</h3>
+<table>
+<thead>
+<tr>
+  <th>Run</th>
+  <th>Easy</th>
+  <th>Medium</th>
+  <th>Hard</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Bash SFT · full 4,677 / E1 †</td>
+  <td>66.7%</td>
+  <td>41.7%</td>
+  <td>32.3%</td>
+</tr>
+<tr>
+  <td>Bash SFT · full 4,677 / E2 †</td>
+  <td>65.2%</td>
+  <td>45.8%</td>
+  <td>26.8%</td>
+</tr>
+<tr>
+  <td>OpenCode SFT · 801 rollouts / E1</td>
+  <td>74.2%</td>
+  <td>50.0%</td>
+  <td>29.5%</td>
+</tr>
+<tr>
+  <td>OpenCode SFT · 801 rollouts / E2</td>
+  <td>77.3%</td>
+  <td>52.8%</td>
+  <td>31.3%</td>
+</tr>
+<tr>
+  <td>Multi-harness SFT · 3,189 rollouts / E1</td>
+  <td>69.7%</td>
+  <td>42.6%</td>
+  <td>22.7%</td>
+</tr>
+<tr>
+  <td>Multi-harness SFT · 3,189 rollouts / E2</td>
+  <td>78.0%</td>
+  <td>50.4%</td>
+  <td>22.7%</td>
+</tr>
+<tr>
+  <td>Harbor OpenCode RL / best, 900</td>
+  <td>78.8%</td>
+  <td>56.6%</td>
+  <td>38.6%</td>
+</tr>
+<tr>
+  <td>Harbor OpenCode RL / final, 1000</td>
+  <td>76.5%</td>
+  <td>56.1%</td>
+  <td>39.6%</td>
+</tr>
+<tr>
+  <td>Harbor multi-harness RL / best, 700</td>
+  <td>79.5%</td>
+  <td>58.5%</td>
+  <td>41.7%</td>
+</tr>
+<tr>
+  <td>Harbor multi-harness RL / final, 1000</td>
+  <td>78.8%</td>
+  <td>58.7%</td>
+  <td>40.7%</td>
+</tr>
+</tbody>
+</table>
+<h2>7. Article update instructions</h2>
+<p>The local article checkout inspected for this handoff is <code>/tmp/data-agent-article-merge/content/articles/multi-harness-rl/</code>. Its checked chapters still describe the September Qwen RL experiments. This is a local reference, not a claim that it matches the latest article PR or deployed Space. Before editing, inspect the actual target branch and preserve newer content.</p>
+<ol>
+<li><strong>Introduction / framing:</strong> keep harnesses and OpenEnv/Harbor as the organizing idea. Add that the same trajectory infrastructure supports supervised imitation as well as online RL. A suitable subtitle is “Learning across agent harnesses with SFT and RL.”</li>
+<li><strong>Data-agent / data preparation:</strong> add the two teacher-trace SFT datasets, success filtering, task counts, current-response masks and student-specific tokenization. Distinguish raw rollouts from assistant-turn examples. Mention the ready-to-use public SFT export.</li>
+<li><strong>Training-ablation chapter:</strong> organize by model first, then SFT versus RL. Show both SFT epochs and best/final RL. Preserve the original Qwen RL resume and exposure findings. Add LFM RL as a separate later experiment, not a continuation of Qwen.</li>
+<li><strong>Evaluation chapter:</strong> keep pass@1 primary. Add native tool-call savings on matched successes, formula and n. State Qwen RL correctness-only, LFM RL correctness plus efficiency, and SFT imitation beside the figures. Do not call all plotted savings an optimized reward.</li>
+<li><strong>Conclusions:</strong> replace “multi-harness training always wins” language with the actual model-dependent picture. Qwen mixed SFT improves broadly. LFM mixed SFT reduces calls but does not match OpenCode SFT correctness. LFM mixed RL combines higher correctness with broad call savings.</li>
+<li><strong>Reproduction:</strong> link the public portable and student-tokenized dataset configurations, exact recipe and local evidence packet. Update historical HuggingEnvs display names/links to FineEnvs where the destination exists; verify remote links before publishing.</li>
+<li><strong>Visuals:</strong> retain the distinct baseline / SFT / RL sections. Show incomplete and overlap flags. Avoid ranking methods only by their best result, or removing the Qwen reward-objective annotation. Use the accompanying tables/JSON to build HTML visualizations; this handoff does not require image interpretation.</li>
+</ol>
+<p>Useful next experiments can be proposed as future work: compare harness mixtures on the same 692 common tasks, equalize supervised target-token exposure, balance task/rollout contributions, and compare SFT→RL against RL from base. None of those controlled comparisons has been run in this packet.</p>
+<h3>Claims to avoid</h3>
+<ul>
+<li>“SFT fails on LFM”: OpenCode SFT improves to 47.5%; mixed SFT is different.</li>
+<li>“Mixed SFT proves harness diversity causes the gain”: data volume, targets and compute differ.</li>
+<li>“RL always beats SFT”: Qwen final RL scores are below mixed SFT, while best RL checkpoints are above it.</li>
+<li>“Qwen's efficiency reward failed”: Qwen did not have one.</li>
+<li>“More efficient means cheaper to solve the whole benchmark”: savings are conditional on pairs solved by both, and tokens/latency are different metrics.</li>
+<li>“TiTO passing proves the run is statistically or operationally perfect”: it validates specific capture checks.</li>
+<li>“All evaluations are complete”: the current teacher-trace SFT evaluations are complete, but historical 907-task SFT, LFM baseline and hard-task continuation have missing cells.</li>
+<li>“Full bash SFT is held out”: it includes test-notebook and question overlap by explicit user choice.</li>
+<li>SFT metrics originally logged locally were backfilled to the public Trackio project on 29 September 2026. See TRACKIO_PUBLICATION.md for the verified dashboard and commit-pinned citation.</li>
+</ul>
+<h2>8. Artifacts and exact provenance</h2>
+<h3>Public entry points</h3>
+<ul>
+<li>Existing article reference: https://huggingface.co/spaces/FineEnvs/multi-harness-rl . Historical user-facing URL: https://huggingface.co/spaces/AdithyaSK/multi-harness-rl . Verify the current destination before publishing.</li>
+<li>Article review PR: https://github.com/adithya-s-k/FineEnvs/pull/13 . Inspect its current head before applying this handoff.</li>
+<li>Historical RL dashboard: https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio/?project=data-agent-rl-comparison . The exact score artifacts in this packet take precedence over a stale dashboard view.</li>
+<li>Portable SFT dataset: https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-multiharness-sft . Configurations: <code>all</code>, four individual harnesses, <code>lfm25_2_6b</code>, <code>qwen35_2b</code>.</li>
+<li>Published training script: https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-multiharness-sft/blob/main/train_sft.py . Requirements and verification receipt live alongside it. Data/code revision tested during publication: <code>a57fbba49e892199d2b0c31f68034310bf2e281c</code>.</li>
+<li>Raw teacher trajectories: https://huggingface.co/datasets/AdithyaSK/qwen38-27b-harbor-rollouts . Bash demonstrations: https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-sft (revision <code>a9fa95ab5dff4f4522081f7eb003109e56b7a36d</code>).</li>
+</ul>
+<p>The Hub SFT example provides a convenient simplified epoch-save recipe. The exact historical cluster runs additionally saved every 50 updates and used the local gated pipeline. Do not claim the public script automatically reproduces the cluster scheduler, full evaluation orchestration or all save policies.</p>
+<h3>Local run roots and checkpoints</h3>
+<ul>
+<li><p><strong>LFM bash SFT, matched 907</strong>: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-20260927">run root</a>. Checkpoints: <code>production/run/checkpoint-114</code> and <code>checkpoint-228</code>. Metrics: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-20260927/production/metrics.jsonl">metrics.jsonl</a>. Local Trackio: <code>production/trackio/</code>. Evaluations: <code>production/evaluations/checkpoint-&lt;step&gt;/</code>.</p>
+</li>
+<li><p><strong>LFM bash SFT, full 4,677</strong>: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-full-20260927">run root</a>. Checkpoints: <code>production/run/checkpoint-585</code> and <code>checkpoint-1170</code>. Metrics: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-full-20260927/production/metrics.jsonl">metrics.jsonl</a>. Local Trackio: <code>production/trackio/</code>. Evaluations: <code>production/evaluations/checkpoint-&lt;step&gt;/</code>.</p>
+</li>
+<li><p><strong>LFM OpenCode SFT</strong>: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/lfm">run root</a>. Checkpoints: <code>production/run/checkpoint-604</code> and <code>checkpoint-1208</code>. Metrics: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/lfm/production/metrics.jsonl">metrics.jsonl</a>. Local Trackio: <code>production/trackio/</code>. Evaluations: <code>production/evaluations/checkpoint-&lt;step&gt;/</code>.</p>
+</li>
+<li><p><strong>Qwen OpenCode SFT</strong>: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/qwen">run root</a>. Checkpoints: <code>production/run/checkpoint-604</code> and <code>checkpoint-1208</code>. Metrics: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/qwen/production/metrics.jsonl">metrics.jsonl</a>. Local Trackio: <code>production/trackio/</code>. Evaluations: <code>production/evaluations/checkpoint-&lt;step&gt;/</code>.</p>
+</li>
+<li><p><strong>LFM multi-harness SFT</strong>: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/lfm">run root</a>. Checkpoints: <code>production/run/checkpoint-2242</code> and <code>checkpoint-4484</code>. Metrics: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/lfm/production/metrics.jsonl">metrics.jsonl</a>. Local Trackio: <code>production/trackio/</code>. Evaluations: <code>production/evaluations/checkpoint-&lt;step&gt;/</code>.</p>
+</li>
+<li><p><strong>Qwen multi-harness SFT</strong>: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/qwen">run root</a>. Checkpoints: <code>production/run/checkpoint-2242</code> and <code>checkpoint-4484</code>. Metrics: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/qwen/production/metrics.jsonl">metrics.jsonl</a>. Local Trackio: <code>production/trackio/</code>. Evaluations: <code>production/evaluations/checkpoint-&lt;step&gt;/</code>.</p>
+</li>
+</ul>
+<p>The four teacher-trace student runs have <code>evaluation_verified.json</code> at both epoch checkpoints. For the two old incomplete bash-907 evaluations use <code>eval_progress.json</code>, not an invented complete receipt. Completion/optimizer evidence is in each production directory; mixed SFT has <code>training_verified_step_4484.json</code> and <code>eval_controller_summary.json</code>.</p>
+<ul>
+<li>Exact OpenCode SFT code: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/code">code directory</a> and <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/final_config.json">final_config.json</a>.</li>
+<li>Exact mixed SFT code: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/code">code directory</a> and per-model <code>production/config.json</code>; <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/CONFIG.json">CONFIG.json</a> is a historical plan whose status field is stale.</li>
+<li>LFM RL roots: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode">OpenCode RL</a> and <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness">multi-harness RL</a>; configs, per-allocation train audits and canonical checkpoint scores are inside.</li>
+<li>Earlier Qwen explanation: <a href="/fsx/adithyaskolavi/projects/trl_prod/HuggingEnvs/04-data-agent/results.md">results.md</a> and <a href="/fsx/adithyaskolavi/projects/trl_prod/HuggingEnvs/04-data-agent/reports/three-run-analysis-20260917/REPORT.md">REPORT.md</a> / <a href="/fsx/adithyaskolavi/projects/trl_prod/HuggingEnvs/04-data-agent/reports/three-run-analysis-20260917/TRAINING.md">TRAINING.md</a>.</li>
+<li>Dataset publication evidence: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-sft-hub-20260928/RESULTS.md">RESULTS.md</a>; full source export and Hub verification receipts live alongside it.</li>
+<li>All-run plotting code: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/plot_all.py">plot_all.py</a>. Native-tool extraction and plots: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool_efficiency.py">tool_efficiency.py</a>.</li>
+<li>Latest correctness figures and HTML: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/20260928T193636Z">artifact directory</a>. Latest efficiency figures and method report: <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-efficiency-20260928T193640Z">artifact directory</a>. They are local artifacts, not published image URLs.</li>
+</ul>
+<h3>Exact score source for each displayed row</h3>
+<ul>
+<li><p><strong>Qwen3.5-2B, Pretrained baseline:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json">canonical_results.json</a></p>
+</li>
+<li><p><strong>Qwen3.5-2B, OpenCode SFT · 801 rollouts / E1:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/qwen/production/evaluations/checkpoint-604/evaluation_verified.json">evaluation_verified.json</a></p>
+</li>
+<li><p><strong>Qwen3.5-2B, OpenCode SFT · 801 rollouts / E2:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/qwen/production/evaluations/checkpoint-1208/evaluation_verified.json">evaluation_verified.json</a></p>
+</li>
+<li><p><strong>Qwen3.5-2B, Multi-harness SFT · 3,189 rollouts / E1:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/qwen/production/evaluations/checkpoint-2242/evaluation_verified.json">evaluation_verified.json</a></p>
+</li>
+<li><p><strong>Qwen3.5-2B, Multi-harness SFT · 3,189 rollouts / E2:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/qwen/production/evaluations/checkpoint-4484/evaluation_verified.json">evaluation_verified.json</a></p>
+</li>
+<li><p><strong>Qwen3.5-2B, Harbor OpenCode RL / best, 700:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000700/scores.json">scores.json</a></p>
+</li>
+<li><p><strong>Qwen3.5-2B, Harbor OpenCode RL / final, 1000:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-001000/scores.json">scores.json</a></p>
+</li>
+<li><p><strong>Qwen3.5-2B, Harbor multi-harness RL / best, 500:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000500/scores.json">scores.json</a></p>
+</li>
+<li><p><strong>Qwen3.5-2B, Harbor multi-harness RL / final, 1000:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-cont-20260915/checkpoint-evals/step-001000/scores.json">scores.json</a></p>
+</li>
+<li><p><strong>Qwen3.5-2B, Native OpenCode RL / best = final, 1000:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-81098/canonical_scores.json">canonical_scores.json</a></p>
+</li>
+<li><p>*<em>Qwen3.5-2B, Hard-task RL continuation / 1000 <em>:</em></em> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/hard500-local-evals-20260921/checkpoint-1000/eval_progress.json">eval_progress.json</a></p>
+</li>
+<li><p>*<em>LFM2.5-2.6B, Pretrained baseline <em>:</em></em> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json">final_tito.json</a></p>
+</li>
+<li><p>*<em>LFM2.5-2.6B, Bash SFT · 907 tasks / E1 <em>:</em></em> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-20260927/production/evaluations/checkpoint-114/eval_progress.json">eval_progress.json</a></p>
+</li>
+<li><p>*<em>LFM2.5-2.6B, Bash SFT · 907 tasks / E2 <em>:</em></em> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-20260927/production/evaluations/checkpoint-228/eval_progress.json">eval_progress.json</a></p>
+</li>
+<li><p><strong>LFM2.5-2.6B, Bash SFT · full 4,677 / E1 †:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-full-20260927/production/evaluations/checkpoint-585/evaluation_verified.json">evaluation_verified.json</a></p>
+</li>
+<li><p><strong>LFM2.5-2.6B, Bash SFT · full 4,677 / E2 †:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-full-20260927/production/evaluations/checkpoint-1170/evaluation_verified.json">evaluation_verified.json</a></p>
+</li>
+<li><p><strong>LFM2.5-2.6B, OpenCode SFT · 801 rollouts / E1:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/lfm/production/evaluations/checkpoint-604/evaluation_verified.json">evaluation_verified.json</a></p>
+</li>
+<li><p><strong>LFM2.5-2.6B, OpenCode SFT · 801 rollouts / E2:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/lfm/production/evaluations/checkpoint-1208/evaluation_verified.json">evaluation_verified.json</a></p>
+</li>
+<li><p><strong>LFM2.5-2.6B, Multi-harness SFT · 3,189 rollouts / E1:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/lfm/production/evaluations/checkpoint-2242/evaluation_verified.json">evaluation_verified.json</a></p>
+</li>
+<li><p><strong>LFM2.5-2.6B, Multi-harness SFT · 3,189 rollouts / E2:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/lfm/production/evaluations/checkpoint-4484/evaluation_verified.json">evaluation_verified.json</a></p>
+</li>
+<li><p><strong>LFM2.5-2.6B, Harbor OpenCode RL / best, 900:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84180/canonical_scores.json">canonical_scores.json</a></p>
+</li>
+<li><p><strong>LFM2.5-2.6B, Harbor OpenCode RL / final, 1000:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84206/canonical_scores.json">canonical_scores.json</a></p>
+</li>
+<li><p><strong>LFM2.5-2.6B, Harbor multi-harness RL / best, 700:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84201/canonical_scores.json">canonical_scores.json</a></p>
+</li>
+<li><p><strong>LFM2.5-2.6B, Harbor multi-harness RL / final, 1000:</strong> <a href="/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84475/canonical_scores.json">canonical_scores.json</a></p>
+</li>
+</ul>
+<h3>Machine-readable packet</h3>
+<ul>
+<li><code>results.json</code>: all displayed rows, all recorded comparison checkpoints, source hashes and caveats.</li>
+<li><code>all_checkpoints.csv</code>: full available checkpoint history, with completeness and overlap flags.</li>
+<li><code>tool_efficiency.json</code> / <code>tool_efficiency.csv</code>: matched-pair counts, before/after native call means, per-harness savings, and references to audited cohort caches with trajectory hashes.</li>
+<li><code>training_summary.json</code>: run roots, optimizer steps, measured training runtime, training loss windows and metrics hashes.</li>
+<li><code>manifest.json</code>: checksums for the packet and the exact input snapshots.</li>
+</ul>
+<p>Local absolute paths identify the original evidence. If handing this to an agent without this filesystem, send the entire packet directory; its summary and tables are self-contained. Raw traces, full checkpoints and tokenized training datasets remain at the linked paths and are not copied into this packet.</p>
+<h2>Suggested short message to the article-writing agent</h2>
+<p>Please update the existing multi-harness article to cover SFT as well as RL using this evidence packet. Keep the architecture and earlier RL history, then add a model-by-model comparison of baseline, both SFT epochs, and best/final RL. Qwen multi-harness SFT reaches 32.7% from 14.6%; LFM OpenCode SFT reaches 47.5%, mixed SFT 43.1%, and mixed RL finishes at 54.2%. Include native tool-call savings on matched successes, with sample sizes. Explicitly state that Qwen RL was correctness-only, LFM RL used an efficiency bonus, and SFT used imitation. Preserve overlap/incomplete flags and avoid causal claims because data and budgets differ. Use the HTML/JSON tables and exact source links, not numbers read from images. Check the current article branch before editing and do not overwrite newer material.</p>
+<h2>SFT runtime metrics and public dashboard</h2>
+<p>Updated 29 September 2026: SFT has moved to its own public CPU-basic Space. The original comparison Space defaults to RL. Prior SFT imports remain archived in its raw database; no records were deleted.</p>
+<ul>
+<li><a href="https://huggingface.co/spaces/FineEnvs/data-agent-sft-trackio">SFT dashboard</a></li>
+<li><a href="https://fineenvs-data-agent-sft-trackio.hf.space/?project=data-agent-sft-comparison&amp;run_ids=f036025d14dd1296b49ce58fe500ec3d%2Ca4cf64db18a6b31a095ebbf9ab0a6b68%2C1bb4e31576c25d10314f48dc1a762a96%2C7dd987e57d95f45535307e5635ede2b0%2C7db29f7f7bf5dc725c86f83c2761a007%2Ca568c52ea8521b301f8155bed9b43826&amp;smoothing=0&amp;metric_filter=%5E%28eval_observed%2F%28pass_at_1%7Ctool_call_savings_pct%29%7Ctrain_sft%2Floss_mean50%7Ceval_coverage%2Fgraded_cells%29%24">SFT overview</a></li>
+<li><a href="https://fineenvs-data-agent-sft-trackio.hf.space/?project=data-agent-sft-comparison&amp;run_ids=f036025d14dd1296b49ce58fe500ec3d%2Ca4cf64db18a6b31a095ebbf9ab0a6b68%2C1bb4e31576c25d10314f48dc1a762a96%2C7dd987e57d95f45535307e5635ede2b0%2C7db29f7f7bf5dc725c86f83c2761a007%2Ca568c52ea8521b301f8155bed9b43826&amp;smoothing=0&amp;metric_filter=%5E%28train_sft%7Ctrain_summary%29%2F">Training curves and runtime metrics</a></li>
+<li><a href="https://fineenvs-data-agent-sft-trackio.hf.space/?project=data-agent-sft-comparison&amp;run_ids=f036025d14dd1296b49ce58fe500ec3d%2Ca4cf64db18a6b31a095ebbf9ab0a6b68%2C1bb4e31576c25d10314f48dc1a762a96%2C7dd987e57d95f45535307e5635ede2b0%2C7db29f7f7bf5dc725c86f83c2761a007%2Ca568c52ea8521b301f8155bed9b43826&amp;smoothing=0&amp;metric_filter=%5E%28eval_observed%7Ceval_coverage%7Ceval_usage%7Ceval_efficiency%29%2F">Evaluation scores, tools and tokens</a></li>
+<li><a href="https://huggingface.co/spaces/FineEnvs/data-agent-sft-trackio/blob/fa45c93c5b987dfc51ee9758d2bc3786e5fdd8f0/SFT_RESULTS.md">Commit-pinned article citation</a></li>
+<li><a href="https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio">RL dashboard</a></li>
+<li><a href="SFT_RESULTS.md">Local results table</a></li>
+</ul>
+<p>All 12,806 SFT scalar records were verified by exact public API readback. This includes 12,782 optimizer updates, six runtime summaries and 18 evaluation records including repeated baselines. Dense plotting responses now retain roughly 800 training points per run; every evaluation and summary point remains visible. Raw data remains complete and can be queried or downloaded. The dedicated SFT Space restores its entire snapshot from a versioned archive on startup.</p>
+<p>The original Space was RUNNING with HTTP 200 and no crash in the available logs when checked. Unlimited plotting responses were a plausible browser bottleneck, not a confirmed server crash. Separation and bounded plotting reduce the rendering load.</p>
+<p>Runtime excludes queue, preprocessing and evaluation. Historical logging timestamps are ingestion times. Partial bash-907 evaluations and overlap-inclusive bash-4,677 evaluations remain flagged. No private rollout text or model weights were published. See TRACKIO_PUBLICATION_ORIGINAL.md for the earlier combined-dashboard publication audit.</p>
+<p>RL dashboard UI update: the default page now opens six LFM overview charts, with navigation for Qwen, harness scores and tool/token usage. A real browser check verified the overview, Qwen and harness views with no JavaScript errors. The former unrestricted view rendered 426 canvases; all diagnostics remain accessible under All RL metrics.</p>
+</body></html>

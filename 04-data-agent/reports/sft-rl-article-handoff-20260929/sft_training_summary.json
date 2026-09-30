@@ -1,0 +1,116 @@
+[
+  {
+    "tasks": 907,
+    "examples": 907,
+    "epoch_steps": [
+      114,
+      228
+    ],
+    "runtime_seconds": 567.9285,
+    "mean_train_loss": 0.44636775108805876,
+    "loss_first50": 0.5436920684576034,
+    "loss_last50": 0.3974331718683243,
+    "metrics_sha256": "f4e40c769a103dbe20688c2b237a1effdaca280359dff33452d35a160d15784d",
+    "run": "LFM 2.6B \u00b7 SFT bash \u00b7 907 tasks",
+    "model": "lfm",
+    "epoch1_pass_at_1": 0.4174174174174174,
+    "epoch1_graded": 999,
+    "epoch2_pass_at_1": 0.46588235294117647,
+    "epoch2_graded": 850
+  },
+  {
+    "tasks": 4677,
+    "examples": 4677,
+    "epoch_steps": [
+      585,
+      1170
+    ],
+    "runtime_seconds": 2729.0271,
+    "mean_train_loss": 0.35326611715504247,
+    "loss_first50": 0.5187726891040803,
+    "loss_last50": 0.3372010153532028,
+    "metrics_sha256": "6cdfaa6803faa4cf730c9c863d7ea80243d4bb4a38bf18c3a3e0b59795101eb0",
+    "run": "LFM 2.6B \u00b7 SFT bash \u00b7 4677 tasks (eval overlap)",
+    "model": "lfm",
+    "epoch1_pass_at_1": 0.413,
+    "epoch1_graded": 1000,
+    "epoch2_pass_at_1": 0.408,
+    "epoch2_graded": 1000
+  },
+  {
+    "tasks": 801,
+    "examples": 4825,
+    "epoch_steps": [
+      604,
+      1208
+    ],
+    "runtime_seconds": 5296.5726,
+    "mean_train_loss": 0.29063189937270534,
+    "loss_first50": 0.3997403588891029,
+    "loss_last50": 0.2788516191393137,
+    "metrics_sha256": "c7fa2e30faeb02f277076b6b12e4a395674973aabac185d1579a43b66d3b4ae5",
+    "run": "LFM 2.6B \u00b7 SFT OpenCode \u00b7 801 tasks",
+    "model": "lfm",
+    "epoch1_pass_at_1": 0.451,
+    "epoch1_graded": 1000,
+    "epoch2_pass_at_1": 0.475,
+    "epoch2_graded": 1000
+  },
+  {
+    "tasks": 801,
+    "examples": 4825,
+    "epoch_steps": [
+      604,
+      1208
+    ],
+    "runtime_seconds": 4286.5479,
+    "mean_train_loss": 0.22704624168155407,
+    "loss_first50": 0.28249539285898206,
+    "loss_last50": 0.21466757848858833,
+    "metrics_sha256": "282145ba1de34e326eb947f2859473bf30d33dc426685c12910eb141e2c5fb61",
+    "run": "Qwen 2B \u00b7 SFT OpenCode \u00b7 801 tasks",
+    "model": "qwen",
+    "epoch1_pass_at_1": 0.284,
+    "epoch1_graded": 1000,
+    "epoch2_pass_at_1": 0.265,
+    "epoch2_graded": 1000
+  },
+  {
+    "tasks": 888,
+    "examples": 17929,
+    "epoch_steps": [
+      2242,
+      4484
+    ],
+    "runtime_seconds": 23209.8465,
+    "mean_train_loss": 0.5814626613510548,
+    "loss_first50": 0.9076286560297012,
+    "loss_last50": 0.5854089191555977,
+    "metrics_sha256": "eb94a9046cee795466efba0eade4b14a8e9acac16c12dc967369ec6d2daf5bfc",
+    "run": "LFM 2.6B \u00b7 SFT four harnesses \u00b7 888 tasks",
+    "model": "lfm",
+    "epoch1_pass_at_1": 0.383,
+    "epoch1_graded": 1000,
+    "epoch2_pass_at_1": 0.431,
+    "epoch2_graded": 1000
+  },
+  {
+    "tasks": 888,
+    "examples": 17929,
+    "epoch_steps": [
+      2242,
+      4484
+    ],
+    "runtime_seconds": 19125.4948,
+    "mean_train_loss": 0.384378594270742,
+    "loss_first50": 0.5131349170207977,
+    "loss_last50": 0.37968474060297014,
+    "metrics_sha256": "e44afd214cef850be4cb07db67999da4c33ba52784ea3e5aeb6c9902c2bb9012",
+    "run": "Qwen 2B \u00b7 SFT four harnesses \u00b7 888 tasks",
+    "model": "qwen",
+    "epoch1_pass_at_1": 0.309,
+    "epoch1_graded": 1000,
+    "epoch2_pass_at_1": 0.327,
+    "epoch2_graded": 1000
+  }
+]

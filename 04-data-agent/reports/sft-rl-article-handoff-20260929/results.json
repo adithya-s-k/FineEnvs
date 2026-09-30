@@ -1,0 +1,2212 @@
+{
+  "snapshot_utc": "2026-09-28T19:36:36.698644+00:00",
+  "panels": {
+    "qwen": [
+      {
+        "model": "qwen",
+        "family": "Baseline",
+        "label": "Pretrained baseline",
+        "step": 0,
+        "epoch": 0,
+        "score": 0.146,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json",
+        "harnesses": {
+          "opencode": 0.108,
+          "claude-code": 0.168,
+          "codex": 0.164,
+          "mini-swe-agent": 0.144
+        }
+      },
+      {
+        "model": "qwen",
+        "family": "OpenCode SFT \u00b7 801 rollouts",
+        "step": 604,
+        "epoch": 1,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/qwen/production/evaluations/checkpoint-604/evaluation_verified.json",
+        "score": 0.284,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.3,
+          "claude-code": 0.276,
+          "codex": 0.312,
+          "mini-swe-agent": 0.248
+        },
+        "difficulty": {
+          "easy": 0.5984848484848485,
+          "medium": 0.3093220338983051,
+          "hard": 0.14898989898989898
+        },
+        "label": "OpenCode SFT \u00b7 801 rollouts | E1"
+      },
+      {
+        "model": "qwen",
+        "family": "OpenCode SFT \u00b7 801 rollouts",
+        "step": 1208,
+        "epoch": 2,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/qwen/production/evaluations/checkpoint-1208/evaluation_verified.json",
+        "score": 0.265,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.26,
+          "claude-code": 0.304,
+          "codex": 0.272,
+          "mini-swe-agent": 0.224
+        },
+        "difficulty": {
+          "easy": 0.6363636363636364,
+          "medium": 0.2966101694915254,
+          "hard": 0.10353535353535354
+        },
+        "label": "OpenCode SFT \u00b7 801 rollouts | E2"
+      },
+      {
+        "model": "qwen",
+        "family": "Multi-harness SFT \u00b7 3,189 rollouts",
+        "step": 2242,
+        "epoch": 1,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/qwen/production/evaluations/checkpoint-2242/evaluation_verified.json",
+        "score": 0.309,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.296,
+          "claude-code": 0.336,
+          "codex": 0.328,
+          "mini-swe-agent": 0.276
+        },
+        "difficulty": {
+          "easy": 0.7121212121212122,
+          "medium": 0.336864406779661,
+          "hard": 0.1414141414141414
+        },
+        "label": "Multi-harness SFT \u00b7 3,189 rollouts | E1"
+      },
+      {
+        "model": "qwen",
+        "family": "Multi-harness SFT \u00b7 3,189 rollouts",
+        "step": 4484,
+        "epoch": 2,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/qwen/production/evaluations/checkpoint-4484/evaluation_verified.json",
+        "score": 0.327,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.296,
+          "claude-code": 0.364,
+          "codex": 0.336,
+          "mini-swe-agent": 0.312
+        },
+        "difficulty": {
+          "easy": 0.7348484848484849,
+          "medium": 0.3411016949152542,
+          "hard": 0.17424242424242425
+        },
+        "label": "Multi-harness SFT \u00b7 3,189 rollouts | E2"
+      },
+      {
+        "model": "qwen",
+        "family": "Harbor OpenCode RL",
+        "step": 700,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000700/scores.json",
+        "score": 0.395,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.4,
+          "claude-code": 0.464,
+          "codex": 0.372,
+          "mini-swe-agent": 0.344
+        },
+        "difficulty": {
+          "easy": 0.7121212121212122,
+          "medium": 0.4449152542372881,
+          "hard": 0.2297979797979798
+        },
+        "label": "Harbor OpenCode RL | best, 700"
+      },
+      {
+        "model": "qwen",
+        "family": "Harbor OpenCode RL",
+        "step": 1000,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-001000/scores.json",
+        "score": 0.264,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.22,
+          "claude-code": 0.308,
+          "codex": 0.324,
+          "mini-swe-agent": 0.204
+        },
+        "difficulty": {
+          "easy": 0.5909090909090909,
+          "medium": 0.3029661016949153,
+          "hard": 0.10858585858585859
+        },
+        "label": "Harbor OpenCode RL | final, 1000"
+      },
+      {
+        "model": "qwen",
+        "family": "Harbor multi-harness RL",
+        "step": 500,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000500/scores.json",
+        "score": 0.37000000000000005,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.328,
+          "claude-code": 0.448,
+          "codex": 0.392,
+          "mini-swe-agent": 0.312
+        },
+        "difficulty": {
+          "easy": 0.7272727272727273,
+          "medium": 0.4427966101694915,
+          "hard": 0.16414141414141414
+        },
+        "label": "Harbor multi-harness RL | best, 500"
+      },
+      {
+        "model": "qwen",
+        "family": "Harbor multi-harness RL",
+        "step": 1000,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-cont-20260915/checkpoint-evals/step-001000/scores.json",
+        "score": 0.263,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.056,
+          "claude-code": 0.388,
+          "codex": 0.248,
+          "mini-swe-agent": 0.36
+        },
+        "difficulty": {
+          "easy": 0.42424242424242425,
+          "medium": 0.326271186440678,
+          "hard": 0.13383838383838384
+        },
+        "label": "Harbor multi-harness RL | final, 1000"
+      },
+      {
+        "model": "qwen",
+        "family": "Native OpenCode RL",
+        "step": 1000,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-81098/canonical_scores.json",
+        "score": 0.298,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.204,
+          "claude-code": 0.332,
+          "codex": 0.296,
+          "mini-swe-agent": 0.36
+        },
+        "difficulty": {
+          "easy": 0.5984848484848485,
+          "medium": 0.3580508474576271,
+          "hard": 0.12626262626262627
+        },
+        "label": "Native OpenCode RL | best = final, 1000"
+      },
+      {
+        "model": "qwen",
+        "family": "Hard-task RL continuation",
+        "step": 1000,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/hard500-local-evals-20260921/checkpoint-1000/eval_progress.json",
+        "score": 0.2597402597402597,
+        "graded": 924,
+        "complete": false,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.1729957805907173,
+          "claude-code": 0.4,
+          "codex": 0.38866396761133604,
+          "mini-swe-agent": 0.09583333333333334
+        },
+        "difficulty": {
+          "easy": 0.49586776859504134,
+          "medium": 0.29128440366972475,
+          "hard": 0.1444141689373297
+        },
+        "label": "Hard-task RL continuation | 1000"
+      }
+    ],
+    "lfm": [
+      {
+        "model": "lfm",
+        "family": "Baseline",
+        "label": "Pretrained baseline",
+        "step": 0,
+        "epoch": 0,
+        "score": 0.4218436873747495,
+        "graded": 998,
+        "complete": false,
+        "overlap": false,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json",
+        "harnesses": {
+          "claude-code": 0.332,
+          "codex": 0.4,
+          "mini-swe-agent": 0.6209677419354839,
+          "opencode": 0.336
+        }
+      },
+      {
+        "model": "lfm",
+        "family": "Bash SFT \u00b7 907 tasks",
+        "step": 114,
+        "epoch": 1,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-20260927/production/evaluations/checkpoint-114/eval_progress.json",
+        "score": 0.4174174174174174,
+        "graded": 999,
+        "complete": false,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.352,
+          "claude-code": 0.26104417670682734,
+          "codex": 0.444,
+          "mini-swe-agent": 0.612
+        },
+        "difficulty": {
+          "easy": 0.6590909090909091,
+          "medium": 0.4639830508474576,
+          "hard": 0.2810126582278481
+        },
+        "label": "Bash SFT \u00b7 907 tasks | E1"
+      },
+      {
+        "model": "lfm",
+        "family": "Bash SFT \u00b7 907 tasks",
+        "step": 228,
+        "epoch": 2,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-20260927/production/evaluations/checkpoint-228/eval_progress.json",
+        "score": 0.46588235294117647,
+        "graded": 850,
+        "complete": false,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.39351851851851855,
+          "claude-code": 0.3088235294117647,
+          "codex": 0.47393364928909953,
+          "mini-swe-agent": 0.6757990867579908
+        },
+        "difficulty": {
+          "easy": 0.6984126984126984,
+          "medium": 0.5059952038369304,
+          "hard": 0.31596091205211724
+        },
+        "label": "Bash SFT \u00b7 907 tasks | E2"
+      },
+      {
+        "model": "lfm",
+        "family": "Bash SFT \u00b7 full 4,677",
+        "step": 585,
+        "epoch": 1,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-full-20260927/production/evaluations/checkpoint-585/evaluation_verified.json",
+        "score": 0.413,
+        "graded": 1000,
+        "complete": true,
+        "overlap": true,
+        "harnesses": {
+          "opencode": 0.392,
+          "claude-code": 0.32,
+          "codex": 0.344,
+          "mini-swe-agent": 0.596
+        },
+        "difficulty": {
+          "easy": 0.6666666666666666,
+          "medium": 0.4173728813559322,
+          "hard": 0.32323232323232326
+        },
+        "label": "Bash SFT \u00b7 full 4,677 | E1"
+      },
+      {
+        "model": "lfm",
+        "family": "Bash SFT \u00b7 full 4,677",
+        "step": 1170,
+        "epoch": 2,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-full-20260927/production/evaluations/checkpoint-1170/evaluation_verified.json",
+        "score": 0.408,
+        "graded": 1000,
+        "complete": true,
+        "overlap": true,
+        "harnesses": {
+          "opencode": 0.38,
+          "claude-code": 0.24,
+          "codex": 0.356,
+          "mini-swe-agent": 0.656
+        },
+        "difficulty": {
+          "easy": 0.6515151515151515,
+          "medium": 0.4576271186440678,
+          "hard": 0.2676767676767677
+        },
+        "label": "Bash SFT \u00b7 full 4,677 | E2"
+      },
+      {
+        "model": "lfm",
+        "family": "OpenCode SFT \u00b7 801 rollouts",
+        "step": 604,
+        "epoch": 1,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/lfm/production/evaluations/checkpoint-604/evaluation_verified.json",
+        "score": 0.451,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.512,
+          "claude-code": 0.288,
+          "codex": 0.424,
+          "mini-swe-agent": 0.58
+        },
+        "difficulty": {
+          "easy": 0.7424242424242424,
+          "medium": 0.5,
+          "hard": 0.29545454545454547
+        },
+        "label": "OpenCode SFT \u00b7 801 rollouts | E1"
+      },
+      {
+        "model": "lfm",
+        "family": "OpenCode SFT \u00b7 801 rollouts",
+        "step": 1208,
+        "epoch": 2,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/lfm/production/evaluations/checkpoint-1208/evaluation_verified.json",
+        "score": 0.475,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.516,
+          "claude-code": 0.332,
+          "codex": 0.464,
+          "mini-swe-agent": 0.588
+        },
+        "difficulty": {
+          "easy": 0.7727272727272727,
+          "medium": 0.527542372881356,
+          "hard": 0.31313131313131315
+        },
+        "label": "OpenCode SFT \u00b7 801 rollouts | E2"
+      },
+      {
+        "model": "lfm",
+        "family": "Multi-harness SFT \u00b7 3,189 rollouts",
+        "step": 2242,
+        "epoch": 1,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/lfm/production/evaluations/checkpoint-2242/evaluation_verified.json",
+        "score": 0.383,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.224,
+          "claude-code": 0.408,
+          "codex": 0.424,
+          "mini-swe-agent": 0.476
+        },
+        "difficulty": {
+          "easy": 0.696969696969697,
+          "medium": 0.4258474576271186,
+          "hard": 0.22727272727272727
+        },
+        "label": "Multi-harness SFT \u00b7 3,189 rollouts | E1"
+      },
+      {
+        "model": "lfm",
+        "family": "Multi-harness SFT \u00b7 3,189 rollouts",
+        "step": 4484,
+        "epoch": 2,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/lfm/production/evaluations/checkpoint-4484/evaluation_verified.json",
+        "score": 0.431,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.38,
+          "claude-code": 0.424,
+          "codex": 0.468,
+          "mini-swe-agent": 0.452
+        },
+        "difficulty": {
+          "easy": 0.7803030303030303,
+          "medium": 0.5042372881355932,
+          "hard": 0.22727272727272727
+        },
+        "label": "Multi-harness SFT \u00b7 3,189 rollouts | E2"
+      },
+      {
+        "model": "lfm",
+        "family": "Harbor OpenCode RL",
+        "step": 900,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84180/canonical_scores.json",
+        "score": 0.524,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.56,
+          "claude-code": 0.436,
+          "codex": 0.484,
+          "mini-swe-agent": 0.616
+        },
+        "difficulty": {
+          "easy": 0.7878787878787878,
+          "medium": 0.565677966101695,
+          "hard": 0.38636363636363635
+        },
+        "label": "Harbor OpenCode RL | best, 900"
+      },
+      {
+        "model": "lfm",
+        "family": "Harbor OpenCode RL",
+        "step": 1000,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84206/canonical_scores.json",
+        "score": 0.523,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.58,
+          "claude-code": 0.42,
+          "codex": 0.432,
+          "mini-swe-agent": 0.66
+        },
+        "difficulty": {
+          "easy": 0.7651515151515151,
+          "medium": 0.5614406779661016,
+          "hard": 0.39646464646464646
+        },
+        "label": "Harbor OpenCode RL | final, 1000"
+      },
+      {
+        "model": "lfm",
+        "family": "Harbor multi-harness RL",
+        "step": 700,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84201/canonical_scores.json",
+        "score": 0.546,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.512,
+          "claude-code": 0.488,
+          "codex": 0.536,
+          "mini-swe-agent": 0.648
+        },
+        "difficulty": {
+          "easy": 0.7954545454545454,
+          "medium": 0.5847457627118644,
+          "hard": 0.4166666666666667
+        },
+        "label": "Harbor multi-harness RL | best, 700"
+      },
+      {
+        "model": "lfm",
+        "family": "Harbor multi-harness RL",
+        "step": 1000,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84475/canonical_scores.json",
+        "score": 0.542,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.496,
+          "claude-code": 0.488,
+          "codex": 0.536,
+          "mini-swe-agent": 0.648
+        },
+        "difficulty": {
+          "easy": 0.7878787878787878,
+          "medium": 0.586864406779661,
+          "hard": 0.4065656565656566
+        },
+        "label": "Harbor multi-harness RL | final, 1000"
+      }
+    ]
+  },
+  "all_checkpoints": [
+    {
+      "model": "qwen",
+      "family": "Baseline",
+      "label": "Pretrained baseline",
+      "step": 0,
+      "epoch": 0,
+      "score": 0.146,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json",
+      "harnesses": {
+        "opencode": 0.108,
+        "claude-code": 0.168,
+        "codex": 0.164,
+        "mini-swe-agent": 0.144
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Baseline",
+      "label": "Pretrained baseline",
+      "step": 0,
+      "epoch": 0,
+      "score": 0.4218436873747495,
+      "graded": 998,
+      "complete": false,
+      "overlap": false,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json",
+      "harnesses": {
+        "claude-code": 0.332,
+        "codex": 0.4,
+        "mini-swe-agent": 0.6209677419354839,
+        "opencode": 0.336
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Bash SFT \u00b7 907 tasks",
+      "step": 114,
+      "epoch": 1,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-20260927/production/evaluations/checkpoint-114/eval_progress.json",
+      "score": 0.4174174174174174,
+      "graded": 999,
+      "complete": false,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.352,
+        "claude-code": 0.26104417670682734,
+        "codex": 0.444,
+        "mini-swe-agent": 0.612
+      },
+      "difficulty": {
+        "easy": 0.6590909090909091,
+        "medium": 0.4639830508474576,
+        "hard": 0.2810126582278481
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Bash SFT \u00b7 907 tasks",
+      "step": 228,
+      "epoch": 2,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-20260927/production/evaluations/checkpoint-228/eval_progress.json",
+      "score": 0.46588235294117647,
+      "graded": 850,
+      "complete": false,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.39351851851851855,
+        "claude-code": 0.3088235294117647,
+        "codex": 0.47393364928909953,
+        "mini-swe-agent": 0.6757990867579908
+      },
+      "difficulty": {
+        "easy": 0.6984126984126984,
+        "medium": 0.5059952038369304,
+        "hard": 0.31596091205211724
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Bash SFT \u00b7 full 4,677",
+      "step": 585,
+      "epoch": 1,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-full-20260927/production/evaluations/checkpoint-585/evaluation_verified.json",
+      "score": 0.413,
+      "graded": 1000,
+      "complete": true,
+      "overlap": true,
+      "harnesses": {
+        "opencode": 0.392,
+        "claude-code": 0.32,
+        "codex": 0.344,
+        "mini-swe-agent": 0.596
+      },
+      "difficulty": {
+        "easy": 0.6666666666666666,
+        "medium": 0.4173728813559322,
+        "hard": 0.32323232323232326
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Bash SFT \u00b7 full 4,677",
+      "step": 1170,
+      "epoch": 2,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-full-20260927/production/evaluations/checkpoint-1170/evaluation_verified.json",
+      "score": 0.408,
+      "graded": 1000,
+      "complete": true,
+      "overlap": true,
+      "harnesses": {
+        "opencode": 0.38,
+        "claude-code": 0.24,
+        "codex": 0.356,
+        "mini-swe-agent": 0.656
+      },
+      "difficulty": {
+        "easy": 0.6515151515151515,
+        "medium": 0.4576271186440678,
+        "hard": 0.2676767676767677
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "OpenCode SFT \u00b7 801 rollouts",
+      "step": 604,
+      "epoch": 1,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/qwen/production/evaluations/checkpoint-604/evaluation_verified.json",
+      "score": 0.284,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.3,
+        "claude-code": 0.276,
+        "codex": 0.312,
+        "mini-swe-agent": 0.248
+      },
+      "difficulty": {
+        "easy": 0.5984848484848485,
+        "medium": 0.3093220338983051,
+        "hard": 0.14898989898989898
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "OpenCode SFT \u00b7 801 rollouts",
+      "step": 1208,
+      "epoch": 2,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/qwen/production/evaluations/checkpoint-1208/evaluation_verified.json",
+      "score": 0.265,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.26,
+        "claude-code": 0.304,
+        "codex": 0.272,
+        "mini-swe-agent": 0.224
+      },
+      "difficulty": {
+        "easy": 0.6363636363636364,
+        "medium": 0.2966101694915254,
+        "hard": 0.10353535353535354
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Multi-harness SFT \u00b7 3,189 rollouts",
+      "step": 2242,
+      "epoch": 1,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/qwen/production/evaluations/checkpoint-2242/evaluation_verified.json",
+      "score": 0.309,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.296,
+        "claude-code": 0.336,
+        "codex": 0.328,
+        "mini-swe-agent": 0.276
+      },
+      "difficulty": {
+        "easy": 0.7121212121212122,
+        "medium": 0.336864406779661,
+        "hard": 0.1414141414141414
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Multi-harness SFT \u00b7 3,189 rollouts",
+      "step": 4484,
+      "epoch": 2,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/qwen/production/evaluations/checkpoint-4484/evaluation_verified.json",
+      "score": 0.327,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.296,
+        "claude-code": 0.364,
+        "codex": 0.336,
+        "mini-swe-agent": 0.312
+      },
+      "difficulty": {
+        "easy": 0.7348484848484849,
+        "medium": 0.3411016949152542,
+        "hard": 0.17424242424242425
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "OpenCode SFT \u00b7 801 rollouts",
+      "step": 604,
+      "epoch": 1,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/lfm/production/evaluations/checkpoint-604/evaluation_verified.json",
+      "score": 0.451,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.512,
+        "claude-code": 0.288,
+        "codex": 0.424,
+        "mini-swe-agent": 0.58
+      },
+      "difficulty": {
+        "easy": 0.7424242424242424,
+        "medium": 0.5,
+        "hard": 0.29545454545454547
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "OpenCode SFT \u00b7 801 rollouts",
+      "step": 1208,
+      "epoch": 2,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/lfm/production/evaluations/checkpoint-1208/evaluation_verified.json",
+      "score": 0.475,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.516,
+        "claude-code": 0.332,
+        "codex": 0.464,
+        "mini-swe-agent": 0.588
+      },
+      "difficulty": {
+        "easy": 0.7727272727272727,
+        "medium": 0.527542372881356,
+        "hard": 0.31313131313131315
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Multi-harness SFT \u00b7 3,189 rollouts",
+      "step": 2242,
+      "epoch": 1,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/lfm/production/evaluations/checkpoint-2242/evaluation_verified.json",
+      "score": 0.383,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.224,
+        "claude-code": 0.408,
+        "codex": 0.424,
+        "mini-swe-agent": 0.476
+      },
+      "difficulty": {
+        "easy": 0.696969696969697,
+        "medium": 0.4258474576271186,
+        "hard": 0.22727272727272727
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Multi-harness SFT \u00b7 3,189 rollouts",
+      "step": 4484,
+      "epoch": 2,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/lfm/production/evaluations/checkpoint-4484/evaluation_verified.json",
+      "score": 0.431,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.38,
+        "claude-code": 0.424,
+        "codex": 0.468,
+        "mini-swe-agent": 0.452
+      },
+      "difficulty": {
+        "easy": 0.7803030303030303,
+        "medium": 0.5042372881355932,
+        "hard": 0.22727272727272727
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor multi-harness RL",
+      "step": 700,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-cont-20260915/checkpoint-evals/step-000700/scores.json",
+      "score": 0.288,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.212,
+        "claude-code": 0.316,
+        "codex": 0.32,
+        "mini-swe-agent": 0.304
+      },
+      "difficulty": {
+        "easy": 0.6060606060606061,
+        "medium": 0.3389830508474576,
+        "hard": 0.12121212121212122
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor multi-harness RL",
+      "step": 800,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-cont-20260915/checkpoint-evals/step-000800/scores.json",
+      "score": 0.27,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.232,
+        "claude-code": 0.32,
+        "codex": 0.268,
+        "mini-swe-agent": 0.26
+      },
+      "difficulty": {
+        "easy": 0.5909090909090909,
+        "medium": 0.326271186440678,
+        "hard": 0.09595959595959595
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor multi-harness RL",
+      "step": 900,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-cont-20260915/checkpoint-evals/step-000900/scores.json",
+      "score": 0.227,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.024,
+        "claude-code": 0.364,
+        "codex": 0.192,
+        "mini-swe-agent": 0.328
+      },
+      "difficulty": {
+        "easy": 0.4621212121212121,
+        "medium": 0.2605932203389831,
+        "hard": 0.10858585858585859
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor multi-harness RL",
+      "step": 1000,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-cont-20260915/checkpoint-evals/step-001000/scores.json",
+      "score": 0.263,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.056,
+        "claude-code": 0.388,
+        "codex": 0.248,
+        "mini-swe-agent": 0.36
+      },
+      "difficulty": {
+        "easy": 0.42424242424242425,
+        "medium": 0.326271186440678,
+        "hard": 0.13383838383838384
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor multi-harness RL",
+      "step": 100,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-bounded-20260915/checkpoint-evals/step-000100/scores.json",
+      "score": 0.248,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.244,
+        "claude-code": 0.276,
+        "codex": 0.28,
+        "mini-swe-agent": 0.192
+      },
+      "difficulty": {
+        "easy": 0.5303030303030303,
+        "medium": 0.3050847457627119,
+        "hard": 0.08585858585858586
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor multi-harness RL",
+      "step": 200,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000200/scores.json",
+      "score": 0.263,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.304,
+        "claude-code": 0.3,
+        "codex": 0.264,
+        "mini-swe-agent": 0.184
+      },
+      "difficulty": {
+        "easy": 0.5833333333333334,
+        "medium": 0.3008474576271186,
+        "hard": 0.1111111111111111
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor multi-harness RL",
+      "step": 300,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000300/scores.json",
+      "score": 0.286,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.296,
+        "claude-code": 0.332,
+        "codex": 0.296,
+        "mini-swe-agent": 0.22
+      },
+      "difficulty": {
+        "easy": 0.6439393939393939,
+        "medium": 0.3283898305084746,
+        "hard": 0.11616161616161616
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor multi-harness RL",
+      "step": 400,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000400/scores.json",
+      "score": 0.33299999999999996,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.328,
+        "claude-code": 0.368,
+        "codex": 0.348,
+        "mini-swe-agent": 0.288
+      },
+      "difficulty": {
+        "easy": 0.7348484848484849,
+        "medium": 0.3961864406779661,
+        "hard": 0.12373737373737374
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor multi-harness RL",
+      "step": 500,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000500/scores.json",
+      "score": 0.37000000000000005,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.328,
+        "claude-code": 0.448,
+        "codex": 0.392,
+        "mini-swe-agent": 0.312
+      },
+      "difficulty": {
+        "easy": 0.7272727272727273,
+        "medium": 0.4427966101694915,
+        "hard": 0.16414141414141414
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor multi-harness RL",
+      "step": 600,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000600/scores.json",
+      "score": 0.318,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.34,
+        "claude-code": 0.3,
+        "codex": 0.324,
+        "mini-swe-agent": 0.308
+      },
+      "difficulty": {
+        "easy": 0.7272727272727273,
+        "medium": 0.3728813559322034,
+        "hard": 0.11616161616161616
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor multi-harness RL",
+      "step": 684,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000684/scores.json",
+      "score": 0.321,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.292,
+        "claude-code": 0.356,
+        "codex": 0.332,
+        "mini-swe-agent": 0.304
+      },
+      "difficulty": {
+        "easy": 0.7575757575757576,
+        "medium": 0.3580508474576271,
+        "hard": 0.13131313131313133
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Native OpenCode RL",
+      "step": 100,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80657/canonical_scores.json",
+      "score": 0.197,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.196,
+        "claude-code": 0.204,
+        "codex": 0.18,
+        "mini-swe-agent": 0.208
+      },
+      "difficulty": {
+        "easy": 0.44696969696969696,
+        "medium": 0.2245762711864407,
+        "hard": 0.08080808080808081
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Native OpenCode RL",
+      "step": 200,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80675/canonical_scores.json",
+      "score": 0.221,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.172,
+        "claude-code": 0.24,
+        "codex": 0.256,
+        "mini-swe-agent": 0.216
+      },
+      "difficulty": {
+        "easy": 0.5984848484848485,
+        "medium": 0.2457627118644068,
+        "hard": 0.06565656565656566
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Native OpenCode RL",
+      "step": 300,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80748/canonical_scores.json",
+      "score": 0.216,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.208,
+        "claude-code": 0.292,
+        "codex": 0.168,
+        "mini-swe-agent": 0.196
+      },
+      "difficulty": {
+        "easy": 0.5151515151515151,
+        "medium": 0.2563559322033898,
+        "hard": 0.06818181818181818
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Native OpenCode RL",
+      "step": 400,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80807/canonical_scores.json",
+      "score": 0.264,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.204,
+        "claude-code": 0.324,
+        "codex": 0.256,
+        "mini-swe-agent": 0.272
+      },
+      "difficulty": {
+        "easy": 0.5909090909090909,
+        "medium": 0.2944915254237288,
+        "hard": 0.11868686868686869
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Native OpenCode RL",
+      "step": 500,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80861/canonical_scores.json",
+      "score": 0.231,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.18,
+        "claude-code": 0.264,
+        "codex": 0.188,
+        "mini-swe-agent": 0.292
+      },
+      "difficulty": {
+        "easy": 0.5303030303030303,
+        "medium": 0.2733050847457627,
+        "hard": 0.08080808080808081
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Native OpenCode RL",
+      "step": 600,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80902/canonical_scores.json",
+      "score": 0.251,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.168,
+        "claude-code": 0.324,
+        "codex": 0.184,
+        "mini-swe-agent": 0.328
+      },
+      "difficulty": {
+        "easy": 0.5606060606060606,
+        "medium": 0.288135593220339,
+        "hard": 0.10353535353535354
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Native OpenCode RL",
+      "step": 700,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80956/canonical_scores.json",
+      "score": 0.232,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.184,
+        "claude-code": 0.296,
+        "codex": 0.144,
+        "mini-swe-agent": 0.304
+      },
+      "difficulty": {
+        "easy": 0.49242424242424243,
+        "medium": 0.288135593220339,
+        "hard": 0.07828282828282829
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Native OpenCode RL",
+      "step": 800,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80993/canonical_scores.json",
+      "score": 0.256,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.2,
+        "claude-code": 0.324,
+        "codex": 0.18,
+        "mini-swe-agent": 0.32
+      },
+      "difficulty": {
+        "easy": 0.5227272727272727,
+        "medium": 0.2966101694915254,
+        "hard": 0.11868686868686869
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Native OpenCode RL",
+      "step": 900,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-81034/canonical_scores.json",
+      "score": 0.253,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.188,
+        "claude-code": 0.34,
+        "codex": 0.144,
+        "mini-swe-agent": 0.34
+      },
+      "difficulty": {
+        "easy": 0.5,
+        "medium": 0.3029661016949153,
+        "hard": 0.1111111111111111
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Native OpenCode RL",
+      "step": 1000,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-81098/canonical_scores.json",
+      "score": 0.298,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.204,
+        "claude-code": 0.332,
+        "codex": 0.296,
+        "mini-swe-agent": 0.36
+      },
+      "difficulty": {
+        "easy": 0.5984848484848485,
+        "medium": 0.3580508474576271,
+        "hard": 0.12626262626262627
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor OpenCode RL",
+      "step": 100,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000100/scores.json",
+      "score": 0.245,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.22,
+        "claude-code": 0.252,
+        "codex": 0.304,
+        "mini-swe-agent": 0.204
+      },
+      "difficulty": {
+        "easy": 0.5,
+        "medium": 0.2923728813559322,
+        "hard": 0.10353535353535354
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor OpenCode RL",
+      "step": 200,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000200/scores.json",
+      "score": 0.271,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.292,
+        "claude-code": 0.284,
+        "codex": 0.308,
+        "mini-swe-agent": 0.2
+      },
+      "difficulty": {
+        "easy": 0.6212121212121212,
+        "medium": 0.3220338983050847,
+        "hard": 0.09343434343434344
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor OpenCode RL",
+      "step": 300,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000300/scores.json",
+      "score": 0.28500000000000003,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.28,
+        "claude-code": 0.304,
+        "codex": 0.32,
+        "mini-swe-agent": 0.236
+      },
+      "difficulty": {
+        "easy": 0.6439393939393939,
+        "medium": 0.3220338983050847,
+        "hard": 0.12121212121212122
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor OpenCode RL",
+      "step": 400,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000400/scores.json",
+      "score": 0.328,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.356,
+        "claude-code": 0.336,
+        "codex": 0.332,
+        "mini-swe-agent": 0.288
+      },
+      "difficulty": {
+        "easy": 0.7045454545454546,
+        "medium": 0.3898305084745763,
+        "hard": 0.12878787878787878
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor OpenCode RL",
+      "step": 500,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000500/scores.json",
+      "score": 0.33,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.328,
+        "claude-code": 0.324,
+        "codex": 0.372,
+        "mini-swe-agent": 0.296
+      },
+      "difficulty": {
+        "easy": 0.7121212121212122,
+        "medium": 0.3792372881355932,
+        "hard": 0.14393939393939395
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor OpenCode RL",
+      "step": 600,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000600/scores.json",
+      "score": 0.32999999999999996,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.356,
+        "claude-code": 0.312,
+        "codex": 0.344,
+        "mini-swe-agent": 0.308
+      },
+      "difficulty": {
+        "easy": 0.6666666666666666,
+        "medium": 0.3983050847457627,
+        "hard": 0.13636363636363635
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor OpenCode RL",
+      "step": 700,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000700/scores.json",
+      "score": 0.395,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.4,
+        "claude-code": 0.464,
+        "codex": 0.372,
+        "mini-swe-agent": 0.344
+      },
+      "difficulty": {
+        "easy": 0.7121212121212122,
+        "medium": 0.4449152542372881,
+        "hard": 0.2297979797979798
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor OpenCode RL",
+      "step": 800,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000800/scores.json",
+      "score": 0.331,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.264,
+        "claude-code": 0.388,
+        "codex": 0.356,
+        "mini-swe-agent": 0.316
+      },
+      "difficulty": {
+        "easy": 0.6590909090909091,
+        "medium": 0.3707627118644068,
+        "hard": 0.17424242424242425
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor OpenCode RL",
+      "step": 900,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000900/scores.json",
+      "score": 0.296,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.3,
+        "claude-code": 0.352,
+        "codex": 0.272,
+        "mini-swe-agent": 0.26
+      },
+      "difficulty": {
+        "easy": 0.6363636363636364,
+        "medium": 0.3220338983050847,
+        "hard": 0.15151515151515152
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Harbor OpenCode RL",
+      "step": 1000,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-001000/scores.json",
+      "score": 0.264,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.22,
+        "claude-code": 0.308,
+        "codex": 0.324,
+        "mini-swe-agent": 0.204
+      },
+      "difficulty": {
+        "easy": 0.5909090909090909,
+        "medium": 0.3029661016949153,
+        "hard": 0.10858585858585859
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor OpenCode RL",
+      "step": 100,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-83856/final_tito.json",
+      "score": 0.47971602434077076,
+      "graded": 986,
+      "complete": false,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.47540983606557374,
+        "claude-code": 0.375,
+        "codex": 0.44,
+        "mini-swe-agent": 0.6311475409836066
+      },
+      "difficulty": {}
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor OpenCode RL",
+      "step": 200,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-83886/final_tito.json",
+      "score": 0.5117466802860061,
+      "graded": 979,
+      "complete": false,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.5378151260504201,
+        "claude-code": 0.39591836734693875,
+        "codex": 0.496,
+        "mini-swe-agent": 0.6178861788617886
+      },
+      "difficulty": {}
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor OpenCode RL",
+      "step": 300,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-83944/final_tito.json",
+      "score": 0.5015166835187057,
+      "graded": 989,
+      "complete": false,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.49382716049382713,
+        "claude-code": 0.39759036144578314,
+        "codex": 0.476,
+        "mini-swe-agent": 0.6396761133603239
+      },
+      "difficulty": {}
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor OpenCode RL",
+      "step": 400,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84030/final_tito.json",
+      "score": 0.5065065065065065,
+      "graded": 999,
+      "complete": false,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.488,
+        "claude-code": 0.40160642570281124,
+        "codex": 0.472,
+        "mini-swe-agent": 0.664
+      },
+      "difficulty": {}
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor OpenCode RL",
+      "step": 500,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84047/canonical_scores.json",
+      "score": 0.501,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.492,
+        "claude-code": 0.372,
+        "codex": 0.492,
+        "mini-swe-agent": 0.648
+      },
+      "difficulty": {
+        "easy": 0.7348484848484849,
+        "medium": 0.5254237288135594,
+        "hard": 0.3939393939393939
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor OpenCode RL",
+      "step": 600,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84094/canonical_scores.json",
+      "score": 0.518,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.532,
+        "claude-code": 0.432,
+        "codex": 0.46,
+        "mini-swe-agent": 0.648
+      },
+      "difficulty": {
+        "easy": 0.7424242424242424,
+        "medium": 0.5677966101694916,
+        "hard": 0.3838383838383838
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor OpenCode RL",
+      "step": 700,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84130/canonical_scores.json",
+      "score": 0.508,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.504,
+        "claude-code": 0.408,
+        "codex": 0.516,
+        "mini-swe-agent": 0.604
+      },
+      "difficulty": {
+        "easy": 0.7651515151515151,
+        "medium": 0.5296610169491526,
+        "hard": 0.39646464646464646
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor OpenCode RL",
+      "step": 800,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84157/canonical_scores.json",
+      "score": 0.512,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.52,
+        "claude-code": 0.44,
+        "codex": 0.468,
+        "mini-swe-agent": 0.62
+      },
+      "difficulty": {
+        "easy": 0.7651515151515151,
+        "medium": 0.5423728813559322,
+        "hard": 0.39141414141414144
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor OpenCode RL",
+      "step": 900,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84180/canonical_scores.json",
+      "score": 0.524,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.56,
+        "claude-code": 0.436,
+        "codex": 0.484,
+        "mini-swe-agent": 0.616
+      },
+      "difficulty": {
+        "easy": 0.7878787878787878,
+        "medium": 0.565677966101695,
+        "hard": 0.38636363636363635
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor OpenCode RL",
+      "step": 1000,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84206/canonical_scores.json",
+      "score": 0.523,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.58,
+        "claude-code": 0.42,
+        "codex": 0.432,
+        "mini-swe-agent": 0.66
+      },
+      "difficulty": {
+        "easy": 0.7651515151515151,
+        "medium": 0.5614406779661016,
+        "hard": 0.39646464646464646
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor multi-harness RL",
+      "step": 100,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-83870/final_tito.json",
+      "score": 0.4706477732793522,
+      "graded": 988,
+      "complete": false,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.4262295081967213,
+        "claude-code": 0.33064516129032256,
+        "codex": 0.516,
+        "mini-swe-agent": 0.6097560975609756
+      },
+      "difficulty": {}
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor multi-harness RL",
+      "step": 200,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-83917/final_tito.json",
+      "score": 0.5263157894736842,
+      "graded": 988,
+      "complete": false,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.5041666666666667,
+        "claude-code": 0.392,
+        "codex": 0.544,
+        "mini-swe-agent": 0.6653225806451613
+      },
+      "difficulty": {}
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor multi-harness RL",
+      "step": 292,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84024/canonical_scores.json",
+      "score": 0.509,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.48,
+        "claude-code": 0.448,
+        "codex": 0.496,
+        "mini-swe-agent": 0.612
+      },
+      "difficulty": {
+        "easy": 0.7727272727272727,
+        "medium": 0.5338983050847458,
+        "hard": 0.39141414141414144
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor multi-harness RL",
+      "step": 300,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84035/canonical_scores.json",
+      "score": 0.507,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.4,
+        "claude-code": 0.436,
+        "codex": 0.556,
+        "mini-swe-agent": 0.636
+      },
+      "difficulty": {
+        "easy": 0.7651515151515151,
+        "medium": 0.5338983050847458,
+        "hard": 0.3888888888888889
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor multi-harness RL",
+      "step": 400,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84093/canonical_scores.json",
+      "score": 0.51,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.432,
+        "claude-code": 0.48,
+        "codex": 0.5,
+        "mini-swe-agent": 0.628
+      },
+      "difficulty": {
+        "easy": 0.7348484848484849,
+        "medium": 0.538135593220339,
+        "hard": 0.4015151515151515
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor multi-harness RL",
+      "step": 500,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84136/canonical_scores.json",
+      "score": 0.521,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.456,
+        "claude-code": 0.476,
+        "codex": 0.532,
+        "mini-swe-agent": 0.62
+      },
+      "difficulty": {
+        "easy": 0.803030303030303,
+        "medium": 0.5444915254237288,
+        "hard": 0.398989898989899
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor multi-harness RL",
+      "step": 600,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84169/canonical_scores.json",
+      "score": 0.507,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.464,
+        "claude-code": 0.472,
+        "codex": 0.464,
+        "mini-swe-agent": 0.628
+      },
+      "difficulty": {
+        "easy": 0.7878787878787878,
+        "medium": 0.5529661016949152,
+        "hard": 0.35858585858585856
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor multi-harness RL",
+      "step": 700,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84201/canonical_scores.json",
+      "score": 0.546,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.512,
+        "claude-code": 0.488,
+        "codex": 0.536,
+        "mini-swe-agent": 0.648
+      },
+      "difficulty": {
+        "easy": 0.7954545454545454,
+        "medium": 0.5847457627118644,
+        "hard": 0.4166666666666667
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor multi-harness RL",
+      "step": 800,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84243/canonical_scores.json",
+      "score": 0.54,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.496,
+        "claude-code": 0.46,
+        "codex": 0.564,
+        "mini-swe-agent": 0.64
+      },
+      "difficulty": {
+        "easy": 0.8106060606060606,
+        "medium": 0.5677966101694916,
+        "hard": 0.4166666666666667
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor multi-harness RL",
+      "step": 850,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84309/final_tito.json",
+      "score": 0.5652173913043478,
+      "graded": 851,
+      "complete": false,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.5229357798165137,
+        "claude-code": 0.5463414634146342,
+        "codex": 0.5384615384615384,
+        "mini-swe-agent": 0.6570048309178744
+      },
+      "difficulty": {}
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor multi-harness RL",
+      "step": 850,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84334/canonical_scores.json",
+      "score": 0.545,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.512,
+        "claude-code": 0.504,
+        "codex": 0.532,
+        "mini-swe-agent": 0.632
+      },
+      "difficulty": {
+        "easy": 0.8257575757575758,
+        "medium": 0.576271186440678,
+        "hard": 0.41414141414141414
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor multi-harness RL",
+      "step": 900,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84380/canonical_scores.json",
+      "score": 0.52,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.472,
+        "claude-code": 0.468,
+        "codex": 0.54,
+        "mini-swe-agent": 0.6
+      },
+      "difficulty": {
+        "easy": 0.7954545454545454,
+        "medium": 0.5572033898305084,
+        "hard": 0.3838383838383838
+      }
+    },
+    {
+      "model": "lfm",
+      "family": "Harbor multi-harness RL",
+      "step": 1000,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84475/canonical_scores.json",
+      "score": 0.542,
+      "graded": 1000,
+      "complete": true,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.496,
+        "claude-code": 0.488,
+        "codex": 0.536,
+        "mini-swe-agent": 0.648
+      },
+      "difficulty": {
+        "easy": 0.7878787878787878,
+        "medium": 0.586864406779661,
+        "hard": 0.4065656565656566
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Hard-task RL continuation",
+      "step": 1000,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/hard500-local-evals-20260921/checkpoint-1000/eval_progress.json",
+      "score": 0.2597402597402597,
+      "graded": 924,
+      "complete": false,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.1729957805907173,
+        "claude-code": 0.4,
+        "codex": 0.38866396761133604,
+        "mini-swe-agent": 0.09583333333333334
+      },
+      "difficulty": {
+        "easy": 0.49586776859504134,
+        "medium": 0.29128440366972475,
+        "hard": 0.1444141689373297
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Hard-task RL continuation",
+      "step": 600,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/hard500-local-evals-20260921/checkpoint-600/eval_progress.json",
+      "score": 0.3557114228456914,
+      "graded": 998,
+      "complete": false,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.3387096774193548,
+        "claude-code": 0.388,
+        "codex": 0.4,
+        "mini-swe-agent": 0.296
+      },
+      "difficulty": {
+        "easy": 0.7196969696969697,
+        "medium": 0.4309978768577495,
+        "hard": 0.14430379746835442
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Hard-task RL continuation",
+      "step": 700,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/hard500-local-evals-20260921/checkpoint-700/eval_progress.json",
+      "score": 0.3487437185929648,
+      "graded": 995,
+      "complete": false,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.3551020408163265,
+        "claude-code": 0.4,
+        "codex": 0.364,
+        "mini-swe-agent": 0.276
+      },
+      "difficulty": {
+        "easy": 0.6666666666666666,
+        "medium": 0.41541755888650966,
+        "hard": 0.16414141414141414
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Hard-task RL continuation",
+      "step": 800,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/hard500-local-evals-20260921/checkpoint-800/eval_progress.json",
+      "score": 0.2987927565392354,
+      "graded": 994,
+      "complete": false,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.24193548387096775,
+        "claude-code": 0.33739837398373984,
+        "codex": 0.352,
+        "mini-swe-agent": 0.264
+      },
+      "difficulty": {
+        "easy": 0.6335877862595419,
+        "medium": 0.33547008547008544,
+        "hard": 0.14430379746835442
+      }
+    },
+    {
+      "model": "qwen",
+      "family": "Hard-task RL continuation",
+      "step": 900,
+      "epoch": null,
+      "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/hard500-local-evals-20260921/checkpoint-900/eval_progress.json",
+      "score": 0.26239669421487605,
+      "graded": 968,
+      "complete": false,
+      "overlap": false,
+      "harnesses": {
+        "opencode": 0.23673469387755103,
+        "claude-code": 0.32,
+        "codex": 0.36,
+        "mini-swe-agent": 0.13709677419354838
+      },
+      "difficulty": {
+        "easy": 0.5538461538461539,
+        "medium": 0.2860310421286031,
+        "hard": 0.13695090439276486
+      }
+    }
+  ],
+  "notes": [
+    "Training objectives: Qwen RL = correctness only; LFM RL = correctness + tool-efficiency bonus. SFT = demonstration imitation.",
+    "Fixed 250 tasks \u00d7 four evaluation harnesses; pass@1. Training data, objectives and compute budgets differ.",
+    "SFT E1/E2 are both shown. RL best is selected retrospectively by aggregate four-harness score; final is shown separately. RL had more checkpoint selections.",
+    "Hatched bars / * denote incomplete evaluations; scores exclude ungraded cells. Pending evaluations are blank, not zero.",
+    "\u2020 Full 4,677-demonstration bash SFT has test overlap: 33 demonstrations share test notebooks and four match test questions. Not strictly held out.",
+    "OpenCode SFT uses 801 successful teacher rollouts; multi-harness SFT uses 3,189 rollouts from 888 unique tasks. Their data volume and turn weighting differ.",
+    "Qwen RL used a different training dataset. Native OpenCode has a separate historical evaluation path and baseline (15.9%).",
+    "Qwen hard-task RL is a continuation from checkpoint 500, not a new base-model run. Its incomplete local results are not eligible for best-complete ranking.",
+    "This report covers the recorded four-harness pass@1 comparison cohort. SETA native-bash-only evaluations are a different protocol and are not mixed into this average.",
+    "Training logs and these artifacts remain local. Historical dashboard: https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio . Exact local score sources below are authoritative for this snapshot."
+  ],
+  "source_sha256": {
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/baselines.json": "066dfaa8e8931aa98c157109fd85e2e5156d55fad845d2deb07af03cd2d729b4",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json": "8c4f5bced4eff04b0c2e5f41806da9ae1b8a4c0fe356ddf926e1f781c6bb9ac6",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json": "ba07407187180cf907d4a2f9b00df228030a25df56a60687461dc26b87fb3c0a",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-20260927/production/evaluations/checkpoint-114/eval_progress.json": "16e84698470137c412efeacce2a8368454601c50c666daef5aff305464a26b4f",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-20260927/production/evaluations/checkpoint-228/eval_progress.json": "34adf5a0145d8fa3135d9c5712c419655feaaf92219a4d445c779255208a109f",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-full-20260927/production/evaluations/checkpoint-585/evaluation_verified.json": "d125a23a907fa4ced6670170696482ae8a8fd4cca72b0a7c25fabee5c3f52341",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-full-20260927/production/evaluations/checkpoint-1170/evaluation_verified.json": "90f132798db2071b0ce1d6969d0f6698c40de56d0fd397aabe2cd60c38da9fea",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/qwen/production/evaluations/checkpoint-604/evaluation_verified.json": "d2852577bdf4263a46d9985969355e2fd41479bd99e2415fec3b973885477586",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/qwen/production/evaluations/checkpoint-1208/evaluation_verified.json": "ceed6e1cd5e357afd180c79cf32d682ab5b8725f69a5b89b33689314fe8420fd",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/qwen/production/evaluations/checkpoint-2242/evaluation_verified.json": "db2aad28350fea2ef8f83052fa0efcffa4b68f0a81ac5acf94eb764913c62bd8",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/qwen/production/evaluations/checkpoint-4484/evaluation_verified.json": "2a801e5fa93e617357f4f01febf66eaaba581cd7b2a7de79b594cb4373f37237",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/lfm/production/evaluations/checkpoint-604/evaluation_verified.json": "2a639cab5d10f82f2551f5f4be620c9ffa7a00c9d5ab137db71a7c134f679bf7",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/lfm/production/evaluations/checkpoint-1208/evaluation_verified.json": "375188be91dc63ba78bf38287e3ee72d9828994995cf3880d497973c33aec589",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/lfm/production/evaluations/checkpoint-2242/evaluation_verified.json": "2b1f1cebe1b0240e8cfb87e0371cc41fad18f594108f062ef3a135b49607754e",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/lfm/production/evaluations/checkpoint-4484/evaluation_verified.json": "4d55b2ec6c022b27371b7904e4ef5edd03032dea6af97272700e0349a081463e",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/analysis-three-runs-20260917/provenance.json": "f466ba9bba9ce34241d6b2a34f413e34c06e1b52015504ae1d5bed02846bdfea",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-cont-20260915/checkpoint-evals/step-000700/scores.json": "39c2ead8681847c6c398eb6b22ae8919aabaff3ad6b668d81b5961564139f8be",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-cont-20260915/checkpoint-evals/step-000800/scores.json": "65130786707d07f68cfa145fcd5ad7308890cb89a305b65382dfbec36ef7a150",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-cont-20260915/checkpoint-evals/step-000900/scores.json": "2276bc4d8ad85c2913b0bed921013951ec2ca968bfbbece737681ce13df9b250",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-cont-20260915/checkpoint-evals/step-001000/scores.json": "3172c293f6386c7732267fa46c9718403b3fa3462f88e9299a01139ad410c99b",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-bounded-20260915/checkpoint-evals/step-000100/scores.json": "1e4f42f54526c9b8b71156f5b1f3673529519201401bc88f88ccff805f291181",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000200/scores.json": "699dce549d1002e879c675555ac06142448b0cbeef534a0816616faf669862af",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000300/scores.json": "299e5ed3528922d9912a591f3cff0c4d85070fef4de732d37723967934bfd691",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000400/scores.json": "f8909af81669f4ec092317c5f9889ef8735754c0dcbc826da82a270d2d92dc7a",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000500/scores.json": "86d56b65edbdc2f5a3f5d54151d0888dae83ca2b81753a7a9dbc2e80ee4f6130",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000600/scores.json": "02fc5a5e84978c198dc880c143fe223507c30485563b3545cb64b2794e3e60b0",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000684/scores.json": "fb54bd52f352463e405bee8067ef24b27147bfd02d41429561f440a916f5d776",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80657/canonical_scores.json": "37eab8fe9e97fda23e9803846f965b08c3de2a6e4142363219a4467af41c6f5c",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80675/canonical_scores.json": "fa67547d19c7f4e63166fc7c1518ca15eb5e2c28ec8f1f3739445029006617ad",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80748/canonical_scores.json": "a0e0cc489e3195827d5ac035945277bfd9ca67e985a015148e5b3c94ca938b0f",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80807/canonical_scores.json": "f30bb541e207a2e8b83b2aabd05bf2e3d96eeac40c2fd8226ff1985606397a7b",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80861/canonical_scores.json": "b6df2570695c2a15ba43f185719b647dc22319eb82ca1494d56e705572e3f1a2",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80902/canonical_scores.json": "d86128c2cae4813a7ae8b99f06d1cd8ca109cefade9944c1cdbebf2b1550e1d9",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80956/canonical_scores.json": "7c60cfab333948e63bf44bd01ed4ce3f0a788f76de84c4ceda2177144e9bc9ba",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-80993/canonical_scores.json": "b689c9dd76c3e2230bfea49eea393f2d5842fe8f3630f04f59380a131497ae98",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-81034/canonical_scores.json": "996f5ea262419b9639fa8f33c1b33fef9b49959c1cbe61e62ba922c0d642985f",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-81098/canonical_scores.json": "1355a9a2ecc1ec165cf413120dacfc672e5d8d59ef2807b28bcf02322dca142b",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000100/scores.json": "08278ea43f152961c9fd3b0b8cc598a0cf5d891b658ef7f5314f95c62ade44d8",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000200/scores.json": "718d706a3b61a8a171e567e99084c30f0b4e532d55d9cbe1f38b0a0f88e9741b",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000300/scores.json": "58ccb317e9c50e09afe5211744049ccac6cf8aeb690e9021307591798733118c",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000400/scores.json": "f473d7a6595f5b461da11eeab86b0265fc0d5a903dd50a7f07c13fe591841071",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000500/scores.json": "3ea7d52077764f3e662f95eb7d2606942f5a8a5745f9527de1b08409ecf2849d",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000600/scores.json": "304f219743ea44713603e6e36f6b2ace485ea0e8caf504d5fee6509ca8081c61",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000700/scores.json": "eff27df90ecb2960693a86592246ba27ed9065b0f391c8dc339a2e14d85d6b1f",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000800/scores.json": "64bd9dd7395cf0105535abddf60f44b79af65ff60815ad6eb755cba461636845",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000900/scores.json": "d71b7033e8317d204be052663d2b121c2d32b24714bdbd796a941f4f3fec20d5",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-001000/scores.json": "c4af433eebf56b98842150a88c467711b62475177a7626f541565392dfd74ea8",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-83856/final_tito.json": "32826dc84947560b4bc84eb9d9f8a8c88dfda2595b8a7282e3146d749ca3f6ff",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-83886/final_tito.json": "eb672621a68b79fb94a0cbc3c6e24b9bc85eabeb878c1c7b8d3c70fd43403d2a",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-83944/final_tito.json": "bc78abb795daaa5eaf55a06c49a5b0ba965a03a90873aa1f985364498bd55a5c",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84030/final_tito.json": "9adb6fc187be3ef4d886d5250473ce72c56946b9a0f18a61bb4c504f9fde5699",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84047/canonical_scores.json": "5179a8acaca8b08f94a33e126f674e5af88e0b3d2d8464da99737b7ae1b7f214",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84094/canonical_scores.json": "9de4fb704e838a271babca7b41db342ac670bea67da68da73f86a52cb2e6f316",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84130/canonical_scores.json": "4e86bbaafea9f915b4e70f1c7ba92ec4bcfcdd15ed4d43d4ad7e4ff09f11b59c",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84157/canonical_scores.json": "debf06a5d66d5b17f4f76e8e8155de33e1de82ba3d58a1098b42c9baa0812a59",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84180/canonical_scores.json": "32fa66b5c41bc4d1cf19265205e4c14f4765cbeb784f10eb7bfec55cb856a115",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84206/canonical_scores.json": "13fa3d0d3c7c5c2fb51abb89a54973a8fbfed7d453de80a20be94b2ff626fa8b",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-83870/final_tito.json": "5cede7ee606d601384f2a361b523a22ccb15dcd8752dfc7bac5190c47027281a",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-83917/final_tito.json": "18903468919273f7393a2d29c09ed73cb9692ab05eae8bc22c45f0a0097c859b",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84024/canonical_scores.json": "93c3317fe979444130ba0ea99fde2349777f2d97299bba02b16e14426243945c",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84035/canonical_scores.json": "b27b42233efe81d73102c3d7d26a33bb3d40c3fe4525db65e777b4e937ae49c7",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84093/canonical_scores.json": "1b7e0624801d77ecf507e6c32c03ddcb541249fe748ea963c6a94d8d10ded2de",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84136/canonical_scores.json": "e007273cf7efae76cc918c060d6a52c04a1ebae994ae4d88a20e7798268bed75",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84169/canonical_scores.json": "cda0e149d8b90b15c4c4161494f192a323a3b5a6c8c1d17b92eaf99e41fe25e5",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84201/canonical_scores.json": "c3b644543c7fffe7c685bacf6ad262ed8f5c5959ce536ab62c1e8ee077ed04c8",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84243/canonical_scores.json": "4922e2a9acb6e9cfa177995ab0674a3f7abf3154e086624b528a414a41f78086",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84309/final_tito.json": "2dad6d554e24ffcb9ea8fac1c8ec37ffb2ffc1ebe69dd5a41c6734dc7ac7116f",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84334/canonical_scores.json": "62d1d631d7f63afdd8695a8a12cffd4b8a89c0bfc761ce98c7278f4fa98d46c4",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84380/canonical_scores.json": "e734b4723bb6439ce9192c2a24419246e3b05032f71ebf684e93d06e351fd79e",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84475/canonical_scores.json": "6c280fe5e9e77558fd0ab80ded7c4dee638417da6b9815abe2dce2c362ccfe22",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/hard500-local-evals-20260921/checkpoint-1000/eval_progress.json": "1e4674b2afbc372256c50b318824f67e8a0f74f6b1a74bbffde37dad72758d46",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/hard500-local-evals-20260921/checkpoint-600/eval_progress.json": "9b841db0bcecc0f27919c723717911bc93159bf0aa15d539ab2452ef1f0dec5e",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/hard500-local-evals-20260921/checkpoint-700/eval_progress.json": "d51aaac219765056af80472010298eda2e2d160c66ca719a3495b85f38fda531",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/hard500-local-evals-20260921/checkpoint-800/eval_progress.json": "61a834daad5de7bba82ff6abbf3771371761291f6d94303a553da891988e2ec9",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/hard500-local-evals-20260921/checkpoint-900/eval_progress.json": "aac3b3fc5673a69bd540a4dfee65beb572c80951f4528bfdf7e1c0c8a3b542ab"
+  }
+}

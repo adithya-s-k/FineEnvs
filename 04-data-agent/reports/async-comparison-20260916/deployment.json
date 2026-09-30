@@ -1,0 +1,8 @@
+{
+  "space": "HuggingEnvs/data-agent-training-comparison-trackio",
+  "public": true,
+  "hardware": "cpu-basic",
+  "artifact_commit": "46bd6f7a64c76dcc518169b1d6ebbb7b9943b257",
+  "publisher_job": "81033",
+  "verified_events": 2018
+}

@@ -1,0 +1,40 @@
+{
+  "deployment": {
+    "space": "FineEnvs/data-agent-sft-trackio",
+    "commit": "fa45c93c5b987dfc51ee9758d2bc3786e5fdd8f0",
+    "files": [
+      "README.md",
+      "app.py",
+      "requirements.txt",
+      "comparison_reads.py",
+      "sft_events.json.gz",
+      "SFT_RESULTS.md",
+      "sft_training_summary.csv",
+      "sft_training_summary.json",
+      "sft_evaluations.json"
+    ],
+    "hardware": "cpu-basic",
+    "project": "data-agent-sft-comparison"
+  },
+  "verification": {
+    "ok": true,
+    "events_verified": 12806,
+    "verification": "exact log_id/run_id/step/metrics",
+    "public": true,
+    "runs": 6,
+    "plot_rows": [
+      232,
+      590,
+      609,
+      609,
+      753,
+      753
+    ]
+  },
+  "citation": "https://huggingface.co/spaces/FineEnvs/data-agent-sft-trackio/blob/fa45c93c5b987dfc51ee9758d2bc3786e5fdd8f0/SFT_RESULTS.md",
+  "links": {
+    "overview": "https://fineenvs-data-agent-sft-trackio.hf.space/?project=data-agent-sft-comparison&run_ids=f036025d14dd1296b49ce58fe500ec3d%2Ca4cf64db18a6b31a095ebbf9ab0a6b68%2C1bb4e31576c25d10314f48dc1a762a96%2C7dd987e57d95f45535307e5635ede2b0%2C7db29f7f7bf5dc725c86f83c2761a007%2Ca568c52ea8521b301f8155bed9b43826&smoothing=0&metric_filter=%5E%28eval_observed%2F%28pass_at_1%7Ctool_call_savings_pct%29%7Ctrain_sft%2Floss_mean50%7Ceval_coverage%2Fgraded_cells%29%24",
+    "training": "https://fineenvs-data-agent-sft-trackio.hf.space/?project=data-agent-sft-comparison&run_ids=f036025d14dd1296b49ce58fe500ec3d%2Ca4cf64db18a6b31a095ebbf9ab0a6b68%2C1bb4e31576c25d10314f48dc1a762a96%2C7dd987e57d95f45535307e5635ede2b0%2C7db29f7f7bf5dc725c86f83c2761a007%2Ca568c52ea8521b301f8155bed9b43826&smoothing=0&metric_filter=%5E%28train_sft%7Ctrain_summary%29%2F",
+    "evaluations": "https://fineenvs-data-agent-sft-trackio.hf.space/?project=data-agent-sft-comparison&run_ids=f036025d14dd1296b49ce58fe500ec3d%2Ca4cf64db18a6b31a095ebbf9ab0a6b68%2C1bb4e31576c25d10314f48dc1a762a96%2C7dd987e57d95f45535307e5635ede2b0%2C7db29f7f7bf5dc725c86f83c2761a007%2Ca568c52ea8521b301f8155bed9b43826&smoothing=0&metric_filter=%5E%28eval_observed%7Ceval_coverage%7Ceval_usage%7Ceval_efficiency%29%2F"
+  }
+}

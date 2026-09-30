@@ -1,0 +1,26 @@
+{
+  "created_utc": "2026-09-30T05:31:26.403715+00:00",
+  "comparison_snapshot": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/20260928T193636Z",
+  "efficiency_snapshot": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-efficiency-20260928T193640Z",
+  "verified_score_sources": 75,
+  "files": {
+    "training_summary.json": "b2fc95664142009a6a04b95235c113d4d6f4945bb10c5a52fd63baebe291ea71",
+    "sft_evaluations.json": "b6bb44f7d9b7d03ca2e917c2baf9726be37d4fcfa8475d80923e58b5f04e7a2b",
+    "sft_training_summary.json": "413556332085de1d095c17b75ae1c9593872be745176aa114702b389b1aed057",
+    "trackio_rl_preservation_verification.json": "fe94c79c39f56abc952e1f724503d957f595566fde491b16d9b3eef3f7e2398d",
+    "results.json": "5378583500b71e487e8f65955a7c1ed758fe7e498d9a4a56b1284043a635604c",
+    "SFT_RESULTS.md": "eb12f2f40c4528f3816748f899e09840ae77a657bc6b7e39911d7c0619b8c94f",
+    "tool_efficiency.json": "dace5348717cae0741b4e2dcab83caf8d0d3bc605a489972b6f26dbed84ee2f2",
+    "tool_efficiency.csv": "04fc8e638f87ff108f621a203488ceea649142671e80b0e7b3c819a416eebf28",
+    "build_handoff.py": "8a2af76399a0f5875f9ec90a420da204b0f9f54456f0ae106e1d291e95cf7600",
+    "trackio_separate_space_publication.json": "e95c10671b5ac9eed9bf3ff8ea3821194b91e2a587b483e0dff46796d9b67cd8",
+    "trackio_public_ui_verification.json": "e6f8ed00de4f05d74eb0421cb7559dee536734343fa3a2678ac9ec14acbecf8b",
+    "all_checkpoints.csv": "b6ad0a527dd9bf58bb76129bd3f20ad26701395e0524590f27e05caf59c3c70c",
+    "HANDOFF.html": "3ce3c102cfe07fd016871efae52ed1c16871589c0681ee946fe8e92c549fbbaf",
+    "TRACKIO_PUBLICATION.md": "9e40629d874adbcb0ba1f9b52516504027220adfae055008dca484edc4a9d688",
+    "trackio_publication.json": "c1899285ad599e2c9967da3a4a21bcc664203b4a84330b32170b10c4f202cc8a",
+    "HANDOFF.md": "74c85efc421200a65e6e2b394adb42846f15b1a2b3e96ca19bc8619046aceaec",
+    "TRACKIO_PUBLICATION_ORIGINAL.md": "4c468f5d836035dba47487631d0f4fdd16579c74534bfa2c1faf18041895f24f",
+    "sft_training_summary.csv": "4b4f507a17e6c0983029ac20e7271268097a7dd1fac7262074605dd25e225165"
+  }
+}

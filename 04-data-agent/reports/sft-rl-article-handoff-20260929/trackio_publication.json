@@ -1,0 +1,28 @@
+{
+  "publication": {
+    "space": "FineEnvs/data-agent-training-comparison-trackio",
+    "commit": "525055784fdd7b8a4aeede4255ee7a8119bedb31",
+    "files": [
+      "README.md",
+      "SFT_RESULTS.md",
+      "sft_training_summary.csv",
+      "sft_training_summary.json",
+      "sft_evaluations.json",
+      "app.py"
+    ],
+    "links": {
+      "overview": "https://fineenvs-data-agent-training-comparison-trackio.hf.space/?project=data-agent-rl-comparison&run_ids=7e03598b74c5944b42002d1759e0184c%2Cd189e77a4f134099c308ed223b840405%2C2419d3a7bf21850a46903d5df20f3d59%2C60cde9f411f365b5c634ee3de1351505%2Ca9a405588dd8646aea613c02bf479c8b%2C736a2514f326ea6119699671e61bb0ef&smoothing=0&metric_filter=%5E%28eval_observed%2F%28pass_at_1%7Ctool_call_savings_pct%29%7Ctrain_sft%2Floss_mean50%7Ceval_coverage%2Fgraded_cells%29%24",
+      "training": "https://fineenvs-data-agent-training-comparison-trackio.hf.space/?project=data-agent-rl-comparison&run_ids=7e03598b74c5944b42002d1759e0184c%2Cd189e77a4f134099c308ed223b840405%2C2419d3a7bf21850a46903d5df20f3d59%2C60cde9f411f365b5c634ee3de1351505%2Ca9a405588dd8646aea613c02bf479c8b%2C736a2514f326ea6119699671e61bb0ef&smoothing=0&metric_filter=%5E%28train_sft%7Ctrain_summary%29%2F",
+      "evaluations": "https://fineenvs-data-agent-training-comparison-trackio.hf.space/?project=data-agent-rl-comparison&run_ids=7e03598b74c5944b42002d1759e0184c%2Cd189e77a4f134099c308ed223b840405%2C2419d3a7bf21850a46903d5df20f3d59%2C60cde9f411f365b5c634ee3de1351505%2Ca9a405588dd8646aea613c02bf479c8b%2C736a2514f326ea6119699671e61bb0ef&smoothing=0&metric_filter=%5E%28eval_observed%7Ceval_coverage%7Ceval_usage%7Ceval_efficiency%29%2F"
+    }
+  },
+  "verification": {
+    "ok": true,
+    "events_verified": 12806,
+    "verification": "exact log_id/run_id/step/metrics",
+    "checked_at": "2026-09-29T11:36:24.266400+00:00",
+    "old_events_preserved": 11643,
+    "total_events": 24449
+  },
+  "citation": "https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio/blob/525055784fdd7b8a4aeede4255ee7a8119bedb31/SFT_RESULTS.md"
+}

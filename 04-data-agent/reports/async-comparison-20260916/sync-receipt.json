@@ -1,0 +1,8 @@
+{
+  "ok": true,
+  "events_verified": 3034,
+  "verification": "exact log_id/run_id/step/metrics",
+  "configurations_verified": 3,
+  "checked_at": "2026-09-17T10:25:54.731685+00:00",
+  "space": "HuggingEnvs/data-agent-training-comparison-trackio"
+}

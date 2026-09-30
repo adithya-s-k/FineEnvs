@@ -1,0 +1,7 @@
+comparison,delta_pp,ci95_low_pp,ci95_high_pp,lost_correct_cells,gained_correct_cells
+Harbor multi-harness: baseline to selected peak,22.400000000000002,18.6,26.3,27,251
+Harbor multi-harness: selected peak to final,-10.7,-14.099999999999998,-7.3999999999999995,174,67
+Native OpenCode: baseline to selected peak,13.900000000000002,11.200000000000001,16.8,47,186
+Harbor OpenCode-only: baseline to selected peak,24.9,21.099999999999998,28.799999999999997,23,272
+Harbor OpenCode-only: selected peak to final,-13.100000000000001,-16.6,-9.700000000000001,190,59
+Multi-harness 500 to OpenCode-only 700,2.5,-0.6,5.7,94,119

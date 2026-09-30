@@ -1,0 +1,54 @@
+{
+  "checked_at": "2026-09-17T10:25:54.741115+00:00",
+  "ok": true,
+  "events": 3034,
+  "training_steps": {
+    "Harbor multi-harness": 1000,
+    "Native OpenCode": 1000,
+    "Harbor OpenCode-only": 1000
+  },
+  "evaluation_steps": {
+    "Harbor multi-harness": [
+      0,
+      100,
+      200,
+      300,
+      400,
+      500,
+      600,
+      684,
+      700,
+      800,
+      900,
+      1000
+    ],
+    "Native OpenCode": [
+      0,
+      100,
+      200,
+      300,
+      400,
+      500,
+      600,
+      700,
+      800,
+      900,
+      1000
+    ],
+    "Harbor OpenCode-only": [
+      0,
+      100,
+      200,
+      300,
+      400,
+      500,
+      600,
+      700,
+      800,
+      900,
+      1000
+    ]
+  },
+  "pending": [],
+  "online": true
+}

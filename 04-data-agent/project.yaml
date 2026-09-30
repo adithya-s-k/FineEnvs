@@ -4,7 +4,7 @@ name: data-agent
 title: "Data Agent"
 tagline: "Give an agent a question and a directory of real tables, and train it on what it actually did — the engine's own token ids, not a re-rendered guess at them."
 order: 4
-status: wip   # environments landing; training runs are local and not yet published here
+status: wip   # completed run evidence is preserved; current compatibility checks are documented locally
 
 hub:
   org: HuggingEnvs

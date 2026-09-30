@@ -1,0 +1,1643 @@
+{
+  "snapshot_utc": "2026-09-28T19:36:40.023969+00:00",
+  "models": {
+    "qwen": [
+      {
+        "model": "qwen",
+        "family": "Baseline",
+        "label": "Pretrained baseline",
+        "step": 0,
+        "epoch": 0,
+        "score": 0.146,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json",
+        "harnesses": {
+          "opencode": 0.108,
+          "claude-code": 0.168,
+          "codex": 0.164,
+          "mini-swe-agent": 0.144
+        },
+        "efficiency": {
+          "all": {
+            "matched_successes": 146,
+            "baseline_calls": 1457,
+            "checkpoint_calls": 1457,
+            "baseline_mean": 9.979452054794521,
+            "checkpoint_mean": 9.979452054794521,
+            "savings_pct": 0.0
+          },
+          "opencode": {
+            "matched_successes": 27,
+            "baseline_calls": 213,
+            "checkpoint_calls": 213,
+            "baseline_mean": 7.888888888888889,
+            "checkpoint_mean": 7.888888888888889,
+            "savings_pct": 0.0
+          },
+          "claude-code": {
+            "matched_successes": 42,
+            "baseline_calls": 327,
+            "checkpoint_calls": 327,
+            "baseline_mean": 7.785714285714286,
+            "checkpoint_mean": 7.785714285714286,
+            "savings_pct": 0.0
+          },
+          "codex": {
+            "matched_successes": 41,
+            "baseline_calls": 465,
+            "checkpoint_calls": 465,
+            "baseline_mean": 11.341463414634147,
+            "checkpoint_mean": 11.341463414634147,
+            "savings_pct": 0.0
+          },
+          "mini-swe-agent": {
+            "matched_successes": 36,
+            "baseline_calls": 452,
+            "checkpoint_calls": 452,
+            "baseline_mean": 12.555555555555555,
+            "checkpoint_mean": 12.555555555555555,
+            "savings_pct": 0.0
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json"
+      },
+      {
+        "model": "qwen",
+        "family": "OpenCode SFT \u00b7 801 rollouts",
+        "step": 604,
+        "epoch": 1,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/qwen/production/evaluations/checkpoint-604/evaluation_verified.json",
+        "score": 0.284,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.3,
+          "claude-code": 0.276,
+          "codex": 0.312,
+          "mini-swe-agent": 0.248
+        },
+        "difficulty": {
+          "easy": 0.5984848484848485,
+          "medium": 0.3093220338983051,
+          "hard": 0.14898989898989898
+        },
+        "label": "OpenCode SFT \u00b7 801 rollouts | E1",
+        "efficiency": {
+          "all": {
+            "matched_successes": 94,
+            "baseline_calls": 914,
+            "checkpoint_calls": 602,
+            "baseline_mean": 9.72340425531915,
+            "checkpoint_mean": 6.404255319148936,
+            "savings_pct": 34.135667396061265
+          },
+          "opencode": {
+            "matched_successes": 16,
+            "baseline_calls": 126,
+            "checkpoint_calls": 77,
+            "baseline_mean": 7.875,
+            "checkpoint_mean": 4.8125,
+            "savings_pct": 38.888888888888886
+          },
+          "claude-code": {
+            "matched_successes": 22,
+            "baseline_calls": 151,
+            "checkpoint_calls": 113,
+            "baseline_mean": 6.863636363636363,
+            "checkpoint_mean": 5.136363636363637,
+            "savings_pct": 25.16556291390728
+          },
+          "codex": {
+            "matched_successes": 35,
+            "baseline_calls": 391,
+            "checkpoint_calls": 248,
+            "baseline_mean": 11.17142857142857,
+            "checkpoint_mean": 7.085714285714285,
+            "savings_pct": 36.57289002557545
+          },
+          "mini-swe-agent": {
+            "matched_successes": 21,
+            "baseline_calls": 246,
+            "checkpoint_calls": 164,
+            "baseline_mean": 11.714285714285714,
+            "checkpoint_mean": 7.809523809523809,
+            "savings_pct": 33.333333333333336
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json"
+      },
+      {
+        "model": "qwen",
+        "family": "OpenCode SFT \u00b7 801 rollouts",
+        "step": 1208,
+        "epoch": 2,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/qwen/production/evaluations/checkpoint-1208/evaluation_verified.json",
+        "score": 0.265,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.26,
+          "claude-code": 0.304,
+          "codex": 0.272,
+          "mini-swe-agent": 0.224
+        },
+        "difficulty": {
+          "easy": 0.6363636363636364,
+          "medium": 0.2966101694915254,
+          "hard": 0.10353535353535354
+        },
+        "label": "OpenCode SFT \u00b7 801 rollouts | E2",
+        "efficiency": {
+          "all": {
+            "matched_successes": 93,
+            "baseline_calls": 925,
+            "checkpoint_calls": 648,
+            "baseline_mean": 9.946236559139784,
+            "checkpoint_mean": 6.967741935483871,
+            "savings_pct": 29.94594594594595
+          },
+          "opencode": {
+            "matched_successes": 14,
+            "baseline_calls": 115,
+            "checkpoint_calls": 58,
+            "baseline_mean": 8.214285714285714,
+            "checkpoint_mean": 4.142857142857143,
+            "savings_pct": 49.56521739130435
+          },
+          "claude-code": {
+            "matched_successes": 29,
+            "baseline_calls": 213,
+            "checkpoint_calls": 178,
+            "baseline_mean": 7.344827586206897,
+            "checkpoint_mean": 6.137931034482759,
+            "savings_pct": 16.43192488262911
+          },
+          "codex": {
+            "matched_successes": 28,
+            "baseline_calls": 320,
+            "checkpoint_calls": 179,
+            "baseline_mean": 11.428571428571429,
+            "checkpoint_mean": 6.392857142857143,
+            "savings_pct": 44.06250000000001
+          },
+          "mini-swe-agent": {
+            "matched_successes": 22,
+            "baseline_calls": 277,
+            "checkpoint_calls": 233,
+            "baseline_mean": 12.590909090909092,
+            "checkpoint_mean": 10.590909090909092,
+            "savings_pct": 15.884476534296033
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json"
+      },
+      {
+        "model": "qwen",
+        "family": "Multi-harness SFT \u00b7 3,189 rollouts",
+        "step": 2242,
+        "epoch": 1,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/qwen/production/evaluations/checkpoint-2242/evaluation_verified.json",
+        "score": 0.309,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.296,
+          "claude-code": 0.336,
+          "codex": 0.328,
+          "mini-swe-agent": 0.276
+        },
+        "difficulty": {
+          "easy": 0.7121212121212122,
+          "medium": 0.336864406779661,
+          "hard": 0.1414141414141414
+        },
+        "label": "Multi-harness SFT \u00b7 3,189 rollouts | E1",
+        "efficiency": {
+          "all": {
+            "matched_successes": 107,
+            "baseline_calls": 1052,
+            "checkpoint_calls": 494,
+            "baseline_mean": 9.83177570093458,
+            "checkpoint_mean": 4.616822429906542,
+            "savings_pct": 53.041825095057035
+          },
+          "opencode": {
+            "matched_successes": 19,
+            "baseline_calls": 146,
+            "checkpoint_calls": 84,
+            "baseline_mean": 7.684210526315789,
+            "checkpoint_mean": 4.421052631578948,
+            "savings_pct": 42.465753424657535
+          },
+          "claude-code": {
+            "matched_successes": 32,
+            "baseline_calls": 246,
+            "checkpoint_calls": 159,
+            "baseline_mean": 7.6875,
+            "checkpoint_mean": 4.96875,
+            "savings_pct": 35.36585365853659
+          },
+          "codex": {
+            "matched_successes": 34,
+            "baseline_calls": 388,
+            "checkpoint_calls": 152,
+            "baseline_mean": 11.411764705882353,
+            "checkpoint_mean": 4.470588235294118,
+            "savings_pct": 60.82474226804124
+          },
+          "mini-swe-agent": {
+            "matched_successes": 22,
+            "baseline_calls": 272,
+            "checkpoint_calls": 99,
+            "baseline_mean": 12.363636363636363,
+            "checkpoint_mean": 4.5,
+            "savings_pct": 63.60294117647059
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json"
+      },
+      {
+        "model": "qwen",
+        "family": "Multi-harness SFT \u00b7 3,189 rollouts",
+        "step": 4484,
+        "epoch": 2,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/qwen/production/evaluations/checkpoint-4484/evaluation_verified.json",
+        "score": 0.327,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.296,
+          "claude-code": 0.364,
+          "codex": 0.336,
+          "mini-swe-agent": 0.312
+        },
+        "difficulty": {
+          "easy": 0.7348484848484849,
+          "medium": 0.3411016949152542,
+          "hard": 0.17424242424242425
+        },
+        "label": "Multi-harness SFT \u00b7 3,189 rollouts | E2",
+        "efficiency": {
+          "all": {
+            "matched_successes": 108,
+            "baseline_calls": 1053,
+            "checkpoint_calls": 486,
+            "baseline_mean": 9.75,
+            "checkpoint_mean": 4.5,
+            "savings_pct": 53.84615384615385
+          },
+          "opencode": {
+            "matched_successes": 15,
+            "baseline_calls": 114,
+            "checkpoint_calls": 65,
+            "baseline_mean": 7.6,
+            "checkpoint_mean": 4.333333333333333,
+            "savings_pct": 42.98245614035088
+          },
+          "claude-code": {
+            "matched_successes": 34,
+            "baseline_calls": 258,
+            "checkpoint_calls": 150,
+            "baseline_mean": 7.588235294117647,
+            "checkpoint_mean": 4.411764705882353,
+            "savings_pct": 41.860465116279066
+          },
+          "codex": {
+            "matched_successes": 33,
+            "baseline_calls": 355,
+            "checkpoint_calls": 134,
+            "baseline_mean": 10.757575757575758,
+            "checkpoint_mean": 4.0606060606060606,
+            "savings_pct": 62.25352112676057
+          },
+          "mini-swe-agent": {
+            "matched_successes": 26,
+            "baseline_calls": 326,
+            "checkpoint_calls": 137,
+            "baseline_mean": 12.538461538461538,
+            "checkpoint_mean": 5.269230769230769,
+            "savings_pct": 57.97546012269939
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json"
+      },
+      {
+        "model": "qwen",
+        "family": "Harbor OpenCode RL",
+        "step": 700,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000700/scores.json",
+        "score": 0.395,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.4,
+          "claude-code": 0.464,
+          "codex": 0.372,
+          "mini-swe-agent": 0.344
+        },
+        "difficulty": {
+          "easy": 0.7121212121212122,
+          "medium": 0.4449152542372881,
+          "hard": 0.2297979797979798
+        },
+        "label": "Harbor OpenCode RL | best, 700",
+        "efficiency": {
+          "all": {
+            "matched_successes": 123,
+            "baseline_calls": 1182,
+            "checkpoint_calls": 1527,
+            "baseline_mean": 9.609756097560975,
+            "checkpoint_mean": 12.414634146341463,
+            "savings_pct": -29.187817258883243
+          },
+          "opencode": {
+            "matched_successes": 21,
+            "baseline_calls": 148,
+            "checkpoint_calls": 346,
+            "baseline_mean": 7.0476190476190474,
+            "checkpoint_mean": 16.476190476190474,
+            "savings_pct": -133.78378378378378
+          },
+          "claude-code": {
+            "matched_successes": 38,
+            "baseline_calls": 292,
+            "checkpoint_calls": 390,
+            "baseline_mean": 7.684210526315789,
+            "checkpoint_mean": 10.263157894736842,
+            "savings_pct": -33.56164383561644
+          },
+          "codex": {
+            "matched_successes": 36,
+            "baseline_calls": 396,
+            "checkpoint_calls": 453,
+            "baseline_mean": 11.0,
+            "checkpoint_mean": 12.583333333333334,
+            "savings_pct": -14.393939393939403
+          },
+          "mini-swe-agent": {
+            "matched_successes": 28,
+            "baseline_calls": 346,
+            "checkpoint_calls": 338,
+            "baseline_mean": 12.357142857142858,
+            "checkpoint_mean": 12.071428571428571,
+            "savings_pct": 2.3121387283236983
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json"
+      },
+      {
+        "model": "qwen",
+        "family": "Harbor OpenCode RL",
+        "step": 1000,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-001000/scores.json",
+        "score": 0.264,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.22,
+          "claude-code": 0.308,
+          "codex": 0.324,
+          "mini-swe-agent": 0.204
+        },
+        "difficulty": {
+          "easy": 0.5909090909090909,
+          "medium": 0.3029661016949153,
+          "hard": 0.10858585858585859
+        },
+        "label": "Harbor OpenCode RL | final, 1000",
+        "efficiency": {
+          "all": {
+            "matched_successes": 91,
+            "baseline_calls": 877,
+            "checkpoint_calls": 1325,
+            "baseline_mean": 9.637362637362637,
+            "checkpoint_mean": 14.56043956043956,
+            "savings_pct": -51.08323831242873
+          },
+          "opencode": {
+            "matched_successes": 13,
+            "baseline_calls": 84,
+            "checkpoint_calls": 255,
+            "baseline_mean": 6.461538461538462,
+            "checkpoint_mean": 19.615384615384617,
+            "savings_pct": -203.57142857142856
+          },
+          "claude-code": {
+            "matched_successes": 29,
+            "baseline_calls": 229,
+            "checkpoint_calls": 345,
+            "baseline_mean": 7.896551724137931,
+            "checkpoint_mean": 11.89655172413793,
+            "savings_pct": -50.655021834061145
+          },
+          "codex": {
+            "matched_successes": 27,
+            "baseline_calls": 305,
+            "checkpoint_calls": 370,
+            "baseline_mean": 11.296296296296296,
+            "checkpoint_mean": 13.703703703703704,
+            "savings_pct": -21.311475409836067
+          },
+          "mini-swe-agent": {
+            "matched_successes": 22,
+            "baseline_calls": 259,
+            "checkpoint_calls": 355,
+            "baseline_mean": 11.772727272727273,
+            "checkpoint_mean": 16.136363636363637,
+            "savings_pct": -37.065637065637056
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json"
+      },
+      {
+        "model": "qwen",
+        "family": "Harbor multi-harness RL",
+        "step": 500,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000500/scores.json",
+        "score": 0.37000000000000005,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.328,
+          "claude-code": 0.448,
+          "codex": 0.392,
+          "mini-swe-agent": 0.312
+        },
+        "difficulty": {
+          "easy": 0.7272727272727273,
+          "medium": 0.4427966101694915,
+          "hard": 0.16414141414141414
+        },
+        "label": "Harbor multi-harness RL | best, 500",
+        "efficiency": {
+          "all": {
+            "matched_successes": 119,
+            "baseline_calls": 1140,
+            "checkpoint_calls": 1773,
+            "baseline_mean": 9.579831932773109,
+            "checkpoint_mean": 14.899159663865547,
+            "savings_pct": -55.52631578947369
+          },
+          "opencode": {
+            "matched_successes": 17,
+            "baseline_calls": 128,
+            "checkpoint_calls": 272,
+            "baseline_mean": 7.529411764705882,
+            "checkpoint_mean": 16.0,
+            "savings_pct": -112.5
+          },
+          "claude-code": {
+            "matched_successes": 38,
+            "baseline_calls": 279,
+            "checkpoint_calls": 633,
+            "baseline_mean": 7.342105263157895,
+            "checkpoint_mean": 16.657894736842106,
+            "savings_pct": -126.88172043010755
+          },
+          "codex": {
+            "matched_successes": 37,
+            "baseline_calls": 401,
+            "checkpoint_calls": 610,
+            "baseline_mean": 10.837837837837839,
+            "checkpoint_mean": 16.486486486486488,
+            "savings_pct": -52.11970074812968
+          },
+          "mini-swe-agent": {
+            "matched_successes": 27,
+            "baseline_calls": 332,
+            "checkpoint_calls": 258,
+            "baseline_mean": 12.296296296296296,
+            "checkpoint_mean": 9.555555555555555,
+            "savings_pct": 22.289156626506024
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json"
+      },
+      {
+        "model": "qwen",
+        "family": "Harbor multi-harness RL",
+        "step": 1000,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-cont-20260915/checkpoint-evals/step-001000/scores.json",
+        "score": 0.263,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.056,
+          "claude-code": 0.388,
+          "codex": 0.248,
+          "mini-swe-agent": 0.36
+        },
+        "difficulty": {
+          "easy": 0.42424242424242425,
+          "medium": 0.326271186440678,
+          "hard": 0.13383838383838384
+        },
+        "label": "Harbor multi-harness RL | final, 1000",
+        "efficiency": {
+          "all": {
+            "matched_successes": 80,
+            "baseline_calls": 812,
+            "checkpoint_calls": 876,
+            "baseline_mean": 10.15,
+            "checkpoint_mean": 10.95,
+            "savings_pct": -7.881773399014769
+          },
+          "opencode": {
+            "matched_successes": 1,
+            "baseline_calls": 6,
+            "checkpoint_calls": 16,
+            "baseline_mean": 6.0,
+            "checkpoint_mean": 16.0,
+            "savings_pct": -166.66666666666666
+          },
+          "claude-code": {
+            "matched_successes": 34,
+            "baseline_calls": 254,
+            "checkpoint_calls": 410,
+            "baseline_mean": 7.470588235294118,
+            "checkpoint_mean": 12.058823529411764,
+            "savings_pct": -61.417322834645674
+          },
+          "codex": {
+            "matched_successes": 22,
+            "baseline_calls": 258,
+            "checkpoint_calls": 284,
+            "baseline_mean": 11.727272727272727,
+            "checkpoint_mean": 12.909090909090908,
+            "savings_pct": -10.077519379844958
+          },
+          "mini-swe-agent": {
+            "matched_successes": 23,
+            "baseline_calls": 294,
+            "checkpoint_calls": 166,
+            "baseline_mean": 12.782608695652174,
+            "checkpoint_mean": 7.217391304347826,
+            "savings_pct": 43.5374149659864
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json"
+      },
+      {
+        "model": "qwen",
+        "family": "Native OpenCode RL",
+        "step": 1000,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-81098/canonical_scores.json",
+        "score": 0.298,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.204,
+          "claude-code": 0.332,
+          "codex": 0.296,
+          "mini-swe-agent": 0.36
+        },
+        "difficulty": {
+          "easy": 0.5984848484848485,
+          "medium": 0.3580508474576271,
+          "hard": 0.12626262626262627
+        },
+        "label": "Native OpenCode RL | best = final, 1000",
+        "efficiency": {
+          "all": {
+            "matched_successes": 112,
+            "baseline_calls": 1132,
+            "checkpoint_calls": 947,
+            "baseline_mean": 10.107142857142858,
+            "checkpoint_mean": 8.455357142857142,
+            "savings_pct": 16.34275618374559
+          },
+          "opencode": {
+            "matched_successes": 22,
+            "baseline_calls": 158,
+            "checkpoint_calls": 111,
+            "baseline_mean": 7.181818181818182,
+            "checkpoint_mean": 5.045454545454546,
+            "savings_pct": 29.746835443037977
+          },
+          "claude-code": {
+            "matched_successes": 30,
+            "baseline_calls": 279,
+            "checkpoint_calls": 192,
+            "baseline_mean": 9.3,
+            "checkpoint_mean": 6.4,
+            "savings_pct": 31.182795698924725
+          },
+          "codex": {
+            "matched_successes": 24,
+            "baseline_calls": 257,
+            "checkpoint_calls": 280,
+            "baseline_mean": 10.708333333333334,
+            "checkpoint_mean": 11.666666666666666,
+            "savings_pct": -8.94941634241244
+          },
+          "mini-swe-agent": {
+            "matched_successes": 36,
+            "baseline_calls": 438,
+            "checkpoint_calls": 364,
+            "baseline_mean": 12.166666666666666,
+            "checkpoint_mean": 10.11111111111111,
+            "savings_pct": 16.894977168949776
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/20260915/blackbox/canonical_scores.json"
+      },
+      {
+        "model": "qwen",
+        "family": "Hard-task RL continuation",
+        "step": 1000,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/hard500-local-evals-20260921/checkpoint-1000/eval_progress.json",
+        "score": 0.2597402597402597,
+        "graded": 924,
+        "complete": false,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.1729957805907173,
+          "claude-code": 0.4,
+          "codex": 0.38866396761133604,
+          "mini-swe-agent": 0.09583333333333334
+        },
+        "difficulty": {
+          "easy": 0.49586776859504134,
+          "medium": 0.29128440366972475,
+          "hard": 0.1444141689373297
+        },
+        "label": "Hard-task RL continuation | 1000",
+        "efficiency": {
+          "all": {
+            "matched_successes": 78,
+            "baseline_calls": 737,
+            "checkpoint_calls": 1225,
+            "baseline_mean": 9.448717948717949,
+            "checkpoint_mean": 15.705128205128204,
+            "savings_pct": -66.2143826322931
+          },
+          "opencode": {
+            "matched_successes": 9,
+            "baseline_calls": 66,
+            "checkpoint_calls": 141,
+            "baseline_mean": 7.333333333333333,
+            "checkpoint_mean": 15.666666666666666,
+            "savings_pct": -113.63636363636363
+          },
+          "claude-code": {
+            "matched_successes": 27,
+            "baseline_calls": 193,
+            "checkpoint_calls": 432,
+            "baseline_mean": 7.148148148148148,
+            "checkpoint_mean": 16.0,
+            "savings_pct": -123.83419689119171
+          },
+          "codex": {
+            "matched_successes": 35,
+            "baseline_calls": 386,
+            "checkpoint_calls": 575,
+            "baseline_mean": 11.028571428571428,
+            "checkpoint_mean": 16.428571428571427,
+            "savings_pct": -48.96373056994818
+          },
+          "mini-swe-agent": {
+            "matched_successes": 7,
+            "baseline_calls": 92,
+            "checkpoint_calls": 77,
+            "baseline_mean": 13.142857142857142,
+            "checkpoint_mean": 11.0,
+            "savings_pct": 16.30434782608695
+          }
+        },
+        "native_tool_coverage": 924,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json"
+      }
+    ],
+    "lfm": [
+      {
+        "model": "lfm",
+        "family": "Baseline",
+        "label": "Pretrained baseline",
+        "step": 0,
+        "epoch": 0,
+        "score": 0.4218436873747495,
+        "graded": 998,
+        "complete": false,
+        "overlap": false,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json",
+        "harnesses": {
+          "claude-code": 0.332,
+          "codex": 0.4,
+          "mini-swe-agent": 0.6209677419354839,
+          "opencode": 0.336
+        },
+        "efficiency": {
+          "all": {
+            "matched_successes": 421,
+            "baseline_calls": 3233,
+            "checkpoint_calls": 3233,
+            "baseline_mean": 7.679334916864608,
+            "checkpoint_mean": 7.679334916864608,
+            "savings_pct": 0.0
+          },
+          "opencode": {
+            "matched_successes": 84,
+            "baseline_calls": 503,
+            "checkpoint_calls": 503,
+            "baseline_mean": 5.988095238095238,
+            "checkpoint_mean": 5.988095238095238,
+            "savings_pct": 0.0
+          },
+          "claude-code": {
+            "matched_successes": 83,
+            "baseline_calls": 617,
+            "checkpoint_calls": 617,
+            "baseline_mean": 7.433734939759036,
+            "checkpoint_mean": 7.433734939759036,
+            "savings_pct": 0.0
+          },
+          "codex": {
+            "matched_successes": 100,
+            "baseline_calls": 827,
+            "checkpoint_calls": 827,
+            "baseline_mean": 8.27,
+            "checkpoint_mean": 8.27,
+            "savings_pct": 0.0
+          },
+          "mini-swe-agent": {
+            "matched_successes": 154,
+            "baseline_calls": 1286,
+            "checkpoint_calls": 1286,
+            "baseline_mean": 8.35064935064935,
+            "checkpoint_mean": 8.35064935064935,
+            "savings_pct": 0.0
+          }
+        },
+        "native_tool_coverage": 998,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json"
+      },
+      {
+        "model": "lfm",
+        "family": "Bash SFT \u00b7 907 tasks",
+        "step": 114,
+        "epoch": 1,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-20260927/production/evaluations/checkpoint-114/eval_progress.json",
+        "score": 0.4174174174174174,
+        "graded": 999,
+        "complete": false,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.352,
+          "claude-code": 0.26104417670682734,
+          "codex": 0.444,
+          "mini-swe-agent": 0.612
+        },
+        "difficulty": {
+          "easy": 0.6590909090909091,
+          "medium": 0.4639830508474576,
+          "hard": 0.2810126582278481
+        },
+        "label": "Bash SFT \u00b7 907 tasks | E1",
+        "efficiency": {
+          "all": {
+            "matched_successes": 289,
+            "baseline_calls": 2209,
+            "checkpoint_calls": 2262,
+            "baseline_mean": 7.643598615916955,
+            "checkpoint_mean": 7.826989619377162,
+            "savings_pct": -2.3992756903576273
+          },
+          "opencode": {
+            "matched_successes": 45,
+            "baseline_calls": 284,
+            "checkpoint_calls": 279,
+            "baseline_mean": 6.311111111111111,
+            "checkpoint_mean": 6.2,
+            "savings_pct": 1.7605633802816878
+          },
+          "claude-code": {
+            "matched_successes": 41,
+            "baseline_calls": 278,
+            "checkpoint_calls": 360,
+            "baseline_mean": 6.780487804878049,
+            "checkpoint_mean": 8.78048780487805,
+            "savings_pct": -29.496402877697836
+          },
+          "codex": {
+            "matched_successes": 70,
+            "baseline_calls": 568,
+            "checkpoint_calls": 504,
+            "baseline_mean": 8.114285714285714,
+            "checkpoint_mean": 7.2,
+            "savings_pct": 11.267605633802813
+          },
+          "mini-swe-agent": {
+            "matched_successes": 133,
+            "baseline_calls": 1079,
+            "checkpoint_calls": 1119,
+            "baseline_mean": 8.112781954887218,
+            "checkpoint_mean": 8.413533834586467,
+            "savings_pct": -3.707136237256714
+          }
+        },
+        "native_tool_coverage": 999,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json"
+      },
+      {
+        "model": "lfm",
+        "family": "Bash SFT \u00b7 907 tasks",
+        "step": 228,
+        "epoch": 2,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-20260927/production/evaluations/checkpoint-228/eval_progress.json",
+        "score": 0.46588235294117647,
+        "graded": 850,
+        "complete": false,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.39351851851851855,
+          "claude-code": 0.3088235294117647,
+          "codex": 0.47393364928909953,
+          "mini-swe-agent": 0.6757990867579908
+        },
+        "difficulty": {
+          "easy": 0.6984126984126984,
+          "medium": 0.5059952038369304,
+          "hard": 0.31596091205211724
+        },
+        "label": "Bash SFT \u00b7 907 tasks | E2",
+        "efficiency": {
+          "all": {
+            "matched_successes": 282,
+            "baseline_calls": 2111,
+            "checkpoint_calls": 2139,
+            "baseline_mean": 7.48581560283688,
+            "checkpoint_mean": 7.585106382978723,
+            "savings_pct": -1.3263855992420748
+          },
+          "opencode": {
+            "matched_successes": 46,
+            "baseline_calls": 285,
+            "checkpoint_calls": 315,
+            "baseline_mean": 6.195652173913044,
+            "checkpoint_mean": 6.8478260869565215,
+            "savings_pct": -10.526315789473696
+          },
+          "claude-code": {
+            "matched_successes": 43,
+            "baseline_calls": 276,
+            "checkpoint_calls": 324,
+            "baseline_mean": 6.4186046511627906,
+            "checkpoint_mean": 7.534883720930233,
+            "savings_pct": -17.391304347826097
+          },
+          "codex": {
+            "matched_successes": 66,
+            "baseline_calls": 541,
+            "checkpoint_calls": 476,
+            "baseline_mean": 8.196969696969697,
+            "checkpoint_mean": 7.212121212121212,
+            "savings_pct": 12.014787430683915
+          },
+          "mini-swe-agent": {
+            "matched_successes": 127,
+            "baseline_calls": 1009,
+            "checkpoint_calls": 1024,
+            "baseline_mean": 7.94488188976378,
+            "checkpoint_mean": 8.062992125984252,
+            "savings_pct": -1.4866204162537144
+          }
+        },
+        "native_tool_coverage": 850,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json"
+      },
+      {
+        "model": "lfm",
+        "family": "Bash SFT \u00b7 full 4,677",
+        "step": 585,
+        "epoch": 1,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-full-20260927/production/evaluations/checkpoint-585/evaluation_verified.json",
+        "score": 0.413,
+        "graded": 1000,
+        "complete": true,
+        "overlap": true,
+        "harnesses": {
+          "opencode": 0.392,
+          "claude-code": 0.32,
+          "codex": 0.344,
+          "mini-swe-agent": 0.596
+        },
+        "difficulty": {
+          "easy": 0.6666666666666666,
+          "medium": 0.4173728813559322,
+          "hard": 0.32323232323232326
+        },
+        "label": "Bash SFT \u00b7 full 4,677 | E1",
+        "efficiency": {
+          "all": {
+            "matched_successes": 283,
+            "baseline_calls": 2085,
+            "checkpoint_calls": 2045,
+            "baseline_mean": 7.3674911660777385,
+            "checkpoint_mean": 7.226148409893993,
+            "savings_pct": 1.918465227817745
+          },
+          "opencode": {
+            "matched_successes": 51,
+            "baseline_calls": 306,
+            "checkpoint_calls": 314,
+            "baseline_mean": 6.0,
+            "checkpoint_mean": 6.1568627450980395,
+            "savings_pct": -2.614379084967311
+          },
+          "claude-code": {
+            "matched_successes": 47,
+            "baseline_calls": 308,
+            "checkpoint_calls": 353,
+            "baseline_mean": 6.553191489361702,
+            "checkpoint_mean": 7.51063829787234,
+            "savings_pct": -14.610389610389607
+          },
+          "codex": {
+            "matched_successes": 59,
+            "baseline_calls": 468,
+            "checkpoint_calls": 355,
+            "baseline_mean": 7.932203389830509,
+            "checkpoint_mean": 6.016949152542373,
+            "savings_pct": 24.14529914529915
+          },
+          "mini-swe-agent": {
+            "matched_successes": 126,
+            "baseline_calls": 1003,
+            "checkpoint_calls": 1023,
+            "baseline_mean": 7.9603174603174605,
+            "checkpoint_mean": 8.119047619047619,
+            "savings_pct": -1.9940179461615193
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json"
+      },
+      {
+        "model": "lfm",
+        "family": "Bash SFT \u00b7 full 4,677",
+        "step": 1170,
+        "epoch": 2,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-full-20260927/production/evaluations/checkpoint-1170/evaluation_verified.json",
+        "score": 0.408,
+        "graded": 1000,
+        "complete": true,
+        "overlap": true,
+        "harnesses": {
+          "opencode": 0.38,
+          "claude-code": 0.24,
+          "codex": 0.356,
+          "mini-swe-agent": 0.656
+        },
+        "difficulty": {
+          "easy": 0.6515151515151515,
+          "medium": 0.4576271186440678,
+          "hard": 0.2676767676767677
+        },
+        "label": "Bash SFT \u00b7 full 4,677 | E2",
+        "efficiency": {
+          "all": {
+            "matched_successes": 284,
+            "baseline_calls": 2072,
+            "checkpoint_calls": 2104,
+            "baseline_mean": 7.295774647887324,
+            "checkpoint_mean": 7.408450704225352,
+            "savings_pct": -1.5444015444015413
+          },
+          "opencode": {
+            "matched_successes": 55,
+            "baseline_calls": 292,
+            "checkpoint_calls": 327,
+            "baseline_mean": 5.3090909090909095,
+            "checkpoint_mean": 5.945454545454545,
+            "savings_pct": -11.986301369863007
+          },
+          "claude-code": {
+            "matched_successes": 34,
+            "baseline_calls": 199,
+            "checkpoint_calls": 255,
+            "baseline_mean": 5.852941176470588,
+            "checkpoint_mean": 7.5,
+            "savings_pct": -28.14070351758795
+          },
+          "codex": {
+            "matched_successes": 61,
+            "baseline_calls": 495,
+            "checkpoint_calls": 398,
+            "baseline_mean": 8.114754098360656,
+            "checkpoint_mean": 6.524590163934426,
+            "savings_pct": 19.5959595959596
+          },
+          "mini-swe-agent": {
+            "matched_successes": 134,
+            "baseline_calls": 1086,
+            "checkpoint_calls": 1124,
+            "baseline_mean": 8.104477611940299,
+            "checkpoint_mean": 8.388059701492537,
+            "savings_pct": -3.4990791896869267
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json"
+      },
+      {
+        "model": "lfm",
+        "family": "OpenCode SFT \u00b7 801 rollouts",
+        "step": 604,
+        "epoch": 1,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/lfm/production/evaluations/checkpoint-604/evaluation_verified.json",
+        "score": 0.451,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.512,
+          "claude-code": 0.288,
+          "codex": 0.424,
+          "mini-swe-agent": 0.58
+        },
+        "difficulty": {
+          "easy": 0.7424242424242424,
+          "medium": 0.5,
+          "hard": 0.29545454545454547
+        },
+        "label": "OpenCode SFT \u00b7 801 rollouts | E1",
+        "efficiency": {
+          "all": {
+            "matched_successes": 310,
+            "baseline_calls": 2325,
+            "checkpoint_calls": 1999,
+            "baseline_mean": 7.5,
+            "checkpoint_mean": 6.448387096774193,
+            "savings_pct": 14.02150537634409
+          },
+          "opencode": {
+            "matched_successes": 67,
+            "baseline_calls": 397,
+            "checkpoint_calls": 293,
+            "baseline_mean": 5.925373134328358,
+            "checkpoint_mean": 4.373134328358209,
+            "savings_pct": 26.19647355163728
+          },
+          "claude-code": {
+            "matched_successes": 43,
+            "baseline_calls": 294,
+            "checkpoint_calls": 300,
+            "baseline_mean": 6.837209302325581,
+            "checkpoint_mean": 6.976744186046512,
+            "savings_pct": -2.0408163265306145
+          },
+          "codex": {
+            "matched_successes": 77,
+            "baseline_calls": 658,
+            "checkpoint_calls": 415,
+            "baseline_mean": 8.545454545454545,
+            "checkpoint_mean": 5.3896103896103895,
+            "savings_pct": 36.93009118541033
+          },
+          "mini-swe-agent": {
+            "matched_successes": 123,
+            "baseline_calls": 976,
+            "checkpoint_calls": 991,
+            "baseline_mean": 7.934959349593496,
+            "checkpoint_mean": 8.05691056910569,
+            "savings_pct": -1.5368852459016313
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json"
+      },
+      {
+        "model": "lfm",
+        "family": "OpenCode SFT \u00b7 801 rollouts",
+        "step": 1208,
+        "epoch": 2,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/lfm/production/evaluations/checkpoint-1208/evaluation_verified.json",
+        "score": 0.475,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.516,
+          "claude-code": 0.332,
+          "codex": 0.464,
+          "mini-swe-agent": 0.588
+        },
+        "difficulty": {
+          "easy": 0.7727272727272727,
+          "medium": 0.527542372881356,
+          "hard": 0.31313131313131315
+        },
+        "label": "OpenCode SFT \u00b7 801 rollouts | E2",
+        "efficiency": {
+          "all": {
+            "matched_successes": 309,
+            "baseline_calls": 2269,
+            "checkpoint_calls": 2076,
+            "baseline_mean": 7.343042071197411,
+            "checkpoint_mean": 6.718446601941747,
+            "savings_pct": 8.50594975760247
+          },
+          "opencode": {
+            "matched_successes": 61,
+            "baseline_calls": 350,
+            "checkpoint_calls": 290,
+            "baseline_mean": 5.737704918032787,
+            "checkpoint_mean": 4.754098360655738,
+            "savings_pct": 17.14285714285714
+          },
+          "claude-code": {
+            "matched_successes": 46,
+            "baseline_calls": 285,
+            "checkpoint_calls": 315,
+            "baseline_mean": 6.195652173913044,
+            "checkpoint_mean": 6.8478260869565215,
+            "savings_pct": -10.526315789473696
+          },
+          "codex": {
+            "matched_successes": 80,
+            "baseline_calls": 663,
+            "checkpoint_calls": 453,
+            "baseline_mean": 8.2875,
+            "checkpoint_mean": 5.6625,
+            "savings_pct": 31.674208144796378
+          },
+          "mini-swe-agent": {
+            "matched_successes": 122,
+            "baseline_calls": 971,
+            "checkpoint_calls": 1018,
+            "baseline_mean": 7.959016393442623,
+            "checkpoint_mean": 8.344262295081966,
+            "savings_pct": -4.840370751802259
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json"
+      },
+      {
+        "model": "lfm",
+        "family": "Multi-harness SFT \u00b7 3,189 rollouts",
+        "step": 2242,
+        "epoch": 1,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/lfm/production/evaluations/checkpoint-2242/evaluation_verified.json",
+        "score": 0.383,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.224,
+          "claude-code": 0.408,
+          "codex": 0.424,
+          "mini-swe-agent": 0.476
+        },
+        "difficulty": {
+          "easy": 0.696969696969697,
+          "medium": 0.4258474576271186,
+          "hard": 0.22727272727272727
+        },
+        "label": "Multi-harness SFT \u00b7 3,189 rollouts | E1",
+        "efficiency": {
+          "all": {
+            "matched_successes": 255,
+            "baseline_calls": 1835,
+            "checkpoint_calls": 1403,
+            "baseline_mean": 7.196078431372549,
+            "checkpoint_mean": 5.5019607843137255,
+            "savings_pct": 23.54223433242507
+          },
+          "opencode": {
+            "matched_successes": 28,
+            "baseline_calls": 155,
+            "checkpoint_calls": 120,
+            "baseline_mean": 5.535714285714286,
+            "checkpoint_mean": 4.285714285714286,
+            "savings_pct": 22.580645161290324
+          },
+          "claude-code": {
+            "matched_successes": 57,
+            "baseline_calls": 368,
+            "checkpoint_calls": 293,
+            "baseline_mean": 6.456140350877193,
+            "checkpoint_mean": 5.140350877192983,
+            "savings_pct": 20.380434782608692
+          },
+          "codex": {
+            "matched_successes": 69,
+            "baseline_calls": 533,
+            "checkpoint_calls": 297,
+            "baseline_mean": 7.72463768115942,
+            "checkpoint_mean": 4.304347826086956,
+            "savings_pct": 44.27767354596624
+          },
+          "mini-swe-agent": {
+            "matched_successes": 101,
+            "baseline_calls": 779,
+            "checkpoint_calls": 693,
+            "baseline_mean": 7.712871287128713,
+            "checkpoint_mean": 6.861386138613861,
+            "savings_pct": 11.039794608472398
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json"
+      },
+      {
+        "model": "lfm",
+        "family": "Multi-harness SFT \u00b7 3,189 rollouts",
+        "step": 4484,
+        "epoch": 2,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/lfm/production/evaluations/checkpoint-4484/evaluation_verified.json",
+        "score": 0.431,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.38,
+          "claude-code": 0.424,
+          "codex": 0.468,
+          "mini-swe-agent": 0.452
+        },
+        "difficulty": {
+          "easy": 0.7803030303030303,
+          "medium": 0.5042372881355932,
+          "hard": 0.22727272727272727
+        },
+        "label": "Multi-harness SFT \u00b7 3,189 rollouts | E2",
+        "efficiency": {
+          "all": {
+            "matched_successes": 276,
+            "baseline_calls": 1981,
+            "checkpoint_calls": 1502,
+            "baseline_mean": 7.177536231884058,
+            "checkpoint_mean": 5.442028985507246,
+            "savings_pct": 24.179707218576475
+          },
+          "opencode": {
+            "matched_successes": 46,
+            "baseline_calls": 266,
+            "checkpoint_calls": 218,
+            "baseline_mean": 5.782608695652174,
+            "checkpoint_mean": 4.739130434782608,
+            "savings_pct": 18.045112781954884
+          },
+          "claude-code": {
+            "matched_successes": 57,
+            "baseline_calls": 365,
+            "checkpoint_calls": 266,
+            "baseline_mean": 6.4035087719298245,
+            "checkpoint_mean": 4.666666666666667,
+            "savings_pct": 27.123287671232877
+          },
+          "codex": {
+            "matched_successes": 74,
+            "baseline_calls": 601,
+            "checkpoint_calls": 350,
+            "baseline_mean": 8.121621621621621,
+            "checkpoint_mean": 4.72972972972973,
+            "savings_pct": 41.76372712146422
+          },
+          "mini-swe-agent": {
+            "matched_successes": 99,
+            "baseline_calls": 749,
+            "checkpoint_calls": 668,
+            "baseline_mean": 7.565656565656566,
+            "checkpoint_mean": 6.747474747474747,
+            "savings_pct": 10.814419225634175
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json"
+      },
+      {
+        "model": "lfm",
+        "family": "Harbor OpenCode RL",
+        "step": 900,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84180/canonical_scores.json",
+        "score": 0.524,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.56,
+          "claude-code": 0.436,
+          "codex": 0.484,
+          "mini-swe-agent": 0.616
+        },
+        "difficulty": {
+          "easy": 0.7878787878787878,
+          "medium": 0.565677966101695,
+          "hard": 0.38636363636363635
+        },
+        "label": "Harbor OpenCode RL | best, 900",
+        "efficiency": {
+          "all": {
+            "matched_successes": 342,
+            "baseline_calls": 2555,
+            "checkpoint_calls": 2218,
+            "baseline_mean": 7.470760233918129,
+            "checkpoint_mean": 6.485380116959064,
+            "savings_pct": 13.18982387475538
+          },
+          "opencode": {
+            "matched_successes": 73,
+            "baseline_calls": 435,
+            "checkpoint_calls": 283,
+            "baseline_mean": 5.958904109589041,
+            "checkpoint_mean": 3.8767123287671232,
+            "savings_pct": 34.94252873563218
+          },
+          "claude-code": {
+            "matched_successes": 62,
+            "baseline_calls": 439,
+            "checkpoint_calls": 407,
+            "baseline_mean": 7.080645161290323,
+            "checkpoint_mean": 6.564516129032258,
+            "savings_pct": 7.289293849658318
+          },
+          "codex": {
+            "matched_successes": 79,
+            "baseline_calls": 647,
+            "checkpoint_calls": 529,
+            "baseline_mean": 8.189873417721518,
+            "checkpoint_mean": 6.69620253164557,
+            "savings_pct": 18.23802163833076
+          },
+          "mini-swe-agent": {
+            "matched_successes": 128,
+            "baseline_calls": 1034,
+            "checkpoint_calls": 999,
+            "baseline_mean": 8.078125,
+            "checkpoint_mean": 7.8046875,
+            "savings_pct": 3.384912959381048
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json"
+      },
+      {
+        "model": "lfm",
+        "family": "Harbor OpenCode RL",
+        "step": 1000,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84206/canonical_scores.json",
+        "score": 0.523,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.58,
+          "claude-code": 0.42,
+          "codex": 0.432,
+          "mini-swe-agent": 0.66
+        },
+        "difficulty": {
+          "easy": 0.7651515151515151,
+          "medium": 0.5614406779661016,
+          "hard": 0.39646464646464646
+        },
+        "label": "Harbor OpenCode RL | final, 1000",
+        "efficiency": {
+          "all": {
+            "matched_successes": 337,
+            "baseline_calls": 2467,
+            "checkpoint_calls": 2186,
+            "baseline_mean": 7.320474777448071,
+            "checkpoint_mean": 6.486646884272997,
+            "savings_pct": 11.39035265504662
+          },
+          "opencode": {
+            "matched_successes": 74,
+            "baseline_calls": 426,
+            "checkpoint_calls": 271,
+            "baseline_mean": 5.756756756756757,
+            "checkpoint_mean": 3.6621621621621623,
+            "savings_pct": 36.3849765258216
+          },
+          "claude-code": {
+            "matched_successes": 55,
+            "baseline_calls": 354,
+            "checkpoint_calls": 388,
+            "baseline_mean": 6.4363636363636365,
+            "checkpoint_mean": 7.054545454545455,
+            "savings_pct": -9.604519774011289
+          },
+          "codex": {
+            "matched_successes": 71,
+            "baseline_calls": 581,
+            "checkpoint_calls": 444,
+            "baseline_mean": 8.183098591549296,
+            "checkpoint_mean": 6.253521126760563,
+            "savings_pct": 23.580034423407913
+          },
+          "mini-swe-agent": {
+            "matched_successes": 137,
+            "baseline_calls": 1106,
+            "checkpoint_calls": 1083,
+            "baseline_mean": 8.072992700729927,
+            "checkpoint_mean": 7.905109489051095,
+            "savings_pct": 2.0795660036166397
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json"
+      },
+      {
+        "model": "lfm",
+        "family": "Harbor multi-harness RL",
+        "step": 700,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84201/canonical_scores.json",
+        "score": 0.546,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.512,
+          "claude-code": 0.488,
+          "codex": 0.536,
+          "mini-swe-agent": 0.648
+        },
+        "difficulty": {
+          "easy": 0.7954545454545454,
+          "medium": 0.5847457627118644,
+          "hard": 0.4166666666666667
+        },
+        "label": "Harbor multi-harness RL | best, 700",
+        "efficiency": {
+          "all": {
+            "matched_successes": 361,
+            "baseline_calls": 2731,
+            "checkpoint_calls": 2002,
+            "baseline_mean": 7.565096952908587,
+            "checkpoint_mean": 5.545706371191136,
+            "savings_pct": 26.693518857561337
+          },
+          "opencode": {
+            "matched_successes": 68,
+            "baseline_calls": 414,
+            "checkpoint_calls": 284,
+            "baseline_mean": 6.088235294117647,
+            "checkpoint_mean": 4.176470588235294,
+            "savings_pct": 31.400966183574873
+          },
+          "claude-code": {
+            "matched_successes": 71,
+            "baseline_calls": 520,
+            "checkpoint_calls": 420,
+            "baseline_mean": 7.323943661971831,
+            "checkpoint_mean": 5.915492957746479,
+            "savings_pct": 19.23076923076923
+          },
+          "codex": {
+            "matched_successes": 88,
+            "baseline_calls": 726,
+            "checkpoint_calls": 386,
+            "baseline_mean": 8.25,
+            "checkpoint_mean": 4.386363636363637,
+            "savings_pct": 46.831955922865006
+          },
+          "mini-swe-agent": {
+            "matched_successes": 134,
+            "baseline_calls": 1071,
+            "checkpoint_calls": 912,
+            "baseline_mean": 7.992537313432836,
+            "checkpoint_mean": 6.8059701492537314,
+            "savings_pct": 14.845938375350142
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json"
+      },
+      {
+        "model": "lfm",
+        "family": "Harbor multi-harness RL",
+        "step": 1000,
+        "epoch": null,
+        "source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84475/canonical_scores.json",
+        "score": 0.542,
+        "graded": 1000,
+        "complete": true,
+        "overlap": false,
+        "harnesses": {
+          "opencode": 0.496,
+          "claude-code": 0.488,
+          "codex": 0.536,
+          "mini-swe-agent": 0.648
+        },
+        "difficulty": {
+          "easy": 0.7878787878787878,
+          "medium": 0.586864406779661,
+          "hard": 0.4065656565656566
+        },
+        "label": "Harbor multi-harness RL | final, 1000",
+        "efficiency": {
+          "all": {
+            "matched_successes": 356,
+            "baseline_calls": 2646,
+            "checkpoint_calls": 1824,
+            "baseline_mean": 7.432584269662922,
+            "checkpoint_mean": 5.123595505617978,
+            "savings_pct": 31.065759637188208
+          },
+          "opencode": {
+            "matched_successes": 66,
+            "baseline_calls": 390,
+            "checkpoint_calls": 262,
+            "baseline_mean": 5.909090909090909,
+            "checkpoint_mean": 3.9696969696969697,
+            "savings_pct": 32.820512820512825
+          },
+          "claude-code": {
+            "matched_successes": 69,
+            "baseline_calls": 470,
+            "checkpoint_calls": 337,
+            "baseline_mean": 6.811594202898551,
+            "checkpoint_mean": 4.884057971014493,
+            "savings_pct": 28.297872340425535
+          },
+          "codex": {
+            "matched_successes": 89,
+            "baseline_calls": 738,
+            "checkpoint_calls": 347,
+            "baseline_mean": 8.292134831460674,
+            "checkpoint_mean": 3.898876404494382,
+            "savings_pct": 52.98102981029811
+          },
+          "mini-swe-agent": {
+            "matched_successes": 132,
+            "baseline_calls": 1048,
+            "checkpoint_calls": 878,
+            "baseline_mean": 7.9393939393939394,
+            "checkpoint_mean": 6.651515151515151,
+            "savings_pct": 16.22137404580153
+          }
+        },
+        "native_tool_coverage": 1000,
+        "baseline_source": "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json"
+      }
+    ]
+  },
+  "notes": [
+    "Training objectives: Qwen RL = correctness only; LFM RL = correctness + tool-efficiency bonus. SFT = demonstration imitation.",
+    "Savings (%) = 100 \u00d7 (1 \u2212 checkpoint tool calls / baseline tool calls), summing over the same task/harness pairs solved by both. Positive = fewer calls; negative = more.",
+    "Only native ATIF agent tool calls with valid unique IDs are counted. These are harness-level tool invocations, not shell subcommands or model turns. Missing trajectories are excluded and coverage is recorded.",
+    "Each checkpoint has its own matched successful subset. Per-harness sample counts are shown. Differences are descriptive; fewer calls alone do not establish better task performance.",
+    "Native OpenCode uses its own historical baseline (15.9%). Other Qwen runs use the Harbor baseline (14.6%). LFM baseline has 998 grades.",
+    "Incomplete evaluations (*) and test-overlap runs (\u2020) retain those labels. RL best selection uses correctness, not tool efficiency. SFT does not optimize an explicit tool-efficiency reward."
+  ],
+  "source_comparison": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/20260928T193636Z/comparison.json",
+  "cohort_cache": {
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/6fd6767a95b12b8b74199aad89f3274c097fa8c481ecfaf0d5baaffd9abd6fe5.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/qwen/production/evaluations/checkpoint-604/evaluation_verified.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/bff7bb581df2c8da2fe09ac8adc8eb7ada42092adfa73ef049377c323859f332.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/qwen/production/evaluations/checkpoint-1208/evaluation_verified.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/559f4e82ca6d170161feff25357bdd8e2564f90cf9b1a8bd58ffc03103713e62.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/qwen/production/evaluations/checkpoint-2242/evaluation_verified.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/e09ab8b15781525064774ccc271ba8aaf734738d30eb918209ac93700ea4d89b.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/qwen/production/evaluations/checkpoint-4484/evaluation_verified.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/28e1fd1dfe5b4afe99c19d6abfa8c35f76f2c903640e69e81b6087564308c116.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-000700/scores.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/1525c01f81f6ead4956ae56371d708471a284c48480d6ffea82353505cf25a32.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/harbor-opencode-only-20260916/checkpoint-evals/step-001000/scores.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/6b6381174863105ad83b46397983b1d06dfbf350398f32624447f52955641082.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000500/scores.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/1cc12b4d843b8778fc037e9456f999238617577718efb9fb168bddb7be1b1796.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-cont-20260915/checkpoint-evals/step-001000/scores.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/f0b99e7397a838642f7362415029b50f6bdba684e92602f2dd8e39fac0a53f38.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/hf-20260915/local-opencode-smoke-v4/repro/outputs/local-eval-opencode-81098/canonical_scores.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/50fd5519a73ae0410d6cfd76119dae70139f39f472a457f600fba2ea2c125166.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/hard500-local-evals-20260921/checkpoint-1000/eval_progress.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/d0c70af945fcfc63e8f32db2f0b975d56f62d900df691a79c12c9b724eee7d38.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-multi4-20260921/eval-83716/final_tito.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/fb7ad5e4df43217137596dc74207baa24d81faf2a398a184165d68bf9c0fc2a7.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-20260927/production/evaluations/checkpoint-114/eval_progress.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/fb0e845a20c6233ebd109b73ee18f70a5b8ecdbf7650bf9ef24cfea231962f24.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-20260927/production/evaluations/checkpoint-228/eval_progress.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/bb6d921c86f9f9192771098c0e04f7f19e90b8a94319ed9a73978d092bf3dd50.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-full-20260927/production/evaluations/checkpoint-585/evaluation_verified.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/fcf607100abb1c4a2675b4a04ed46390f12b151ca02af41d478082658eeac4dd.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-sft-full-20260927/production/evaluations/checkpoint-1170/evaluation_verified.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/edb712811e72aaa11c7ccb1e851220a300ab070888e5a72c40cf6139646903c6.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/lfm/production/evaluations/checkpoint-604/evaluation_verified.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/ce41860523f86d3465f6c18933979105e7af53ca408f2d23d442bd36f92d0267.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/opencode-student-sft-20260927/lfm/production/evaluations/checkpoint-1208/evaluation_verified.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/04275fc9aab36bf2e1547737d66d30fec155dd9a1e8c285e5a180cf41f5c7c12.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/lfm/production/evaluations/checkpoint-2242/evaluation_verified.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/0673d57025fc4176f87e53ba861a2a4a021d7c183a51486d3c8dd9f40ce5d11d.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/multiharness-student-sft-20260928/lfm/production/evaluations/checkpoint-4484/evaluation_verified.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/d35d3f89ee7efe94165afd36e2dd97cd7a8d8efdc3eb4fd4cf32a76216e31a14.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84180/canonical_scores.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/96c5ea54e9a21766efc85814d720074a0b02e3dab9c8757598663ae090cafe85.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/opencode/eval-84206/canonical_scores.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/68cb170dabe7179b59119d7ce98a15540084a275ae9c55216cd59c7aa2395a10.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84201/canonical_scores.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/f56edcbb08ee696a561182383783fb7ae646d03c108761a636a503cc58a38ebb.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/lfm25-medium-hard1000-20260921/multi-harness/eval-84475/canonical_scores.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/dffe33b80108f3d1e637f6a818bcd830ad6ad9d2f693152d03177211598c735e.json",
+    "/fsx/adithyaskolavi/projects/trl_prod/experiments/daytona_harness_comparison/logs/20260915/blackbox/canonical_scores.json": "/fsx/adithyaskolavi/projects/trl_prod/experiments/sft-rl-complete-comparison-20260928/tool-count-cache/ded52b83b0dbb29b05141a77a9b91005c8ec9fa6bfc03aeb8bbf9153b7ad335b.json"
+  }
+}

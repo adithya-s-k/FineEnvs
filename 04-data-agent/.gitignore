@@ -1,0 +1,8 @@
+# Local run state and duplicate raw exports. Keep source, summaries and plots in Git.
+reports/**/trackio/
+reports/**/.publisher.lock
+reports/**/events.jsonl
+reports/**/publisher-*.out
+reports/**/publisher-*.err
+reports/async-comparison-20260916/snapshot.json
+eval/progress-*/training_metrics.json

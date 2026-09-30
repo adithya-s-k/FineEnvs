@@ -1,0 +1,8 @@
+{
+  "job": "81083",
+  "replaces": "81033",
+  "interval_seconds": 60,
+  "source_sha256": "afbe52725638b51c850bedc85b1874ae952ce882d0a2f9c57c86389235d6284e",
+  "space": "HuggingEnvs/data-agent-training-comparison-trackio",
+  "additional_run": "Harbor OpenCode-only"
+}
