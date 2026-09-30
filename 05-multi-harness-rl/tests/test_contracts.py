@@ -18,6 +18,25 @@ from runtime.launch import stage
 from runtime.models import check_visible_response
 
 
+def test_ampere_attention_keeps_packed_flash_attention(tmp_path):
+    from runtime.models import training_attention_backend
+    from runtime.patches import apply_trl
+    assert training_attention_backend((8, 0)) == "kernels-community/flash-attn2"
+    assert training_attention_backend((9, 0)) == "kernels-community/flash-attn3"
+    with pytest.raises(ValueError, match="Unqualified"):
+        training_attention_backend((7, 0))
+    path = tmp_path / "trl/experimental/async_grpo/async_grpo_trainer.py"
+    path.parent.mkdir(parents=True)
+    path.write_text('model = create_model_from_path(model, attn_implementation="kernels-community/flash-attn3", **model_init_kwargs)')
+    apply_trl(tmp_path)
+    apply_trl(tmp_path)
+    calls = []
+    kwargs = {"attn_implementation": training_attention_backend((8, 0)), "revision": "fixed"}
+    exec(path.read_text(), {"create_model_from_path": lambda *a, **k: calls.append(k),
+                            "model": "test", "model_init_kwargs": kwargs})
+    assert calls == [{"attn_implementation": "kernels-community/flash-attn2", "revision": "fixed"}]
+
+
 def test_frozen_data_and_rotation():
     train, test = task_rows("train"), task_rows("test")
     assert len(train) == 1000 and len(test) == 250

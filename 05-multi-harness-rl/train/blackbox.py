@@ -4,11 +4,12 @@ import os
 from pathlib import Path
 
 from datasets import Dataset
+import torch
 from hard_curriculum_train import FiniteLoop, FiniteTrainer, FiniteWorker
 from trl.experimental.async_grpo import AsyncGRPOConfig
 
 from recipe import digest, resume_state, schedule, task_rows, write_json
-from runtime.models import tokenizer_for
+from runtime.models import tokenizer_for, training_attention_backend
 from train.adapters import Factory, rollout_reward
 from train.logging_utils import Checkpoints, Logs, publish_checkpoint
 
@@ -65,7 +66,8 @@ def train(cfg, data, server, vllm, resume=None):
         token_budget=cfg["token_budget"], temperature=cfg["temperature"], top_p=1.0, top_k=0,
         optim="paged_adamw_8bit", bf16=True, dtype="bfloat16", gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
-        model_init_kwargs={"revision": cfg["profile"]["revision"]},
+        model_init_kwargs={"revision": cfg["profile"]["revision"],
+                           "attn_implementation": training_attention_backend(torch.cuda.get_device_capability())},
         vllm_server_base_url=vllm, heartbeat_stale_after_s=900,
         save_strategy="steps", save_steps=cfg["save_steps"], save_total_limit=None,
         logging_steps=1, report_to="trackio", project=cfg["project"], run_name=cfg["run_name"],

@@ -7,6 +7,16 @@ def replace(text, old, new):
     return text.replace(old, new, 1)
 
 
+def apply_trl(root):
+    path = root / "trl/experimental/async_grpo/async_grpo_trainer.py"
+    old = 'attn_implementation="kernels-community/flash-attn3",'
+    new = 'attn_implementation=model_init_kwargs.pop("attn_implementation", "kernels-community/flash-attn3"),'
+    text = path.read_text()
+    if text.count(new) == 1 and old not in text:
+        return
+    path.write_text(replace(text, old, new))
+
+
 def apply(packages):
     path = packages / "data_agent_env/server/capture.py"
     path.write_text(replace(path.read_text(), "max_output_tokens=16384,",

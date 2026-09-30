@@ -14,7 +14,7 @@ This is a new non-thinking recipe. Historical training results are not its basel
 
 | Check | Result |
 |---|---|
-| CPU contracts and fetched-runtime integration | 21 passed |
+| CPU contracts and fetched-runtime integration | 22 passed, including Ampere attention selection |
 | Clean, minimal CI environment | 17 passed; four runtime checks skipped without fetched dependencies |
 | Native OpenEnv to TRL partial mask | `[1, 0]` preserved |
 | Native LFM checkpoint handoff | Both initial smoke checkpoints saved; file hashes verified |
@@ -26,7 +26,7 @@ This is a new non-thinking recipe. Historical training results are not its basel
 | Whitebox checkpoint reload eval | 2/2 tasks graded; one correct answer |
 | Async checkpoint resume | Resumed step 1 to 2; committed group 0 was not replayed |
 | HF Jobs setup | Fresh Python 3.12 environment, locked installation and all 1,250 tasks prepared successfully |
-| HF Jobs GPU smoke | Corrected submission accepted; allocation pending |
+| HF Jobs GPU smoke | A100 replacement submitted; pulling container image |
 
 | Model | Mode | Local smoke wall time | Nonzero gradient observed? |
 |---|---|---|---|
@@ -55,6 +55,7 @@ Local smoke artifacts are ignored under `runs/qualification/`: configuration, se
 - Whitebox checkpoint eval: `qwen-whitebox-v5-eval`, job `92821`.
 - Async resume: `lfm-native-resume-v1`, job `92822`. Only optimizer step 2 was executed; the new admission record contains group 2, while the restored state retains group 0.
 - [HF setup check](https://huggingface.co/jobs/FineEnvs/6abcb82f031314b696343d7d): completed with the corrected Python 3.12 bootstrap.
-- [HF GPU smoke](https://huggingface.co/jobs/FineEnvs/6abcb8c8031314b696343daf): current submission, bounded to 40 minutes of runtime. Superseded queued submissions were canceled before allocation.
+- [H200 GPU smoke](https://huggingface.co/jobs/FineEnvs/6abcb8c8031314b696343daf): canceled after remaining queued for hardware.
+- [A100 GPU smoke](https://huggingface.co/jobs/FineEnvs/6abcc3d9031314b6963440a0): replacement on A100×4, bounded to 40 minutes. At this check it was pulling the image. It uses two GPUs and tests the Ampere FlashAttention 2 path; successful GPU execution is still pending.
 
 Before a long HF run, finish the GPU smoke and verify bucket checkpoint handoff. Then collect a fresh non-thinking baseline on the fixed 250-task test set. A tiny smoke establishes execution, not benchmark performance or throughput at concurrency 35.

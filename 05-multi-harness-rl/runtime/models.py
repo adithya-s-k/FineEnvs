@@ -2,6 +2,15 @@
 from pathlib import Path
 
 
+def training_attention_backend(capability):
+    major, _ = capability
+    if major == 9:
+        return "kernels-community/flash-attn3"
+    if major == 8:
+        return "kernels-community/flash-attn2"
+    raise ValueError(f"Unqualified training GPU capability: {capability}")
+
+
 def tokenizer_for(cfg, template_path=None):
     from copy import deepcopy
     from transformers import AutoTokenizer

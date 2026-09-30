@@ -61,8 +61,9 @@ def bootstrap(local_archive=None, local_trl=None, local_openenv=None):
             link.unlink()
         shutil.copytree(destination / "envs" / folder, link, dirs_exist_ok=True)
     sys.path.insert(0, str(ROOT))
-    from runtime.patches import apply
+    from runtime.patches import apply, apply_trl
     apply(packages)
+    apply_trl(RUNTIME / "trl")
     print(f"Verified {len(archive['files'])} runtime files; pinned TRL and OpenEnv ready.")
 
 

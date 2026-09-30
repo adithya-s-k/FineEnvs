@@ -38,6 +38,8 @@ python runtime/launch.py hf watch --run-name eval-watcher \
 
 Repeat the smoke for each model/mode before launching that combination. The default GPU flavor is `h200x2`: one trainer GPU and one serving GPU; evaluation uses both GPUs as DP2 replicas. HF Jobs currently has no two-A100 flavor. Override `--flavor` only with hardware that has enough GPUs and memory. The base image is pinned by digest; Python packages and source revisions are pinned separately.
 
+The A100 alternative is `--flavor a100x4`; this recipe uses two of those four GPUs, but the full allocation is billed. Async training selects FlashAttention 2 on Ampere and FlashAttention 3 on Hopper, preserving packed-sequence boundaries. A checked adapter enables this choice in the pinned TRL runtime. See `VALIDATION.md` for hardware qualification status.
+
 The bucket is mounted at `/outputs`. A run writes to `/outputs/RUN_NAME`; the watcher hashes completed checkpoints before launching evals. Keep the watcher alive until all final evaluations finish. Failures remain in `eval-watcher.json` for investigation rather than resubmitting indefinitely. Relaunch a failed evaluation explicitly with the same output name to retain already graded pairs.
 
 ```bash
