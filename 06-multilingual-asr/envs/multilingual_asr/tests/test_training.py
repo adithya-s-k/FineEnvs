@@ -32,3 +32,23 @@ def test_padding_gives_every_clip_one_feature_shape():
     unpadded = AssetCache("http://localhost")
     kept = numpy.ones(4 * SAMPLING_RATE, dtype="float32")
     assert unpadded._fit(kept).shape == kept.shape
+
+
+def test_adapter_spec_parsing_and_mutually_exclusive_candidates():
+    """Checkpoints are named name=path; models and adapters cannot mix."""
+    import argparse
+    import importlib.util
+    from pathlib import Path
+
+    import pytest as pt
+
+    path = Path(__file__).resolve().parents[3] / "train" / "eval_vllm.py"
+    spec = importlib.util.spec_from_file_location("eval_vllm_adapters", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.parse_adapter("step-50=/outputs/rev/checkpoint-50") == (
+        "step-50",
+        "/outputs/rev/checkpoint-50",
+    )
+    with pt.raises(argparse.ArgumentTypeError):
+        module.parse_adapter("checkpoint-50")

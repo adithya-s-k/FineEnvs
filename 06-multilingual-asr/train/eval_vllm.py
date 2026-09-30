@@ -41,9 +41,22 @@ def free_port():
 
 @contextmanager
 def vllm_server(
-    model, revision, *, max_model_len, gpu_fraction, extra_args, boot_seconds
+    model,
+    revision,
+    *,
+    max_model_len,
+    gpu_fraction,
+    extra_args,
+    boot_seconds,
+    loras=0,
+    max_lora_rank=16,
 ):
-    """Serve one checkpoint, in an environment of its own."""
+    """Serve one checkpoint, in an environment of its own.
+
+    With loras set the engine also accepts adapters at runtime, so a whole run's
+    checkpoints are scored on one boot. A cold boot plus a 16GB weight download is
+    minutes; an adapter swap is seconds.
+    """
     port = free_port()
     command = [
         "uv",
@@ -68,8 +81,16 @@ def vllm_server(
         str(max_model_len),
         "--gpu-memory-utilization",
         str(gpu_fraction),
-        *extra_args,
     ]
+    if loras:
+        command += [
+            "--enable-lora",
+            "--max-loras",
+            str(loras),
+            "--max-lora-rank",
+            str(max_lora_rank),
+        ]
+    command += extra_args
     print("starting vLLM: " + " ".join(command), flush=True)
     # FlashInfer's sampler is JIT-compiled and wants a CUDA toolkit this image does not
     # carry, so the engine dies on the first token. Evaluation samples greedily and has
@@ -78,7 +99,13 @@ def vllm_server(
         command,
         stdout=sys.stdout,
         stderr=sys.stderr,
-        env={**os.environ, "VLLM_USE_FLASHINFER_SAMPLER": "0"},
+        env={
+            **os.environ,
+            "VLLM_USE_FLASHINFER_SAMPLER": "0",
+            # Runtime load/unload is behind this flag; without it the endpoints 404
+            # and every checkpoint would need its own boot.
+            **({"VLLM_ALLOW_RUNTIME_LORA_UPDATING": "1"} if loras else {}),
+        },
     )
     url = f"http://127.0.0.1:{port}"
     try:
@@ -102,6 +129,38 @@ def vllm_server(
             process.wait(timeout=120)
         except subprocess.TimeoutExpired:
             process.kill()
+
+
+@contextmanager
+def adapter(vllm_url, name, path):
+    """Serve one checkpoint over the live engine, and take it away afterwards."""
+    started = time.monotonic()
+    requests.post(
+        f"{vllm_url}/v1/load_lora_adapter",
+        json={"lora_name": name, "lora_path": str(path)},
+        timeout=600,
+    ).raise_for_status()
+    print(f"  adapter {name} loaded in {time.monotonic() - started:.1f}s", flush=True)
+    try:
+        yield name
+    finally:
+        try:
+            requests.post(
+                f"{vllm_url}/v1/unload_lora_adapter",
+                json={"lora_name": name},
+                timeout=120,
+            ).raise_for_status()
+        except requests.RequestException as error:
+            # An adapter left loaded wastes a slot; it does not invalidate the score
+            # already taken, so this reports rather than discards the run.
+            print(f"  adapter {name} not unloaded: {error}", flush=True)
+
+
+def parse_adapter(spec):
+    name, _, path = spec.partition("=")
+    if not path:
+        raise argparse.ArgumentTypeError("Use name=/path/to/checkpoint")
+    return name, path
 
 
 def answer(vllm_url, model, prompt, wav, max_tokens, timeout):
@@ -294,7 +353,27 @@ def main():
         "--corpus", default="", help="Corpus manifest JSON, or a snapshot"
     )
     parser.add_argument("--env-url", default="")
-    parser.add_argument("--models", nargs="+", required=True)
+    parser.add_argument(
+        "--models",
+        nargs="*",
+        default=[],
+        help="Whole models, each needing its own engine. Use --base with --adapters "
+        "when scoring checkpoints of one run.",
+    )
+    parser.add_argument(
+        "--base",
+        default="",
+        help="Model served once; checkpoints load over it as adapters",
+    )
+    parser.add_argument(
+        "--adapters",
+        nargs="*",
+        type=parse_adapter,
+        default=[],
+        help="name=/path/to/checkpoint, scored one after another on the live engine",
+    )
+    parser.add_argument("--max-loras", type=int, default=2)
+    parser.add_argument("--max-lora-rank", type=int, default=16)
     parser.add_argument("--eval-split", default="eval_21_validation")
     parser.add_argument(
         "--limit", type=int, default=0, help="Subsample the split evenly"
@@ -312,6 +391,10 @@ def main():
         "--output-dir", default=os.environ.get("OUTPUT_DIR", "artifacts/eval")
     )
     args = parser.parse_args()
+    if not args.models and not (args.base and args.adapters):
+        parser.error("Provide --models, or --base with --adapters")
+    if args.models and args.adapters:
+        parser.error("Score whole models or adapters of one base, not both at once")
     if bool(args.corpus) == bool(args.env_url):
         parser.error("Provide exactly one of --corpus or --env-url")
     output = Path(args.output_dir).resolve()
@@ -352,31 +435,8 @@ def main():
         prepared = prefetch(env_url, rows, args.request_timeout, args.progress)
 
         leaderboard = []
-        for model_id in args.models:
-            revision = model_info(model_id).sha
-            print(f"\n=== {model_id} @ {revision[:12]} ===", flush=True)
-            with vllm_server(
-                model_id,
-                revision,
-                max_model_len=args.max_model_len,
-                gpu_fraction=args.gpu_fraction,
-                extra_args=args.vllm_arg,
-                boot_seconds=args.boot_seconds,
-            ) as vllm_url:
-                started = time.monotonic()
-                predictions = predict(
-                    vllm_url,
-                    model_id,
-                    prepared,
-                    args.max_new_tokens,
-                    args.request_timeout,
-                    args.workers,
-                    args.progress,
-                )
-            samples, groups = grade(
-                env_url, prepared, predictions, args.request_timeout, args.workers
-            )
-            result = summarize(samples, groups, time.monotonic() - started)
+
+        def record(model_id, revision, result, rows_scored, adapter_path=None):
             body = {
                 "model": model_id,
                 "model_revision": revision,
@@ -386,7 +446,8 @@ def main():
                 "snapshot_id": manifest["snapshot_id"],
                 "grading": manifest["grading"],
                 "families": args.families or "all",
-                "tasks": len(rows),
+                "tasks": rows_scored,
+                **({"adapter_path": str(adapter_path)} if adapter_path else {}),
                 **result,
             }
             (output / f"{model_id.replace('/', '__')}.json").write_text(
@@ -412,6 +473,75 @@ def main():
             print(f"RESULT-BEGIN {model_id}", flush=True)
             print(json.dumps(body, ensure_ascii=False), flush=True)
             print(f"RESULT-END {model_id}", flush=True)
+            return body
+
+        if args.adapters:
+            revision = model_info(args.base).sha
+            print(f"\n=== base {args.base} @ {revision[:12]} ===", flush=True)
+            with vllm_server(
+                args.base,
+                revision,
+                max_model_len=args.max_model_len,
+                gpu_fraction=args.gpu_fraction,
+                extra_args=args.vllm_arg,
+                boot_seconds=args.boot_seconds,
+                loras=args.max_loras,
+                max_lora_rank=args.max_lora_rank,
+            ) as vllm_url:
+                for name, path in args.adapters:
+                    print(f"\n=== {name} (adapter over {args.base}) ===", flush=True)
+                    with adapter(vllm_url, name, path):
+                        started = time.monotonic()
+                        predictions = predict(
+                            vllm_url,
+                            name,
+                            prepared,
+                            args.max_new_tokens,
+                            args.request_timeout,
+                            args.workers,
+                            args.progress,
+                        )
+                    samples, groups = grade(
+                        env_url, prepared, predictions, args.request_timeout, args.workers
+                    )
+                    record(
+                        name,
+                        revision,
+                        summarize(samples, groups, time.monotonic() - started),
+                        len(rows),
+                        adapter_path=path,
+                    )
+
+        for model_id in args.models:
+            revision = model_info(model_id).sha
+            print(f"\n=== {model_id} @ {revision[:12]} ===", flush=True)
+            with vllm_server(
+                model_id,
+                revision,
+                max_model_len=args.max_model_len,
+                gpu_fraction=args.gpu_fraction,
+                extra_args=args.vllm_arg,
+                boot_seconds=args.boot_seconds,
+            ) as vllm_url:
+                started = time.monotonic()
+                predictions = predict(
+                    vllm_url,
+                    model_id,
+                    prepared,
+                    args.max_new_tokens,
+                    args.request_timeout,
+                    args.workers,
+                    args.progress,
+                )
+            samples, groups = grade(
+                env_url, prepared, predictions, args.request_timeout, args.workers
+            )
+            record(
+                model_id,
+                revision,
+                summarize(samples, groups, time.monotonic() - started),
+                len(rows),
+            )
 
         leaderboard.sort(key=lambda e: e["macro_reward"], reverse=True)
         (output / "leaderboard.json").write_text(
