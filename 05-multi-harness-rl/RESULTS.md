@@ -17,11 +17,11 @@ The Harbor reload smoke solved 5/8 pairs on two medium tasks. This is a function
 
 Snapshot: **2026-09-30 10:20 UTC**. Each pilot uses the same 25 held-out tasks (3 easy, 12 medium, 10 hard), baseline evaluation, 100 training updates, saves at 50/100 and final evaluation. Evaluation concurrency is 35. Blackbox evaluations have 100 task/harness pairs; whitebox has 25 native episodes.
 
-| Mode | Baseline pass@1 | Optimizer step (metrics) | Learning signal observed? | Job |
-|---|---|---:|---|---|
-| Native OpenCode | 24/100 = 24% | 10 | Yes: step 9 reward 0.126 and gradient norm 3.50 | [OpenCode pilot](https://huggingface.co/jobs/FineEnvs/6abcd384031314b69634440b) |
-| Harbor multi-harness | 17/100 = 17% | 8 | Yes: step 8 reward 0.598 and gradient norm 2.70 | [Harbor pilot](https://huggingface.co/jobs/FineEnvs/6abcd3874c46ef19870359af) |
-| Whitebox SETA | 7/25 = 28% | 5 | No reward contrast in its first five updates | [Whitebox pilot](https://huggingface.co/jobs/FineEnvs/6abcd472031314b696344457) |
+| Mode | Baseline pass@1 | Optimizer step (metrics) | Learning signal observed? |
+|---|---|---:|---|
+| Native OpenCode | 24/100 = 24% | 10 | Yes: step 9 reward 0.126 and gradient norm 3.50 |
+| Harbor multi-harness | 17/100 = 17% | 8 | Yes: step 8 reward 0.598 and gradient norm 2.70 |
+| Whitebox SETA | 7/25 = 28% | 5 | No reward contrast in its first five updates |
 
 All three jobs were running at this check. The whitebox save failure in its earlier smoke was traced to missing TRL package metadata and corrected before this pilot. The running jobs use immutable uploaded source snapshots; later tutorial edits do not modify them.
 
