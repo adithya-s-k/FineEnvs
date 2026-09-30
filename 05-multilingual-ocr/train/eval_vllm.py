@@ -646,6 +646,16 @@ def main():
                 else vllm_server(args.base, revision, args=args)
             )
             with server as vllm_url:
+                # The untuned model on the same engine, same tasks, same grading. A
+                # curve of checkpoints says nothing without the point it started from,
+                # and the trainer's own baseline uses a different harness and task
+                # count, so it is not comparable with these numbers.
+                print(f"\n=== {args.base} (no adapter) ===", flush=True)
+                record(
+                    args.base,
+                    {"model": args.base, "model_revision": revision},
+                    run_one(env_url, vllm_url, args.base, prepared, args),
+                )
                 for name, path in args.adapters:
                     print(f"\n=== {name} (adapter over {args.base}) ===", flush=True)
                     with adapter(vllm_url, name, path):
