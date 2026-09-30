@@ -193,3 +193,57 @@ def assert_trl_groups(tmp_path, dataset):
         for row in batch:
             assert row["spare_task_ids"]
             assert row["task_id"] not in row["spare_task_ids"]
+
+
+def test_accumulation_gives_an_optimizer_step_several_distinct_prompts(tmp_path):
+    """The whole point of the knob: one step must see more than one task.
+
+    Without accumulation TRL fills the batch with a single prompt's generations, so
+    every gradient came from one task. This asserts the config actually widens it.
+    """
+    trl = pytest.importorskip(
+        "trl", reason="Install --extra train to verify TRL's CPU sampler"
+    )
+    from tokenizers import Tokenizer
+    from tokenizers.models import WordLevel
+    from transformers import GPT2Config, GPT2LMHeadModel, PreTrainedTokenizerFast
+
+    tokenizer = PreTrainedTokenizerFast(
+        tokenizer_object=Tokenizer(WordLevel({"[PAD]": 0, "[BOS]": 1, "[EOS]": 2,
+                                              "[UNK]": 3, "hello": 4}, unk_token="[UNK]")),
+        pad_token="[PAD]", bos_token="[BOS]", eos_token="[EOS]", unk_token="[UNK]",
+    )
+    model = GPT2LMHeadModel(GPT2Config(n_layer=1, n_head=2, n_embd=16, vocab_size=5,
+                                       bos_token_id=1, eos_token_id=2, pad_token_id=0))
+    path = Path(__file__).resolve().parents[3] / "train" / "grpo_nayana.py"
+    spec = importlib.util.spec_from_file_location("grpo_nayana_accum", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    dataset = module.build_dataset(
+        [{"prompt": "hello", "task_id": str(i)} for i in range(32)], "map"
+    )
+    accumulation = 4
+    trainer = trl.GRPOTrainer(
+        model=model,
+        processing_class=tokenizer,
+        train_dataset=dataset,
+        reward_funcs=lambda completions, **kwargs: [0.0] * len(completions),
+        args=trl.GRPOConfig(
+            output_dir=str(tmp_path),
+            max_steps=2,
+            num_generations=2,
+            per_device_train_batch_size=2,
+            gradient_accumulation_steps=accumulation,
+            use_cpu=True, bf16=False, gradient_checkpointing=False,
+            report_to="none", dataloader_num_workers=0,
+            accelerator_config={"dispatch_batches": False},
+        ),
+    )
+    assert trainer.args.gradient_accumulation_steps == accumulation
+    batches = iter(trainer.get_train_dataloader())
+    seen = set()
+    for _ in range(accumulation):
+        seen.update(row["task_id"] for row in next(batches))
+    assert len(seen) == accumulation, (
+        f"one optimizer step covered {len(seen)} distinct tasks, expected {accumulation}"
+    )
