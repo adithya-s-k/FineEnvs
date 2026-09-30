@@ -135,12 +135,14 @@ WEBDEV_WHY = [
     "differed by 0.042 and brief fulfilment by 0.054), so it gets a full third instead of being drowned out by a "
     "0.6-weighted visual score.",
 ]
-WEBDEV_TRAINING = ("Training used a different, group-relative reward. A grading service compared the screenshots of "
-                   "sibling rollouts on the same brief (in groups of up to 8) and picked among them, then subtracted a "
-                   "deduction when a page missed the brief. Delivering nothing was a real 0; a page that failed to render "
-                   "was left out of the group. That number only means something next to its siblings, so a single "
-                   "rollout here is graded with Xiaomi's evaluation rubric instead. The grading service is not part of "
-                   "the release.")
+WEBDEV_TRAINING = ("Training used a different, group-relative reward, from a grading service that is in the release "
+                   "(XiaomiMiMo/verl, recipes/design/grader_service; the judge model it calls isn't named). One judge "
+                   "compared the 8 pages written for the same brief over 8 rounds, each page in every position once, "
+                   "and marked the clearly better and clearly worse ones. A second judge scored how well each page met "
+                   "the brief, which set a deduction: reward = (picks − deduction + 2) ÷ 3. A script error, crash or "
+                   "freeze scored 0 before any judging, and delivering nothing was a real 0; only a page the service "
+                   "itself failed to render was left out. That number only means something next to its siblings, so a "
+                   "single rollout here is graded with Xiaomi's evaluation rubric instead.")
 
 
 def webdev(query: str) -> dict:

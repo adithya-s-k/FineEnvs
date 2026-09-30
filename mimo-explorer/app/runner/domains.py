@@ -585,7 +585,8 @@ class Music:
                     headers={**host_hdr, **({"Authorization": f"Bearer {key}"} if key else {})}) as resp:
                 if resp.status_code != 200:
                     err = resp.read()[:400].decode(errors="replace")
-                    if resp.status_code in (400, 422) and n + 1 < len(budgets):
+                    # 402: OpenRouter refuses a max_tokens the key's credit can't cover ("can only afford N")
+                    if resp.status_code in (400, 402, 422) and n + 1 < len(budgets):
                         r.log(f"The provider refused max_tokens={budget} ({err[:160]}); retrying with {budgets[n + 1]}.")
                         continue
                     raise RuntimeError(f"model call failed: HTTP {resp.status_code} {err[:300]}")

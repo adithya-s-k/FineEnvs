@@ -78,7 +78,11 @@ def request(method: str, url: str, key: str | None, **kw) -> httpx.Response:
                 body += chunk
                 if len(body) > MAX_BODY:
                     raise EndpointError("The endpoint's reply was too large.")
-            return httpx.Response(r.status_code, headers=r.headers, content=body, request=r.request)
+            # iter_bytes() already undid any gzip/br: keeping Content-Encoding would make httpx decode the
+            # plain body a second time (DecodingError, e.g. with OpenRouter, which compresses its replies)
+            headers = [(k, v) for k, v in r.headers.multi_items()
+                       if k.lower() not in ("content-encoding", "content-length", "transfer-encoding")]
+            return httpx.Response(r.status_code, headers=headers, content=body, request=r.request)
 
 
 def _headers(key: str | None) -> dict:
