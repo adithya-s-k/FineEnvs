@@ -26,7 +26,8 @@ This is a new non-thinking recipe. Historical training results are not its basel
 | Whitebox checkpoint reload eval | 2/2 tasks graded; one correct answer |
 | Async checkpoint resume | Resumed step 1 to 2; committed group 0 was not replayed |
 | HF Jobs setup | Fresh Python 3.12 environment, locked installation and all 1,250 tasks prepared successfully |
-| HF Jobs GPU smoke | A100 replacement submitted; pulling container image |
+| HF Jobs native OpenCode GPU smoke | A100 completed two steps; both saved checkpoint inventories match the bucket |
+| HF Jobs Harbor smoke and reload eval | Running on A100; dependency installation completed |
 
 | Model | Mode | Local smoke wall time | Nonzero gradient observed? |
 |---|---|---|---|
@@ -56,6 +57,7 @@ Local smoke artifacts are ignored under `runs/qualification/`: configuration, se
 - Async resume: `lfm-native-resume-v1`, job `92822`. Only optimizer step 2 was executed; the new admission record contains group 2, while the restored state retains group 0.
 - [HF setup check](https://huggingface.co/jobs/FineEnvs/6abcb82f031314b696343d7d): completed with the corrected Python 3.12 bootstrap.
 - [H200 GPU smoke](https://huggingface.co/jobs/FineEnvs/6abcb8c8031314b696343daf): canceled after remaining queued for hardware.
-- [A100 GPU smoke](https://huggingface.co/jobs/FineEnvs/6abcc3d9031314b6963440a0): replacement on A100×4, bounded to 40 minutes. At this check it was pulling the image. It uses two GPUs and tests the Ampere FlashAttention 2 path; successful GPU execution is still pending.
+- [A100 native OpenCode smoke](https://huggingface.co/jobs/FineEnvs/6abcc3d9031314b6963440a0): completed. Runtime from container start to finish was 10m 05s; the trainer reported 335.3s. Both optimizer steps had zero reward contrast and zero gradient, so this confirms execution rather than learning improvement. Six completed rollout records had verified native tool counts. Both checkpoints include model, optimizer and RNG state; all 13 recorded file sizes match the persistent bucket. Byte hashes and cross-job reload remain unverified for this checkpoint. Evidence downloaded to `runs/qualification/hf-a100-native-v1/`.
+- [A100 Harbor smoke](https://huggingface.co/jobs/FineEnvs/6abcc72d031314b696344167): two-step multi-harness training followed by checkpoint-2 reload evaluation on two tasks × four harnesses, concurrency four, 45-minute cap. Submitted with `--smoke-eval`; running, with dependency installation completed at this check. This tests all four evaluation adapters, while two training steps alone need not consume all four harnesses. The new orchestration has 19 passing CPU contract checks, including aborting reload after training failure.
 
-Before a long HF run, finish the GPU smoke and verify bucket checkpoint handoff. Then collect a fresh non-thinking baseline on the fixed 250-task test set. A tiny smoke establishes execution, not benchmark performance or throughput at concurrency 35.
+Before a long HF run, finish the Harbor smoke and verify checkpoint reload. A same-job reload does not qualify a separate evaluation job reading the bucket; that handoff remains a separate check. Then collect a fresh non-thinking baseline on the fixed 250-task test set. A tiny smoke establishes execution, not benchmark performance or throughput at concurrency 35.

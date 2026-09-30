@@ -37,6 +37,27 @@ def test_ampere_attention_keeps_packed_flash_attention(tmp_path):
     assert calls == [{"attn_implementation": "kernels-community/flash-attn2", "revision": "fixed"}]
 
 
+def test_smoke_reload_is_separate_and_training_failure_stops_eval(tmp_path, monkeypatch):
+    import run
+    import runtime.checkpoints
+    calls = []
+    monkeypatch.setattr(sys, "argv", ["run.py", "smoke", "--model", "lfm", "--mode", "multi-harness",
+                                    "--output", str(tmp_path), "--smoke-eval", "--concurrency", "4"])
+    monkeypatch.setattr(runtime.checkpoints, "make_ready", lambda p: calls.append(("ready", p)))
+    monkeypatch.setattr(run, "launch_local", lambda a, c: calls.append((a.action, a.checkpoint, c["output"], a.limit)))
+    run.main()
+    assert calls[0][0] == "smoke"
+    assert calls[1] == ("ready", tmp_path / "checkpoint-2")
+    assert calls[2] == ("eval", tmp_path / "checkpoint-2", str(tmp_path / "reload-eval"), 2)
+    calls.clear()
+    def fail(*args):
+        raise RuntimeError("training failed")
+    monkeypatch.setattr(run, "launch_local", fail)
+    with pytest.raises(RuntimeError, match="training failed"):
+        run.main()
+    assert not calls
+
+
 def test_frozen_data_and_rotation():
     train, test = task_rows("train"), task_rows("test")
     assert len(train) == 1000 and len(test) == 250

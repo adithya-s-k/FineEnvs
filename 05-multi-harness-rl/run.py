@@ -26,6 +26,7 @@ def parser():
     p.add_argument("--resume", type=Path)
     p.add_argument("--concurrency", type=int)
     p.add_argument("--limit", type=int, help="Eval tasks per harness; omit for all 250")
+    p.add_argument("--smoke-eval", action="store_true", help="Reload the smoke checkpoint for two tasks per harness")
     p.add_argument("--server", help="External URL, or a local bind URL; owned services default to unused ports")
     p.add_argument("--vllm-url")
     p.add_argument("--capture-port", type=int)
@@ -140,6 +141,8 @@ def launch_local(args, cfg):
 
 def main():
     args = parser().parse_args()
+    if args.smoke_eval and (args.action != "smoke" or args.external_services):
+        raise ValueError("--smoke-eval requires a smoke with job-local services")
     if args.external_services and (not args.server or not args.vllm_url):
         raise ValueError("External services require --server and --vllm-url")
     args.server = args.server or f"http://127.0.0.1:{unused_port()}"
@@ -156,7 +159,18 @@ def main():
         return
     if args.action in {"train", "eval", "smoke"}:
         if not args.external_services:
-            return launch_local(args, cfg)
+            launch_local(args, cfg)
+            if args.smoke_eval:
+                from runtime.checkpoints import make_ready
+                checkpoint = Path(cfg["output"]) / f'checkpoint-{cfg["max_steps"]}'
+                make_ready(checkpoint)
+                eval_args = argparse.Namespace(**vars(args))
+                eval_args.action, eval_args.checkpoint, eval_args.resume = "eval", checkpoint, None
+                eval_args.limit = args.limit or 2
+                eval_cfg = {**cfg, "output": str(Path(cfg["output"]) / "reload-eval"),
+                            "run_name": cfg["run_name"] + "-reload", "eval_concurrency": args.concurrency or 4}
+                launch_local(eval_args, eval_cfg)
+            return
         args.action = "_eval" if args.action == "eval" else "_train"
     from runtime.bootstrap import activate
     activate()

@@ -47,14 +47,19 @@ def main():
     p.add_argument("--resume")
     p.add_argument("--concurrency", type=int, default=35)
     p.add_argument("--limit", type=int)
+    p.add_argument("--smoke-eval", action="store_true")
     p.add_argument("--max-active-evals", type=int, default=1)
     p.add_argument("--submit", action="store_true")
     args = p.parse_args()
+    if args.smoke_eval and args.action != "smoke":
+        p.error("--smoke-eval requires the smoke action")
     if Path(args.run_name).name != args.run_name or args.run_name in {".", ".."}:
         p.error("run-name must be a single directory name")
     output = str(Path("/outputs" if args.backend == "hf" else args.output_root.resolve()) / args.run_name)
     flags = [args.action, "--model", args.model, "--mode", args.mode, "--run-name", args.run_name,
              "--output", output, "--concurrency", str(args.concurrency)]
+    if args.smoke_eval:
+        flags.append("--smoke-eval")
     if args.config:
         path = args.config
         if args.backend == "hf" and not str(path).startswith("/outputs/"):

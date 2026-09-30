@@ -40,6 +40,8 @@ Repeat the smoke for each model/mode before launching that combination. The defa
 
 The A100 alternative is `--flavor a100x4`; this recipe uses two of those four GPUs, but the full allocation is billed. Async training selects FlashAttention 2 on Ampere and FlashAttention 3 on Hopper, preserving packed-sequence boundaries. A checked adapter enables this choice in the pinned TRL runtime. See `VALIDATION.md` for hardware qualification status.
 
+For a combined training and reload check, add `--smoke-eval --concurrency 4` to the smoke command. After two updates, it hashes checkpoint 2, restarts the services and evaluates two test tasks per harness. Blackbox modes run all four Harbor harnesses, producing eight graded pairs when complete. The evaluation lives under `reload-eval/`; a training failure prevents it from starting.
+
 The bucket is mounted at `/outputs`. A run writes to `/outputs/RUN_NAME`; the watcher hashes completed checkpoints before launching evals. Keep the watcher alive until all final evaluations finish. Failures remain in `eval-watcher.json` for investigation rather than resubmitting indefinitely. Relaunch a failed evaluation explicitly with the same output name to retain already graded pairs.
 
 ```bash
