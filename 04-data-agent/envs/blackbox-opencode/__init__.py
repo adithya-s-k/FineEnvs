@@ -34,7 +34,8 @@ print(result.reward, len(result.turns))
 
 # Training use: hand the factory to TRL's HarnessRolloutWorker.
 factory = DataAgentSessionFactory(
-    "http://127.0.0.1:8200", split="train:medium", llm_url=VLLM_URL, model=MODEL
+    "http://127.0.0.1:8200", split="train:medium", llm_url=VLLM_URL, model=MODEL,
+    sampling={"temperature": 0.8, "top_p": 1.0, "top_k": 0},
 )
 ```
 """

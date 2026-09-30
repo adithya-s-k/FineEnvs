@@ -33,7 +33,7 @@ import logging
 import threading
 from typing import Any
 
-from .task import DataAgentTask, instruction_id
+from .task import DataAgentTask, instruction_id, _tolerance
 
 
 logger = logging.getLogger(__name__)
@@ -61,6 +61,10 @@ def _load_split(split: str) -> list[dict[str, Any]]:
     score zero for reasons that have nothing to do with the policy. They are dropped at discovery so
     they never reach a sandbox, and the count is logged rather than silently absorbed.
     """
+    import os
+    frozen = os.environ.get("DATA_AGENT_FROZEN_TASKS_DIR")
+    if frozen:
+        return _frozen_rows(frozen, split)
     from datasets import load_dataset
 
     raw = list(load_dataset(DATASET, split=split))
@@ -230,3 +234,32 @@ def _public(task: DataAgentTask, split: str, index: int) -> dict[str, Any]:
         "reward_mode": task.reward_mode,
         "files": task.files,
     }
+
+
+def _frozen_rows(root: str, split: str) -> list[dict[str, Any]]:
+    """Read the shared frozen data without invoking Harbor's execution path."""
+    from pathlib import Path
+    import hashlib
+    import json
+    import tomllib
+    if split not in {"train", "test"}:
+        raise ValueError("Frozen task split must be train or test")
+    root = Path(root)
+    manifest = json.loads((root.parent / f"{split}_manifest.json").read_text())
+    rows = []
+    for entry in sorted(manifest["tasks"], key=lambda t: t["name"]):
+        path = root / split / "tasks" / entry["name"]
+        instruction = (path / "instruction.md").read_text()
+        expected = entry["file_hashes"][f"tasks/{entry['name']}/instruction.md"]
+        if hashlib.sha256(instruction.encode()).hexdigest() != expected:
+            raise ValueError(f"Frozen instruction hash mismatch: {entry['name']}")
+        if hashlib.sha256((path / "task.toml").read_bytes()).hexdigest() != entry.get("effective_task_toml_sha256", entry["file_hashes"][f"tasks/{entry['name']}/task.toml"]):
+            raise ValueError(f"Frozen task configuration mismatch: {entry['name']}")
+        spec = tomllib.loads((path / "task.toml").read_text())
+        meta, env, verifier = spec["metadata"], spec["environment"]["env"], spec["verifier"]["env"]
+        rows.append(dict(task_id=entry["name"], instruction=instruction, answer=meta["gold_answer"],
+             question=spec["task"]["description"], reward_mode=verifier["REWARD_MODE"],
+             atol=_tolerance(verifier.get("ATOL")), rtol=_tolerance(verifier.get("RTOL")),
+             hf_bucket=env["HF_BUCKET"], bucket_prefix=env["BUCKET_PREFIX"],
+             difficulty_tier=meta["difficulty_tier"], difficulty_level=meta["difficulty_level"]))
+    return rows

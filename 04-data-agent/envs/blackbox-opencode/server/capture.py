@@ -42,6 +42,7 @@ at module level, guarded by a lock.
 from __future__ import annotations
 
 import logging
+import hashlib
 import os
 import threading
 from typing import Any
@@ -70,7 +71,7 @@ _FORWARDER: Any = None
 _PUBLIC_URL: str = ""
 # Measured tier per (llm_url, model). Deciding it means sending real completions, so it is measured
 # once per engine and shared, never per rollout.
-_TIERS: dict[tuple[str, str], str] = {}
+_TIERS: dict[tuple[str, str, str], str] = {}
 
 
 def capture_server(
@@ -96,7 +97,8 @@ def capture_server(
     global _SERVER, _FORWARDER, _PUBLIC_URL
     with _LOCK:
         if _SERVER is None:
-            server = CaptureServer(llm_url=llm_url, model=model, port=port)
+            server = CaptureServer(llm_url=llm_url, model=model, port=port,
+                max_output_tokens=16384, admin_key=os.environ.get("DATA_AGENT_CAPTURE_ADMIN_KEY") or __import__("secrets").token_urlsafe(32))
             server.start()
             logger.info(
                 "capture proxy listening on :%d (engine %s, model %s)",
@@ -138,7 +140,7 @@ def agent_base_url(server: CaptureServer) -> str:
     return _PUBLIC_URL or f"http://127.0.0.1:{server.port}"
 
 
-def engine_tier(llm_url: str, model: str, *, require_tokens: bool) -> str:
+def engine_tier(llm_url: str, model: str, *, require_tokens: bool, api_key: str | None = None) -> str:
     """Measure what this engine can return, once, and remember it.
 
     An engine served without `--return-tokens-as-token-ids --logprobs-mode processed_logprobs`
@@ -155,7 +157,7 @@ def engine_tier(llm_url: str, model: str, *, require_tokens: bool) -> str:
     Returns:
         `str`: `"tokens"` or `"text"`.
     """
-    key = (llm_url, model)
+    key = (llm_url, model, hashlib.sha256((api_key or "").encode()).hexdigest())
     with _LOCK:
         hit = _TIERS.get(key)
     if hit is not None and not (require_tokens and hit != "tokens"):
@@ -163,7 +165,7 @@ def engine_tier(llm_url: str, model: str, *, require_tokens: bool) -> str:
 
     from openenv.core.harness.capture.validate_llm import require_llm
 
-    report = require_llm(llm_url, model, require_tokens=require_tokens)
+    report = require_llm(llm_url, model, require_tokens=require_tokens, api_key=api_key)
     level = report.capture_level or "text"
     with _LOCK:
         _TIERS[key] = level
@@ -179,6 +181,7 @@ def mint_session(
     rollout_id: str,
     capture_level: str,
     max_model_calls: int = 0,
+    api_key: str | None = None,
     **metadata: Any,
 ) -> tuple[str, str]:
     """Create a capture session on the live registry.
@@ -197,7 +200,7 @@ def mint_session(
     """
     session = server.registry.create(
         session_id=None,
-        upstream=Upstream(llm_url=llm_url, model=model),
+        upstream=Upstream(llm_url=llm_url, model=model, api_key=api_key),
         capture_level=capture_level,
         max_model_calls=max_model_calls,
         rollout_id=rollout_id,
@@ -241,7 +244,14 @@ def fetch_turns(
         logger.warning(
             "capture findings for %s: %s", session_id, "; ".join(findings[:5])
         )
-    return turns_from_capture(to_trace_entries(session.graph, document)), findings
+    if level == "tokens":
+        return turns_from_capture(to_trace_entries(session.graph, document)), findings
+    # Hosted text-only inference remains evaluable, with no fabricated token arrays.
+    turns = [DataAgentTurn(turn=n.index, text=(n.response_message or {}).get("content") or "",
+             tool_calls=(n.response_message or {}).get("tool_calls") or [],
+             request_messages=n.request_messages, request_tools=n.request_tools,
+             finish_reason=n.finish_reason) for n in session.graph.nodes()]
+    return turns, findings
 
 
 def release_session(server: CaptureServer, session_id: str | None) -> None:

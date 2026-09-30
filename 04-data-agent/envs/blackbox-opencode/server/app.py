@@ -18,7 +18,7 @@ Everything is read from the environment, so one image serves any split and any e
 rebuild:
 
     DATA_AGENT_SPLITS        comma-separated splits, e.g. `train:medium,test` (default `train`)
-    DATA_AGENT_SANDBOX       default backend, `e2b` or `hf`
+    DATA_AGENT_SANDBOX       default backend, `e2b`, `hf` or `daytona`
     DATA_AGENT_MAX_CONCURRENT  rollouts in flight; see the ceiling note below
     DATA_AGENT_CAPTURE_PORT  port the capture proxy binds (default 8300)
     CAPTURE_PUBLIC_URL       how the SANDBOX reaches that port, when it is not localhost

@@ -44,6 +44,11 @@ def instruction_id(instruction: str) -> str:
     return hashlib.sha1(instruction.encode()).hexdigest()
 
 
+def _tolerance(value: Any) -> float:
+    """Default an omitted tolerance while preserving an explicit numeric zero."""
+    return 1e-3 if value is None or value == "" else float(value)
+
+
 class DataAgentTask(BaseModel):
     """A single task, parsed from one dataset row.
 
@@ -79,8 +84,8 @@ class DataAgentTask(BaseModel):
     answer: str
     question: str = ""
     reward_mode: str = ""
-    atol: float = 0.0
-    rtol: float = 0.0
+    atol: float = 1e-3
+    rtol: float = 1e-3
     hf_bucket: str
     bucket_prefix: str
     files: list[str] = Field(default_factory=list)
@@ -99,8 +104,8 @@ class DataAgentTask(BaseModel):
             answer=str(row["answer"]),
             question=row.get("question", "") or "",
             reward_mode=row.get("reward_mode") or "",
-            atol=float(row.get("atol") or 0.0),
-            rtol=float(row.get("rtol") or 0.0),
+            atol=_tolerance(row.get("atol")),
+            rtol=_tolerance(row.get("rtol")),
             hf_bucket=row["hf_bucket"],
             bucket_prefix=row["bucket_prefix"],
             files=list(row.get("files") or []),

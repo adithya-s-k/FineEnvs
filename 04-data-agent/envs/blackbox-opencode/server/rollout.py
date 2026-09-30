@@ -75,6 +75,8 @@ def run_rollout(
     hf_token: str | None,
     config: DataAgentConfig,
     require_tokens: bool = True,
+    api_key: str | None = None,
+    sampling: dict[str, float | int] | None = None,
 ) -> DataAgentRolloutResult:
     """Run one rollout end to end. Never raises.
 
@@ -115,6 +117,7 @@ def run_rollout(
     server = None
     session_id = None
     sandbox = None
+    rollout_type = "eval"
     try:
         from .capture import (
             agent_base_url,
@@ -131,7 +134,10 @@ def run_rollout(
             llm_url=llm_url,
             model=model,
             rollout_id=rollout_id,
-            capture_level=engine_tier(llm_url, model, require_tokens=require_tokens),
+            capture_level=engine_tier(llm_url, model, require_tokens=require_tokens, api_key=api_key),
+            api_key=api_key,
+            sampling=sampling,
+            max_output_tokens=config.max_output_tokens,
             max_model_calls=config.agent_step_limit,
             task=task.instruction_id,
             sandbox=config.sandbox,
@@ -141,7 +147,7 @@ def run_rollout(
         # separate `exec` below, which is also what `opencode_env`'s harness does.
         sandbox = backend.create(
             timeout_s=int(config.agent_timeout_s),
-            envs=task.env(hf_token),
+            envs=task.env(None),
             metadata={"rollout_id": rollout_id, "task": task.instruction_id},
         )
         _wait_ready(sandbox)
@@ -203,6 +209,10 @@ def run_rollout(
                 "rollout_id": rollout_id,
                 "session_id": session_id,
                 "sandbox": config.sandbox,
+                "implementation": "standalone-opencode",
+                "opencode_version": OPENCODE_VERSION,
+                "max_output_tokens": config.max_output_tokens,
+                "task_id": task.task_id,
                 # Surfaced rather than swallowed: `per_turn_capture_only` means the turns are exact
                 # but became one graph root each, so a consumer expecting multi-turn credit
                 # assignment is not getting it. That is invisible in the turn list itself.
@@ -213,8 +223,18 @@ def run_rollout(
         logger.warning(
             "rollout %s failed; returning ungraded", rollout_id, exc_info=True
         )
+        # Preserve observed tokens for diagnosis even when infrastructure prevents
+        # grading. A partial capture must never turn an ungraded attempt into zero.
+        turns, capture_findings = [], []
+        if server is not None and session_id is not None:
+            try:
+                turns, capture_findings = fetch_turns(server, session_id)
+            except Exception as capture_exc:
+                capture_findings = [f"capture export failed: {type(capture_exc).__name__}"]
         return DataAgentRolloutResult(
-            metadata={"error": f"{type(exc).__name__}: {exc}", "rollout_id": rollout_id}
+            rollout_type=rollout_type, turns=turns,
+            metadata={"error": f"{type(exc).__name__}: {exc}", "rollout_id": rollout_id,
+                      "task_id": task.task_id, "capture_findings": capture_findings}
         )
     finally:
         # Order matters: kill the sandbox and drop the capture session before releasing the slot, or
@@ -252,7 +272,7 @@ def _stage_inputs(sandbox: Any, task: DataAgentTask, hf_token: str | None, confi
         return
     last = None
     for attempt in (1, 2):
-        result = sandbox.exec(setup, timeout=config.setup_timeout_s)
+        result = sandbox.exec(setup, timeout=config.setup_timeout_s, envs=task.env(hf_token))
         code = _exit_code(result, default=0)
         if code == 0:
             return
@@ -263,6 +283,7 @@ def _stage_inputs(sandbox: Any, task: DataAgentTask, hf_token: str | None, confi
 
 # opencode lands here when installed at runtime; the E2B template also puts it on PATH.
 OPENCODE_BIN = "$HOME/.opencode/bin"
+OPENCODE_VERSION = os.environ.get("DATA_AGENT_OPENCODE_VERSION", "1.18.31")
 
 
 def _exit_code(result: Any, *, default: int = 1) -> int:
@@ -303,7 +324,7 @@ def _opencode_present(sandbox: Any) -> bool:
     """Whether `opencode` runs in this sandbox. The PATH export is load-bearing on a fresh install."""
     try:
         r = sandbox.exec(f'export PATH="{OPENCODE_BIN}:$PATH"; opencode --version', timeout=20)
-        return _exit_code(r) == 0
+        return _exit_code(r) == 0 and r.stdout.strip() == OPENCODE_VERSION
     except Exception:  # noqa: BLE001
         return False
 
@@ -327,7 +348,8 @@ def _ensure_opencode(sandbox: Any, config: DataAgentConfig) -> None:
         return
     install = (
         f"mkdir -p {config.home}/.config/opencode {config.home}/workdir && "
-        "curl -fsSL https://opencode.ai/install | bash"
+        "set -o pipefail; curl -fsSL https://opencode.ai/install | bash -s -- --version "
+        + __import__("shlex").quote(OPENCODE_VERSION)
     )
     last = None
     for attempt in (1, 2, 3):
@@ -402,15 +424,20 @@ def _run_agent(
     #
     # A file has neither problem, and it is what the working eval harness did.
     sandbox.write_text(f"{config.home}/workdir/task.md", instruction)
-    # `timeout`, not `timeout_s`: the handle protocol names it `timeout` while the BACKEND's `create`
-    # names its own `timeout_s`. The two differ, and mixing them up raises only at call time.
-    result = sandbox.exec(
+    # The shared backend protocol already supports detached execution. In particular,
+    # Daytona's synchronous exec holds one HTTP request for the whole command and can
+    # lose its result at the command deadline. Poll a background process instead;
+    # a genuine agent budget expiry still leaves the captured trajectory available.
+    process = sandbox.start_bg(
         f'export PATH="{OPENCODE_BIN}:$PATH"; '
         f"cd {config.home}/workdir && "
         f'opencode run --print-logs "$(cat {config.home}/workdir/task.md)"',
-        timeout=config.agent_timeout_s,
     )
-    return _exit_code(result, default=0)
+    try:
+        return process.wait(timeout=config.agent_timeout_s)
+    except TimeoutError:
+        process.kill()
+        return 124
 
 
 def turns_from_capture(entries: list[dict[str, Any]]) -> list[DataAgentTurn]:
@@ -424,9 +451,9 @@ def turns_from_capture(entries: list[dict[str, Any]]) -> list[DataAgentTurn]:
                 prompt_token_ids=list(e.get("prompt_token_ids") or []),
                 completion_token_ids=list(e.get("completion_token_ids") or []),
                 per_token_logps=list(e.get("per_token_logps") or []),
-                trainable=bool(
-                    e.get("prompt_token_ids") and e.get("completion_token_ids")
-                ),
+                loss_mask=list(e.get("loss_mask") or []),
+                capture_metadata=dict(e.get("metadata") or {}),
+                trainable=bool(any(e.get("loss_mask") or [])),
                 request_messages=list((e.get("request") or {}).get("messages") or []),
                 request_tools=(e.get("request") or {}).get("tools"),
                 text=msg.get("content") or "",

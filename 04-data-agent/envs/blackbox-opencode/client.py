@@ -120,6 +120,8 @@ class DataAgentEnv(MCPToolClient):
         agent_step_limit: int = 10,
         agent_timeout_s: float = 600.0,
         require_tokens: bool = True,
+        api_key: str = "",
+        sampling: dict[str, float | int] | None = None,
         timeout_s: float | None = None,
     ) -> DataAgentRolloutResult:
         """Run one rollout to completion and return its token-level result.
@@ -147,6 +149,8 @@ class DataAgentEnv(MCPToolClient):
             agent_step_limit=agent_step_limit,
             agent_timeout_s=agent_timeout_s,
             require_tokens=require_tokens,
+            api_key=api_key,
+            **({"sampling": sampling} if sampling is not None else {}),
         )
         return DataAgentRolloutResult.model_validate(_as_json(raw))
 

@@ -43,6 +43,7 @@ e2b = ["e2b>=1.0.0"]
 # `huggingface_hub.Sandbox` ships in 1.22; there is no `[sandbox]` extra, and asking for one makes
 # uv warn and then silently resolve without it.
 hf = ["huggingface_hub>=1.22"]
+daytona = ["daytona>=0.203.0"]
 dev = ["pytest>=9.0.3", "pytest-cov>=4.0.0"]
 
 [project.scripts]
@@ -50,5 +51,5 @@ server = "data_agent_env.server.app:main"
 
 [tool.setuptools]
 include-package-data = true
-packages = ["data_agent_env", "data_agent_env.server"]
-package-dir = { "data_agent_env" = ".", "data_agent_env.server" = "server" }
+packages = ["data_agent_env", "data_agent_env.server", "data_agent_env.sandbox"]
+package-dir = { "data_agent_env" = ".", "data_agent_env.server" = "server", "data_agent_env.sandbox" = "sandbox" }
