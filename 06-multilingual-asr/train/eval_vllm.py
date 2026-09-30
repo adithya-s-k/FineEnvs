@@ -488,6 +488,31 @@ def main():
                 loras=args.max_loras,
                 max_lora_rank=args.max_lora_rank,
             ) as vllm_url:
+                # The untuned model on the same engine, same tasks, same grading. A
+                # curve of checkpoints says nothing without the point it started from,
+                # and the trainer's own baseline uses a different harness and task
+                # count, so it is not comparable with these numbers.
+                print(f"\n=== {args.base} (no adapter) ===", flush=True)
+                started = time.monotonic()
+                predictions = predict(
+                    vllm_url,
+                    args.base,
+                    prepared,
+                    args.max_new_tokens,
+                    args.request_timeout,
+                    args.workers,
+                    args.progress,
+                )
+                samples, groups = grade(
+                    env_url, prepared, predictions, args.request_timeout, args.workers
+                )
+                record(
+                    args.base,
+                    revision,
+                    summarize(samples, groups, time.monotonic() - started),
+                    len(rows),
+                )
+
                 for name, path in args.adapters:
                     print(f"\n=== {name} (adapter over {args.base}) ===", flush=True)
                     with adapter(vllm_url, name, path):
