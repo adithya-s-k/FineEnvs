@@ -36,9 +36,19 @@ def decode_audio(raw, expected_rate=SAMPLING_RATE):
 
 
 class AssetCache:
-    def __init__(self, url, max_bytes=64_000_000):
+    # TRL left-pads input_ids but hands every other multimodal field to
+    # torch.tensor(np.array(v)), which needs one shape. Audio features are
+    # (frames, 128) with frames tracking duration, so a batch spanning more than one
+    # utterance raised "inhomogeneous shape" the moment accumulation made batches
+    # cover several tasks. Padding to a fixed span here fixes every caller at once,
+    # and keeps training and evaluation on identical preprocessing. The model reads
+    # input_features_mask, so the padding is inert rather than heard as silence.
+    def __init__(self, url, max_bytes=64_000_000, pad_seconds=0):
         if max_bytes < 1:
             raise ValueError("Asset cache budget must be positive")
+        if pad_seconds < 0:
+            raise ValueError("Use a non-negative audio pad span")
+        self.pad_samples = int(pad_seconds * SAMPLING_RATE)
         self.url = url.rstrip("/")
         self.max_bytes = max_bytes
         self._bytes = 0
@@ -78,7 +88,18 @@ class AssetCache:
                 self._bytes += len(raw)
                 self.downloads += 1
             self._items[sha] = raw
-        return decode_audio(raw)
+        return self._fit(decode_audio(raw))
+
+    def _fit(self, audio):
+        if not self.pad_samples:
+            return audio
+        import numpy
+
+        if len(audio) >= self.pad_samples:
+            # Truncating loses speech the reference still transcribes, so this is a
+            # last resort for a clip longer than the configured span, not a default.
+            return audio[: self.pad_samples]
+        return numpy.pad(audio, (0, self.pad_samples - len(audio)))
 
 
 class TrainingEnvironment:
