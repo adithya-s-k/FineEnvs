@@ -1,0 +1,11 @@
+{
+  "space": "FineEnvs/data-agent-training-comparison-trackio",
+  "revision": "21c9eabee5fa045ef92a8fb583f54f0045cb1883",
+  "files": {
+    "app.py": "579296f7166b1d96c40490ea90e0271a84d5826507ae9eb742ee18513599774c",
+    "requirements.txt": "a603895f51c3aacaca97c46606c16f05b6c6119e06086a3838cbc6121fa443f4",
+    "comparison_reads.py": "911fced5cd547682bb05fad55da35c946af27b5307993196c20dfcedf73d418a",
+    "dashboard_ui.py": "7a9088d4c0795a6e06d01c8520e5e7bee67f771d9819f23feaf0439556d2a27e",
+    "SPACE_README.md": "f3e14fd656ec20203976ac172b49ca6d60e56acabe35261d824e73354be3f92a"
+  }
+}
