@@ -1,0 +1,53 @@
+{
+  "model": "lfm",
+  "mode": "multi-harness",
+  "seed": 0,
+  "passes": 2,
+  "max_steps": 1000,
+  "learning_rate": 0.000003,
+  "num_generations": 8,
+  "max_inflight": 32,
+  "max_outstanding_rollouts": 16,
+  "max_staleness": 4,
+  "batch_size": 4,
+  "gradient_accumulation_steps": 4,
+  "token_budget": 40960,
+  "max_model_len": 131072,
+  "max_completion_length": 16384,
+  "max_output_tokens": 4096,
+  "temperature": 0.8,
+  "top_p": 1.0,
+  "top_k": 0,
+  "agent_step_limit": 17,
+  "agent_timeout_sec": 600,
+  "save_steps": 50,
+  "eval_steps": 100,
+  "eval_concurrency": 35,
+  "eval_dp": 2,
+  "efficiency_weight": 0.1,
+  "tool_budget": 15,
+  "sandbox": "daytona",
+  "project": "smoldataenv-rl",
+  "trackio_space_id": null,
+  "models": {
+    "lfm": {
+      "id": "LiquidAI/LFM2.5-2.6B",
+      "revision": "654f9463ce32b05d0429d76fe1f580b27d4c1ac0",
+      "tool_parser": "lfm2",
+      "template": "lfm-closed-thinking"
+    },
+    "qwen": {
+      "id": "Qwen/Qwen3.5-2B",
+      "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+      "tool_parser": "qwen3_xml",
+      "template": "enable_thinking_false"
+    }
+  },
+  "harnesses": ["opencode", "claude-code", "codex", "mini-swe-agent"],
+  "harness_versions": {
+    "opencode": "1.18.31",
+    "claude-code": "2.1.270",
+    "codex": "0.154.0",
+    "mini-swe-agent": "2.4.6"
+  }
+}

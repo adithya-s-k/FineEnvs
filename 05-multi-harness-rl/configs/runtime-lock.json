@@ -1,0 +1,61 @@
+{
+  "archive": {
+    "repo": "adithya-s-k/FineEnvs",
+    "revision": "bff1b69310db76bf048ae26f7ba1d70134d5f2e3",
+    "files": {
+      "envs/blackbox-opencode/tasks.py": "1a99bfb65008366993ce6794fe70a762985aadec01320cb9de9039bd762af802",
+      "envs/blackbox-opencode/config.py": "19914b42ea832893e52b1c8671e69aefd3908df76dc8bd97498507ecb64385ad",
+      "envs/blackbox-opencode/curriculum.py": "d3c2d9b47a4a517d8a671ca2a46c1e0682f3c2786b79ba2d6731022f279ec2c2",
+      "envs/blackbox-opencode/verifier.py": "02e2c9ab9d7340fa450f75e36f1418a8acfb6d6dc7593a77fb3d1cc3dbc797c3",
+      "envs/blackbox-opencode/__init__.py": "0eabe01dc2ba02aed86167f3c746d9a096379dfb26b0a917b59502c8affe8ebc",
+      "envs/blackbox-opencode/task.py": "8e492535a8bf6fd7b13e9e00a19a4ec6c03a801246143db842b185b9cc7d8d97",
+      "envs/blackbox-opencode/client.py": "18cee684f7f3ae377c565bdeeabcaa6e790b366fd859efce93938ed6ea7a52d7",
+      "envs/blackbox-opencode/reward.py": "fed11e459a0795f624ee9a18121890f0a6aa460b9e1b75763e9d66279fde5129",
+      "envs/blackbox-opencode/harness.py": "2037caa67cf1a8100f1acff3bbd6d510471261c402738c0634b97beac4ed5fbe",
+      "envs/blackbox-opencode/grader.py": "58220f93a7d78767f9152c7db6f33a67800d694b4f15eca8e53dbca02625f457",
+      "envs/blackbox-opencode/rollout.py": "be6b7c787ee187a74b5dfa9af7eef1e56efedaa14aa99dc3b72132dd15e6e6bc",
+      "envs/blackbox-opencode/models.py": "5fcc4a4b1e7d35b359d87463b83e4f35263733384768b7cc07c924227ae8d0fd",
+      "envs/blackbox-opencode/server/__init__.py": "0b63c98ec0d6e82d66fa0b13523d417d87dbba0e7aeea1d786aa13a8388e7184",
+      "envs/blackbox-opencode/server/app.py": "0e318a153dbb420e7a95e05a815466da8bdaf49f45bdeb1b9656ad2296f20a58",
+      "envs/blackbox-opencode/server/rollout.py": "eb961258c432798403b4bc41709b3ac8fa01c087041911022bac8adba283447b",
+      "envs/blackbox-opencode/server/capture.py": "97108b4a961e1c0217e04fd0f94b51de6f1a4356d232e49f1511a45bc911da49",
+      "envs/blackbox-opencode/server/environment.py": "95dfae62baa042742840efc67dad816e1deabcb62b568ad69204bf005ae01229",
+      "envs/blackbox-opencode/sandbox/hf.py": "8d2d1b3e0eba9819833f52ac714ff693bd1ae2cf467d12313a531837b5f2d795",
+      "envs/blackbox-opencode/sandbox/__init__.py": "399b02c8050f151072c32b59760ccc4c4c397cb129f406186cd153d974741556",
+      "envs/blackbox-opencode/sandbox/base.py": "2385954579f8061d34bcbc3e1a20b13658557d1dc8f872a8058aaf4670899d93",
+      "envs/blackbox-opencode/sandbox/e2b.py": "b30faa2628bc23a2ba3ebaa1b21ef467f3b5d8fac93a317d23bd5f4ce6c8bffa",
+      "envs/blackbox-opencode/sandbox/daytona.py": "9407386abc7ace49f6b6615ceb20ed8ab8e922840614d2cc863e5e211e079707",
+      "envs/whitebox-bash/grader.py": "4333d1526a3307a0b9b72a37199009831f7162f2d30cf3d8c7bbd656fdd7b859",
+      "envs/whitebox-bash/dataagent.py": "7d3b9d91e8f2f8c3679c86e10bba47c4ffcc234a9a065095fe5ee0a327d11943",
+      "envs/whitebox-bash/suite.py": "a0e162f042d6f6bf5efc4165e3e117d474df2723417e42abd4b3a1875502dc80",
+      "envs/whitebox-bash/client.py": "b3888637c79ae079c66e1a434090da89cfa5e2a90ec60b64a6c42ecf22782e7f",
+      "envs/whitebox-bash/__init__.py": "8f34adaf64792f79887b9a1cf72d9767db3a8425028e3566ee377050e1de6b08",
+      "envs/whitebox-bash/tasks.py": "465c5c721150a4f46929b8e4750c99565c165dbe25930b2ada226551b71c49ba",
+      "envs/whitebox-bash/models.py": "ea2a29f0c9dd0db0fc201069ed7183089b277cfd3b94bd562a7c19b6929291f8",
+      "envs/whitebox-bash/tools.py": "02eee5f7ce958ae48702f219859c59432929f7f7f4c99aeee8051472a2c6b35a",
+      "envs/whitebox-bash/server/__init__.py": "515cd1e723b755ac5281840119a4dd30fe6c63eb98b1b3a6d9b6b9b6c8978cd3",
+      "envs/whitebox-bash/server/environment.py": "f372126214413d7cddbc631ce6a388c23412effb5713931ee38c703a8c787836",
+      "envs/whitebox-bash/server/sandbox.py": "238d142a1f2ad114ddea12fb975670e5c1d39d361d80abd8983a326a58643b21",
+      "envs/whitebox-bash/server/app.py": "9d3cfae74f414a236a95a38844b8b2a78f28df6de2f872b06d1b6fd839d4cdd7",
+      "train/atomic_rollouts.py": "2c3a1918caff0d5c580f7dacaa914e6707ea7ec78365beb0411f92fb30c63616",
+      "train/training_audit.py": "2345477c719f15c3c8dd1b98bed0ca7d7c09c6eb3f7b00630dd8fb9de34bcb9b",
+      "train/checkpoint_artifacts.py": "9bc1055b9bdc1ec389fb73320c2519ab14dad6ace02e6e617b3c1d00365f06db",
+      "train/harness_schedule.py": "acca0746f9168c50d5e1ef1197cedba8c09126b28dc88fa34da01248cc36a0ba",
+      "train/multi_harness.py": "6609a24ee58ea1dfbf5ce10a7fea997e4028f82cf65cb4699d5a92a125673259",
+      "train/standalone_comparison.py": "bd0768a108b96129a2a5c8d80029b63a78fb8b578b96044eca19c90a50031d09",
+      "hf/runtime/hard_curriculum_train.py": "52c71aa1749536683901832817cd280a107ef7d66d9e7fa85efc2d0ff3dc8777",
+      "hf/runtime/daytona_whitebox_backend.py": "26677b370d16d8d9f8c4634d169d7ad9aff371d59c3b66583e028f85d2e8549c",
+      "hf/runtime/service_policy.py": "00c161987b6118c77dcde301fdd0eaeeba2708a4f386934bee1844af38c0701f",
+      "hf/runtime/whitebox_tito.py": "aee498fdb47f1b66e67118372e8641de79d8f01a8a6e63f9ca90cc6261f88be5",
+      "model_runs/lfm25/packing.py": "411c8be4ad0966f36ca5260b96d6c04fc20f4c8d7454b89cb64eda762a6df820"
+    }
+  },
+  "trl": {
+    "repo": "adithya-s-k/trl",
+    "revision": "3cb8efdd8586f1eb1b4d4f9b346f9bdad7e86bb4"
+  },
+  "openenv": {
+    "repo": "huggingface/OpenEnv",
+    "revision": "4f4c85fb9038f43efc2f51858a27638277f16355"
+  }
+}

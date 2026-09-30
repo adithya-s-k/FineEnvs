@@ -1,0 +1,32 @@
+name: multi-harness-rl
+title: "SmolDataEnv: whitebox and multi-harness RL"
+tagline: "One task split and reward across SETA, native OpenCode and Harbor; HF Jobs and Slurm recipes."
+order: 5
+status: wip
+hub:
+  org: FineEnvs
+  datasets:
+    - FineEnvs/SmolDataEnvs-harbor-train
+    - FineEnvs/SmolDataEnvs-harbor-test
+  spaces:
+    - FineEnvs/data-agent-seta-whitebox-env
+    - FineEnvs/data-agent-blackbox-opencode-env
+    - FineEnvs/data-agent-blackbox-harbor-env
+  trackio:
+    - FineEnvs/data-agent-training-comparison-trackio
+envs:
+  - name: seta
+    summary: "Native bash/SETA tools driven by synchronous GRPO."
+    frameworks:
+      openenv:
+        verified: false
+  - name: native-opencode
+    summary: "Native OpenCode owns its loop; AsyncGRPO consumes captured tokens."
+    frameworks:
+      openenv:
+        verified: false
+  - name: harbor
+    summary: "Rotate four Harbor harnesses between task groups."
+    frameworks:
+      openenv:
+        verified: false
