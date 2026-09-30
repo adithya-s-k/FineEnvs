@@ -68,7 +68,8 @@ Selected scope: LFM only, all three modes, 25 fixed held-out tasks (3 easy, 12 m
 
 - [Native OpenCode pilot](https://huggingface.co/jobs/FineEnvs/6abcd384031314b69634440b), `pilot-lfm-opencode-v2`: submitted.
 - [Harbor multi-harness pilot](https://huggingface.co/jobs/FineEnvs/6abcd3874c46ef19870359af), `pilot-lfm-multi-harness-v2`: submitted.
-- [Whitebox HF qualification](https://huggingface.co/jobs/FineEnvs/6abcd28f4c46ef1987035955): two updates plus reload eval, running before the whitebox pilot is launched.
+- [Whitebox HF qualification](https://huggingface.co/jobs/FineEnvs/6abcd28f4c46ef1987035955): failed saving step 1 because the fresh environment lacked TRL package metadata. Training and token auditing had reached the update. The entrypoint now installs the pinned checkout with `--no-deps --no-build-isolation`; package metadata was verified in a clean Python environment.
+- [Whitebox pilot](https://huggingface.co/jobs/FineEnvs/6abcd472031314b696344457), `pilot-lfm-whitebox-v1`: submitted with `--preflight-smoke`. It must finish two training updates and reload eval before starting the baseline/100-step phases; any failed qualification stops the job.
 
 The first two pilot submissions were canceled while still scheduling, then replaced with copies that print phase and scalar progress in HF logs. No training progress was discarded. Configurations, scalar logs, local Trackio and phase reports live under each run prefix in `FineEnvs/data-agent-daytona-artifacts`. No Slurm pilot has been submitted.
 
