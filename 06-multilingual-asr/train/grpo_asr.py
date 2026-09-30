@@ -66,6 +66,11 @@ class Config:
     resume: str = ""
     smoke: bool = False
 
+    @property
+    def rollouts_in_flight(self):
+        """Sessions TRL holds open at once: one per completion in an optimizer step."""
+        return self.num_generations * self.gradient_accumulation_steps
+
     def validate(self):
         if not math.isfinite(self.learning_rate) or self.learning_rate <= 0:
             raise ValueError("Use a finite positive learning rate")
@@ -212,7 +217,9 @@ def run(config):
 
     with ExitStack() as stack:
         url = config.env_url or stack.enter_context(
-            local_server(config.corpus, config.num_generations + 4)
+            # TRL opens a session per rollout, and accumulation multiplies the
+            # rollouts in flight: generations * accumulation, not generations.
+            local_server(config.corpus, config.rollouts_in_flight + 4)
         )
         with connect(url) as client:
             manifest = client.manifest()
