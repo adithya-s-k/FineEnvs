@@ -162,6 +162,33 @@ def test_native_means_native():
     assert {g["harness"] for g in schedule(config(mode="opencode"), task_rows("train"))} == {"opencode"}
 
 
+def test_config_overlays_preserve_defaults_and_explicit_overrides(tmp_path):
+    path = tmp_path / "my-run.json"
+    write_json(path, {"model": "qwen", "mode": "whitebox", "eval_concurrency": 7,
+                      "models": {"qwen": {"template": "enable_thinking_false"}}})
+    cfg = config(path)
+    assert cfg["model"] == "qwen" and cfg["mode"] == "whitebox" and cfg["eval_concurrency"] == 7
+    assert cfg["learning_rate"] == 3e-6
+    assert cfg["profile"]["id"] == "Qwen/Qwen3.5-2B"
+    assert "lfm" in cfg["models"]
+    assert config(path, model="lfm")["profile"]["id"] == "LiquidAI/LFM2.5-2.6B"
+
+
+def test_submission_uses_bucket_owner_without_overriding_config(monkeypatch, capsys):
+    from runtime import launch
+    monkeypatch.setattr(sys, "argv", ["launch.py", "hf", "pilot", "--bucket", "reader/my-runs",
+                                     "--run-name", "test", "--flavor", "a100x4"])
+    launch.main()
+    plan = json.loads(capsys.readouterr().out)
+    assert plan["namespace"] == "reader"
+    assert "--mode" not in plan["command"] and "--model" not in plan["command"]
+    assert "--concurrency" not in plan["command"]
+    monkeypatch.setattr(sys, "argv", ["launch.py", "hf", "pilot", "--bucket", "reader/my-runs",
+                                     "--run-name", "test", "--flavor", "a100-large"])
+    with pytest.raises(SystemExit):
+        launch.main()
+
+
 def test_nonthinking_preflight_checks_streaming_content(monkeypatch):
     hidden = False
     def create(*, stream, **kwargs):

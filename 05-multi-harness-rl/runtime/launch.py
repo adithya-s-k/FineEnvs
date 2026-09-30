@@ -12,7 +12,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from recipe import MODES, write_json
+from recipe import MODES, config, write_json
 
 
 def slurm_time(value):
@@ -40,11 +40,11 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("backend", choices=["hf", "slurm"])
     p.add_argument("action", choices=["train", "eval", "smoke", "pilot", "watch"])
-    p.add_argument("--model", choices=["lfm", "qwen"], default="lfm")
+    p.add_argument("--model", choices=["lfm", "qwen"], help="Override config model (default: lfm)")
     p.add_argument("--config", type=Path)
-    p.add_argument("--mode", choices=MODES, default="multi-harness")
+    p.add_argument("--mode", choices=MODES, help="Override config mode (default: multi-harness)")
     p.add_argument("--run-name", required=True)
-    p.add_argument("--namespace", default="FineEnvs")
+    p.add_argument("--namespace", help="HF Jobs owner; defaults to the bucket owner")
     p.add_argument("--bucket", help="Existing HF bucket, e.g. FineEnvs/smoldataenv-runs")
     p.add_argument("--image", default="huggingface/trl@sha256:8433cde7eaf3b289f3daffdaefcab6bb71499ca1ff59dc5d05abba7a71603a58")
     p.add_argument("--flavor", default="h200x2")
@@ -54,7 +54,7 @@ def main():
     p.add_argument("--output-root", type=Path, default=ROOT / "runs")
     p.add_argument("--checkpoint")
     p.add_argument("--resume")
-    p.add_argument("--concurrency", type=int, default=35)
+    p.add_argument("--concurrency", type=int, help="Override eval concurrency (default: 35 from config)")
     p.add_argument("--limit", type=int)
     p.add_argument("--smoke-eval", action="store_true")
     p.add_argument("--preflight-smoke", action="store_true")
@@ -67,9 +67,17 @@ def main():
         p.error("--preflight-smoke requires the pilot action")
     if Path(args.run_name).name != args.run_name or args.run_name in {".", ".."}:
         p.error("run-name must be a single directory name")
+    if args.config is None or not str(args.config).startswith("/outputs/"):
+        config(args.config, model=args.model, mode=args.mode, eval_concurrency=args.concurrency)
+    if args.limit is not None and not 1 <= args.limit <= 250:
+        p.error("--limit must be between 1 and the 250 fixed test tasks")
     output = str(Path("/outputs" if args.backend == "hf" else args.output_root.resolve()) / args.run_name)
-    flags = [args.action, "--model", args.model, "--mode", args.mode, "--run-name", args.run_name,
-             "--output", output, "--concurrency", str(args.concurrency)]
+    flags = [args.action, "--run-name", args.run_name, "--output", output]
+    if args.concurrency is not None:
+        flags += ["--concurrency", str(args.concurrency)]
+    for key in ("model", "mode"):
+        if getattr(args, key) is not None:
+            flags += ["--" + key, getattr(args, key)]
     if args.smoke_eval:
         flags.append("--smoke-eval")
     if args.preflight_smoke:
@@ -92,10 +100,16 @@ def main():
     if args.backend == "hf":
         if not args.bucket:
             p.error("HF Jobs require --bucket for durable checkpoints and logs")
+        if len(args.bucket.split("/")) != 2 or not all(args.bucket.split("/")):
+            p.error("Use a bucket ID in owner/name form")
+        args.namespace = args.namespace or args.bucket.split("/", 1)[0]
+        gpu_count = re.search(r"x([0-9]+)$", args.flavor)
+        if args.action != "watch" and (gpu_count is None or int(gpu_count[1]) < 2):
+            p.error("This recipe needs at least two GPUs; use h200x2 or a100x4")
         if args.action == "watch":
             flags = ["watch", "--root", "/outputs", "--backend", "hf", "--bucket", args.bucket,
                      "--namespace", args.namespace, "--flavor", args.flavor,
-                     "--concurrency", str(args.concurrency), "--max-active", str(args.max_active_evals), "--submit"]
+                     "--concurrency", str(args.concurrency if args.concurrency is not None else 35), "--max-active", str(args.max_active_evals), "--submit"]
         specification = {"image": args.image, "command": ["bash", "/recipe-source/runtime/job.sh", *flags],
             "flavor": "cpu-basic" if args.action == "watch" else args.flavor, "timeout": args.timeout, "namespace": args.namespace,
             "name": args.run_name, "labels": {"recipe": "smoldataenv-multi-harness", "role": args.action},
@@ -124,7 +138,7 @@ def main():
         if args.action == "watch":
             command = [sys.executable, str(ROOT / "eval/watch.py"), "--root", str(args.output_root.resolve()),
                        "--backend", "slurm", "--partition", args.partition, "--data", str(args.data.resolve()),
-                       "--concurrency", str(args.concurrency), "--max-active", str(args.max_active_evals), "--submit"]
+                       "--concurrency", str(args.concurrency if args.concurrency is not None else 35), "--max-active", str(args.max_active_evals), "--submit"]
         submit = ["sbatch", "--parsable", "--partition", args.partition, "--nodes=1", "--gpus=2",
                   "--cpus-per-task=16", "--mem=192G", "--time=" + slurm_time(args.timeout), "--job-name", args.run_name,
                   "--output", str(args.output_root / (args.run_name + "-%j.log")), "--wrap", shlex.join(command)]

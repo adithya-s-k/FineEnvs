@@ -1,8 +1,138 @@
-# Run the recipe
+# Run SmolDataEnv RL
 
-All commands below start in `05-multi-harness-rl/`. Python 3.12 is required. Choose `--mode whitebox`, `--mode opencode` or `--mode multi-harness`, and `--model lfm` or `--model qwen`.
+Start from a checkout containing this example:
 
-## 1. Prepare and inspect
+```bash
+cd 05-multi-harness-rl
+```
+
+Pick **HF Jobs** if you want the container to install and prepare everything. Pick **local/Slurm** if you already have a compatible GPU machine. Both use the same code, fixed tasks and model revisions. The current branch is local until published; the commands assume you already have its files.
+
+## 1. What you need
+
+- Python 3.12 and [uv](https://docs.astral.sh/uv/getting-started/installation/).
+- An HF account with Jobs billing enabled, or access to a local GPU machine.
+- A Daytona account and API key for task sandboxes. GPU and sandbox usage are billed separately.
+- Two GPUs with enough memory: the qualified HF blackbox setup uses A100 80 GB; local smokes used H100s. The default HF request is H200×2. Other combinations need their own smoke.
+
+One GPU trains while the other serves rollouts. Evaluation uses both as independent inference replicas. HF offers A100×4 rather than A100×2; this recipe uses two GPUs but the entire allocation is billed.
+
+## 2. Submit from a CPU laptop with HF Jobs
+
+You do **not** need CUDA, PyTorch, the datasets or a local environment server for submission.
+
+```bash
+uv venv --python 3.12
+source .venv/bin/activate
+uv pip install huggingface_hub==1.24.0
+hf auth login
+
+# Replace this with your own HF username or organization.
+export HF_NAMESPACE="your-hf-username"
+export HF_BUCKET="$HF_NAMESPACE/smoldataenv-runs"
+hf buckets create "$HF_BUCKET" --private --exist-ok
+
+# Enter your Daytona key without putting it in shell history.
+read -rs -p "Daytona API key: " DAYTONA_API_KEY
+export DAYTONA_API_KEY
+```
+
+Your HF login needs access to submit Jobs and write the bucket. The launcher uses the bucket owner as the job namespace; pass `--namespace` to choose another account you can use. Tokens are sent as HF Job secrets, not embedded in the uploaded source. Keep credentials out of config files.
+
+### First: verify one small run
+
+Commands print a submission plan by default. Read it, then add `--submit` to launch.
+
+```bash
+python runtime/launch.py hf smoke --model lfm --mode opencode \
+  --run-name smoke-lfm-opencode-v1 --bucket "$HF_BUCKET" \
+  --flavor a100x4 --timeout 45m --smoke-eval --concurrency 4
+```
+
+The job creates a Python environment, installs locked dependencies, fetches the pinned runtime and prepares tasks. It then runs two small training updates, saves checkpoints 1 and 2, and reloads checkpoint 2 for evaluation. Blackbox modes evaluate two tasks through each of four Harbor harnesses; whitebox evaluates two native SETA episodes. Require complete grading and valid capture, not a particular score from this tiny sample.
+
+### Next: a 100-step pilot
+
+```bash
+python runtime/launch.py hf pilot --model lfm --mode multi-harness \
+  --run-name pilot-lfm-multi-v1 --bucket "$HF_BUCKET" \
+  --flavor a100x4 --timeout 12h --limit 25 --concurrency 35
+```
+
+Add `--submit` after checking the plan. The phases are:
+
+1. Baseline pass@1 on 25 fixed tasks: 3 easy, 12 medium and 10 hard.
+2. Train with the normal eight-rollout configuration for 100 updates, saving at 50 and 100.
+3. Hash and reload checkpoint 100; repeat the same evaluation.
+4. Write `comparison.json` with quality, tool/token usage and gradient diagnostics.
+
+Phases run sequentially in one allocation. Evaluation does not compete with training. An incomplete baseline stops the job before training. The 12-hour timeout is a spending/time cap, not a completion estimate.
+
+Change `--mode` to `opencode` or `whitebox` and choose a **new run name** for each comparison. Add `--preflight-smoke` if that mode/model/hardware combination has not passed the small training and reload test; the pilot proceeds only after it passes. Change `--model lfm` to `--model qwen` to use Qwen3.5-2B. Use `--limit 250` for the full held-out set.
+
+## 3. Monitor and read the results
+
+Submission prints a job URL and records it in `runs/submissions/RUN_NAME.json`.
+
+```bash
+hf jobs inspect JOB_ID --namespace "$HF_NAMESPACE"
+hf jobs logs JOB_ID --namespace "$HF_NAMESPACE" --tail 50
+hf jobs logs JOB_ID --namespace "$HF_NAMESPACE" --follow
+```
+
+Logs show phase transitions, training step/reward/gradient norm and evaluation coverage. A job marked `RUNNING` may still be installing packages, loading a model or running its baseline; it does not necessarily mean training has begun. Inspect the final job status as well as the logs.
+
+Outputs are under `/outputs/RUN_NAME` inside the job, backed by your bucket. Afterward, download a run:
+
+```bash
+hf buckets sync "hf://buckets/$HF_BUCKET/RUN_NAME" runs/RUN_NAME
+```
+
+```text
+RUN_NAME/
+├── pilot.json                 configuration, exact test IDs and phase status
+├── baseline/eval/             summary.json and one result per task/harness
+├── train/
+│   ├── metrics.jsonl          raw training scalars
+│   ├── checkpoint-50/
+│   ├── checkpoint-100/        weights, optimizer, RNG and recipe
+│   ├── rollouts/              blackbox correctness and tool-count evidence
+│   ├── audit/                 async group admission and consumed-rollout records
+│   └── trackio/               local Trackio data
+├── checkpoint-100/eval/       final held-out results
+└── comparison.json           baseline-to-checkpoint comparison
+```
+
+Each phase also keeps its service logs and resolved `config.json`. Whitebox keeps `token-audit.jsonl` and `whitebox-records/`; Harbor keeps native trajectories in `trials/`. OpenEnv/vLLM startup URLs are in `services.json`. A preflight, when enabled, has its own directory.
+
+Check these before calling a pilot successful:
+
+| Evidence | Interpretation |
+|---|---|
+| Complete evaluation coverage | All intended pairs graded; missing infrastructure results are not incorrect answers |
+| Nonzero gradient updates | At least some groups supplied learning signal; zero contrast yields zero policy gradient |
+| Baseline vs checkpoint pass@1 | Held-out correctness, not shaped training reward |
+| Matched-success tool/token savings | Usage changes on pairs solved by both models; report the matched-pair count |
+| First/last 20-update reward means | A training diagnostic; async row weighting differs from rollout-level correctness |
+
+A 25-task pilot is noisy. A higher reward or lower tool count alone does not establish better answer quality. Incorrect answers are retained as zero; only ungraded failures are retried. TiTO checks validate token/logprob/mask consistency, not benchmark performance.
+
+### Optional online Trackio
+
+Offline Trackio and scalar logs are always kept. To mirror charts, create a small config file under `configs/`:
+
+```json
+{
+  "project": "my-smoldataenv-pilot",
+  "trackio_space_id": "your-hf-username/smoldataenv-trackio"
+}
+```
+
+Pass `--config configs/my-run.json`. Your token needs permission to create/update that Space. Config files override [defaults](configs/default.json), so you only need the settings you want to change. Explicit CLI model, mode and concurrency options take precedence. Inspect the resolved settings with `python run.py plan --config configs/my-run.json`.
+
+## 4. Run locally or on Slurm
+
+On the GPU machine, install the full runtime. Keep the source, Python environment, task files and output directory accessible from the allocated node.
 
 ```bash
 uv venv --python 3.12
@@ -10,113 +140,69 @@ source .venv/bin/activate
 uv pip install -r requirements.lock
 python runtime/bootstrap.py
 uv pip install --no-deps --no-build-isolation -e .runtime/trl
+hf auth login
+# Export DAYTONA_API_KEY as in the HF setup above.
 python prepare.py
 python -m pytest -q tests
-python run.py plan --model lfm --mode multi-harness
 ```
 
-`prepare.py` downloads immutable revisions of the corrected Harbor train/test datasets. It selects the exact IDs in `data/`, checks instruction and grader hashes, sets each task to one CPU/4 GB, and records file hashes. It never selects a fresh random test set. Data and downloaded runtime code are ignored by Git.
+The editable TRL installation supplies metadata needed for checkpoint model cards; it does not change the locked dependencies. `prepare.py` checks task instructions, corrected graders, train/test separation and dataset revisions.
 
-Log in with `hf auth login` and set `DAYTONA_API_KEY` in your shell. Do not put credentials into a config or commit an `.env` file. The job-local service stages private task data; model-serving access is scoped to capture sessions.
-
-## 2. HF Jobs
-
-Create a durable bucket you own. Supply its `owner/name` below. Launch commands print a plan unless you add `--submit`; neither Git push nor an environment Space is required. The launcher uploads only the allowlisted recipe source.
+On a local two-GPU machine:
 
 ```bash
-# Disposable two-update training smoke.
-python runtime/launch.py hf smoke --model lfm --mode opencode \
-  --run-name smoke-lfm-native --bucket FineEnvs/YOUR_BUCKET --timeout 2h
-
-# Inspect, then add --submit to launch.
-python runtime/launch.py hf train --model lfm --mode multi-harness \
-  --run-name lfm-multi-nonthinking-v1 --bucket FineEnvs/YOUR_BUCKET
-
-# Separate CPU watcher submits evaluations on separate GPU Jobs.
-python runtime/launch.py hf watch --run-name eval-watcher \
-  --bucket FineEnvs/YOUR_BUCKET --concurrency 35 --max-active-evals 1
+CUDA_VISIBLE_DEVICES=0,1 python run.py pilot --model lfm --mode multi-harness \
+  --run-name pilot-lfm-multi-local --limit 25 --concurrency 35
 ```
 
-Repeat the smoke for each model/mode before launching that combination. The default GPU flavor is `h200x2`: one trainer GPU and one serving GPU; evaluation uses both GPUs as DP2 replicas. HF Jobs currently has no two-A100 flavor. Override `--flavor` only with hardware that has enough GPUs and memory. The base image is pinned by digest; Python packages and source revisions are pinned separately.
-
-The A100 alternative is `--flavor a100x4`; this recipe uses two of those four GPUs, but the full allocation is billed. Async training selects FlashAttention 2 on Ampere and FlashAttention 3 on Hopper, preserving packed-sequence boundaries. A checked adapter enables this choice in the pinned TRL runtime. See `VALIDATION.md` for hardware qualification status.
-
-For a combined training and reload check, add `--smoke-eval --concurrency 4` to the smoke command. After two updates, it hashes checkpoint 2, restarts the services and evaluates two test tasks per harness. Blackbox modes run all four Harbor harnesses, producing eight graded pairs when complete. The evaluation lives under `reload-eval/`; a training failure prevents it from starting.
-
-The bucket is mounted at `/outputs`. A run writes to `/outputs/RUN_NAME`; the watcher hashes completed checkpoints before launching evals. Keep the watcher alive until all final evaluations finish. Failures remain in `eval-watcher.json` for investigation rather than resubmitting indefinitely. Relaunch a failed evaluation explicitly with the same output name to retain already graded pairs.
-
-```bash
-python runtime/launch.py hf eval --model lfm --mode multi-harness \
-  --run-name lfm-multi-nonthinking-v1-eval-checkpoint-100 \
-  --checkpoint /outputs/lfm-multi-nonthinking-v1/checkpoint-100 \
-  --bucket FineEnvs/YOUR_BUCKET --concurrency 35
-```
-
-For online Trackio, set `trackio_space_id` in `configs/default.json` before submission. Logs and offline Trackio data remain in the bucket regardless. Use `hf jobs ps` and `hf jobs logs JOB_ID` to monitor. Native OpenCode and Harbor passed HF A100 smokes; check `VALIDATION.md` for the remaining qualifications.
-
-## 100-step pilot
-
-The `pilot` action runs baseline eval, training to step 100, then checkpoint-100 eval in one allocation. Services restart between phases, so evaluation does not compete with training. It keeps the normal batch size, eight rollouts, LR `3e-6`, reward and task schedule; only the step ceiling and evaluation size change. Checkpoints save at 50 and 100. Do not start the separate eval watcher for these pilots.
-
-```bash
-for mode in whitebox opencode multi-harness; do
-  python runtime/launch.py hf pilot --model lfm --mode "$mode" \
-    --run-name "pilot-lfm-$mode-v1" --bucket FineEnvs/YOUR_BUCKET \
-    --flavor a100x4 --timeout 12h --limit 25 --concurrency 35
-done
-```
-
-These commands are dry runs; add `--submit` when ready. Use `--model qwen` with distinct names for Qwen. `--limit 25` selects the same seeded subset for every mode and checkpoint: 3 easy, 12 medium, 10 hard. That gives 100 pairs per blackbox eval and 25 episodes per whitebox eval. Use `--limit 250` for the full test set. Small subsets are noisy; 100 training steps do not guarantee an improvement.
-
-Add `--preflight-smoke` for a mode/hardware combination that has not passed its HF training and reload smoke. The pilot proceeds only if that two-update check passes. Keep the flag when resuming that pilot. The entrypoint installs the pinned TRL checkout without changing locked dependencies; this also supplies package metadata needed by whitebox checkpoint saving.
-
-Each output contains `pilot.json`, `baseline/`, `train/`, `checkpoint-100/` and a final `comparison.json`. The report includes per-harness pass@1, matched-success tool/token savings, first/last 20-update reward means and zero/nonzero gradient counts. Raw logs, task IDs and offline Trackio remain available. An incomplete baseline stops the pilot before training. To resume, use the same name/config plus `--resume /outputs/RUN_NAME/train/checkpoint-50`; completed phases are retained. The 12-hour cap is a limit, not an ETA.
-
-The Slurm equivalent uses the same phases and configuration, with two GPUs:
+On Slurm:
 
 ```bash
 python runtime/launch.py slurm pilot --partition YOUR_GPU_PARTITION \
-  --model lfm --mode multi-harness --run-name pilot-lfm-multi-harness-v1 \
+  --model lfm --mode multi-harness --run-name pilot-lfm-multi-slurm \
   --timeout 12h --limit 25 --concurrency 35
 ```
 
-Use a local checkpoint path for Slurm resume. Inspect the plan, then add `--submit`. No additional watcher, Space or Slurm job is required for the pilot.
+Add `--submit` to submit the printed `sbatch` command. It requests one node, two GPUs, 16 CPUs, 192 GB RAM and the time limit you specified. Configure your cluster account/QoS as usual. Use `squeue -u "$USER"` and the printed log path to follow the job. No Slurm job is needed when you use HF Jobs.
 
-## 3. Slurm or a local two-GPU machine
+## 5. Resume or scale up
 
-The same Python environment and prepared files must be visible on compute nodes. Choose a free GPU partition; no cluster name is hardcoded into the recipe.
-
-```bash
-python runtime/launch.py slurm smoke --partition YOUR_GPU_PARTITION \
-  --model lfm --mode opencode --run-name smoke-lfm-native
-
-python runtime/launch.py slurm train --partition YOUR_GPU_PARTITION \
-  --model qwen --mode multi-harness --run-name qwen-multi-v1
-
-# On a persistent CPU/login process, submit separate GPU eval allocations.
-python eval/watch.py --root runs --backend slurm --partition YOUR_GPU_PARTITION \
-  --concurrency 50 --max-active 1 --submit
-```
-
-Add `--submit` to the launch commands after inspecting them. They request one node, two GPUs, 16 CPUs and 192 GB RAM. Local execution without Slurm is `CUDA_VISIBLE_DEVICES=0,1 python run.py smoke --model lfm --mode opencode`.
-
-Each job starts its own vLLM and OpenEnv services on unused local ports, and stops its own process groups on exit. Their URLs are recorded in `services.json`. The capture proxy uses OpenEnv's Gradio tunnel so remote Daytona containers can reach it. Sandbox egress and tunnel reliability must be checked in the rollout smoke.
-
-## 4. Checkpoint and evaluation checks
-
-The smoke saves at updates 1 and 2. Run the watcher with `--once` without `--submit` to verify checkpoint files and inspect eval commands. Then reload a smoke checkpoint for a two-task evaluation:
+To resume a pilot, keep its name, configuration and evaluation limit. Point to the last complete training checkpoint:
 
 ```bash
-python eval/watch.py --root runs --backend slurm --partition YOUR_GPU_PARTITION --once
-python run.py eval --model lfm --mode opencode \
-  --checkpoint runs/smoke-lfm-native/checkpoint-2 \
-  --output runs/smoke-lfm-native-eval --limit 2 --concurrency 2
+python runtime/launch.py hf pilot --model lfm --mode multi-harness \
+  --run-name pilot-lfm-multi-v1 --bucket "$HF_BUCKET" \
+  --flavor a100x4 --timeout 12h --limit 25 --concurrency 35 \
+  --resume /outputs/pilot-lfm-multi-v1/train/checkpoint-50
 ```
 
-That is eight pass@1 pairs for a blackbox policy, or two SETA episodes for whitebox. Require a complete summary, valid captured tokens/logprobs/masks, verified tool counts, finite training metrics and a loadable checkpoint. Inspect `train.log`, `environment.log` and `vllm.log` when a check fails.
+Keep `--preflight-smoke` if the original pilot used it. Completed phases and graded eval pairs are retained. For Slurm, use the checkpoint's absolute shared-filesystem path. Async resume restores committed group IDs; unconsumed tails of partially committed groups are recorded and abandoned. A pilot that fails before saving a checkpoint needs a fresh training attempt.
 
-Production saves every 50 updates; the watcher evaluates every 100 and the final checkpoint. Full blackbox eval is 1,000 pairs. An incorrect answer is retained as zero; only ungraded failures are retried. Incomplete evaluations are explicitly provisional. Do not retry completed incorrect answers and call the result pass@1.
+For a longer run, use `train` instead of `pilot`. The default ceiling is 1,000 updates, with saves every 50 and evaluations every 100 plus the final checkpoint. A separate CPU watcher launches evaluation GPU jobs:
 
-Resume with `--resume /path/to/checkpoint-N`. Blackbox checkpoints preserve committed group IDs, so groups already used by the optimizer are not replayed. Unconsumed tails of partially committed groups are recorded and abandoned; groups with no committed work can be regenerated. Keep the task schedule, model and reward configuration fixed across a resume.
+```bash
+python runtime/launch.py hf train --model lfm --mode multi-harness \
+  --run-name lfm-multi-full-v1 --bucket "$HF_BUCKET" --timeout 24h
+python runtime/launch.py hf watch --run-name eval-watcher \
+  --bucket "$HF_BUCKET" --concurrency 35 --max-active-evals 1 --timeout 24h
+```
 
-References: [HF Jobs](https://huggingface.co/docs/huggingface_hub/guides/jobs), [volume configuration](https://huggingface.co/docs/hub/jobs-configuration), [OpenCode CLI](https://dev.opencode.ai/docs/cli/).
+Both are dry runs until `--submit` is added. Full evaluation uses all 250 tasks. Keep the watcher alive until final evals finish. The HF pilot qualifies same-job reload; separate-job live bucket handoff is still an additional qualification item in [VALIDATION.md](VALIDATION.md). Do not run the watcher for pilots.
+
+For Slurm, run `python eval/watch.py --root runs --backend slurm --partition YOUR_GPU_PARTITION --concurrency 35 --max-active 1 --submit` on a persistent process. Failed evaluations remain in its ledger for investigation; it does not resubmit forever.
+
+## Troubleshooting
+
+| Symptom | First check |
+|---|---|
+| `SCHEDULING` | Hardware allocation or image pull; training has not started |
+| Job exits during startup | HF logs, then phase `vllm.log` and `environment.log` |
+| Rollouts are ungraded | Sandbox/provider limits, capture tunnel and verifier logs; keep errors separate from wrong answers |
+| Reward and gradient remain zero | Per-rollout grades and group contrast; do not assume the optimizer is broken |
+| Existing-output error | Use a new run name, or resume a complete checkpoint from the same run |
+| Whitebox model-card save fails | Confirm the pinned TRL checkout was installed as above |
+| New GPU/kernel combination fails | Run a small smoke first; avoid switching to attention that loses packed-sequence boundaries |
+
+The code fixes the data protocol and supports two pinned models and Daytona sandboxes. Adding a different dataset, model or provider requires adapting the task/template/backend boundary and repeating qualification. It is not a drop-in recipe for arbitrary models.
+
+References: [HF Jobs](https://huggingface.co/docs/huggingface_hub/guides/jobs), [bucket volumes](https://huggingface.co/docs/hub/jobs-configuration), [Daytona](https://www.daytona.io/docs/).

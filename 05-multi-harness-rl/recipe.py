@@ -27,8 +27,19 @@ def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
+def merge_config(base, updates):
+    for key, value in updates.items():
+        if isinstance(value, dict) and isinstance(base.get(key), dict):
+            merge_config(base[key], value)
+        else:
+            base[key] = value
+    return base
+
+
 def config(path=None, **overrides):
-    result = json.loads(Path(path or ROOT / "configs/default.json").read_text())
+    result = json.loads((ROOT / "configs/default.json").read_text())
+    if path:
+        merge_config(result, json.loads(Path(path).read_text()))
     result.update({k: v for k, v in overrides.items() if v is not None})
     if result["mode"] not in MODES or result["model"] not in result["models"]:
         raise ValueError("Unknown mode or model")

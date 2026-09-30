@@ -74,3 +74,11 @@ Selected scope: LFM only, all three modes, 25 fixed held-out tasks (3 easy, 12 m
 The first two pilot submissions were canceled while still scheduling, then replaced with copies that print phase and scalar progress in HF logs. No training progress was discarded. Configurations, scalar logs, local Trackio and phase reports live under each run prefix in `FineEnvs/data-agent-daytona-artifacts`. No Slurm pilot has been submitted.
 
 Pilot checks: 23 CPU contracts passed, plus the four fetched-runtime integration checks. Coverage includes fixed stratification, preserving original task catalog indices, stopping on incomplete baseline, retaining normal training batches, phase resume and Slurm time limits. A comparison fixture verifies repeated-step deduplication and matched-success tool/token savings. Actual baseline/100-step results are pending.
+
+## Tutorial audit, 30 September 2026
+
+The beginner path now separates lightweight CPU-only HF submission from full local GPU installation. The launcher defaults to the bucket owner's namespace, preserves model/mode/concurrency settings from custom config files unless explicitly overridden, validates the config before submission, and rejects single-GPU allocations. Small config overlays inherit pinned defaults. No active job source or hyperparameter was changed by this audit.
+
+Checks: 29 tests passed against the fetched runtime. A clean copied checkout in a CPU-only client environment passed 25 contracts, with four runtime checks skipped as intended. HF submission plans and `run.py plan` work without PyTorch. Shell syntax, source compilation, the repository index and relative documentation links were checked. The original source archive and ignored experimental artifacts remain intact.
+
+The pilot baselines and current gradient evidence were downloaded from the bucket and summarized in [RESULTS.md](RESULTS.md). All three pilots were running; whitebox had passed its corrected preflight. Detailed audit snapshots remain ignored under `runs/qualification/tutorial-audit/`, `tutorial-audit-status.json` and `tutorial-audit-results.json`. No checkpoint-100 result is claimed.

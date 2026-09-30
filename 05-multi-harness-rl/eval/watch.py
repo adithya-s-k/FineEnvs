@@ -32,7 +32,7 @@ def main():
     p.add_argument("--root", type=Path, required=True)
     p.add_argument("--backend", choices=["hf", "slurm"], required=True)
     p.add_argument("--bucket")
-    p.add_argument("--namespace", default="FineEnvs")
+    p.add_argument("--namespace", help="HF Jobs owner; defaults to the bucket owner")
     p.add_argument("--partition")
     p.add_argument("--flavor", default="h200x2")
     p.add_argument("--data", type=Path, default=ROOT / "prepared")
@@ -44,6 +44,8 @@ def main():
     args.root = args.root.resolve()
     if args.backend == "hf" and not args.bucket:
         p.error("--bucket is required for HF Jobs")
+    if args.backend == "hf":
+        args.namespace = args.namespace or args.bucket.split("/", 1)[0]
     if args.backend == "slurm" and not args.partition:
         p.error("--partition is required for Slurm")
     if args.max_active < 1 or args.concurrency < 1:
