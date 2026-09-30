@@ -56,3 +56,26 @@ The [historical Trackio Space](https://huggingface.co/spaces/FineEnvs/data-agent
 - Treat Qwen HF execution and hardware combinations not tested here as needing their own smoke.
 
 Detailed pins, failure diagnoses, test counts and original smoke evidence are in [VALIDATION.md](VALIDATION.md).
+
+## Historical article curves
+
+The [multi-harness RL article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) covers the earlier LFM and Qwen experiments on [SmolDataEnvs](../04-smoldataenvs/). The README figure shows its two LFM runs, both trained with correctness plus tool efficiency and evaluated on 250 tasks across four harnesses.
+
+| Historical LFM run | Step-1,000 pass@1 | Graded pairs | Tool-call savings on matched successes |
+|---|---:|---:|---:|
+| Harbor, OpenCode only | 52.3% | 1,000/1,000 | 11.39% |
+| Harbor, multi-harness | 54.2% | 1,000/1,000 | 31.07% |
+
+The recorded baseline is 421/998 graded pairs (42.18%); two pairs were ungraded. Some early checkpoints also have incomplete coverage, marked with hollow points in the figure. These are observed pass@1 scores, not confidence intervals. The two final scores alone do not establish a statistically significant difference between runs.
+
+Both historical runs used Harbor. The current tutorial instead uses native OpenCode for its `opencode` mode and explicitly non-thinking serving for both models. These curves do not validate the new pilot configuration. The article also includes Qwen results, whose historical reward was correctness only.
+
+The figure uses a [pinned copy of the article data](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl/blob/a1e03a6c7d8fd0d51d0cf7361ba51a469cc6defc/app/src/content/assets/data/training-results.json). The [local excerpt](assets/historical-lfm-curves.json) keeps the plotted values, evaluation coverage, source URL and source SHA-256. The [Trackio dashboard](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio) provides the historical run charts.
+
+To redraw the figure from this folder, without downloading data or starting a job:
+
+```bash
+uv run --no-project --with matplotlib==3.11.1 python assets/plot_history.py
+```
+
+Training reward is a trailing 50-update mean, with raw values shown faintly. Evaluation is unsmoothed. Tool savings use task/harness pairs solved by both baseline and checkpoint; positive values mean fewer calls.

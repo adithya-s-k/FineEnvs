@@ -54,7 +54,8 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **01** | **[LaTeX OCR](./01-latex-ocr/)** | Train Qwen3-VL-2B to read math images into LaTeX, with a verifiable reward. | 1 | 1 | 1 | ✅ stable |
 | **02** | **[Watercolour](./02-watercolour/)** | Train Qwen3.5-35B-A3B to paint watercolours by writing p5.brush sketches, rewarded by an aesthetic preference model. | 1 | 1 | 0 | ✅ trained |
 | **03** | **[GeoGuesser](./03-geoguesser/)** | Drop a VLM at a random street corner on Earth and score it on kilometres of error. | 1 | 1 | 1 | ✅ stable |
-| **05** | **[SmolDataEnv: whitebox and multi-harness RL](./05-multi-harness-rl/)** | One task split and reward across SETA, native OpenCode and Harbor; HF Jobs and Slurm recipes. | 3 | 1 | 0 | 🚧 wip |
+| **04** | **[SmolDataEnvs](./04-smoldataenvs/)** | Data-analysis tasks, verified SFT traces and a single-turn GRPO tutorial on HF Jobs. | 1 | 1 | 0 | 🚧 wip |
+| **05** | **[SmolDataEnvs: multi-harness RL](./05-multi-harness-rl/)** | Train on SmolDataEnvs with SETA, native OpenCode or Harbor, using HF Jobs or Slurm. | 3 | 1 | 0 | 🚧 wip |
 <!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means

@@ -1,6 +1,8 @@
-# SmolDataEnv: learn RL through three agent interfaces
+# SmolDataEnvs: learn RL through three agent interfaces
 
 Fine-tune a small language model to solve data-analysis tasks, then measure whether it answers more questions correctly and uses fewer tools. This example compares three ways of connecting an agent to a trainer, using the same tasks and reward.
+
+Start with [04: SmolDataEnvs](../04-smoldataenvs/) for the dataset, SFT and single-turn RL. This chapter takes those tasks into multi-turn agent harnesses. The companion article, [The ultimate guide to multi-harness RL](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl), explains the approach and earlier experiments.
 
 **Start here:** [run the tutorial](REPRODUCE.md). You can submit an HF Job from a CPU laptop, or run on a local two-GPU machine or Slurm cluster. [Current results](RESULTS.md) distinguish completed checks from ongoing experiments; [validation notes](VALIDATION.md) contain the detailed evidence.
 
@@ -59,6 +61,16 @@ The full schedule contains two passes and stops at 1,000 updates or schedule exh
 
 ## Start small, then scale
 
+After the [HF account, bucket and sandbox setup](REPRODUCE.md#2-submit-from-a-cpu-laptop-with-hf-jobs), preview a quick training and evaluation smoke:
+
+```bash
+python runtime/launch.py hf smoke --model lfm --mode opencode \
+  --run-name smoke-lfm-opencode-v1 --bucket "$HF_BUCKET" \
+  --flavor a100x4 --timeout 45m --smoke-eval --concurrency 4
+```
+
+Add `--submit` to launch. This runs two small updates, saves both checkpoints and reloads checkpoint 2 for evaluation on two tasks through all four harnesses. For the other modes, use `--mode multi-harness` or `--mode whitebox` and a new run name. Whitebox evaluates two native SETA episodes. The [tutorial](REPRODUCE.md) also covers local and Slurm execution.
+
 | Action | Purpose |
 |---|---|
 | `smoke --smoke-eval` | Two small training updates, checkpoint saving, then two-task reload evaluation |
@@ -85,4 +97,12 @@ There is **no Space to deploy** for these runs. OpenEnv lives inside the GPU job
 
 `runtime/bootstrap.py` downloads the pinned TRL/OpenEnv sources and 45 existing runtime files into ignored `.runtime/`. It checks the archive file hashes. You do not need the original experiment workspace. Prepared tasks, checkpoints, caches and credentials are not committed.
 
-This is the condensed successor to the [archived experiment](https://github.com/adithya-s-k/FineEnvs/tree/archive/data-agent-experiments-20260930/04-data-agent). The [historical dashboard](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio) contains those earlier runs, not the live pilots unless explicitly configured. Corrected Harbor graders and dataset revisions are pinned here; see [VALIDATION.md](VALIDATION.md) before comparing historical scores.
+## Earlier training results
+
+![Historical LFM training reward, held-out pass@1 and tool-call savings](assets/historical-lfm-curves.svg)
+
+These curves come from the [article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl), using 250 test tasks across four harnesses. Both historical LFM runs used Harbor, including the OpenCode-only run. This tutorial's `opencode` mode uses native OpenCode. The curves are historical context, not results from the new non-thinking pilots.
+
+Training reward uses a trailing 50-update mean. Evaluation is unsmoothed; hollow markers indicate incomplete coverage. Tool-call savings compare pairs solved by both baseline and checkpoint. See [the data source and final scores](RESULTS.md#historical-article-curves), or explore the [Trackio dashboard](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio).
+
+The full experiment remains on the [archived branch](https://github.com/adithya-s-k/FineEnvs/tree/archive/data-agent-experiments-20260930/04-data-agent). Corrected Harbor graders and dataset revisions are pinned here; [VALIDATION.md](VALIDATION.md) records what has been checked for this recipe.

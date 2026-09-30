@@ -1,6 +1,6 @@
 name: multi-harness-rl
-title: "SmolDataEnv: whitebox and multi-harness RL"
-tagline: "One task split and reward across SETA, native OpenCode and Harbor; HF Jobs and Slurm recipes."
+title: "SmolDataEnvs: multi-harness RL"
+tagline: "Train on SmolDataEnvs with SETA, native OpenCode or Harbor, using HF Jobs or Slurm."
 order: 5
 status: wip
 hub:

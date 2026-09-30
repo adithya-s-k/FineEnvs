@@ -1,4 +1,4 @@
-# Run SmolDataEnv RL
+# Run SmolDataEnvs RL
 
 Check out the example branch:
 
