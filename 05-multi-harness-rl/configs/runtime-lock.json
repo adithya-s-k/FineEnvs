@@ -52,7 +52,7 @@
   },
   "trl": {
     "repo": "adithya-s-k/trl",
-    "revision": "173f37e9dca9a8d7aecf75c9076f63dbfc853899"
+    "revision": "2de2cea22b1a3da717c7904722109ca6e2ecb503"
   },
   "openenv": {
     "repo": "huggingface/OpenEnv",

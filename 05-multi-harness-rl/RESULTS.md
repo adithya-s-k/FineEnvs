@@ -4,6 +4,8 @@ These are the checks and pilot results for the non-thinking recipe. Two blackbox
 
 ## Completed checks
 
+The merged-contract HF smokes completed two updates and checkpoint reload in all three modes. Reload evaluation graded native OpenCode 4/4 pairs, Harbor 4/4 pairs and whitebox 1/1 task. [Validation](VALIDATION.md#merged-contract-update-30-september) records pins and evidence. The qualification table below predates that migration.
+
 | Check | Result | Evidence |
 |---|---|---|
 | Local training, LFM and Qwen × all three modes | All six completed two updates and saved checkpoints | [Validation record](VALIDATION.md) |

@@ -9,7 +9,21 @@ The recipe now pins merged [OpenEnv #1280](https://github.com/huggingface/OpenEn
 - 43 CPU checks cover the updated recipe, including native partial/zero masks, invalid captures, correctness plus efficiency through the typed TRL worker, and the whitebox update budget against TRL's sampler.
 - The TRL integration passed 51 contract/reconciliation checks against the merged producer.
 - Fresh-clone bootstrap and repeat-bootstrap handling are tested. User edits are preserved; only the recipe's known attention patch is removed before updating TRL.
-- HF A100 training and checkpoint-reload smokes are running for all three modes. Results will be recorded here after completion.
+- Fresh HF A100 training and checkpoint-reload evaluation completed in all three modes, as recorded below.
+
+Each smoke used non-thinking LFM2.5-2.6B, two optimizer updates and two rollouts per group. Both checkpoints were saved; evaluation restarted inference from checkpoint 2. Blackbox evaluation used one fixed task across four harnesses; whitebox used one native task.
+
+| Mode | Updates / checkpoints | Reload eval graded | Correct | Nonzero gradient? | Evidence |
+|---|---|---|---|---|---|
+| Native OpenCode | 2 / 2 | 4/4 | 2/4 | No reward contrast | [HF smoke](https://huggingface.co/jobs/FineEnvs/6abd47c0fbc85ba68235c27c) |
+| Harbor multi-harness | 2 / 2 | 4/4 | 1/4 | Yes, norm 5.47 at step 1 | [HF smoke](https://huggingface.co/jobs/FineEnvs/6abd47bdfbc85ba68235c27a) |
+| Whitebox SETA | 2 / 2 | 1/1 | 1/1 | No reward contrast | [HF smoke](https://huggingface.co/jobs/FineEnvs/6abd47c3fbc85ba68235c27e) |
+
+These tiny samples validate execution, capture, saving and reload, not learning quality. Blackbox evaluations passed token/mask checks. A correct Harbor training rollout with six verified tool calls received 1.0714; failed rollouts received zero. Trainer reward averages are over training rows and must not be read as rollout pass@1.
+
+The jobs ran OpenEnv `86a180ed` and TRL `a39476c6`. The current TRL pin has identical experimental trainer code; later changes cover example warmup, optional tests, documentation and an upstream CI fix. The first fresh-container attempt exposed a bootstrap restore bug before training; it was fixed and regression-tested before these replacement jobs.
+
+Artifacts are in bucket `FineEnvs/data-agent-daytona-artifacts`, under `merged-contract-{opencode,multi-harness,whitebox}-v2`. Each has `metrics.jsonl`, checkpoints, local Trackio logs and `reload-eval/eval/summary.json`. Bucket access requires permission.
 
 Execution status, typed execution limits and structured tool outcomes in OpenEnv remain follow-up API work from the TRL review. The recipe uses explicit per-session turn/time budgets and verified native tool counts; it does not claim the broader session API is complete.
 
