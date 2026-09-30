@@ -53,6 +53,10 @@ class Config:
     eval_per_group: int = 4
     max_steps: int = 30
     num_generations: int = 4
+    # TRL fills a batch with one prompt's generations, so without accumulation every
+    # optimizer step sees exactly one task. Eight hundred such steps moved 31 of 150
+    # held-out predictions and half of those went backwards: the gradient was noise.
+    gradient_accumulation_steps: int = 1
     max_completion_length: int = 2048
     max_pixels: int = 1_048_576
     learning_rate: float = 1e-5
@@ -83,6 +87,7 @@ class Config:
             )
             < 1
             or self.num_generations < 2
+            or self.gradient_accumulation_steps < 1
         ):
             raise ValueError("Use positive limits and at least two generations")
         if not 0 <= self.prefetch_blocks <= 4:
@@ -98,6 +103,7 @@ INTEGER_OPTIONS = (
     "eval_per_group",
     "max_steps",
     "num_generations",
+    "gradient_accumulation_steps",
     "max_completion_length",
     "prefetch_blocks",
     "max_pixels",
@@ -481,6 +487,9 @@ def run(config):
                 },
                 num_generations=config.num_generations,
                 per_device_train_batch_size=config.num_generations,
+                # Distinct prompts per optimizer step, each scored over
+                # num_generations completions.
+                gradient_accumulation_steps=config.gradient_accumulation_steps,
                 max_steps=config.max_steps,
                 max_completion_length=config.max_completion_length,
                 learning_rate=config.learning_rate,
