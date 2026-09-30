@@ -88,14 +88,29 @@ class Config:
             raise ValueError(f"Unknown task family in {self.families}")
 
 
+SKIPPED_TOWERS = ("audio_tower", "vision_tower")
+
+
 def lora_target_modules(model_id, revision, wanted=("q_proj", "v_proj")):
     """Resolve LoRA targets to full, unambiguous module names.
 
     PEFT adapts genuine leaves and matches a short target against every module whose name
     ends with it. Gemma 4 wraps some projections in Gemma4ClippableLinear, so a suffix can
     match both a wrapper and a leaf and injection fails outright. Full names name exactly
-    one leaf each. Unlike the OCR environment, nothing is skipped here: the audio tower is
-    the part this task must adapt.
+    one leaf each.
+
+    Only the language model is adapted. An earlier version targeted the audio tower too --
+    "the part this task must adapt" -- and a 250-step run proved that wrong in the worst
+    way: all 24 audio-tower lora_B tensors were still exactly zero at the end, alongside
+    32 dead vision ones. A zero B contributes nothing, so 46% of the adapter was inert
+    while PEFT reported 244 tensors adapted and reward climbed.
+
+    The cause is upstream and still present on TRL main: GRPO's loss forward takes
+    pixel_values and friends but has no input_features parameter, and its multimodal
+    branch is gated on `images is not None`. The audio tower runs during generation, which
+    is under no_grad, and never appears in the backward graph. Targeting it cannot work
+    until TRL carries audio into training; adapting the language model alone is honest
+    about what this run changes.
     """
     import torch
     from transformers import AutoConfig, AutoModel
@@ -116,6 +131,9 @@ def lora_target_modules(model_id, revision, wanted=("q_proj", "v_proj")):
         for name, module in model.named_modules()
         if isinstance(module, adaptable)
         and any(part in wanted for part in name.split("."))
+        # A tower's adapter cannot receive gradient, so targeting one only spends
+        # parameters and hides the fact that nothing there is learning.
+        and not any(tower in name for tower in SKIPPED_TOWERS)
     ]
     return sorted(targets) or list(wanted)
 

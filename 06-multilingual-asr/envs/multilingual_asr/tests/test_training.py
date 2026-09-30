@@ -52,3 +52,51 @@ def test_adapter_spec_parsing_and_mutually_exclusive_candidates():
     )
     with pt.raises(argparse.ArgumentTypeError):
         module.parse_adapter("checkpoint-50")
+
+
+def test_lora_targets_skip_towers_that_cannot_receive_gradient():
+    """A 250-step run ended with 56 of 122 adapter modules still exactly zero.
+
+    TRL's GRPO loss forward has no input_features parameter and its multimodal branch is
+    gated on images, so the audio tower never enters the backward graph. Targeting it
+    spends parameters and hides that nothing there is learning.
+    """
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[3] / "train" / "grpo_asr.py"
+    spec = importlib.util.spec_from_file_location("grpo_asr_targets", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    class Fake:
+        """Stands in for the meta-device skeleton, with Gemma 4's wrapper nesting."""
+
+        def named_modules(self):
+            import torch
+
+            names = [
+                "language_model.layers.0.self_attn.q_proj",
+                "language_model.layers.0.self_attn.v_proj",
+                "audio_tower.layers.0.attention.q_proj.linear",
+                "audio_tower.layers.0.attention.v_proj.linear",
+                "vision_tower.encoder.layers.0.self_attn.q_proj",
+            ]
+            return [(n, torch.nn.Linear(2, 2)) for n in names]
+
+    import torch
+
+    adaptable = (torch.nn.Linear, torch.nn.Embedding, torch.nn.Conv1d, torch.nn.Conv2d)
+    wanted = ("q_proj", "v_proj")
+    chosen = sorted(
+        name
+        for name, mod in Fake().named_modules()
+        if isinstance(mod, adaptable)
+        and any(p in wanted for p in name.split("."))
+        and not any(t in name for t in module.SKIPPED_TOWERS)
+    )
+    assert chosen == [
+        "language_model.layers.0.self_attn.q_proj",
+        "language_model.layers.0.self_attn.v_proj",
+    ]
+    assert not [c for c in chosen if "audio_tower" in c or "vision_tower" in c]
