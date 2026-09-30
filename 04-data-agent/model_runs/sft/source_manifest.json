@@ -1,0 +1,94 @@
+{
+  "source": "experiments/multiharness-student-sft-20260928/code",
+  "snapshot_date": "2026-09-30",
+  "files": [
+    {
+      "file": "eval_policy.py",
+      "sha256": "adbbf03812fc17349f51b7b21ac75eb5d25c2558689d6a19425b3d107e0c8c47"
+    },
+    {
+      "file": "evaluate.py",
+      "sha256": "53c589ff090d943b564521a60ce48bd903dc5e5a6f83993e8f364538cf4bca2b"
+    },
+    {
+      "file": "launch.py",
+      "sha256": "53cef1ed8c380dec7929f18405e90c8a043e166f2c3c0b88201dcd5b213ce34c"
+    },
+    {
+      "file": "local_logging.py",
+      "sha256": "13cb7732b79a25eac3d60f8b4ba0f6fdfce4e4b40ab169379ed1cbb4ebc62a81"
+    },
+    {
+      "file": "pipeline.py",
+      "sha256": "b2e289576de9d90dfa08d93dbe4fd0f1f225af792c5b174a537e5f775479bd09"
+    },
+    {
+      "file": "plot_comparison.py",
+      "sha256": "a23e9d031a8e5b39f32d01292b67b00d69ac16166158afb9224ca5550a8b391f"
+    },
+    {
+      "file": "prepare.py",
+      "sha256": "16b490b4bf1d08961634a584aaa22bd556b79c275443c3b8df2bfbbbfc9408d5"
+    },
+    {
+      "file": "prepare_opencode.py",
+      "sha256": "f9756228cf25273408313c858736df898d287a7091fb25316a7d871f69f79fbb"
+    },
+    {
+      "file": "prepare_opencode_messages.py",
+      "sha256": "903c63ee1b3c328e5085d767f69594bb58a3ea846e5d07c6e9496c06863d0f9b"
+    },
+    {
+      "file": "probe_longest.py",
+      "sha256": "cad66a5cbecf53da0aae28cc58de7f3abd85f0fbcbe7a7553fd0d0d7a6d6f3ce"
+    },
+    {
+      "file": "qualify.py",
+      "sha256": "ed8dfc0ad889ce13f0265d51fef11b0109780681b50fc4cdda263912c65d5893"
+    },
+    {
+      "file": "qualify_opencode.py",
+      "sha256": "542ec308db126e01f828c698c62f342512e8444f23bf9e58768260906cb4e7b0"
+    },
+    {
+      "file": "show_local.py",
+      "sha256": "70dc5d5dfe96d716b2b85c168fe51c013a50dd61663117ab2b365385c2cf3cb4"
+    },
+    {
+      "file": "smoke_opencode.py",
+      "sha256": "ce0521b50e9c40d7ea8a93513d09964511629408524871f0278938be19cde9ef"
+    },
+    {
+      "file": "test_eval_policy.py",
+      "sha256": "378bda083a017ec11175810116ade48df80533878e1dc35aa5bc27632d62e67c"
+    },
+    {
+      "file": "test_local_logging.py",
+      "sha256": "44629ec5b95a40e3bd453a948aae8f90e486bdd1490c25f1452f4100072a56a8"
+    },
+    {
+      "file": "test_opencode_format.py",
+      "sha256": "6f99aeef9a1c9984764e2f39843a177e5bfd336194147d55430792d4bc04ccb5"
+    },
+    {
+      "file": "test_opencode_messages.py",
+      "sha256": "d30ba41e2d5f0c1a97c36a95bf30e00e26fa986bf15e23abe2eff234815ca40b"
+    },
+    {
+      "file": "test_watch_evals.py",
+      "sha256": "5e04f828cd96c83ee3a25a0b4bc289dcf08b7dd5f268b31f5d7d67e10b4bcbb3"
+    },
+    {
+      "file": "train.py",
+      "sha256": "9bee19287afc9859deab80889bcfc7f314c126cdb674b8b972f7717b71c200a7"
+    },
+    {
+      "file": "train_entry.py",
+      "sha256": "127c141f1ee06a150069fc9bd138628850e0e944cf4a53c321ad325c802fc86e"
+    },
+    {
+      "file": "watch_evals.py",
+      "sha256": "66ed502de396748e3b4f783943234970748cd5ca6e87a8b00d0ee5e5494bdb28"
+    }
+  ]
+}

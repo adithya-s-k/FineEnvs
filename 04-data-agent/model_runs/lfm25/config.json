@@ -1,0 +1,157 @@
+{
+  "model": "LiquidAI/LFM2.5-2.6B",
+  "model_revision": "654f9463ce32b05d0429d76fe1f580b27d4c1ac0",
+  "initialization": "Fresh pretrained model; no Qwen optimizer or weights",
+  "run_name": "lfm25-multi4-1000tasks-20260921",
+  "dataset": {
+    "split": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-rotation-20260914/dataset",
+    "task_count": 1000,
+    "difficulty_counts": {
+      "easy": 150,
+      "medium": 600,
+      "hard": 250
+    },
+    "easy_start_task_count": 32,
+    "selection_seed": 0,
+    "pairs_per_cycle": 4000,
+    "rollouts_per_scheduled_cycle": 32000,
+    "test_overlap_checks": {
+      "source_ids": 0,
+      "notebooks": 0,
+      "normalized_questions": 0,
+      "normalized_instructions": 0
+    },
+    "manifest_sha256": "65ebbf8c86825597e4605ee2f75c2332a6e2144e22413bdc63aa39150cc54703",
+    "schedule_mode": "one_harness_per_task_per_pass",
+    "groups_per_pass": 1000,
+    "rollouts_per_pass": 8000,
+    "passes_per_cycle": 4,
+    "schedule_file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/harness_schedule.json",
+    "schedule_sha256": "6a6ea4a085908f3f256a0a605031aaf7f16469797c2b04ffa73092c4a44f2696",
+    "harness_groups_per_pass": {
+      "opencode": 250,
+      "claude-code": 250,
+      "codex": 250,
+      "mini-swe-agent": 250
+    }
+  },
+  "harnesses": [
+    "opencode",
+    "claude-code",
+    "codex",
+    "mini-swe-agent"
+  ],
+  "harness_versions": {
+    "opencode": "1.18.31",
+    "claude-code": "2.1.270",
+    "codex": "0.154.0",
+    "mini-swe-agent": "2.4.6"
+  },
+  "training": {
+    "learning_rate": 3e-06,
+    "num_generations": 8,
+    "max_inflight": 32,
+    "max_staleness": 4,
+    "per_device_batch_size": 4,
+    "gradient_accumulation_steps": 4,
+    "optim": "paged_adamw_8bit",
+    "dtype": "bfloat16",
+    "gradient_checkpointing": true,
+    "gradient_checkpointing_use_reentrant": false,
+    "token_budget": 40960,
+    "max_model_len": 131072,
+    "max_completion_length": 16384,
+    "max_steps": 1000,
+    "save_steps": 50,
+    "coverage_min_steps": 0,
+    "lossless_capture": true,
+    "fork_threshold_tokens": 0,
+    "train_turn_filter": "all",
+    "agent_turn_filter": "none",
+    "seed": 0,
+    "save_total_limit": null,
+    "checkpoint_max_seconds": 3600,
+    "atomic_rollouts": true,
+    "max_row_tokens": 131072,
+    "loss_normalization": "update_supervised_token_mean",
+    "max_outstanding_rollouts": 16,
+    "max_rollouts_per_packing_unit": 2
+  },
+  "sampling": {
+    "temperature": 0.8,
+    "top_p": 1.0,
+    "top_k_disabled": true,
+    "enable_thinking": true
+  },
+  "rollouts": {
+    "sandbox": "e2b",
+    "sandbox_cpu": 1,
+    "sandbox_memory_mb": 4096,
+    "agent_step_limit": 17,
+    "agent_timeout_seconds": 600,
+    "reward_key": "correctness,reward",
+    "openenv_capacity": 64,
+    "provider_account_concurrency_limit": 600,
+    "provider_quota_source": "User confirmed E2B dashboard capacity on 2026-09-14",
+    "stream_uploads": true
+  },
+  "resources": {
+    "h100_80gb": 2,
+    "trainer_gpus": 1,
+    "training_inference_gpus": 1,
+    "cpus": 16,
+    "host_memory": "192G",
+    "slurm_walltime": "24:00:00",
+    "inference_enforce_eager": true,
+    "inference_gpu_memory_utilization": 0.85,
+    "partition": "hopper-prod"
+  },
+  "evaluation": {
+    "interval_optimizer_steps": 100,
+    "include_final_complete_checkpoint": true,
+    "test_tasks": 250,
+    "harnesses": 4,
+    "pass_k": 1,
+    "evaluations_per_checkpoint": 1000,
+    "max_active_eval_jobs": 2,
+    "separate_gpus": 2,
+    "tp": 1,
+    "dp": 2,
+    "concurrency": 50,
+    "protocol_file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/eval-source/protocol.json",
+    "queue_checkpoints_when_busy": true,
+    "exclude_training_node": true,
+    "dedicated_openenv_server": true,
+    "dedicated_capture_proxy": true,
+    "stream_uploads": true,
+    "partition": "hopper-prod"
+  },
+  "logging": {
+    "project": "lfm25-multi4-20260921",
+    "space_id": "HuggingEnvs/data-agent-training-comparison-trackio",
+    "local_jsonl": true
+  },
+  "serving": {
+    "tool_call_parser": "lfm2",
+    "reasoning_parser": "qwen3",
+    "chat_template_kwargs": {
+      "preserve_thinking": true
+    },
+    "max_output_tokens": 4096,
+    "max_model_len": 131072,
+    "generation_config": "vllm",
+    "repetition_penalty": 1.0
+  },
+  "reference": {
+    "config": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/run_config.json",
+    "train_manifest_sha256": "65ebbf8c86825597e4605ee2f75c2332a6e2144e22413bdc63aa39150cc54703",
+    "schedule_sha256": "6a6ea4a085908f3f256a0a605031aaf7f16469797c2b04ffa73092c4a44f2696",
+    "changes": [
+      "model and pinned revision",
+      "native lfm2 tool parser",
+      "native reasoning enabled and preserve_thinking=true",
+      "fresh initialization",
+      "finite schedule/cursor implementation from qualified v11"
+    ]
+  }
+}

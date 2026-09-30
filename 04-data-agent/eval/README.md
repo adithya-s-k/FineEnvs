@@ -1,3 +1,16 @@
+# Completed Harbor baseline
+
+The **2026-09-14 Qwen3.5-2B baseline is complete**: 250 fixed Harbor test tasks × OpenCode,
+Claude Code, Codex and mini-swe-agent × **pass@1**, for 1,000 graded evaluations and **14.6%
+overall pass@1**. All 1,000 selected captures passed the exact-context TiTO audit.
+
+See [results, difficulty breakdown and fixed protocol](BASELINE_PASS_AT_1.md) and
+[machine-readable protocol](baseline_protocol.json). Checkpoint evaluations should use that
+protocol. The older flat-environment experiments below use a different split and budget.
+
+[Checkpoint evaluator](checkpoint_evals.py) queues the same 1,000 pass@1 cells every
+100 optimizer steps; training saves every 50 steps. See the [training and evaluation setup](../train/TRAINING_SETUP.md).
+
 # Evaluating a data-agent environment
 
 ```bash

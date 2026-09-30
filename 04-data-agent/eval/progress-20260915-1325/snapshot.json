@@ -1,0 +1,1376 @@
+{
+  "snapshot_utc": "2026-09-15T13:27:32.270545+00:00",
+  "evaluations": {
+    "base": {
+      "graded": 1000,
+      "correct": 146,
+      "pass_at_1": 0.146,
+      "final_audited": true,
+      "harnesses": {
+        "opencode": {
+          "graded": 250,
+          "correct": 27,
+          "pass_at_1": 0.108,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 11,
+              "pass_at_1": 0.3333333333333333
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 10,
+              "pass_at_1": 0.0847457627118644
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 6,
+              "pass_at_1": 0.06060606060606061
+            }
+          }
+        },
+        "claude-code": {
+          "graded": 250,
+          "correct": 42,
+          "pass_at_1": 0.168,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 14,
+              "pass_at_1": 0.42424242424242425
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 22,
+              "pass_at_1": 0.1864406779661017
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 6,
+              "pass_at_1": 0.06060606060606061
+            }
+          }
+        },
+        "codex": {
+          "graded": 250,
+          "correct": 41,
+          "pass_at_1": 0.164,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 14,
+              "pass_at_1": 0.42424242424242425
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 20,
+              "pass_at_1": 0.1694915254237288
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 7,
+              "pass_at_1": 0.0707070707070707
+            }
+          }
+        },
+        "mini-swe-agent": {
+          "graded": 250,
+          "correct": 36,
+          "pass_at_1": 0.144,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 14,
+              "pass_at_1": 0.42424242424242425
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 16,
+              "pass_at_1": 0.13559322033898305
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 6,
+              "pass_at_1": 0.06060606060606061
+            }
+          }
+        }
+      },
+      "difficulty": {
+        "easy": {
+          "graded": 132,
+          "correct": 53,
+          "pass_at_1": 0.4015151515151515
+        },
+        "medium": {
+          "graded": 472,
+          "correct": 68,
+          "pass_at_1": 0.1440677966101695
+        },
+        "hard": {
+          "graded": 396,
+          "correct": 25,
+          "pass_at_1": 0.06313131313131314
+        }
+      }
+    },
+    "100": {
+      "graded": 1000,
+      "correct": 248,
+      "pass_at_1": 0.248,
+      "final_audited": true,
+      "harnesses": {
+        "opencode": {
+          "graded": 250,
+          "correct": 61,
+          "pass_at_1": 0.244,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 17,
+              "pass_at_1": 0.5151515151515151
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 37,
+              "pass_at_1": 0.3135593220338983
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 7,
+              "pass_at_1": 0.0707070707070707
+            }
+          }
+        },
+        "claude-code": {
+          "graded": 250,
+          "correct": 69,
+          "pass_at_1": 0.276,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 20,
+              "pass_at_1": 0.6060606060606061
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 38,
+              "pass_at_1": 0.3220338983050847
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 11,
+              "pass_at_1": 0.1111111111111111
+            }
+          }
+        },
+        "codex": {
+          "graded": 250,
+          "correct": 70,
+          "pass_at_1": 0.28,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 19,
+              "pass_at_1": 0.5757575757575758
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 42,
+              "pass_at_1": 0.3559322033898305
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 9,
+              "pass_at_1": 0.09090909090909091
+            }
+          }
+        },
+        "mini-swe-agent": {
+          "graded": 250,
+          "correct": 48,
+          "pass_at_1": 0.192,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 14,
+              "pass_at_1": 0.42424242424242425
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 27,
+              "pass_at_1": 0.2288135593220339
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 7,
+              "pass_at_1": 0.0707070707070707
+            }
+          }
+        }
+      },
+      "difficulty": {
+        "easy": {
+          "graded": 132,
+          "correct": 70,
+          "pass_at_1": 0.5303030303030303
+        },
+        "medium": {
+          "graded": 472,
+          "correct": 144,
+          "pass_at_1": 0.3050847457627119
+        },
+        "hard": {
+          "graded": 396,
+          "correct": 34,
+          "pass_at_1": 0.08585858585858586
+        }
+      }
+    },
+    "200": {
+      "graded": 1000,
+      "correct": 263,
+      "pass_at_1": 0.263,
+      "final_audited": true,
+      "harnesses": {
+        "opencode": {
+          "graded": 250,
+          "correct": 76,
+          "pass_at_1": 0.304,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 17,
+              "pass_at_1": 0.5151515151515151
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 41,
+              "pass_at_1": 0.3474576271186441
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 18,
+              "pass_at_1": 0.18181818181818182
+            }
+          }
+        },
+        "claude-code": {
+          "graded": 250,
+          "correct": 75,
+          "pass_at_1": 0.3,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 21,
+              "pass_at_1": 0.6363636363636364
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 39,
+              "pass_at_1": 0.3305084745762712
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 15,
+              "pass_at_1": 0.15151515151515152
+            }
+          }
+        },
+        "codex": {
+          "graded": 250,
+          "correct": 66,
+          "pass_at_1": 0.264,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 21,
+              "pass_at_1": 0.6363636363636364
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 35,
+              "pass_at_1": 0.2966101694915254
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 10,
+              "pass_at_1": 0.10101010101010101
+            }
+          }
+        },
+        "mini-swe-agent": {
+          "graded": 250,
+          "correct": 46,
+          "pass_at_1": 0.184,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 18,
+              "pass_at_1": 0.5454545454545454
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 27,
+              "pass_at_1": 0.2288135593220339
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 1,
+              "pass_at_1": 0.010101010101010102
+            }
+          }
+        }
+      },
+      "difficulty": {
+        "easy": {
+          "graded": 132,
+          "correct": 77,
+          "pass_at_1": 0.5833333333333334
+        },
+        "medium": {
+          "graded": 472,
+          "correct": 142,
+          "pass_at_1": 0.3008474576271186
+        },
+        "hard": {
+          "graded": 396,
+          "correct": 44,
+          "pass_at_1": 0.1111111111111111
+        }
+      }
+    },
+    "300": {
+      "graded": 976,
+      "correct": 284,
+      "pass_at_1": 0.29098360655737704,
+      "final_audited": false,
+      "harnesses": {
+        "opencode": {
+          "graded": 244,
+          "correct": 74,
+          "pass_at_1": 0.30327868852459017,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 20,
+              "pass_at_1": 0.6060606060606061
+            },
+            "medium": {
+              "graded": 115,
+              "correct": 39,
+              "pass_at_1": 0.3391304347826087
+            },
+            "hard": {
+              "graded": 96,
+              "correct": 15,
+              "pass_at_1": 0.15625
+            }
+          }
+        },
+        "claude-code": {
+          "graded": 235,
+          "correct": 81,
+          "pass_at_1": 0.3446808510638298,
+          "difficulty": {
+            "easy": {
+              "graded": 31,
+              "correct": 21,
+              "pass_at_1": 0.6774193548387096
+            },
+            "medium": {
+              "graded": 112,
+              "correct": 46,
+              "pass_at_1": 0.4107142857142857
+            },
+            "hard": {
+              "graded": 92,
+              "correct": 14,
+              "pass_at_1": 0.15217391304347827
+            }
+          }
+        },
+        "codex": {
+          "graded": 250,
+          "correct": 74,
+          "pass_at_1": 0.296,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 23,
+              "pass_at_1": 0.696969696969697
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 39,
+              "pass_at_1": 0.3305084745762712
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 12,
+              "pass_at_1": 0.12121212121212122
+            }
+          }
+        },
+        "mini-swe-agent": {
+          "graded": 247,
+          "correct": 55,
+          "pass_at_1": 0.22267206477732793,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 20,
+              "pass_at_1": 0.6060606060606061
+            },
+            "medium": {
+              "graded": 116,
+              "correct": 31,
+              "pass_at_1": 0.2672413793103448
+            },
+            "hard": {
+              "graded": 98,
+              "correct": 4,
+              "pass_at_1": 0.04081632653061224
+            }
+          }
+        }
+      },
+      "difficulty": {
+        "easy": {
+          "graded": 130,
+          "correct": 84,
+          "pass_at_1": 0.6461538461538462
+        },
+        "medium": {
+          "graded": 461,
+          "correct": 155,
+          "pass_at_1": 0.3362255965292842
+        },
+        "hard": {
+          "graded": 385,
+          "correct": 45,
+          "pass_at_1": 0.11688311688311688
+        }
+      }
+    }
+  },
+  "training": {
+    "job": "79083",
+    "latest_step": 348,
+    "current_job_updates": 152,
+    "nonzero_gradient_updates": 89,
+    "nonfinite_updates": 0,
+    "max_observed_staleness": 4.0,
+    "stale_rollouts_dropped": 12.0,
+    "stale_rows_dropped": 75.0,
+    "oversized_rows_dropped": 0,
+    "last20_nonzero_gradients": 9,
+    "last20_zero_group_variance": 11,
+    "last_nonzero_gradient_step": 348,
+    "windows": [
+      {
+        "from": 54,
+        "to": 100,
+        "updates": 47,
+        "mean_reward": 0.37835463605586095,
+        "nonzero_gradients": 34,
+        "zero_group_variance_updates": 13,
+        "mean_step_seconds": 99.83283109863228
+      },
+      {
+        "from": 101,
+        "to": 150,
+        "updates": 50,
+        "mean_reward": 0.41146431249062826,
+        "nonzero_gradients": 31,
+        "zero_group_variance_updates": 19,
+        "mean_step_seconds": 98.98432617818005
+      },
+      {
+        "from": 151,
+        "to": 200,
+        "updates": 50,
+        "mean_reward": 0.25713191714802625,
+        "nonzero_gradients": 28,
+        "zero_group_variance_updates": 22,
+        "mean_step_seconds": 90.45057645709996
+      },
+      {
+        "from": 201,
+        "to": 250,
+        "updates": 50,
+        "mean_reward": 0.2341406119762371,
+        "nonzero_gradients": 28,
+        "zero_group_variance_updates": 22,
+        "mean_step_seconds": 92.10870412748073
+      },
+      {
+        "from": 251,
+        "to": 280,
+        "updates": 30,
+        "mean_reward": 0.36988665062637005,
+        "nonzero_gradients": 24,
+        "zero_group_variance_updates": 6,
+        "mean_step_seconds": 90.38455978590063
+      },
+      {
+        "from": 281,
+        "to": 310,
+        "updates": 30,
+        "mean_reward": 0.41619469563266076,
+        "nonzero_gradients": 19,
+        "zero_group_variance_updates": 11,
+        "mean_step_seconds": 79.92046914853466
+      },
+      {
+        "from": 311,
+        "to": 348,
+        "updates": 38,
+        "mean_reward": 0.427957940897541,
+        "nonzero_gradients": 16,
+        "zero_group_variance_updates": 22,
+        "mean_step_seconds": 98.42552233854995
+      }
+    ],
+    "coverage": {
+      "optimizer_steps": 348,
+      "target_min_steps": 0,
+      "resumed_group_offset": 170,
+      "hard_max_steps": 1000,
+      "collated_group_ids": [
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        249,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258,
+        259,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265,
+        266,
+        267,
+        268,
+        271,
+        273,
+        274,
+        275,
+        276
+      ],
+      "covered_pairs": [
+        {
+          "task_row": 37,
+          "harness": "codex"
+        },
+        {
+          "task_row": 45,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 58,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 87,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 110,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 117,
+          "harness": "codex"
+        },
+        {
+          "task_row": 131,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 143,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 149,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 153,
+          "harness": "codex"
+        },
+        {
+          "task_row": 155,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 160,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 162,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 196,
+          "harness": "codex"
+        },
+        {
+          "task_row": 199,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 204,
+          "harness": "codex"
+        },
+        {
+          "task_row": 205,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 212,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 225,
+          "harness": "codex"
+        },
+        {
+          "task_row": 237,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 256,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 266,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 271,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 273,
+          "harness": "codex"
+        },
+        {
+          "task_row": 291,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 293,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 301,
+          "harness": "codex"
+        },
+        {
+          "task_row": 305,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 314,
+          "harness": "codex"
+        },
+        {
+          "task_row": 349,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 351,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 363,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 370,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 379,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 394,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 399,
+          "harness": "codex"
+        },
+        {
+          "task_row": 404,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 413,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 425,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 471,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 472,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 484,
+          "harness": "codex"
+        },
+        {
+          "task_row": 496,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 500,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 502,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 503,
+          "harness": "codex"
+        },
+        {
+          "task_row": 504,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 511,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 520,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 522,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 524,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 527,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 535,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 539,
+          "harness": "codex"
+        },
+        {
+          "task_row": 546,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 560,
+          "harness": "codex"
+        },
+        {
+          "task_row": 561,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 562,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 570,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 572,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 575,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 578,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 589,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 600,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 614,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 622,
+          "harness": "codex"
+        },
+        {
+          "task_row": 643,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 648,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 672,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 681,
+          "harness": "codex"
+        },
+        {
+          "task_row": 682,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 683,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 702,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 707,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 710,
+          "harness": "codex"
+        },
+        {
+          "task_row": 712,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 713,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 715,
+          "harness": "codex"
+        },
+        {
+          "task_row": 725,
+          "harness": "codex"
+        },
+        {
+          "task_row": 736,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 747,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 758,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 771,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 780,
+          "harness": "codex"
+        },
+        {
+          "task_row": 782,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 793,
+          "harness": "codex"
+        },
+        {
+          "task_row": 799,
+          "harness": "codex"
+        },
+        {
+          "task_row": 800,
+          "harness": "codex"
+        },
+        {
+          "task_row": 804,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 810,
+          "harness": "codex"
+        },
+        {
+          "task_row": 819,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 821,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 822,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 840,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 856,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 887,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 891,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 897,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 899,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 956,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 973,
+          "harness": "codex"
+        },
+        {
+          "task_row": 997,
+          "harness": "opencode"
+        }
+      ],
+      "pair_coverage_complete": false,
+      "unique_tasks_covered": 102,
+      "target_unique_tasks": 1000,
+      "harness_pair_counts": {
+        "opencode": 25,
+        "claude-code": 25,
+        "codex": 25,
+        "mini-swe-agent": 27
+      },
+      "coverage_semantics": "at least one row per pair; stable over two optimizer boundaries"
+    },
+    "tito": {
+      "claude-code": {
+        "rollouts": 200,
+        "completed_results": 200,
+        "incomplete_results": 0,
+        "tito_pass": 200,
+        "graded": 200,
+        "reward_sum": 87.0,
+        "task_indices": [
+          37,
+          75,
+          89,
+          97,
+          174,
+          246,
+          255,
+          261,
+          263,
+          379,
+          427,
+          453,
+          466,
+          468,
+          513,
+          550,
+          612,
+          709,
+          812,
+          822,
+          833,
+          847,
+          934,
+          958,
+          984
+        ],
+        "token_budget": 131072,
+        "largest_row_tokens": 114881,
+        "rows": 3334,
+        "eligible_tokens": 731835,
+        "retained_tokens": 731835,
+        "rows_over_40960": 1169,
+        "rows_over_token_budget": 0
+      },
+      "codex": {
+        "rollouts": 208,
+        "completed_results": 208,
+        "incomplete_results": 0,
+        "tito_pass": 208,
+        "graded": 208,
+        "reward_sum": 81.0,
+        "task_indices": [
+          83,
+          99,
+          153,
+          176,
+          185,
+          190,
+          195,
+          240,
+          266,
+          298,
+          306,
+          401,
+          435,
+          452,
+          491,
+          498,
+          571,
+          596,
+          607,
+          771,
+          810,
+          893,
+          932,
+          949,
+          978,
+          990
+        ],
+        "token_budget": 131072,
+        "largest_row_tokens": 59459,
+        "rows": 212,
+        "eligible_tokens": 596973,
+        "retained_tokens": 596973,
+        "rows_over_40960": 2,
+        "rows_over_token_budget": 0
+      },
+      "mini-swe-agent": {
+        "rollouts": 216,
+        "completed_results": 216,
+        "incomplete_results": 0,
+        "tito_pass": 216,
+        "graded": 214,
+        "reward_sum": 65.0,
+        "task_indices": [
+          13,
+          45,
+          46,
+          62,
+          128,
+          134,
+          198,
+          205,
+          236,
+          259,
+          289,
+          331,
+          334,
+          431,
+          500,
+          579,
+          699,
+          701,
+          734,
+          741,
+          747,
+          853,
+          866,
+          889,
+          891,
+          915,
+          988
+        ],
+        "token_budget": 131072,
+        "largest_row_tokens": 37939,
+        "rows": 230,
+        "eligible_tokens": 313863,
+        "retained_tokens": 313863,
+        "rows_over_40960": 0,
+        "rows_over_token_budget": 0
+      },
+      "opencode": {
+        "rollouts": 205,
+        "completed_results": 205,
+        "incomplete_results": 0,
+        "tito_pass": 205,
+        "graded": 204,
+        "reward_sum": 46.0,
+        "task_indices": [
+          48,
+          74,
+          136,
+          138,
+          141,
+          160,
+          193,
+          219,
+          241,
+          277,
+          310,
+          318,
+          350,
+          405,
+          423,
+          456,
+          489,
+          518,
+          546,
+          606,
+          623,
+          631,
+          634,
+          748,
+          921,
+          960
+        ],
+        "token_budget": 131072,
+        "largest_row_tokens": 83513,
+        "rows": 441,
+        "eligible_tokens": 363709,
+        "retained_tokens": 363709,
+        "rows_over_40960": 107,
+        "rows_over_token_budget": 0
+      }
+    },
+    "audit_timestamp": "2026-09-15T13:27:16.386308+00:00",
+    "checkpoints": [
+      {
+        "step": 200,
+        "saved": true,
+        "ready_marker": true
+      },
+      {
+        "step": 238,
+        "saved": true,
+        "ready_marker": false
+      },
+      {
+        "step": 250,
+        "saved": true,
+        "ready_marker": false
+      },
+      {
+        "step": 294,
+        "saved": true,
+        "ready_marker": false
+      },
+      {
+        "step": 300,
+        "saved": true,
+        "ready_marker": true
+      },
+      {
+        "step": 337,
+        "saved": true,
+        "ready_marker": false
+      }
+    ],
+    "trackio": {
+      "checked_at": "2026-09-15T13:26:48.432030+00:00",
+      "online": true,
+      "events": 203,
+      "withheld_evaluations": [],
+      "local_ok": true,
+      "sync": {
+        "ok": true,
+        "skipped_unchanged": true
+      }
+    },
+    "monitor_timestamp": "2026-09-15T13:27:18.505481+00:00",
+    "monitor_alerts": [],
+    "supervisor": {
+      "checked_at": "2026-09-15T13:26:48.343486+00:00",
+      "training_state": "RUNNING",
+      "jobs": {
+        "79083": "RUNNING",
+        "79084": "PENDING",
+        "79085": "RUNNING",
+        "79086": "RUNNING",
+        "79087": "RUNNING",
+        "79199": "COMPLETED",
+        "79200": "COMPLETED",
+        "79305": "RUNNING",
+        "79306": "PENDING"
+      },
+      "alerts": [],
+      "restarted": {}
+    },
+    "source_chain": [
+      {
+        "job": "79083",
+        "resume_step": 196,
+        "file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/job-79083/audit/metrics.jsonl",
+        "sha256": "60809cd3f558ec3ad5ae21f1659e9c2f111dc76c4f72b28229339f0ac9055a33"
+      },
+      {
+        "job": "78956",
+        "resume_step": 53,
+        "file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-bounded-20260915/job-78956/audit/metrics.jsonl",
+        "sha256": "e566e6c3206e2ec911f1289bb4247a8a66fcbebbdcd99b1743f1039cfeaf73fc"
+      },
+      {
+        "job": "78831",
+        "resume_step": 30,
+        "file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-blackbox-match-20260915/job-78831/audit/metrics.jsonl",
+        "sha256": "a47ffbb05e62e93e1770075dfa3bdf835b78f88b8b5c630bc5ff4410bded6701"
+      },
+      {
+        "job": "78767",
+        "resume_step": 25,
+        "file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-gas64-reliable-20260915/job-78767/audit/metrics.jsonl",
+        "sha256": "9b0affdd3af9a64ca1cccd26b271692b47da05879a414af666c6f18643756740"
+      },
+      {
+        "job": "78681",
+        "resume_step": 17,
+        "file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-gas64-v2-20260915/job-78681/audit/metrics.jsonl",
+        "sha256": "77053f34384f4f20a83f32f112df65df83686919239f0e5c4976f9cce6ec3a1d"
+      },
+      {
+        "job": "78647",
+        "resume_step": 0,
+        "file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-gas16-20260914/job-78647/audit/metrics.jsonl",
+        "sha256": "be7983dd70b4b66aeb9d4ccd10db6ae7f6795237782e70f0e7f2f428587498d0"
+      }
+    ]
+  },
+  "matched_cells": {
+    "base": {
+      "graded": 976,
+      "correct": 144,
+      "pass_at_1": 0.14754098360655737
+    },
+    "100": {
+      "graded": 976,
+      "correct": 245,
+      "pass_at_1": 0.2510245901639344
+    },
+    "200": {
+      "graded": 976,
+      "correct": 258,
+      "pass_at_1": 0.26434426229508196
+    },
+    "300": {
+      "graded": 976,
+      "correct": 284,
+      "pass_at_1": 0.29098360655737704
+    }
+  },
+  "latest_checkpoint": "300",
+  "ungraded_attempts": {
+    "100": 49,
+    "200": 81,
+    "300": 29
+  },
+  "sources": {
+    "base": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json",
+    "100": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-bounded-20260915/checkpoint-evals/step-000100",
+    "200": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000200",
+    "300": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000300"
+  }
+}

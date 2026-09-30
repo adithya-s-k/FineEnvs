@@ -1,0 +1,1067 @@
+{
+  "snapshot_utc": "2026-09-15T11:13:22.806509+00:00",
+  "evaluations": {
+    "base": {
+      "correct": 146,
+      "graded": 1000,
+      "pass_at_1": 0.146,
+      "coverage_complete": true,
+      "final_audited": true,
+      "harnesses": {
+        "opencode": {
+          "correct": 27,
+          "graded": 250,
+          "pass_at_1": 0.108,
+          "difficulty": {
+            "easy": {
+              "correct": 11,
+              "graded": 33,
+              "pass_at_1": 0.3333333333333333
+            },
+            "medium": {
+              "correct": 10,
+              "graded": 118,
+              "pass_at_1": 0.0847457627118644
+            },
+            "hard": {
+              "correct": 6,
+              "graded": 99,
+              "pass_at_1": 0.06060606060606061
+            }
+          }
+        },
+        "claude-code": {
+          "correct": 42,
+          "graded": 250,
+          "pass_at_1": 0.168,
+          "difficulty": {
+            "easy": {
+              "correct": 14,
+              "graded": 33,
+              "pass_at_1": 0.42424242424242425
+            },
+            "medium": {
+              "correct": 22,
+              "graded": 118,
+              "pass_at_1": 0.1864406779661017
+            },
+            "hard": {
+              "correct": 6,
+              "graded": 99,
+              "pass_at_1": 0.06060606060606061
+            }
+          }
+        },
+        "codex": {
+          "correct": 41,
+          "graded": 250,
+          "pass_at_1": 0.164,
+          "difficulty": {
+            "easy": {
+              "correct": 14,
+              "graded": 33,
+              "pass_at_1": 0.42424242424242425
+            },
+            "medium": {
+              "correct": 20,
+              "graded": 118,
+              "pass_at_1": 0.1694915254237288
+            },
+            "hard": {
+              "correct": 7,
+              "graded": 99,
+              "pass_at_1": 0.0707070707070707
+            }
+          }
+        },
+        "mini-swe-agent": {
+          "correct": 36,
+          "graded": 250,
+          "pass_at_1": 0.144,
+          "difficulty": {
+            "easy": {
+              "correct": 14,
+              "graded": 33,
+              "pass_at_1": 0.42424242424242425
+            },
+            "medium": {
+              "correct": 16,
+              "graded": 118,
+              "pass_at_1": 0.13559322033898305
+            },
+            "hard": {
+              "correct": 6,
+              "graded": 99,
+              "pass_at_1": 0.06060606060606061
+            }
+          }
+        }
+      },
+      "difficulty": {
+        "easy": {
+          "correct": 53,
+          "graded": 132,
+          "pass_at_1": 0.4015151515151515
+        },
+        "medium": {
+          "correct": 68,
+          "graded": 472,
+          "pass_at_1": 0.1440677966101695
+        },
+        "hard": {
+          "correct": 25,
+          "graded": 396,
+          "pass_at_1": 0.06313131313131314
+        }
+      }
+    },
+    "100": {
+      "correct": 248,
+      "graded": 1000,
+      "pass_at_1": 0.248,
+      "coverage_complete": true,
+      "final_audited": true,
+      "harnesses": {
+        "opencode": {
+          "correct": 61,
+          "graded": 250,
+          "pass_at_1": 0.244,
+          "difficulty": {
+            "easy": {
+              "correct": 17,
+              "graded": 33,
+              "pass_at_1": 0.5151515151515151
+            },
+            "medium": {
+              "correct": 37,
+              "graded": 118,
+              "pass_at_1": 0.3135593220338983
+            },
+            "hard": {
+              "correct": 7,
+              "graded": 99,
+              "pass_at_1": 0.0707070707070707
+            }
+          }
+        },
+        "claude-code": {
+          "correct": 69,
+          "graded": 250,
+          "pass_at_1": 0.276,
+          "difficulty": {
+            "easy": {
+              "correct": 20,
+              "graded": 33,
+              "pass_at_1": 0.6060606060606061
+            },
+            "medium": {
+              "correct": 38,
+              "graded": 118,
+              "pass_at_1": 0.3220338983050847
+            },
+            "hard": {
+              "correct": 11,
+              "graded": 99,
+              "pass_at_1": 0.1111111111111111
+            }
+          }
+        },
+        "codex": {
+          "correct": 70,
+          "graded": 250,
+          "pass_at_1": 0.28,
+          "difficulty": {
+            "easy": {
+              "correct": 19,
+              "graded": 33,
+              "pass_at_1": 0.5757575757575758
+            },
+            "medium": {
+              "correct": 42,
+              "graded": 118,
+              "pass_at_1": 0.3559322033898305
+            },
+            "hard": {
+              "correct": 9,
+              "graded": 99,
+              "pass_at_1": 0.09090909090909091
+            }
+          }
+        },
+        "mini-swe-agent": {
+          "correct": 48,
+          "graded": 250,
+          "pass_at_1": 0.192,
+          "difficulty": {
+            "easy": {
+              "correct": 14,
+              "graded": 33,
+              "pass_at_1": 0.42424242424242425
+            },
+            "medium": {
+              "correct": 27,
+              "graded": 118,
+              "pass_at_1": 0.2288135593220339
+            },
+            "hard": {
+              "correct": 7,
+              "graded": 99,
+              "pass_at_1": 0.0707070707070707
+            }
+          }
+        }
+      },
+      "difficulty": {
+        "easy": {
+          "correct": 70,
+          "graded": 132,
+          "pass_at_1": 0.5303030303030303
+        },
+        "medium": {
+          "correct": 144,
+          "graded": 472,
+          "pass_at_1": 0.3050847457627119
+        },
+        "hard": {
+          "correct": 34,
+          "graded": 396,
+          "pass_at_1": 0.08585858585858586
+        }
+      }
+    },
+    "200": {
+      "correct": 259,
+      "graded": 978,
+      "pass_at_1": 0.26482617586912066,
+      "coverage_complete": false,
+      "final_audited": false,
+      "harnesses": {
+        "opencode": {
+          "correct": 76,
+          "graded": 248,
+          "pass_at_1": 0.3064516129032258,
+          "difficulty": {
+            "easy": {
+              "correct": 17,
+              "graded": 33,
+              "pass_at_1": 0.5151515151515151
+            },
+            "medium": {
+              "correct": 41,
+              "graded": 118,
+              "pass_at_1": 0.3474576271186441
+            },
+            "hard": {
+              "correct": 18,
+              "graded": 97,
+              "pass_at_1": 0.18556701030927836
+            }
+          }
+        },
+        "claude-code": {
+          "correct": 71,
+          "graded": 230,
+          "pass_at_1": 0.30869565217391304,
+          "difficulty": {
+            "easy": {
+              "correct": 21,
+              "graded": 33,
+              "pass_at_1": 0.6363636363636364
+            },
+            "medium": {
+              "correct": 37,
+              "graded": 108,
+              "pass_at_1": 0.3425925925925926
+            },
+            "hard": {
+              "correct": 13,
+              "graded": 89,
+              "pass_at_1": 0.14606741573033707
+            }
+          }
+        },
+        "codex": {
+          "correct": 66,
+          "graded": 250,
+          "pass_at_1": 0.264,
+          "difficulty": {
+            "easy": {
+              "correct": 21,
+              "graded": 33,
+              "pass_at_1": 0.6363636363636364
+            },
+            "medium": {
+              "correct": 35,
+              "graded": 118,
+              "pass_at_1": 0.2966101694915254
+            },
+            "hard": {
+              "correct": 10,
+              "graded": 99,
+              "pass_at_1": 0.10101010101010101
+            }
+          }
+        },
+        "mini-swe-agent": {
+          "correct": 46,
+          "graded": 250,
+          "pass_at_1": 0.184,
+          "difficulty": {
+            "easy": {
+              "correct": 18,
+              "graded": 33,
+              "pass_at_1": 0.5454545454545454
+            },
+            "medium": {
+              "correct": 27,
+              "graded": 118,
+              "pass_at_1": 0.2288135593220339
+            },
+            "hard": {
+              "correct": 1,
+              "graded": 99,
+              "pass_at_1": 0.010101010101010102
+            }
+          }
+        }
+      },
+      "difficulty": {
+        "easy": {
+          "correct": 77,
+          "graded": 132,
+          "pass_at_1": 0.5833333333333334
+        },
+        "medium": {
+          "correct": 140,
+          "graded": 462,
+          "pass_at_1": 0.30303030303030304
+        },
+        "hard": {
+          "correct": 42,
+          "graded": 384,
+          "pass_at_1": 0.109375
+        }
+      }
+    }
+  },
+  "difficulty_task_counts": {
+    "medium": 118,
+    "easy": 33,
+    "hard": 99
+  },
+  "matched_completed_cells": {
+    "base": {
+      "correct": 144,
+      "graded": 978,
+      "pass_at_1": 0.147239263803681,
+      "harnesses": {
+        "opencode": {
+          "correct": 27,
+          "graded": 248,
+          "pass_at_1": 0.10887096774193548
+        },
+        "claude-code": {
+          "correct": 40,
+          "graded": 230,
+          "pass_at_1": 0.17391304347826086
+        },
+        "codex": {
+          "correct": 41,
+          "graded": 250,
+          "pass_at_1": 0.164
+        },
+        "mini-swe-agent": {
+          "correct": 36,
+          "graded": 250,
+          "pass_at_1": 0.144
+        }
+      }
+    },
+    "100": {
+      "correct": 246,
+      "graded": 978,
+      "pass_at_1": 0.25153374233128833,
+      "harnesses": {
+        "opencode": {
+          "correct": 61,
+          "graded": 248,
+          "pass_at_1": 0.24596774193548387
+        },
+        "claude-code": {
+          "correct": 67,
+          "graded": 230,
+          "pass_at_1": 0.29130434782608694
+        },
+        "codex": {
+          "correct": 70,
+          "graded": 250,
+          "pass_at_1": 0.28
+        },
+        "mini-swe-agent": {
+          "correct": 48,
+          "graded": 250,
+          "pass_at_1": 0.192
+        }
+      }
+    },
+    "200": {
+      "correct": 259,
+      "graded": 978,
+      "pass_at_1": 0.26482617586912066,
+      "harnesses": {
+        "opencode": {
+          "correct": 76,
+          "graded": 248,
+          "pass_at_1": 0.3064516129032258
+        },
+        "claude-code": {
+          "correct": 71,
+          "graded": 230,
+          "pass_at_1": 0.30869565217391304
+        },
+        "codex": {
+          "correct": 66,
+          "graded": 250,
+          "pass_at_1": 0.264
+        },
+        "mini-swe-agent": {
+          "correct": 46,
+          "graded": 250,
+          "pass_at_1": 0.184
+        }
+      }
+    }
+  },
+  "paired_changes": {
+    "base": {
+      "newly_solved": 167,
+      "newly_unsolved": 52,
+      "net": 115
+    },
+    "100": {
+      "newly_solved": 108,
+      "newly_unsolved": 95,
+      "net": 13
+    }
+  },
+  "training": {
+    "latest_step": 260,
+    "windows": [
+      {
+        "start": 54,
+        "end": 100,
+        "updates": 47,
+        "mean_logged_reward": 0.37835463605586095,
+        "nonzero_gradient_updates": 34
+      },
+      {
+        "start": 101,
+        "end": 150,
+        "updates": 50,
+        "mean_logged_reward": 0.41146431249062826,
+        "nonzero_gradient_updates": 31
+      },
+      {
+        "start": 151,
+        "end": 200,
+        "updates": 50,
+        "mean_logged_reward": 0.25713191714802625,
+        "nonzero_gradient_updates": 28
+      },
+      {
+        "start": 201,
+        "end": 260,
+        "updates": 60,
+        "mean_logged_reward": 0.24953119129486903,
+        "nonzero_gradient_updates": 37
+      },
+      {
+        "start": 221,
+        "end": 240,
+        "updates": 20,
+        "mean_logged_reward": 0.3294358438894578,
+        "nonzero_gradient_updates": 13
+      },
+      {
+        "start": 241,
+        "end": 260,
+        "updates": 20,
+        "mean_logged_reward": 0.23746823442020487,
+        "nonzero_gradient_updates": 16
+      }
+    ],
+    "current_job_updates": 64,
+    "current_job_nonzero_gradient_updates": 39,
+    "current_job_nonfinite_updates": 0,
+    "current_job_max_sample_staleness": 4.0,
+    "current_job_stale_rows_dropped": 67.0,
+    "current_job_stale_rollouts_dropped": 4.0,
+    "current_job_oversize_rows_dropped": 0,
+    "current_job_stale_drop_steps": [
+      218
+    ],
+    "monitor": {
+      "checked_at": "2026-09-15T11:06:09.316520+00:00",
+      "optimizer_step": 253,
+      "alerts": [],
+      "saved_checkpoints": [
+        200,
+        238,
+        250
+      ],
+      "tito": {
+        "claude-code": {
+          "rollouts": 72,
+          "completed_results": 72,
+          "incomplete_results": 0,
+          "tito_pass": 72,
+          "graded": 72,
+          "reward_sum": 25.0,
+          "task_indices": [
+            37,
+            75,
+            246,
+            261,
+            379,
+            427,
+            709,
+            822,
+            833
+          ],
+          "token_budget": 131072,
+          "largest_row_tokens": 113179,
+          "rows": 1205,
+          "eligible_tokens": 295335,
+          "retained_tokens": 295335,
+          "rows_over_40960": 436,
+          "rows_over_token_budget": 0
+        },
+        "codex": {
+          "rollouts": 80,
+          "completed_results": 80,
+          "incomplete_results": 0,
+          "tito_pass": 80,
+          "graded": 80,
+          "reward_sum": 24.0,
+          "task_indices": [
+            99,
+            298,
+            401,
+            452,
+            491,
+            571,
+            810,
+            893,
+            978,
+            990
+          ],
+          "token_budget": 131072,
+          "largest_row_tokens": 27158,
+          "rows": 81,
+          "eligible_tokens": 236409,
+          "retained_tokens": 236409,
+          "rows_over_40960": 0,
+          "rows_over_token_budget": 0
+        },
+        "mini-swe-agent": {
+          "rollouts": 84,
+          "completed_results": 84,
+          "incomplete_results": 0,
+          "tito_pass": 84,
+          "graded": 83,
+          "reward_sum": 26.0,
+          "task_indices": [
+            13,
+            46,
+            62,
+            134,
+            236,
+            289,
+            331,
+            500,
+            699,
+            853,
+            866
+          ],
+          "token_budget": 131072,
+          "largest_row_tokens": 37939,
+          "rows": 91,
+          "eligible_tokens": 142592,
+          "retained_tokens": 142592,
+          "rows_over_40960": 0,
+          "rows_over_token_budget": 0
+        },
+        "opencode": {
+          "rollouts": 80,
+          "completed_results": 80,
+          "incomplete_results": 0,
+          "tito_pass": 80,
+          "graded": 79,
+          "reward_sum": 13.0,
+          "task_indices": [
+            48,
+            74,
+            138,
+            141,
+            160,
+            241,
+            277,
+            631,
+            634,
+            960
+          ],
+          "token_budget": 131072,
+          "largest_row_tokens": 74411,
+          "rows": 177,
+          "eligible_tokens": 178329,
+          "retained_tokens": 178329,
+          "rows_over_40960": 51,
+          "rows_over_token_budget": 0
+        }
+      }
+    },
+    "trackio": {
+      "checked_at": "2026-09-15T11:12:48.414705+00:00",
+      "online": true,
+      "events": 79,
+      "withheld_evaluations": [],
+      "local_ok": true,
+      "sync": {
+        "ok": true,
+        "skipped_unchanged": true
+      }
+    },
+    "semantics": "Unweighted mean of logged per-update reward; not unique-rollout or fixed-task pass@1. Training task/harness mix varies. Plot starts at bounded-admission recipe step54.",
+    "source_chain": [
+      {
+        "job": "79083",
+        "metrics_file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/job-79083/audit/metrics.jsonl",
+        "resume_step": 196,
+        "retained_steps": [
+          197,
+          198,
+          199,
+          200,
+          201,
+          202,
+          203,
+          204,
+          205,
+          206,
+          207,
+          208,
+          209,
+          210,
+          211,
+          212,
+          213,
+          214,
+          215,
+          216,
+          217,
+          218,
+          219,
+          220,
+          221,
+          222,
+          223,
+          224,
+          225,
+          226,
+          227,
+          228,
+          229,
+          230,
+          231,
+          232,
+          233,
+          234,
+          235,
+          236,
+          237,
+          238,
+          239,
+          240,
+          241,
+          242,
+          243,
+          244,
+          245,
+          246,
+          247,
+          248,
+          249,
+          250,
+          251,
+          252,
+          253,
+          254,
+          255,
+          256,
+          257,
+          258,
+          259,
+          260
+        ],
+        "file_sha256": "eaacf3f2a7243db4d64f1a59213f8bbcb65e8c6cb9847247808a3127ad6dd521"
+      },
+      {
+        "job": "78956",
+        "metrics_file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-bounded-20260915/job-78956/audit/metrics.jsonl",
+        "resume_step": 53,
+        "retained_steps": [
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90,
+          91,
+          92,
+          93,
+          94,
+          95,
+          96,
+          97,
+          98,
+          99,
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          107,
+          108,
+          109,
+          110,
+          111,
+          112,
+          113,
+          114,
+          115,
+          116,
+          117,
+          118,
+          119,
+          120,
+          121,
+          122,
+          123,
+          124,
+          125,
+          126,
+          127,
+          128,
+          129,
+          130,
+          131,
+          132,
+          133,
+          134,
+          135,
+          136,
+          137,
+          138,
+          139,
+          140,
+          141,
+          142,
+          143,
+          144,
+          145,
+          146,
+          147,
+          148,
+          149,
+          150,
+          151,
+          152,
+          153,
+          154,
+          155,
+          156,
+          157,
+          158,
+          159,
+          160,
+          161,
+          162,
+          163,
+          164,
+          165,
+          166,
+          167,
+          168,
+          169,
+          170,
+          171,
+          172,
+          173,
+          174,
+          175,
+          176,
+          177,
+          178,
+          179,
+          180,
+          181,
+          182,
+          183,
+          184,
+          185,
+          186,
+          187,
+          188,
+          189,
+          190,
+          191,
+          192,
+          193,
+          194,
+          195,
+          196
+        ],
+        "file_sha256": "e566e6c3206e2ec911f1289bb4247a8a66fcbebbdcd99b1743f1039cfeaf73fc"
+      },
+      {
+        "job": "78831",
+        "metrics_file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-blackbox-match-20260915/job-78831/audit/metrics.jsonl",
+        "resume_step": 30,
+        "retained_steps": [
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53
+        ],
+        "file_sha256": "a47ffbb05e62e93e1770075dfa3bdf835b78f88b8b5c630bc5ff4410bded6701"
+      },
+      {
+        "job": "78767",
+        "metrics_file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-gas64-reliable-20260915/job-78767/audit/metrics.jsonl",
+        "resume_step": 25,
+        "retained_steps": [
+          26,
+          27,
+          28,
+          29,
+          30
+        ],
+        "file_sha256": "9b0affdd3af9a64ca1cccd26b271692b47da05879a414af666c6f18643756740"
+      },
+      {
+        "job": "78681",
+        "metrics_file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-gas64-v2-20260915/job-78681/audit/metrics.jsonl",
+        "resume_step": 17,
+        "retained_steps": [
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25
+        ],
+        "file_sha256": "77053f34384f4f20a83f32f112df65df83686919239f0e5c4976f9cce6ec3a1d"
+      },
+      {
+        "job": "78647",
+        "metrics_file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-gas16-20260914/job-78647/audit/metrics.jsonl",
+        "resume_step": 0,
+        "retained_steps": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17
+        ],
+        "file_sha256": "be7983dd70b4b66aeb9d4ccd10db6ae7f6795237782e70f0e7f2f428587498d0"
+      }
+    ]
+  },
+  "excluded_ungraded_attempts": {
+    "100": 49,
+    "200": 79
+  },
+  "sources": {
+    "base": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json",
+    "100": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-bounded-20260915/checkpoint-evals/step-000100/scores.json",
+    "200": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000200/job-79092/traces"
+  },
+  "checkpoint200_missing": [
+    {
+      "harness": "claude-code",
+      "index": 17,
+      "difficulty": "medium"
+    },
+    {
+      "harness": "claude-code",
+      "index": 29,
+      "difficulty": "medium"
+    },
+    {
+      "harness": "claude-code",
+      "index": 30,
+      "difficulty": "hard"
+    },
+    {
+      "harness": "claude-code",
+      "index": 31,
+      "difficulty": "hard"
+    },
+    {
+      "harness": "claude-code",
+      "index": 36,
+      "difficulty": "medium"
+    },
+    {
+      "harness": "claude-code",
+      "index": 50,
+      "difficulty": "medium"
+    },
+    {
+      "harness": "claude-code",
+      "index": 65,
+      "difficulty": "medium"
+    },
+    {
+      "harness": "claude-code",
+      "index": 89,
+      "difficulty": "hard"
+    },
+    {
+      "harness": "claude-code",
+      "index": 109,
+      "difficulty": "medium"
+    },
+    {
+      "harness": "claude-code",
+      "index": 111,
+      "difficulty": "medium"
+    },
+    {
+      "harness": "claude-code",
+      "index": 130,
+      "difficulty": "medium"
+    },
+    {
+      "harness": "claude-code",
+      "index": 131,
+      "difficulty": "hard"
+    },
+    {
+      "harness": "claude-code",
+      "index": 132,
+      "difficulty": "hard"
+    },
+    {
+      "harness": "claude-code",
+      "index": 168,
+      "difficulty": "medium"
+    },
+    {
+      "harness": "claude-code",
+      "index": 170,
+      "difficulty": "medium"
+    },
+    {
+      "harness": "claude-code",
+      "index": 187,
+      "difficulty": "hard"
+    },
+    {
+      "harness": "claude-code",
+      "index": 197,
+      "difficulty": "hard"
+    },
+    {
+      "harness": "claude-code",
+      "index": 206,
+      "difficulty": "hard"
+    },
+    {
+      "harness": "claude-code",
+      "index": 209,
+      "difficulty": "hard"
+    },
+    {
+      "harness": "claude-code",
+      "index": 214,
+      "difficulty": "hard"
+    },
+    {
+      "harness": "opencode",
+      "index": 132,
+      "difficulty": "hard"
+    },
+    {
+      "harness": "opencode",
+      "index": 177,
+      "difficulty": "hard"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+# Preserve exported CSV line endings and generated SVG path formatting.
+*.csv whitespace=cr-at-eol
+*.svg -whitespace

@@ -119,6 +119,7 @@ def main() -> None:
         llm_url=args.vllm_url,
         model=args.model,
         sandbox=args.sandbox,
+        sampling={"temperature": args.temperature, "top_p": 1.0, "top_k": 0},
         agent_step_limit=args.agent_step_limit,
         curriculum=args.curriculum,
         seed=args.seed,
@@ -161,6 +162,8 @@ def main() -> None:
         vllm_server_url=args.vllm_url,
         max_tokens=args.max_completion_length,
         temperature=args.temperature,
+        top_p=1.0,
+        top_k=0,
         log_completions=True,
         num_completions_to_print=2,
     )

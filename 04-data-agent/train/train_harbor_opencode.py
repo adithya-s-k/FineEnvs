@@ -165,6 +165,7 @@ def main() -> None:
         # fails, the tier grades `text`, and every rollout comes back with no trainable turns.
         llm_url=args.vllm_url,
         model=args.model,
+        sampling={"temperature": args.temperature, "top_p": args.top_p, "top_k": args.top_k},
         reward_key=args.reward_key,
         agent_timeout_sec=args.agent_timeout,
         agent_step_limit=args.agent_step_limit,
@@ -208,6 +209,8 @@ def main() -> None:
 
     worker = HarnessRolloutWorker(
         harness_session_factory=factory,
+        lossless_capture=True,
+        fork_threshold_tokens=0,
         harness_adapter=None,  # loop-owning: the agent drives itself; we read what it did
         # Reinforce turns that took an ACTION rather than prose. Works only because the env hands TRL
         # tool calls in the NESTED OpenAI shape; flattened, this is False for every turn and the whole
@@ -244,6 +247,7 @@ def main() -> None:
         top_p=args.top_p,
         top_k=args.top_k,
         max_staleness=args.max_staleness,
+        fork_threshold_tokens=0,
         vllm_server_base_url=args.vllm_url,
         optim=args.optim,
         bf16=True,

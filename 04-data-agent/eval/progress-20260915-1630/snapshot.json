@@ -1,0 +1,2009 @@
+{
+  "snapshot_utc": "2026-09-15T16:28:50.017037+00:00",
+  "evaluations": {
+    "base": {
+      "graded": 1000,
+      "correct": 146,
+      "pass_at_1": 0.146,
+      "final_audited": true,
+      "harnesses": {
+        "opencode": {
+          "graded": 250,
+          "correct": 27,
+          "pass_at_1": 0.108,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 11,
+              "pass_at_1": 0.3333333333333333
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 10,
+              "pass_at_1": 0.0847457627118644
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 6,
+              "pass_at_1": 0.06060606060606061
+            }
+          }
+        },
+        "claude-code": {
+          "graded": 250,
+          "correct": 42,
+          "pass_at_1": 0.168,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 14,
+              "pass_at_1": 0.42424242424242425
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 22,
+              "pass_at_1": 0.1864406779661017
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 6,
+              "pass_at_1": 0.06060606060606061
+            }
+          }
+        },
+        "codex": {
+          "graded": 250,
+          "correct": 41,
+          "pass_at_1": 0.164,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 14,
+              "pass_at_1": 0.42424242424242425
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 20,
+              "pass_at_1": 0.1694915254237288
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 7,
+              "pass_at_1": 0.0707070707070707
+            }
+          }
+        },
+        "mini-swe-agent": {
+          "graded": 250,
+          "correct": 36,
+          "pass_at_1": 0.144,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 14,
+              "pass_at_1": 0.42424242424242425
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 16,
+              "pass_at_1": 0.13559322033898305
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 6,
+              "pass_at_1": 0.06060606060606061
+            }
+          }
+        }
+      },
+      "difficulty": {
+        "easy": {
+          "graded": 132,
+          "correct": 53,
+          "pass_at_1": 0.4015151515151515
+        },
+        "medium": {
+          "graded": 472,
+          "correct": 68,
+          "pass_at_1": 0.1440677966101695
+        },
+        "hard": {
+          "graded": 396,
+          "correct": 25,
+          "pass_at_1": 0.06313131313131314
+        }
+      }
+    },
+    "100": {
+      "graded": 1000,
+      "correct": 248,
+      "pass_at_1": 0.248,
+      "final_audited": true,
+      "harnesses": {
+        "opencode": {
+          "graded": 250,
+          "correct": 61,
+          "pass_at_1": 0.244,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 17,
+              "pass_at_1": 0.5151515151515151
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 37,
+              "pass_at_1": 0.3135593220338983
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 7,
+              "pass_at_1": 0.0707070707070707
+            }
+          }
+        },
+        "claude-code": {
+          "graded": 250,
+          "correct": 69,
+          "pass_at_1": 0.276,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 20,
+              "pass_at_1": 0.6060606060606061
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 38,
+              "pass_at_1": 0.3220338983050847
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 11,
+              "pass_at_1": 0.1111111111111111
+            }
+          }
+        },
+        "codex": {
+          "graded": 250,
+          "correct": 70,
+          "pass_at_1": 0.28,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 19,
+              "pass_at_1": 0.5757575757575758
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 42,
+              "pass_at_1": 0.3559322033898305
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 9,
+              "pass_at_1": 0.09090909090909091
+            }
+          }
+        },
+        "mini-swe-agent": {
+          "graded": 250,
+          "correct": 48,
+          "pass_at_1": 0.192,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 14,
+              "pass_at_1": 0.42424242424242425
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 27,
+              "pass_at_1": 0.2288135593220339
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 7,
+              "pass_at_1": 0.0707070707070707
+            }
+          }
+        }
+      },
+      "difficulty": {
+        "easy": {
+          "graded": 132,
+          "correct": 70,
+          "pass_at_1": 0.5303030303030303
+        },
+        "medium": {
+          "graded": 472,
+          "correct": 144,
+          "pass_at_1": 0.3050847457627119
+        },
+        "hard": {
+          "graded": 396,
+          "correct": 34,
+          "pass_at_1": 0.08585858585858586
+        }
+      }
+    },
+    "200": {
+      "graded": 1000,
+      "correct": 263,
+      "pass_at_1": 0.263,
+      "final_audited": true,
+      "harnesses": {
+        "opencode": {
+          "graded": 250,
+          "correct": 76,
+          "pass_at_1": 0.304,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 17,
+              "pass_at_1": 0.5151515151515151
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 41,
+              "pass_at_1": 0.3474576271186441
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 18,
+              "pass_at_1": 0.18181818181818182
+            }
+          }
+        },
+        "claude-code": {
+          "graded": 250,
+          "correct": 75,
+          "pass_at_1": 0.3,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 21,
+              "pass_at_1": 0.6363636363636364
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 39,
+              "pass_at_1": 0.3305084745762712
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 15,
+              "pass_at_1": 0.15151515151515152
+            }
+          }
+        },
+        "codex": {
+          "graded": 250,
+          "correct": 66,
+          "pass_at_1": 0.264,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 21,
+              "pass_at_1": 0.6363636363636364
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 35,
+              "pass_at_1": 0.2966101694915254
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 10,
+              "pass_at_1": 0.10101010101010101
+            }
+          }
+        },
+        "mini-swe-agent": {
+          "graded": 250,
+          "correct": 46,
+          "pass_at_1": 0.184,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 18,
+              "pass_at_1": 0.5454545454545454
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 27,
+              "pass_at_1": 0.2288135593220339
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 1,
+              "pass_at_1": 0.010101010101010102
+            }
+          }
+        }
+      },
+      "difficulty": {
+        "easy": {
+          "graded": 132,
+          "correct": 77,
+          "pass_at_1": 0.5833333333333334
+        },
+        "medium": {
+          "graded": 472,
+          "correct": 142,
+          "pass_at_1": 0.3008474576271186
+        },
+        "hard": {
+          "graded": 396,
+          "correct": 44,
+          "pass_at_1": 0.1111111111111111
+        }
+      }
+    },
+    "300": {
+      "graded": 1000,
+      "correct": 286,
+      "pass_at_1": 0.286,
+      "final_audited": true,
+      "harnesses": {
+        "opencode": {
+          "graded": 250,
+          "correct": 74,
+          "pass_at_1": 0.296,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 20,
+              "pass_at_1": 0.6060606060606061
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 39,
+              "pass_at_1": 0.3305084745762712
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 15,
+              "pass_at_1": 0.15151515151515152
+            }
+          }
+        },
+        "claude-code": {
+          "graded": 250,
+          "correct": 83,
+          "pass_at_1": 0.332,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 22,
+              "pass_at_1": 0.6666666666666666
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 46,
+              "pass_at_1": 0.3898305084745763
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 15,
+              "pass_at_1": 0.15151515151515152
+            }
+          }
+        },
+        "codex": {
+          "graded": 250,
+          "correct": 74,
+          "pass_at_1": 0.296,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 23,
+              "pass_at_1": 0.696969696969697
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 39,
+              "pass_at_1": 0.3305084745762712
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 12,
+              "pass_at_1": 0.12121212121212122
+            }
+          }
+        },
+        "mini-swe-agent": {
+          "graded": 250,
+          "correct": 55,
+          "pass_at_1": 0.22,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 20,
+              "pass_at_1": 0.6060606060606061
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 31,
+              "pass_at_1": 0.2627118644067797
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 4,
+              "pass_at_1": 0.04040404040404041
+            }
+          }
+        }
+      },
+      "difficulty": {
+        "easy": {
+          "graded": 132,
+          "correct": 85,
+          "pass_at_1": 0.6439393939393939
+        },
+        "medium": {
+          "graded": 472,
+          "correct": 155,
+          "pass_at_1": 0.3283898305084746
+        },
+        "hard": {
+          "graded": 396,
+          "correct": 46,
+          "pass_at_1": 0.11616161616161616
+        }
+      }
+    },
+    "400": {
+      "graded": 995,
+      "correct": 331,
+      "pass_at_1": 0.3326633165829146,
+      "final_audited": false,
+      "harnesses": {
+        "opencode": {
+          "graded": 246,
+          "correct": 80,
+          "pass_at_1": 0.3252032520325203,
+          "difficulty": {
+            "easy": {
+              "graded": 31,
+              "correct": 22,
+              "pass_at_1": 0.7096774193548387
+            },
+            "medium": {
+              "graded": 117,
+              "correct": 45,
+              "pass_at_1": 0.38461538461538464
+            },
+            "hard": {
+              "graded": 98,
+              "correct": 13,
+              "pass_at_1": 0.1326530612244898
+            }
+          }
+        },
+        "claude-code": {
+          "graded": 249,
+          "correct": 92,
+          "pass_at_1": 0.36947791164658633,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 25,
+              "pass_at_1": 0.7575757575757576
+            },
+            "medium": {
+              "graded": 117,
+              "correct": 53,
+              "pass_at_1": 0.452991452991453
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 14,
+              "pass_at_1": 0.1414141414141414
+            }
+          }
+        },
+        "codex": {
+          "graded": 250,
+          "correct": 87,
+          "pass_at_1": 0.348,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 24,
+              "pass_at_1": 0.7272727272727273
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 50,
+              "pass_at_1": 0.423728813559322
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 13,
+              "pass_at_1": 0.13131313131313133
+            }
+          }
+        },
+        "mini-swe-agent": {
+          "graded": 250,
+          "correct": 72,
+          "pass_at_1": 0.288,
+          "difficulty": {
+            "easy": {
+              "graded": 33,
+              "correct": 24,
+              "pass_at_1": 0.7272727272727273
+            },
+            "medium": {
+              "graded": 118,
+              "correct": 39,
+              "pass_at_1": 0.3305084745762712
+            },
+            "hard": {
+              "graded": 99,
+              "correct": 9,
+              "pass_at_1": 0.09090909090909091
+            }
+          }
+        }
+      },
+      "difficulty": {
+        "easy": {
+          "graded": 130,
+          "correct": 95,
+          "pass_at_1": 0.7307692307692307
+        },
+        "medium": {
+          "graded": 470,
+          "correct": 187,
+          "pass_at_1": 0.39787234042553193
+        },
+        "hard": {
+          "graded": 395,
+          "correct": 49,
+          "pass_at_1": 0.1240506329113924
+        }
+      }
+    }
+  },
+  "training": {
+    "job": "79083",
+    "latest_step": 473,
+    "current_job_updates": 277,
+    "nonzero_gradient_updates": 168,
+    "nonfinite_updates": 0,
+    "max_observed_staleness": 4.0,
+    "stale_rollouts_dropped": 12.0,
+    "stale_rows_dropped": 75.0,
+    "oversized_rows_dropped": 0,
+    "last20_nonzero_gradients": 17,
+    "last20_zero_group_variance": 3,
+    "last_nonzero_gradient_step": 473,
+    "windows": [
+      {
+        "from": 54,
+        "to": 100,
+        "updates": 47,
+        "mean_reward": 0.37835463605586095,
+        "nonzero_gradients": 34,
+        "zero_group_variance_updates": 13,
+        "mean_step_seconds": 99.83283109863228
+      },
+      {
+        "from": 101,
+        "to": 150,
+        "updates": 50,
+        "mean_reward": 0.41146431249062826,
+        "nonzero_gradients": 31,
+        "zero_group_variance_updates": 19,
+        "mean_step_seconds": 98.98432617818005
+      },
+      {
+        "from": 151,
+        "to": 200,
+        "updates": 50,
+        "mean_reward": 0.25713191714802625,
+        "nonzero_gradients": 28,
+        "zero_group_variance_updates": 22,
+        "mean_step_seconds": 90.45057645709996
+      },
+      {
+        "from": 201,
+        "to": 250,
+        "updates": 50,
+        "mean_reward": 0.2341406119762371,
+        "nonzero_gradients": 28,
+        "zero_group_variance_updates": 22,
+        "mean_step_seconds": 92.10870412748073
+      },
+      {
+        "from": 251,
+        "to": 280,
+        "updates": 30,
+        "mean_reward": 0.36988665062637005,
+        "nonzero_gradients": 24,
+        "zero_group_variance_updates": 6,
+        "mean_step_seconds": 90.38455978590063
+      },
+      {
+        "from": 281,
+        "to": 310,
+        "updates": 30,
+        "mean_reward": 0.41619469563266076,
+        "nonzero_gradients": 19,
+        "zero_group_variance_updates": 11,
+        "mean_step_seconds": 79.92046914853466
+      },
+      {
+        "from": 311,
+        "to": 473,
+        "updates": 163,
+        "mean_reward": 0.3802952732651972,
+        "nonzero_gradients": 95,
+        "zero_group_variance_updates": 68,
+        "mean_step_seconds": 89.01563589467433
+      }
+    ],
+    "coverage": {
+      "optimizer_steps": 473,
+      "target_min_steps": 0,
+      "resumed_group_offset": 170,
+      "hard_max_steps": 1000,
+      "collated_group_ids": [
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        249,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258,
+        259,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265,
+        266,
+        267,
+        268,
+        269,
+        270,
+        271,
+        272,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        285,
+        286,
+        287,
+        288,
+        289,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296,
+        297,
+        298,
+        299,
+        300,
+        301,
+        302,
+        303,
+        304,
+        305,
+        306,
+        307,
+        308,
+        309,
+        310,
+        311,
+        312,
+        313,
+        314,
+        315,
+        316,
+        317,
+        318,
+        319,
+        320,
+        321,
+        322,
+        323,
+        324,
+        325,
+        326,
+        327,
+        328,
+        329,
+        330,
+        331,
+        332,
+        333,
+        334,
+        335,
+        336,
+        337,
+        338,
+        339,
+        340,
+        341,
+        342,
+        343,
+        344,
+        345,
+        346,
+        347,
+        348,
+        349,
+        350,
+        351,
+        352,
+        354
+      ],
+      "covered_pairs": [
+        {
+          "task_row": 37,
+          "harness": "codex"
+        },
+        {
+          "task_row": 41,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 45,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 47,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 58,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 61,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 63,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 76,
+          "harness": "codex"
+        },
+        {
+          "task_row": 78,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 84,
+          "harness": "codex"
+        },
+        {
+          "task_row": 87,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 105,
+          "harness": "codex"
+        },
+        {
+          "task_row": 106,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 110,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 117,
+          "harness": "codex"
+        },
+        {
+          "task_row": 131,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 134,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 143,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 144,
+          "harness": "codex"
+        },
+        {
+          "task_row": 149,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 150,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 153,
+          "harness": "codex"
+        },
+        {
+          "task_row": 155,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 160,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 162,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 188,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 196,
+          "harness": "codex"
+        },
+        {
+          "task_row": 199,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 204,
+          "harness": "codex"
+        },
+        {
+          "task_row": 205,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 211,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 212,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 225,
+          "harness": "codex"
+        },
+        {
+          "task_row": 232,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 237,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 241,
+          "harness": "codex"
+        },
+        {
+          "task_row": 248,
+          "harness": "codex"
+        },
+        {
+          "task_row": 256,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 266,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 271,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 273,
+          "harness": "codex"
+        },
+        {
+          "task_row": 280,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 287,
+          "harness": "codex"
+        },
+        {
+          "task_row": 291,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 293,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 301,
+          "harness": "codex"
+        },
+        {
+          "task_row": 305,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 307,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 314,
+          "harness": "codex"
+        },
+        {
+          "task_row": 316,
+          "harness": "codex"
+        },
+        {
+          "task_row": 325,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 349,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 351,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 363,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 370,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 372,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 379,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 386,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 389,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 394,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 399,
+          "harness": "codex"
+        },
+        {
+          "task_row": 400,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 402,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 404,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 413,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 417,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 420,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 424,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 425,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 449,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 454,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 471,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 472,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 482,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 484,
+          "harness": "codex"
+        },
+        {
+          "task_row": 489,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 496,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 500,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 502,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 503,
+          "harness": "codex"
+        },
+        {
+          "task_row": 504,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 511,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 515,
+          "harness": "codex"
+        },
+        {
+          "task_row": 520,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 522,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 524,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 527,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 528,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 535,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 539,
+          "harness": "codex"
+        },
+        {
+          "task_row": 545,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 546,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 549,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 551,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 560,
+          "harness": "codex"
+        },
+        {
+          "task_row": 561,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 562,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 570,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 572,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 575,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 578,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 584,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 588,
+          "harness": "codex"
+        },
+        {
+          "task_row": 589,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 591,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 600,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 603,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 614,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 615,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 622,
+          "harness": "codex"
+        },
+        {
+          "task_row": 626,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 640,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 643,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 648,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 662,
+          "harness": "codex"
+        },
+        {
+          "task_row": 669,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 672,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 680,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 681,
+          "harness": "codex"
+        },
+        {
+          "task_row": 682,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 683,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 685,
+          "harness": "codex"
+        },
+        {
+          "task_row": 691,
+          "harness": "codex"
+        },
+        {
+          "task_row": 702,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 703,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 707,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 710,
+          "harness": "codex"
+        },
+        {
+          "task_row": 712,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 713,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 715,
+          "harness": "codex"
+        },
+        {
+          "task_row": 717,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 725,
+          "harness": "codex"
+        },
+        {
+          "task_row": 727,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 736,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 745,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 746,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 747,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 758,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 762,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 771,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 780,
+          "harness": "codex"
+        },
+        {
+          "task_row": 781,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 782,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 784,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 786,
+          "harness": "codex"
+        },
+        {
+          "task_row": 793,
+          "harness": "codex"
+        },
+        {
+          "task_row": 799,
+          "harness": "codex"
+        },
+        {
+          "task_row": 800,
+          "harness": "codex"
+        },
+        {
+          "task_row": 804,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 810,
+          "harness": "codex"
+        },
+        {
+          "task_row": 817,
+          "harness": "codex"
+        },
+        {
+          "task_row": 819,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 820,
+          "harness": "codex"
+        },
+        {
+          "task_row": 821,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 822,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 840,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 856,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 862,
+          "harness": "codex"
+        },
+        {
+          "task_row": 874,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 884,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 887,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 891,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 893,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 897,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 899,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 903,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 904,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 908,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 934,
+          "harness": "codex"
+        },
+        {
+          "task_row": 935,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 938,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 943,
+          "harness": "codex"
+        },
+        {
+          "task_row": 956,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 959,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 960,
+          "harness": "claude-code"
+        },
+        {
+          "task_row": 962,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 966,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 970,
+          "harness": "codex"
+        },
+        {
+          "task_row": 973,
+          "harness": "codex"
+        },
+        {
+          "task_row": 982,
+          "harness": "codex"
+        },
+        {
+          "task_row": 984,
+          "harness": "opencode"
+        },
+        {
+          "task_row": 996,
+          "harness": "mini-swe-agent"
+        },
+        {
+          "task_row": 997,
+          "harness": "opencode"
+        }
+      ],
+      "pair_coverage_complete": false,
+      "unique_tasks_covered": 183,
+      "target_unique_tasks": 1000,
+      "harness_pair_counts": {
+        "opencode": 46,
+        "claude-code": 45,
+        "codex": 46,
+        "mini-swe-agent": 46
+      },
+      "coverage_semantics": "at least one row per pair; stable over two optimizer boundaries"
+    },
+    "tito": {
+      "claude-code": {
+        "rollouts": 368,
+        "completed_results": 368,
+        "incomplete_results": 0,
+        "tito_pass": 368,
+        "graded": 368,
+        "reward_sum": 160.0,
+        "task_indices": [
+          37,
+          69,
+          75,
+          89,
+          97,
+          117,
+          119,
+          133,
+          144,
+          174,
+          218,
+          246,
+          255,
+          261,
+          263,
+          282,
+          333,
+          363,
+          379,
+          387,
+          420,
+          427,
+          453,
+          466,
+          468,
+          513,
+          520,
+          550,
+          558,
+          585,
+          602,
+          612,
+          658,
+          709,
+          739,
+          802,
+          812,
+          822,
+          829,
+          833,
+          847,
+          922,
+          934,
+          945,
+          958,
+          984
+        ],
+        "token_budget": 131072,
+        "largest_row_tokens": 114881,
+        "rows": 6152,
+        "eligible_tokens": 1530360,
+        "retained_tokens": 1530360,
+        "rows_over_40960": 2028,
+        "rows_over_token_budget": 0
+      },
+      "codex": {
+        "rollouts": 384,
+        "completed_results": 384,
+        "incomplete_results": 0,
+        "tito_pass": 384,
+        "graded": 384,
+        "reward_sum": 166.0,
+        "task_indices": [
+          83,
+          99,
+          153,
+          176,
+          185,
+          190,
+          195,
+          196,
+          229,
+          240,
+          249,
+          265,
+          266,
+          298,
+          302,
+          306,
+          332,
+          401,
+          435,
+          447,
+          452,
+          465,
+          491,
+          493,
+          498,
+          503,
+          509,
+          540,
+          547,
+          549,
+          571,
+          596,
+          607,
+          714,
+          763,
+          771,
+          805,
+          810,
+          825,
+          839,
+          893,
+          932,
+          949,
+          959,
+          962,
+          964,
+          978,
+          990
+        ],
+        "token_budget": 131072,
+        "largest_row_tokens": 59459,
+        "rows": 398,
+        "eligible_tokens": 1263825,
+        "retained_tokens": 1263825,
+        "rows_over_40960": 2,
+        "rows_over_token_budget": 0
+      },
+      "mini-swe-agent": {
+        "rollouts": 368,
+        "completed_results": 368,
+        "incomplete_results": 0,
+        "tito_pass": 368,
+        "graded": 366,
+        "reward_sum": 117.0,
+        "task_indices": [
+          13,
+          45,
+          46,
+          58,
+          62,
+          67,
+          128,
+          134,
+          139,
+          188,
+          198,
+          205,
+          236,
+          259,
+          289,
+          307,
+          312,
+          315,
+          331,
+          334,
+          408,
+          431,
+          464,
+          500,
+          515,
+          543,
+          579,
+          594,
+          642,
+          699,
+          701,
+          710,
+          719,
+          734,
+          741,
+          747,
+          834,
+          853,
+          866,
+          869,
+          889,
+          891,
+          899,
+          915,
+          977,
+          988
+        ],
+        "token_budget": 131072,
+        "largest_row_tokens": 40162,
+        "rows": 390,
+        "eligible_tokens": 625409,
+        "retained_tokens": 625409,
+        "rows_over_40960": 0,
+        "rows_over_token_budget": 0
+      },
+      "opencode": {
+        "rollouts": 368,
+        "completed_results": 368,
+        "incomplete_results": 0,
+        "tito_pass": 368,
+        "graded": 367,
+        "reward_sum": 92.0,
+        "task_indices": [
+          41,
+          48,
+          74,
+          110,
+          112,
+          136,
+          138,
+          140,
+          141,
+          160,
+          182,
+          193,
+          219,
+          241,
+          277,
+          294,
+          310,
+          317,
+          318,
+          350,
+          405,
+          409,
+          423,
+          425,
+          456,
+          489,
+          518,
+          526,
+          546,
+          578,
+          606,
+          623,
+          631,
+          634,
+          637,
+          671,
+          721,
+          727,
+          748,
+          799,
+          921,
+          928,
+          953,
+          960,
+          965,
+          985
+        ],
+        "token_budget": 131072,
+        "largest_row_tokens": 114836,
+        "rows": 823,
+        "eligible_tokens": 758929,
+        "retained_tokens": 758929,
+        "rows_over_40960": 236,
+        "rows_over_token_budget": 0
+      }
+    },
+    "audit_timestamp": "2026-09-15T16:28:38.915492+00:00",
+    "checkpoints": [
+      {
+        "step": 200,
+        "saved": true,
+        "ready_marker": true
+      },
+      {
+        "step": 238,
+        "saved": true,
+        "ready_marker": false
+      },
+      {
+        "step": 250,
+        "saved": true,
+        "ready_marker": false
+      },
+      {
+        "step": 294,
+        "saved": true,
+        "ready_marker": false
+      },
+      {
+        "step": 300,
+        "saved": true,
+        "ready_marker": true
+      },
+      {
+        "step": 337,
+        "saved": true,
+        "ready_marker": false
+      },
+      {
+        "step": 350,
+        "saved": true,
+        "ready_marker": false
+      },
+      {
+        "step": 394,
+        "saved": true,
+        "ready_marker": false
+      },
+      {
+        "step": 400,
+        "saved": true,
+        "ready_marker": true
+      },
+      {
+        "step": 446,
+        "saved": true,
+        "ready_marker": false
+      },
+      {
+        "step": 450,
+        "saved": true,
+        "ready_marker": false
+      }
+    ],
+    "trackio": {
+      "checked_at": "2026-09-15T16:27:48.457733+00:00",
+      "online": true,
+      "events": 352,
+      "withheld_evaluations": [],
+      "local_ok": true,
+      "sync": {
+        "ok": true,
+        "returncode": 0
+      }
+    },
+    "monitor_timestamp": "2026-09-15T16:28:41.035033+00:00",
+    "monitor_alerts": [],
+    "supervisor": {
+      "checked_at": "2026-09-15T16:27:56.067630+00:00",
+      "training_state": "RUNNING",
+      "jobs": {
+        "79083": "RUNNING",
+        "79084": "PENDING",
+        "79085": "RUNNING",
+        "79086": "RUNNING",
+        "79087": "RUNNING",
+        "79199": "COMPLETED",
+        "79200": "COMPLETED",
+        "79305": "COMPLETED",
+        "79306": "COMPLETED",
+        "80064": "RUNNING",
+        "80065": "PENDING"
+      },
+      "alerts": [],
+      "restarted": {}
+    },
+    "source_chain": [
+      {
+        "job": "79083",
+        "resume_step": 196,
+        "file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/job-79083/audit/metrics.jsonl",
+        "sha256": "72244a39a296ba6078d83dcc32fa6a4b457236f8d91af57435fc676d1eef1295"
+      },
+      {
+        "job": "78956",
+        "resume_step": 53,
+        "file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-bounded-20260915/job-78956/audit/metrics.jsonl",
+        "sha256": "e566e6c3206e2ec911f1289bb4247a8a66fcbebbdcd99b1743f1039cfeaf73fc"
+      },
+      {
+        "job": "78831",
+        "resume_step": 30,
+        "file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-blackbox-match-20260915/job-78831/audit/metrics.jsonl",
+        "sha256": "a47ffbb05e62e93e1770075dfa3bdf835b78f88b8b5c630bc5ff4410bded6701"
+      },
+      {
+        "job": "78767",
+        "resume_step": 25,
+        "file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-gas64-reliable-20260915/job-78767/audit/metrics.jsonl",
+        "sha256": "9b0affdd3af9a64ca1cccd26b271692b47da05879a414af666c6f18643756740"
+      },
+      {
+        "job": "78681",
+        "resume_step": 17,
+        "file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-gas64-v2-20260915/job-78681/audit/metrics.jsonl",
+        "sha256": "77053f34384f4f20a83f32f112df65df83686919239f0e5c4976f9cce6ec3a1d"
+      },
+      {
+        "job": "78647",
+        "resume_step": 0,
+        "file": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-gas16-20260914/job-78647/audit/metrics.jsonl",
+        "sha256": "be7983dd70b4b66aeb9d4ccd10db6ae7f6795237782e70f0e7f2f428587498d0"
+      }
+    ]
+  },
+  "matched_cells": {
+    "base": {
+      "graded": 995,
+      "correct": 145,
+      "pass_at_1": 0.1457286432160804
+    },
+    "100": {
+      "graded": 995,
+      "correct": 247,
+      "pass_at_1": 0.24824120603015076
+    },
+    "200": {
+      "graded": 995,
+      "correct": 262,
+      "pass_at_1": 0.2633165829145729
+    },
+    "300": {
+      "graded": 995,
+      "correct": 283,
+      "pass_at_1": 0.28442211055276384
+    },
+    "400": {
+      "graded": 995,
+      "correct": 331,
+      "pass_at_1": 0.3326633165829146
+    }
+  },
+  "latest_checkpoint": "400",
+  "ungraded_attempts": {
+    "100": 49,
+    "200": 81,
+    "300": 29,
+    "400": 48
+  },
+  "sources": {
+    "base": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-baseline-20260914/job-78215/canonical_results.json",
+    "100": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-bounded-20260915/checkpoint-evals/step-000100",
+    "200": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000200",
+    "300": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000300",
+    "400": "/fsx/adithyaskolavi/projects/trl_prod/experiments/async_grpo_harbor_data_agent/logs/multi4-long-prod-20260915/checkpoint-evals/step-000400"
+  }
+}
