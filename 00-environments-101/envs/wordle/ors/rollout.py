@@ -19,7 +19,7 @@ from openreward import EnvironmentsAPI
 REPO_ROOT = Path(__file__).resolve().parents[3]
 load_dotenv(REPO_ROOT / ".env")
 
-ENV_URL = os.environ.get("ORS_URL", "https://AdithyaSK-wordle-ors.hf.space")
+ENV_URL = os.environ.get("ORS_URL", "https://fineenvs-wordle-ors.hf.space")
 ENV_NAME = os.environ.get("ORS_ENV_NAME", "wordleors")
 SPLIT = os.environ.get("ORS_SPLIT", "train")
 TASK_INDEX = int(os.environ.get("TASK_INDEX", "0"))

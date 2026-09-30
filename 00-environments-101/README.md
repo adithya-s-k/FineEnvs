@@ -238,7 +238,7 @@ Wordle has **no external backend** — it's pure Python (the shared `WordleGame`
 ```bash
 cd envs/wordle/openenv && uv sync && uv run python rollout.py
 ```
-Generic `MCPToolClient` against [`AdithyaSK/wordle-openenv`](https://huggingface.co/spaces/AdithyaSK/wordle-openenv).
+Generic `MCPToolClient` against [`FineEnvs/wordle-openenv`](https://huggingface.co/spaces/FineEnvs/wordle-openenv).
 
 </details>
 
@@ -248,7 +248,7 @@ Generic `MCPToolClient` against [`AdithyaSK/wordle-openenv`](https://huggingface
 ```bash
 cd envs/wordle/ors && uv sync && uv run python rollout.py
 ```
-[`openreward`](https://pypi.org/project/openreward/) client → `EnvironmentsAPI(base_url=..., api_key="").get("wordleors")` against [`AdithyaSK/wordle-ors`](https://huggingface.co/spaces/AdithyaSK/wordle-ors). Each task has the answer in `task_spec`.
+[`openreward`](https://pypi.org/project/openreward/) client → `EnvironmentsAPI(base_url=..., api_key="").get("wordleors")` against [`FineEnvs/wordle-ors`](https://huggingface.co/spaces/FineEnvs/wordle-ors). Each task has the answer in `task_spec`.
 
 </details>
 
@@ -258,7 +258,7 @@ cd envs/wordle/ors && uv sync && uv run python rollout.py
 ```bash
 cd envs/wordle/nemo_gym && uv sync && uv run python rollout.py
 ```
-Raw `requests` against [`AdithyaSK/wordle-nemo-gym`](https://huggingface.co/spaces/AdithyaSK/wordle-nemo-gym). Same Ray-blocks-local caveat as the Jupyter sibling — deployed Space is the path.
+Raw `requests` against [`FineEnvs/wordle-nemo-gym`](https://huggingface.co/spaces/FineEnvs/wordle-nemo-gym). Same Ray-blocks-local caveat as the Jupyter sibling — deployed Space is the path.
 
 </details>
 
@@ -296,9 +296,9 @@ cd envs/wordle/gem && uv sync && uv run python rollout.py
 
 The HTTP variants are deployed on HF Spaces (cold-start may take a minute):
 
-- OpenEnv: [`AdithyaSK/wordle-openenv`](https://huggingface.co/spaces/AdithyaSK/wordle-openenv)
-- ORS: [`AdithyaSK/wordle-ors`](https://huggingface.co/spaces/AdithyaSK/wordle-ors)
-- NeMo Gym: [`AdithyaSK/wordle-nemo-gym`](https://huggingface.co/spaces/AdithyaSK/wordle-nemo-gym)
+- OpenEnv: [`FineEnvs/wordle-openenv`](https://huggingface.co/spaces/FineEnvs/wordle-openenv)
+- ORS: [`FineEnvs/wordle-ors`](https://huggingface.co/spaces/FineEnvs/wordle-ors)
+- NeMo Gym: [`FineEnvs/wordle-nemo-gym`](https://huggingface.co/spaces/FineEnvs/wordle-nemo-gym)
 
 The shared `WordleGame` logic lives at `envs/wordle/core/game.py` and is reused by all six framework folders.
 
@@ -529,7 +529,7 @@ list; these are the live ones:
 | Env | OpenEnv | ORS | NeMo Gym |
 |---|---|---|---|
 | Jupyter | [jupyter-agent-openenv](https://huggingface.co/spaces/AdithyaSK/jupyter-agent-openenv) | [jupyter-agent-ors](https://huggingface.co/spaces/AdithyaSK/jupyter-agent-ors) | [jupyter-agent-nemo-gym](https://huggingface.co/spaces/AdithyaSK/jupyter-agent-nemo-gym) |
-| Wordle | [wordle-openenv](https://huggingface.co/spaces/AdithyaSK/wordle-openenv) | [wordle-ors](https://huggingface.co/spaces/AdithyaSK/wordle-ors) | [wordle-nemo-gym](https://huggingface.co/spaces/AdithyaSK/wordle-nemo-gym) |
+| Wordle | [wordle-openenv](https://huggingface.co/spaces/FineEnvs/wordle-openenv) | [wordle-ors](https://huggingface.co/spaces/FineEnvs/wordle-ors) | [wordle-nemo-gym](https://huggingface.co/spaces/FineEnvs/wordle-nemo-gym) |
 | Desktop | [desktop-openenv](https://huggingface.co/spaces/AdithyaSK/desktop-openenv) | [desktop-ors](https://huggingface.co/spaces/AdithyaSK/desktop-ors) | — |
 
 Sandbox-backed Spaces expect `E2B_API_KEY` as a Space secret.

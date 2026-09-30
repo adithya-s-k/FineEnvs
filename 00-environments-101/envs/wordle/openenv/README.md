@@ -2,7 +2,7 @@
 
 A multi-turn Wordle environment, packaged using **[OpenEnv](https://github.com/huggingface/OpenEnv)** (Hugging Face's HTTP-server / MCP-protocol framework). Pure Python game logic, no E2B sandbox needed — Wordle is the cleanest way to see how OpenEnv handles a multi-turn env.
 
-**Deployed:** [`AdithyaSK/wordle-openenv`](https://huggingface.co/spaces/AdithyaSK/wordle-openenv)
+**Deployed:** [`FineEnvs/wordle-openenv`](https://huggingface.co/spaces/FineEnvs/wordle-openenv)
 
 ## What this environment exposes
 
@@ -26,7 +26,7 @@ Episode ends after 6 guesses or a correct word. Last response includes `'Game ov
 ```python
 from openenv.core.mcp_client import MCPToolClient
 
-with MCPToolClient(base_url="https://AdithyaSK-wordle-openenv.hf.space").sync() as env:
+with MCPToolClient(base_url="https://fineenvs-wordle-openenv.hf.space").sync() as env:
     env.reset()
     out = env.call_tool("guess", word="crane")
     print(out)   # '⬛⬛🟨🟨⬛ — 5 guesses remaining.'
@@ -61,7 +61,7 @@ OPENENV_URL=http://localhost:8000 uv run python rollout.py
 ### Sample output
 
 ```
-OpenEnv server: https://AdithyaSK-wordle-openenv.hf.space
+OpenEnv server: https://fineenvs-wordle-openenv.hf.space
 Provider:       hf-router
 Model:          Qwen/Qwen3-Coder-480B-A35B-Instruct:together
 
@@ -83,7 +83,7 @@ Discovered 3 tools: ['guess', 'get_history', 'reset_game']
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `OPENENV_URL` | `https://AdithyaSK-wordle-openenv.hf.space` | OpenEnv server URL. |
+| `OPENENV_URL` | `https://fineenvs-wordle-openenv.hf.space` | OpenEnv server URL. |
 | `ROLLOUT_MODEL` | `Qwen/Qwen3-Coder-480B-A35B-Instruct:together` | If contains `:` → HF Router. Else → OpenAI native. |
 | `MAX_TURNS` | `8` | Hard cap (Wordle allows 6 guesses + a couple of slack turns for `reset_game` etc.). |
 

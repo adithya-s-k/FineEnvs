@@ -25,7 +25,7 @@ from openai import OpenAI
 REPO_ROOT = Path(__file__).resolve().parents[3]
 load_dotenv(REPO_ROOT / ".env")
 
-ENV_URL = os.environ.get("NEMO_GYM_URL", "https://AdithyaSK-wordle-nemo-gym.hf.space")
+ENV_URL = os.environ.get("NEMO_GYM_URL", "https://fineenvs-wordle-nemo-gym.hf.space")
 MODEL = os.environ.get("ROLLOUT_MODEL", "Qwen/Qwen3-Coder-480B-A35B-Instruct:together")
 MAX_TURNS = int(os.environ.get("MAX_TURNS", "6"))
 

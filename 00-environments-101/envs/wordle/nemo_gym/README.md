@@ -2,7 +2,7 @@
 
 A multi-turn Wordle environment, packaged using **[NeMo Gym](https://github.com/NVIDIA-NeMo/Gym)** (NVIDIA's HTTP-server framework with REST endpoints + cookie-based sessions).
 
-**Deployed:** [`AdithyaSK/wordle-nemo-gym`](https://huggingface.co/spaces/AdithyaSK/wordle-nemo-gym)
+**Deployed:** [`FineEnvs/wordle-nemo-gym`](https://huggingface.co/spaces/FineEnvs/wordle-nemo-gym)
 
 ## What this environment exposes
 
@@ -23,8 +23,8 @@ Plain `requests`, no SDK:
 import requests
 
 s = requests.Session()
-s.post("https://AdithyaSK-wordle-nemo-gym.hf.space/seed_session", json={}).raise_for_status()
-r = s.post("https://AdithyaSK-wordle-nemo-gym.hf.space/guess", json={"word": "crane"})
+s.post("https://fineenvs-wordle-nemo-gym.hf.space/seed_session", json={}).raise_for_status()
+r = s.post("https://fineenvs-wordle-nemo-gym.hf.space/guess", json={"word": "crane"})
 print(r.json()["output"])   # '⬛⬛🟨⬛🟩 — 5 guesses remaining.'
 ```
 
@@ -39,7 +39,7 @@ uv run python rollout.py                 # talks to deployed HF Space
 ### Sample output
 
 ```
-NeMo Gym server: https://AdithyaSK-wordle-nemo-gym.hf.space
+NeMo Gym server: https://fineenvs-wordle-nemo-gym.hf.space
 Provider: hf-router    Model: Qwen/Qwen3-Coder-480B-A35B-Instruct:together
 
 [seed_session] cookies={'WordleResourcesServer___wordle': '...'}
@@ -61,7 +61,7 @@ Provider: hf-router    Model: Qwen/Qwen3-Coder-480B-A35B-Instruct:together
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `NEMO_GYM_URL` | `https://AdithyaSK-wordle-nemo-gym.hf.space` | NeMo Gym server URL. |
+| `NEMO_GYM_URL` | `https://fineenvs-wordle-nemo-gym.hf.space` | NeMo Gym server URL. |
 | `ROLLOUT_MODEL` | `Qwen/Qwen3-Coder-480B-A35B-Instruct:together` | If contains `:` → HF Router. Else → OpenAI native. |
 | `MAX_TURNS` | `6` | One turn per allowed guess. |
 
@@ -73,7 +73,7 @@ Provider: hf-router    Model: Qwen/Qwen3-Coder-480B-A35B-Instruct:together
 | `server.py` | The `SimpleResourcesServer` deployed to the HF Space. |
 | `configs/wordle.yaml` | NeMo Gym Hydra config. |
 | `Dockerfile`, `Dockerfile.spaces`, `README.spaces.md` | Deployment to HF Spaces. |
-| `pyproject.toml` | `nemo_gym` (git) + rollout-side `openai`, `python-dotenv`, `requests`. **Python 3.12 required.** |
+| `pyproject.toml` | `nemo_gym` (git, pinned by `uv.lock`) + rollout-side `openai`, `python-dotenv`, `requests`. **Python 3.12 required.** |
 
 ## References
 
