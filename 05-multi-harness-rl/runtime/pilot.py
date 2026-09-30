@@ -32,6 +32,7 @@ def pilot(args, cfg):
         entry = {"complete": False, "started_at": time.time()}
         state["phases"][phase] = entry
         write_json(manifest, state)
+        print(json.dumps({"pilot": cfg["run_name"], "phase": phase, "status": "started"}), flush=True)
         current = argparse.Namespace(**vars(args))
         current.action = "train" if phase == "train" else "eval"
         current.limit = limit
@@ -57,6 +58,7 @@ def pilot(args, cfg):
                     raise ValueError("Training ended before checkpoint 100")
             entry.update(complete=True, finished_at=time.time())
             write_json(manifest, state)
+            print(json.dumps({"pilot": cfg["run_name"], "phase": phase, "status": "complete"}), flush=True)
         except BaseException as exc:
             entry.update(error=type(exc).__name__, finished_at=time.time())
             write_json(manifest, state)

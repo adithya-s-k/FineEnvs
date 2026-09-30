@@ -121,9 +121,20 @@ def launch_local(args, cfg):
         if args.limit:
             command += ["--limit", str(args.limit)]
         worker = spawn(command, "train" if training else "eval", dict(env, CUDA_VISIBLE_DEVICES=devices[1]) if training else env)
+        next_status = 0
         while worker.poll() is None:
             if engine.poll() is not None or service.poll() is not None:
                 raise RuntimeError("Inference or environment service died; stopping worker")
+            if time.monotonic() >= next_status:
+                progress_path = output / ("metrics.jsonl" if training else "eval/progress.json")
+                try:
+                    content = progress_path.read_text()
+                    progress = json.loads(content.splitlines()[-1] if training else content)
+                    keys = ("step", "reward", "grad_norm", "loss") if training else ("expected", "graded", "correct", "coverage")
+                    print(json.dumps({"run": cfg["run_name"], "progress": {k: progress[k] for k in keys if k in progress}}), flush=True)
+                except (OSError, ValueError, IndexError):
+                    print(json.dumps({"run": cfg["run_name"], "status": "waiting_for_first_result"}), flush=True)
+                next_status = time.monotonic() + 60
             time.sleep(2)
         if worker.returncode:
             raise RuntimeError(f"Worker failed ({worker.returncode}); inspect {output}")
