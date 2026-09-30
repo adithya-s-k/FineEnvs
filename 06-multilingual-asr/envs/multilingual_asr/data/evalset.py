@@ -424,6 +424,18 @@ def main():
     make.add_argument("--size", type=int, default=510)
     make.add_argument("--overlap-size", type=int, default=504)
     make.add_argument("--families", nargs="+", default=list(FAMILIES))
+    make.add_argument(
+        "--languages",
+        nargs="+",
+        default=None,
+        help="Restrict to these FLEURS languages and emit one focused set instead "
+        "of the nested all/overlap pair",
+    )
+    make.add_argument(
+        "--name",
+        default=None,
+        help="Name for a --languages set; defaults to fleurs-<joined languages>",
+    )
     make.add_argument("--seed", type=int, default=42)
     make.add_argument("--source-root")
     make.add_argument("--workers", type=int, default=8)
@@ -468,6 +480,11 @@ def main():
             }
         )
     languages = [lang for lang in languages if lang]
+    if args.languages:
+        missing = sorted(set(args.languages) - set(languages))
+        if missing:
+            parser.error(f"FLEURS lacks {missing}")
+        languages = [lang for lang in languages if lang in set(args.languages)]
     print(f"{len(languages)} FLEURS languages", flush=True)
 
     # One metadata pass serves both sets; the reads are independent, so overlap them.
@@ -483,19 +500,32 @@ def main():
             print(f"  {language}: {len(metadata[language])} utterances", flush=True)
 
     families = list(args.families)
-    overlap = overlap_languages(languages)
-    sets = {
-        "fleurs-all": (
-            languages,
-            args.size,
-            select(metadata, languages, families, args.size, args.seed),
-        ),
-        "fleurs-ocr-overlap": (
-            overlap,
-            args.overlap_size,
-            select(metadata, overlap, families, args.overlap_size, args.seed),
-        ),
-    }
+    if args.languages:
+        # A focused set has no wider set to nest inside, so the overlap filter -- which
+        # exists to keep the 21-language set a subset of the 102-language one -- has
+        # nothing to do here and would only drop languages the caller asked for.
+        name = args.name or "fleurs-" + "-".join(sorted(languages))
+        sets = {
+            name: (
+                languages,
+                args.size,
+                select(metadata, languages, families, args.size, args.seed),
+            )
+        }
+    else:
+        overlap = overlap_languages(languages)
+        sets = {
+            "fleurs-all": (
+                languages,
+                args.size,
+                select(metadata, languages, families, args.size, args.seed),
+            ),
+            "fleurs-ocr-overlap": (
+                overlap,
+                args.overlap_size,
+                select(metadata, overlap, families, args.overlap_size, args.seed),
+            ),
+        }
 
     # The sets nest, so verify the union in one pass: reading a language's shard twice
     # would double the expensive part of the build for no additional guarantee.
