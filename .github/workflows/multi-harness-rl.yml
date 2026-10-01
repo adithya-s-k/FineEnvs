@@ -1,4 +1,4 @@
-name: SmolDataEnv RL recipe
+name: SmolDataEnvs RL recipe
 on:
   pull_request:
     paths: ['05-multi-harness-rl/**', '.github/workflows/multi-harness-rl.yml']

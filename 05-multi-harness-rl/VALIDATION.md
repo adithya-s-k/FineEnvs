@@ -1,10 +1,12 @@
 # Validation of the tutorial
 
-[Read the article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Tutorial](README.md)
+[Read the article](https://huggingface.co/spaces/FineEnvs/multi-harness-rl) · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Tutorial](README.md)
 
 This is the validation record for the `train/`, `eval/` and `envs/` rewrite. Historical pilots in [RESULTS.md](RESULTS.md) and the [article](../content/articles/multi-harness-rl/) used an earlier implementation.
 
 ## Runtime and CPU checks
+
+The final review passed 44 runtime/contract tests, including two new checks that Whitebox and Harbor preflight do not import deprecated native OpenCode. The article build, 105 external article links, 69 tutorial file links, section anchors and desktop/mobile rendering also passed.
 
 - **42 tests passed** against OpenEnv main `7ee88d590d36ae1ac3daf2cc11bc551bca7a804f` on 1 October 2026. Tests cover task identity, grading, cleanup, service routing, tokenizer templates and the typed training contract, including partial and zero loss masks.
 - A clean Python 3.12 CI environment passed 12 lightweight tests and skipped 30 runtime tests. Lint, formatting, shell syntax and the repository index also passed.
@@ -38,7 +40,7 @@ Browser checks on 1 October 2026 verified the three UIs and their root redirects
 
 The existing 1,024-session limits are preserved. This is a configuration limit, not a measured throughput claim. Native OpenCode needs a reachable token-capturing inference endpoint before model rollouts; the Space browser check does not establish GPU training readiness. Local evidence is in `experiments/standalone-env-spaces-20261001/`, including source hashes, browser checks and the sandbox probe. The whitebox UI tests cover separate browser sessions, restart and expiry cleanup, failed submissions, unscored attempts and escaped tool output. The deployed browser smoke computed a task answer from its CSV with one command and received correctness `1.0` and reward `1.09375`. A second browser remained isolated, and the 390px mobile layout had no horizontal overflow. Screenshots and logs are in `experiments/whitebox-playground-20261001/`. Previous Space bundles are retained in ignored local archives and the Space's `.archive/` directory.
 
-The three Spaces were renamed to `smoldataenv-multi-harness-*` and grouped in the [SmolDataEnv Multi-harness RL collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212). Their history, public visibility, CPU Basic hardware and concurrency settings were preserved. Checks of the new URLs passed, including the whitebox task above, browser isolation and mobile layout. The merged-main installation, test results and deployment checks are recorded in `experiments/smoldataenv-migration-main-20261001/`.
+The three Spaces were renamed to `smoldataenv-multi-harness-*` and grouped in the [SmolDataEnvs Multi-harness RL collection](https://huggingface.co/collections/FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212). Their history, public visibility, CPU Basic hardware and concurrency settings were preserved. Checks of the new URLs passed, including the whitebox task above, browser isolation and mobile layout. The merged-main installation, test results and deployment checks are recorded in `experiments/smoldataenv-migration-main-20261001/`.
 
 ## GPU smoke progress
 
@@ -72,12 +74,14 @@ The local two-update groups had no reward contrast and zero gradient. An earlier
 
 ## Evidence and remaining checks
 
-Local evidence is under `experiments/tutorial-gpu-smoke-20261001/`: immutable `source-v*` snapshots, `local/` checkpoints and evaluation results, CPU UI checks, the packed-kernel probe and the real Daytona upload check. Repository-local test logs are in ignored `runs/qualification-20261001/`.
+The tables above summarize the checks for readers. The underlying logs are internal maintainer records, not part of this repository. Local evidence is under `experiments/tutorial-gpu-smoke-20261001/`: immutable `source-v*` snapshots, `local/` checkpoints and evaluation results, CPU UI checks, the packed-kernel probe and the real Daytona upload check. Repository-local test logs are in ignored `runs/qualification-20261001/`.
 
-HF outputs use bucket `FineEnvs/data-agent-daytona-artifacts`. Qwen whitebox checkpoints are in `tutorial-main-smoke-qwen-whitebox-v4`; their reload retry is `tutorial-main-eval-qwen-whitebox-v8`. Other refreshed source snapshots use `tutorial-main-smoke-lfm-whitebox-v8`, `tutorial-main-smoke-{lfm,qwen}-opencode-v8`, and `tutorial-main-smoke-{lfm,qwen}-multi_harness-v8`. Each smoke keeps `train/`, `reload-eval/` and, only after success, `smoke.json`.
+Internal HF outputs use the **private** bucket `FineEnvs/data-agent-daytona-artifacts`. Qwen whitebox checkpoints are in `tutorial-main-smoke-qwen-whitebox-v4`; their reload retry is `tutorial-main-eval-qwen-whitebox-v8`. Other refreshed source snapshots use `tutorial-main-smoke-lfm-whitebox-v8`, `tutorial-main-smoke-{lfm,qwen}-opencode-v8`, and `tutorial-main-smoke-{lfm,qwen}-multi_harness-v8`. Each smoke keeps `train/`, `reload-eval/` and, only after success, `smoke.json`.
 
 Before a long run, finish the outstanding HF GPU/reload checks on merged TRL main and verify reward contrast over a larger sample. The public Space deployments and contract tests above validate the environment and trainer interfaces; the separate HF GPU smoke matrix remains pending hardware.
 
 Native `opencode_env` remains deprecated upstream. Its timeout is not Harbor's strict turn cap. Upstream async packing may drop rows above 40,960 tokens and split one rollout into several rows. This tutorial does not reproduce the archive's exact committed-group resume or whole-rollout weighting.
 
 Earlier code remains in git history and in ignored `temp/pre-tutorial-rewrite/`. Credentials, prepared tasks and run artifacts are excluded from the PR.
+
+The tutorial intentionally installs TRL and OpenEnv from main and records the resolved commits. It is not a dependency lockfile. Native OpenCode can stop building after upstream removal. The standalone sandbox image also uses a mutable tag in a personal Docker Hub repository; moving it to an organization registry with a fixed digest remains a reproducibility follow-up.

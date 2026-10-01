@@ -1,6 +1,6 @@
 # Historical results
 
-[Read the article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Tutorial](README.md)
+[Read the article](https://huggingface.co/spaces/FineEnvs/multi-harness-rl) · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Tutorial](README.md)
 
 These are checks and pilot results from the earlier pinned recipe at `4d9c040`, before the tutorial rewrite. They do not qualify the current training scripts. Two blackbox pilots completed 100 updates and evaluation; the whitebox pilot stopped at step 31 after an HTTP read timeout. Those pilots used the previous runtime pins. The merged-contract smoke qualification is recorded separately in [VALIDATION.md](VALIDATION.md). Earlier experiment scores are kept on the [archived branch](https://github.com/adithya-s-k/FineEnvs/tree/archive/data-agent-experiments-20260930/04-data-agent).
 
@@ -11,9 +11,9 @@ The merged-contract HF smokes completed two updates and checkpoint reload in all
 | Check | Result | Evidence |
 |---|---|---|
 | Local training, LFM and Qwen × all three modes | All six completed two updates and saved checkpoints | [Validation record](VALIDATION.md) |
-| HF native OpenCode, LFM on A100 | Two updates; both checkpoints persisted | [HF job](https://huggingface.co/jobs/FineEnvs/6abcc3d9031314b6963440a0) |
-| HF Harbor, LFM on A100 | Two updates; checkpoint reload; 8/8 pairs graded with TiTO and verified tool counts | [HF job](https://huggingface.co/jobs/FineEnvs/6abcc72d031314b696344167) |
-| HF whitebox, LFM on A100 | Corrected preflight completed training and reload evaluation before starting its pilot | [HF job](https://huggingface.co/jobs/FineEnvs/6abcd472031314b696344457) |
+| HF native OpenCode, LFM on A100 | Two updates; both checkpoints persisted | Internal job record `6abcc3d9` |
+| HF Harbor, LFM on A100 | Two updates; checkpoint reload; 8/8 pairs graded with TiTO and verified tool counts | Internal job record `6abcc72d` |
+| HF whitebox, LFM on A100 | Corrected preflight completed training and reload evaluation before starting its pilot | Internal job record `6abcd472`; the subsequent pilot failed at step 31 |
 
 The Harbor reload smoke solved 5/8 pairs on two medium tasks. This is a functional check, not a benchmark. Both standalone HF blackbox training smokes had zero reward contrast; they validated execution and checkpointing, not learning.
 
@@ -42,15 +42,15 @@ The 10:17 UTC artifact sample contains 2 correct answers among 51 native OpenCod
 
 ## Locate an artifact
 
-Our test and pilot outputs use bucket `FineEnvs/data-agent-daytona-artifacts`, under these run prefixes:
+Internal test and pilot outputs use the **private** bucket `FineEnvs/data-agent-daytona-artifacts`, under these run prefixes:
 
 - `pilot-lfm-opencode-v2`
 - `pilot-lfm-multi-harness-v2`
 - `pilot-lfm-whitebox-v1`
 
-Each prefix contains `pilot.json`, `baseline/`, `train/`, `checkpoint-100/` and, after completion, `comparison.json`. Checkpoints contain model weights, optimizer and RNG state. Logs include local Trackio data, scalar metrics and rollout/audit evidence. Bucket access requires permission; job links may also require an HF login. No public trained-model artifact is claimed for these pilots.
+Each prefix contains `pilot.json`, `baseline/`, `train/`, `checkpoint-100/` and, after completion, `comparison.json`. Checkpoints contain model weights, optimizer and RNG state. Logs include local Trackio data, scalar metrics and rollout/audit evidence. These paths are maintainer records, not publicly accessible artifacts. No public trained-model artifact is claimed for these pilots.
 
-The [historical Trackio Space](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio) does not automatically contain these new pilots. Their current config keeps Trackio offline in the bucket. Follow the HF job logs for live progress. The tutorial explains how to enable your own online Trackio Space.
+The [historical Trackio Space](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio) does not automatically contain these new pilots. Their current config keeps Trackio offline in the bucket. Maintainers can inspect the saved HF job logs. The tutorial explains how to enable your own online Trackio Space.
 
 ## Remaining checks
 
@@ -63,7 +63,7 @@ Detailed pins, failure diagnoses, test counts and original smoke evidence are in
 
 ## Historical article curves
 
-The [multi-harness RL article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) covers the earlier LFM and Qwen experiments on [SmolDataEnvs](../04-smoldataenvs/). The README figure shows its two LFM runs, both trained with correctness plus tool efficiency and evaluated on 250 tasks across four harnesses.
+The [multi-harness RL article](https://huggingface.co/spaces/FineEnvs/multi-harness-rl) covers the earlier LFM and Qwen experiments on [SmolDataEnvs](../04-smoldataenvs/). The README figure shows its two LFM runs, both trained with correctness plus tool efficiency and evaluated on 250 tasks across four harnesses.
 
 | Historical LFM run | Step-1,000 pass@1 | Graded pairs | Tool-call savings on matched successes |
 |---|---:|---:|---:|
@@ -74,7 +74,7 @@ The recorded baseline is 421/998 graded pairs (42.18%); two pairs were ungraded.
 
 Both historical runs used Harbor. The current tutorial instead uses native OpenCode for its `opencode` mode and explicitly non-thinking serving for both models. These curves do not validate the new pilot configuration. The article also includes Qwen results, whose historical reward was correctness only.
 
-The figure uses a [pinned copy of the article data](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl/blob/a1e03a6c7d8fd0d51d0cf7361ba51a469cc6defc/app/src/content/assets/data/training-results.json). The [local excerpt](assets/historical-lfm-curves.json) keeps the plotted values, evaluation coverage, source URL and source SHA-256. The [Trackio dashboard](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio) provides the historical run charts.
+The figure uses a [pinned copy of the article data](https://huggingface.co/spaces/FineEnvs/multi-harness-rl/blob/a1e03a6c7d8fd0d51d0cf7361ba51a469cc6defc/app/src/content/assets/data/training-results.json). The [local excerpt](assets/historical-lfm-curves.json) keeps the plotted values, evaluation coverage, source URL and source SHA-256. The [Trackio dashboard](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio) provides the historical run charts.
 
 To redraw the figure from this folder, without downloading data or starting a job:
 

@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="400" viewBox="0 0 1400 400" role="img" aria-labelledby="title description">
-  <title id="title">SmolDataEnv: multi-harness RL</title>
+  <title id="title">SmolDataEnvs: multi-harness RL</title>
   <desc id="description">Train a small model with SETA, native OpenCode or Harbor, then evaluate it on the same held-out tasks.</desc>
   <defs>
     <linearGradient id="background" x2="1" y2="1">
@@ -10,7 +10,7 @@
   <rect width="1400" height="400" rx="24" fill="url(#background)"/>
   <g font-family="Inter, DejaVu Sans, Arial, sans-serif">
     <text x="58" y="68" fill="#91c5ff" font-size="19" letter-spacing="3">FINEENVS / THE MULTI-HARNESS RL TUTORIAL</text>
-    <text x="56" y="152" fill="#fff" font-size="62" font-weight="700">SmolDataEnv</text>
+    <text x="56" y="152" fill="#fff" font-size="62" font-weight="700">SmolDataEnvs</text>
     <text x="58" y="211" fill="#fff" font-size="36">One model. Three ways to train.</text>
     <text x="58" y="261" fill="#c4d5e6" font-size="23">Real data tasks, tool use and a checkable answer.</text>
     <rect x="58" y="309" width="215" height="42" rx="21" fill="#233d53"/>

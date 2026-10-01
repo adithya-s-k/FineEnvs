@@ -1,6 +1,6 @@
 # Run the tutorial
 
-[Read the article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Tutorial](README.md)
+[Read the article](https://huggingface.co/spaces/FineEnvs/multi-harness-rl) · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Tutorial](README.md)
 
 Start with one mode and a two-step smoke. Check that the checkpoint reloads and the evaluation grades every requested pair before spending time on a longer run.
 

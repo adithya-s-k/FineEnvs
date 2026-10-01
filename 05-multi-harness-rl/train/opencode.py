@@ -1,4 +1,8 @@
-"""Train native OpenCode with AsyncGRPO. Read the numbered sections in order."""
+"""Train native OpenCode with AsyncGRPO (deprecated upstream).
+
+Kept for the historical interface comparison. For new runs, use multi_harness.py
+with HARNESSES = ("opencode",). Read the numbered sections in order.
+"""
 
 # %% 1. Choose the model and run settings.
 import argparse

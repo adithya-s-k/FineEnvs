@@ -59,7 +59,7 @@ def main():
             ".env",
             ".git/**",
         ],
-        commit_message="Deploy SmolDataEnv Multi-harness | SETA Whitebox",
+        commit_message="Deploy SmolDataEnvs Multi-harness | SETA Whitebox",
     )
     print(f"https://huggingface.co/spaces/{args.repo}")
 

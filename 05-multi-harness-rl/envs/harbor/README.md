@@ -1,5 +1,5 @@
 ---
-title: SmolDataEnv Multi-harness | Harbor
+title: SmolDataEnvs Multi-harness | Harbor
 emoji: 🧪
 colorFrom: blue
 colorTo: green
@@ -10,9 +10,9 @@ hf_oauth_scopes:
   - inference-api
 ---
 
-# SmolDataEnv: Harbor multi-harness
+# SmolDataEnvs: Harbor multi-harness
 
-**[Read the multi-harness RL article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl)** · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Training tutorial](https://github.com/adithya-s-k/FineEnvs/tree/05-multi-harness-rl/05-multi-harness-rl)
+**[Read the multi-harness RL article](https://huggingface.co/spaces/FineEnvs/multi-harness-rl)** · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Training tutorial](https://github.com/adithya-s-k/FineEnvs/tree/6f2b6137b8253377ca97f898742974ba724f4046/05-multi-harness-rl)
 
 Harbor runs OpenCode, Claude Code, Codex or Mini-SWE-Agent. Its OpenEnv UI shows rollouts, live traces and downloadable training captures.
 

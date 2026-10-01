@@ -14,8 +14,6 @@ def main():
         default="all",
     )
     args = parser.parse_args()
-    from harbor_env.harness import HarborSession
-    from opencode_env.harness import OpenCodeSessionFactory
     from openenv.core.harness import TrainingTrace
     from transformers.models.lfm2 import modeling_lfm2
     from trl import GRPOTrainer
@@ -33,15 +31,15 @@ def main():
         )
     if "environment_factory" not in inspect.signature(GRPOTrainer).parameters:
         raise RuntimeError("GRPOTrainer.environment_factory is required")
-    assert all(
-        callable(api)
-        for api in (
-            TrainingTrace,
-            OpenCodeSessionFactory,
-            HarborSession,
-            AsyncGRPOTrainer,
-        )
-    )
+    assert callable(TrainingTrace) and callable(AsyncGRPOTrainer)
+    if args.mode in ("all", "multi_harness"):
+        from harbor_env.harness import HarborSession
+
+        assert callable(HarborSession)
+    if args.mode in ("all", "opencode"):
+        from opencode_env.harness import OpenCodeSessionFactory
+
+        assert callable(OpenCodeSessionFactory)
     print(
         json.dumps(
             {

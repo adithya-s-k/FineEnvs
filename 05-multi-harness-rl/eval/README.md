@@ -1,6 +1,6 @@
 # Evaluate a checkpoint
 
-[Read the article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Tutorial](../README.md) · [Setup](../REPRODUCE.md)
+[Read the article](https://huggingface.co/spaces/FineEnvs/multi-harness-rl) · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Tutorial](../README.md) · [Setup](../REPRODUCE.md)
 
 Use the same tasks, sampling settings and evaluation interfaces for the base model and every checkpoint. The shared evaluator measures pass@1, correctness plus tool-efficiency reward, tool calls and token use.
 
@@ -62,4 +62,4 @@ Always read **coverage alongside pass@1**. An infrastructure failure has no grad
 
 To recover, rerun the same command with the same output directory. It retains both correct and incorrect graded attempts and retries only ungraded or missing pairs. Use a fresh directory for a different model, checkpoint or evaluator version.
 
-Add `--space-id your-org/your-trackio-space` to publish aggregate evaluation metrics. Per-harness and difficulty details are retained in `summary.json`. The [article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) shows how to interpret answer quality and tool savings together.
+Add `--space-id your-org/your-trackio-space` to publish aggregate evaluation metrics. Per-harness and difficulty details are retained in `summary.json`. The [article](https://huggingface.co/spaces/FineEnvs/multi-harness-rl) shows how to interpret answer quality and tool savings together.

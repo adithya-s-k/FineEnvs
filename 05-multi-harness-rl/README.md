@@ -1,18 +1,18 @@
 <div align="center">
 
-<a href="https://huggingface.co/spaces/AdithyaSK/multi-harness-rl"><img src="./assets/banner.svg" alt="SmolDataEnv: one model, three ways to train" width="100%"></a>
+<a href="https://huggingface.co/spaces/FineEnvs/multi-harness-rl"><img src="./assets/banner.svg" alt="SmolDataEnvs: one model, three ways to train" width="100%"></a>
 
-# SmolDataEnv: multi-harness RL
+# SmolDataEnvs: multi-harness RL
 
-[![Read the article](https://img.shields.io/badge/Read_the_article-Multi--harness_RL-91c5ff?style=for-the-badge&labelColor=142439)](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl)
-[![Collection](https://img.shields.io/badge/Collection-Models_%26_environments-FFD21E?style=for-the-badge&labelColor=142439)](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212)
+[![Read the article](https://img.shields.io/badge/Read_the_article-Multi--harness_RL-91c5ff?style=for-the-badge&labelColor=142439)](https://huggingface.co/spaces/FineEnvs/multi-harness-rl)
+[![Collection](https://img.shields.io/badge/Collection-Models_%26_environments-FFD21E?style=for-the-badge&labelColor=142439)](https://huggingface.co/collections/FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212)
 [![Try the playground](https://img.shields.io/badge/Try_it-SETA_playground-82d8b6?style=for-the-badge&labelColor=142439)](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-whitebox)
 
 </div>
 
 > Train a small model to solve real data tasks, then see how it behaves in different agent harnesses.
 
-This is the companion code for **[the multi-harness RL article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl)**. The article walks through the experiments and their results. Here you can read the training code, try the environments and run your own comparison with LFM2.5-2.6B or Qwen3.5-2B.
+This is the companion code for **[the multi-harness RL article](https://huggingface.co/spaces/FineEnvs/multi-harness-rl)**. The article walks through the experiments and their results. Here you can read the training code, try the environments and run your own comparison with LFM2.5-2.6B or Qwen3.5-2B.
 
 The tasks come from [04: SmolDataEnvs](../04-smoldataenvs/). Each gives an agent a question, data files and a checkable answer. We keep the training tasks and reward shared while changing who runs the tool loop: TRL, native OpenCode or Harbor.
 
@@ -20,15 +20,15 @@ The tasks come from [04: SmolDataEnvs](../04-smoldataenvs/). Each gives an agent
 
 | You want to… | Open |
 |---|---|
-| Understand the experiment and results | [Read the article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) |
+| Understand the experiment and results | [Read the article](https://huggingface.co/spaces/FineEnvs/multi-harness-rl) |
 | Try a data task in your browser | [SETA playground](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-whitebox) |
 | Train on HF Jobs or your own GPUs | [Step-by-step setup](REPRODUCE.md) |
 | Evaluate a base model or checkpoint | [Evaluation guide](eval/README.md) |
-| Find the Spaces, datasets and trained models | [Experiment collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212) |
+| Find the Spaces, datasets and trained models | [Experiment collection](https://huggingface.co/collections/FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212) |
 
 ## A look at the article's results
 
-[![Historical LFM training reward, held-out pass@1 and tool-call savings](assets/historical-lfm-curves.svg)](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl)
+[![Historical LFM training reward, held-out pass@1 and tool-call savings](assets/historical-lfm-curves.svg)](https://huggingface.co/spaces/FineEnvs/multi-harness-rl)
 
 <sub>Historical LFM runs from the article. Training reward uses a trailing 50-update mean; evaluation points are unsmoothed. Hollow markers indicate incomplete evaluation coverage. Tool savings compare tasks solved by both baseline and checkpoint.</sub>
 
@@ -41,10 +41,12 @@ Each script follows the same order: settings → tokenizer → environment → r
 | Script | Who runs the tool loop? | Trainer |
 |---|---|---|
 | [train/whitebox.py](train/whitebox.py) | TRL calls Python bash/SETA tools | `GRPOTrainer` |
-| [train/opencode.py](train/opencode.py) | Native OpenCode runs inside a sandbox | `AsyncGRPOTrainer` |
+| [train/opencode.py](train/opencode.py) | Native OpenCode runs inside a sandbox (deprecated) | `AsyncGRPOTrainer` |
 | [train/multi_harness.py](train/multi_harness.py) | Harbor runs OpenCode, Claude Code, Codex or Mini-SWE-Agent | `AsyncGRPOTrainer` |
 
-Read whitebox first if you are new to tool-using RL. Its [environment](envs/whitebox/smoldataenv_whitebox/environment.py) shows exactly which tools the model can call and how an answer is graded. Then read OpenCode to see what changes when an existing agent owns the conversation. The multi-harness script assigns one harness to each task; its eight rollouts all use that assignment.
+Read whitebox first if you are new to tool-using RL. Its [environment](envs/whitebox/smoldataenv_whitebox/environment.py) shows exactly which tools the model can call and how an answer is graded. Then read the Harbor script to see what changes when an existing agent owns the conversation. The multi-harness script assigns one harness to each task; its eight rollouts all use that assignment.
+
+Native `opencode_env` is deprecated since OpenEnv 0.7.0 and remains here for the earlier comparison. For new runs, use Harbor. Set `HARNESSES = ("opencode",)` in `train/multi_harness.py` for OpenCode-only training, as in the article's LFM run.
 
 The installer uses **TRL main and OpenEnv main**, including the merged typed training-trace integration. `check_setup.py` verifies the required APIs before training. Each run records the resolved commits; see [VALIDATION.md](VALIDATION.md) for the tested versions and remaining GPU checks.
 
