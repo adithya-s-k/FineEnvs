@@ -25,7 +25,7 @@ def main():
         openenv_harness
     ):
         raise RuntimeError(
-            "TRL main does not yet consume TrainingTrace. Wait for huggingface/trl#6947 to merge."
+            "The installed TRL lacks the TrainingTrace consumer. Run bash jobs/install.sh to update from main."
         )
     if "seq_idx" not in inspect.getsource(modeling_lfm2.Lfm2ShortConv):
         raise RuntimeError(

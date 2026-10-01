@@ -103,7 +103,9 @@ def main():
         "optimizer_metrics": updates,
         "nonzero_gradient_updates": sum(row.get("grad_norm", 0) > 0 for row in updates),
         "eval": summary,
-        "trl_revision": os.getenv("TRL_REVISION", "installed"),
+        "dependencies": json.loads((train / "dependencies.json").read_text())
+        if (train / "dependencies.json").exists()
+        else None,
         "job": os.getenv("SLURM_JOB_ID") or os.getenv("HF_JOB_ID"),
         "complete": True,
     }

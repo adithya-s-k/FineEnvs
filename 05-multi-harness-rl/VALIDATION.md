@@ -11,7 +11,7 @@ This is the validation record for the `train/`, `eval/` and `envs/` rewrite. His
 - LFM's GPU check produced identical packed and separate-sequence logits, then completed backward. The scripts run this guard before async training.
 - A real Harbor/Daytona upload passed from the cluster's user ID with `TAR_OPTIONS=--no-same-owner`.
 
-TRL's typed consumer is still in [PR #6947](https://github.com/huggingface/trl/pull/6947). Qualification explicitly uses `910138e9392dda75d3a9766e7c494d44f1d82723`; the installer defaults to upstream main and reports the missing API until that PR merges. OpenEnv always comes from upstream main. The local checks before the refresh used `86a180e`; the diff to `7ee88d5` changes release metadata and lockfiles only, with identical UI, rollout and contract code.
+TRL's typed consumer merged in [PR #6947](https://github.com/huggingface/trl/pull/6947). All 40 runtime/contract tests also passed against merged TRL main `52fb144e7ece97e26aabd3c025740022838e46b5` and OpenEnv main `7ee88d590d36ae1ac3daf2cc11bc551bca7a804f`. Local and HF installers now use both upstream main branches, without a PR revision override. Earlier GPU checks below used the reviewed TRL commit `910138e9392dda75d3a9766e7c494d44f1d82723`; they are not fresh GPU tests of the merge commit.
 
 The fresh GPU environment uses Python 3.12, Torch 2.11.0, vLLM 0.25.1, Transformers main `d6c1e71bd717bf092f8293f0c3c9bd4a5ac5401a`, and Harbor 0.23.0. `dependencies.json` and `packages.txt` record what each installation resolved.
 
@@ -27,13 +27,15 @@ Each environment was copied outside this tutorial and started in the CPU-only in
 
 | Environment | Public UI | Hardware | Task API |
 |---|---|---|---|
-| SETA whitebox | [Open](https://fineenvs-data-agent-seta-whitebox-env.hf.space/web/) | CPU Basic | 1,000 train / 250 test |
-| Native OpenCode | [Open](https://fineenvs-data-agent-blackbox-opencode-env.hf.space/web/) | CPU Basic | 1,000 train / 250 test |
-| Harbor multi-harness | [Open](https://fineenvs-data-agent-blackbox-harbor-env.hf.space/web/) | CPU Basic | 1,000 train / 250 test |
+| SETA whitebox | [Open](https://fineenvs-smoldataenv-multi-harness-whitebox.hf.space/web/) | CPU Basic | 1,000 train / 250 test |
+| Native OpenCode | [Open](https://fineenvs-smoldataenv-multi-harness-opencode.hf.space/web/) | CPU Basic | 1,000 train / 250 test |
+| Harbor multi-harness | [Open](https://fineenvs-smoldataenv-multi-harness-harbor.hf.space/web/) | CPU Basic | 1,000 train / 250 test |
 
 Browser checks on 1 October 2026 verified the three UIs and their root redirects, with no JavaScript errors. Harbor uses the current OpenEnv task browser, rollout controls and trace UI. Whitebox has a task picker, Bash workspace, execution history and score cards. Native OpenCode uses OpenEnv's playground with environment-specific connection examples. A real whitebox Space session staged task data in Daytona, executed one tool call, graded an intentionally incorrect answer as zero and released the sandbox.
 
 The existing 1,024-session limits are preserved. This is a configuration limit, not a measured throughput claim. Native OpenCode needs a reachable token-capturing inference endpoint before model rollouts; the Space browser check does not establish GPU training readiness. Local evidence is in `experiments/standalone-env-spaces-20261001/`, including source hashes, browser checks and the sandbox probe. The whitebox UI tests cover separate browser sessions, restart and expiry cleanup, failed submissions, unscored attempts and escaped tool output. The deployed browser smoke computed a task answer from its CSV with one command and received correctness `1.0` and reward `1.09375`. A second browser remained isolated, and the 390px mobile layout had no horizontal overflow. Screenshots and logs are in `experiments/whitebox-playground-20261001/`. Previous Space bundles are retained in ignored local archives and the Space's `.archive/` directory.
+
+The three Spaces were renamed to `smoldataenv-multi-harness-*` and grouped in the [SmolDataEnv Multi-harness RL collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212). Their history, public visibility, CPU Basic hardware and concurrency settings were preserved. Checks of the new URLs passed, including the whitebox task above, browser isolation and mobile layout. The merged-main installation, test results and deployment checks are recorded in `experiments/smoldataenv-migration-main-20261001/`.
 
 ## GPU smoke progress
 
@@ -71,7 +73,7 @@ Local evidence is under `experiments/tutorial-gpu-smoke-20261001/`: immutable `s
 
 HF outputs use bucket `FineEnvs/data-agent-daytona-artifacts`. Qwen whitebox checkpoints are in `tutorial-main-smoke-qwen-whitebox-v4`; their reload retry is `tutorial-main-eval-qwen-whitebox-v8`. Other refreshed source snapshots use `tutorial-main-smoke-lfm-whitebox-v8`, `tutorial-main-smoke-{lfm,qwen}-opencode-v8`, and `tutorial-main-smoke-{lfm,qwen}-multi_harness-v8`. Each smoke keeps `train/`, `reload-eval/` and, only after success, `smoke.json`.
 
-Before a long run, finish the outstanding HF GPU/reload checks, repeat against TRL main after merge, and verify reward contrast over a larger sample. The public Space deployments above validate the CPU environment boundary; the separate HF GPU smoke matrix remains pending hardware.
+Before a long run, finish the outstanding HF GPU/reload checks on merged TRL main and verify reward contrast over a larger sample. The public Space deployments and contract tests above validate the environment and trainer interfaces; the separate HF GPU smoke matrix remains pending hardware.
 
 Native `opencode_env` remains deprecated upstream. Its timeout is not Harbor's strict turn cap. Upstream async packing may drop rows above 40,960 tokens and split one rollout into several rows. This tutorial does not reproduce the archive's exact committed-group resume or whole-rollout weighting.
 

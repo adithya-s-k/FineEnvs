@@ -305,8 +305,9 @@ of our GRPO groups. Past the limit, `serve` rejects new rollouts with `CAPACITY_
 
 The trainer side lives in OpenEnv's `harbor_env` package. Its `HarborSessionFactory` produces
 sessions in the shape [TRL](https://github.com/huggingface/trl)'s `HarnessRolloutWorker` expects when the agent owns the loop, a worker
-added in [TRL pull request #6947](https://github.com/huggingface/trl/pull/6947), which is still open.
-Each session requests one rollout, waits for it, and returns the captured turns as TRL trace entries.
+added in [TRL pull request #6947](https://github.com/huggingface/trl/pull/6947) and now available on main.
+Each session requests one rollout, waits for it, and returns a typed `TrainingTrace` with token IDs,
+behavior logprobs and loss masks. TRL consumes that object directly.
 
 ```python
 from harbor_env.harness import HarborSessionFactory
@@ -320,7 +321,7 @@ factory = HarborSessionFactory(
 )
 session = factory.create(prompt)      # the prompt carries the task's instruction
 session.wait_for_completion()         # the server runs the agent in its sandbox
-trace = session.fetch_proxy_trace()   # prompt ids, sampled ids and logprobs, per turn
+trace = session.fetch_training_trace()  # validated tokens, logprobs and loss masks
 reward = session.verify(transcript)   # the task's own verifier
 ```
 
@@ -333,6 +334,7 @@ trainer used to recompute logprobs.
      by side: same task, same weights, different tool-call formats, different turn counts, both
      arriving as trainable tokens. Needs real captured output rather than an illustration. */}
 
-{/* TODO: link the live Space and walk through what a reader sees on opening it: the task list
-     from the Task API, a rollout in flight, and the finished graph with per-turn token ids behind
-     an accordion. FineEnvs/data-agent-blackbox-harbor-env is the current deployment. */}
+Try the [SmolDataEnv Harbor Space](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-harbor).
+Choose a task, connect a model and run a harness to inspect its rollout and traces. The
+[training tutorial](https://github.com/adithya-s-k/FineEnvs/tree/05-multi-harness-rl/05-multi-harness-rl)
+includes the same environment source and commands for HF Jobs or a local cluster.

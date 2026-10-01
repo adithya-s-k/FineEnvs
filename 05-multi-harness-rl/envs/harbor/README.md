@@ -1,5 +1,5 @@
 ---
-title: SmolDataEnv Harbor multi-harness
+title: SmolDataEnv Multi-harness | Harbor
 emoji: 🧪
 colorFrom: blue
 colorTo: green
@@ -16,7 +16,7 @@ Harbor runs OpenCode, Claude Code, Codex or Mini-SWE-Agent. Its OpenEnv UI shows
 
 This directory is the complete Space source. Copy it on its own, build it locally or upload it to a Docker Space. It has no imports from the other tutorial environments.
 
-[Open the deployed UI](https://fineenvs-data-agent-blackbox-harbor-env.hf.space/web/) · [Space](https://huggingface.co/spaces/FineEnvs/data-agent-blackbox-harbor-env)
+[Open the deployed UI](https://fineenvs-smoldataenv-multi-harness-harbor.hf.space/web/) · [Space](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-harbor)
 
 ## Read the code
 
@@ -46,7 +46,7 @@ The UI supports Hugging Face sign-in and provider selection. You can also supply
 ## Deploy this folder
 
 ```bash
-python deploy.py --repo YOUR_ORG/data-agent-blackbox-harbor-env --public
+python deploy.py --repo YOUR_ORG/smoldataenv-multi-harness-harbor --public
 ```
 
 Add `HF_TOKEN` and `DAYTONA_API_KEY` as Space secrets. The uploader sends the files in this directory, without generating or swapping application code. It enables the UI and preserves an existing concurrency limit. For a new Space the limit defaults to 40; use `--concurrency` to change it. CPU Basic serves the API; actual tasks run in Daytona.

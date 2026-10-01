@@ -59,7 +59,7 @@ def main():
             ".env",
             ".git/**",
         ],
-        commit_message="Deploy standalone SmolDataEnv Harbor multi-harness",
+        commit_message="Deploy SmolDataEnv Multi-harness | Harbor",
     )
     print(f"https://huggingface.co/spaces/{args.repo}")
 

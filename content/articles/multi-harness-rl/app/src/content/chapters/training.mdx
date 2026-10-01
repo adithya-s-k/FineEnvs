@@ -389,10 +389,10 @@ not learn answers that evaluation would cut off.
 
 ### Reproducing it
 
-- [Multi-harness RL collection](https://huggingface.co/collections/FineEnvs/multi-harness-rl-6abdfaaa8d74dacd481d5212): everything below in one place, plus the base models.
+- [SmolDataEnv Multi-harness RL collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212): everything below in one place, plus the base models.
 - Trained models: LFM [multi-harness RL](https://huggingface.co/FineEnvs/LFM2.5-2.6B-multiharness-RL) and [OpenCode-only RL](https://huggingface.co/FineEnvs/LFM2.5-2.6B-opencode-RL) at step 1,000, with the best checkpoints (steps 700 and 900) on `step-700` and `step-900` branches; LFM [multi-harness SFT](https://huggingface.co/FineEnvs/LFM2.5-2.6B-multiharness-SFT) and [OpenCode SFT](https://huggingface.co/FineEnvs/LFM2.5-2.6B-opencode-SFT) after epoch 2; and the best Qwen checkpoints, [multi-harness](https://huggingface.co/FineEnvs/Qwen3.5-2B-multiharness-RL) (step 500), [OpenCode-only](https://huggingface.co/FineEnvs/Qwen3.5-2B-opencode-RL) (step 700) and [standalone OpenCode](https://huggingface.co/FineEnvs/Qwen3.5-2B-opencode-standalone-RL) (step 1,000).
 - [Training comparison dashboard](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio): every training curve and checkpoint evaluation.
-- [Harbor environment](https://huggingface.co/spaces/FineEnvs/data-agent-blackbox-harbor-env) and [standalone OpenCode environment](https://huggingface.co/spaces/FineEnvs/data-agent-blackbox-opencode-env): the environment servers used in training.
+- [Harbor environment](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-harbor) and [standalone OpenCode environment](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-opencode): the environment servers used in training.
 - [SmolDataEnvs-multiharness-sft](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-multiharness-sft): the SFT data, per harness and pre-tokenized for LFM2.5-2.6B and Qwen3.5-2B, with a training script.
 - [OpenEnv #1036](https://github.com/huggingface/OpenEnv/pull/1036) for the capture proxy and Harbor integration, and [TRL #6947](https://github.com/huggingface/trl/pull/6947) for the trainer side.
 

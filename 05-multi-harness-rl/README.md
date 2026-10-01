@@ -4,7 +4,9 @@ A model can solve the same task through different agent programs. Does training 
 
 Start with [04: SmolDataEnvs](../04-smoldataenvs/) for the dataset. The [multi-harness RL article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) explains the earlier experiments; its [source and figures](../content/articles/multi-harness-rl/) live in this branch too.
 
-Try the [whitebox playground](https://fineenvs-data-agent-seta-whitebox-env.hf.space/web/) to solve a task yourself. Browse the environments and experiment artifacts in the [Multi-harness RL collection](https://huggingface.co/collections/FineEnvs/multi-harness-rl-6abdfaaa8d74dacd481d5212).
+Try the [whitebox playground](https://fineenvs-smoldataenv-multi-harness-whitebox.hf.space/web/) to solve a task yourself. Browse the environments and experiment artifacts in the [SmolDataEnv Multi-harness RL collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212).
+
+If you want to run training first, follow the [HF Jobs quickstart](REPRODUCE.md#2-submit-from-a-laptop-with-hf-jobs). If you already have GPUs, use the [local and Slurm commands](REPRODUCE.md#3-run-the-same-commands-locally-or-with-slurm). Both launch the environment inside the allocation; the public Spaces are also available for interactive exploration.
 
 ## Open a training script first
 
@@ -18,7 +20,7 @@ Each script reads like a notebook: settings → tokenizer → environment → re
 
 Read whitebox first if you are new to tool-using RL. Its [environment](envs/whitebox/smoldataenv_whitebox/environment.py) shows exactly which tools the model can call and how an answer is graded. Then read OpenCode to see what changes when an existing agent owns the conversation. The multi-harness script assigns one harness to each task; its eight rollouts all use that assignment.
 
-**Current dependency status:** install TRL and OpenEnv from upstream main. The typed blackbox integration still needs [TRL #6947](https://github.com/huggingface/trl/pull/6947), which was open when this rewrite was checked. `check_setup.py` reports this before training starts. There is no automatic fork checkout or source patch. [Validation](VALIDATION.md) separates checks of this rewrite from older GPU results.
+The installer uses **TRL main and OpenEnv main**, including the merged typed training-trace integration. `check_setup.py` verifies the required APIs before training. Each run records the resolved commits; see [VALIDATION.md](VALIDATION.md) for the tested versions and remaining GPU checks.
 
 ## Folder layout
 
@@ -53,8 +55,11 @@ Whitebox gives TRL the tools and lets it generate each turn. Blackbox gives TRL 
 ```python
 # Whitebox: TRL owns generation and tool execution.
 trainer = GRPOTrainer(
-    model=model, args=config, train_dataset=dataset,
-    reward_funcs=[], environment_factory=BashEnvironment,
+    model=model,
+    args=config,
+    train_dataset=dataset,
+    reward_funcs=[],
+    environment_factory=BashEnvironment,
 )
 
 # Blackbox: the agent owns generation; OpenEnv captures its tokens.
@@ -65,7 +70,10 @@ worker = HarnessRolloutWorker(
     # See either blackbox script for the model and sampling arguments.
 )
 trainer = AsyncGRPOTrainer(
-    model=model, args=config, train_dataset=dataset, rollout_worker=worker,
+    model=model,
+    args=config,
+    train_dataset=dataset,
+    rollout_worker=worker,
 )
 ```
 

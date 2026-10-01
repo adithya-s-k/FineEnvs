@@ -1,5 +1,5 @@
 ---
-title: SmolDataEnv SETA whitebox
+title: SmolDataEnv Multi-harness | SETA Whitebox
 emoji: 🧪
 colorFrom: blue
 colorTo: green
@@ -13,7 +13,7 @@ TRL drives the bash, file and submit-solution tools. Each WebSocket session owns
 
 This directory is the complete Space source. Copy it on its own, build it locally or upload it to a Docker Space. It has no imports from the other tutorial environments.
 
-[Open the deployed UI](https://fineenvs-data-agent-seta-whitebox-env.hf.space/web/) · [Space](https://huggingface.co/spaces/FineEnvs/data-agent-seta-whitebox-env)
+[Open the deployed UI](https://fineenvs-smoldataenv-multi-harness-whitebox.hf.space/web/) · [Space](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-whitebox)
 
 ## Read the code
 
@@ -50,7 +50,7 @@ Each browser session gets its own sandbox. **Release sandbox**, grading, or sess
 ## Deploy this folder
 
 ```bash
-python deploy.py --repo YOUR_ORG/data-agent-seta-whitebox-env --public
+python deploy.py --repo YOUR_ORG/smoldataenv-multi-harness-whitebox --public
 ```
 
 Add `HF_TOKEN` and `DAYTONA_API_KEY` as Space secrets. The uploader sends the files in this directory, without generating or swapping application code. It enables the UI and preserves an existing concurrency limit. For a new Space the limit defaults to 40; use `--concurrency` to change it. CPU Basic serves the API; actual tasks run in Daytona.

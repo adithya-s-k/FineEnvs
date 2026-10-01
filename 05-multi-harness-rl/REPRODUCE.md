@@ -19,7 +19,7 @@ python prepare.py
 
 The installer uses **TRL main**, **OpenEnv main** and Transformers main. It refreshes the OpenEnv checkout on each installation and loads the environment examples from that checkout's `envs/` directory. No installed source files are patched. Each run keeps the resolved versions and commits in `dependencies.json`.
 
-As of the rewrite, TRL #6947 is still open. Installation can finish while `check_setup.py` correctly stops on the missing typed consumer. For qualification before merge, explicitly set `TRL_REVISION` (local installation) or `--trl-revision` (HF submission) to the reviewed commit listed in [VALIDATION.md](VALIDATION.md). The default remains `main`; it never selects a fork silently.
+TRL's typed OpenEnv integration is merged. Both local and HF Jobs installations use upstream main without a PR checkout. The installer checks the required APIs before starting; [VALIDATION.md](VALIDATION.md) records the versions tested here.
 
 Task preparation pins the corrected train/test dataset revisions and verifies instructions, graders and split separation. It downloads all 1,250 tasks into ignored `prepared/`. Credentials belong in the environment, never in source files. Create a [Daytona account](https://www.daytona.io/) and an HF bucket you can write to before using HF Jobs.
 

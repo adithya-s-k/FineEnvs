@@ -130,7 +130,7 @@ def build_ui(manager, fields, metadata, is_chat, title, quick_start):
     choices = task_choices("test", "All")
     first = choices[0][1] if choices else None
     with gr.Blocks(
-        title="SmolDataEnv | Data playground", analytics_enabled=False
+        title="SmolDataEnv Multi-harness | SETA Whitebox", analytics_enabled=False
     ) as demo:
         session = gr.State(
             PlaygroundSession(), time_to_live=900, delete_callback=close_session
@@ -227,7 +227,7 @@ def build_ui(manager, fields, metadata, is_chat, title, quick_start):
         with gr.Accordion("Use this environment in code", open=False):
             gr.Markdown(
                 "This playground uses the same `BashEnvironment` as the whitebox training script. Each browser session has its own sandbox.\n\n"
-                "[Source and local setup](https://huggingface.co/spaces/FineEnvs/data-agent-seta-whitebox-env/tree/main) · "
+                "[Source and local setup](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-whitebox/tree/main) · "
                 "[Training tutorial](https://github.com/adithya-s-k/FineEnvs/tree/05-multi-harness-rl/05-multi-harness-rl) · "
                 "[SmolDataEnvs collection](https://huggingface.co/collections/FineEnvs/smoldataenvs-6ab4f2f6e09b7cb872ebc867)"
             )

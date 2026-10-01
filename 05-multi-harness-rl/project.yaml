@@ -9,9 +9,9 @@ hub:
     - FineEnvs/SmolDataEnvs-harbor-train
     - FineEnvs/SmolDataEnvs-harbor-test
   spaces:
-    - FineEnvs/data-agent-seta-whitebox-env
-    - FineEnvs/data-agent-blackbox-opencode-env
-    - FineEnvs/data-agent-blackbox-harbor-env
+    - FineEnvs/smoldataenv-multi-harness-whitebox
+    - FineEnvs/smoldataenv-multi-harness-opencode
+    - FineEnvs/smoldataenv-multi-harness-harbor
   trackio:
     - FineEnvs/data-agent-training-comparison-trackio
 envs:

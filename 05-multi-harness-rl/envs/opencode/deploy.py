@@ -59,7 +59,7 @@ def main():
             ".env",
             ".git/**",
         ],
-        commit_message="Deploy standalone SmolDataEnv Native OpenCode",
+        commit_message="Deploy SmolDataEnv Multi-harness | Native OpenCode",
     )
     print(f"https://huggingface.co/spaces/{args.repo}")
 

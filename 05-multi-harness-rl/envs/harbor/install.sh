@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p .deps
 if [[ ! -d .deps/OpenEnv/.git ]]; then
-    git clone --depth 1 https://github.com/huggingface/OpenEnv.git .deps/OpenEnv
+    git clone --depth 1 --branch main https://github.com/huggingface/OpenEnv.git .deps/OpenEnv
 else
     git -C .deps/OpenEnv pull --ff-only origin main
 fi

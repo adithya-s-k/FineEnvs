@@ -27,11 +27,6 @@ def main():
     )
     parser.add_argument("--flavor", default="h200x2")
     parser.add_argument("--timeout", default="12h")
-    parser.add_argument(
-        "--trl-revision",
-        default="main",
-        help="Explicit test revision while the integration PR is pending",
-    )
     parser.add_argument("--steps", type=int, default=1000)
     parser.add_argument("--save-steps", type=int, default=50)
     parser.add_argument("--checkpoint", help="For eval: /outputs/<run>/checkpoint-100")
@@ -88,7 +83,6 @@ def main():
         "name": args.name,
         "env": {
             "PYTHONUNBUFFERED": "1",
-            "TRL_REVISION": args.trl_revision,
             "TUTORIAL_MODE": args.mode,
         },
     }

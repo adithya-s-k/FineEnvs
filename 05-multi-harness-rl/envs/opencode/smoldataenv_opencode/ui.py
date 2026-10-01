@@ -17,7 +17,7 @@ From Python:
 import requests
 from openenv.core.mcp_client import MCPToolClient
 
-url = "https://fineenvs-data-agent-blackbox-opencode-env.hf.space"
+url = "https://fineenvs-smoldataenv-multi-harness-opencode.hf.space"
 task = requests.post(url + "/smoldataenv_opencode/task",
                      json={"split": "test", "index": 0}).json()["task"]
 with MCPToolClient(url, message_timeout_s=1800).sync() as env:
