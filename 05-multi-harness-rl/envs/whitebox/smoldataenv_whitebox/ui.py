@@ -228,7 +228,7 @@ def build_ui(manager, fields, metadata, is_chat, title, quick_start):
             gr.Markdown(
                 "This playground uses the same `BashEnvironment` as the whitebox training script. Each browser session has its own sandbox.\n\n"
                 "[Source and local setup](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-whitebox/tree/main) · "
-                "[Training tutorial](https://github.com/adithya-s-k/FineEnvs/tree/6f2b6137b8253377ca97f898742974ba724f4046/05-multi-harness-rl) · "
+                "[Training tutorial](https://github.com/adithya-s-k/FineEnvs/tree/main/05-multi-harness-rl) · "
                 "[SmolDataEnvs collection](https://huggingface.co/collections/FineEnvs/smoldataenvs-6ab4f2f6e09b7cb872ebc867)"
             )
 

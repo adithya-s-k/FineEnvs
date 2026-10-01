@@ -9,7 +9,7 @@ app_port: 7860
 
 # SmolDataEnvs: Native OpenCode
 
-**[Read the multi-harness RL article](https://huggingface.co/spaces/FineEnvs/multi-harness-rl)** · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Training tutorial](https://github.com/adithya-s-k/FineEnvs/tree/6f2b6137b8253377ca97f898742974ba724f4046/05-multi-harness-rl)
+**[Read the multi-harness RL article](https://huggingface.co/spaces/FineEnvs/multi-harness-rl)** · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Training tutorial](https://github.com/adithya-s-k/FineEnvs/tree/main/05-multi-harness-rl)
 
 Native OpenCode runs inside the sandbox. The server grades its answer and returns a typed token trace for AsyncGRPO.
 
