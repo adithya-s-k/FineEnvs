@@ -31,7 +31,12 @@ collapsible section at the end.
   46 hours for the multi-harness run, not counting evaluation, queueing and restarts. We did not
   track the full cost closely enough to quote it.
 
-{/* TODO: link the training code and configs once they are published. */}
+The companion tutorial has readable [multi-harness](https://github.com/adithya-s-k/FineEnvs/blob/6f2b6137b8253377ca97f898742974ba724f4046/05-multi-harness-rl/train/multi_harness.py)
+and [native OpenCode](https://github.com/adithya-s-k/FineEnvs/blob/6f2b6137b8253377ca97f898742974ba724f4046/05-multi-harness-rl/train/opencode.py)
+training scripts, plus [HF Jobs and Slurm instructions](https://github.com/adithya-s-k/FineEnvs/blob/6f2b6137b8253377ca97f898742974ba724f4046/05-multi-harness-rl/REPRODUCE.md).
+The reported LFM runs used Harbor for both policies and E2B sandboxes. The current tutorial uses
+Daytona and includes native OpenCode as a separate comparison, so it is not an exact replay of
+those historical runs.
 
 Each cell runs once, so a point or two between neighbouring checkpoints is noise. Trust the trend
 across checkpoints over any single one.
@@ -87,9 +92,8 @@ Here are two real groups from the multi-harness run, scored both ways.
   frameless
 />
 
-All-correct groups made up 97 of the OpenCode-only run's groups and 155 of the multi-harness
-run's. The tool call count comes from the harness's own trace, and an audit of every
-training rollout found the bonus applied exactly as written and never to a wrong answer.
+All-correct groups occurred in both runs. The tool call count comes from the harness's own trace,
+and an audit of every training rollout found the bonus applied exactly as written and never to a wrong answer.
 
 In both LFM runs, tool calls per rollout fell during training and under every harness, as the
 curves below show. There was no LFM run without the bonus, so we cannot say the bonus caused this on
@@ -392,9 +396,9 @@ not learn answers that evaluation would cut off.
 - [SmolDataEnv Multi-harness RL collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212): everything below in one place, plus the base models.
 - Trained models: LFM [multi-harness RL](https://huggingface.co/FineEnvs/LFM2.5-2.6B-multiharness-RL) and [OpenCode-only RL](https://huggingface.co/FineEnvs/LFM2.5-2.6B-opencode-RL) at step 1,000, with the best checkpoints (steps 700 and 900) on `step-700` and `step-900` branches; LFM [multi-harness SFT](https://huggingface.co/FineEnvs/LFM2.5-2.6B-multiharness-SFT) and [OpenCode SFT](https://huggingface.co/FineEnvs/LFM2.5-2.6B-opencode-SFT) after epoch 2; and the best Qwen checkpoints, [multi-harness](https://huggingface.co/FineEnvs/Qwen3.5-2B-multiharness-RL) (step 500), [OpenCode-only](https://huggingface.co/FineEnvs/Qwen3.5-2B-opencode-RL) (step 700) and [standalone OpenCode](https://huggingface.co/FineEnvs/Qwen3.5-2B-opencode-standalone-RL) (step 1,000).
 - [Training comparison dashboard](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio): every training curve and checkpoint evaluation.
-- [Harbor environment](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-harbor) and [standalone OpenCode environment](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-opencode): the environment servers used in training.
+- [Harbor environment](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-harbor) and [standalone OpenCode environment](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-opencode): the current companion environment servers. The standalone `opencode_env` is deprecated since OpenEnv 0.7.0 and is retained for the historical comparison; new runs should use Harbor with `harness="opencode"`.
 - [SmolDataEnvs-multiharness-sft](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-multiharness-sft): the SFT data, per harness and pre-tokenized for LFM2.5-2.6B and Qwen3.5-2B, with a training script.
-- [OpenEnv #1036](https://github.com/huggingface/OpenEnv/pull/1036) for the capture proxy and Harbor integration, and [TRL #6947](https://github.com/huggingface/trl/pull/6947) for the trainer side.
+- Merged integrations: [OpenEnv #1036](https://github.com/huggingface/OpenEnv/pull/1036) for the capture proxy and Harbor, [OpenEnv #1280](https://github.com/huggingface/OpenEnv/pull/1280) for the typed `TrainingTrace` API, and [TRL #6947](https://github.com/huggingface/trl/pull/6947) for the worker. TRL's [Harbor example](https://github.com/huggingface/trl/tree/main/examples/async_grpo_harbor) shows the full trainer wiring; install TRL from main until that worker is released.
 
 <Note variant="info" title="Bigger runs are coming">
 Every run in this article uses a small model, 2 to 2.6 billion parameters, trained for 1,000 steps on

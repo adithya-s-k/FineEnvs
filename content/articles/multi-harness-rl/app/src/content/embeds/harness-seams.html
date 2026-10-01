@@ -28,7 +28,7 @@
       };
       const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-      // The ten harnesses marked validated in openenv/harbor/seams.py (OpenEnv 0.6), grouped
+      // The ten harnesses marked validated in openenv/harbor/seams.py (OpenEnv 0.7.0), grouped
       // by how the seam reaches them. Every API key written here is the capture session id.
       const KIND = {
         agent:  { i:0, label:'environment variables, agent run only' },
@@ -127,7 +127,7 @@
           + `<div class="lg"><div class="lg-t">Legend</div>`
           + kinds.map(k => `<span class="k"><span class="sw" style="border-color:${P(k.i)};background:color-mix(in srgb, ${P(k.i)} 25%, transparent)"></span>${esc(k.label)}</span>`).join('')
           + `</div>`
-          + `<div class="nt">These are the ten harnesses marked validated in OpenEnv 0.6. Another 19 are listed but not validated: 2 unstable, 3 unsupported, 3 blocked and 11 untested.</div>`;
+          + `<div class="nt">These are the ten harnesses marked validated in OpenEnv 0.7.0. Another 19 are listed but not validated: 2 unstable, 3 unsupported, 3 blocked and 11 untested.</div>`;
       };
       draw();
       // Colours are read when drawing, so redraw when the reader switches theme.

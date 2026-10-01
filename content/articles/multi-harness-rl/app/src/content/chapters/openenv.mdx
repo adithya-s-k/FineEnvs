@@ -16,11 +16,24 @@ and publishable to the Hub. It began as a Meta PyTorch and Hugging Face collabor
 at [`huggingface/OpenEnv`](https://github.com/huggingface/OpenEnv), steered by a committee of twelve organisations, under BSD-3-Clause.
 
 In this article, OpenEnv is the shared interface that the harness, the environment, and the trainer
-all connect to. It does not train anything or define rewards. Two pieces added in [OpenEnv 0.5.0](https://github.com/huggingface/OpenEnv/releases/tag/v0.5.0) make
-it possible to train inside a black-box harness. The **capture proxy** records what RL training needs
-from any agent that calls a model API. The **Harbor integration** [@openenv2026harbor] serves Harbor's containerised tasks
-as OpenEnv environments, with the harness and the sandbox chosen per rollout. Both install with
-`pip install "openenv[harbor]"`.
+all connect to. It does not train anything or define rewards. The **capture proxy** records what RL
+training needs from any agent that calls a model API. The **Harbor integration** [@openenv2026harbor]
+serves Harbor's containerised tasks as OpenEnv environments, with the harness and sandbox chosen per rollout.
+
+Training through the typed `TrainingTrace` API needs [OpenEnv 0.7.0](https://github.com/huggingface/OpenEnv/releases/tag/v0.7.0)
+or later and **Python 3.12** for the Harbor extra. On Python 3.10 or 3.11, `openenv[harbor]` does not
+install the Harbor dependencies. The `harbor_env` package also comes from the repository's `envs/`
+directory, not the OpenEnv wheel. For a checkout from main:
+
+```bash
+# Run in a Python 3.12 virtual environment.
+git clone --depth 1 --branch main https://github.com/huggingface/OpenEnv.git
+python -m pip install -e './OpenEnv[harbor]'
+export PYTHONPATH="$PWD/OpenEnv/envs${PYTHONPATH:+:$PYTHONPATH}"
+```
+
+See TRL's [Harbor example](https://github.com/huggingface/trl/tree/main/examples/async_grpo_harbor)
+for the trainer and inference-server dependencies and the two-GPU launch commands.
 
 ### One rollout, end to end
 
@@ -151,11 +164,11 @@ also stopped by the proxy itself, so that final reply is never part of the train
 ### Harbor
 
 [Harbor](https://harborframework.com/), from the team behind Terminal-Bench [@merrill2026terminalbench], runs agents against containerised tasks and keeps the task, the harness and the sandbox
-independent of each other. [Version 0.22.0](https://github.com/harbor-framework/harbor/releases/tag/v0.22.0) ships adapters for more than 40 agent harnesses and 26
-execution backends, from local Docker to [Daytona](https://www.daytona.io), [Modal](https://modal.com) and E2B. About 80 task datasets already
+independent of each other. [Version 0.22.0](https://github.com/harbor-framework/harbor/releases/tag/v0.22.0) ships adapters for more than 40 agent harnesses and [26
+execution backends](https://github.com/harbor-framework/harbor/blob/v0.22.0/src/harbor/models/environment_type.py), from local Docker to [Daytona](https://www.daytona.io), [Modal](https://modal.com) and E2B. About 80 task datasets already
 use its format, including Terminal-Bench and SWE-bench [@jimenez2024swebench]. Any harness can attempt
 any task on any backend, so one task set can be trained against many harnesses, and a run is one
-command that names the dataset, the agent and the backend. I wrote about why it is the right
+command that names the dataset, the agent and the backend. Adithya wrote about why it is the right
 abstraction for coding RL in [RL Coding Environments 101: Why Harbor
 Exists](https://x.com/adithya_s_k/article/2054961319179420035).
 
@@ -214,7 +227,7 @@ handles a value instead of catching an exception.
 
 ```bash
 openenv harbor info    --llm-url $LLM --dataset org/train,org/eval
-openenv harbor rollout --llm-url $LLM --dataset org/train --task-index 0 -n 5 --harness codex --sandbox e2b
+openenv harbor rollout --llm-url $LLM --dataset org/train --task-index 0 -n 5 --harness opencode --sandbox e2b
 openenv harbor serve   --dataset org/train,org/eval
 openenv harbor push    --llm-url $LLM --dataset org/train,org/eval --repo-id you/harbor-env
 ```
@@ -222,7 +235,9 @@ openenv harbor push    --llm-url $LLM --dataset org/train,org/eval --repo-id you
 `rollout` requires `--llm-url` and has no default, because a stale endpoint produces rollouts that
 look fine and carry no token ids. `serve` can start without one, because each rollout names its own
 engine. That let one deployment serve both training, pointed at the trainer's vLLM, and evaluation.
-A rollout prints one line when it finishes:
+Here `-n 5` (or `--n-tasks 5`) runs tasks 0 through 4 once each, starting at `--task-index 0`.
+It does not sample five attempts at one task. The E2B example matches the reported experiments;
+the companion tutorial uses Daytona. A rollout prints one line when it finishes:
 
 ```
 [opencode / e2b] task 0: 0000_369_369503_qa_1 ...
@@ -303,38 +318,74 @@ Before training, raise the server's concurrency limit, `max_concurrent_envs`. It
 rollouts one server runs at once, and the default of four is fewer than the eight rollouts in each
 of our GRPO groups. Past the limit, `serve` rejects new rollouts with `CAPACITY_REACHED`.
 
-The trainer side lives in OpenEnv's `harbor_env` package. Its `HarborSessionFactory` produces
-sessions in the shape [TRL](https://github.com/huggingface/trl)'s `HarnessRolloutWorker` expects when the agent owns the loop, a worker
-added in [TRL pull request #6947](https://github.com/huggingface/trl/pull/6947) and now available on main.
-Each session requests one rollout, waits for it, and returns a typed `TrainingTrace` with token IDs,
-behavior logprobs and loss masks. TRL consumes that object directly.
+OpenEnv's `HarborSessionFactory` produces sessions in the shape TRL's `HarnessRolloutWorker`
+expects when the agent owns the loop. The worker was merged in
+[TRL #6947](https://github.com/huggingface/trl/pull/6947) and lives under `trl.experimental`.
+As of 1 October 2026, it is on main but not in the latest release, v1.14.1. Install TRL from main
+until the next release:
+
+```bash
+python -m pip install 'trl @ git+https://github.com/huggingface/trl.git@main'
+```
+
+Each session requests one rollout, waits for it, and returns a typed `TrainingTrace` through
+`fetch_training_trace()`, with token IDs, behavior logprobs and loss masks. TRL consumes that object
+directly. Given a prepared task dataset and the model's tokenizer, the worker wiring is:
 
 ```python
-from harbor_env.harness import HarborSessionFactory
+from functools import partial
 
-factory = HarborSessionFactory(
-    server_url="http://localhost:8000",         # openenv harbor serve
-    split="FineEnvs/SmolDataEnvs-harbor-train",
-    llm_url="http://localhost:8001",            # the vLLM the trainer syncs weights into
-    harness="claude-code",
-    sandbox="e2b",
-)
-session = factory.create(prompt)      # the prompt carries the task's instruction
-session.wait_for_completion()         # the server runs the agent in its sandbox
-trace = session.fetch_training_trace()  # validated tokens, logprobs and loss masks
-reward = session.verify(transcript)   # the task's own verifier
+from harbor_env.harness import HarborSessionFactory
+from trl.experimental.async_grpo.openenv_harness import HarnessRolloutWorker
+
+
+def correctness_reward(outcome):
+    return outcome.env_reward  # None keeps a failed verifier unscorable.
+
+
+def make_rollout_worker(dataset, tokenizer, server_url, vllm_url, model):
+    factory = partial(
+        HarborSessionFactory,
+        server_url=server_url,
+        split="FineEnvs/SmolDataEnvs-harbor-train",
+        llm_url=vllm_url,
+        model=model,
+        harness="opencode",
+        sandbox="daytona",
+        reward_key="correctness,reward",
+    )
+    return HarnessRolloutWorker(
+        harness_session_factory=factory,
+        harness_adapter=None,
+        rollout_reward_fn=correctness_reward,
+        model_name=model,
+        dataset=dataset,
+        processing_class=tokenizer,
+        reward_funcs=[],
+        num_generations=8,
+        max_inflight_tasks=8,
+        vllm_server_url=vllm_url,
+        max_tokens=4096,
+        temperature=1.0,
+        top_p=1.0,
+        top_k=-1,
+        chat_template_kwargs={"enable_thinking": False},
+    )
 ```
+
+Pass this worker as `rollout_worker` to `AsyncGRPOTrainer`. The worker calls the factory with
+`sampling=` before generation, so the capture policy matches training. `harness_adapter=None`
+lets the harness run its own loop. This minimal callback forwards correctness; the
+[training setup](#what-we-rewarded) adds the tool-efficiency bonus. The
+[full TRL example](https://github.com/huggingface/trl/blob/main/examples/async_grpo_harbor/async_grpo_harbor.py)
+also shows task discovery, `AsyncGRPOConfig`, the trainer and checkpoint saving.
 
 In our runs every rollout in a GRPO group used the same harness, so the advantage compared actions
 rather than harnesses. The sampling temperature sent with each rollout also matched the one the
 trainer used to recompute logprobs.
 
-{/* PLACEHOLDER: a worked rollout, and the single most convincing artifact this section could
-     carry. Take one L2 SmolDataEnvs task, run it under two harnesses, and show the trajectories side
-     by side: same task, same weights, different tool-call formats, different turn counts, both
-     arriving as trainable tokens. Needs real captured output rather than an illustration. */}
-
 Try the [SmolDataEnv Harbor Space](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-harbor).
 Choose a task, connect a model and run a harness to inspect its rollout and traces. The
-[training tutorial](https://github.com/adithya-s-k/FineEnvs/tree/05-multi-harness-rl/05-multi-harness-rl)
-includes the same environment source and commands for HF Jobs or a local cluster.
+[training tutorial](https://github.com/adithya-s-k/FineEnvs/tree/6f2b6137b8253377ca97f898742974ba724f4046/05-multi-harness-rl)
+includes the same environment source and commands for HF Jobs or a local cluster. This link pins the
+reviewed tutorial while [FineEnvs PR #29](https://github.com/adithya-s-k/FineEnvs/pull/29) awaits merge.
