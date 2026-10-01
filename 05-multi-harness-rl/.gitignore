@@ -6,3 +6,6 @@ runs/
 prepared/
 .env
 .gradio/
+
+temp/
+.deps/

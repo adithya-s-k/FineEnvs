@@ -1,10 +1,10 @@
-# Current results
+# Historical results
 
-These are the checks and pilot results for the non-thinking recipe. Two blackbox pilots completed 100 updates and evaluation; the whitebox pilot stopped at step 31 after an HTTP read timeout. Those pilots used the previous runtime pins. The merged-contract smoke qualification is recorded separately in [VALIDATION.md](VALIDATION.md). Earlier experiment scores are kept on the [archived branch](https://github.com/adithya-s-k/FineEnvs/tree/archive/data-agent-experiments-20260930/04-data-agent).
+These are checks and pilot results from the earlier pinned recipe at `4d9c040`, before the tutorial rewrite. They do not qualify the current training scripts. Two blackbox pilots completed 100 updates and evaluation; the whitebox pilot stopped at step 31 after an HTTP read timeout. Those pilots used the previous runtime pins. The merged-contract smoke qualification is recorded separately in [VALIDATION.md](VALIDATION.md). Earlier experiment scores are kept on the [archived branch](https://github.com/adithya-s-k/FineEnvs/tree/archive/data-agent-experiments-20260930/04-data-agent).
 
 ## Completed checks
 
-The merged-contract HF smokes completed two updates and checkpoint reload in all three modes. Reload evaluation graded native OpenCode 4/4 pairs, Harbor 4/4 pairs and whitebox 1/1 task. [Validation](VALIDATION.md#merged-contract-update-30-september) records pins and evidence. The qualification table below predates that migration.
+The merged-contract HF smokes completed two updates and checkpoint reload in all three modes. Reload evaluation graded native OpenCode 4/4 pairs, Harbor 4/4 pairs and whitebox 1/1 task. [Earlier validation](https://github.com/adithya-s-k/FineEnvs/blob/4d9c040a28695c484de75bc23d6a70a99beda258/05-multi-harness-rl/VALIDATION.md) records pins and evidence. The qualification table below predates that migration.
 
 | Check | Result | Evidence |
 |---|---|---|
