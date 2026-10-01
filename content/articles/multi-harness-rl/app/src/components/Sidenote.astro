@@ -1,0 +1,270 @@
+---
+
+---
+
+<div class="sidenote-container">
+  <aside class="sidenote">
+    <slot />
+  </aside>
+</div>
+
+<script>
+  const initSidenotes = () => {
+    const containers = document.querySelectorAll(".sidenote-container");
+
+    containers.forEach((container) => {
+      // Vérifier si on est déjà dans un wrapper (éviter les doublons)
+      if (container.closest(".sidenote-wrapper")) {
+        return; // Déjà traité
+      }
+
+      // Trouver l'élément précédent (sibling juste avant)
+      let previousElement =
+        container.previousElementSibling as HTMLElement | null;
+
+      // Si pas d'élément précédent direct, essayer de trouver via le parent
+      if (!previousElement && container.parentNode) {
+        const parent = container.parentNode as HTMLElement;
+        // Si le parent n'a qu'un seul enfant (le container), chercher le sibling du parent
+        if (parent.children.length === 1 && parent.previousElementSibling) {
+          previousElement = parent.previousElementSibling as HTMLElement;
+        }
+      }
+
+      if (
+        previousElement &&
+        previousElement.parentNode &&
+        container.parentNode
+      ) {
+        // Créer un wrapper div qui contiendra l'élément précédent et le sidenote
+        const wrapper = document.createElement("div");
+        wrapper.className = "sidenote-wrapper";
+
+        const parent = container.parentNode;
+
+        // Cas normal : même parent
+        if (previousElement.parentNode === parent) {
+          parent.insertBefore(wrapper, previousElement);
+          wrapper.appendChild(previousElement);
+          wrapper.appendChild(container);
+        } else {
+          // Cas où ils sont dans des parents différents
+          const prevParent = previousElement.parentNode;
+          prevParent.insertBefore(wrapper, previousElement);
+          wrapper.appendChild(previousElement);
+          parent.removeChild(container);
+          wrapper.appendChild(container);
+        }
+
+        // Style le wrapper
+        wrapper.style.position = "relative";
+        wrapper.style.display = "block";
+
+        // Style le sidenote container
+        const sidenoteContainer = container as HTMLElement;
+        sidenoteContainer.style.position = "absolute";
+        sidenoteContainer.style.top = "0";
+        sidenoteContainer.style.right = "-292px"; // 260px width + 32px gap
+        sidenoteContainer.style.width = "260px";
+
+        // Afficher le container avec un fade-in
+        sidenoteContainer.style.display = "block";
+        sidenoteContainer.style.opacity = "0";
+
+        // Fade-in avec requestAnimationFrame (plus fiable que setTimeout)
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            sidenoteContainer.style.opacity = "1";
+          });
+        });
+      } else {
+        // Fallback : si pas d'élément précédent, afficher juste le sidenote normalement
+        const sidenoteContainer = container as HTMLElement;
+        sidenoteContainer.style.display = "block";
+        sidenoteContainer.style.opacity = "1";
+      }
+    });
+  };
+
+  // Vérifier que les styles sont bien appliqués
+  const verifyStylesApplied = () => {
+    const wrappers = document.querySelectorAll(".sidenote-wrapper");
+    let allApplied = true;
+
+    wrappers.forEach((wrapper) => {
+      const sidenote = wrapper.querySelector(
+        ".sidenote-container",
+      ) as HTMLElement;
+      if (sidenote) {
+        const computed = window.getComputedStyle(sidenote);
+        // Vérifier que position absolute est bien appliquée
+        if (computed.position !== "absolute" && window.innerWidth > 768) {
+          allApplied = false;
+          // Réappliquer les styles si nécessaire
+          sidenote.style.position = "absolute";
+          sidenote.style.top = "0";
+          sidenote.style.right = "-292px";
+          sidenote.style.width = "260px";
+          sidenote.style.display = "block";
+        }
+      }
+    });
+
+    return allApplied;
+  };
+
+  // Fonction pour démarrer l'initialisation avec observer si nécessaire
+  const startInit = () => {
+    // Essayer immédiatement
+    initSidenotes();
+
+    // Vérifier et réappliquer les styles si nécessaire
+    setTimeout(() => {
+      verifyStylesApplied();
+    }, 50);
+
+    // Si on ne trouve pas de sidenotes, utiliser MutationObserver pour attendre
+    // que le contenu MDX soit rendu (important pour les Spaces Hugging Face)
+    const containers = document.querySelectorAll(".sidenote-container");
+
+    if (containers.length === 0) {
+      // Aucun sidenote trouvé, observer les changements du DOM
+      const observer = new MutationObserver((mutations, obs) => {
+        const newContainers = document.querySelectorAll(".sidenote-container");
+        if (newContainers.length > 0) {
+          // Des sidenotes sont apparus, initialiser
+          initSidenotes();
+          // Vérifier les styles après initialisation
+          setTimeout(() => {
+            verifyStylesApplied();
+          }, 50);
+          // Arrêter l'observation après un délai pour éviter les boucles infinies
+          setTimeout(() => {
+            obs.disconnect();
+          }, 5000);
+        }
+      });
+
+      // Observer les changements dans le body (ou main si disponible)
+      const targetNode = document.querySelector("main") || document.body;
+      if (targetNode) {
+        observer.observe(targetNode, {
+          childList: true,
+          subtree: true,
+        });
+      }
+
+      // Arrêter l'observation après 10 secondes max (sécurité)
+      setTimeout(() => {
+        observer.disconnect();
+      }, 10000);
+    }
+  };
+
+  // Attendre que toutes les ressources soient chargées (images, etc.)
+  const waitForFullLoad = () => {
+    // Helper pour utiliser requestIdleCallback si disponible
+    const idleOrTimeout = (callback: () => void, timeout: number) => {
+      if (typeof (window as any).requestIdleCallback === "function") {
+        (window as any).requestIdleCallback(callback, { timeout });
+      } else {
+        setTimeout(callback, timeout);
+      }
+    };
+
+    if (document.readyState === "loading") {
+      // Attendre DOMContentLoaded puis window.load
+      document.addEventListener(
+        "DOMContentLoaded",
+        () => {
+          idleOrTimeout(startInit, 300);
+        },
+        { once: true },
+      );
+
+      // Aussi attendre window.load pour les ressources
+      window.addEventListener(
+        "load",
+        () => {
+          setTimeout(() => {
+            initSidenotes();
+            verifyStylesApplied();
+          }, 100);
+        },
+        { once: true },
+      );
+    } else if (document.readyState === "interactive") {
+      // DOM est chargé mais pas toutes les ressources
+      idleOrTimeout(startInit, 300);
+
+      // Aussi attendre window.load
+      window.addEventListener(
+        "load",
+        () => {
+          setTimeout(() => {
+            initSidenotes();
+            verifyStylesApplied();
+          }, 100);
+        },
+        { once: true },
+      );
+    } else {
+      // Tout est déjà chargé
+      idleOrTimeout(startInit, 300);
+
+      // Vérifier une dernière fois après un délai pour s'assurer que tout est bien rendu
+      setTimeout(() => {
+        initSidenotes();
+        verifyStylesApplied();
+      }, 500);
+    }
+  };
+
+  waitForFullLoad();
+</script>
+
+<style is:global>
+  .sidenote-wrapper {
+    /* Le wrapper contient l'élément original et le sidenote */
+    position: relative;
+    display: block;
+  }
+
+  .sidenote-container {
+    /* Caché par défaut, sera affiché par JS */
+    display: none;
+    margin: 0;
+    /* Transition for fade-in */
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .sidenote {
+    border-radius: 8px;
+    padding: 0 30px;
+    font-size: 0.9rem;
+    color: var(--muted-color);
+    margin: 0;
+  }
+
+  @media (--bp-content-collapse) {
+    .sidenote-wrapper {
+      /* Sur mobile, le wrapper n'a pas besoin de position relative */
+      position: static !important;
+    }
+
+    .sidenote-container {
+      position: static !important;
+      width: auto !important;
+      right: auto !important;
+      top: auto !important;
+      margin-top: 8px;
+      /* Affichage normal sur mobile */
+      display: block !important;
+      opacity: 1 !important;
+    }
+
+    .sidenote {
+      padding: 0;
+    }
+  }
+</style>

@@ -1,0 +1,54 @@
+@import './_variables.css';
+@import './_reset.css';
+@import './_base.css';
+@import './_layout.css';
+@import './_print.css';
+@import './components/_code.css';
+@import './components/_button.css';
+@import './components/_table.css';
+@import './components/_tag.css';
+@import './components/_card.css';
+@import './components/_form.css';
+@import './components/_mermaid.css';
+
+.demo-wide,
+.demo-full-width {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 150px;
+  color: var(--muted-color);
+  font-size: 12px;
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  background: var(--surface-bg);
+  margin-bottom: var(--block-spacing-y);
+}
+
+.mermaid {
+  background: none !important;
+  margin-bottom: var(--block-spacing-y) !important;
+}
+
+/* Iframes avec smoothing=0 : compensation du padding interne */
+iframe[src*="smoothing=0"] {
+  width: calc(100% + 120px) !important;
+  margin-left: -61px;
+  transform: scaleX(0.94);
+  /* Respecte le thème courant au lieu de forcer le blanc */
+  background-color: var(--surface-bg, transparent) !important;
+}
+
+/* Padding mobile pour les iframes */
+@media (max-width: 768px) {
+  iframe[src*="smoothing=0"] {
+    padding: 0 20px;
+  }
+}
+
+/* Fond adaptatif pour le thème sombre */
+[data-theme="dark"] iframe[src*="smoothing=0"] {
+  background-color: var(--surface-bg, #0f1115) !important;
+}

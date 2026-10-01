@@ -1,0 +1,1152 @@
+---
+export interface Props {
+  tableOfContentAutoCollapse?: boolean;
+}
+const { tableOfContentAutoCollapse = false } = Astro.props as Props;
+---
+
+<nav
+  class="table-of-contents toc-loading"
+  aria-label="Table of Contents"
+  data-auto-collapse={tableOfContentAutoCollapse ? "1" : "0"}
+>
+  <div class="title">Table of Contents</div>
+  <div id="article-toc-placeholder"></div>
+</nav>
+
+<!-- Mobile sidebar -->
+<button class="toc-mobile-toggle" aria-label="Open table of contents" aria-expanded="false">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+</button>
+<div class="toc-mobile-backdrop" aria-hidden="true"></div>
+<aside class="toc-mobile-sidebar toc-loading" aria-label="Table of Contents">
+  <div class="toc-mobile-sidebar__header">
+    <span class="toc-mobile-sidebar__title">Table of Contents</span>
+    <div class="toc-mobile-sidebar__actions">
+      <button class="toc-mobile-sidebar__theme" aria-label="Toggle color theme">
+        <svg class="icon light" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="4"></line>
+          <line x1="12" y1="20" x2="12" y2="23"></line>
+          <line x1="1" y1="12" x2="4" y2="12"></line>
+          <line x1="20" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"></line>
+          <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"></line>
+          <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"></line>
+          <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="icon dark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+      <button class="toc-mobile-sidebar__close" aria-label="Close table of contents">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+  </div>
+  <div class="toc-mobile-sidebar__body" id="article-toc-mobile-placeholder"></div>
+</aside>
+
+<script is:inline>
+  // Build TOC from article headings (h2/h3/h4) and render into the sticky aside
+  const buildTOC = () => {
+    const holder = document.getElementById("article-toc-placeholder");
+    const holderMobile = document.getElementById(
+      "article-toc-mobile-placeholder",
+    );
+    // Always rebuild TOC to avoid stale entries
+    if (holder) holder.innerHTML = "";
+    if (holderMobile) holderMobile.innerHTML = "";
+    const articleRoot = document.querySelector("section.content-grid main");
+    if (!articleRoot) return;
+    const headings = articleRoot.querySelectorAll("h2, h3, h4");
+    if (!headings.length) return;
+
+    // Inclure tous les titres H2/H3/H4 sans filtrer "Table of contents"
+    const headingsArr = Array.from(headings);
+    if (!headingsArr.length) return;
+
+    // Ensure unique ids for headings (deduplicate duplicates)
+    const usedIds = new Set();
+    const slugify = (s) =>
+      String(s || "")
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_\-]/g, "");
+    headingsArr.forEach((h) => {
+      let id = (h.id || "").trim();
+      if (!id) {
+        const base = slugify(h.textContent || "");
+        id = base || "section";
+      }
+      let candidate = id;
+      let n = 2;
+      while (usedIds.has(candidate)) {
+        candidate = `${id}-${n++}`;
+      }
+      if (h.id !== candidate) h.id = candidate;
+      usedIds.add(candidate);
+    });
+
+    const nav = document.createElement("nav");
+    let ulStack = [document.createElement("ul")];
+    nav.appendChild(ulStack[0]);
+
+    const levelOf = (tag) => (tag === "H2" ? 2 : tag === "H3" ? 3 : 4);
+    let prev = 2;
+    let headingCount = 0;
+    headingsArr.forEach((h) => {
+      const lvl = levelOf(h.tagName);
+      // adjust depth
+      while (lvl > prev) {
+        const ul = document.createElement("ul");
+        ulStack[ulStack.length - 1].lastElementChild?.appendChild(ul);
+        ulStack.push(ul);
+        prev++;
+      }
+      while (lvl < prev) {
+        ulStack.pop();
+        prev--;
+      }
+      const li = document.createElement("li");
+      const a = document.createElement("a");
+      a.href = "#" + h.id;
+      a.textContent = h.textContent;
+      a.target = "_self";
+      li.appendChild(a);
+      // Ajouter un index unique à chaque heading pour le tracking
+      li.setAttribute("data-heading-idx", String(headingCount));
+      headingCount++;
+      ulStack[ulStack.length - 1].appendChild(li);
+    });
+
+    if (holder) holder.appendChild(nav);
+    const navClone = nav.cloneNode(true);
+    if (holderMobile) holderMobile.appendChild(navClone);
+
+    // active link on scroll
+    const links = [
+      ...(holder ? holder.querySelectorAll("a") : []),
+      ...(holderMobile ? holderMobile.querySelectorAll("a") : []),
+    ];
+    // Read breakpoint from CSS var and set autoCollapse only on desktop (disabled on mobile)
+    const getCollapsePx = () => {
+      const root = document.documentElement;
+      const raw = getComputedStyle(root)
+        .getPropertyValue("--bp-content-collapse")
+        .trim();
+      return raw || "1100px";
+    };
+    const mq = window.matchMedia(`(max-width: ${getCollapsePx()})`);
+    const attrEnabled =
+      document
+        .querySelector(".table-of-contents")
+        ?.getAttribute("data-auto-collapse") === "1";
+    let autoCollapse = attrEnabled && !mq.matches;
+
+    // Inject styles for collapsible & animation (tous les niveaux)
+    const ensureStyles = () => {
+      if (document.getElementById("toc-collapse-style")) return;
+      const style = document.createElement("style");
+      style.id = "toc-collapse-style";
+      style.textContent = `
+        .table-of-contents nav.table-of-contents-collapsible li > ul,
+        .toc-mobile-sidebar nav.table-of-contents-collapsible li > ul { overflow: hidden; transition: height 200ms ease; }
+        .table-of-contents nav.table-of-contents-collapsible li.collapsed > ul,
+        .toc-mobile-sidebar nav.table-of-contents-collapsible li.collapsed > ul { display: block; }
+      `;
+      document.head.appendChild(style);
+    };
+    ensureStyles();
+
+    const getAllItemsWithChildren = () => {
+      const sideNav = holder ? holder.querySelector("nav") : null;
+      const mobileNav = holderMobile ? holderMobile.querySelector("nav") : null;
+      const q = (navEl) =>
+        navEl
+          ? Array.from(navEl.querySelectorAll("li[data-heading-idx]")).filter(
+              (li) => li.querySelector(":scope > ul"),
+            )
+          : [];
+      return {
+        sideNav,
+        mobileNav,
+        sideItems: q(sideNav),
+        mobileItems: q(mobileNav),
+      };
+    };
+
+    const setNavCollapsible = () => {
+      const sideNav = holder ? holder.querySelector("nav") : null;
+      const mobileNav = holderMobile ? holderMobile.querySelector("nav") : null;
+      if (sideNav) sideNav.classList.add("table-of-contents-collapsible");
+      if (mobileNav) mobileNav.classList.add("table-of-contents-collapsible");
+    };
+
+    const measure = (el) => {
+      if (!el) return 0;
+      // Temporarily set height to auto to measure scrollHeight reliably
+      const prev = el.style.height;
+      el.style.height = "auto";
+
+      // Force un reflow pour que le navigateur calcule les wraps de texte
+      void el.offsetHeight;
+
+      // Maintenant scrollHeight inclut la vraie hauteur avec tous les line wraps
+      const h = el.scrollHeight;
+      el.style.height = prev || "";
+      return h;
+    };
+
+    // Tracker les animations en cours pour pouvoir les annuler
+    const activeAnimations = new Map();
+
+    const cancelAnimation = (el) => {
+      if (!el) return;
+      const animData = activeAnimations.get(el);
+      if (animData) {
+        // Nettoyer le listener de l'animation précédente
+        el.removeEventListener("transitionend", animData.onEnd);
+        activeAnimations.delete(el);
+      }
+    };
+
+    const animateTo = (el, target) => {
+      if (!el) return;
+
+      // Annuler toute animation en cours sur cet élément
+      cancelAnimation(el);
+
+      // Obtenir la hauteur ACTUELLE (même si une animation est en cours)
+      const current = parseFloat(getComputedStyle(el).height) || 0;
+
+      // Si on est déjà proche de la cible, pas besoin d'animer
+      if (Math.abs(current - target) < 1) {
+        el.style.height = target ? "auto" : "0px";
+        return;
+      }
+
+      // Démarrer depuis la hauteur actuelle
+      el.style.height = current + "px";
+      // Force reflow
+      void el.offsetHeight;
+
+      // Aller vers la cible
+      el.style.height = target + "px";
+
+      // Créer le listener de fin
+      const onEnd = (e) => {
+        if (e.propertyName !== "height") return;
+        el.removeEventListener("transitionend", onEnd);
+        activeAnimations.delete(el);
+        if (target > 0) el.style.height = "auto";
+      };
+
+      // Sauvegarder le listener pour pouvoir l'annuler plus tard
+      activeAnimations.set(el, { onEnd });
+      el.addEventListener("transitionend", onEnd);
+    };
+
+    let prevActiveIdx = -1;
+    let prevActiveElements = new Set();
+    let prevActiveHeadingId = null;
+
+    const setCollapsedState = (activeIdx) => {
+      if (!autoCollapse) return;
+      if (activeIdx == null || activeIdx < 0) activeIdx = 0;
+      const { sideItems, mobileItems } = getAllItemsWithChildren();
+
+      // Trouver l'élément <li> correspondant au heading actif et tous ses ancêtres
+      const getActiveAndAncestors = (items, targetIdx) => {
+        const toExpand = new Set();
+
+        // Trouver le <li> qui correspond au targetIdx
+        const findActiveLi = (li) => {
+          const idx = Number(li.getAttribute("data-heading-idx") || "-1");
+          if (idx === targetIdx) {
+            return li;
+          }
+
+          const childUl = li.querySelector(":scope > ul");
+          if (!childUl) return null;
+
+          const childLis = childUl.querySelectorAll(
+            ":scope > li[data-heading-idx]",
+          );
+          for (const child of childLis) {
+            const found = findActiveLi(child);
+            if (found) return found;
+          }
+          return null;
+        };
+
+        let activeLi = null;
+        for (const li of items) {
+          activeLi = findActiveLi(li);
+          if (activeLi) break;
+        }
+
+        if (!activeLi) return toExpand;
+
+        // Collecter l'élément actif lui-même
+        const activeIdx = Number(
+          activeLi.getAttribute("data-heading-idx") || "-1",
+        );
+        toExpand.add(activeIdx);
+
+        // Remonter et collecter TOUS les ancêtres, sans condition
+        // La structure de la TOC détermine automatiquement qui doit être ouvert
+        let current = activeLi;
+        while (current) {
+          const parent = current.parentElement?.closest("li[data-heading-idx]");
+          if (parent) {
+            const parentIdx = Number(
+              parent.getAttribute("data-heading-idx") || "-1",
+            );
+            toExpand.add(parentIdx);
+            current = parent;
+          } else {
+            break;
+          }
+        }
+
+        return toExpand;
+      };
+
+      const update = (items) => {
+        const newActiveAncestors = getActiveAndAncestors(items, activeIdx);
+
+        // Étape 0 : Annuler TOUTES les animations en cours avant de commencer
+        // Cela évite les conflits si l'utilisateur scroll rapidement
+        items.forEach((li) => {
+          const sub = li.querySelector(":scope > ul");
+          if (sub) cancelAnimation(sub);
+        });
+
+        // Étape 1 : Identifier TOUS les éléments qui vont changer d'état
+        const allChanges = [];
+        items.forEach((li) => {
+          const sub = li.querySelector(":scope > ul");
+          if (!sub) return;
+
+          const idx = Number(li.getAttribute("data-heading-idx") || "-1");
+
+          // Un élément doit être expanded SI il contient (directement ou indirectement) le heading actif
+          // Donc soit il est dans newActiveAncestors, soit un de ses descendants l'est
+          let shouldBeExpanded = false;
+
+          // Vérifier si cet élément ou un de ses descendants est dans le chemin actif
+          const allDescendants = li.querySelectorAll("li[data-heading-idx]");
+          const allRelatedIndices = [
+            idx,
+            ...Array.from(allDescendants).map((d) =>
+              Number(d.getAttribute("data-heading-idx") || "-1"),
+            ),
+          ];
+
+          // Si au moins un de ces indices est dans newActiveAncestors, garder ouvert
+          shouldBeExpanded = allRelatedIndices.some((i) =>
+            newActiveAncestors.has(i),
+          );
+
+          const isCurrentlyCollapsed = li.classList.contains("collapsed");
+
+          const isChanging =
+            (shouldBeExpanded && isCurrentlyCollapsed) ||
+            (!shouldBeExpanded && !isCurrentlyCollapsed);
+
+          if (isChanging) {
+            allChanges.push({ li, sub, shouldBeExpanded, idx });
+          }
+        });
+
+        // Étape 2 : Parmi tous les changements, trouver ceux qui sont des "top-level"
+        // (= n'ont PAS d'ancêtre qui change aussi)
+        const topLevelChanges = [];
+        const descendantChanges = [];
+
+        allChanges.forEach((change) => {
+          let hasAncestorChanging = false;
+
+          // Remonter l'arbre pour voir si un ancêtre change aussi
+          let currentLi = change.li;
+          while (currentLi) {
+            const parentLi = currentLi.parentElement?.closest(
+              "li[data-heading-idx]",
+            );
+            if (!parentLi) break;
+
+            const parentIdx = Number(
+              parentLi.getAttribute("data-heading-idx") || "-1",
+            );
+
+            // Vérifier si ce parent est dans la liste des changements
+            const parentIsChanging = allChanges.some(
+              (c) => c.idx === parentIdx,
+            );
+            if (parentIsChanging) {
+              hasAncestorChanging = true;
+              break;
+            }
+
+            currentLi = parentLi;
+          }
+
+          if (hasAncestorChanging) {
+            descendantChanges.push(change);
+          } else {
+            topLevelChanges.push(change);
+          }
+        });
+
+        // Étape 3 : Appliquer TOUS les descendants instantanément (sans animation)
+        // Ceci doit être fait AVANT toute animation pour que les hauteurs soient correctes
+        if (descendantChanges.length > 0) {
+          descendantChanges.forEach(({ li, sub, shouldBeExpanded }) => {
+            const oldTransition = sub.style.transition;
+            sub.style.transition = "none";
+
+            if (shouldBeExpanded) {
+              li.classList.remove("collapsed");
+              sub.style.height = "auto";
+            } else {
+              li.classList.add("collapsed");
+              sub.style.height = "0px";
+            }
+
+            // Forcer un reflow immédiat pour cet élément
+            void sub.offsetHeight;
+            sub.style.transition = oldTransition || "";
+          });
+
+          // Forcer un reflow global pour que TOUS les changements soient appliqués
+          void document.body.offsetHeight;
+
+          // IMPORTANT : Attendre un frame pour que le navigateur ait fini tous les calculs
+          // avant de mesurer les hauteurs des parents
+        }
+
+        // Étape 4 : Animer SEULEMENT les top-level avec requestAnimationFrame
+        // Les descendants sont déjà dans leur état final, donc la hauteur du parent sera correcte
+        if (topLevelChanges.length > 0) {
+          // Double requestAnimationFrame pour être sûr que le DOM est stabilisé
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              topLevelChanges.forEach(({ li, sub, shouldBeExpanded }) => {
+                if (shouldBeExpanded) {
+                  li.classList.remove("collapsed");
+
+                  // CRITIQUE : Avant de mesurer, mettre ABSOLUMENT TOUS les sous-éléments
+                  // dans leur état final (expanded OU collapsed) de manière synchrone
+                  const allInnerItems = sub.querySelectorAll(
+                    "li[data-heading-idx]",
+                  );
+
+                  // D'abord, désactiver toutes les transitions
+                  allInnerItems.forEach((innerLi) => {
+                    const innerSub = innerLi.querySelector(":scope > ul");
+                    if (innerSub) {
+                      innerSub.style.transition = "none";
+                    }
+                  });
+
+                  // Ensuite, mettre chaque élément dans son état final
+                  allInnerItems.forEach((innerLi) => {
+                    const innerIdx = Number(
+                      innerLi.getAttribute("data-heading-idx") || "-1",
+                    );
+                    const innerSub = innerLi.querySelector(":scope > ul");
+                    if (innerSub) {
+                      if (newActiveAncestors.has(innerIdx)) {
+                        // Cet élément devrait être expanded
+                        innerLi.classList.remove("collapsed");
+                        innerSub.style.height = "auto";
+                      } else {
+                        // Cet élément devrait être collapsed
+                        innerLi.classList.add("collapsed");
+                        innerSub.style.height = "0px";
+                      }
+                    }
+                  });
+
+                  // Forcer un reflow global pour que TOUT soit calculé
+                  void sub.offsetHeight;
+
+                  // Réactiver les transitions
+                  allInnerItems.forEach((innerLi) => {
+                    const innerSub = innerLi.querySelector(":scope > ul");
+                    if (innerSub) {
+                      innerSub.style.transition = "";
+                    }
+                  });
+
+                  // Maintenant on peut mesurer avec confiance : tous les éléments
+                  // sont dans leur état final définitif
+                  const target = measure(sub);
+                  animateTo(sub, target);
+                } else {
+                  li.classList.add("collapsed");
+                  animateTo(sub, 0);
+                }
+              });
+            });
+          });
+        }
+
+        prevActiveElements = newActiveAncestors;
+      };
+
+      update(sideItems);
+      update(mobileItems);
+      setNavCollapsible();
+      prevActiveIdx = activeIdx;
+    };
+
+    // When switching between desktop/mobile, refresh autoCollapse and expand all on mobile
+    const expandAll = () => {
+      const { sideItems, mobileItems } = getAllItemsWithChildren();
+      const expand = (items) =>
+        items.forEach((li) => {
+          li.classList.remove("collapsed");
+          const sub = li.querySelector(":scope > ul");
+          if (sub) sub.style.height = "auto";
+        });
+      expand(sideItems);
+      expand(mobileItems);
+    };
+
+    const onMqChange = () => {
+      autoCollapse = attrEnabled && !mq.matches;
+      if (!autoCollapse) {
+        expandAll();
+      } else {
+        setCollapsedState(prevActiveIdx);
+      }
+    };
+    if (mq.addEventListener) mq.addEventListener("change", onMqChange);
+    else if (mq.addListener) mq.addListener(onMqChange);
+
+    // Constantes de configuration
+    const SCROLL_OFFSET_PX = 60; // Offset pour détecter quand un heading est "actif" (position sticky)
+    const SCROLL_THROTTLE_MS = 50; // Throttle le scroll à max 20 fois par seconde
+    const URL_DEBOUNCE_MS = 300; // Debounce la mise à jour d'URL à 300ms
+    const COLLAPSE_DEBOUNCE_MS = 100; // Debounce pour le collapse state
+    const ANIMATION_DURATION_MS = 250; // Durée des animations de collapse
+
+    // Debounce pour traiter la dernière mise à jour après que le scroll se stabilise
+    let scrollDebounceTimer = null;
+    let lastRequestedIdx = -1;
+    let isProcessing = false;
+    let hasUserScrolled = false; // Flag pour savoir si l'utilisateur a vraiment scrollé
+    let urlUpdateTimer = null; // Timer pour debounce la mise à jour de l'URL
+    let lastScrollTime = 0; // Pour le throttling
+
+    // Fonction pour mettre à jour l'URL avec l'ancre actuelle (avec debounce)
+    const updateURL = (headingId, force = false) => {
+      if (!headingId) return;
+
+      // Ne pas mettre à jour l'URL si l'utilisateur n'a pas scrollé et que ce n'est pas forcé
+      if (!force && !hasUserScrolled) return;
+
+      // Debounce la mise à jour d'URL pour éviter trop d'appels à history.pushState
+      clearTimeout(urlUpdateTimer);
+      urlUpdateTimer = setTimeout(
+        () => {
+          const newUrl = `${window.location.pathname}${window.location.search}#${headingId}`;
+
+          // Mettre à jour l'URL sans recharger la page
+          if (window.location.href !== newUrl) {
+            history.pushState(null, null, newUrl);
+
+            // Communiquer avec la fenêtre parente (format officiel Hugging Face)
+            if (window.parent !== window) {
+              try {
+                window.parent.postMessage(
+                  {
+                    queryString: "",
+                    hash: headingId,
+                  },
+                  "https://huggingface.co",
+                );
+              } catch (e) {
+                // Ignorer les erreurs silencieusement
+              }
+            }
+          }
+        },
+        force ? 0 : URL_DEBOUNCE_MS,
+      ); // Pas de debounce si forcé (navigation initiale)
+    };
+
+    // Fonction utilitaire pour trouver le heading actif selon la position du scroll
+    const findActiveHeading = () => {
+      let activeIdx = -1;
+      let activeHeadingId = null;
+
+      for (let i = headingsArr.length - 1; i >= 0; i--) {
+        const top = headingsArr[i].getBoundingClientRect().top;
+        if (top - SCROLL_OFFSET_PX <= 0) {
+          links.forEach((l) => l.classList.remove("active"));
+          const id = "#" + headingsArr[i].id;
+          const actives = Array.from(links).filter(
+            (l) => l.getAttribute("href") === id,
+          );
+          actives.forEach((a) => a.classList.add("active"));
+          activeIdx = i;
+          activeHeadingId = headingsArr[i].id;
+          break;
+        }
+      }
+
+      return { activeIdx, activeHeadingId };
+    };
+
+    const onScroll = () => {
+      // Throttling : ne traiter le scroll que toutes les SCROLL_THROTTLE_MS ms
+      const now = performance.now();
+      if (now - lastScrollTime < SCROLL_THROTTLE_MS) {
+        return;
+      }
+      lastScrollTime = now;
+
+      // Marquer que l'utilisateur a scrollé
+      hasUserScrolled = true;
+
+      // Optimisation : utiliser requestAnimationFrame pour batch les getBoundingClientRect
+      // et éviter les reflows multiples
+      requestAnimationFrame(() => {
+        const { activeIdx, activeHeadingId } = findActiveHeading();
+
+        // Mettre à jour l'URL si la section active a changé (avec debounce intégré)
+        if (activeHeadingId && activeHeadingId !== prevActiveHeadingId) {
+          updateURL(activeHeadingId);
+          prevActiveHeadingId = activeHeadingId;
+        }
+
+        if (activeIdx === prevActiveIdx) return;
+
+        // Sauvegarder la dernière demande
+        lastRequestedIdx = activeIdx;
+
+        // Si on est en train de traiter, ne rien faire (on traitera la dernière demande après)
+        if (isProcessing) return;
+
+        // Debounce : attendre un peu que le scroll se stabilise
+        clearTimeout(scrollDebounceTimer);
+        scrollDebounceTimer = setTimeout(() => {
+          // Traiter la dernière demande
+          if (lastRequestedIdx !== prevActiveIdx) {
+            isProcessing = true;
+            setCollapsedState(lastRequestedIdx);
+            // Le processing flag sera réinitialisé après les animations
+            setTimeout(() => {
+              isProcessing = false;
+              // Si une nouvelle demande est arrivée pendant qu'on traitait, la traiter maintenant
+              if (lastRequestedIdx !== prevActiveIdx) {
+                onScroll();
+              }
+            }, ANIMATION_DURATION_MS); // Attendre que les animations soient lancées
+          }
+        }, COLLAPSE_DEBOUNCE_MS);
+      });
+    };
+
+    // Version d'initialisation synchrone de setCollapsedState (sans animations)
+    const setCollapsedStateSync = (activeIdx) => {
+      if (!autoCollapse) return;
+      if (activeIdx == null || activeIdx < 0) activeIdx = 0;
+      const { sideItems, mobileItems } = getAllItemsWithChildren();
+
+      const getActiveAndAncestors = (items, targetIdx) => {
+        const toExpand = new Set();
+        const findActiveLi = (li) => {
+          const idx = Number(li.getAttribute("data-heading-idx") || "-1");
+          if (idx === targetIdx) return li;
+          const childUl = li.querySelector(":scope > ul");
+          if (!childUl) return null;
+          const childLis = childUl.querySelectorAll(
+            ":scope > li[data-heading-idx]",
+          );
+          for (const child of childLis) {
+            const found = findActiveLi(child);
+            if (found) return found;
+          }
+          return null;
+        };
+
+        let activeLi = null;
+        for (const li of items) {
+          activeLi = findActiveLi(li);
+          if (activeLi) break;
+        }
+        if (!activeLi) return toExpand;
+
+        const activeIdxNum = Number(
+          activeLi.getAttribute("data-heading-idx") || "-1",
+        );
+        toExpand.add(activeIdxNum);
+
+        let current = activeLi;
+        while (current) {
+          const parent = current.parentElement?.closest("li[data-heading-idx]");
+          if (parent) {
+            const parentIdx = Number(
+              parent.getAttribute("data-heading-idx") || "-1",
+            );
+            toExpand.add(parentIdx);
+            current = parent;
+          } else {
+            break;
+          }
+        }
+        return toExpand;
+      };
+
+      const applyStateSync = (items) => {
+        const newActiveAncestors = getActiveAndAncestors(items, activeIdx); // activeIdx du scope parent
+
+        // Désactiver toutes les transitions temporairement
+        items.forEach((li) => {
+          const sub = li.querySelector(":scope > ul");
+          if (sub) {
+            sub.style.transition = "none";
+          }
+        });
+
+        // Appliquer l'état sans animation
+        items.forEach((li) => {
+          const sub = li.querySelector(":scope > ul");
+          if (!sub) return;
+
+          const idx = Number(li.getAttribute("data-heading-idx") || "-1");
+          const allDescendants = li.querySelectorAll("li[data-heading-idx]");
+          const allRelatedIndices = [
+            idx,
+            ...Array.from(allDescendants).map((d) =>
+              Number(d.getAttribute("data-heading-idx") || "-1"),
+            ),
+          ];
+
+          const shouldBeExpanded = allRelatedIndices.some((i) =>
+            newActiveAncestors.has(i),
+          );
+
+          if (shouldBeExpanded) {
+            li.classList.remove("collapsed");
+            sub.style.height = "auto";
+          } else {
+            li.classList.add("collapsed");
+            sub.style.height = "0px";
+          }
+        });
+
+        // Forcer un reflow
+        void document.body.offsetHeight;
+
+        // Réactiver les transitions après un court délai
+        requestAnimationFrame(() => {
+          items.forEach((li) => {
+            const sub = li.querySelector(":scope > ul");
+            if (sub) {
+              sub.style.transition = "";
+            }
+          });
+        });
+      };
+
+      applyStateSync(sideItems);
+      applyStateSync(mobileItems);
+      setNavCollapsible();
+      prevActiveIdx = activeIdx;
+    };
+
+    // Fonction pour déclencher le fade-in une fois que tout est prêt
+    const showTOC = () => {
+      // Utiliser plusieurs RAF pour s'assurer que le DOM est complètement rendu
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Petit délai supplémentaire pour être sûr que tout est stabilisé
+          setTimeout(() => {
+            const tocElement = document.querySelector(".table-of-contents");
+            const tocMobileElement = document.querySelector(
+              ".toc-mobile-sidebar",
+            );
+            if (tocElement) {
+              tocElement.classList.remove("toc-loading");
+              tocElement.classList.add("toc-loaded");
+            }
+            if (tocMobileElement) {
+              tocMobileElement.classList.remove("toc-loading");
+              tocMobileElement.classList.add("toc-loaded");
+            }
+          }, 50); // Petit délai pour s'assurer que tout est rendu
+        });
+      });
+    };
+
+    // If auto-collapse, appliquer l'état de manière synchrone (sans animations)
+    if (autoCollapse) {
+      setCollapsedStateSync(0);
+      // Attendre que tout soit rendu avant d'afficher
+      showTOC();
+    } else {
+      // Si pas d'auto-collapse, afficher immédiatement
+      showTOC();
+    }
+
+    window.addEventListener("scroll", onScroll);
+
+    // Gérer la navigation par ancres au chargement de la page
+    const handleInitialNavigation = () => {
+      const hash = window.location.hash;
+      if (hash) {
+        const targetElement = document.querySelector(hash);
+        if (targetElement) {
+          // Attendre que le DOM soit prêt puis faire défiler vers l'élément
+          setTimeout(() => {
+            targetElement.scrollIntoView({ block: "start" });
+            // Mettre à jour l'URL après le scroll (forcé car c'est une navigation initiale avec ancre)
+            setTimeout(() => {
+              updateURL(hash.substring(1), true); // Enlever le # du hash, forcer la mise à jour
+            }, 100);
+          }, 100);
+        }
+      }
+      // Ne plus mettre à jour l'URL automatiquement si pas d'ancre
+    };
+
+    // Initialize state (sans mettre à jour l'URL)
+    // Ne pas marquer hasUserScrolled ici pour éviter les mises à jour d'URL au chargement
+    const { activeIdx: initialActiveIdx, activeHeadingId: initialHeadingId } =
+      findActiveHeading();
+    if (initialHeadingId) {
+      prevActiveHeadingId = initialHeadingId;
+    }
+    prevActiveIdx = initialActiveIdx;
+
+    // Gérer la navigation initiale
+    handleInitialNavigation();
+
+    // Gérer les événements de navigation du navigateur (boutons précédent/suivant)
+    window.addEventListener("popstate", (event) => {
+      const hash = window.location.hash;
+      if (hash) {
+        const targetElement = document.querySelector(hash);
+        if (targetElement) {
+          targetElement.scrollIntoView({ block: "start" });
+        }
+      } else {
+        // Si pas d'ancre, aller au début de la page
+        window.scrollTo({ top: 0 });
+      }
+    });
+
+    // Marquer qu'un scroll a eu lieu quand l'utilisateur clique sur un lien du TOC
+    links.forEach((link) => {
+      link.addEventListener("click", () => {
+        hasUserScrolled = true;
+      });
+    });
+
+    // Mobile sidebar open/close logic
+    const sidebar = document.querySelector(".toc-mobile-sidebar");
+    const backdrop = document.querySelector(".toc-mobile-backdrop");
+    const toggleBtn = document.querySelector(".toc-mobile-toggle");
+    const closeBtn = document.querySelector(".toc-mobile-sidebar__close");
+
+    const openSidebar = () => {
+      if (!sidebar || !backdrop || !toggleBtn) return;
+      sidebar.classList.add("open");
+      backdrop.classList.add("open");
+      toggleBtn.setAttribute("aria-expanded", "true");
+      document.body.style.overflow = "hidden";
+
+      // Scroll to the active link so the user sees where they are
+      requestAnimationFrame(() => {
+        const activeLink = sidebar.querySelector("a.active");
+        if (activeLink) {
+          const body = sidebar.querySelector(".toc-mobile-sidebar__body");
+          if (body) {
+            const linkTop = activeLink.offsetTop - body.offsetTop;
+            body.scrollTop = Math.max(0, linkTop - body.clientHeight / 3);
+          }
+        }
+      });
+    };
+    const closeSidebar = () => {
+      if (!sidebar || !backdrop || !toggleBtn) return;
+      sidebar.classList.remove("open");
+      backdrop.classList.remove("open");
+      toggleBtn.setAttribute("aria-expanded", "false");
+      document.body.style.overflow = "";
+    };
+
+    if (toggleBtn) toggleBtn.addEventListener("click", openSidebar);
+    if (closeBtn) closeBtn.addEventListener("click", closeSidebar);
+    if (backdrop) backdrop.addEventListener("click", closeSidebar);
+
+    // Sidebar theme toggle — reuses the same logic as the main #theme-toggle
+    const sidebarThemeBtn = document.querySelector(".toc-mobile-sidebar__theme");
+    if (sidebarThemeBtn) {
+      sidebarThemeBtn.addEventListener("click", () => {
+        const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+        localStorage.setItem("theme", next);
+        document.documentElement.dataset.theme = next;
+      });
+    }
+
+    // Close sidebar when a TOC link is clicked
+    if (holderMobile) {
+      holderMobile.addEventListener("click", (ev) => {
+        const target = ev.target;
+        const anchor =
+          target && "closest" in target ? target.closest("a") : null;
+        if (anchor instanceof HTMLAnchorElement) {
+          closeSidebar();
+        }
+      });
+    }
+
+    // Close sidebar on Escape key
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && sidebar?.classList.contains("open")) {
+        closeSidebar();
+      }
+    });
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", buildTOC, { once: true });
+  } else {
+    buildTOC();
+  }
+</script>
+
+<style is:global>
+  /* Fade-in animation pour le chargement du TOC */
+  .table-of-contents.toc-loading,
+  .toc-mobile-sidebar.toc-loading {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .table-of-contents.toc-loaded,
+  .toc-mobile-sidebar.toc-loaded {
+    opacity: 1;
+  }
+
+  /* Sticky aside */
+  .table-of-contents {
+    position: sticky;
+    top: 32px;
+    margin-top: 12px;
+  }
+
+  .table-of-contents nav {
+    border-left: 1px solid var(--border-color);
+    padding-left: 16px;
+    font-size: 13px;
+  }
+
+  .table-of-contents .title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  /* Look & feel */
+  .table-of-contents nav ul {
+    margin: 0 0 6px;
+    padding-left: 1em;
+  }
+
+  .table-of-contents nav li {
+    list-style: none;
+    margin: 0.25em 0;
+  }
+
+  .table-of-contents nav a,
+  .table-of-contents nav a:link,
+  .table-of-contents nav a:visited {
+    color: var(--text-color);
+    text-decoration: none;
+    border-bottom: none;
+  }
+
+  .table-of-contents nav > ul > li > a {
+    font-weight: 700;
+  }
+
+  .table-of-contents nav a:hover {
+    text-decoration: underline solid var(--muted-color);
+  }
+
+  .table-of-contents nav a.active {
+    text-decoration: underline;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Mobile sidebar toggle button                                       */
+  /* ------------------------------------------------------------------ */
+  .toc-mobile-toggle {
+    display: none; /* hidden on desktop */
+    position: fixed;
+    top: var(--spacing-4);
+    left: var(--spacing-4);
+    z-index: var(--z-overlay);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: var(--page-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    transition: transform 150ms ease, box-shadow 150ms ease;
+  }
+
+  .toc-mobile-toggle:active {
+    transform: scale(0.92);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Mobile sidebar backdrop                                             */
+  /* ------------------------------------------------------------------ */
+  .toc-mobile-backdrop {
+    display: none; /* hidden on desktop */
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-overlay) + 1);
+    background: rgba(0,0,0,.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 250ms ease;
+  }
+  .toc-mobile-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Mobile sidebar panel                                                */
+  /* ------------------------------------------------------------------ */
+  .toc-mobile-sidebar {
+    display: none; /* hidden on desktop */
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: calc(var(--z-overlay) + 2);
+    width: min(320px, 85vw);
+    background: var(--page-bg);
+    border-right: 1px solid var(--border-color);
+    transform: translateX(-100%);
+    transition: transform 300ms cubic-bezier(.4,0,.2,1);
+    flex-direction: column;
+  }
+  .toc-mobile-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .toc-mobile-sidebar__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+  }
+
+  .toc-mobile-sidebar__title {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-color);
+  }
+
+  .toc-mobile-sidebar__actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .toc-mobile-sidebar__close,
+  .toc-mobile-sidebar__theme {
+    background: none;
+    border: none;
+    color: var(--muted-color);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 150ms ease, background 150ms ease;
+  }
+  .toc-mobile-sidebar__close:hover,
+  .toc-mobile-sidebar__theme:hover {
+    color: var(--text-color);
+    background: var(--surface-bg);
+  }
+
+  /* Theme icon visibility in sidebar */
+  .toc-mobile-sidebar__theme .icon.dark {
+    display: none;
+  }
+  [data-theme="dark"] .toc-mobile-sidebar__theme .icon.light {
+    display: none;
+  }
+  [data-theme="dark"] .toc-mobile-sidebar__theme .icon.dark {
+    display: inline;
+  }
+
+  .toc-mobile-sidebar__body {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--spacing-3) var(--spacing-4) var(--spacing-6);
+  }
+
+  /* TOC styles inside sidebar */
+  .toc-mobile-sidebar nav ul {
+    margin: 0 0 6px;
+    padding-left: 1em;
+  }
+
+  .toc-mobile-sidebar nav li {
+    list-style: none;
+    margin: 0.35em 0;
+  }
+
+  .toc-mobile-sidebar nav a,
+  .toc-mobile-sidebar nav a:link,
+  .toc-mobile-sidebar nav a:visited {
+    color: var(--text-color);
+    text-decoration: none;
+    border-bottom: none;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .toc-mobile-sidebar nav > ul > li > a {
+    font-weight: 700;
+  }
+
+  .toc-mobile-sidebar nav a:hover {
+    text-decoration: underline solid var(--muted-color);
+  }
+
+  .toc-mobile-sidebar nav a.active {
+    color: var(--primary-color);
+    text-decoration: underline;
+  }
+</style>

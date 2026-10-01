@@ -1,0 +1,629 @@
+---
+// @ts-ignore - types provided by Astro at runtime
+import { Image as AstroImage } from "astro:assets";
+
+interface Props {
+  /** Source image imported via astro:assets */
+  src: any;
+  /** Alt text for accessibility */
+  alt: string;
+  /** Optional HTML string caption (use slot caption for rich content) */
+  caption?: string;
+  /** Optional class to apply on the <figure> wrapper when caption is used */
+  figureClass?: string;
+  /** Enable medium-zoom behavior on this image */
+  zoomable?: boolean;
+  /** Show a download button overlay and enable download flow */
+  downloadable?: boolean;
+  /** Optional explicit file name to use on download */
+  downloadName?: string;
+  /** Optional explicit source URL to download instead of currentSrc */
+  downloadSrc?: string;
+  /** Optional link that wraps the image (not the caption) */
+  linkHref?: string;
+  /** Optional target for the link (default: _blank when linkHref provided) */
+  linkTarget?: string;
+  /** Optional rel for the link (default: noopener noreferrer when linkHref provided) */
+  linkRel?: string;
+  /** Make the image span full width */
+  fullWidth?: boolean;
+  /** Any additional attributes should be forwarded to the underlying <AstroImage> */
+  [key: string]: any;
+}
+
+const {
+  caption,
+  figureClass,
+  zoomable,
+  downloadable,
+  downloadName,
+  downloadSrc,
+  linkHref,
+  linkTarget,
+  linkRel,
+  fullWidth,
+  src,
+  ...imgProps
+} = Astro.props as Props;
+
+// Try to get original image src from ImageMetadata object
+const getOriginalSrc = (imageSrc: any): string => {
+  if (typeof imageSrc === "string") {
+    return imageSrc;
+  }
+  // ImageMetadata from astro:assets has a 'src' property with the URL
+  if (imageSrc && typeof imageSrc === "object") {
+    // Check if this is an import with ?url (returns the original path directly)
+    if ("default" in imageSrc && typeof imageSrc.default === "string") {
+      return imageSrc.default;
+    }
+    // Try src property (optimized version)
+    if ("src" in imageSrc && typeof imageSrc.src === "string") {
+      return imageSrc.src;
+    }
+    // Try pathname property
+    if ("pathname" in imageSrc && typeof imageSrc.pathname === "string") {
+      return imageSrc.pathname;
+    }
+    // Fallback: try all string properties
+    for (const key of Object.keys(imageSrc)) {
+      if (typeof imageSrc[key] === "string" && imageSrc[key].length > 0) {
+        return imageSrc[key];
+      }
+    }
+  }
+  return "";
+};
+
+const originalSrc = getOriginalSrc(src);
+
+// Apply safe defaults without requiring callers to specify them
+const MAX_DISPLAY_WIDTH = 1800;
+const resolvedFormat = (imgProps as any).format || "webp";
+
+// If no explicit width is provided and we have metadata, cap to MAX_DISPLAY_WIDTH
+let resolvedWidth = (imgProps as any).width;
+if (
+  !resolvedWidth &&
+  src &&
+  typeof src === "object" &&
+  typeof src.width === "number"
+) {
+  resolvedWidth = Math.min(src.width, MAX_DISPLAY_WIDTH);
+}
+const hasCaptionSlot = Astro.slots.has("caption");
+const hasCaption =
+  hasCaptionSlot || (typeof caption === "string" && caption.length > 0);
+const hasTitle = Astro.slots.has("title");
+const uid = `ri_${Math.random().toString(36).slice(2)}`;
+// Use booleans instead of strings to avoid truthy "0" problem
+const dataZoomable = zoomable !== false || !!(imgProps as any)["data-zoomable"];
+const dataDownloadable =
+  downloadable !== false || !!(imgProps as any)["data-downloadable"];
+const hasLink = typeof linkHref === "string" && linkHref.length > 0;
+const resolvedTarget = hasLink ? linkTarget || "_blank" : undefined;
+const resolvedRel = hasLink ? linkRel || "noopener noreferrer" : undefined;
+
+// Use downloadSrc if provided, otherwise try to use the original src
+const resolvedDownloadSrc = downloadSrc || originalSrc;
+---
+
+<div
+  class={`image-wrapper`}
+  data-image-wrapper={uid}
+  data-has-title={hasTitle}
+  data-has-caption={hasCaption}
+>
+  {
+    hasCaption ? (
+      <figure
+        class={(figureClass || "") + (dataDownloadable ? " has-dl-btn" : "")}
+      >
+        {dataDownloadable ? (
+          <span class="img-dl-wrap">
+            {hasLink ? (
+              <a
+                class="image-link"
+                href={linkHref}
+                target={resolvedTarget}
+                rel={resolvedRel}
+              >
+                <AstroImage
+                  src={src}
+                  format={resolvedFormat}
+                  width={resolvedWidth}
+                  {...imgProps}
+                  data-zoomable={dataZoomable}
+                  data-downloadable={dataDownloadable}
+                  data-download-name={downloadName}
+                  data-download-src={resolvedDownloadSrc}
+                />
+              </a>
+            ) : (
+              <AstroImage
+                src={src}
+                format={resolvedFormat}
+                width={resolvedWidth}
+                {...imgProps}
+                data-zoomable={dataZoomable}
+                data-downloadable={dataDownloadable}
+                data-download-name={downloadName}
+                data-download-src={resolvedDownloadSrc}
+              />
+            )}
+            <button
+              type="button"
+              class="button img-dl-btn"
+              aria-label="Download image"
+              title={
+                downloadName ? `Download ${downloadName}` : "Download image"
+              }
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 16c-.26 0-.52-.11-.71-.29l-5-5a1 1 0 0 1 1.42-1.42L11 12.59V4a1 1 0 1 1 2 0v8.59l3.29-3.3a1 1 0 1 1 1.42 1.42l-5 5c-.19.18-.45.29-.71.29zM5 20a1 1 0 1 1 0-2h14a1 1 0 1 1 0 2H5z" />
+              </svg>
+            </button>
+          </span>
+        ) : hasLink ? (
+          <a
+            class="image-link"
+            href={linkHref}
+            target={resolvedTarget}
+            rel={resolvedRel}
+          >
+            <AstroImage
+              src={src}
+              format={resolvedFormat}
+              width={resolvedWidth}
+              {...imgProps}
+              data-zoomable={dataZoomable}
+            />
+          </a>
+        ) : (
+          <AstroImage
+            src={src}
+            format={resolvedFormat}
+            width={resolvedWidth}
+            {...imgProps}
+            data-zoomable={dataZoomable}
+          />
+        )}
+        <figcaption>
+          {hasCaptionSlot ? (
+            <slot name="caption" />
+          ) : (
+            caption && <span set:html={caption} />
+          )}
+        </figcaption>
+      </figure>
+    ) : dataDownloadable ? (
+      <span class="img-dl-wrap">
+        {hasLink ? (
+          <a
+            class="image-link"
+            href={linkHref}
+            target={resolvedTarget}
+            rel={resolvedRel}
+          >
+            <AstroImage
+              src={src}
+              format={resolvedFormat}
+              width={resolvedWidth}
+              {...imgProps}
+              data-zoomable={dataZoomable}
+              data-downloadable={dataDownloadable}
+              data-download-name={downloadName}
+              data-download-src={resolvedDownloadSrc}
+            />
+          </a>
+        ) : (
+          <AstroImage
+            src={src}
+            format={resolvedFormat}
+            width={resolvedWidth}
+            {...imgProps}
+            data-zoomable={dataZoomable}
+            data-downloadable={dataDownloadable}
+            data-download-name={downloadName}
+            data-download-src={resolvedDownloadSrc}
+          />
+        )}
+        <button
+          type="button"
+          class="button img-dl-btn"
+          aria-label="Download image"
+          title={downloadName ? `Download ${downloadName}` : "Download image"}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 16c-.26 0-.52-.11-.71-.29l-5-5a1 1 0 0 1 1.42-1.42L11 12.59V4a1 1 0 1 1 2 0v8.59l3.29-3.3a1 1 0 1 1 1.42 1.42l-5 5c-.19.18-.45.29-.71.29zM5 20a1 1 0 1 1 0-2h14a1 1 0 1 1 0 2H5z" />
+          </svg>
+        </button>
+      </span>
+    ) : hasLink ? (
+      <a
+        class="image-link"
+        href={linkHref}
+        target={resolvedTarget}
+        rel={resolvedRel}
+      >
+        <AstroImage
+          src={src}
+          format={resolvedFormat}
+          width={resolvedWidth}
+          {...imgProps}
+          data-zoomable={dataZoomable}
+          class={fullWidth ? "full" : ""}
+        />
+      </a>
+    ) : (
+      <AstroImage
+        src={src}
+        format={resolvedFormat}
+        width={resolvedWidth}
+        {...imgProps}
+        data-zoomable={dataZoomable}
+        class={fullWidth ? "full" : ""}
+      />
+    )
+  }
+</div>
+
+<script is:inline>
+  (() => {
+    const scriptEl = document.currentScript;
+    const root = scriptEl ? scriptEl.previousElementSibling : null;
+    if (!root) {
+      console.log("Figure script: No root element found, exiting");
+      return;
+    }
+    const img =
+      root.tagName === "IMG"
+        ? root
+        : root.querySelector
+          ? root.querySelector("img")
+          : null;
+    if (!img) {
+      console.log("Figure script: No img element found, exiting");
+      return;
+    }
+
+    // medium-zoom integration scoped to this image only
+    const ensureMediumZoomReady = (cb) => {
+      // @ts-ignore
+      if (window.mediumZoom) return cb();
+      const retry = () => {
+        // @ts-ignore
+        if (window.mediumZoom) cb();
+        else setTimeout(retry, 30);
+      };
+      retry();
+    };
+
+    const initZoomIfNeeded = () => {
+      if (img.getAttribute("data-zoomable") !== "true") return;
+      const isDark =
+        document.documentElement.getAttribute("data-theme") === "dark";
+      const background = isDark ? "rgba(0,0,0,.9)" : "rgba(0,0,0,.85)";
+      ensureMediumZoomReady(() => {
+        // @ts-ignore
+        const instance = window.mediumZoom
+          ? window.mediumZoom(img, { background, margin: 24, scrollOffset: 0 })
+          : null;
+        if (!instance) return;
+        let onScrollLike;
+        const attachCloseOnScroll = () => {
+          if (onScrollLike) return;
+          onScrollLike = () => {
+            try {
+              instance.close && instance.close();
+            } catch {}
+          };
+          window.addEventListener("wheel", onScrollLike, { passive: true });
+          window.addEventListener("touchmove", onScrollLike, { passive: true });
+          window.addEventListener("scroll", onScrollLike, { passive: true });
+        };
+        const detachCloseOnScroll = () => {
+          if (!onScrollLike) return;
+          window.removeEventListener("wheel", onScrollLike);
+          window.removeEventListener("touchmove", onScrollLike);
+          window.removeEventListener("scroll", onScrollLike);
+          onScrollLike = null;
+        };
+        try {
+          instance.on && instance.on("open", attachCloseOnScroll);
+        } catch {}
+        try {
+          instance.on && instance.on("close", detachCloseOnScroll);
+        } catch {}
+        const themeObserver = new MutationObserver(() => {
+          const dark =
+            document.documentElement.getAttribute("data-theme") === "dark";
+          try {
+            instance.update &&
+              instance.update({
+                background: dark ? "rgba(0,0,0,.9)" : "rgba(0,0,0,.85)",
+              });
+          } catch {}
+        });
+        themeObserver.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ["data-theme"],
+        });
+      });
+    };
+
+    // Global zoom management to hide other Figures
+    const setupGlobalZoomBehavior = () => {
+      img.addEventListener("click", () => {
+        if (img.getAttribute("data-zoomable") === "true") {
+          // Remove zoom-active from all other image wrappers
+          document
+            .querySelectorAll(".image-wrapper.zoom-active")
+            .forEach((el) => el.classList.remove("zoom-active"));
+
+          // Add zoom-active to this image wrapper
+          root.classList.add("zoom-active");
+        }
+      });
+    };
+
+    // Download button handler
+    const dlBtn = root.querySelector ? root.querySelector(".img-dl-btn") : null;
+    if (dlBtn) {
+      dlBtn.addEventListener("click", async (ev) => {
+        try {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const pickHrefAndName = () => {
+            const current = img.currentSrc || img.src || "";
+            let href = img.getAttribute("data-download-src") || current;
+            const deriveName = () => {
+              try {
+                const u = new URL(current, location.href);
+                const rawHref = u.searchParams.get("href");
+                const candidate = rawHref
+                  ? decodeURIComponent(rawHref)
+                  : u.pathname;
+                const last = String(candidate).split("/").pop() || "";
+                const base = last.split("?")[0].split("#")[0];
+                const m = base.match(
+                  /^(.+?\.(?:png|jpe?g|webp|avif|gif|svg))(?:[._-].*)?$/i,
+                );
+                if (m && m[1]) return m[1];
+                return base || "image";
+              } catch {
+                return "image";
+              }
+            };
+            const name = img.getAttribute("data-download-name") || deriveName();
+            return { href, name };
+          };
+          const picked = pickHrefAndName();
+          const res = await fetch(picked.href, { credentials: "same-origin" });
+          const blob = await res.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          const tmp = document.createElement("a");
+          tmp.href = objectUrl;
+          tmp.download = picked.name || "image";
+          tmp.target = "_self";
+          tmp.rel = "noopener";
+          tmp.style.display = "none";
+          document.body.appendChild(tmp);
+          tmp.click();
+          setTimeout(() => {
+            URL.revokeObjectURL(objectUrl);
+            tmp.remove();
+          }, 1000);
+        } catch {}
+      });
+    }
+
+    // Setup comportement zoom
+    setupGlobalZoomBehavior();
+
+    if (document.readyState === "complete") initZoomIfNeeded();
+    else window.addEventListener("load", initZoomIfNeeded, { once: true });
+  })();
+</script>
+
+<style>
+  .image-wrapper {
+    display: block;
+    width: 100%;
+  }
+
+  .image-link {
+    display: block;
+    width: 100%;
+    text-decoration: none;
+    border-bottom: none;
+    background: none;
+  }
+
+  .image-wrapper img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  figure {
+    margin: var(--block-spacing-y) 0;
+    display: block;
+    width: 100%;
+  }
+
+  figcaption {
+    text-align: left;
+    font-size: 0.9rem;
+    color: var(--muted-color);
+    margin-top: 6px;
+  }
+  figcaption {
+    background: var(--page-bg);
+    position: relative;
+    z-index: var(--z-elevated);
+    display: block;
+    width: 100%;
+  }
+  .image-credit {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--muted-color);
+  }
+  .image-credit a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* Zoomable overlay container (if used by any lightbox implementation) */
+  [data-zoom-overlay],
+  .zoom-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-overlay);
+  }
+
+  /* Ensure medium-zoom overlay is above figcaption */
+  :global(.medium-zoom-overlay) {
+    z-index: var(--z-overlay) !important;
+  }
+
+  /* Ensure zoomed image is above overlay */
+  :global(.medium-zoom-image--opened) {
+    z-index: calc(var(--z-overlay) + 1) !important;
+  }
+
+  /* Download link inside figures */
+  figure .download-link {
+    position: relative;
+    z-index: var(--z-elevated);
+  }
+
+  /* Opt-in zoomable images */
+  img[data-zoomable="true"] {
+    cursor: zoom-in;
+  }
+  .medium-zoom--opened img[data-zoomable="true"] {
+    cursor: zoom-out;
+  }
+
+  /* Download button for img[data-downloadable] */
+  figure.has-dl-btn {
+    position: relative;
+  }
+  .dl-host {
+    position: relative;
+  }
+  .img-dl-wrap {
+    width: 100%;
+    position: relative;
+    display: inline-block;
+  }
+  .img-dl-btn {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    color: white;
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    z-index: var(--z-elevated);
+    display: none;
+    background: var(--primary-color);
+  }
+
+  /* When an image is zoomed, hide ALL Figures on the page */
+  :global(.medium-zoom--opened) .image-wrapper {
+    opacity: 0;
+    z-index: calc(var(--z-base) - 1);
+    transition: opacity 0.3s ease;
+  }
+
+  /* The currently zoomed image remains visible */
+  :global(.medium-zoom--opened) .image-wrapper:has(.medium-zoom--opened) {
+    opacity: 1;
+    z-index: var(--z-overlay);
+  }
+
+  /* Fallback for browsers without :has() support */
+  :global(.medium-zoom--opened) .image-wrapper.zoom-active {
+    opacity: 1 !important;
+    z-index: var(--z-overlay) !important;
+  }
+
+  /* Specifically hide download button and figcaption during zoom */
+  :global(.medium-zoom--opened) .img-dl-btn {
+    opacity: 0;
+    z-index: calc(var(--z-base) - 1);
+    transition: opacity 0.3s ease;
+  }
+
+  :global(.medium-zoom--opened) figcaption {
+    opacity: 0;
+    z-index: calc(var(--z-base) - 1);
+    transition: opacity 0.3s ease;
+  }
+
+  /* Even for active zoomed image, hide button and caption for clean experience */
+  :global(.medium-zoom--opened) .image-wrapper.zoom-active .img-dl-btn {
+    opacity: 0;
+    z-index: calc(var(--z-base) - 1);
+  }
+
+  :global(.medium-zoom--opened) .image-wrapper.zoom-active figcaption {
+    opacity: 0;
+    z-index: calc(var(--z-base) - 1);
+  }
+  .img-dl-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+  }
+  .img-dl-wrap:hover .img-dl-btn {
+    display: inline-flex;
+  }
+  .img-dl-btn:hover {
+    background: var(--primary-color-hover);
+  }
+
+  [data-theme="dark"] .img-dl-btn {
+    background: var(--primary-color);
+    color: var(--on-primary);
+    border-color: var(--primary-color);
+  }
+  [data-theme="dark"] .img-dl-btn:hover {
+    background: var(--primary-color-hover);
+  }
+
+  /* Conditional margins based on title and caption presence */
+  .image-wrapper:not([data-has-title="true"]) {
+    margin-top: 20px;
+  }
+
+  .image-wrapper:not([data-has-caption="true"]) {
+    margin-bottom: 20px;
+  }
+
+  /* full image styles */
+  img.full {
+    width: 100% !important;
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  /* Dark mode: invert luminosity while preserving color harmony */
+  :global([data-theme="dark"]) .image-wrapper img {
+    filter: invert(0.925) hue-rotate(180deg);
+  }
+
+  /* Apply same filter to zoomed images in dark mode */
+  :global([data-theme="dark"]) :global(.medium-zoom-image--opened) {
+    filter: invert(0.925) hue-rotate(180deg);
+  }
+</style>

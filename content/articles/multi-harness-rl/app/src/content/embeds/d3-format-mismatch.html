@@ -1,0 +1,79 @@
+<div class="format-mismatch" style="width:100%;margin:14px 0;"></div>
+<style>
+  .format-mismatch { position: relative; }
+  .format-mismatch .fm-grid { display:grid; grid-template-columns: 1fr 40px 1.25fr 40px 1fr; align-items:center; gap:0; }
+  .format-mismatch .fm-card { border:1px solid var(--border-color); border-radius:10px; padding:10px 12px; background:var(--surface-bg); min-width:0; }
+  .format-mismatch .fm-card.ok { border-color:var(--fm-ok); }
+  .format-mismatch .fm-card.bad { border-color:var(--fm-bad); }
+  .format-mismatch .fm-lbl { font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-color); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .format-mismatch .fm-t { font-size:13px; font-weight:600; color:var(--text-color); margin:2px 0 8px; }
+  .format-mismatch .fm-sub { font-size:11px; color:var(--muted-color); margin:8px 0 4px; }
+  .format-mismatch .fm-tools { display:flex; flex-wrap:wrap; gap:4px; }
+  .format-mismatch .fm-tools code { font-size:11px; padding:2px 6px; border-radius:5px; border:1px solid var(--border-color); color:var(--muted-color); background:none; }
+  .format-mismatch .fm-tools code.hit { color:var(--text-color); border-color:var(--fm-ok); background:color-mix(in srgb, var(--fm-ok) 14%, transparent); }
+  .format-mismatch .fm-tools code.near { color:var(--text-color); border-color:var(--fm-bad); border-style:dashed; }
+  .format-mismatch pre { margin:0; font-size:11.5px; line-height:1.6; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre; overflow-x:auto; color:var(--text-color); }
+  .format-mismatch .mk { background:color-mix(in srgb, var(--fm-bad) 22%, transparent); border-radius:3px; padding:0 2px; }
+  .format-mismatch .fm-res { margin-top:10px; font-size:12px; line-height:1.45; padding:7px 9px; border-radius:7px; }
+  .format-mismatch .fm-res.ok { background:color-mix(in srgb, var(--fm-ok) 12%, transparent); }
+  .format-mismatch .fm-res.bad { background:color-mix(in srgb, var(--fm-bad) 12%, transparent); }
+  .format-mismatch .fm-res code { font-size:11px; }
+  .format-mismatch .fm-ar { text-align:center; font-size:18px; line-height:1; }
+  .format-mismatch .fm-ar.ok { color:var(--fm-ok); }
+  .format-mismatch .fm-ar.bad { color:var(--fm-bad); }
+  .format-mismatch .nt { margin-top:12px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+  @media (max-width: 720px) {
+    .format-mismatch .fm-grid { grid-template-columns: 1fr; gap:8px; }
+    .format-mismatch .fm-model { order:-1; }
+    .format-mismatch .fm-ar { display:none; }
+  }
+</style>
+<script>
+  (() => {
+    const C = 'format-mismatch';
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let r = scriptEl ? scriptEl.previousElementSibling : null;
+      while (r && !(r.classList && r.classList.contains(C))) r = r.previousElementSibling;
+      if (!r) { const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true'); r = n[n.length-1]; }
+      if (!r || r.dataset.mounted === 'true') return;
+      r.dataset.mounted = 'true';
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      r.style.setProperty('--fm-ok', P(0));
+      r.style.setProperty('--fm-bad', P(3));
+
+      // One tool call from a model trained in a harness whose write tool is `Write`
+      // with a `file_path` argument, shown against a harness that spells both differently.
+      r.innerHTML =
+          `<div class="fm-grid">`
+        +   `<div class="fm-card ok">`
+        +     `<div class="fm-lbl">the harness it trained in</div><div class="fm-t">Tool names in Title case</div>`
+        +     `<div class="fm-sub">tools it offers</div>`
+        +     `<div class="fm-tools"><code>Bash</code><code>Read</code><code class="hit">Write</code><code>Edit</code></div>`
+        +     `<div class="fm-sub">Write takes</div><div class="fm-tools"><code class="hit">file_path</code><code class="hit">content</code></div>`
+        +     `<div class="fm-res ok">Found. The tool runs and the turn continues.</div>`
+        +   `</div>`
+        +   `<div class="fm-ar ok l" aria-hidden="true">←</div>`
+        +   `<div class="fm-card fm-model">`
+        +     `<div class="fm-lbl">the model’s output, unchanged</div><div class="fm-t">One tool call</div>`
+        +     `<pre>{\n  "type": "tool_use",\n  "name": "<span class="mk">Write</span>",\n  "input": {\n    "<span class="mk">file_path</span>": "/workdir/answer.txt",\n    "content": "25.4"\n  }\n}</pre>`
+        +   `</div>`
+        +   `<div class="fm-ar bad" aria-hidden="true">→</div>`
+        +   `<div class="fm-card bad">`
+        +     `<div class="fm-lbl">a harness it never saw</div><div class="fm-t">Tool names in lower case</div>`
+        +     `<div class="fm-sub">tools it offers</div>`
+        +     `<div class="fm-tools"><code>bash</code><code>read</code><code class="near">write</code><code>edit</code></div>`
+        +     `<div class="fm-sub">write takes</div><div class="fm-tools"><code class="near">filePath</code><code>content</code></div>`
+        +     `<div class="fm-res bad">Rejected with <code>AI_NoSuchToolError</code>. Even with the name fixed, <code>file_path</code> is not <code>filePath</code>.</div>`
+        +   `</div>`
+        + `</div>`
+        + `<div class="nt">The task, the reasoning and the answer are all fine. The call fails because the model learned one harness’s spelling of its tools.</div>`;
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
+  })();
+</script>
