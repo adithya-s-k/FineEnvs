@@ -18,7 +18,8 @@ This directory is the complete Space source. Copy it on its own, build it locall
 ## Read the code
 
 - [`smoldataenv_whitebox/environment.py`](smoldataenv_whitebox/environment.py): task execution and grading.
-- [`smoldataenv_whitebox/server.py`](smoldataenv_whitebox/server.py): OpenEnv server and UI.
+- [`smoldataenv_whitebox/server.py`](smoldataenv_whitebox/server.py): OpenEnv API.
+- [`smoldataenv_whitebox/ui.py`](smoldataenv_whitebox/ui.py) and [`playground.py`](smoldataenv_whitebox/playground.py): browser layout and per-visitor sandbox lifecycle.
 - [`prepare.py`](prepare.py) and [`data/`](data/): the pinned 1,000 train / 250 test tasks, with grader and split checks.
 - [`Dockerfile`](Dockerfile): exactly what the Space builds.
 
@@ -38,7 +39,13 @@ bash start.sh
 
 Open **http://localhost:7860/**. It opens the UI at `/web/`; the API is at `/docs` and health at `/health`. `install.sh` installs OpenEnv from main and its environment examples from the same checkout. This server needs no GPU or TRL installation.
 
-The trainer supplies inference. You can also call the tools directly from the UI; no model endpoint is needed for that.
+The playground has three steps:
+
+1. Choose a split, difficulty and task, then click **Start this task**.
+2. Run Bash or Python commands against `/home/user/input`. The file-list and CSV-preview buttons prepare example commands for you.
+3. Enter your answer and click **Submit and score**. Correctness, tool calls and total reward appear above the workspace.
+
+Each browser session gets its own sandbox. **Release sandbox**, grading, or session expiry closes it. Execution history keeps your commands and outputs. The UI calls the same `BashEnvironment` used by training; no model endpoint is needed to try it yourself.
 
 ## Deploy this folder
 

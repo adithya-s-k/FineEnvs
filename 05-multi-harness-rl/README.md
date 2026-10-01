@@ -4,6 +4,8 @@ A model can solve the same task through different agent programs. Does training 
 
 Start with [04: SmolDataEnvs](../04-smoldataenvs/) for the dataset. The [multi-harness RL article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) explains the earlier experiments; its [source and figures](../content/articles/multi-harness-rl/) live in this branch too.
 
+Try the [whitebox playground](https://fineenvs-data-agent-seta-whitebox-env.hf.space/web/) to solve a task yourself. Browse the environments and experiment artifacts in the [Multi-harness RL collection](https://huggingface.co/collections/FineEnvs/multi-harness-rl-6abdfaaa8d74dacd481d5212).
+
 ## Open a training script first
 
 Each script reads like a notebook: settings → tokenizer → environment → reward → TRL config → training. The data loading, reward and trainer call are visible in that file. The numbered sections keep the setup and training flow easy to follow. To change the learning rate or batch size, edit the visible TRL config in that script.

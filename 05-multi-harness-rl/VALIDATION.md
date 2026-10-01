@@ -4,8 +4,8 @@ This is the validation record for the `train/`, `eval/` and `envs/` rewrite. His
 
 ## Runtime and CPU checks
 
-- **35 tests passed** against OpenEnv main `7ee88d590d36ae1ac3daf2cc11bc551bca7a804f` on 1 October 2026. Tests cover task identity, grading, cleanup, service routing, tokenizer templates and the typed training contract, including partial and zero loss masks.
-- A clean Python 3.12 CI environment passed 10 lightweight tests and skipped 25 runtime tests. Lint, formatting, shell syntax and the repository index also passed.
+- **40 tests passed** against OpenEnv main `7ee88d590d36ae1ac3daf2cc11bc551bca7a804f` on 1 October 2026. Tests cover task identity, grading, cleanup, service routing, tokenizer templates and the typed training contract, including partial and zero loss masks.
+- A clean Python 3.12 CI environment passed 10 lightweight tests and skipped 30 runtime tests. Lint, formatting, shell syntax and the repository index also passed.
 - A separate CPU installation, with **neither Torch nor TRL installed**, started all three environment servers. Their `/health`, `/web/` and Task API requests succeeded. Whitebox and native OpenCode exposed the 250 test tasks. Harbor's UI check used an empty registry; GPU checks use the prepared task registry.
 - All 1,000 training and 250 test tasks were prepared with instruction/grader hash checks and no notebook overlap.
 - LFM's GPU check produced identical packed and separate-sequence logits, then completed backward. The scripts run this guard before async training.
@@ -31,9 +31,9 @@ Each environment was copied outside this tutorial and started in the CPU-only in
 | Native OpenCode | [Open](https://fineenvs-data-agent-blackbox-opencode-env.hf.space/web/) | CPU Basic | 1,000 train / 250 test |
 | Harbor multi-harness | [Open](https://fineenvs-data-agent-blackbox-harbor-env.hf.space/web/) | CPU Basic | 1,000 train / 250 test |
 
-Browser checks on 1 October 2026 verified the three UIs and their root redirects, with no JavaScript errors. Harbor uses the current OpenEnv task browser, rollout controls and trace UI. Whitebox and native OpenCode use OpenEnv's playground with environment-specific connection examples. A real whitebox Space session staged task data in Daytona, executed one tool call, graded an intentionally incorrect answer as zero and released the sandbox.
+Browser checks on 1 October 2026 verified the three UIs and their root redirects, with no JavaScript errors. Harbor uses the current OpenEnv task browser, rollout controls and trace UI. Whitebox has a task picker, Bash workspace, execution history and score cards. Native OpenCode uses OpenEnv's playground with environment-specific connection examples. A real whitebox Space session staged task data in Daytona, executed one tool call, graded an intentionally incorrect answer as zero and released the sandbox.
 
-The existing 1,024-session limits are preserved. This is a configuration limit, not a measured throughput claim. Native OpenCode needs a reachable token-capturing inference endpoint before model rollouts; the Space browser check does not establish GPU training readiness. Local evidence is in `experiments/standalone-env-spaces-20261001/`, including source hashes, browser checks and the sandbox probe. Previous Space bundles are retained in ignored local archives and the Space's `.archive/` directory.
+The existing 1,024-session limits are preserved. This is a configuration limit, not a measured throughput claim. Native OpenCode needs a reachable token-capturing inference endpoint before model rollouts; the Space browser check does not establish GPU training readiness. Local evidence is in `experiments/standalone-env-spaces-20261001/`, including source hashes, browser checks and the sandbox probe. The whitebox UI tests cover separate browser sessions, restart and expiry cleanup, failed submissions, unscored attempts and escaped tool output. The deployed browser smoke computed a task answer from its CSV with one command and received correctness `1.0` and reward `1.09375`. A second browser remained isolated, and the 390px mobile layout had no horizontal overflow. Screenshots and logs are in `experiments/whitebox-playground-20261001/`. Previous Space bundles are retained in ignored local archives and the Space's `.archive/` directory.
 
 ## GPU smoke progress
 
