@@ -1,5 +1,7 @@
 # Run the tutorial
 
+[Read the article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Tutorial](README.md)
+
 Start with one mode and a two-step smoke. Check that the checkpoint reloads and the evaluation grades every requested pair before spending time on a longer run.
 
 ## 1. Install and prepare the tasks
@@ -91,7 +93,7 @@ python jobs/hf_job.py eval --mode multi_harness --tasks 25 \
   --name lfm-harbor-100-eval --bucket "$RUN_BUCKET" --submit
 ```
 
-Both blackbox policies use four evaluation harnesses: 25 tasks means 100 pairs. Whitebox uses its native tools: 25 tasks means 25 episodes. The subset is deterministic, taken from the sorted fixed test list. It is not the older pilot's stratified subset, so generate a new baseline. Omit `--tasks` for all 250 tasks.
+Both blackbox policies use four evaluation harnesses: 25 tasks means 100 pairs. Whitebox uses its native tools: 25 tasks means 25 episodes. The [evaluation guide](eval/README.md) maps each training mode to its evaluation interface and shows how to use a deployed environment. The subset is deterministic, taken from the sorted fixed test list. It is not the older pilot's stratified subset, so generate a new baseline. Omit `--tasks` for all 250 tasks.
 
 For a longer run, omit `--steps 100`. Checkpoints are saved every 50 updates. Submit independent evaluations at steps 100, 200, … using the corresponding path and `--step`. The trainer does not wait for them. Checkpoint serving uses vLLM's eager safetensors loader to avoid random reads from bucket and network filesystems. This tutorial keeps submission explicit rather than claiming an untested automatic checkpoint watcher.
 

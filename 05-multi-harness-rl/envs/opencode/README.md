@@ -9,9 +9,13 @@ app_port: 7860
 
 # SmolDataEnv: Native OpenCode
 
+**[Read the multi-harness RL article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl)** · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Training tutorial](https://github.com/adithya-s-k/FineEnvs/tree/05-multi-harness-rl/05-multi-harness-rl)
+
 Native OpenCode runs inside the sandbox. The server grades its answer and returns a typed token trace for AsyncGRPO.
 
-This directory is the complete Space source. Copy it on its own, build it locally or upload it to a Docker Space. It has no imports from the other tutorial environments.
+Use this environment to train through the native OpenCode agent. The tutorial then evaluates that checkpoint across four Harbor harnesses to see how well it transfers.
+
+This folder contains the complete Space source. You can run it locally or deploy it on its own.
 
 [Open the deployed UI](https://fineenvs-smoldataenv-multi-harness-opencode.hf.space/web/) · [Space](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-opencode)
 

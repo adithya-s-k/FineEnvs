@@ -9,9 +9,13 @@ app_port: 7860
 
 # SmolDataEnv: SETA whitebox
 
+**[Read the multi-harness RL article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl)** · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Training tutorial](https://github.com/adithya-s-k/FineEnvs/tree/05-multi-harness-rl/05-multi-harness-rl)
+
 TRL drives the bash, file and submit-solution tools. Each WebSocket session owns one sandbox.
 
-This directory is the complete Space source. Copy it on its own, build it locally or upload it to a Docker Space. It has no imports from the other tutorial environments.
+This is the hands-on companion to the article: explore a dataset, run a command and submit an answer. Training uses these same tools with TRL driving the model.
+
+This folder contains the complete Space source. You can run it locally or deploy it on its own.
 
 [Open the deployed UI](https://fineenvs-smoldataenv-multi-harness-whitebox.hf.space/web/) · [Space](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-whitebox)
 

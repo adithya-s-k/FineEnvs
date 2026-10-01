@@ -1,16 +1,42 @@
-# SmolDataEnvs: train an agent, then change its harness
+<div align="center">
 
-A model can solve the same task through different agent programs. Does training through several programs help it transfer? This tutorial gives you three scripts to explore that question on data-analysis tasks.
+<a href="https://huggingface.co/spaces/AdithyaSK/multi-harness-rl"><img src="./assets/banner.svg" alt="SmolDataEnv: one model, three ways to train" width="100%"></a>
 
-Start with [04: SmolDataEnvs](../04-smoldataenvs/) for the dataset. The [multi-harness RL article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) explains the earlier experiments; its [source and figures](../content/articles/multi-harness-rl/) live in this branch too.
+# SmolDataEnv: multi-harness RL
 
-Try the [whitebox playground](https://fineenvs-smoldataenv-multi-harness-whitebox.hf.space/web/) to solve a task yourself. Browse the environments and experiment artifacts in the [SmolDataEnv Multi-harness RL collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212).
+[![Read the article](https://img.shields.io/badge/Read_the_article-Multi--harness_RL-91c5ff?style=for-the-badge&labelColor=142439)](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl)
+[![Collection](https://img.shields.io/badge/Collection-Models_%26_environments-FFD21E?style=for-the-badge&labelColor=142439)](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212)
+[![Try the playground](https://img.shields.io/badge/Try_it-SETA_playground-82d8b6?style=for-the-badge&labelColor=142439)](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-whitebox)
 
-If you want to run training first, follow the [HF Jobs quickstart](REPRODUCE.md#2-submit-from-a-laptop-with-hf-jobs). If you already have GPUs, use the [local and Slurm commands](REPRODUCE.md#3-run-the-same-commands-locally-or-with-slurm). Both launch the environment inside the allocation; the public Spaces are also available for interactive exploration.
+</div>
 
-## Open a training script first
+> Train a small model to solve real data tasks, then see how it behaves in different agent harnesses.
 
-Each script reads like a notebook: settings → tokenizer → environment → reward → TRL config → training. The data loading, reward and trainer call are visible in that file. The numbered sections keep the setup and training flow easy to follow. To change the learning rate or batch size, edit the visible TRL config in that script.
+This is the companion code for **[the multi-harness RL article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl)**. The article walks through the experiments and their results. Here you can read the training code, try the environments and run your own comparison with LFM2.5-2.6B or Qwen3.5-2B.
+
+The tasks come from [04: SmolDataEnvs](../04-smoldataenvs/). Each gives an agent a question, data files and a checkable answer. We keep the training tasks and reward shared while changing who runs the tool loop: TRL, native OpenCode or Harbor.
+
+## Start here
+
+| You want to… | Open |
+|---|---|
+| Understand the experiment and results | [Read the article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) |
+| Try a data task in your browser | [SETA playground](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-whitebox) |
+| Train on HF Jobs or your own GPUs | [Step-by-step setup](REPRODUCE.md) |
+| Evaluate a base model or checkpoint | [Evaluation guide](eval/README.md) |
+| Find the Spaces, datasets and trained models | [Experiment collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212) |
+
+## A look at the article's results
+
+[![Historical LFM training reward, held-out pass@1 and tool-call savings](assets/historical-lfm-curves.svg)](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl)
+
+<sub>Historical LFM runs from the article. Training reward uses a trailing 50-update mean; evaluation points are unsmoothed. Hollow markers indicate incomplete evaluation coverage. Tool savings compare tasks solved by both baseline and checkpoint.</sub>
+
+Both policies in this figure used Harbor, including the OpenCode-only policy. This tutorial's native OpenCode mode is a separate interface. See [results and source data](RESULTS.md#historical-article-curves) for the numbers behind the figure and [validation](VALIDATION.md) for checks of the current scripts. The first panel shows training reward.
+
+## Three scripts, three tool loops
+
+Each script follows the same order: settings → tokenizer → environment → reward → TRL config → training. Read it from top to bottom, then edit its TRL config to try your own learning rate or batch size.
 
 | Script | Who runs the tool loop? | Trainer |
 |---|---|---|
@@ -90,7 +116,15 @@ Follow [REPRODUCE.md](REPRODUCE.md) for installation, a two-step smoke, a 100-st
 python jobs/smoke.py --mode multi_harness --output runs/harbor-smoke
 ```
 
-Use `--mode opencode` for native OpenCode, or `--mode whitebox` for bash/SETA. Blackbox evaluation uses all four Harbor harnesses for both policies. Whitebox evaluation uses its own bash/SETA tools.
+Use `--mode opencode` for native OpenCode, or `--mode whitebox` for bash/SETA. Evaluation uses the same driver for all three training modes:
+
+| Training mode | Evaluation interface | Full pass@1 evaluation |
+|---|---|---|
+| SETA whitebox | Its own bash/SETA tools | 250 attempts |
+| Native OpenCode | OpenCode, Claude Code, Codex and Mini-SWE-Agent through Harbor | 1,000 attempts |
+| Harbor multi-harness | The same four Harbor harnesses | 1,000 attempts |
+
+The two blackbox policies share an evaluation protocol so you can compare transfer across harnesses. SETA is reported separately. The [evaluation guide](eval/README.md) explains local or Space endpoints, checkpoint loading, coverage and retrying failed pairs.
 
 ## Shared settings
 
@@ -123,10 +157,6 @@ Both models use a 131,072-token serving context and up to 4,096 tokens per model
 
 Training keeps local Trackio data and checkpoints. Add `--space-id your-org/your-trackio-space` to also publish charts. It does not automatically write to the historical dashboard.
 
-## Earlier experiment
-
-![Historical LFM training and evaluation curves](assets/historical-lfm-curves.svg)
-
-These curves belong to the [article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl), not this rewrite. Both historical LFM policies used Harbor, including its OpenCode-only policy. The native OpenCode tutorial is a different interface. [RESULTS.md](RESULTS.md#historical-article-curves) links the plotted source data and the [historical dashboard](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio).
+## Earlier experiments
 
 The full experimental implementation remains on the [archived branch](https://github.com/adithya-s-k/FineEnvs/tree/archive/data-agent-experiments-20260930/04-data-agent). Earlier recipe code is also recoverable from this branch's git history.

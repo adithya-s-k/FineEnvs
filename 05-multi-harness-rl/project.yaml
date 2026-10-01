@@ -5,6 +5,7 @@ order: 5
 status: wip
 hub:
   org: FineEnvs
+  collection: FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212
   datasets:
     - FineEnvs/SmolDataEnvs-harbor-train
     - FineEnvs/SmolDataEnvs-harbor-test

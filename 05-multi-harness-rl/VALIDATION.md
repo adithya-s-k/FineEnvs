@@ -1,17 +1,20 @@
 # Validation of the tutorial
 
+[Read the article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Tutorial](README.md)
+
 This is the validation record for the `train/`, `eval/` and `envs/` rewrite. Historical pilots in [RESULTS.md](RESULTS.md) and the [article](../content/articles/multi-harness-rl/) used an earlier implementation.
 
 ## Runtime and CPU checks
 
-- **40 tests passed** against OpenEnv main `7ee88d590d36ae1ac3daf2cc11bc551bca7a804f` on 1 October 2026. Tests cover task identity, grading, cleanup, service routing, tokenizer templates and the typed training contract, including partial and zero loss masks.
-- A clean Python 3.12 CI environment passed 10 lightweight tests and skipped 30 runtime tests. Lint, formatting, shell syntax and the repository index also passed.
+- **42 tests passed** against OpenEnv main `7ee88d590d36ae1ac3daf2cc11bc551bca7a804f` on 1 October 2026. Tests cover task identity, grading, cleanup, service routing, tokenizer templates and the typed training contract, including partial and zero loss masks.
+- A clean Python 3.12 CI environment passed 12 lightweight tests and skipped 30 runtime tests. Lint, formatting, shell syntax and the repository index also passed.
 - A separate CPU installation, with **neither Torch nor TRL installed**, started all three environment servers. Their `/health`, `/web/` and Task API requests succeeded. Whitebox and native OpenCode exposed the 250 test tasks. Harbor's UI check used an empty registry; GPU checks use the prepared task registry.
+- Evaluation tests exercise both execution modes, verify routing from all three training modes, retain graded wrong answers, retry only ungraded pairs and reject a different checkpoint in the same output directory. The latest test logs and documentation previews are in `experiments/smoldataenv-docs-20261001/`.
 - All 1,000 training and 250 test tasks were prepared with instruction/grader hash checks and no notebook overlap.
 - LFM's GPU check produced identical packed and separate-sequence logits, then completed backward. The scripts run this guard before async training.
 - A real Harbor/Daytona upload passed from the cluster's user ID with `TAR_OPTIONS=--no-same-owner`.
 
-TRL's typed consumer merged in [PR #6947](https://github.com/huggingface/trl/pull/6947). All 40 runtime/contract tests also passed against merged TRL main `52fb144e7ece97e26aabd3c025740022838e46b5` and OpenEnv main `7ee88d590d36ae1ac3daf2cc11bc551bca7a804f`. Local and HF installers now use both upstream main branches, without a PR revision override. Earlier GPU checks below used the reviewed TRL commit `910138e9392dda75d3a9766e7c494d44f1d82723`; they are not fresh GPU tests of the merge commit.
+TRL's typed consumer merged in [PR #6947](https://github.com/huggingface/trl/pull/6947). All 42 runtime/contract tests also passed against merged TRL main `52fb144e7ece97e26aabd3c025740022838e46b5` and OpenEnv main `7ee88d590d36ae1ac3daf2cc11bc551bca7a804f`. Local and HF installers now use both upstream main branches, without a PR revision override. Earlier GPU checks below used the reviewed TRL commit `910138e9392dda75d3a9766e7c494d44f1d82723`; they are not fresh GPU tests of the merge commit.
 
 The fresh GPU environment uses Python 3.12, Torch 2.11.0, vLLM 0.25.1, Transformers main `d6c1e71bd717bf092f8293f0c3c9bd4a5ac5401a`, and Harbor 0.23.0. `dependencies.json` and `packages.txt` record what each installation resolved.
 

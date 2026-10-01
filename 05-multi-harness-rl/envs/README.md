@@ -1,5 +1,7 @@
 # Three standalone environments
 
+[Read the article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Tutorial](../README.md)
+
 Each directory is a complete Docker Space. Its local files are the files deployed to the Hub. There is no shared environment implementation or generated application bundle.
 
 | Environment | Local source | Space |

@@ -1,5 +1,7 @@
 # Historical results
 
+[Read the article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Tutorial](README.md)
+
 These are checks and pilot results from the earlier pinned recipe at `4d9c040`, before the tutorial rewrite. They do not qualify the current training scripts. Two blackbox pilots completed 100 updates and evaluation; the whitebox pilot stopped at step 31 after an HTTP read timeout. Those pilots used the previous runtime pins. The merged-contract smoke qualification is recorded separately in [VALIDATION.md](VALIDATION.md). Earlier experiment scores are kept on the [archived branch](https://github.com/adithya-s-k/FineEnvs/tree/archive/data-agent-experiments-20260930/04-data-agent).
 
 ## Completed checks

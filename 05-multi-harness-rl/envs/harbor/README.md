@@ -12,9 +12,13 @@ hf_oauth_scopes:
 
 # SmolDataEnv: Harbor multi-harness
 
+**[Read the multi-harness RL article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl)** · [Collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212) · [Training tutorial](https://github.com/adithya-s-k/FineEnvs/tree/05-multi-harness-rl/05-multi-harness-rl)
+
 Harbor runs OpenCode, Claude Code, Codex or Mini-SWE-Agent. Its OpenEnv UI shows rollouts, live traces and downloadable training captures.
 
-This directory is the complete Space source. Copy it on its own, build it locally or upload it to a Docker Space. It has no imports from the other tutorial environments.
+Use the task browser to choose a problem, connect a model and watch an agent solve it. This environment also serves the four-harness evaluation used to compare both blackbox policies.
+
+This folder contains the complete Space source. You can run it locally or deploy it on its own.
 
 [Open the deployed UI](https://fineenvs-smoldataenv-multi-harness-harbor.hf.space/web/) · [Space](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-harbor)
 

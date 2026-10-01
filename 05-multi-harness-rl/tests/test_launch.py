@@ -70,3 +70,7 @@ def test_each_mode_gets_the_right_services_and_gpu(tmp_path, monkeypatch, action
         action == "train" and mode == "opencode"
     )
     assert worker[0][2] == (f"train.{mode}" if action == "train" else "eval.evaluate")
+    if action == "eval":
+        assert worker[0][worker[0].index("--mode") + 1] == (
+            "whitebox" if mode == "whitebox" else "blackbox"
+        )
