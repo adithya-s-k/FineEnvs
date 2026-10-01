@@ -96,8 +96,8 @@ const hasCaption =
   hasCaptionSlot || (typeof caption === "string" && caption.length > 0);
 const hasTitle = Astro.slots.has("title");
 const uid = `ri_${Math.random().toString(36).slice(2)}`;
-// Use booleans instead of strings to avoid truthy "0" problem
-const dataZoomable = zoomable !== false || !!(imgProps as any)["data-zoomable"];
+// The zoom handler reads the literal "true" from this data attribute.
+const dataZoomable = String(zoomable !== false || !!(imgProps as any)["data-zoomable"]);
 const dataDownloadable =
   downloadable !== false || !!(imgProps as any)["data-downloadable"];
 const hasLink = typeof linkHref === "string" && linkHref.length > 0;
