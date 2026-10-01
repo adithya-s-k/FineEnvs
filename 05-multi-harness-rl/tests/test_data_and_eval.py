@@ -6,7 +6,7 @@ from types import SimpleNamespace
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from envs.tasks import stage_task
-from evaluate import summarize, write_json
+from eval.evaluate import summarize, write_json
 
 
 def test_fixed_split_is_disjoint_and_keeps_the_training_mix():

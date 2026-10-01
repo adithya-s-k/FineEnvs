@@ -40,7 +40,8 @@ def trace():
 def test_native_trace_preserves_masks_and_passes_native_count_to_trl(trace):
     from trl.experimental.async_grpo.openenv_harness import _turns_from_training_trace
 
-    from train_opencode import TaskSession, reward
+    from envs.opencode.environment import TaskSession
+    from train.opencode import reward
 
     events = [{"type": "step_finish"}] + [
         {
@@ -69,8 +70,8 @@ def test_native_trace_preserves_masks_and_passes_native_count_to_trl(trace):
     [(None, 4, None), (0, 4, 0), (1, None, 1), (1, 0, 1), (1, 15, 1.05)],
 )
 def test_both_async_rewards_match(grade, calls, expected):
-    from train_multi_harness import reward as harbor
-    from train_opencode import reward as native
+    from train.multi_harness import reward as harbor
+    from train.opencode import reward as native
 
     outcome = SimpleNamespace(
         env_reward=grade, trace=[{"metadata": {"native_tool_calls": calls}}]
@@ -80,7 +81,7 @@ def test_both_async_rewards_match(grade, calls, expected):
 
 
 def test_harbor_assignment_depends_on_prompt_not_seed(monkeypatch):
-    import train_multi_harness as tutorial
+    import envs.harbor.environment as tutorial
 
     rows = [{"instruction": str(i)} for i in range(8)]
     args = SimpleNamespace(
@@ -93,16 +94,32 @@ def test_harbor_assignment_depends_on_prompt_not_seed(monkeypatch):
     monkeypatch.setattr(tutorial, "HarborEnv", Mock())
     constructor = Mock()
     monkeypatch.setattr(tutorial, "TaskSession", constructor)
+    monkeypatch.setattr(
+        "httpx.get",
+        Mock(return_value=Mock(json=lambda: {"train": "prepared/datasets/train"})),
+    )
     factory = tutorial.TaskFactory(args, rows, sampling={"temperature": 0.8})
     for seed in (0, 17, 9000):
         factory.create([{"role": "user", "content": "5"}], seed=seed)
         assert constructor.call_args.kwargs["task_index"] == 5
         assert constructor.call_args.kwargs["harness"] == "claude-code"
         assert constructor.call_args.kwargs["sampling"] == {"temperature": 0.8}
+        assert constructor.call_args.kwargs["reward_key"] == "correctness,reward"
+
+
+@pytest.mark.parametrize("grade", [0.0, 1.0])
+def test_harbor_reads_both_published_grader_formats(grade):
+    from openenv.harbor.rollout import _pick_reward
+
+    assert _pick_reward({"reward": grade}, "correctness,reward")[0] == grade
+    assert (
+        _pick_reward({"correctness": grade, "submission": 1.0}, "correctness,reward")[0]
+        == grade
+    )
 
 
 def test_native_setup_failure_closes_sandbox(monkeypatch):
-    import train_opencode as tutorial
+    import envs.opencode.environment as tutorial
 
     monkeypatch.setenv("SANDBOX_VLLM_URL", "https://example.test")
     monkeypatch.setenv("SANDBOX_VLLM_KEY", "test-key")
@@ -124,7 +141,7 @@ def test_native_setup_failure_closes_sandbox(monkeypatch):
 
 
 def test_whitebox_reward_and_cleanup(monkeypatch):
-    import train_whitebox as tutorial
+    import envs.whitebox.environment as tutorial
 
     env = tutorial.BashEnvironment()
     sandbox = Mock()
@@ -136,7 +153,7 @@ def test_whitebox_reward_and_cleanup(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "module", ["train_opencode", "train_multi_harness", "train_whitebox"]
+    "module", ["train.opencode", "train.multi_harness", "train.whitebox"]
 )
 @pytest.mark.parametrize("model", ["LiquidAI/LFM2.5-2.6B", "Qwen/Qwen3.5-2B"])
 def test_nonthinking_prompt(module, model):
@@ -158,7 +175,7 @@ def test_whitebox_public_tool_schemas_are_valid():
 
     from transformers.utils import get_json_schema
 
-    from train_whitebox import BashEnvironment
+    from train.whitebox import BashEnvironment
 
     env = BashEnvironment()
     tools = [
@@ -217,7 +234,7 @@ def test_public_config_signatures_accept_tutorial_keywords():
         ("opencode", AsyncGRPOConfig),
         ("multi_harness", AsyncGRPOConfig),
     ]:
-        tree = ast.parse((ROOT / f"train_{name}.py").read_text())
+        tree = ast.parse((ROOT / "train" / f"{name}.py").read_text())
         calls = [
             node
             for node in ast.walk(tree)
@@ -234,7 +251,7 @@ def test_public_config_signatures_accept_tutorial_keywords():
 def test_whitebox_does_not_count_submission(monkeypatch):
     import time
 
-    from train_whitebox import BashEnvironment
+    from train.whitebox import BashEnvironment
 
     env = BashEnvironment()
     env._sandbox, env._deadline, env._calls = Mock(), time.monotonic() + 60, 3

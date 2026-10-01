@@ -38,7 +38,9 @@ def test_each_mode_gets_the_right_services_and_gpu(tmp_path, monkeypatch, action
 
     def spawn(command, **kwargs):
         calls.append((command, kwargs["env"]))
-        is_worker = command[1].startswith("train_") or command[1] == "evaluate.py"
+        is_worker = command[1] == "-m" and (
+            command[2].startswith("train.") or command[2] == "eval.evaluate"
+        )
         if command[1] == "jobs/inference_proxy.py":
             Path(command[command.index("--output") + 1]).write_text(
                 "https://sandbox-inference.test"
@@ -60,11 +62,11 @@ def test_each_mode_gets_the_right_services_and_gpu(tmp_path, monkeypatch, action
         worker[0][worker[0].index("--vllm-url") + 1]
         == f"http://127.0.0.1:{engine_port}"
     )
-    has_harbor = any("harbor_env.server.app:app" in command for command, _ in calls)
+    has_harbor = any("envs.harbor.server:app" in command for command, _ in calls)
     assert has_harbor == (
         mode != "whitebox" and (mode == "multi_harness" or action == "eval")
     )
     assert any("jobs/inference_proxy.py" in command for command, _ in calls) == (
         action == "train" and mode == "opencode"
     )
-    assert worker[0][1] == (f"train_{mode}.py" if action == "train" else "evaluate.py")
+    assert worker[0][2] == (f"train.{mode}" if action == "train" else "eval.evaluate")

@@ -1,0 +1,6 @@
+spec_version: 1
+name: smoldataenv_opencode
+type: space
+runtime: fastapi
+app: envs.opencode.server:app
+port: 7860

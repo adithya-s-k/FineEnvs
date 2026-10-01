@@ -2,7 +2,7 @@
 
 A model can solve the same task through different agent programs. Does training through several programs help it transfer? This tutorial gives you three scripts to explore that question on data-analysis tasks.
 
-Start with [04: SmolDataEnvs](../04-smoldataenvs/) for the dataset. The [multi-harness RL article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) explains the earlier experiments.
+Start with [04: SmolDataEnvs](../04-smoldataenvs/) for the dataset. The [multi-harness RL article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl) explains the earlier experiments; its [source and figures](../content/articles/multi-harness-rl/) live in this branch too.
 
 ## Open a training script first
 
@@ -10,13 +10,32 @@ Each script reads like a notebook: settings → tokenizer → environment → re
 
 | Script | Who runs the tool loop? | Trainer |
 |---|---|---|
-| [train_whitebox.py](train_whitebox.py) | TRL calls Python bash/SETA tools | `GRPOTrainer` |
-| [train_opencode.py](train_opencode.py) | Native OpenCode runs inside a sandbox | `AsyncGRPOTrainer` |
-| [train_multi_harness.py](train_multi_harness.py) | Harbor runs OpenCode, Claude Code, Codex or Mini-SWE-Agent | `AsyncGRPOTrainer` |
+| [train/whitebox.py](train/whitebox.py) | TRL calls Python bash/SETA tools | `GRPOTrainer` |
+| [train/opencode.py](train/opencode.py) | Native OpenCode runs inside a sandbox | `AsyncGRPOTrainer` |
+| [train/multi_harness.py](train/multi_harness.py) | Harbor runs OpenCode, Claude Code, Codex or Mini-SWE-Agent | `AsyncGRPOTrainer` |
 
-Read whitebox first if you are new to tool-using RL. Its `BashEnvironment` shows exactly which tools the model can call and how an answer is graded. Then read OpenCode to see what changes when an existing agent owns the conversation. The multi-harness script assigns one harness to each task; its eight rollouts all use that assignment.
+Read whitebox first if you are new to tool-using RL. Its [environment](envs/whitebox/environment.py) shows exactly which tools the model can call and how an answer is graded. Then read OpenCode to see what changes when an existing agent owns the conversation. The multi-harness script assigns one harness to each task; its eight rollouts all use that assignment.
 
 **Current dependency status:** install TRL and OpenEnv from upstream main. The typed blackbox integration still needs [TRL #6947](https://github.com/huggingface/trl/pull/6947), which was open when this rewrite was checked. `check_setup.py` reports this before training starts. There is no automatic fork checkout or source patch. [Validation](VALIDATION.md) separates checks of this rewrite from older GPU results.
+
+## Folder layout
+
+```text
+train/                  Three readable TRL training scripts
+  whitebox.py
+  opencode.py
+  multi_harness.py
+eval/evaluate.py        Fixed pass@1 evaluation and tool/token metrics
+envs/                   Environment implementations and deployment
+  whitebox/             SETA tools, OpenEnv server and client
+  opencode/             Native OpenCode sessions, server and client
+  harbor/               Task assignment and OpenEnv Harbor service
+  Dockerfile            Same container locally and on a Space
+  deploy.py             Upload a selected environment to the Hub
+jobs/                   HF Jobs, Slurm and train/reload smoke commands
+data/                   Fixed task identities
+prepare.py              Download and check the task files
+```
 
 ## What is being trained?
 
@@ -54,19 +73,13 @@ These are the boundaries to compare. The complete calls, including every trainin
 
 ## Run a small experiment
 
-Use Python 3.12 and two H100 or H200 GPUs: one for vLLM, one for training. HF Jobs can supply them; you do not need a GPU on your laptop. OpenEnv runs inside the job. Daytona supplies the task sandboxes. No environment Space is needed.
+Use Python 3.12 and two H100 or H200 GPUs: one for vLLM, one for training. HF Jobs can supply them; you do not need a GPU on your laptop. OpenEnv runs inside the job. Daytona supplies the task sandboxes. The same [environment code](envs/README.md) can also be deployed to a CPU Space.
 
 Follow [REPRODUCE.md](REPRODUCE.md) for installation, a two-step smoke, a 100-step comparison, and checkpoint evaluation. From a prepared local environment:
 
 ```bash
-# Two updates, saving both checkpoints. The normal eight-rollout group is retained.
-python jobs/run.py train --mode multi_harness --steps 2 --save-steps 1 \
-  --output runs/harbor-smoke
-
-# Restart inference from the saved weights and evaluate two tasks × four harnesses.
-python jobs/run.py eval --mode multi_harness \
-  --checkpoint runs/harbor-smoke/checkpoint-2 --step 2 \
-  --tasks 2 --concurrency 4 --output runs/harbor-smoke-eval
+# Two updates, save both checkpoints, then reload checkpoint 2 for evaluation.
+python jobs/smoke.py --mode multi_harness --output runs/harbor-smoke
 ```
 
 Use `--mode opencode` for native OpenCode, or `--mode whitebox` for bash/SETA. Blackbox evaluation uses all four Harbor harnesses for both policies. Whitebox evaluation uses its own bash/SETA tools.
@@ -94,8 +107,8 @@ Both models use a 131,072-token serving context and up to 4,096 tokens per model
 
 ## Where to look next
 
-- [envs/](envs/): Daytona operations, task data staging and host-side grading. No trainer subclasses.
-- [evaluate.py](evaluate.py): individual pass@1 results, coverage, correctness, tool calls and token usage. Failed pairs remain visible and can be retried without rerunning graded pairs.
+- [envs/](envs/README.md): actual environments, OpenEnv servers and clients, Docker image and Space deployment.
+- [eval/evaluate.py](eval/evaluate.py): individual pass@1 results, coverage, correctness, tool calls and token usage. Failed pairs remain visible and can be retried without rerunning graded pairs.
 - [jobs/](jobs/): installation, service startup, HF submission and a Slurm template. No hidden training configuration.
 - [prepare.py](prepare.py) and [data/](data/): fixed task selection and checked dataset revisions.
 - [RESULTS.md](RESULTS.md): earlier experiment results and artifact locations.

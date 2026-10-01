@@ -1,11 +1,19 @@
 """Check the required public APIs before requesting GPUs or creating sandboxes."""
 
+import argparse
 import inspect
 import json
 from importlib.metadata import version
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--mode",
+        choices=["all", "whitebox", "opencode", "multi_harness"],
+        default="all",
+    )
+    args = parser.parse_args()
     from harbor_env.harness import HarborSession
     from opencode_env.harness import OpenCodeSessionFactory
     from openenv.core.harness import TrainingTrace
@@ -13,7 +21,9 @@ def main():
     from trl import GRPOTrainer
     from trl.experimental.async_grpo import AsyncGRPOTrainer, openenv_harness
 
-    if "fetch_training_trace" not in inspect.getsource(openenv_harness):
+    if args.mode != "whitebox" and "fetch_training_trace" not in inspect.getsource(
+        openenv_harness
+    ):
         raise RuntimeError(
             "TRL main does not yet consume TrainingTrace. Wait for huggingface/trl#6947 to merge."
         )

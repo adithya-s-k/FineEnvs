@@ -22,20 +22,23 @@ def write_json(path, value):
 
 
 def harbor_episode(args, index, task, harness):
+    import httpx
     from harbor_env import HarborEnv
     from harbor_env.harness import HarborSession
 
+    response = httpx.get(args.server.rstrip("/") + "/smoldataenv/splits", timeout=30)
+    response.raise_for_status()
     session = HarborSession(
         env=HarborEnv(args.server, message_timeout_s=1800),
         owns_env=True,
-        split=str(Path(args.data).resolve() / "datasets/test"),
+        split=response.json()["test"],
         task_index=index,
         instruction=task["instruction"],
         harness=harness,
         sandbox="daytona",
-        llm_url=args.vllm_url,
+        llm_url=args.env_llm_url or args.vllm_url,
         model=args.model,
-        reward_key="correctness",
+        reward_key="correctness,reward",
         sampling={"temperature": 0.8, "top_p": 1.0, "top_k": -1},
         agent_step_limit=17,
         agent_timeout_sec=600,
@@ -48,20 +51,13 @@ def harbor_episode(args, index, task, harness):
         trace = (
             session.fetch_training_trace()
         )  # Checks engine tokens, logprobs and masks.
-        path = Path(args.trials) / session.result.trial_name / "agent/trajectory.json"
-        try:
-            atif = json.loads(path.read_text())
-            if not atif["schema_version"].startswith("ATIF-"):
-                raise ValueError("Unknown trajectory format")
-            ids = [
-                c["tool_call_id"]
-                for s in atif["steps"]
-                if s.get("source") == "agent"
-                for c in s.get("tool_calls", []) or []
-            ]
-            calls = len(ids) if all(ids) and len(set(ids)) == len(ids) else None
-        except (OSError, ValueError, KeyError, TypeError):
-            calls = None
+        response = httpx.get(
+            args.server.rstrip("/")
+            + f"/smoldataenv/trials/{session.result.trial_name}/tool-count",
+            timeout=30,
+        )
+        response.raise_for_status()
+        calls = response.json()["native_tool_calls"]
         return {
             "correctness": correctness,
             "tool_calls": calls,
@@ -77,9 +73,12 @@ def whitebox_episode(args, index, task, harness):
     from openai import OpenAI
     from transformers.utils import get_json_schema
 
-    from train_whitebox import SYSTEM, BashEnvironment
+    from envs.whitebox.client import RemoteBashEnvironment
+    from envs.whitebox.environment import SYSTEM, BashEnvironment
 
-    environment = BashEnvironment()
+    environment = (
+        RemoteBashEnvironment(args.server) if args.server else BashEnvironment()
+    )
     messages = [{"role": "system", "content": SYSTEM}]
     generated, prompt_tokens = 0, 0
     try:
@@ -172,6 +171,9 @@ def main():
     parser.add_argument("--step", type=int, default=0)
     parser.add_argument("--mode", choices=["blackbox", "whitebox"], default="blackbox")
     parser.add_argument("--data", default="prepared")
+    parser.add_argument(
+        "--env-llm-url", help="Inference URL reachable by a remote environment server"
+    )
     parser.add_argument("--server", default="http://127.0.0.1:8200")
     parser.add_argument("--vllm-url", default="http://127.0.0.1:8000")
     parser.add_argument("--trials", default="runs/trials")
@@ -231,7 +233,15 @@ def main():
                 1 + 1.5 / (15 + calls) if calls else 1
             )
         except Exception as exc:  # noqa: BLE001 - persist an ungraded pair for retry
-            row.update(correctness=None, error=type(exc).__name__)
+            import os
+
+            detail = str(exc)
+            for key, value in os.environ.items():
+                if value and any(
+                    word in key for word in ("TOKEN", "SECRET", "API_KEY")
+                ):
+                    detail = detail.replace(value, "[redacted]")
+            row.update(correctness=None, error=type(exc).__name__, detail=detail[:1000])
         row["seconds"] = time.monotonic() - start
         write_json(path, row)
         return row
@@ -256,9 +266,9 @@ def main():
     write_json(output / "summary.json", summary)
     import os
 
+    os.environ["TRACKIO_DIR"] = str(output.resolve() / "trackio")
     import trackio
 
-    os.environ["TRACKIO_DIR"] = str(output.resolve() / "trackio")
     run = trackio.init(
         project="smoldataenv-rl",
         name=output.name,

@@ -83,6 +83,8 @@ def prepare(destination, sources=None):
             spec = tomllib.loads((target / "task.toml").read_text())
             spec["environment"]["memory_mb"] = 4096
             spec["environment"]["cpus"] = 1
+            # Cluster user IDs may not exist inside Daytona's user namespace.
+            spec["environment"].setdefault("env", {})["TAR_OPTIONS"] = "--no-same-owner"
             (target / "task.toml").write_text(tomli_w.dumps(spec))
             hashes = {
                 str(f.relative_to(destination / "datasets" / split)): hashlib.sha256(

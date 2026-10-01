@@ -17,9 +17,9 @@ export DAYTONA_API_KEY="your-key"
 python prepare.py
 ```
 
-The installer uses **TRL main**, **OpenEnv main** and Transformers main. OpenEnv's environment examples are loaded from the same checkout's `envs/` directory because they are outside its core wheel. No source files are modified. To update an existing checkout, run `git -C .deps/OpenEnv pull --ff-only` and rerun the installer.
+The installer uses **TRL main**, **OpenEnv main** and Transformers main. It refreshes the OpenEnv checkout on each installation and loads the environment examples from that checkout's `envs/` directory. No installed source files are patched. Each run keeps the resolved versions and commits in `dependencies.json`.
 
-As of the rewrite, TRL #6947 is still open. Installation can finish while `check_setup.py` correctly stops on the missing typed consumer. Wait for that integration to merge before a main-only blackbox run. Do not treat the older pinned-runtime results as qualification of this installation.
+As of the rewrite, TRL #6947 is still open. Installation can finish while `check_setup.py` correctly stops on the missing typed consumer. For qualification before merge, explicitly set `TRL_REVISION` (local installation) or `--trl-revision` (HF submission) to the reviewed commit listed in [VALIDATION.md](VALIDATION.md). The default remains `main`; it never selects a fork silently.
 
 Task preparation pins the corrected train/test dataset revisions and verifies instructions, graders and split separation. It downloads all 1,250 tasks into ignored `prepared/`. Credentials belong in the environment, never in source files. Create a [Daytona account](https://www.daytona.io/) and an HF bucket you can write to before using HF Jobs.
 
@@ -33,40 +33,32 @@ hf auth login
 export DAYTONA_API_KEY="your-key"
 export RUN_BUCKET="your-org/smoldataenv-runs"
 
-python jobs/hf_job.py train --mode multi_harness \
+python jobs/hf_job.py smoke --mode multi_harness \
   --name lfm-harbor-smoke --bucket "$RUN_BUCKET" \
-  --steps 2 --save-steps 1 --timeout 1h
+  --timeout 1h
 ```
 
 This prints the plan. Add `--submit` to launch. Use `h200x2` (default). Current upstream AsyncGRPO selects FlashAttention 3, so this tutorial does not patch in A100 support.
 
-After the smoke completes, load its checkpoint in a separate evaluation job:
+The smoke trains for two updates, saves both checkpoints, stops the trainer, then reloads checkpoint 2 into vLLM for evaluation. Its report is `/outputs/lfm-harbor-smoke/smoke.json`; training and evaluation have separate subfolders.
 
-```bash
-python jobs/hf_job.py eval --mode multi_harness \
-  --name lfm-harbor-smoke-eval --bucket "$RUN_BUCKET" \
-  --checkpoint /outputs/lfm-harbor-smoke/checkpoint-2 --step 2 \
-  --tasks 2 --concurrency 4 --timeout 1h --submit
-```
-
-Repeat with `--mode opencode` and `--mode whitebox`, giving each job a fresh name. For Qwen, add `--model Qwen/Qwen3.5-2B` to **both** train and eval. A completed two-step smoke establishes execution, not learning. Check `reward`, `grad_norm`, checkpoint files and evaluation coverage. All-equal rewards can legitimately yield zero gradient.
+Repeat with `--mode opencode` and `--mode whitebox`, giving each job a fresh name. For Qwen, add `--model Qwen/Qwen3.5-2B`. A completed two-step smoke establishes execution, not learning. Check `reward`, `grad_norm`, checkpoint files and evaluation coverage. All-equal rewards can legitimately yield zero gradient.
 
 ## 3. Run the same commands locally or with Slurm
 
 For a local two-GPU machine, activate the environment and run:
 
 ```bash
-CUDA_VISIBLE_DEVICES=0,1 python jobs/run.py train --mode opencode \
-  --steps 2 --save-steps 1 --output runs/opencode-smoke
-
-CUDA_VISIBLE_DEVICES=0,1 python jobs/run.py eval --mode opencode \
-  --checkpoint runs/opencode-smoke/checkpoint-2 --step 2 \
-  --tasks 2 --concurrency 4 --output runs/opencode-smoke-eval
+CUDA_VISIBLE_DEVICES=0,1 python jobs/smoke.py --mode opencode \
+  --output runs/opencode-smoke
 ```
 
 For Slurm, choose your cluster's H100/H200 partition. Submit from this folder after installing dependencies and preparing tasks:
 
 ```bash
+sbatch --partition=YOUR_PARTITION jobs/train.slurm smoke \
+  --mode multi_harness --output runs/harbor-smoke
+
 sbatch --partition=YOUR_PARTITION jobs/train.slurm train \
   --mode multi_harness --steps 100 --output runs/harbor-pilot
 
@@ -77,6 +69,10 @@ sbatch --partition=YOUR_PARTITION jobs/train.slurm eval \
 ```
 
 One allocation owns one trainer and one inference engine. Evaluation gets a **different allocation**, with two inference replicas and no trainer. Shared sandbox quotas and bucket bandwidth still need headroom. The launcher chooses unused local service ports and records them in `services.json`. Keep each allocation on its own assigned GPUs and use a different output directory.
+
+The bounded smoke uses two optimizer updates, two rollouts per group and checkpointing each update. It checks checkpoint contents and reloads checkpoint 2 for two held-out tasks, across four harnesses for blackbox or SETA for whitebox. Normal runs retain eight rollouts per group and the settings in the training scripts.
+
+The launcher starts the actual [environment servers](envs/README.md) inside the allocation. That page also covers Docker and Hub deployment of the same code.
 
 ## 4. Compare baseline with checkpoint 100
 
@@ -104,12 +100,13 @@ For a longer run, omit `--steps 100`. Checkpoints are saved every 50 updates. Su
 | Output | Contents |
 |---|---|
 | `train.log` / `eval.log` | Trainer or evaluator output |
-| `vllm.log`, `harbor.log` | Inference and environment service logs |
+| `vllm.log`, `whitebox.log` / `opencode.log` / `harbor.log` | Inference and environment service logs |
 | `training_config.json` | Resolved TRL hyperparameters |
+| `dependencies.json`, `packages.txt` | Installed commits and package versions |
 | `task_names.json` | Selected training task identities |
 | `checkpoint-50/`, `checkpoint-100/`, … | Standard TRL/Transformers training checkpoints |
 | `final/` | Final model weights and tokenizer |
-| `trackio/` | Local Trackio database |
+| `trackio/` | Local Trackio database or append-only logs on network storage |
 | Eval `pairs/*.json` | One result per task/harness, including ungraded errors |
 | Eval `summary.json` | Coverage, observed pass@1, reward, tool/token usage, harness and difficulty breakdowns |
 

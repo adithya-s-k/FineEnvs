@@ -1,39 +1,61 @@
-# Validation of the tutorial rewrite
+# Validation of the tutorial
 
-The tutorial now uses public TRL trainers and OpenEnv producers. It does not download the archived experiment runtime or patch installed libraries.
+This is the validation record for the `train/`, `eval/` and `envs/` rewrite. Historical pilots in [RESULTS.md](RESULTS.md) and the [article](../content/articles/multi-harness-rl/) used an earlier implementation.
 
-## Checked locally
+## Runtime and CPU checks
 
-- 29 tests passed with the installed runtime: 10 data/launch checks and 19 contract/tokenizer checks.
-- All 1,000 training and 250 test tasks were re-prepared from the local copies, checking instruction and grader hashes.
-- A fresh dependency resolution succeeded with upstream TRL, OpenEnv and Transformers main. This was resolution, not a clean GPU installation.
-- HF train/eval submission plans, Python compilation, shell syntax, Ruff, documentation links and the generated repository index passed.
+- **35 tests passed** against OpenEnv main `7ee88d590d36ae1ac3daf2cc11bc551bca7a804f` on 1 October 2026. Tests cover task identity, grading, cleanup, service routing, tokenizer templates and the typed training contract, including partial and zero loss masks.
+- A clean Python 3.12 CI environment passed 10 lightweight tests and skipped 25 runtime tests. Lint, formatting, shell syntax and the repository index also passed.
+- A separate CPU installation, with **neither Torch nor TRL installed**, started all three environment servers. Their `/health`, `/web/` and Task API requests succeeded. Whitebox and native OpenCode exposed the 250 test tasks. Harbor's UI check used an empty registry; GPU checks use the prepared task registry.
+- All 1,000 training and 250 test tasks were prepared with instruction/grader hash checks and no notebook overlap.
+- LFM's GPU check produced identical packed and separate-sequence logits, then completed backward. The scripts run this guard before async training.
+- A real Harbor/Daytona upload passed from the cluster's user ID with `TAR_OPTIONS=--no-same-owner`.
 
+TRL's typed consumer is still in [PR #6947](https://github.com/huggingface/trl/pull/6947). Qualification explicitly uses `910138e9392dda75d3a9766e7c494d44f1d82723`; the installer defaults to upstream main and reports the missing API until that PR merges. OpenEnv always comes from upstream main. The local checks before the refresh used `86a180e`; the diff to `7ee88d5` changes release metadata and lockfiles only, with identical UI, rollout and contract code.
 
-The CPU checks exercise the fixed task split, reward gating, native tool counts, task identity independent of worker seeds, sandbox cleanup, tool schemas, and both non-thinking tokenizer templates. Contract checks pass partial and zero masks through the real OpenEnv producer and TRL consumer.
+The fresh GPU environment uses Python 3.12, Torch 2.11.0, vLLM 0.25.1, Transformers main `d6c1e71bd717bf092f8293f0c3c9bd4a5ac5401a`, and Harbor 0.23.0. `dependencies.json` and `packages.txt` record what each installation resolved.
 
 ```bash
-python -m pytest tests -q             # Lightweight checks, no model/runtime installation
-python -m pytest tests -q --contract  # Also exercise installed TRL/OpenEnv and tokenizers
-python check_setup.py                # API prerequisites
+python -m pytest tests -q             # Lightweight checks
+python -m pytest tests -q --contract  # Installed runtime and tokenizer checks
+python jobs/smoke.py --mode multi_harness --output runs/harbor-smoke
 ```
 
-Contract validation used merged OpenEnv `86a180ede21e044f7929b9a7783ad83aa67d83a3` and local TRL PR #6947 at `910138e9392dda75d3a9766e7c494d44f1d82723`. That TRL branch includes the public main trainer plus the pending typed consumer. This is not a claim that the consumer is already on main. The setup script fails clearly until main contains it.
+## GPU smoke progress
 
-## Still required before a long run
+Snapshot: **1 October 2026, 07:30 UTC**. Each smoke requests two optimizer updates, saves both checkpoints, and reloads checkpoint 2 for two test tasks. Blackbox evaluation covers all four harnesses, so it requires eight graded pairs. These tiny samples check execution, not benchmark quality.
 
-- Resolve and install current upstream dependencies in a clean GPU job after TRL #6947 merges.
-- For each model/mode, complete the documented two-update smoke and reload checkpoint 2 for evaluation.
-- Verify LFM packed logits agree with separate sequences on the GPU. The async scripts perform this check and abort on a mismatch; a kernel that ignores sequence boundaries is not acceptable.
-- Check nonzero learning signal over a larger sample, and complete the fresh baseline/checkpoint-100 comparison.
-- Validate simultaneous training and evaluation against the available sandbox quota. Evaluation uses separate GPUs, but sandbox and storage capacity are shared.
+| Platform | Model / mode | Training | Checkpoint reload evaluation |
+|---|---|---|---|
+| Slurm, two H100s | LFM / whitebox | Two updates and checkpoints verified | 2/2 graded on latest main |
+| Slurm, two H100s | Qwen / whitebox | Two updates; persistent Trackio verified | 2/2 graded |
+| Slurm, two H100s | LFM / native OpenCode | Two updates; persistent Trackio verified | Running on latest main |
+| Slurm, two H100s | Qwen / native OpenCode | Two updates and checkpoints verified | Running on latest main |
+| Slurm, two H100s | LFM / Harbor | Two updates and checkpoints verified | Running on latest main |
+| Slurm, two H100s | Qwen / Harbor | Two updates and checkpoints verified | Running on latest main |
+| HF Jobs, two H200s | Qwen / whitebox | Two updates; persistent Trackio present | Reload running |
+| HF Jobs, two H200s | Qwen / native OpenCode | Earlier attempt saved both checkpoints; replacement queued | Pending |
+| HF Jobs, two H200s | LFM / whitebox, native OpenCode, Harbor; Qwen / Harbor | Queued for hardware | Pending |
 
-Native `opencode_env` is available on current OpenEnv main but is marked deprecated upstream. This tutorial retains it because the comparison explicitly calls for native OpenCode. Harbor-only OpenCode would be a different experiment.
+The local two-update groups so far had no reward contrast and zero gradient. An earlier HF native Qwen attempt had reward 0.2574 and gradient norm 3.672 at update 2, but failed its logging-location assertion after training. It is not counted as a completed smoke. No claim of reward improvement follows from these checks.
 
-The public native API bounds time and tokens per call; it does not expose Harbor's strict turn limit. Upstream async packing can drop rows longer than 40,960 tokens and can give one rollout multiple training rows. The tutorial does not claim the archive's custom scheduling, exact resume or rollout weighting guarantees.
+## Issues caught and corrected
 
-## Earlier evidence
+- **Packed LFM convolutions:** the default kernel path ignored sequence boundaries. The scripts explicitly enable the compatible version-2 kernel on the GPU and check packed logits before training.
+- **Qwen whitebox context:** the current GRPO tool loop reads the outer config's context limit. The script copies it from Qwen's text config using public model configuration.
+- **Trackio persistence:** set `TRACKIO_DIR` before importing TRL/Trackio. Accept SQLite or append-only JSONL storage; FSx uses the latter. Replacement jobs keep logs beside their checkpoints.
+- **Harbor routing:** register task metadata routes outside Harbor's root app, while preserving its lifespan, UI and capture routes.
+- **Reward selection:** the pinned tasks include JSON `correctness` and scalar `reward` outputs. OpenEnv's public `correctness,reward` fallback reads both, so valid grades are not discarded.
+- **Daytona archive ownership:** cluster file owners may be outside the sandbox's user namespace. Task preparation sets tar to retain the sandbox owner. The grader and questions are unchanged; installed libraries are not patched.
 
-[RESULTS.md](RESULTS.md) retains the historical pilot scores and article curves. The [validation record before this rewrite](https://github.com/adithya-s-k/FineEnvs/blob/4d9c040a28695c484de75bc23d6a70a99beda258/05-multi-harness-rl/VALIDATION.md) contains the old GPU smokes, source pins and artifact paths. Those jobs used custom runtime changes, including A100 support, and do not qualify the rewritten scripts.
+## Evidence and remaining checks
 
-The previous files have been preserved locally under ignored `temp/pre-tutorial-rewrite/`; they also remain in git history. Prepared data, old experiments and credentials are not included in the PR.
+Local evidence is under `experiments/tutorial-gpu-smoke-20261001/`: immutable `source-v*` snapshots, `local/` checkpoints and evaluation results, CPU UI checks, the packed-kernel probe and the real Daytona upload check. Repository-local test logs are in ignored `runs/qualification-20261001/`.
+
+HF outputs use bucket `FineEnvs/data-agent-daytona-artifacts`. Active source snapshots use prefixes `tutorial-main-smoke-qwen-whitebox-v4`, `tutorial-main-smoke-lfm-whitebox-v4`, `tutorial-main-smoke-{lfm,qwen}-opencode-v7`, and `tutorial-main-smoke-{lfm,qwen}-multi_harness-v7`. Each keeps `train/`, `reload-eval/` and, only after success, `smoke.json`.
+
+Before a long run, finish the outstanding GPU/reload checks, repeat against TRL main after merge, and verify reward contrast over a larger sample. The Docker recipe and CPU server installation have been checked separately; a new public Space deployment has not been qualified by this rewrite.
+
+Native `opencode_env` remains deprecated upstream. Its timeout is not Harbor's strict turn cap. Upstream async packing may drop rows above 40,960 tokens and split one rollout into several rows. This tutorial does not reproduce the archive's exact committed-group resume or whole-rollout weighting.
+
+Earlier code remains in git history and in ignored `temp/pre-tutorial-rewrite/`. Credentials, prepared tasks and run artifacts are excluded from the PR.

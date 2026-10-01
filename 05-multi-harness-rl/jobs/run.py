@@ -1,4 +1,4 @@
-"""Launch services and one tutorial script on a two-GPU machine. Training logic lives in train_*.py."""
+"""Launch services and one tutorial script on a two-GPU machine. Training logic lives in train/."""
 
 import argparse
 import json
@@ -27,6 +27,7 @@ def main():
     )
     parser.add_argument("--model", default="LiquidAI/LFM2.5-2.6B")
     parser.add_argument("--output", required=True)
+    parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--steps", type=int, default=1000)
     parser.add_argument("--save-steps", type=int, default=50)
     parser.add_argument("--checkpoint")
@@ -36,13 +37,16 @@ def main():
     parser.add_argument("--space-id")
     args = parser.parse_args()
     os.chdir(ROOT)
-    subprocess.run([sys.executable, "check_setup.py"], check=True)
+    subprocess.run([sys.executable, "check_setup.py", "--mode", args.mode], check=True)
     if not Path("prepared/ready.json").exists():
         raise RuntimeError("Run prepare.py before allocating GPUs")
     output = Path(args.output).resolve()
     if output.exists() and args.action == "train":
         raise ValueError("Use a fresh training output directory")
     output.mkdir(parents=True, exist_ok=True)
+    revisions = ROOT / ".deps/revisions.json"
+    if revisions.exists():
+        (output / "dependencies.json").write_text(revisions.read_text())
     with (output / "packages.txt").open("w") as packages:
         subprocess.run(
             [sys.executable, "-m", "pip", "freeze"], stdout=packages, check=True
@@ -53,6 +57,7 @@ def main():
     env = dict(
         os.environ,
         PYTHONUNBUFFERED="1",
+        TRACKIO_DIR=str(output / "trackio"),
         VLLM_USE_DEEP_GEMM="0",
         VLLM_DEEP_GEMM_WARMUP="skip",
         VLLM_USE_FLASHINFER_SAMPLER="0",
@@ -136,7 +141,7 @@ def main():
                     sys.executable,
                     "-m",
                     "uvicorn",
-                    "harbor_env.server.app:app",
+                    "envs.harbor.server:app",
                     "--host",
                     "127.0.0.1",
                     "--port",
@@ -192,6 +197,40 @@ def main():
                 timeout=30,
             )
             response.raise_for_status()
+        if args.mode == "whitebox":
+            spawn(
+                [
+                    sys.executable,
+                    "-m",
+                    "uvicorn",
+                    "envs.whitebox.server:app",
+                    "--host",
+                    "127.0.0.1",
+                    "--port",
+                    str(server_port),
+                ],
+                "whitebox",
+                {"ENABLE_WEB_INTERFACE": "false"},
+            )
+            wait(server_url + "/health")
+        if args.action == "train" and args.mode == "opencode":
+            spawn(
+                [
+                    sys.executable,
+                    "-m",
+                    "uvicorn",
+                    "envs.opencode.server:app",
+                    "--host",
+                    "127.0.0.1",
+                    "--port",
+                    str(server_port),
+                    "--ws-ping-timeout",
+                    "1800",
+                ],
+                "opencode",
+                {"ENABLE_WEB_INTERFACE": "false"},
+            )
+            wait(server_url + "/health")
         common = [
             "--model",
             args.model,
@@ -200,14 +239,16 @@ def main():
             "--vllm-url",
             engine_url,
         ]
+        common += ["--server", server_url]
         if args.action == "eval" or args.mode == "multi_harness":
-            common += ["--trials", str(output / "trials"), "--server", server_url]
+            common += ["--trials", str(output / "trials")]
         if args.space_id:
             common += ["--space-id", args.space_id]
         if args.action == "train":
             command = [
                 sys.executable,
-                f"train_{args.mode}.py",
+                "-m",
+                f"train.{args.mode}",
                 *common,
                 "--steps",
                 str(args.steps),
@@ -217,7 +258,8 @@ def main():
         else:
             command = [
                 sys.executable,
-                "evaluate.py",
+                "-m",
+                "eval.evaluate",
                 *common,
                 "--mode",
                 "whitebox" if args.mode == "whitebox" else "blackbox",
@@ -230,6 +272,8 @@ def main():
                 "--concurrency",
                 str(args.concurrency),
             ]
+        if args.smoke and args.action == "train":
+            command += ["--smoke"]
         worker = spawn(command, args.action, {"CUDA_VISIBLE_DEVICES": devices[1]})
         children.remove(worker)
         try:

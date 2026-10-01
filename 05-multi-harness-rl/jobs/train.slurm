@@ -8,4 +8,8 @@
 set -euo pipefail
 # Submit from 05-multi-harness-rl after installation and prepare.py.
 # Activate your Python 3.12 environment before sbatch; it is inherited by the job.
+if [[ "$1" == "smoke" ]]; then
+    shift
+    exec python jobs/smoke.py "$@"
+fi
 python jobs/run.py "$@"

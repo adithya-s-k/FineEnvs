@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["train", "eval"])
+    parser.add_argument("action", choices=["train", "eval", "smoke"])
     parser.add_argument(
         "--mode",
         choices=["whitebox", "opencode", "multi_harness"],
@@ -27,17 +27,24 @@ def main():
     )
     parser.add_argument("--flavor", default="h200x2")
     parser.add_argument("--timeout", default="12h")
+    parser.add_argument(
+        "--trl-revision",
+        default="main",
+        help="Explicit test revision while the integration PR is pending",
+    )
     parser.add_argument("--steps", type=int, default=1000)
     parser.add_argument("--save-steps", type=int, default=50)
     parser.add_argument("--checkpoint", help="For eval: /outputs/<run>/checkpoint-100")
     parser.add_argument("--step", type=int, default=0)
-    parser.add_argument("--tasks", type=int, default=250)
-    parser.add_argument("--concurrency", type=int, default=35)
+    parser.add_argument("--tasks", type=int)
+    parser.add_argument("--concurrency", type=int)
     parser.add_argument("--space-id")
     parser.add_argument(
         "--submit", action="store_true", help="Without this flag, print the job plan"
     )
     args = parser.parse_args()
+    args.tasks = args.tasks or (2 if args.action == "smoke" else 250)
+    args.concurrency = args.concurrency or (4 if args.action == "smoke" else 35)
     if Path(args.name).name != args.name or args.name in {".", ".."}:
         parser.error("Use a single directory name for --name")
     if args.flavor != "h200x2":
@@ -79,7 +86,11 @@ def main():
         "flavor": args.flavor,
         "timeout": args.timeout,
         "name": args.name,
-        "env": {"PYTHONUNBUFFERED": "1"},
+        "env": {
+            "PYTHONUNBUFFERED": "1",
+            "TRL_REVISION": args.trl_revision,
+            "TUTORIAL_MODE": args.mode,
+        },
     }
     print(
         json.dumps(
@@ -101,7 +112,7 @@ def main():
     with tempfile.TemporaryDirectory() as directory:
         # An allowlist keeps credentials, prepared tasks and old experiments out of the source upload.
         paths = list(ROOT.glob("*.py")) + [ROOT / "requirements.txt"]
-        for folder in ("jobs", "envs", "data"):
+        for folder in ("jobs", "envs", "train", "eval", "data"):
             paths += [
                 p
                 for p in (ROOT / folder).rglob("*")

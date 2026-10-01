@@ -21,9 +21,15 @@ MODEL_REVISIONS = {
 def arguments():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="LiquidAI/LFM2.5-2.6B")
+    parser.add_argument("--server", help="Optional local or Space OpenEnv server")
     parser.add_argument("--data", default="prepared")
     parser.add_argument("--vllm-url", default="http://127.0.0.1:8000")
     parser.add_argument("--output", default="runs/opencode")
+    parser.add_argument(
+        "--smoke",
+        action="store_true",
+        help="Two updates, two rollouts per group and a small batch",
+    )
     parser.add_argument("--steps", type=int, default=1000)
     parser.add_argument("--save-steps", type=int, default=50)
     parser.add_argument("--inflight", type=int, default=32)
@@ -62,99 +68,7 @@ def tokenizer_for(model):
 
 
 # %% 3. Run native OpenCode in Daytona. Harbor is not involved in training.
-from opencode_env.config import OpenCodeConfig
-from opencode_env.harness import OpenCodeSessionFactory
-from opencode_env.task import OpenCodeTask
-from openenv.core.harness import VerifyResult
-
-from envs.daytona import DaytonaSandboxBackend
-from envs.tasks import grade_answer, stage_task
-
-
-class TaskSession:
-    def __init__(self, session):
-        self.session = session
-
-    def __getattr__(self, name):
-        return getattr(self.session, name)
-
-    def fetch_training_trace(self):
-        trace = self.session.fetch_training_trace()
-        try:
-            events = [
-                json.loads(line)
-                for line in self.session.fetch_trace().splitlines()
-                if line.strip()
-            ]
-            parts = [
-                event["part"] for event in events if event.get("type") == "tool_use"
-            ]
-            ids = [part["callID"] for part in parts]
-            if not any(event.get("type") == "step_finish" for event in events):
-                raise ValueError("Incomplete OpenCode event stream")
-            if any(not value for value in ids) or len(set(ids)) != len(ids):
-                raise ValueError("Missing or repeated tool action IDs")
-            if any(
-                part.get("state", {}).get("status") not in {"completed", "error"}
-                for part in parts
-            ):
-                raise ValueError("Unfinished tool action")
-            calls = len(ids)
-        except (OSError, ValueError, KeyError, TypeError):
-            calls = None
-        for turn in trace.turns:
-            turn.metadata["native_tool_calls"] = calls
-        return trace
-
-
-def verify(sandbox, task):
-    return VerifyResult(
-        env_reward=grade_answer(sandbox, task.metadata["folder"]), done=True
-    )
-
-
-class TaskFactory:
-    def __init__(self, args, tasks, *, sampling):
-        self.tasks = {task["instruction"]: task for task in tasks}
-        config = OpenCodeConfig(
-            base_url=os.environ["SANDBOX_VLLM_URL"].rstrip("/") + "/v1",
-            api_key=os.environ["SANDBOX_VLLM_KEY"],
-            model=args.model,
-            opencode_version="1.18.31",
-            sandbox_home="/root",
-            proxy_disable_thinking=True,
-            proxy_max_tokens_cap=4096,
-            agent_timeout_s=600,
-            run_format="json",
-            extra_setup_shell="mkdir -p /workdir && rmdir /root/workdir && ln -s /workdir /root/workdir",
-            disabled_tools=["webfetch", "question", "task"],
-            extra_opencode_json={"permission": {"*": "allow"}},
-        )
-        self.factory = OpenCodeSessionFactory(
-            config=config,
-            sampling=sampling,
-            verifier=verify,
-            mode="transparent_proxy",
-            sandbox_backend=DaytonaSandboxBackend(
-                image="docker.io/savatar101/env-data-agent-train:base"
-            ),
-        )
-
-    def create(self, task, seed=None, episode_id=None):
-        row = self.tasks[task[-1]["content"]]
-        task = OpenCodeTask(
-            instruction=row["instruction"], metadata={"folder": row["folder"]}
-        )
-        session = self.factory.create(
-            task, seed=seed, episode_id=episode_id, start_agent=False
-        )
-        try:
-            stage_task(session.sandbox, row["folder"])
-            session.start_agent()
-            return TaskSession(session)
-        except BaseException:
-            session.close()
-            raise
+from envs.opencode.environment import TaskFactory
 
 
 # %% 4. Reward correctness, with a small bonus for fewer verified tool calls.
@@ -170,14 +84,14 @@ def reward(outcome):
 
 # %% 5. Configure public AsyncGRPO. These are the experiment's hyperparameters.
 def main():
-    import torch
-    from trl.experimental.async_grpo import AsyncGRPOConfig, AsyncGRPOTrainer
-    from trl.experimental.async_grpo.openenv_harness import HarnessRolloutWorker
-
     args = arguments()
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     os.environ["TRACKIO_DIR"] = str(output.resolve() / "trackio")
+    import torch
+    from trl.experimental.async_grpo import AsyncGRPOConfig, AsyncGRPOTrainer
+    from trl.experimental.async_grpo.openenv_harness import HarnessRolloutWorker
+
     tasks = load_tasks(args.data, "train")
     dataset = Dataset.from_list(
         [
@@ -191,15 +105,15 @@ def main():
         learning_rate=3e-6,
         lr_scheduler_type="constant",
         warmup_steps=0,
-        max_steps=args.steps,
-        per_device_train_batch_size=4,
-        gradient_accumulation_steps=4,
-        num_generations=8,
+        max_steps=2 if args.smoke else args.steps,
+        per_device_train_batch_size=1 if args.smoke else 4,
+        gradient_accumulation_steps=2 if args.smoke else 4,
+        num_generations=2 if args.smoke else 8,
         max_completion_length=16384,
         temperature=0.8,
         top_p=1.0,
         top_k=-1,
-        max_inflight_tasks=args.inflight,
+        max_inflight_tasks=min(args.inflight, 4) if args.smoke else args.inflight,
         max_staleness=4,
         token_budget=40960,
         fork_threshold_tokens=0,
@@ -208,24 +122,26 @@ def main():
         dtype="bfloat16",
         model_init_kwargs={
             "revision": MODEL_REVISIONS[args.model],
-            "use_kernels": "lfm" in args.model.lower(),
         },
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
         vllm_server_base_url=args.vllm_url,
         heartbeat_stale_after_s=900,
         save_strategy="steps",
-        save_steps=args.save_steps,
+        save_steps=1 if args.smoke else args.save_steps,
         save_total_limit=None,
         logging_steps=1,
         report_to="trackio",
         project="smoldataenv-rl",
-        run_name=output.name,
+        run_name=output.parent.name if output.name == "train" else output.name,
         trackio_space_id=args.space_id,
         seed=0,
     )
+    from envs.opencode.client import RemoteTaskFactory
+
+    factory = RemoteTaskFactory if args.server else TaskFactory
     worker = HarnessRolloutWorker(
-        harness_session_factory=partial(TaskFactory, args, tasks),
+        harness_session_factory=partial(factory, args, tasks),
         harness_adapter=None,  # OpenEnv captures a CLI agent's own model calls.
         rollout_reward_fn=reward,
         lossless_capture=True,
@@ -233,8 +149,8 @@ def main():
         processing_class=tokenizer,
         dataset=dataset,
         reward_funcs=[],
-        num_generations=8,
-        max_inflight_tasks=args.inflight,
+        num_generations=2 if args.smoke else 8,
+        max_inflight_tasks=min(args.inflight, 4) if args.smoke else args.inflight,
         vllm_server_url=args.vllm_url,
         max_tokens=16384,
         temperature=0.8,
@@ -250,6 +166,21 @@ def main():
         rollout_worker=worker,
     )
     if trainer.model.config.model_type == "lfm2":
+        from transformers import KernelConfig
+
+        # Version 2 has builds for the Torch version required by vLLM 0.25.1.
+        trainer.model.train()
+        trainer.model.set_use_kernels(
+            True,
+            kernel_config=KernelConfig(
+                kernel_mapping={
+                    name: (f"kernels-community/mamba-ssm:{name}", {"version": 2})
+                    for name in ("causal_conv1d_fn", "causal_conv1d_update")
+                },
+                inherit_mapping=False,
+            ),
+        )
+
         # Packed samples reset attention positions. LFM's convolutions also need sequence IDs.
         def reset_convolutions(module, positional, keyword):
             keyword["seq_idx"] = ((keyword["position_ids"] == 0).cumsum(-1) - 1).to(
@@ -259,7 +190,6 @@ def main():
 
         trainer.model.register_forward_pre_hook(reset_convolutions, with_kwargs=True)
         # Abort if the installed convolution kernel ignores packed sequence boundaries.
-        trainer.model.eval()
         with torch.no_grad():
             ids = torch.tensor(
                 [[10, 20, 30, 40, 50, 60, 70, 80]], device=trainer.model.device
