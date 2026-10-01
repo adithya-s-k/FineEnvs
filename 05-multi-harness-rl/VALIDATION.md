@@ -23,21 +23,23 @@ python jobs/smoke.py --mode multi_harness --output runs/harbor-smoke
 
 ## GPU smoke progress
 
-Snapshot: **1 October 2026, 07:30 UTC**. Each smoke requests two optimizer updates, saves both checkpoints, and reloads checkpoint 2 for two test tasks. Blackbox evaluation covers all four harnesses, so it requires eight graded pairs. These tiny samples check execution, not benchmark quality.
+Snapshot: **1 October 2026, 07:37 UTC**. Each smoke requests two optimizer updates, saves both checkpoints, and reloads checkpoint 2 for two test tasks. Blackbox evaluation covers all four harnesses, so it requires eight graded pairs. These tiny samples check execution, not benchmark quality.
 
 | Platform | Model / mode | Training | Checkpoint reload evaluation |
 |---|---|---|---|
 | Slurm, two H100s | LFM / whitebox | Two updates and checkpoints verified | 2/2 graded on latest main |
 | Slurm, two H100s | Qwen / whitebox | Two updates; persistent Trackio verified | 2/2 graded |
-| Slurm, two H100s | LFM / native OpenCode | Two updates; persistent Trackio verified | Running on latest main |
-| Slurm, two H100s | Qwen / native OpenCode | Two updates and checkpoints verified | Running on latest main |
-| Slurm, two H100s | LFM / Harbor | Two updates and checkpoints verified | Running on latest main |
-| Slurm, two H100s | Qwen / Harbor | Two updates and checkpoints verified | Running on latest main |
-| HF Jobs, two H200s | Qwen / whitebox | Two updates; persistent Trackio present | Reload running |
+| Slurm, two H100s | LFM / native OpenCode | Two updates; persistent Trackio verified | 8/8 graded on latest main |
+| Slurm, two H100s | Qwen / native OpenCode | Two updates and checkpoints verified | 8/8 graded on latest main |
+| Slurm, two H100s | LFM / Harbor | Two updates and checkpoints verified | 8/8 graded on latest main |
+| Slurm, two H100s | Qwen / Harbor | Two updates and checkpoints verified | 8/8 graded on latest main |
+| HF Jobs, two H200s | Qwen / whitebox | Two updates; persistent Trackio present | Reload timed out during bucket weight loading; sequential-loading retry submitted |
 | HF Jobs, two H200s | Qwen / native OpenCode | Earlier attempt saved both checkpoints; replacement queued | Pending |
 | HF Jobs, two H200s | LFM / whitebox, native OpenCode, Harbor; Qwen / Harbor | Queued for hardware | Pending |
 
-The local two-update groups so far had no reward contrast and zero gradient. An earlier HF native Qwen attempt had reward 0.2574 and gradient norm 3.672 at update 2, but failed its logging-location assertion after training. It is not counted as a completed smoke. No claim of reward improvement follows from these checks.
+The native OpenCode reloads were separate retries against their saved checkpoints; they were not single uninterrupted smoke invocations. Their `checkpoint-reload-verification.json` records both source snapshots. The whitebox and Harbor checks completed through `jobs/smoke.py`.
+
+The local two-update groups had no reward contrast and zero gradient. An earlier HF native Qwen attempt had reward 0.2574 and gradient norm 3.672 at update 2, but failed its logging-location assertion after training. It is not counted as a completed smoke. No claim of reward improvement follows from these checks.
 
 ## Issues caught and corrected
 
@@ -46,15 +48,16 @@ The local two-update groups so far had no reward contrast and zero gradient. An 
 - **Trackio persistence:** set `TRACKIO_DIR` before importing TRL/Trackio. Accept SQLite or append-only JSONL storage; FSx uses the latter. Replacement jobs keep logs beside their checkpoints.
 - **Harbor routing:** register task metadata routes outside Harbor's root app, while preserving its lifespan, UI and capture routes.
 - **Reward selection:** the pinned tasks include JSON `correctness` and scalar `reward` outputs. OpenEnv's public `correctness,reward` fallback reads both, so valid grades are not discarded.
+- **HF checkpoint reload:** both DP workers stalled in memory-mapped bucket weight loading. Checkpoint serving now requests vLLM's public `eager` loader. HF retry is submitted; the saved checkpoints are retained.
 - **Daytona archive ownership:** cluster file owners may be outside the sandbox's user namespace. Task preparation sets tar to retain the sandbox owner. The grader and questions are unchanged; installed libraries are not patched.
 
 ## Evidence and remaining checks
 
 Local evidence is under `experiments/tutorial-gpu-smoke-20261001/`: immutable `source-v*` snapshots, `local/` checkpoints and evaluation results, CPU UI checks, the packed-kernel probe and the real Daytona upload check. Repository-local test logs are in ignored `runs/qualification-20261001/`.
 
-HF outputs use bucket `FineEnvs/data-agent-daytona-artifacts`. Active source snapshots use prefixes `tutorial-main-smoke-qwen-whitebox-v4`, `tutorial-main-smoke-lfm-whitebox-v4`, `tutorial-main-smoke-{lfm,qwen}-opencode-v7`, and `tutorial-main-smoke-{lfm,qwen}-multi_harness-v7`. Each keeps `train/`, `reload-eval/` and, only after success, `smoke.json`.
+HF outputs use bucket `FineEnvs/data-agent-daytona-artifacts`. Qwen whitebox checkpoints are in `tutorial-main-smoke-qwen-whitebox-v4`; their reload retry is `tutorial-main-eval-qwen-whitebox-v8`. Other refreshed source snapshots use `tutorial-main-smoke-lfm-whitebox-v8`, `tutorial-main-smoke-{lfm,qwen}-opencode-v8`, and `tutorial-main-smoke-{lfm,qwen}-multi_harness-v8`. Each smoke keeps `train/`, `reload-eval/` and, only after success, `smoke.json`.
 
-Before a long run, finish the outstanding GPU/reload checks, repeat against TRL main after merge, and verify reward contrast over a larger sample. The Docker recipe and CPU server installation have been checked separately; a new public Space deployment has not been qualified by this rewrite.
+Before a long run, finish the outstanding HF GPU/reload checks, repeat against TRL main after merge, and verify reward contrast over a larger sample. The Docker recipe and CPU server installation have been checked separately; a new public Space deployment has not been qualified by this rewrite.
 
 Native `opencode_env` remains deprecated upstream. Its timeout is not Harbor's strict turn cap. Upstream async packing may drop rows above 40,960 tokens and split one rollout into several rows. This tutorial does not reproduce the archive's exact committed-group resume or whole-rollout weighting.
 

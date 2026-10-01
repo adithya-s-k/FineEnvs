@@ -93,7 +93,7 @@ python jobs/hf_job.py eval --mode multi_harness --tasks 25 \
 
 Both blackbox policies use four evaluation harnesses: 25 tasks means 100 pairs. Whitebox uses its native tools: 25 tasks means 25 episodes. The subset is deterministic, taken from the sorted fixed test list. It is not the older pilot's stratified subset, so generate a new baseline. Omit `--tasks` for all 250 tasks.
 
-For a longer run, omit `--steps 100`. Checkpoints are saved every 50 updates. Submit independent evaluations at steps 100, 200, … using the corresponding path and `--step`. The trainer does not wait for them. This tutorial keeps submission explicit rather than claiming an untested automatic checkpoint watcher.
+For a longer run, omit `--steps 100`. Checkpoints are saved every 50 updates. Submit independent evaluations at steps 100, 200, … using the corresponding path and `--step`. The trainer does not wait for them. Checkpoint serving uses vLLM's eager safetensors loader to avoid random reads from bucket and network filesystems. This tutorial keeps submission explicit rather than claiming an untested automatic checkpoint watcher.
 
 ## 5. Read the outputs
 

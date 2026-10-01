@@ -63,6 +63,9 @@ def main():
     ]
     if not args.checkpoint:
         command += ["--revision", MODEL_REVISIONS[args.model]]
+    else:
+        # Read bucket/network checkpoints sequentially instead of memory-mapping them.
+        command += ["--safetensors-load-strategy", "eager"]
     if not args.eval:
         command += ["--weight-transfer-config", '{"backend":"nccl"}']
         os.environ["VLLM_SERVER_DEV_MODE"] = "1"
