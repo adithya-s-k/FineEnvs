@@ -26,4 +26,5 @@ for name in ('openenv', 'trl', 'transformers', 'vllm', 'harbor'):
 versions['openenv']['commit'] = subprocess.check_output(['git', '-C', '.deps/OpenEnv', 'rev-parse', 'HEAD'], text=True).strip()
 Path('.deps/revisions.json').write_text(json.dumps(versions, indent=2) + '\n')
 PY
+python -m pip install --no-deps -e envs/whitebox -e envs/opencode -e envs/harbor
 python check_setup.py --mode "${TUTORIAL_MODE:-all}"

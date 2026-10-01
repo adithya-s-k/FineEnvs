@@ -9,7 +9,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from envs.tasks import load_tasks
+from smoldataenv_harbor.tasks import load_tasks
 
 HARNESSES = ("opencode", "claude-code", "codex", "mini-swe-agent")
 
@@ -71,10 +71,9 @@ def harbor_episode(args, index, task, harness):
 
 def whitebox_episode(args, index, task, harness):
     from openai import OpenAI
+    from smoldataenv_whitebox.client import RemoteBashEnvironment
+    from smoldataenv_whitebox.environment import SYSTEM, BashEnvironment
     from transformers.utils import get_json_schema
-
-    from envs.whitebox.client import RemoteBashEnvironment
-    from envs.whitebox.environment import SYSTEM, BashEnvironment
 
     environment = (
         RemoteBashEnvironment(args.server) if args.server else BashEnvironment()

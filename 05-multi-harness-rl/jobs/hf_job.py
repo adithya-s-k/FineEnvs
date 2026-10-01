@@ -116,7 +116,12 @@ def main():
             paths += [
                 p
                 for p in (ROOT / folder).rglob("*")
-                if p.suffix in {".py", ".sh", ".json"}
+                if p.suffix in {".py", ".sh", ".json", ".toml", ".txt", ".yaml"}
+                and not any(
+                    part in {".deps", ".venv", "prepared", ".archive", "__pycache__"}
+                    or part.endswith(".egg-info")
+                    for part in p.relative_to(ROOT).parts
+                )
             ]
         for source in paths:
             target = Path(directory) / source.relative_to(ROOT)

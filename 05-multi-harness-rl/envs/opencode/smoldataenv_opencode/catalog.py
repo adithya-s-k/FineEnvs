@@ -3,7 +3,7 @@
 import os
 from functools import lru_cache
 
-from envs.tasks import load_tasks
+from .tasks import load_tasks
 
 
 @lru_cache

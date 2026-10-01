@@ -72,7 +72,7 @@ One allocation owns one trainer and one inference engine. Evaluation gets a **di
 
 The bounded smoke uses two optimizer updates, two rollouts per group and checkpointing each update. It checks checkpoint contents and reloads checkpoint 2 for two held-out tasks, across four harnesses for blackbox or SETA for whitebox. Normal runs retain eight rollouts per group and the settings in the training scripts.
 
-The launcher starts the actual [environment servers](envs/README.md) inside the allocation. That page also covers Docker and Hub deployment of the same code.
+The launcher starts the actual [environment servers](envs/README.md) inside the allocation. Each folder under `envs/` is a standalone Space with its own Dockerfile, dependencies, data preparation and implementation. That page links the independent local and Hub instructions.
 
 ## 4. Compare baseline with checkpoint 100
 

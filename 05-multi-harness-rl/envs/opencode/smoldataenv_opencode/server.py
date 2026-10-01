@@ -9,8 +9,9 @@ from openenv.core.env_server.mcp_environment import MCPEnvironment
 from openenv.core.env_server.mcp_types import CallToolAction, CallToolObservation
 from openenv.core.env_server.types import Observation, State
 
-from envs.catalog import TaskCatalog, task_by_name
-from envs.opencode.environment import TaskFactory
+from .catalog import TaskCatalog, task_by_name
+from .environment import TaskFactory
+from .ui import build_ui
 
 
 class OpenCodeEnvironment(TaskCatalog, MCPEnvironment):
@@ -67,6 +68,8 @@ app = create_app(
     OpenCodeEnvironment,
     CallToolAction,
     CallToolObservation,
+    gradio_builder=build_ui,
+    show_default_tab=False,
     env_name="smoldataenv_opencode",
     max_concurrent_envs=int(os.environ.get("MAX_CONCURRENT_ENVS", "40")),
 )

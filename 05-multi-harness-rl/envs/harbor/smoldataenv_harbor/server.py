@@ -42,7 +42,7 @@ def split_paths():
 def tool_count(trial_name: str):
     from fastapi import HTTPException
 
-    from envs.harbor.environment import count_tools
+    from .environment import count_tools
 
     if Path(trial_name).name != trial_name or trial_name in {".", ".."}:
         raise HTTPException(status_code=400, detail="Invalid trial name")

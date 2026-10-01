@@ -10,8 +10,9 @@ from openenv.core.env_server.mcp_environment import MCPEnvironment
 from openenv.core.env_server.mcp_types import CallToolAction, CallToolObservation
 from openenv.core.env_server.types import Observation, State
 
-from envs.catalog import TaskCatalog, task_by_name
-from envs.whitebox.environment import BashEnvironment
+from .catalog import TaskCatalog, task_by_name
+from .environment import BashEnvironment
+from .ui import build_ui
 
 
 class WhiteboxEnvironment(TaskCatalog, MCPEnvironment):
@@ -24,6 +25,13 @@ class WhiteboxEnvironment(TaskCatalog, MCPEnvironment):
         for name, method in inspect.getmembers(self.episode, inspect.ismethod):
             if not name.startswith("_") and name not in {"reset", "get_reward"}:
                 mcp.tool(method)
+
+        @mcp.tool
+        def start_task(split: str = "test", index: int = 0) -> dict:
+            """Select a task and stage its files in a new sandbox."""
+            task = self.get_task(split, index)
+            observation = self.reset(split=split, task_name=task["name"])
+            return observation.metadata
 
         @mcp.tool
         def grade() -> dict:
@@ -73,6 +81,8 @@ app = create_app(
     WhiteboxEnvironment,
     CallToolAction,
     CallToolObservation,
+    gradio_builder=build_ui,
+    show_default_tab=False,
     env_name="smoldataenv_whitebox",
     max_concurrent_envs=int(os.environ.get("MAX_CONCURRENT_ENVS", "40")),
 )

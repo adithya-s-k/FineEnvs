@@ -14,7 +14,7 @@ Each script reads like a notebook: settings → tokenizer → environment → re
 | [train/opencode.py](train/opencode.py) | Native OpenCode runs inside a sandbox | `AsyncGRPOTrainer` |
 | [train/multi_harness.py](train/multi_harness.py) | Harbor runs OpenCode, Claude Code, Codex or Mini-SWE-Agent | `AsyncGRPOTrainer` |
 
-Read whitebox first if you are new to tool-using RL. Its [environment](envs/whitebox/environment.py) shows exactly which tools the model can call and how an answer is graded. Then read OpenCode to see what changes when an existing agent owns the conversation. The multi-harness script assigns one harness to each task; its eight rollouts all use that assignment.
+Read whitebox first if you are new to tool-using RL. Its [environment](envs/whitebox/smoldataenv_whitebox/environment.py) shows exactly which tools the model can call and how an answer is graded. Then read OpenCode to see what changes when an existing agent owns the conversation. The multi-harness script assigns one harness to each task; its eight rollouts all use that assignment.
 
 **Current dependency status:** install TRL and OpenEnv from upstream main. The typed blackbox integration still needs [TRL #6947](https://github.com/huggingface/trl/pull/6947), which was open when this rewrite was checked. `check_setup.py` reports this before training starts. There is no automatic fork checkout or source patch. [Validation](VALIDATION.md) separates checks of this rewrite from older GPU results.
 
@@ -27,11 +27,9 @@ train/                  Three readable TRL training scripts
   multi_harness.py
 eval/evaluate.py        Fixed pass@1 evaluation and tool/token metrics
 envs/                   Environment implementations and deployment
-  whitebox/             SETA tools, OpenEnv server and client
-  opencode/             Native OpenCode sessions, server and client
-  harbor/               Task assignment and OpenEnv Harbor service
-  Dockerfile            Same container locally and on a Space
-  deploy.py             Upload a selected environment to the Hub
+  whitebox/             Standalone SETA Space and Python package
+  opencode/             Standalone native OpenCode Space and package
+  harbor/               Standalone Harbor Space with its rollout UI
 jobs/                   HF Jobs, Slurm and train/reload smoke commands
 data/                   Fixed task identities
 prepare.py              Download and check the task files
@@ -73,7 +71,7 @@ These are the boundaries to compare. The complete calls, including every trainin
 
 ## Run a small experiment
 
-Use Python 3.12 and two H100 or H200 GPUs: one for vLLM, one for training. HF Jobs can supply them; you do not need a GPU on your laptop. OpenEnv runs inside the job. Daytona supplies the task sandboxes. The same [environment code](envs/README.md) can also be deployed to a CPU Space.
+Use Python 3.12 and two H100 or H200 GPUs: one for vLLM, one for training. HF Jobs can supply them; you do not need a GPU on your laptop. OpenEnv runs inside the job. Daytona supplies the task sandboxes. Each [environment folder](envs/README.md) is also a standalone CPU Space: its local Dockerfile and application files are uploaded unchanged.
 
 Follow [REPRODUCE.md](REPRODUCE.md) for installation, a two-step smoke, a 100-step comparison, and checkpoint evaluation. From a prepared local environment:
 

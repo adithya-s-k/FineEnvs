@@ -38,9 +38,9 @@ def trace():
 
 
 def test_native_trace_preserves_masks_and_passes_native_count_to_trl(trace):
+    from smoldataenv_opencode.environment import TaskSession
     from trl.experimental.async_grpo.openenv_harness import _turns_from_training_trace
 
-    from envs.opencode.environment import TaskSession
     from train.opencode import reward
 
     events = [{"type": "step_finish"}] + [
@@ -81,7 +81,7 @@ def test_both_async_rewards_match(grade, calls, expected):
 
 
 def test_harbor_assignment_depends_on_prompt_not_seed(monkeypatch):
-    import envs.harbor.environment as tutorial
+    import smoldataenv_harbor.environment as tutorial
 
     rows = [{"instruction": str(i)} for i in range(8)]
     args = SimpleNamespace(
@@ -119,7 +119,7 @@ def test_harbor_reads_both_published_grader_formats(grade):
 
 
 def test_native_setup_failure_closes_sandbox(monkeypatch):
-    import envs.opencode.environment as tutorial
+    import smoldataenv_opencode.environment as tutorial
 
     monkeypatch.setenv("SANDBOX_VLLM_URL", "https://example.test")
     monkeypatch.setenv("SANDBOX_VLLM_KEY", "test-key")
@@ -141,7 +141,7 @@ def test_native_setup_failure_closes_sandbox(monkeypatch):
 
 
 def test_whitebox_reward_and_cleanup(monkeypatch):
-    import envs.whitebox.environment as tutorial
+    import smoldataenv_whitebox.environment as tutorial
 
     env = tutorial.BashEnvironment()
     sandbox = Mock()

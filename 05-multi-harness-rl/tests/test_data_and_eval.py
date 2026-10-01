@@ -5,7 +5,8 @@ from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from envs.tasks import stage_task
+from smoldataenv_whitebox.tasks import stage_task
+
 from eval.evaluate import summarize, write_json
 
 

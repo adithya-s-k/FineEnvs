@@ -62,7 +62,7 @@ def test_each_mode_gets_the_right_services_and_gpu(tmp_path, monkeypatch, action
         worker[0][worker[0].index("--vllm-url") + 1]
         == f"http://127.0.0.1:{engine_port}"
     )
-    has_harbor = any("envs.harbor.server:app" in command for command, _ in calls)
+    has_harbor = any("smoldataenv_harbor.server:app" in command for command, _ in calls)
     assert has_harbor == (
         mode != "whitebox" and (mode == "multi_harness" or action == "eval")
     )

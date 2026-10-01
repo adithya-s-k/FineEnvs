@@ -8,8 +8,8 @@ from opencode_env.harness import OpenCodeSessionFactory
 from opencode_env.task import OpenCodeTask
 from openenv.core.harness import VerifyResult
 
-from envs.daytona import DaytonaSandboxBackend
-from envs.tasks import grade_answer, stage_task
+from .daytona import DaytonaSandboxBackend
+from .tasks import grade_answer, stage_task
 
 
 class TaskSession:

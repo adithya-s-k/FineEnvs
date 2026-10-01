@@ -8,9 +8,8 @@ from functools import partial
 from pathlib import Path
 
 from datasets import Dataset
+from smoldataenv_whitebox.tasks import load_tasks
 from transformers import AutoTokenizer
-
-from envs.tasks import load_tasks
 
 MODEL_REVISIONS = {
     "LiquidAI/LFM2.5-2.6B": "654f9463ce32b05d0429d76fe1f580b27d4c1ac0",
@@ -69,7 +68,7 @@ def tokenizer_for(model):
 # %% 3. Give TRL a Python environment. Public methods become model tools.
 import socket
 
-from envs.whitebox.environment import SYSTEM, BashEnvironment
+from smoldataenv_whitebox.environment import SYSTEM, BashEnvironment
 
 
 # %% 4. Configure GRPO. The environment supplies the correctness and tool reward.
@@ -139,7 +138,7 @@ def main():
         trackio_space_id=args.space_id,
         seed=0,
     )
-    from envs.whitebox.client import RemoteBashEnvironment
+    from smoldataenv_whitebox.client import RemoteBashEnvironment
 
     environment_factory = (
         partial(RemoteBashEnvironment, args.server) if args.server else BashEnvironment

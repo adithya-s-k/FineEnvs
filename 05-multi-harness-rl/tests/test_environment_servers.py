@@ -29,14 +29,18 @@ def tool(ws, name, **arguments):
 def test_whitebox_websocket_retains_episode_and_closes_sandbox(monkeypatch):
     monkeypatch.setenv("ENABLE_WEB_INTERFACE", "false")
     from fastapi.testclient import TestClient
-
-    from envs.whitebox import server
+    from smoldataenv_whitebox import server
 
     monkeypatch.setattr(
         server, "task_by_name", lambda split, name: {"folder": "/test/tasks/demo"}
     )
     monkeypatch.setattr(
         server.BashEnvironment, "reset", lambda self, folder: "Solve demo"
+    )
+    monkeypatch.setattr(
+        server.WhiteboxEnvironment,
+        "get_task",
+        lambda self, split, index: {"name": "demo"},
     )
     sandbox = Mock()
 
@@ -52,6 +56,8 @@ def test_whitebox_websocket_retains_episode_and_closes_sandbox(monkeypatch):
         with client.websocket_connect("/ws") as ws:
             initial = exchange(ws, "reset", {"split": "test", "task_name": "demo"})
             assert initial["metadata"]["instruction"] == "Solve demo"
+            selected = tool(ws, "start_task", split="test", index=0)
+            assert selected["instruction"] == "Solve demo"
             grade = tool(ws, "grade")
             assert grade == {"reward": 1.05, "correctness": 1.0, "tool_calls": 15}
     sandbox.kill.assert_called_once()
@@ -61,8 +67,7 @@ def test_native_server_exports_typed_trace_and_closes_session(monkeypatch):
     monkeypatch.setenv("ENABLE_WEB_INTERFACE", "false")
     from fastapi.testclient import TestClient
     from openenv.core.harness import TrainingTrace, TrainingTurn
-
-    from envs.opencode import server
+    from smoldataenv_opencode import server
 
     trace = TrainingTrace(
         turns=[
@@ -105,7 +110,7 @@ def test_native_server_exports_typed_trace_and_closes_session(monkeypatch):
 
 
 def test_remote_native_capture_failure_stays_a_contract_error():
-    from envs.opencode.client import RemoteSession
+    from smoldataenv_opencode.client import RemoteSession
 
     session = RemoteSession.__new__(RemoteSession)
     session.result = {"capture_error": "mask does not match sampled tokens"}
@@ -120,8 +125,7 @@ def test_harbor_metadata_routes_precede_root_ui(monkeypatch, tmp_path):
     monkeypatch.setenv("OPENENV_LLM_URL", "")
     monkeypatch.setenv("OPENENV_HARBOR_TRIALS_DIR", str(tmp_path))
     from fastapi.testclient import TestClient
-
-    from envs.harbor import server
+    from smoldataenv_harbor import server
 
     trajectory = tmp_path / "trial" / "agent" / "trajectory.json"
     trajectory.parent.mkdir(parents=True)

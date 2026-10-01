@@ -8,9 +8,8 @@ from functools import partial
 from pathlib import Path
 
 from datasets import Dataset
+from smoldataenv_opencode.tasks import load_tasks
 from transformers import AutoTokenizer
-
-from envs.tasks import load_tasks
 
 MODEL_REVISIONS = {
     "LiquidAI/LFM2.5-2.6B": "654f9463ce32b05d0429d76fe1f580b27d4c1ac0",
@@ -68,7 +67,7 @@ def tokenizer_for(model):
 
 
 # %% 3. Run native OpenCode in Daytona. Harbor is not involved in training.
-from envs.opencode.environment import TaskFactory
+from smoldataenv_opencode.environment import TaskFactory
 
 
 # %% 4. Reward correctness, with a small bonus for fewer verified tool calls.
@@ -137,7 +136,7 @@ def main():
         trackio_space_id=args.space_id,
         seed=0,
     )
-    from envs.opencode.client import RemoteTaskFactory
+    from smoldataenv_opencode.client import RemoteTaskFactory
 
     factory = RemoteTaskFactory if args.server else TaskFactory
     worker = HarnessRolloutWorker(

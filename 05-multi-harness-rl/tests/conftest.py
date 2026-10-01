@@ -1,3 +1,10 @@
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+for mode in ("whitebox", "opencode", "harbor"):
+    sys.path.insert(0, str(ROOT / "envs" / mode))
+
 import pytest
 
 

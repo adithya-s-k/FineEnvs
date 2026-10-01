@@ -21,6 +21,20 @@ python -m pytest tests -q --contract  # Installed runtime and tokenizer checks
 python jobs/smoke.py --mode multi_harness --output runs/harbor-smoke
 ```
 
+## Standalone Space deployments
+
+Each environment was copied outside this tutorial and started in the CPU-only installation. All three passed health, UI and API checks without importing a sibling environment. The uploaded source files were also compared byte for byte with their local folders.
+
+| Environment | Public UI | Hardware | Task API |
+|---|---|---|---|
+| SETA whitebox | [Open](https://fineenvs-data-agent-seta-whitebox-env.hf.space/web/) | CPU Basic | 1,000 train / 250 test |
+| Native OpenCode | [Open](https://fineenvs-data-agent-blackbox-opencode-env.hf.space/web/) | CPU Basic | 1,000 train / 250 test |
+| Harbor multi-harness | [Open](https://fineenvs-data-agent-blackbox-harbor-env.hf.space/web/) | CPU Basic | 1,000 train / 250 test |
+
+Browser checks on 1 October 2026 verified the three UIs and their root redirects, with no JavaScript errors. Harbor uses the current OpenEnv task browser, rollout controls and trace UI. Whitebox and native OpenCode use OpenEnv's playground with environment-specific connection examples. A real whitebox Space session staged task data in Daytona, executed one tool call, graded an intentionally incorrect answer as zero and released the sandbox.
+
+The existing 1,024-session limits are preserved. This is a configuration limit, not a measured throughput claim. Native OpenCode needs a reachable token-capturing inference endpoint before model rollouts; the Space browser check does not establish GPU training readiness. Local evidence is in `experiments/standalone-env-spaces-20261001/`, including source hashes, browser checks and the sandbox probe. Previous Space bundles are retained in ignored local archives and the Space's `.archive/` directory.
+
 ## GPU smoke progress
 
 Snapshot: **1 October 2026, 07:47 UTC**. Each smoke requests two optimizer updates, saves both checkpoints, and reloads checkpoint 2 for two test tasks. Blackbox evaluation covers all four harnesses, so it requires eight graded pairs. These tiny samples check execution, not benchmark quality.
@@ -57,7 +71,7 @@ Local evidence is under `experiments/tutorial-gpu-smoke-20261001/`: immutable `s
 
 HF outputs use bucket `FineEnvs/data-agent-daytona-artifacts`. Qwen whitebox checkpoints are in `tutorial-main-smoke-qwen-whitebox-v4`; their reload retry is `tutorial-main-eval-qwen-whitebox-v8`. Other refreshed source snapshots use `tutorial-main-smoke-lfm-whitebox-v8`, `tutorial-main-smoke-{lfm,qwen}-opencode-v8`, and `tutorial-main-smoke-{lfm,qwen}-multi_harness-v8`. Each smoke keeps `train/`, `reload-eval/` and, only after success, `smoke.json`.
 
-Before a long run, finish the outstanding HF GPU/reload checks, repeat against TRL main after merge, and verify reward contrast over a larger sample. The Docker recipe was reviewed and the CPU server installation was exercised separately; a new public Space deployment has not been qualified by this rewrite.
+Before a long run, finish the outstanding HF GPU/reload checks, repeat against TRL main after merge, and verify reward contrast over a larger sample. The public Space deployments above validate the CPU environment boundary; the separate HF GPU smoke matrix remains pending hardware.
 
 Native `opencode_env` remains deprecated upstream. Its timeout is not Harbor's strict turn cap. Upstream async packing may drop rows above 40,960 tokens and split one rollout into several rows. This tutorial does not reproduce the archive's exact committed-group resume or whole-rollout weighting.
 

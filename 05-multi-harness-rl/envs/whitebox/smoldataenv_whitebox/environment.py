@@ -5,8 +5,8 @@ import shlex
 import time
 from pathlib import Path
 
-from envs.daytona import DaytonaSandboxBackend
-from envs.tasks import grade_answer, stage_task
+from .daytona import DaytonaSandboxBackend
+from .tasks import grade_answer, stage_task
 
 SYSTEM = "Use the sandbox tools to solve the task. Call submit_solution with the final answer itself."
 

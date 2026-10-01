@@ -8,9 +8,8 @@ from functools import partial
 from pathlib import Path
 
 from datasets import Dataset
+from smoldataenv_harbor.tasks import load_tasks
 from transformers import AutoTokenizer
-
-from envs.tasks import load_tasks
 
 MODEL_REVISIONS = {
     "LiquidAI/LFM2.5-2.6B": "654f9463ce32b05d0429d76fe1f580b27d4c1ac0",
@@ -72,7 +71,7 @@ def tokenizer_for(model):
 
 
 # %% 3. Select one harness per task. All eight rollouts use the same assignment.
-from envs.harbor.environment import TaskFactory
+from smoldataenv_harbor.environment import TaskFactory
 
 
 # %% 4. Reward correctness, with a small bonus for fewer verified tool calls.
