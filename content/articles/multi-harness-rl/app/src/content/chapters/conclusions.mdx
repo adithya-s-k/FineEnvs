@@ -2,45 +2,36 @@
 
 *Results compiled through 29 September 2026. Article updated 1 October 2026.*
 
-We set out to answer one question: can a small open model be trained inside the harnesses people
-actually use, such as Claude Code, Codex and OpenCode, and improve across all of them? It can. The
-harnesses run as they ship, with no changes to their code. The capture proxy sits between the
-harness and the model and records the exact tokens the model produced. Harbor supplies the tasks and
-the sandboxes, and TRL trains on the result.
+**Multi-harness RL improved both task performance and tool use in our small-model experiments.**
+On SmolDataEnvs, LFM2.5-2.6B went from 42.2% to 54.2% pass@1, with gains under all four harnesses:
+OpenCode, Claude Code, Codex and Mini-SWE-Agent. Training only in OpenCode also improved the model,
+including in other harnesses, but the multi-harness run spread its efficiency gains across all four.
+A small open model can learn to work better with several agent interfaces through the same training
+pipeline.
 
-### What we found
+The tool-efficiency reward made the way an agent solves a task part of the training objective.
+Our earlier Qwen runs rewarded correctness alone, and some learned to make increasingly long
+sequences of tool calls. For LFM, we added a small bonus for correct solutions that used fewer
+calls. Tool calls fell during training. At the final checkpoint, the multi-harness model used
+**31% fewer tool calls on held-out tasks that both it and the base model solved**, with savings
+under every harness. The bonus also gave GRPO a learning signal when all scorable rollouts in a
+group were correct but took different numbers of calls. Correctness remained essential: a wrong
+answer earned no efficiency bonus.
 
-**The harness changes the score before any training.** With the same weights, LFM2.5-2.6B solved
-62% of our test tasks under Mini-SWE-Agent and 33% under Claude Code. A score measured in one
-harness describes the model in that harness, not the model in general.
+OpenEnv's capture proxy makes this practical without rewriting the harnesses or building a separate
+training loop for each one. With a compatible inference backend, it records the exact prompt and
+completion tokens, generation log probabilities and loss masks that training needs. Harbor supplies
+the tasks and sandboxes, and the same TRL trainer learns from the resulting traces. The harness
+keeps its own tools, context management and execution loop. Changing which harness produces the
+rollout does not require reimplementing those behaviours inside the trainer.
 
-**A model gets better where it trains.** This held for both methods we tried. OpenCode-only RL
-raised LFM's OpenCode score from 34% to 58%, and OpenCode SFT raised it to 52%. Both did much less in
-the other three harnesses. Training across all four spread the gains: multi-harness RL improved
-under every harness and ended at 54% overall, against 52% for OpenCode-only RL. That overall gap is
-within the noise. The difference is where the gains landed: higher under Claude Code and Codex,
-lower in OpenCode.
+These are small experiments on one task family, with one seed per setup and unequal data and compute
+exposure. They support the gains over the base model, but do not establish a general ranking of
+harness mixes. RL produced larger accuracy gains than SFT in these runs; SFT also reduced tool use.
+We did not run LFM without the efficiency bonus, so its contribution cannot be separated from the
+other changes to the recipe.
 
-**The reward decides how long the agent keeps working.** In our earlier Qwen runs, with correctness
-as the only reward, nothing told the model to stop, and between 35% and 58% of optimizer steps taught
-nothing because every rollout in each group scored the same. A bonus of at most 0.1 for fewer tool calls gave LFM a
-signal even when a whole group was correct. The multi-harness LFM model made 31% fewer calls than
-the base model on the tasks both solved. There was no LFM run without the bonus, so we can't
-separate its effect from the other changes between the Qwen and LFM setups.
-
-**Imitation helped less than RL.** Fine-tuning LFM on a 27B teacher's successful rollouts reached
-47.5% with OpenCode data and 43.1% with all four harnesses, both below the two RL runs. Multi-harness
-SFT still made 24% fewer tool calls, and fewer in every harness, with nothing in its objective asking
-for it. Its overall score, within the noise of the base model, hid gains of 4 to 9 points in three
-harnesses and a 17-point drop under Mini-SWE-Agent.
-
-**Exact tokens are only the starting point.** They make the update match what the model generated.
-The earlier Qwen runs had exact tokens and still peaked and fell back. One run's answers grew past the
-output limit that evaluation allowed, and the other kept calling tools without submitting. The LFM
-runs used the same output limit in training and evaluation and a reward that values finishing, and
-they did not decline, though they also changed the model and the task pool.
-
-**Steps are a poor unit of comparison.** The two LFM RL runs took the same 1,000 steps, but the
-multi-harness run saw 626 distinct tasks against 555 and processed 451M training tokens against
-162M. Much of the difference comes from Claude Code, which rewrites its history as it goes, so each
-of its rollouts became about eight training rows.
+The broader opportunity is to train for both successful answers and efficient execution across the
+interfaces people actually use. This work provides an open, working path to do that: keep the real
+harnesses, capture the evidence needed for learning, and improve the model through its own
+interactions with them.
