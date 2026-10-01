@@ -1,4 +1,5 @@
 import HtmlEmbed from "../../components/HtmlEmbed.astro";
+import Note from "../../components/Note.astro";
 
 ## The basics
 
@@ -23,7 +24,8 @@ A few neighbouring terms are easy to mix up with it, so this is how the article 
 Hugging Face's [agent glossary](https://huggingface.co/blog/agent-glossary) covers the same terms in
 more detail.
 
-The harness decides *which call to make*, but it does not decide *where that call goes*.
+The model chooses the tool and its arguments. The harness executes the call and adds the result
+back into the model's context before asking it what to do next.
 
 {/* VIZ: d3-harness-anatomy: one harness opened up. Its own loop, its own tool surface, its own
      sandbox, and exactly one wire leaving it toward an OpenAI-compatible endpoint. Everything
@@ -89,11 +91,13 @@ Harnesses differ wildly on the inside, but every one of them has to call a model
 is the one interface guaranteed to exist outside the harness. Everything else, the harness's state
 and the environment's, is hidden from the trainer.
 
-> **Note:** the KAT-Coder report [@kwaikat2026katcoder] uses white-box and black-box to mean something else, namely how
-> a harness organises its trajectories. Mini-swe-agent is white-box, with a simple loop and no
-> trajectory compression. Claude Code, Codex, OpenClaw and OpenHands are black-box, because they
-> compress and reorganise their context. That is a property of the harness. The sense used here is a property of the training
-> setup, meaning who owns the loop. The two often coincide and they are not the same axis.
+<Note variant="info" title="Two uses of white-box and black-box">
+The KAT-Coder report [@kwaikat2026katcoder] uses these terms to describe how a harness organises
+its trajectories. It calls Mini-SWE-Agent white-box because it has a simple loop without trajectory
+compression, and Claude Code, Codex, OpenClaw and OpenHands black-box because they compress and
+reorganise their context. In this article, the distinction is who owns the rollout loop: the trainer
+or the harness. Context handling and ownership of the loop are separate choices.
+</Note>
 
 Moving the loop into the harness changes two things. The first is who makes each call, and in what
 order.
@@ -128,19 +132,20 @@ An on-policy policy gradient [@williams1992reinforce] needs two things per token
 sampled, and the probability it was sampled with. A harness that hands back text and a score gives
 you neither.
 
-Re-tokenising the text guesses at the first, and it can guess wrong, because decoding is not
-injective. TRL's write-up on getting this right states the rule: "in RL, you optimize on the exact
-tokens the model produced." The failure it describes is that you "decode a sequence, re-encode the
-text, and you can land on different tokens," and then "the gradient ends up on a sequence the model
-never sampled" [@gallouedec2026tito]. Nothing errors, and the loss just spikes now and then for no reason
-you can see.
+Different token sequences can produce the same text. If you save only the text and tokenize it
+again, you can get different token IDs from those the model sampled. TRL's
+[write-up](https://huggingface.co/blog/huggingface/tito) puts it directly: "in RL, you optimize on the
+exact tokens the model produced" [@gallouedec2026tito].
 
-The seam between turns is where this usually bites, because that is where a template appends
-something to what the model wrote. Tool-call serialisation changes whitespace on the way through,
-and some harnesses repair malformed JSON without saying so, which hides the model's actual mistake
-from the reward. Recomputing log probabilities in the trainer gives you the current policy's numbers, not the
-sampler's. The importance ratio then defaults to one when it is not one, and an estimator
-you believe is on-policy becomes a biased off-policy one.
+When a harness builds the next prompt, it may add role markers or change whitespace in a tool call.
+Some harnesses also repair malformed JSON. If the trainer learns from this edited text, it may
+update the model using a response it never generated.
+
+The probabilities need to be recorded during generation too. In asynchronous RL, the model may
+have been updated since a rollout was sampled. Recomputing log probabilities with the current
+weights does not recover the probabilities used during that rollout. Importance sampling compares
+the current probability with the one used during generation; using the current value for both
+would make their ratio 1 even when the policies differ.
 
 <HtmlEmbed
   src="d3-token-drift.html"
@@ -149,8 +154,8 @@ you believe is on-policy becomes a biased off-policy one.
   frameless
 />
 
-Fixing either requires the sampler to hand back token ids and per-token log probabilities, and the
-trainer to keep them. Never re-encode text you decoded. Keep the sampled ids and append the
+To avoid both errors, the sampler must return token ids and per-token log probabilities, and the
+trainer must keep them. Never re-encode text you decoded. Keep the sampled ids and append the
 template's suffix by id concatenation. This works because most chat templates extend token for token
 when a tool message is appended, and eighteen of the nineteen models tested in TRL's write-up do so
 unmodified. It is also why a system that wants the exact tokens has to intercept at the

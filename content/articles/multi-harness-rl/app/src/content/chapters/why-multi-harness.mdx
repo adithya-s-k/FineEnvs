@@ -35,9 +35,8 @@ on Scale's [SEAL leaderboard](https://labs.scale.com/leaderboard/swe_bench_pro) 
 
 ### When a model leaves the harness it was trained in
 
-Those frontier models do well in every harness they have been evaluated in, although their labs
-don't say which harnesses they were trained in. A model trained inside just one harness can do far
-worse when you move it to another. The Orchard paper measured this [@peng2026orchard]. It took two
+A model can perform well in the harness it was trained in and struggle when moved to another.
+The Orchard paper measured this transfer across harnesses [@peng2026orchard]. It took two
 open coding models trained with one or two harnesses and ran them under three, including Kimi-CLI,
 which none of the systems compared had used in training. Orchard's own model ran alongside them. It
 was fine-tuned on trajectories from OpenHands and Mini-SWE-Agent, then trained with RL in
@@ -92,10 +91,10 @@ how they compact context, and how much of the control flow they take away from t
   frameless
 />
 
-Mini-SWE-Agent's own [README](https://github.com/SWE-agent/mini-swe-agent) gives scaffold overfitting as a reason to use it, so harness authors knew
-about the problem before any tech report named it. [Aider](https://aider.chat/) is the far end of the range. It does not use
-tool calling at all and asks the model to write [edit blocks](https://aider.chat/docs/more/edit-formats.html) in prose, so a model trained on
-structured tool calls has to switch to a different output format entirely.
+Mini-SWE-Agent's [README](https://github.com/SWE-agent/mini-swe-agent) lists avoiding scaffold
+overfitting as a reason for its simple design. [Aider](https://aider.chat/) uses a different interface:
+it asks the model to write [edit blocks](https://aider.chat/docs/more/edit-formats.html) in prose
+instead of structured tool calls. A model trained on tool calls has to learn that output format too.
 
 In practice, the failure often shows up as an error rather than a lower score. A model trained in one
 harness calls a tool by that harness's name for it, with that harness's argument names, and a
