@@ -499,18 +499,6 @@
             <div class="d3-llm-rl__rollouts">${rolloutsHtml}</div>
           </div>
         </div>
-
-        <div class="d3-llm-rl__caption">
-          Each rollout is a multi-turn trace: the model writes a thought, calls a tool, reads the
-          output, decides what to do next, and submits an answer. The environment scores the
-          completed trace and returns a reward, and the training loop collects a group of these
-          traces per prompt to learn from. This is one shape of environment, multi-turn tool use;
-          LLM-based RL environments vary widely (single-turn reasoning, agentic web tasks,
-          code-repo agents, multi-agent setups), and the same traces can feed very different
-          training methods. <em>GRPO</em> is an example of <em>online RL</em>, where the policy
-          updates from the group right away, but the same traces can equally be stored and used
-          later for <em>distillation</em>, <em>offline RL</em>, or imitation learning.
-        </div>
       `;
 
       // ─── Refs ───

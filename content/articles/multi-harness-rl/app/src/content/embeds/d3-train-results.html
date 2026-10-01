@@ -187,11 +187,12 @@
             const W = Math.max(320, r.clientWidth), narrow = W < 560;
             const q = D.evals.qwen_harbor_multi.points[0], l = D.evals.lfm_harbor_multi.points[0];
             const cats = [...H.map(h => [h, q.h[h], l.h[h]]), [null, q.overall, l.overall]];
-            const m = { l: narrow ? 122 : 150, r: 46, t: 6, b: 24 }, rowH = 38, Ht = m.t + m.b + rowH*cats.length;
+            const lfmOnly = cfg.only === 'lfm';
+            const m = { l: narrow ? 122 : 150, r: 46, t: 6, b: 24 }, rowH = lfmOnly ? 28 : 38, Ht = m.t + m.b + rowH*cats.length;
             const X = (v) => m.l + v / 70 * (W - m.l - m.r);
             const mu = V('--muted-color','#888'), tx = V('--text-color','#111'), bd = V('--border-color','rgba(128,128,128,.3)');
             const cq = V('--muted-color','#999'), cl = P(0), id = `${uid}c${clipN++}`;
-            let s = `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="Pass@1 of the two base models on the test set, by harness">` + clipDef(id, m.l, 0, W - m.l, Ht);
+            let s = `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="Pass@1 of ${lfmOnly ? 'the LFM base model' : 'the two base models'} on the test set, by harness">` + clipDef(id, m.l, 0, W - m.l, Ht);
             [0, 10, 20, 30, 40, 50, 60, 70].forEach(v => { s += `<line x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${Ht-m.b}" stroke="${bd}" stroke-dasharray="${v?'2 4':''}"/>`;
               s += `<text x="${X(v)}" y="${Ht-6}" text-anchor="middle" font-size="10.5" fill="${mu}">${v}%</text>`; });
             cats.forEach(([hk, a, b], i) => {
@@ -199,15 +200,15 @@
               if (hk) { const lx = 4; s += `<rect x="${lx}" y="${y+rowH/2-9}" width="18" height="18" rx="5" fill="#fcfcfd"/><image href="/logos/${LOGO[hk]}" x="${lx+2.5}" y="${y+rowH/2-6.5}" width="13" height="13"/>`; }
               s += `<text x="${m.l-10}" y="${y+rowH/2+4}" text-anchor="end" font-size="12" font-weight="${hk?500:700}" fill="${tx}">${esc(hk ? HL[hk] : 'Overall')}</text>`;
               s += `<g clip-path="url(#${id})">`;
-              [[a, cq, 'Qwen3.5-2B', .55], [b, cl, 'LFM2.5-2.6B', .92]].forEach(([v, c, who, op], j) => {
-                const yy = y + 5 + j*(bh+3);
+              (lfmOnly ? [[b, cl, 'LFM2.5-2.6B', .92]] : [[a, cq, 'Qwen3.5-2B', .55], [b, cl, 'LFM2.5-2.6B', .92]]).forEach(([v, c, who, op], j) => {
+                const yy = lfmOnly ? y + (rowH - bh) / 2 : y + 5 + j*(bh+3);
                 s += `<rect x="${X(0)}" y="${yy}" width="${X(v)-X(0)}" height="${bh}" rx="3" fill="${c}" fill-opacity="${op}"><title>${who}: ${v.toFixed(1)}%</title></rect>`;
-                s += `<text x="${X(v)+5}" y="${yy+bh-2}" font-size="10.5" fill="${j ? tx : mu}">${v.toFixed(1)}%</text>`;
+                s += `<text x="${X(v)+5}" y="${yy+bh-2}" font-size="10.5" fill="${(lfmOnly || j) ? tx : mu}">${v.toFixed(1)}%</text>`;
               });
               s += `</g>`;
             });
             s += `</svg>`;
-            r.innerHTML = s + legend([[cq, 'Qwen3.5-2B'], [cl, 'LFM2.5-2.6B']],
+            r.innerHTML = s + legend(lfmOnly ? [[cl, 'LFM2.5-2.6B']] : [[cq, 'Qwen3.5-2B'], [cl, 'LFM2.5-2.6B']],
               'Pass@1 on the 250 test tasks under each harness, before any training. LFM’s baseline has 998 of 1,000 cells graded.');
           },
 
@@ -226,7 +227,7 @@
             [1, 5, 15, 30].forEach(n => { const v = 1 + 1.5/(15+n);
               s += `<circle cx="${X(n)}" cy="${Y(v)}" r="3.6" fill="${cl}"/><text x="${X(n)}" y="${Y(v)-9}" text-anchor="${n === 1 ? 'start' : n === 30 ? 'end' : 'middle'}" font-size="10.5" fill="${cl}">${n} call${n>1?'s':''}: ${v.toFixed(3)}</text>`; });
             s += `</g></svg>`;
-            r.innerHTML = s + legend([[cq, 'Qwen: 1 for a correct answer, however many calls', true], [cl, 'LFM: 1 + 1.5 / (15 + calls)']],
+            r.innerHTML = s + legend([[cq, 'Correctness only: 1 for a correct answer, however many calls', true], [cl, 'With the tool bonus, as LFM trained: 1 + 1.5 / (15 + calls)']],
               'Reward for a correct rollout. A wrong answer scores 0 in both, however few calls it made.');
           },
 
@@ -284,8 +285,8 @@
               });
               return o;
             };
-            s += panel(topH + 6, 'Correctness only', 'the Qwen reward', qa, null, true);
-            s += panel(topH + 6 + panH + gap, 'With the tool bonus', 'the LFM reward', la, R.map(x => x.reward), false);
+            s += panel(topH + 6, 'Correctness only', 'no tool bonus', qa, null, true);
+            s += panel(topH + 6 + panH + gap, 'With the tool bonus', 'what LFM trained on', la, R.map(x => x.reward), false);
             s += `</svg>`;
             const note = sel === 0
               ? `All eight solved this hard ${esc(HL[g.harness])} task (training step ${g.step}). With correctness alone the group gives no signal. With the bonus, the two rollouts that took 4 calls are pushed up most and the one that took 10 is pushed down most.`

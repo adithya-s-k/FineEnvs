@@ -207,8 +207,8 @@
           `<span class="wd-k"><span class="wd-sw wd-dash" style="color:${mu}"></span>dashed: the trainer is not there</span></div>`;
 
         const note = mode === 'white'
-          ? `<div class="wd-nt">Every arrow starts or ends at the trainer, because the trainer is the one calling. It asks the model for an action, hands that action to the environment, reads the observation back, and decides whether to go again. Nothing happens that it did not ask for, so the full episode is in its hands by construction.</div>`
-          : `<div class="wd-nt">Now read the tails of the arrows. Not one exchange begins at the trainer. The harness runs tools, assembles context and decides when to stop, entirely on its own, and the trainer is woken only when a completion is needed. Note where the trainer now sits: in the wire between the harness and the model, which is the only reason it can see token ids at all. It is a service being called, not a driver, and most of the episode happens while it is not looking.</div>`;
+          ? `<div class="wd-nt">The trainer starts every exchange, so it sees the whole episode.</div>`
+          : `<div class="wd-nt">The harness starts every exchange. The trainer sits between the harness and the model, so it sees the model calls and nothing else.</div>`;
 
         r.innerHTML =
           `<div class="wd-pick" role="group" aria-label="Choose an architecture">` +

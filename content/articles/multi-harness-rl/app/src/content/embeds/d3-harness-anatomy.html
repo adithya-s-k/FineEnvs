@@ -178,13 +178,13 @@
 
       const legend = () => {
         const c = P(0), c2 = P(3), mu = V('--muted-color','#888');
-        return `<div class="lg"><span class="lg-t">On the wire</span>` +
+        return `<div class="lg"><span class="lg-t">Model calls</span>` +
           `<span class="k"><span class="sw" style="background:${c}"></span>request out</span>` +
           `<span class="k"><span class="sw" style="background:${c2}"></span>response back</span>` +
           `<span class="k" style="color:${mu}"><span class="sw dash"></span>opaque to the trainer</span>` +
           `</div>`;
       };
-      const note = `<div class="nt">None of what happens inside the box reaches a trainer: not the loop's decisions, not the tool results, not what was compacted away. The strip along the bottom is its whole view.</div>`;
+      const note = `<div class="nt">A trainer outside the harness sees only the model calls along the bottom.</div>`;
 
       const paint = () => { r.innerHTML = svg() + legend() + note; };
 

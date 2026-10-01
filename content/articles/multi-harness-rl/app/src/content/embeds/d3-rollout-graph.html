@@ -157,7 +157,7 @@
           + `<span class="rg-k"><span class="rg-sw" style="background:${KC.tool};transform:rotate(45deg)"></span>tool result</span>`
           + `</div>`;
 
-        const note = `<div class="rg-nt">Turns link by exact token prefix, not by request id: ids are per-harness, the prefix is not. Storing each message once instead of re-storing the whole prompt keeps a long rollout linear rather than quadratic.</div>`;
+        const note = `<div class="rg-nt">Turns are linked by exact token prefix, which works the same way in every harness.</div>`;
 
         r.innerHTML =
           `<div class="rg-pick" role="group" aria-label="Highlight one branch">`

@@ -14,19 +14,20 @@ its Terminal-Bench number had to come from a different harness [@deepseek2025v32
 The harness can even change which model comes out ahead. @zhang2026stopcomparing took three models that sit
 within three points of each other on a public coding leaderboard: GLM-5.1, GPT-5.4, and Kimi K2.6.
 They ran all three on the same 100 SWE-bench Verified [@jimenez2024swebench] tasks under three
-harness configurations, with everything else held fixed.
+harness configurations, with everything else held fixed. The configurations build on each other:
+**Minimal** has verbose tools, no context compression and no retries, **Improved** trims the tools
+and adds compression and retries, and **Full** adds self-checks, drift checks and rollback.
 
 <HtmlEmbed
   src="d3-scaffold-reversal.html"
-  title="Same models, same tasks, three harnesses"
+  title="Same models, same tasks, three harness configurations"
   desc="Each of the three models is the best model under a different harness configuration."
   frameless
 />
 
 Each model comes out on top under a different harness. Swapping the harness moved GLM-5.1 by 13
 points, while swapping the model inside the same harness moved the score by only 2.5 to 5.
-[Joel Niklaus found the same](https://x.com/joelniklaus/status/2085725862142623875) across ten harnesses on SWE-bench Pro, where the harness alone
-moved GLM-5.2 between 23% and 52%.
+[Joel Niklaus found the same](https://x.com/joelniklaus/status/2085725862142623875) across ten harnesses on SWE-bench Pro.
 
 You can see the same thing outside a controlled test. Claude Opus 4.5 scores 45.9% on SWE-bench Pro [@deng2025swebenchpro]
 on Scale's [SEAL leaderboard](https://labs.scale.com/leaderboard/swe_bench_pro) and 55.4% inside Claude Code, with the same weights
@@ -126,7 +127,7 @@ Kimi K3's RL environment builds harnesses such as Claude Code and [Codex](https:
 the model trains on many harness configurations instead of one [@kimi2026k3]. Qwen3-Coder-Next
 generates its agentic coding data in six different harnesses [@qwen2026codernext], and MiMo-V2.6
 trains on a pool of task-adapted mini-harnesses [@xiaomi2026mimov26]. Liquid AI does the same at a
-much smaller size. For [LFM2.5-2.6B](https://www.liquid.ai/blog/lfm2-5-2-6b), one of the two models we train later,
+much smaller size. For [LFM2.5-2.6B](https://www.liquid.ai/blog/lfm2-5-2-6b), the model we train later,
 Liquid picks a harness at random for each training task. Their release post gives the reason:
 "training directly inside Hermes Agent, OpenClaw, and other harnesses exposes the model to their
 tools, system prompts, and interaction patterns, helping it work reliably across agent environments."
@@ -175,4 +176,3 @@ trainers, and ours was TRL [@trl].
 
 On top of that, the Harbor integration [@openenv2026harbor] serves [Harbor's](https://harborframework.com/) containerized tasks as
 OpenEnv environments, so the harness and the sandbox become settings you choose per rollout.
-[The next chapter](#openenv) covers how both work.

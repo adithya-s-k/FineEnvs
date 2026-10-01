@@ -130,7 +130,7 @@
           + `<span class="td-k"><span class="td-sw" style="background:${cBad};opacity:.45;border:1.5px dashed ${cBad}"></span>tokens the model never produced</span>`
           + `</div>`;
 
-        const note = `<div class="td-nt">The string is identical either way; only the boundaries move. Train on the lower row and the gradient lands on tokens the model never sampled. The fix is not a better tokeniser, it is not decoding in the first place.</div>`;
+        const note = `<div class="td-nt">The text is identical; only the token boundaries move. Training on the lower row puts the gradient on tokens the model never sampled.</div>`;
 
         r.innerHTML = s + legend + note;
       };

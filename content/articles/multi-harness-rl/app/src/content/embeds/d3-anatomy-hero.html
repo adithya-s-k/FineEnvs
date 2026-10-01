@@ -357,20 +357,23 @@
         <text class="ah-arrow-label" x="${(envRight + ecLeft) / 2}" y="${obsY + 14}"
               text-anchor="middle">observation</text>
 
-        <!-- episode-control label sits above the action/observation pair -->
-        <text class="ah-loop-label" x="${(envRight + ecLeft) / 2}" y="${actionY - 30}"
-              text-anchor="middle">episode control</text>
+        <!-- episode-control label sits above the action/observation pair, on two lines so it
+             fits in the gap between the two boxes instead of running over their borders -->
+        <text class="ah-loop-label" x="${(envRight + ecLeft) / 2}" y="${actionY - 40}"
+              text-anchor="middle">episode</text>
+        <text class="ah-loop-label" x="${(envRight + ecLeft) / 2}" y="${actionY - 26}"
+              text-anchor="middle">control</text>
       `;
 
       // ── Headers / zone labels ───────────────────────────────────────
-      const COMPONENTS_ANCHOR = '#what-makes-an-rl-environment-for-llms-the-components';
+      // The components are covered in the RL environments guide, not in this article.
+      const COMPONENTS_ANCHOR = 'https://adithyask-rl-environments-guide.hf.space/#what-makes-an-rl-environment-for-llms-the-components';
       const headersSvg = `
         <text class="ah-badge" x="${padX - 4}" y="34">Anatomy of an RL environment</text>
 
-        <a class="ah-env-link" href="${COMPONENTS_ANCHOR}">
+        <a class="ah-env-link" href="${COMPONENTS_ANCHOR}" target="_blank" rel="noopener">
           <text class="ah-zone-label" x="${envX}" y="${envY - 24}">RL ENVIRONMENT</text>
           <text class="ah-link-arrow" x="${envX + 142}" y="${envY - 24}">↗ components</text>
-          <text class="ah-zone-sub"   x="${envX}" y="${envY - 9}">docker · in-venv</text>
         </a>
 
         <text class="ah-zone-label" x="${ecX}" y="${ecY - 24}">TRAINING LOOP</text>

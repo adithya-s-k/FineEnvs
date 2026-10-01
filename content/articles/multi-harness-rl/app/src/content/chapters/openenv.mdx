@@ -1,7 +1,14 @@
 import Accordion from "../../components/Accordion.astro";
 import HtmlEmbed from "../../components/HtmlEmbed.astro";
 
-## OpenEnv
+## How the framework works
+
+The framework has three parts. OpenEnv is the interface the harness, the environment and the trainer
+all connect to, and its capture proxy records the tokens. Harbor supplies the tasks and the
+sandboxes. TRL trains on what the proxy recorded. This chapter follows one rollout through all of
+them, then covers each part in turn.
+
+### OpenEnv
 
 OpenEnv is a standard interface for RL environments [@openenv2026]. It offers [Gymnasium](https://gymnasium.farama.org)-style `reset`, `step`, and
 `state` over a client and server transport, with typed actions and observations, packaged as Docker
@@ -17,8 +24,9 @@ as OpenEnv environments, with the harness and the sandbox chosen per rollout. Bo
 
 ### One rollout, end to end
 
-The figure follows one rollout of a SmolDataEnvs task, three turns long, through every part of the
-system. Switching the harness changes only how Harbor wires it to the proxy, the format of its model
+Before looking at each part, here is the whole path. The figure follows one rollout, three turns
+long, of a task from [SmolDataEnvs](https://huggingface.co/collections/FineEnvs/smoldataenvs), our
+suite of data-analysis tasks built from real Kaggle notebooks, through every part of the system. Switching the harness changes only how Harbor wires it to the proxy, the format of its model
 calls and replies, and the names of its tools.
 
 <HtmlEmbed
@@ -28,10 +36,10 @@ calls and replies, and the names of its tools.
   frameless
 />
 
-In our runs the trainer and vLLM [@kwon2023vllm] had one GPU each. The main runs used H100s on the
-Hugging Face cluster, and the Qwen run we continued on harder tasks used H200s on [Hugging Face Jobs](https://huggingface.co/docs/huggingface_hub/guides/jobs). The OpenEnv
-server ran next to them or on a Hugging Face Space, and every rollout got its own [E2B](https://e2b.dev) sandbox. The harness inside the sandbox never
-talks to vLLM or to the trainer. It reaches the model only through the capture proxy, and the only
+The trainer and the inference server, vLLM [@kwon2023vllm], each get their own GPU. The OpenEnv
+server can run next to them or on a Hugging Face Space, and every rollout gets its own sandbox. The
+hardware for our runs is in the [training setup](#setup). The harness inside the sandbox never talks
+to vLLM or to the trainer. It reaches the model only through the capture proxy, and the only
 credential it holds for that is a session id.
 
 ### The capture proxy
@@ -48,7 +56,7 @@ serves every concurrent rollout. A call carrying a key the proxy never registere
 />
 
 Harnesses speak four different model APIs, as the [harness
-table](#why-models-overfit-to-a-single-harness) shows. The proxy works out which one a request uses from its path,
+table](#harness-ecosystem-matrix) shows. The proxy works out which one a request uses from its path,
 then its headers, then the shape of its body.
 It converts the request to chat completions with converters vendored from NVIDIA's Polar gateway [@xu2026polar],
 and replays the answer in the caller's own format.
@@ -67,17 +75,20 @@ the harness cannot tell the difference, and the proxy never has to parse partial
 #### What gets recorded
 
 For each call the proxy asks the engine for the prompt's token ids, the sampled token ids and a
-logprob for every sampled token. It also switches off truncating sampling such as `top_p`, because
-vLLM's processed logprobs are computed after truncation. In our runs, moving `top_p` to 1.0 took the
-importance ratio from 0.985–0.993 to 0.9984–0.9999. On vLLM this needs two server flags:
+logprob for every sampled token. It also samples from the full distribution, with no `top_p` or
+`top_k`. Truncating the distribution biases what the policy samples away from what it would sample
+on its own, which in RL is a known route to entropy collapse, and vLLM computes its processed
+logprobs after the truncation, so they would not match the policy either. In our runs, moving `top_p`
+to 1.0 took the importance ratio from 0.985–0.993 to 0.9984–0.9999. On vLLM this needs two server
+flags:
 
 ```bash
 vllm serve <model> --return-tokens-as-token-ids --logprobs-mode processed_logprobs
 ```
 
-[SGLang](https://github.com/sgl-project/sglang) can return the sampled token ids from v0.5.17 for non-streaming requests, and v0.5.20 adds
-them for streaming. The proxy never streams from the engine, so v0.5.17 or later should work, though
-we only tested it against a build from SGLang's main branch.
+[SGLang](https://github.com/sgl-project/sglang) works too.[^sglang]
+
+[^sglang]: SGLang returns the sampled token ids from v0.5.17 for non-streaming requests, and v0.5.20 adds them for streaming. The proxy never streams from the engine, so v0.5.17 or later should work, though we only tested a build from SGLang's main branch.
 
 The proxy does not take any of this on trust. The first time it sees an engine it sends a probe and
 grades the result, and it also checks whether the logprobs are raw or processed. An engine below the
@@ -148,9 +159,10 @@ command that names the dataset, the agent and the backend. I wrote about why it 
 abstraction for coding RL in [RL Coding Environments 101: Why Harbor
 Exists](https://x.com/adithya_s_k/article/2054961319179420035).
 
-A Harbor task is a directory with an instruction, an environment and a test script. The ones below come from SmolDataEnvs, the task suite used for every run in this article. Its tasks
-are data-analysis questions built from real Kaggle notebooks in the [jupyter-agent
-dataset](https://huggingface.co/datasets/jupyter-agent/jupyter-agent-dataset), each with an automatic grader, and the suite is published in the [SmolDataEnvs collection](https://huggingface.co/collections/FineEnvs/smoldataenvs).
+A Harbor task is a directory with an instruction, an environment and a test script. The ones below
+come from SmolDataEnvs, the task suite used for every run in this article. Its questions come from
+Kaggle notebooks in the [jupyter-agent dataset](https://huggingface.co/datasets/jupyter-agent/jupyter-agent-dataset),
+each with an automatic grader.
 Pick a task and a file to read it as the agent and the verifier see it.
 
 <HtmlEmbed
@@ -314,8 +326,7 @@ reward = session.verify(transcript)   # the task's own verifier
 
 In our runs every rollout in a GRPO group used the same harness, so the advantage compared actions
 rather than harnesses. The sampling temperature sent with each rollout also matched the one the
-trainer used to recompute logprobs. [The training chapter](#training-small-models-across-harnesses) covers the
-training loop.
+trainer used to recompute logprobs.
 
 {/* PLACEHOLDER: a worked rollout, and the single most convincing artifact this section could
      carry. Take one L2 SmolDataEnvs task, run it under two harnesses, and show the trajectories side

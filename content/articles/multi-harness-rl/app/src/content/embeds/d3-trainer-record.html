@@ -30,7 +30,7 @@
       const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
       // The same task run both ways. Column 1 is the agent's episode in full;
-      // columns 2 and 3 are the record a trainer is left holding under each
+      // columns 2 and 3 are the record a trainer ends up with under each
       // architecture. Compaction is listed because it happens in the agent run and
       // has no counterpart in the trainer-driven one.
       // kind: 'sampled' is policy output (the only thing a gradient can be taken on),
@@ -144,7 +144,7 @@
           + `<span class="tr-k"><span class="tr-sw tr-hatch" style="border:1px solid ${bd}"></span>never reaches the trainer</span>`
           + `</div>`;
 
-        const note = `<div class="tr-nt">The retry is the row to notice. The model emitted a malformed call, the harness quietly repaired it, and the black-box record has no idea it happened.</div>`;
+        const note = `<div class="tr-nt">The black-box record misses the malformed call that the harness repaired and retried.</div>`;
 
         const tallyHtml = narrow
           ? `<div class="tr-tally">` + tallies.map(t =>

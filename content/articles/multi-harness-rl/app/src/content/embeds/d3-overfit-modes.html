@@ -20,7 +20,7 @@
       const esc = (t) => t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
       // The three modes are KAT-Coder's. The examples are the concrete form each
-      // one takes on the wire, so the row is readable without the chapter text.
+      // one takes in a model call, so the row is readable without the chapter text.
       const MODES = [
         {
           name:'Format',
@@ -78,11 +78,12 @@
           const fl = wrapChars(m.foreign.code, colW - 20, fsMono * 0.60);
           const th = wrapChars(m.trained.h, colW, fs * 0.52);
           const fh = wrapChars(m.foreign.h, colW, fs * 0.52);
-          const sn = wrapChars(m.seen, bodyW, fs * 0.52);
+          const sn = wrapChars(m.seen, bodyW, fs * 0.56);
           const codeLines = Math.max(tl.length, fl.length);
           const headLines = Math.max(th.length, fh.length);
           const labLines = narrow ? 2 : 0;
-          const h = 10 + labLines*18 + headLines*15 + 8 + codeLines*15 + 26 + sn.length*16 + 14;
+          // ends 12px below the last line of the symptom text, which starts 76px + the head and code lines down
+          const h = 72 + labLines*18 + headLines*15 + codeLines*15 + sn.length*16;
           return {m, tl, fl, th, fh, sn, codeLines, headLines, h};
         });
 
@@ -126,7 +127,7 @@
         });
         s += '</svg>';
 
-        r.innerHTML = s + `<div class="nt">The three modes are the KAT-Coder team's; the examples are the form each one takes on the wire. All three have the same cure and it is not three separate patches: vary the harness during rollouts, and none of the three has a fixed target to anchor to.</div>`;
+        r.innerHTML = s + `<div class="nt">The three modes are from the KAT-Coder report. One fix covers all three: vary the harness during training.</div>`;
       };
       draw();
       // Colours are read when drawing, so redraw when the reader switches theme.
