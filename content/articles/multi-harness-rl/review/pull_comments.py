@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pull every review thread from the Space into one readable file.
 
-    uv run --with huggingface_hub python review/pull_comments.py                 # from https://adithyask-multi-harness-rl.hf.space
+    uv run --with huggingface_hub python review/pull_comments.py                 # from https://fineenvs-multi-harness-rl.hf.space
     uv run --with huggingface_hub python review/pull_comments.py --all           # include resolved threads in comments.md
     uv run --with huggingface_hub python review/pull_comments.py --url http://localhost:4331
 
@@ -26,7 +26,7 @@ HERE = Path(__file__).resolve().parent
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--url", default="https://adithyask-multi-harness-rl.hf.space")
+    ap.add_argument("--url", default="https://fineenvs-multi-harness-rl.hf.space")
     ap.add_argument("--out", default=str(HERE / ".pulled"))
     ap.add_argument("--all", action="store_true", help="include resolved threads in comments.md")
     args = ap.parse_args()

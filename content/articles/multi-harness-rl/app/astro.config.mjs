@@ -29,7 +29,7 @@ const spaceId = process.env.SPACE_ID; // e.g. "tfrere/research-article-template"
 // SPACE_ID is only set at runtime on Spaces, not during the Docker build, so fall back to
 // this article's Space. Without a site, canonical URLs point at localhost and no sitemap is built.
 const siteUrl = process.env.SITE_URL
-  || (spaceId ? `https://${spaceId.replace('/', '-').toLowerCase()}.hf.space` : 'https://adithyask-multi-harness-rl.hf.space');
+  || (spaceId ? `https://${spaceId.replace('/', '-').toLowerCase()}.hf.space` : 'https://fineenvs-multi-harness-rl.hf.space');
 
 export default defineConfig({
   ...(siteUrl ? { site: siteUrl } : {}),

@@ -21,12 +21,12 @@ tags:
   - grpo
   - trl
 thumbnail: >-
-  https://huggingface.co/spaces/AdithyaSK/multi-harness-rl/resolve/main/app/public/og/og-image.png
+  https://huggingface.co/spaces/FineEnvs/multi-harness-rl/resolve/main/app/public/og/og-image.png
 ---
 
 # Multi-Harness RL
 
-[Read the article](https://huggingface.co/spaces/AdithyaSK/multi-harness-rl).
+[Read the article](https://huggingface.co/spaces/FineEnvs/multi-harness-rl).
 
 A research article built with [research-article-template](https://huggingface.co/spaces/tfrere/research-article-template).
 
@@ -57,7 +57,7 @@ npm run dev           # http://localhost:4321
 From the repo root, over the Hub HTTP endpoint (no git remote, no nested repo):
 
 ```bash
-python3 tools/deploy.py content/articles/multi-harness-rl AdithyaSK/multi-harness-rl
+python3 tools/deploy.py content/articles/multi-harness-rl FineEnvs/multi-harness-rl
 ```
 
 The Dockerfile and nginx config are included; this README is the Space card.
@@ -70,11 +70,14 @@ showing on the published page.
 - **Published (default).** With `REVIEW_MODE` unset or `off`, the page never loads the review
   layer and every `/api/review/` endpoint answers 404.
 - **Review.** With the Space variable `REVIEW_MODE=on`, open the article with `?review`
-  (`https://adithyask-multi-harness-rl.hf.space/?review`) and sign in with Hugging Face. Select text to
+  (`https://fineenvs-multi-harness-rl.hf.space/?review`) and sign in with Hugging Face. Select text to
   comment, suggest a deletion or suggest new wording, or use a figure's Comment button. Cards sit in
   the margin next to their text; the Comments panel lists open, resolved and detached threads. Only the
   Space owner and the usernames in `REVIEWERS` can read or write, and only the owner can accept or
   reject a suggestion. **Exit** (or `?review=off`) goes back to the published view.
+
+For an organization-owned Space, set `REVIEW_OWNER` to the maintainer's HF username. This keeps
+review moderation tied to a person rather than the organization name.
 
 Threads are stored one JSON file each under `/data/review-comments/threads/`, on the private bucket
 `AdithyaSK/multi-harness-rl-review`, mounted at `/data` (Space settings → Storage Buckets). To read them all at once:

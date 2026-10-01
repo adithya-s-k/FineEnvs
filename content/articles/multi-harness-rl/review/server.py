@@ -37,7 +37,7 @@ from starlette.concurrency import run_in_threadpool
 from huggingface_hub import HfApi, attach_huggingface_oauth, parse_huggingface_oauth
 
 REVIEW_MODE = os.environ.get("REVIEW_MODE", "off").strip().lower() == "on"
-OWNER = (os.environ.get("SPACE_AUTHOR_NAME") or os.environ.get("REVIEW_OWNER") or "").strip()
+OWNER = (os.environ.get("REVIEW_OWNER") or os.environ.get("SPACE_AUTHOR_NAME") or "").strip()
 REVIEWERS = {u.strip().lower() for u in os.environ.get("REVIEWERS", "").split(",") if u.strip()}
 if OWNER:
     REVIEWERS.add(OWNER.lower())

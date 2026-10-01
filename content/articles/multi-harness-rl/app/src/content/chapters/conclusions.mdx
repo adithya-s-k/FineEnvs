@@ -44,31 +44,3 @@ they did not decline, though they also changed the model and the task pool.
 multi-harness run saw 626 distinct tasks against 555 and processed 451M training tokens against
 162M. Much of the difference comes from Claude Code, which rewrites its history as it goes, so each
 of its rollouts became about eight training rows.
-
-### If you train or ship agent models
-
-- Evaluate in more than one harness, and report each harness as well as the average. An average can
-  hide a large drop in one of them.
-- Train in the harnesses your users run. Training in one mostly improves that one.
-- Give the reward a reason to finish, and use the same output limits in training and evaluation.
-- Compare runs by the tasks and tokens they saw, not by optimizer steps.
-
-### What these results can't tell us
-
-Every run used a model of 2 to 2.6 billion parameters and a single seed. The runs in each comparison
-differ in more than the one thing we name: token exposure and task coverage differ between harness
-mixes, and SFT and RL also differ in objective, data source and compute. The gains over the base
-model are large enough to be clear. The 1.9-point overall gap between the two RL runs is not, and
-none of the gaps between runs comes from a controlled comparison, so we read them as observations
-rather than rankings.
-
-### What comes next
-
-The runs we want next are an LFM run without the efficiency bonus, several seeds per setup, harness
-mixes compared at equal token exposure (for SFT, on the 692 tasks the teacher solved in all four
-harnesses), SFT followed by RL against RL from the base model, and larger models. Everything here
-runs on an open stack: [OpenEnv](https://github.com/huggingface/OpenEnv) for the environments and
-the capture proxy, [Harbor](https://harborframework.com/) for tasks and sandboxes,
-[TRL](https://github.com/huggingface/trl) for training, and the
-[multi-harness SFT data](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-multiharness-sft). If
-you have a harness, a task set or a trainer of your own, you can plug it in and try.

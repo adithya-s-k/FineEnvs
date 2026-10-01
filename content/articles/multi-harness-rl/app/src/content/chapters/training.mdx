@@ -92,8 +92,11 @@ Here are two real groups from the multi-harness run, scored both ways.
   frameless
 />
 
-All-correct groups occurred in both runs. The tool call count comes from the harness's own trace,
-and an audit of every training rollout found the bonus applied exactly as written and never to a wrong answer.
+In 97 of 555 OpenCode-only groups (17.5%) and 155 of 686 multi-harness groups (22.6%), every
+scorable rollout was correct but tool counts differed. The efficiency bonus supplied their only
+reward contrast. These [audited counts](/data/reward-group-audit.json) cover groups that contributed
+to the retained training updates; they exclude work discarded on resume. Tool counts come from the
+harness's own trace. The reward audit found no formula mismatches and no bonus on wrong answers.
 
 In both LFM runs, tool calls per rollout fell during training and under every harness, as the
 curves below show. There was no LFM run without the bonus, so we cannot say the bonus caused this on
@@ -224,7 +227,7 @@ effective batch size of 8. Each epoch is evaluated on the same 1,000 test cells 
 The data is public as [SmolDataEnvs-multiharness-sft](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-multiharness-sft).
 It has one config per harness, an `all` config with the four together, and configs already tokenized
 for LFM2.5-2.6B and Qwen3.5-2B, next to a [training script](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-multiharness-sft/blob/main/train_sft.py).
-The raw teacher rollouts are in [qwen38-27b-harbor-rollouts](https://huggingface.co/datasets/AdithyaSK/qwen38-27b-harbor-rollouts).
+The raw teacher rollouts are in [qwen38-27b-harbor-rollouts](https://huggingface.co/datasets/FineEnvs/qwen38-27b-harbor-rollouts).
 
 The two methods learn from different things:
 
@@ -393,7 +396,7 @@ not learn answers that evaluation would cut off.
 
 ### Reproducing it
 
-- [SmolDataEnv Multi-harness RL collection](https://huggingface.co/collections/FineEnvs/smoldataenv-multi-harness-rl-6abdfaaa8d74dacd481d5212): everything below in one place, plus the base models.
+- [SmolDataEnvs Multi-harness RL collection](https://huggingface.co/collections/FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212): everything below in one place, plus the base models.
 - Trained models: LFM [multi-harness RL](https://huggingface.co/FineEnvs/LFM2.5-2.6B-multiharness-RL) and [OpenCode-only RL](https://huggingface.co/FineEnvs/LFM2.5-2.6B-opencode-RL) at step 1,000, with the best checkpoints (steps 700 and 900) on `step-700` and `step-900` branches; LFM [multi-harness SFT](https://huggingface.co/FineEnvs/LFM2.5-2.6B-multiharness-SFT) and [OpenCode SFT](https://huggingface.co/FineEnvs/LFM2.5-2.6B-opencode-SFT) after epoch 2; and the best Qwen checkpoints, [multi-harness](https://huggingface.co/FineEnvs/Qwen3.5-2B-multiharness-RL) (step 500), [OpenCode-only](https://huggingface.co/FineEnvs/Qwen3.5-2B-opencode-RL) (step 700) and [standalone OpenCode](https://huggingface.co/FineEnvs/Qwen3.5-2B-opencode-standalone-RL) (step 1,000).
 - [Training comparison dashboard](https://huggingface.co/spaces/FineEnvs/data-agent-training-comparison-trackio): every training curve and checkpoint evaluation.
 - [Harbor environment](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-harbor) and [standalone OpenCode environment](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-opencode): the current companion environment servers. The standalone `opencode_env` is deprecated since OpenEnv 0.7.0 and is retained for the historical comparison; new runs should use Harbor with `harness="opencode"`.
