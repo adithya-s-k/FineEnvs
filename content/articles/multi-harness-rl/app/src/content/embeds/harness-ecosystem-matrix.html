@@ -1,0 +1,64 @@
+<div class="harness-ecosystem-matrix" style="width:100%;margin:14px 0;"></div>
+<style>
+  .harness-ecosystem-matrix { position: relative; }
+  .harness-ecosystem-matrix svg { display:block; width:100%; height:auto; overflow:visible; }
+  .harness-ecosystem-matrix .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .harness-ecosystem-matrix .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .harness-ecosystem-matrix .k { display:inline-flex; align-items:center; gap:7px; }
+  .harness-ecosystem-matrix .sw { width:13px; height:3px; border-radius:2px; }
+  .harness-ecosystem-matrix .tbl { overflow-x:auto; }
+  .harness-ecosystem-matrix table { border-collapse:collapse; width:100%; font-size:12.5px; }
+  .harness-ecosystem-matrix th { text-align:left; font-weight:600; font-size:11px; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--muted-color); padding:8px 12px 8px 0; border-bottom:1px solid var(--border-color); white-space:nowrap; }
+  .harness-ecosystem-matrix td { padding:9px 12px 9px 0; border-bottom:1px solid var(--border-color); color:var(--text-color); vertical-align:top; }
+  .harness-ecosystem-matrix td code { font-size:12px; }
+  .harness-ecosystem-matrix .dl { display:inline-block; padding:2px 7px; border-radius:5px; border:1px solid; font-size:11px; white-space:nowrap; }
+  .harness-ecosystem-matrix .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'harness-ecosystem-matrix';
+    const boot = () => {
+      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const grab = async (f) => {
+        for (const u of ['/data/'+f, 'assets/data/'+f]) {
+          try { const x = await fetch(u, {cache:'no-cache'}); if (x.ok) return await x.json(); } catch(e) {}
+        }
+        throw new Error('could not load '+f);
+      };
+      let D = null;
+      const draw = () => {
+        if (!D) return;
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const fam = {}; let k = 0;
+        D.rows.forEach(row => { const d = row[2]; if (!(d in fam)) fam[d] = k++; });
+        let h = '<div class="tbl"><table><thead><tr>' + D.columns.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+        D.rows.forEach(row => {
+          h += '<tr>' + row.map((c,i) => {
+            if (i === 0) return `<td><code>${c}</code></td>`;
+            if (i === 2) return `<td><span class="dl" style="background:color-mix(in srgb, ${P(fam[c])} 12%, transparent);border-color:${P(fam[c])}">${c}</span></td>`;
+            return `<td>${c}</td>`;
+          }).join('') + '</tr>';
+        });
+        h += '</tbody></table></div>';
+        r.innerHTML = h + `<div class="nt">${D.note}</div>`;
+      };
+      grab('harness-ecosystem.json').then(d => { D = d; draw(); }).catch(e => { r.innerHTML = '<div class="nt">'+e.message+'</div>'; });
+      if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
+      else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

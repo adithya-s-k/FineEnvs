@@ -1,0 +1,145 @@
+<div class="token-drift" style="width:100%;margin:14px 0;"></div>
+<style>
+  .token-drift { position: relative; }
+  .token-drift svg { display:block; width:100%; height:auto; overflow:visible; }
+  .token-drift .td-lg { display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .token-drift .td-lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .token-drift .td-k { display:inline-flex; align-items:center; gap:7px; }
+  .token-drift .td-sw { width:13px; height:11px; border-radius:3px; }
+  .token-drift .td-nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'token-drift';
+    const boot = () => {
+      const nodes = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = nodes[nodes.length-1]; if (!r) return; r.dataset.mounted = 'true';
+
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const show = (t) => t.replace(/\n/g, '\\n');
+
+      // Drift does not usually happen inside a word. It happens at the seam, where
+      // a turn ends and the next thing is appended. These three rows cover the same
+      // characters and differ only in where the token boundaries fall.
+      //
+      // Row 1 is the ground truth: the ids the engine actually sampled, then the
+      // template's own suffix appended by id.
+      // Row 2 is what re-rendering the whole conversation as text and re-encoding
+      // it produces: the trailing brace, newline and special token get grouped
+      // differently, so the sequences part company at the seam.
+      const SAMPLED = [
+        { t:'"150', kind:'sampled' },
+        { t:'"}',   kind:'sampled' },
+        { t:'\n',   kind:'suffix' },
+        { t:'<|im_end|>', kind:'suffix' },
+        { t:'\n',   kind:'suffix' },
+        { t:'<|im_start|>', kind:'suffix' },
+        { t:'user', kind:'suffix' },
+      ];
+      const REENCODED = [
+        { t:'"150', kind:'same' },
+        { t:'"}',   kind:'same' },
+        { t:'\n<|im_end|>', kind:'drift' },
+        { t:'\n<|im_start|>', kind:'drift' },
+        { t:'user', kind:'same' },
+      ];
+      // first index at which the two sequences stop agreeing
+      let firstDiff = 0;
+      while (firstDiff < Math.min(SAMPLED.length, REENCODED.length)
+             && SAMPLED[firstDiff].t === REENCODED[firstDiff].t) firstDiff++;
+
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const mono = 'ui-monospace,SFMono-Regular,Menlo,monospace';
+        const cSam = P(0), cSuf = P(1), cBad = P(3);
+
+        const narrow = W < 620;
+        const labW = narrow ? 0 : 186;
+        const padR = 12;
+        const laneW = W - labW - padR;
+
+        // measure so a token cell always fits its own text
+        const mc = draw._mc || (draw._mc = document.createElement('canvas').getContext('2d'));
+        const fam = getComputedStyle(r).fontFamily || 'monospace';
+        const fs = narrow ? 10 : 11.5;
+        mc.font = `${fs}px ${mono}`;
+        const wOf = (t) => Math.max(30, Math.round(mc.measureText(show(t)).width) + 18);
+
+        const rowW = (row) => row.reduce((a, c) => a + wOf(c.t) + 4, 0) - 4;
+        const scale = Math.min(1, laneW / Math.max(rowW(SAMPLED), rowW(REENCODED)));
+
+        const cellH = 26, rowGap = narrow ? 54 : 46;
+        const top = narrow ? 44 : 30;
+        const H = top + rowGap*2 + cellH + (narrow ? 34 : 30);
+
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="The same characters tokenised two ways. The sampled sequence keeps the template suffix as separate tokens; re-encoding the rendered text merges the newline into the special tokens, so the two sequences diverge at the third token and the prefix no longer matches.">`;
+
+        const drawRow = (row, y, label, sub, isRe) => {
+          if (!narrow) {
+            s += `<text x="${labW-14}" y="${y+15}" text-anchor="end" font-size="11.5" font-weight="600" fill="${tx}">${esc(label)}</text>`;
+            s += `<text x="${labW-14}" y="${y+29}" text-anchor="end" font-size="10" fill="${mu}">${esc(sub)}</text>`;
+          } else {
+            s += `<text x="0" y="${y-8}" font-size="11" font-weight="600" fill="${tx}">${esc(label)} <tspan font-weight="400" fill="${mu}">${esc(sub)}</tspan></text>`;
+          }
+          let x = narrow ? 0 : labW;
+          row.forEach((c, i) => {
+            const w = wOf(c.t) * scale;
+            const bad = isRe && c.kind === 'drift';
+            const col = bad ? cBad : (c.kind === 'suffix' ? cSuf : cSam);
+            s += `<rect x="${x}" y="${y}" width="${w}" height="${cellH}" rx="4"
+                   fill="${col}" fill-opacity="${bad ? .28 : (c.kind === 'suffix' ? .16 : .3)}"
+                   stroke="${col}" stroke-opacity="${bad ? .9 : .5}"
+                   ${bad ? 'stroke-dasharray="4 3"' : ''} stroke-width="${bad ? 1.5 : 1}"/>`;
+            s += `<text x="${x + w/2}" y="${y + 17}" text-anchor="middle" font-size="${fs*scale}"
+                   fill="${tx}" font-family="${mono}">${esc(show(c.t))}</text>`;
+            x += w + 4*scale;
+          });
+          return x;
+        };
+
+        const y1 = top, y2 = top + rowGap, y3 = top + rowGap*2;
+        drawRow(SAMPLED,   y1, 'as sampled',  'ids straight off the engine', false);
+        drawRow(REENCODED, y2, 're-encoded',  'decoded, then encoded again', true);
+
+        // where they part company
+        let dx = narrow ? 0 : labW;
+        for (let i = 0; i < firstDiff; i++) dx += wOf(SAMPLED[i].t)*scale + 4*scale;
+        s += `<line x1="${dx}" y1="${y1-6}" x2="${dx}" y2="${y2+cellH+6}" stroke="${cBad}" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+        s += `<text x="${dx+7}" y="${y2+cellH+18}" font-size="10.5" fill="${cBad}" font-family="${mono}">diverges here, token ${firstDiff+1}</text>`;
+
+        // the consequence line
+        s += `<text x="${narrow?0:labW}" y="${y3+18}" font-size="11.5" fill="${tx}">`
+           + `<tspan font-weight="600">${firstDiff}</tspan><tspan fill="${mu}"> tokens of shared prefix, then the sequences differ. The prefix test fails, so the trainer files this turn as a new root instead of a child.</tspan></text>`;
+
+        s += '</svg>';
+
+        const legend = `<div class="td-lg"><span class="td-lg-t">One cell is one token</span>`
+          + `<span class="td-k"><span class="td-sw" style="background:${cSam};opacity:.55"></span>sampled by the model</span>`
+          + `<span class="td-k"><span class="td-sw" style="background:${cSuf};opacity:.35"></span>template suffix, appended by id</span>`
+          + `<span class="td-k"><span class="td-sw" style="background:${cBad};opacity:.45;border:1.5px dashed ${cBad}"></span>tokens the model never produced</span>`
+          + `</div>`;
+
+        const note = `<div class="td-nt">The string is identical either way; only the boundaries move. Train on the lower row and the gradient lands on tokens the model never sampled. The fix is not a better tokeniser, it is not decoding in the first place.</div>`;
+
+        r.innerHTML = s + legend + note;
+      };
+
+      draw();
+      if ('ResizeObserver' in window) {
+        let t; new ResizeObserver(() => { clearTimeout(t); t = setTimeout(draw, 120); }).observe(r);
+      } else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

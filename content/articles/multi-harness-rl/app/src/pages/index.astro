@@ -1,0 +1,443 @@
+---
+import * as ArticleMod from "../content/article.mdx";
+
+import HeroArticle from "../components/HeroArticle.astro";
+import HeroPaper from "../components/HeroPaper.astro";
+import Footer from "../components/Footer.astro";
+import ThemeToggle from "../components/ThemeToggle.astro";
+import Seo from "../components/Seo.astro";
+import TableOfContents from "../components/TableOfContents.astro";
+import HtmlEmbed from "../components/HtmlEmbed.astro";
+// Default OG image served from public/
+const ogDefaultUrl = "/thumb.auto.jpg";
+import "katex/dist/katex.min.css";
+import "../styles/global.css";
+const articleFM = (ArticleMod as any).frontmatter ?? {};
+const Article = (ArticleMod as any).default;
+// Helper to strip HTML tags
+const stripHtml = (text: string) => String(text || "").replace(/<[^>]*>/g, "");
+// docTitle without HTML tags for SEO/meta
+const docTitle = stripHtml(articleFM?.title ?? "Untitled article");
+// Allow explicit line breaks in the title via "\n" or YAML newlines
+const docTitleHtml = (articleFM?.title ?? "Untitled article")
+  .replace(/\\n/g, "<br/>")
+  .replace(/\n/g, "<br/>");
+const subtitle = articleFM?.subtitle ?? "";
+const description = articleFM?.description ?? "";
+// Accept authors as string[] or array of objects { name, url, affiliations? }
+const rawAuthors = (articleFM as any)?.authors ?? [];
+type Affiliation = { id: number; name: string; url?: string };
+type Author = { name: string; url?: string; affiliationIndices?: number[] };
+
+// Normalize affiliations from frontmatter: supports strings or objects { id?, name, url? }
+const rawAffils =
+  (articleFM as any)?.affiliations ?? (articleFM as any)?.affiliation ?? [];
+const normalizedAffiliations: Affiliation[] = (() => {
+  const seen: Map<string, number> = new Map();
+  const list: Affiliation[] = [];
+  const pushUnique = (name: string, url?: string) => {
+    const key = `${String(name).trim()}|${url ? String(url).trim() : ""}`;
+    if (seen.has(key)) return seen.get(key)!;
+    const id = list.length + 1;
+    list.push({
+      id,
+      name: String(name).trim(),
+      url: url ? String(url) : undefined,
+    });
+    seen.set(key, id);
+    return id;
+  };
+  const input = Array.isArray(rawAffils)
+    ? rawAffils
+    : rawAffils
+      ? [rawAffils]
+      : [];
+  for (const a of input) {
+    if (typeof a === "string") {
+      pushUnique(a);
+    } else if (a && typeof a === "object") {
+      const name = a.name ?? a.label ?? a.text ?? a.affiliation ?? "";
+      if (!String(name).trim()) continue;
+      const url = a.url || a.link;
+      // Respect provided numeric id for display stability if present and sequential; otherwise reassign
+      pushUnique(String(name), url ? String(url) : undefined);
+    }
+  }
+  return list;
+})();
+
+// Helper: ensure an affiliation exists and return its id
+const ensureAffiliation = (val: any): number | undefined => {
+  if (val == null) return undefined;
+  if (typeof val === "number" && Number.isFinite(val) && val > 0) {
+    return Math.floor(val);
+  }
+  const name =
+    typeof val === "string"
+      ? val
+      : (val?.name ?? val?.label ?? val?.text ?? val?.affiliation);
+  if (!name || !String(name).trim()) return undefined;
+  const existing = normalizedAffiliations.find(
+    (a) => a.name === String(name).trim(),
+  );
+  if (existing) return existing.id;
+  const id = normalizedAffiliations.length + 1;
+  normalizedAffiliations.push({
+    id,
+    name: String(name).trim(),
+    url: val?.url || val?.link,
+  });
+  return id;
+};
+
+// Normalize authors and map affiliations -> indices (Distill-like)
+const normalizedAuthors: Author[] = (
+  Array.isArray(rawAuthors) ? rawAuthors : []
+)
+  .map((a: any) => {
+    if (typeof a === "string") {
+      return { name: a } as Author;
+    }
+    const name = String(a?.name || "").trim();
+    const url = a?.url || a?.link;
+    let indices: number[] | undefined = undefined;
+    const raw = a?.affiliations ?? a?.affiliation ?? a?.affils;
+    if (raw != null) {
+      const entries = Array.isArray(raw) ? raw : [raw];
+      const ids = entries
+        .map(ensureAffiliation)
+        .filter((x): x is number => typeof x === "number");
+      const unique = Array.from(new Set(ids)).sort((x, y) => x - y);
+      if (unique.length) indices = unique;
+    }
+    return { name, url, affiliationIndices: indices } as Author;
+  })
+  .filter((a: Author) => a.name && a.name.trim().length > 0);
+const authorNames: string[] = normalizedAuthors.map((a) => a.name);
+const published = articleFM?.published ?? undefined;
+const template: string = (articleFM as any)?.template ?? "article";
+const tags = articleFM?.tags ?? [];
+// Prefer seoThumbImage from frontmatter if provided
+const fmOg = articleFM?.seoThumbImage as string | undefined;
+const imageAbs: string =
+  fmOg && fmOg.startsWith("http")
+    ? fmOg
+    : Astro.site
+      ? new URL(fmOg ?? ogDefaultUrl, Astro.site).toString()
+      : (fmOg ?? ogDefaultUrl);
+
+// ---- Build citation text & BibTeX from frontmatter ----
+const rawTitle = articleFM?.title ?? "Untitled article";
+const titleFlat = stripHtml(String(rawTitle))
+  .replace(/\\n/g, " ")
+  .replace(/\n/g, " ")
+  .replace(/\s+/g, " ")
+  .trim();
+const extractYear = (val: string | undefined): number | undefined => {
+  if (!val) return undefined;
+  const d = new Date(val);
+  if (!Number.isNaN(d.getTime())) return d.getFullYear();
+  const m = String(val).match(/(19|20)\d{2}/);
+  return m ? Number(m[0]) : undefined;
+};
+
+const year = extractYear(published);
+const citationAuthorsText = authorNames.join(", ");
+const citationText = `${citationAuthorsText}${year ? ` (${year})` : ""}. "${titleFlat}".`;
+
+const authorsBib = authorNames.join(" and ");
+const keyAuthor = (authorNames[0] || "article")
+  .split(/\s+/)
+  .slice(-1)[0]
+  .toLowerCase();
+const keyTitle = titleFlat
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, "_")
+  .replace(/^_|_$/g, "");
+const bibKey = `${keyAuthor}${year ?? ""}_${keyTitle}`;
+const doi = (ArticleMod as any)?.frontmatter?.doi
+  ? String((ArticleMod as any).frontmatter.doi)
+  : undefined;
+const bibtex = `@misc{${bibKey},\n  title={${titleFlat}},\n  author={${authorsBib}},\n  ${year ? `year={${year}},\n  ` : ""}${doi ? `doi={${doi}}` : ""}\n}`;
+const envCollapse = false;
+const tableOfContentAutoCollapse = Boolean(
+  (articleFM as any)?.tableOfContentAutoCollapse ??
+    (articleFM as any)?.tableOfContentsAutoCollapse ??
+    envCollapse,
+);
+// Licence note (HTML allowed)
+const licence =
+  (articleFM as any)?.licence ??
+  (articleFM as any)?.license ??
+  (articleFM as any)?.licenseNote;
+
+// External links (paper, code, data, demo, etc.) shown in paper template hero
+const links: Array<{ label: string; url: string; icon?: string }> =
+  ((articleFM as any)?.links ?? []).map((l: any) => ({
+    label: l.label ?? l.name ?? l.text ?? "Link",
+    url: l.url ?? l.href ?? l.link ?? "#",
+    icon: l.icon,
+  }));
+---
+
+<html
+  lang="en"
+  data-theme="light"
+  data-template={template}
+  data-toc-auto-collapse={tableOfContentAutoCollapse ? "1" : "0"}
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <Seo
+      title={docTitle}
+      description={description}
+      authors={authorNames}
+      published={published}
+      tags={tags}
+      image={imageAbs}
+    />
+    <script is:inline>
+      (() => {
+        try {
+          const saved = localStorage.getItem("theme");
+          const prefersDark =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches;
+          const theme = saved || (prefersDark ? "dark" : "light");
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch {}
+      })();
+    </script>
+    <script is:inline>
+      // Debounce all ResizeObserver callbacks to prevent layout thrashing
+      // during window resize (10+ D3 embeds re-render simultaneously otherwise)
+      (() => {
+        const _RO = window.ResizeObserver;
+        if (!_RO) return;
+        const DEBOUNCE_MS = 100;
+        window.ResizeObserver = class {
+          constructor(cb) {
+            this._timer = null;
+            this._ro = new _RO((entries, observer) => {
+              clearTimeout(this._timer);
+              this._timer = setTimeout(() => {
+                requestAnimationFrame(() => cb(entries, observer));
+              }, DEBOUNCE_MS);
+            });
+          }
+          observe(el, opts) { this._ro.observe(el, opts); }
+          unobserve(el) { this._ro.unobserve(el); }
+          disconnect() { this._ro.disconnect(); clearTimeout(this._timer); }
+        };
+      })();
+    </script>
+    <script type="module" src="/scripts/color-palettes.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/medium-zoom@1.1.0/dist/medium-zoom.min.js"
+    ></script>
+    <script src="/src/scripts/mermaid-zoom.js"></script>
+    <script>
+      // Debug and global zoom initialization
+
+      function initializeZoom() {
+        const zoomableImages = document.querySelectorAll(
+          'img[data-zoomable="1"]',
+        );
+
+        if ((window as any).mediumZoom && zoomableImages.length > 0) {
+          zoomableImages.forEach((img, index) => {
+            // Check if already initialized
+            if (!img.classList.contains("medium-zoom-image")) {
+              try {
+                const instance = (window as any).mediumZoom(img, {
+                  background: "rgba(0,0,0,.85)",
+                  margin: 24,
+                  scrollOffset: 0,
+                });
+              } catch (error) {
+                console.error(
+                  `Global script: Error initializing zoom for image ${index}:`,
+                  error,
+                );
+              }
+            } else {
+              console.log(`Global script: Image ${index} already has zoom`);
+            }
+          });
+        } else {
+          console.log(
+            "Global script: mediumZoom not available or no images found",
+          );
+        }
+      }
+
+      // Try to initialize immediately
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initializeZoom);
+      } else {
+        initializeZoom();
+      }
+
+      // Also try after complete loading
+      window.addEventListener("load", () => {
+        setTimeout(initializeZoom, 100);
+      });
+    </script>
+    <script>
+      // Refresh HF Space iframes on theme change
+      (function () {
+        try {
+          let reloadTimer: number | null = null;
+          const isTargetIframe = (el) => {
+            if (!el || el.tagName !== "IFRAME") return false;
+            const src = el.getAttribute("src") || "";
+            return src.includes(".hf.space");
+          };
+          const reloadIframes = () => {
+            const iframes = Array.from(
+              document.querySelectorAll("iframe"),
+            ).filter(isTargetIframe);
+            const theme =
+              document.documentElement.getAttribute("data-theme") || "light";
+            iframes.forEach((iframe) => {
+              try {
+                const currentSrc = iframe.getAttribute("src");
+                if (!currentSrc) return;
+                const url = new URL(currentSrc, window.location.href);
+                url.searchParams.set("_theme", theme);
+                url.searchParams.set("_ts", Date.now().toString());
+                iframe.setAttribute("src", url.toString());
+              } catch {}
+            });
+          };
+          const scheduleReload = () => {
+            if (reloadTimer) clearTimeout(reloadTimer);
+            reloadTimer = window.setTimeout(reloadIframes, 120);
+          };
+          const observer = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+              if (m.type === "attributes" && m.attributeName === "data-theme") {
+                scheduleReload();
+                break;
+              }
+            }
+          });
+          observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ["data-theme"],
+          });
+        } catch {}
+      })();
+    </script>
+  </head>
+  <body>
+    <ThemeToggle />
+    {template === "paper" ? (
+      <HeroPaper
+        title={docTitleHtml}
+        titleRaw={docTitle}
+        description={subtitle || description}
+        authors={normalizedAuthors as any}
+        affiliations={normalizedAffiliations as any}
+        affiliation={articleFM?.affiliation}
+        published={articleFM?.published}
+        links={links}
+      />
+    ) : (
+      <HeroArticle
+        title={docTitleHtml}
+        titleRaw={docTitle}
+        description={subtitle || description}
+        authors={normalizedAuthors as any}
+        affiliations={normalizedAffiliations as any}
+        affiliation={articleFM?.affiliation}
+        published={articleFM?.published}
+        doi={doi}
+        pdfProOnly={articleFM?.pdfProOnly}
+        showPdf={articleFM?.showPdf}
+        links={links}
+        repo={(articleFM as any)?.repo}
+      />
+    )}
+
+    {template === "paper" && (
+      <div class="paper-hero-banner">
+        <HtmlEmbed src="banner.html" frameless />
+      </div>
+    )}
+
+    <section class="content-grid">
+      <TableOfContents
+        tableOfContentAutoCollapse={tableOfContentAutoCollapse}
+      />
+      <main>
+        <Article />
+      </main>
+    </section>
+
+    <Footer
+      citationText={citationText}
+      bibtex={bibtex}
+      licence={licence}
+      doi={doi}
+      template={template}
+    />
+
+    <script>
+      // Open external links in a new tab; keep internal anchors in-page
+      const setExternalTargets = () => {
+        const isExternal = (href) => {
+          try {
+            const u = new URL(href, location.href);
+            return u.origin !== location.origin;
+          } catch {
+            return false;
+          }
+        };
+        document.querySelectorAll("a[href]").forEach((a) => {
+          const href = a.getAttribute("href");
+          if (!href) return;
+          if (isExternal(href)) {
+            a.setAttribute("target", "_blank");
+            a.setAttribute("rel", "noopener noreferrer");
+          } else {
+            a.removeAttribute("target");
+          }
+        });
+      };
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", setExternalTargets, {
+          once: true,
+        });
+      } else {
+        setExternalTargets();
+      }
+    </script>
+
+    <script>
+      // Delegate copy clicks for code blocks injected by rehypeCodeCopy
+      document.addEventListener("click", async (e) => {
+        const target = e.target instanceof Element ? e.target : null;
+        const btn = target ? target.closest(".code-copy") : null;
+        if (!btn) return;
+        const card = btn.closest(".code-card");
+        const pre = card && card.querySelector("pre");
+        if (!pre) return;
+        const text = pre.textContent || "";
+        try {
+          await navigator.clipboard.writeText(text.trim());
+          const old = btn.innerHTML;
+          btn.innerHTML =
+            '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 16.2l-3.5-3.5-1.4 1.4L9 19 20.3 7.7l-1.4-1.4z"/></svg>';
+          setTimeout(() => (btn.innerHTML = old), 1200);
+        } catch {
+          btn.textContent = "Error";
+          setTimeout(() => (btn.textContent = "Copy"), 1200);
+        }
+      });
+    </script>
+  </body>
+</html>

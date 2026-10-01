@@ -1,0 +1,274 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## OpenEnv × Harbor
+
+### What is Harbor?
+
+Harbor comes from the people who built Terminal-Bench, and its origin story is the useful part. They
+shipped a benchmark, watched what people actually did with it, and found the container format being
+used for things it was never designed for. Their own words:
+
+> "When we released Terminal-Bench in May, we were surprised to see it used in unexpected ways like
+> building custom evals, optimizing prompts, running RL, generating SFT traces, and CI/CD agent
+> testing. We also learned that defining and managing containerized tasks at scale is hard. We built
+> Harbor to make it easy."
+
+So Harbor is a framework for evaluating and optimizing agents in container environments. What it
+contributes here is one thing done well: it **decouples the task from the agent and from the machine
+the agent runs on**, thoroughly enough that all three vary independently.
+
+<HtmlEmbed
+  src="harbor-matrix.html"
+  title="What Harbor already covers"
+  desc="Three axes that vary independently."
+  frameless
+/>
+
+The interface an agent implements is deliberately small. A Harbor agent declares its name and
+version, sets itself up inside a container, and runs against a task, with both setup and run handed
+the environment they execute in. That is nearly the whole contract, which is why adding a harness is
+a file rather than a project.
+
+The one property that makes the rest of this section possible is stated flatly in Harbor's own
+documentation:
+
+> "Harbor tasks are independent, isolated, reproducible pieces of code. Harbor tasks have no
+> dependency on the Harbor framework. They can easily be plugged into any framework that supports the
+> Harbor format."
+
+A task is an instruction, an environment and a test script. Nothing more. That is why it can be
+served to something Harbor has never heard of.
+
+> **Note:** Harbor calls its execution backends *environments*, which collides with how this article
+> and the previous guide use the word, and with OpenEnv's *provider*, which is the thing that hosts
+> an environment server. Harbor knows: its own docs say "It's a bad name, we know. But it's too late
+> to change now." Read Harbor's environment as the box the agent runs in.
+
+### What a task looks like
+
+Abstractions are easier to trust once you have seen one instance, so here is a single task from the
+Data Agent training suite, unedited.
+
+<HtmlEmbed
+  src="d3-harbor-task.html"
+  title="One Harbor task, in full"
+  desc="What a Harbor task is on disk, and how its reward gets out."
+  frameless
+/>
+
+Two details in that layout matter later.
+
+The first is `environment/pull_bucket.py`, wired in through the container's healthcheck. Harbor runs
+it after the container starts and before the agent begins, which is how each task pulls its own
+Kaggle dataset instead of baking gigabytes into an image. Small plumbing, and it is the difference
+between a suite of five thousand tasks being buildable and not.
+
+The second is the failure branch in the verifier. If the agent never wrote an answer, `test.sh`
+writes `0.0` and exits **cleanly** rather than erroring. That looks pedantic until you are holding a
+training batch and cannot tell which rows are wrong answers and which are dead sandboxes.
+
+Notice what the task does not contain: no harness, no sandbox backend, no trainer. It says what to do
+and how to score it, then stops. That silence is the whole opening.
+
+### Serving Harbor through OpenEnv
+
+*If Harbor already runs agents against tasks, what is left to build?*
+
+Harbor runs an agent and hands back a verdict. A trainer needs something else: the exact tokens the
+policy emitted and the probability it emitted them with. Harbor's own RL documentation names the two
+ways to get them:
+
+> "There are two strategies for collecting tokens: 1. Intercepting tokens from a vLLM server 2.
+> Returning tokens as part of the agent result metadata."
+
+Strategy two is cleaner and only works for harnesses that have been modified to cooperate, which in
+practice means Terminus 2. Strategy one works for anything that speaks an OpenAI-shaped API, which is
+every harness in the matrix. This integration takes strategy one, and the rest of the section is the
+consequences of that choice.
+
+#### Why an HTTP boundary, not an import
+
+The in-process version was tried first, and the shape of its failure is the architectural argument.
+Running agent rollouts inside the trainer means an exception thrown five layers down inside somebody
+else's agent binary propagates into the training loop. On one GPU that is an annoyance. Across ranks
+it is a hang: one rank dies, the others wait at the NCCL barrier for a peer that is never coming, and
+the job wedges until a human notices. TRL's in-process Harbor integration runs to roughly five
+hundred lines, with nearly every environment call individually wrapped in `try` and `except`, and
+that is the maintenance cost of defending against this rather than removing it.
+
+Behind an HTTP boundary the failure class cannot occur. A rollout that dies returns a result that
+says so, carrying `ok=False` and an error, and the trainer handles a value rather than catching an
+exception. The same boundary collapses evaluation and training onto one code path, so hardening
+either hardens both.
+
+#### The four commands
+
+| Command | What it does |
+|---|---|
+| `openenv harbor info` | Reports what this machine can actually run: whether the endpoint returns token ids, which backends have both working credentials and an importable SDK, which datasets resolve and how many tasks each holds. Read-only, boots nothing. |
+| `openenv harbor rollout` | Rollouts with no environment server involved. Also the debugging path: if `rollout` works and `serve` does not, the fault is in the serving layer and nothing below it. |
+| `openenv harbor serve` | The environment server. Task API for discovery, one long-running rollout tool for execution, a web UI. Refuses to start if the endpoint cannot return token ids. |
+| `openenv harbor push` | Deploys that same server to a Space, with configuration as Space variables and credentials as secrets. |
+
+```bash
+openenv harbor info    --llm-url $LLM --dataset org/train,org/eval
+openenv harbor rollout --llm-url $LLM --dataset org/train --task-index 0 -n 5 --harness codex --sandbox modal
+openenv harbor serve   --llm-url $LLM --dataset org/train,org/eval
+openenv harbor push    --llm-url $LLM --dataset org/train,org/eval --repo-id you/harbor-env
+```
+
+`--llm-url` is required, with no default and no environment-variable fallback. That unfriendliness is
+deliberate, and it is the same instinct as refusing to start without token ids. An endpoint that
+cannot return them still answers every request perfectly well: text, a 200, plausible usage numbers.
+What it does not return is anything trainable, so every row rebuilt downstream is empty, training
+silently does nothing, and the first symptom is a loss curve that never moved, noticed days later.
+That failure has no loud edge, so the check has to be at the front.
+
+<HtmlEmbed
+  src="d3-capture-levels.html"
+  title="Three levels of capture"
+  desc="Only one of them can be trained against."
+  frameless
+/>
+
+{/* VIZ: d3-serve-flow: the six steps from serve to a returned rollout, as a numbered vertical
+     pipeline, marking which happen once at start-up and which happen per rollout. */}
+<HtmlEmbed
+  src="d3-serve-flow.html"
+  title="From serve to rollout"
+  desc="From one command to a validated trajectory."
+  frameless
+/>
+
+#### What is actually new
+
+The division of labour is the point. **Harbor already had** the tasks, the verifiers, the harnesses,
+the backends and the trial concurrency. **OpenEnv already had** the environment server, the Task API,
+the typed client, the sandbox transport and the CLI. What is new is small: a capture proxy, a rollout
+graph, and a token contract.
+
+The one piece of per-harness knowledge in the whole stack is a table of seams, and the module that
+holds it says why it is a table rather than code:
+
+> "For every Harbor agent the only thing that differs is which env var or config key carries the base
+> URL and the API key. Sandbox, capture, stitching, masking and validation are identical downstream."
+
+Claude Code takes `ANTHROPIC_BASE_URL`. Codex takes `OPENAI_BASE_URL` and an `OPENAI_API_KEY` that is
+really the capture session id. opencode takes no environment variables at all and needs a provider
+block instead. Each of those is one row. The alternative, which the ecosystem was drifting toward, is
+one environment package per coding agent, each carrying its own interception proxy that has to be
+correct about token ids. Get that wrong once and you are training on tokens the model never emitted.
+
+A seam is only marked validated after an end-to-end run passes both the capture contract and the
+independent trace cross-check. Everything else is untested however plausible it looks, and one
+harness has already been removed outright rather than left in as aspirational: it failed five out of
+five tasks before the agent even started, because its install script exited 127.
+
+### The parts that are easy to get wrong
+
+Three details decide whether what comes out is trainable or merely plausible.
+
+**Harness and sandbox are per-rollout arguments, not deployment settings.** One server covers the
+whole matrix. That reads as a convenience feature and is really the entire multi-harness story: if
+the harness were fixed at deploy time, varying it during training would mean standing up a separate
+server for each one, and nobody does that at scale.
+
+**The reward is a scalar chosen by an explicit rule, and the rule refuses rather than guesses.**
+Harbor's verifier produces a dictionary of named floats and OpenEnv wants one number, so the
+dictionary travels through verbatim and the scalar is picked by rule: one key, or one named `reward`,
+otherwise fail and demand that the caller says which. Combining keys automatically would be inventing
+reward semantics, and there is a scar behind that decision. An earlier run carried a `+0.2 for
+submitting anything` term, the policy learned to submit immediately, training reward looked healthy
+throughout, and held-out evaluation fell from 0.740 to 0.178.
+
+**`reward=None` is not zero.** It means the verifier never ran. Conflating the two makes a dead
+sandbox look like a wrong answer, and a run that quietly learns from broken infrastructure is very
+hard to diagnose afterwards. This is the same care the task's own `test.sh` took, carried all the way
+up to the result object, where `solved` is defined as graded *and* positive rather than simply
+non-zero.
+
+There is a fourth failure worth including because it is so unobvious. Setting `OPENAI_API_KEY` on one
+harness broke grading rather than execution: Harbor forwards the variable into the sandbox, where the
+Data Agent grader's own LLM judge checks for it, finds the capture session id instead of a real key,
+gets a 401, and silently skips the judge. Every answer that was right but not an exact string match
+scored zero. Not a crash. Reward corruption.
+
+### Validating against something that is not us
+
+Every check described so far is one we wrote, run on data we captured, using assumptions we chose. A
+proxy can be perfectly self-consistent and completely wrong.
+
+ATIF is the way out of that circle. It is Harbor's own trajectory format, written by the harness
+independently of anything the capture layer does, so reconciling the two is the only test available
+that is not self-referential. Compare call by call: turn counts, per-call completion token counts,
+and which calls the harness itself considers real agent steps rather than internal bookkeeping. A
+rollout comes back marked as a match, a mismatch, or as having no trace to compare against.
+
+When they agree, they agree precisely:
+
+```
+ATIF completion_tokens : [37, 36, 104, 264, 255, 119, 32, 27]   total 874
+intercept turn_lengths : [37, 36, 104, 264, 255, 119, 32, 27]   total 874
+ATIF step-1 prompt_tokens 7990  ==  intercept prompt_len 7990
+```
+
+That agreement is worth more than it looks. The masking, the turn segmentation and the prefix
+stitching are all being checked at once, by a path that shares none of our assumptions.
+
+It has already earned its place. One harness sent an empty tools array, received a 400 from the
+inference server, and had its trajectory truncated, leaving behind a rollout graph that looked
+perfectly well formed. Nothing in the captured data was visibly broken. The mismatch is what surfaced
+it. The check runs on ingest rather than export, for the obvious reason: a turn whose logprobs are
+misaligned has to be caught while we still know which turn it was.
+
+The endpoint of this is neater than two formats being reconciled forever. ATIF already has optional
+fields for logprobs and completion token ids that harnesses leave empty. Filling them in gives one
+artifact that is trace, SFT dataset and RL data at the same time.
+
+### Running it somewhere other than a laptop
+
+Locally this uses two ports. The environment server faces trainers and browsers; the capture proxy
+faces the sandbox and is the only one published. Sharing one port would expose the environment server
+the moment the proxy became reachable.
+
+Hosted, that inverts. A Space has one port and one URL, so the proxy is mounted on the environment
+server's own application at `/capture`, with nothing forwarded. The Space has to be public, because a
+private one requires an authorization header that the agent inside the sandbox does not send. That is
+safe here only because the proxy rejects any caller without a registered session id, so a public
+mount is not an open relay. The `--private` flag exists and its help text is honest about what it is
+for: the sandbox then cannot reach the proxy at all, so rollouts are impossible and you are only
+parking a deployment.
+
+### Where this sits
+
+Serving Harbor tasks to a trainer is not a new idea, and it is worth being precise about what is
+different here rather than claiming novelty that is not there.
+
+| | How it consumes Harbor |
+|---|---|
+| **TRL** | In-process, external agents only. Harbor's own installed agents are unsupported, because they run their own model inside the container and expose no policy tokens. |
+| **SkyRL** | In-process, and the integration Harbor itself endorses. Reads token ids and logprobs out of the trial result, which in practice means Terminus 2. |
+| **NeMo Gym** | In-process, with a compatibility layer, plus its own sandbox for HPC. |
+| **verifiers** | Consumes Harbor's task format, then runs rollouts on its own runtime. Harbor is a task source, not the rollout engine. |
+| **Polar** | Does wire-level capture across dialects, and has no Harbor. |
+
+Read down that column and the gap is specific. Everyone running Harbor in-process depends on the
+harness handing tokens back, which limits them to harnesses modified to do so. The one project doing
+wire-level capture across dialects is not connected to Harbor at all. Nothing yet serves Harbor tasks
+to a trainer over an HTTP boundary with wire-level capture across four dialects, which is exactly the
+combination that makes the harness a per-rollout argument.
+
+> **Status.** The integration described here is [OpenEnv pull request
+> #1036](https://github.com/huggingface/OpenEnv/pull/1036), open and unmerged at the time of writing.
+> Harbor's own RL submodule, which would give tasks a `step` and `grade` interface directly, is also
+> an open pull request. Both numbers and both designs may move.
+
+{/* PLACEHOLDER: a worked rollout, and the single most convincing artifact this section could
+     carry. Take one L2 Data Agent task, run it under two harnesses, and show the trajectories side
+     by side: same task, same weights, different tool-call formats, different turn counts, both
+     arriving as trainable tokens. Needs real captured output rather than an illustration. */}
+
+{/* TODO: link the live Space once the Data Agent environment is redeployed from this branch, and
+     walk through what a reader sees on opening it: the task list from the Task API, a rollout in
+     flight, and the finished graph with per-turn token ids behind an accordion.
+     AdithyaSK/harbor-data-agent-env is the current deployment. */}

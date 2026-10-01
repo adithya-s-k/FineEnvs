@@ -1,0 +1,250 @@
+<div class="harness-anatomy" style="width:100%;margin:14px 0;"></div>
+<style>
+  .harness-anatomy { position: relative; }
+  .harness-anatomy svg { display:block; width:100%; height:auto; overflow:visible; }
+  .harness-anatomy .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .harness-anatomy .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; margin-bottom:2px; }
+  .harness-anatomy .k { display:inline-flex; align-items:center; gap:7px; }
+  .harness-anatomy .sw { width:13px; height:3px; border-radius:2px; }
+  .harness-anatomy .sw.dash { background:none; border-top:2px dashed currentColor; height:0; }
+  .harness-anatomy .nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'harness-anatomy';
+    const boot = () => {
+      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const esc = (t) => t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+      // Real text measurement, so a description can never overflow its own row.
+      // The previous version divided the box height by the row count and drew two
+      // lines into a box only tall enough for one.
+      const mc = document.createElement('canvas').getContext('2d');
+      const fam = getComputedStyle(r).fontFamily || 'system-ui, sans-serif';
+      const measure = (t, size, weight) => { mc.font = `${weight||400} ${size}px ${fam}`; return mc.measureText(t).width; };
+      const wrap = (t, size, weight, maxW) => {
+        const words = t.split(' '); const lines = []; let cur = '';
+        for (const w of words) {
+          const test = cur ? cur+' '+w : w;
+          if (measure(test, size, weight) > maxW && cur) { lines.push(cur); cur = w; } else cur = test;
+        }
+        if (cur) lines.push(cur);
+        return lines;
+      };
+
+      // The four things a harness owns. Order is the order of one turn.
+      const STAGES = [
+        { k:'loop',    t:'the loop',         d:'decides what happens next, and when to stop', wire:true },
+        { k:'context', t:'the context',      d:'what the model is shown this turn, and what is compacted away', wire:false },
+        { k:'tools',   t:'the tool surface', d:'which tools exist, and the schemas they are called with', wire:false },
+        { k:'sandbox', t:'the sandbox',      d:'where the tool calls actually run', wire:false },
+      ];
+
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let stage = 0, phase = 0, pulses = [], trips = [], calls = 0, turn = 1, last = 0, raf = 0, visible = !('IntersectionObserver' in window);
+      const STAGE_MS = 820, TRIP_MS = 820;
+
+      let L = null; // computed layout
+      const layout = () => {
+        const W = Math.max(320, r.clientWidth);
+        const narrow = W < 620;
+        const TX = 13, DX = 11.5, LH = 15;
+        const epW = 104, epH = 54, gap = narrow ? 46 : 86;
+        const bx = 2, by = 2;
+        const bw = narrow ? W-4 : W - 4 - epW - gap;
+        const gutter = 30;                    // left channel for the cycle arrow
+        const rowPadX = 13, rowInset = 15;
+        const innerW = bw - rowInset*2 - gutter;
+        const textW = innerW - rowPadX*2;
+
+        const rows = STAGES.map(s => {
+          const dl = wrap(s.d, DX, 400, textW);
+          return { ...s, dl, h: 11 + TX + 6 + dl.length*LH + 10 };
+        });
+        const headH = 34;
+        const rowGap = 8;
+        const bodyH = rows.reduce((a,b)=>a+b.h,0) + rowGap*(rows.length-1);
+        const bh = headH + bodyH + 14;
+
+        let y = by + headH;
+        rows.forEach(s => { s.y = y; y += s.h + rowGap; });
+
+        const stripH = 52, stripGap = narrow ? 18 : 20;
+        const H = (narrow ? by+bh + gap + epH : by + Math.max(bh, epH)) + stripGap + stripH + 6;
+
+        const wireY = narrow ? 0 : by + bh/2;
+        L = { W, H, narrow, bx, by, bw, bh, rows, headH, gutter, rowInset, rowPadX, TX, DX, LH,
+              epW, epH, gap, wireY, stripH, stripY: (narrow ? by+bh+gap+epH : by+Math.max(bh,epH)) + stripGap };
+      };
+
+      const svg = () => {
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const c = P(0), c2 = P(3);
+        const { W,H,narrow,bx,by,bw,bh,rows,headH,gutter,rowInset,rowPadX,TX,DX,LH,epW,epH,wireY,stripH,stripY } = L;
+        const mono = 'ui-monospace,SFMono-Regular,Menlo,monospace';
+
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="A harness owns its loop, context, tool surface and sandbox. Only one wire leaves it, toward a model endpoint, and that wire is all a trainer can see.">`;
+        s += `<defs><clipPath id="ha-strip"><rect x="${bx}" y="${stripY}" width="${W-4}" height="${stripH}" rx="8"/></clipPath></defs>`;
+
+        // ── the harness box
+        s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="12" fill="${sf}" stroke="${bd}"/>`;
+        s += `<text x="${bx+rowInset}" y="${by+22}" font-size="11" fill="${mu}" font-family="${mono}" letter-spacing="1">AGENT HARNESS</text>`;
+        s += `<text x="${bx+bw-rowInset}" y="${by+22}" text-anchor="end" font-size="11" fill="${mu}" font-family="${mono}">turn ${turn} · ${calls} tool call${calls===1?'':'s'}</text>`;
+
+        // the cycle arrow down the left gutter: these stages repeat, they are not a list
+        const gx = bx + rowInset + gutter/2;
+        const y0 = rows[0].y + 16, y1 = rows[rows.length-1].y + rows[rows.length-1].h - 12;
+        s += `<path d="M ${gx} ${y1} L ${gx} ${y0+7}" stroke="${bd}" stroke-width="1.5" fill="none"/>`;
+        s += `<polygon points="${gx},${y0-1} ${gx-4},${y0+8} ${gx+4},${y0+8}" fill="${bd}"/>`;
+        s += `<path d="M ${gx} ${y1} q 0 8 8 8" stroke="${bd}" stroke-width="1.5" fill="none"/>`;
+        // the travelling marker on the cycle
+        const cyT = rows[stage] ? (rows[stage].y + rows[stage].h/2) : y0;
+        s += `<circle cx="${gx}" cy="${cyT}" r="4.5" fill="${c}"/>`;
+        s += `<circle cx="${gx}" cy="${cyT}" r="9" fill="none" stroke="${c}" stroke-opacity=".35"/>`;
+
+        // ── the four rows
+        rows.forEach((sg,i) => {
+          const on = i === stage;
+          const rx = bx + rowInset + gutter, rw = bw - rowInset*2 - gutter;
+          s += `<rect x="${rx}" y="${sg.y}" width="${rw}" height="${sg.h}" rx="8" fill="${on?c:'none'}" fill-opacity="${on?0.10:0}" stroke="${on?c:bd}" stroke-width="${on?1.4:1}" stroke-dasharray="${on?'':'3 3'}"/>`;
+          s += `<text x="${rx+rowPadX}" y="${sg.y+11+TX}" font-size="${TX}" font-weight="600" fill="${on?c:tx}" fill-opacity="${on?1:.85}">${esc(sg.t)}</text>`;
+          sg.dl.forEach((ln,j) => {
+            s += `<text x="${rx+rowPadX}" y="${sg.y+11+TX+6+LH*(j+1)-3}" font-size="${DX}" fill="${mu}">${esc(ln)}</text>`;
+          });
+        });
+
+        // ── the one wire, and the endpoint
+        const ex = narrow ? bx + bw/2 : bx + bw;
+        const ey = narrow ? by + bh : wireY;
+        const tx2 = narrow ? bx + bw/2 : W - 2 - epW;
+        const ty2 = narrow ? by + bh + L.gap : wireY;
+        if (narrow) {
+          s += `<line x1="${ex}" y1="${ey}" x2="${ex}" y2="${ty2}" stroke="${c}" stroke-width="2"/>`;
+          s += `<circle cx="${ex}" cy="${ey}" r="4" fill="${c}"/>`;
+          s += `<rect x="${tx2-epW/2}" y="${ty2}" width="${epW}" height="${epH}" rx="9" fill="${sf}" stroke="${c}" stroke-width="1.5"/>`;
+          s += `<text x="${tx2}" y="${ty2+22}" text-anchor="middle" font-size="12" font-weight="600" fill="${tx}">model</text>`;
+          s += `<text x="${tx2}" y="${ty2+38}" text-anchor="middle" font-size="11" fill="${mu}">endpoint</text>`;
+          s += `<text x="${ex+10}" y="${ey+(L.gap/2)}" font-size="11" fill="${c}" font-family="${mono}">one wire</text>`;
+        } else {
+          s += `<line x1="${ex}" y1="${wireY}" x2="${tx2}" y2="${wireY}" stroke="${c}" stroke-width="2"/>`;
+          s += `<circle cx="${ex}" cy="${wireY}" r="4" fill="${c}"/>`;
+          s += `<rect x="${tx2}" y="${wireY-epH/2}" width="${epW}" height="${epH}" rx="9" fill="${sf}" stroke="${c}" stroke-width="1.5"/>`;
+          s += `<text x="${tx2+epW/2}" y="${wireY-2}" text-anchor="middle" font-size="12" font-weight="600" fill="${tx}">model</text>`;
+          s += `<text x="${tx2+epW/2}" y="${wireY+15}" text-anchor="middle" font-size="11" fill="${mu}">endpoint</text>`;
+          s += `<text x="${(ex+tx2)/2}" y="${wireY-13}" text-anchor="middle" font-size="11" fill="${c}" font-family="${mono}">one wire</text>`;
+        }
+
+        // pulses travelling the wire
+        pulses.forEach(p => {
+          const t = p.out ? p.t : 1-p.t;
+          const px = narrow ? ex : ex + (tx2-ex)*t;
+          const py = narrow ? ey + (ty2-ey)*t : wireY;
+          s += `<circle cx="${px}" cy="${py}" r="3.6" fill="${p.out?c:c2}"/>`;
+        });
+
+        // ── what the trainer sees
+        s += `<rect x="${bx}" y="${stripY}" width="${W-4}" height="${stripH}" rx="8" fill="none" stroke="${bd}" stroke-dasharray="3 3"/>`;
+        s += `<text x="${bx+13}" y="${stripY+17}" font-size="10.5" fill="${mu}" font-family="${mono}" letter-spacing="1">WHAT THE TRAINER SEES</text>`;
+        s += `<g clip-path="url(#ha-strip)">`;
+        const tw = 15, tx0 = bx + 168;
+        trips.forEach((tp,i) => {
+          const x = tx0 + i*tw;
+          if (x > W - 16) return;
+          const a = Math.min(1, tp.age/220);
+          s += `<rect x="${x}" y="${stripY+26}" width="5" height="16" rx="1.5" fill="${c}" fill-opacity="${.85*a}"/>`;
+          s += `<rect x="${x+6.5}" y="${stripY+26}" width="5" height="16" rx="1.5" fill="${c2}" fill-opacity="${.85*a}"/>`;
+        });
+        s += `</g>`;
+        if (!trips.length) {
+          s += `<text x="${tx0}" y="${stripY+38}" font-size="11" fill="${mu}" fill-opacity=".6">waiting for the first request</text>`;
+        }
+        s += `<text x="${W-2-13}" y="${stripY+38}" text-anchor="end" font-size="11" fill="${mu}" font-family="${mono}">${trips.length} round trip${trips.length===1?'':'s'}</text>`;
+
+        s += '</svg>';
+        return s;
+      };
+
+      const legend = () => {
+        const c = P(0), c2 = P(3), mu = V('--muted-color','#888');
+        return `<div class="lg"><span class="lg-t">On the wire</span>` +
+          `<span class="k"><span class="sw" style="background:${c}"></span>request out</span>` +
+          `<span class="k"><span class="sw" style="background:${c2}"></span>response back</span>` +
+          `<span class="k" style="color:${mu}"><span class="sw dash"></span>opaque to the trainer</span>` +
+          `</div>`;
+      };
+      const note = `<div class="nt">None of what happens inside the box reaches a trainer: not the loop's decisions, not the tool results, not what was compacted away. The strip along the bottom is its whole view.</div>`;
+
+      const paint = () => { r.innerHTML = svg() + legend() + note; };
+
+      const step = (dt) => {
+        phase += dt;
+        trips.forEach(t => t.age += dt);
+        pulses.forEach(p => p.t += dt/TRIP_MS);
+        // a returning response completes the round trip
+        pulses.filter(p => p.t >= 1 && p.out).forEach(() => pulses.push({ t:0, out:false }));
+        pulses = pulses.filter(p => p.t < 1);
+        if (phase >= STAGE_MS) {
+          phase -= STAGE_MS;
+          if (STAGES[stage].k === 'sandbox') calls++;
+          stage = (stage + 1) % STAGES.length;
+          if (stage === 0) {
+            turn++;
+            pulses.push({ t:0, out:true });          // the loop asks the model
+            trips.push({ age:0 });
+            if (trips.length > 40) { trips = []; calls = 0; turn = 1; }
+          }
+        }
+      };
+
+      const tick = (ts) => {
+        if (!last) last = ts;
+        const dt = Math.min(64, ts - last); last = ts;
+        if (visible) { step(dt); paint(); }
+        raf = requestAnimationFrame(tick);
+      };
+
+      const start = () => {
+        layout();
+        if (reduce) {
+          // A representative still: mid-turn, one request in flight, some history.
+          stage = 2; calls = 3; turn = 4;
+          trips = Array.from({length:6}, () => ({ age:999 }));
+          pulses = [{ t:.55, out:true }];
+          paint();
+          return;
+        }
+        // Join a rollout already in progress: an empty strip understates the point,
+        // which is that this thin stream is the trainer's whole view.
+        turn = 5; calls = 4;
+        trips = Array.from({length:4}, () => ({ age:999 }));
+        paint();
+        raf = requestAnimationFrame(tick);
+      };
+
+      start();
+
+      if ('IntersectionObserver' in window && !reduce) {
+        new IntersectionObserver((es) => { visible = es.some(e => e.isIntersecting); },
+          { rootMargin: '80px' }).observe(r);
+      }
+      if ('ResizeObserver' in window) {
+        let t; new ResizeObserver(() => { clearTimeout(t); t = setTimeout(() => { layout(); paint(); }, 120); }).observe(r);
+      } else {
+        window.addEventListener('resize', () => { layout(); paint(); });
+      }
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

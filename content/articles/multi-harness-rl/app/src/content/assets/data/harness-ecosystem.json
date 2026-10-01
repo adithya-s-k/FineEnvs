@@ -1,0 +1,96 @@
+{
+  "note": "Dialect is the axis that matters most for capture: it decides whether one proxy can serve a harness at all.",
+  "columns": [
+    "Harness",
+    "Maker",
+    "Wire dialect",
+    "Tool calling",
+    "What makes it distinct"
+  ],
+  "rows": [
+    [
+      "claude-code",
+      "Anthropic",
+      "Anthropic Messages",
+      "yes",
+      "The de-facto reference implementation; agent source not published"
+    ],
+    [
+      "codex",
+      "OpenAI",
+      "OpenAI Responses",
+      "yes",
+      "The only harness to have deliberately deleted chat-completions"
+    ],
+    [
+      "opencode",
+      "Anomaly",
+      "all four",
+      "yes",
+      "Headless daemon with a published OpenAPI schema"
+    ],
+    [
+      "goose",
+      "Agentic AI Foundation",
+      "Anthropic, chat, Google",
+      "yes",
+      "Most MCP-native; can treat other harnesses as model providers"
+    ],
+    [
+      "swe-agent",
+      "Princeton, Stanford",
+      "chat-completions",
+      "yes",
+      "Tools installed into the container as shell scripts"
+    ],
+    [
+      "mini-swe-agent",
+      "SWE-agent team",
+      "chat, Responses, text",
+      "one tool",
+      "Deliberately minimal, stateless steps, built to avoid overfitting"
+    ],
+    [
+      "openhands-sdk",
+      "OpenHands",
+      "chat-completions",
+      "yes",
+      "Event-stream architecture, agent server over REST"
+    ],
+    [
+      "aider",
+      "Aider-AI",
+      "chat-completions",
+      "no",
+      "Parses edit formats out of prose instead of calling tools"
+    ],
+    [
+      "qwen-coder",
+      "Alibaba",
+      "multi, Google-shaped",
+      "yes",
+      "Forked from Gemini CLI, canonical form still Google's"
+    ],
+    [
+      "kimi-cli",
+      "Moonshot",
+      "chat-completions",
+      "yes",
+      "A coding agent that is also a shell"
+    ],
+    [
+      "terminus-2",
+      "Laude Institute",
+      "chat-completions",
+      "no",
+      "Uses no tool-calling API at all, plain text parsing"
+    ],
+    [
+      "hermes",
+      "Nous Research",
+      "all three, switchable",
+      "yes",
+      "Persistent multi-surface agent with a learning loop"
+    ]
+  ]
+}

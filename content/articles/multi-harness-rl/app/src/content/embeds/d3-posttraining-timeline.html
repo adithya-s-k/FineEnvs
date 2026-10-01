@@ -1,0 +1,67 @@
+<div class="posttraining-timeline" style="width:100%;margin:14px 0;"></div>
+<style>
+  .posttraining-timeline { position: relative; }
+  .posttraining-timeline svg { display:block; width:100%; height:auto; overflow:visible; }
+  .posttraining-timeline .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .posttraining-timeline .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .posttraining-timeline .k { display:inline-flex; align-items:center; gap:7px; }
+  .posttraining-timeline .sw { width:13px; height:3px; border-radius:2px; }
+  .posttraining-timeline .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'posttraining-timeline';
+    const boot = () => {
+      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const grab = async (f) => {
+        for (const u of ['/data/'+f, 'assets/data/'+f]) {
+          try { const x = await fetch(u, {cache:'no-cache'}); if (x.ok) return await x.json(); } catch(e) {}
+        }
+        throw new Error('could not load '+f);
+      };
+      let D = null;
+      const draw = () => {
+        if (!D) return;
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const It = D.items, L = D.levels;
+        const rowH = 30, H = 60 + It.length*rowH;
+        const lx = Math.min(200, W*0.24), rx = W - 26;
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Recent releases and how much each discloses about the harness it was measured or trained in">`;
+        L.forEach((l,i) => {
+          const x = lx + (i/(L.length-1))*(rx-lx-40);
+          s += `<line x1="${x}" y1="34" x2="${x}" y2="${H-26}" stroke="${bd}" stroke-dasharray="2 4"/>`;
+          s += `<text x="${x}" y="24" text-anchor="middle" font-size="10.5" fill="${mu}" font-family="ui-monospace,Menlo,monospace">${l}</text>`;
+        });
+        It.forEach((it,i) => {
+          const y = 48 + i*rowH, c = P(it.level);
+          const x = lx + (it.level/(L.length-1))*(rx-lx-40);
+          s += `<text x="${lx-12}" y="${y+4}" text-anchor="end" font-size="12" font-weight="600" fill="${tx}">${it.label}</text>`;
+          s += `<text x="${lx-12}" y="${y+16}" text-anchor="end" font-size="10" fill="${mu}" font-family="ui-monospace,Menlo,monospace">${it.date}</text>`;
+          if (x > lx + 6) s += `<line x1="${lx}" y1="${y}" x2="${x}" y2="${y}" stroke="${c}" stroke-opacity=".22" stroke-width="1.2"/>`;
+          s += `<circle cx="${x}" cy="${y}" r="5" fill="${c}"><title>${it.detail}</title></circle>`;
+          // detail sits left of the dot once the dot is far right, or it runs off the edge
+          const flip = x > W*0.58;
+          s += `<text x="${flip ? x-13 : x+13}" y="${y+4}" text-anchor="${flip?'end':'start'}" font-size="11" fill="${mu}">${it.detail}</text>`;
+        });
+        s += '</svg>';
+        r.innerHTML = s + `<div class="nt">${D.note} The lower half of this chart is eighteen months old.</div>`;
+      };
+      grab('harness-disclosure.json').then(d => { D = d; draw(); }).catch(e => { r.innerHTML = '<div class="nt">'+e.message+'</div>'; });
+      if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
+      else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

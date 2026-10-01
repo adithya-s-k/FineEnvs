@@ -1,0 +1,61 @@
+<div class="format-mismatch" style="width:100%;margin:14px 0;"></div>
+<style>
+  .format-mismatch { position: relative; }
+  .format-mismatch svg { display:block; width:100%; height:auto; overflow:visible; }
+  .format-mismatch .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .format-mismatch .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .format-mismatch .k { display:inline-flex; align-items:center; gap:7px; }
+  .format-mismatch .sw { width:13px; height:3px; border-radius:2px; }
+  .format-mismatch .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'format-mismatch';
+    const boot = () => {
+      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const H = Math.max(230, Math.round(W/3.0));
+        const c0 = P(0), c3 = P(3);
+        const bw = Math.min(210, W*0.27), cy = H*0.46;
+        const mid = W/2 - bw/2;
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="One model output accepted by its native harness and rejected by another">`;
+        s += `<text x="${W/2}" y="18" text-anchor="middle" font-size="10" fill="${mu}" font-family="ui-monospace,Menlo,monospace" letter-spacing="1">ONE MODEL, ONE OUTPUT</text>`;
+        s += `<rect x="${mid}" y="${cy-26}" width="${bw}" height="52" rx="8" fill="${sf}" stroke="${bd}"/>`;
+        s += `<text x="${W/2}" y="${cy-6}" text-anchor="middle" font-size="12" fill="${tx}" font-family="ui-monospace,Menlo,monospace">tool: "Write"</text>`;
+        s += `<text x="${W/2}" y="${cy+12}" text-anchor="middle" font-size="10.5" fill="${mu}">capitalised, as it was trained to emit</text>`;
+        const side = (x0, wdt, acc, title, l1, l2) => {
+          let g = `<rect x="${x0}" y="${cy-34}" width="${wdt}" height="68" rx="8" fill="${acc}" fill-opacity=".07" stroke="${acc}" stroke-opacity=".5"/>`;
+          g += `<text x="${x0+wdt/2}" y="${cy-14}" text-anchor="middle" font-size="12" font-weight="600" fill="${tx}">${title}</text>`;
+          g += `<text x="${x0+wdt/2}" y="${cy+4}" text-anchor="middle" font-size="11" fill="${acc}" font-family="ui-monospace,Menlo,monospace">${l1}</text>`;
+          g += `<text x="${x0+wdt/2}" y="${cy+21}" text-anchor="middle" font-size="10.5" fill="${mu}">${l2}</text>`;
+          return g;
+        };
+        const sw = Math.min(230, W*0.29);
+        s += side(12, sw, c0, 'its native harness', 'accepted', 'the tool runs, the turn continues');
+        s += side(W-12-sw, sw, c3, 'a foreign harness', 'AI_NoSuchToolError', 'the turn dies before the task starts');
+        s += `<line x1="${mid}" y1="${cy}" x2="${12+sw+8}" y2="${cy}" stroke="${c0}" stroke-width="1.5"/>`;
+        s += `<line x1="${mid+bw}" y1="${cy}" x2="${W-12-sw-8}" y2="${cy}" stroke="${c3}" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+        s += `<text x="${W/2}" y="${H-16}" text-anchor="middle" font-size="11.5" fill="${mu}">the model is not confused about the task, only about the interface</text>`;
+        s += '</svg>';
+        r.innerHTML = s + `<div class="nt">This is what harness overfitting looks like from the outside. Not a lower score: a tool name memorised in one harness's casing, and a foreign harness that has never heard of it. Reported repeatedly against open models dropped into agents they were never trained in.</div>`;
+      };
+      draw();
+      if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
+      else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

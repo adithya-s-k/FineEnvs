@@ -1,0 +1,273 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## What are RL environments?
+
+### Technical overview
+
+An RL environment is the stateful thing a policy acts on. It takes an action, updates its internal
+state, returns an observation, and at some point returns a reward. In the LLM era the actions are
+tool calls, the observations are tool results, and the reward comes from a grader that looks at the
+finished trajectory. What separates it from a benchmark is that a benchmark is a fixed task set plus
+a comparison protocol, administered on top of environments.
+
+Drawn out, the two halves look like this. On one side a training loop that samples, scores and
+updates. On the other an environment made of far more parts than the word suggests.
+
+{/* Carried over from the previous guide so the two articles share one picture of the anatomy.
+     Do not redraw it here; if it changes, it should change in both. */}
+<HtmlEmbed src="d3-anatomy-hero.html" frameless />
+
+The pieces inside that box are worth naming once, because the rest of this article keeps reaching
+for them: a task set, a prompt template, tools, observations, an execution backend, world state, a
+reward rule and a termination condition. Every environment has all of them, whether or not its
+framework gives you a name for each. Note the box labelled tools and harness, which is the previous
+guide's narrower use of the word, meaning the tool surface rather than the agent program. The
+previous guide tabulates all of these component by component, with an example of each, so there is
+no need to repeat it here.
+
+And this is the shape a single rollout takes once the model is a language model and the actions are
+tool calls: write, run, read the result, decide what to try next, and eventually submit something a
+grader can score.
+
+<HtmlEmbed src="d3-llm-rl-coding.html" frameless />
+
+That is the whole definition this article needs, and all three figures are lifted from
+[The ultimate guide to RL environments](https://huggingface.co/spaces/AdithyaSK/rl-environments-guide)
+rather than redrawn, so the vocabulary carries over intact. That guide spends a full chapter on the
+anatomy, walks the five-stage spine from tasks through harness and reward to rollout collection and
+training, and compares how six frameworks slice it. If anything above feels thin, that is where the
+depth is. This chapter only covers what changes once the agent, rather than the trainer, is driving.
+
+### Why OpenEnv?
+
+OpenEnv is a standard interface for RL environments: Gymnasium-style `reset`, `step` and `state`
+over a client and server transport, with typed actions and observations, packaged as Docker and
+publishable to the Hub. It began as a Meta PyTorch and Hugging Face collaboration and now lives at
+`huggingface/OpenEnv`, steered by a committee of around eleven organisations, under BSD-3-Clause.
+
+The reason it exists is worth quoting, because it could have been written as the abstract for this
+article:
+
+> "Agent harnesses like Claude Code, Codex, OpenClaw, and Hermes just keep improving. One reason for
+> their improvement is that models like GPT-5.5 and Opus 4.8 are trained to use their respective
+> harnesses. We want those gains with open source models too."
+
+Frontier labs train the model and the harness together, so the two fit. In the open, nobody controls
+both ends: developers pick any harness, any model, any inference engine. OpenEnv's role in this
+article is narrow and specific. It is not the trainer and it does not define rewards. It is the
+socket that the harness, the environment and the trainer all plug into, which is what makes it
+possible to serve the same task set into a dozen different agent programs without reimplementing
+anything.
+
+### White-box vs black-box RL environments
+
+*Who actually drives the rollout?*
+
+This is the distinction the rest of the article turns on, and it is not about what the task is. It is
+about which side of the boundary owns the loop.
+
+In a **white-box** environment the trainer owns it. The trainer samples an action, calls `env.step()`,
+reads the observation, samples again. The environment is passive, it waits to be called, and every
+token the policy produced is already in the trainer's hands because the trainer is the one that
+produced it. This is how the environments in the previous guide work, and it is what TRL's
+`GRPOTrainer` expects when you hand it an environment factory.
+
+In a **black-box** environment the agent owns it. A harness starts inside a sandbox, runs its own
+loop, calls its own tools, compacts its own context, and stops when it decides to. The trainer is
+outside that box. It sees one thing: a sequence of calls arriving at a model endpoint.
+
+Microsoft's Agent Lightning team gave the two modes names, and the sentence is the cleanest statement
+of the problem I have found [@he2026agentlightning]:
+
+> "Harnessed agentic RL differs fundamentally from traditional agentic RL: the harness, rather than
+> the training engine, owns the environment interaction loop, while the trainer observes only
+> sequences of LLM request-response pairs."
+
+The reason this is tractable at all is a single structural fact. Agents differ wildly on the inside,
+but every LLM-based agent has to talk to a model, and the model API is the one interface that is
+guaranteed to exist outside the agent. The policy is the model. Everything from the API boundary
+outward, harness state and environment state alike, is latent.
+
+> **Note:** the KAT-Coder report uses white-box and black-box to mean something else, namely whether
+> a harness's internals are inspectable, with mini-swe-agent as white-box and Claude Code as
+> black-box. That is a property of the harness. The sense used here is a property of the training
+> setup, meaning who owns the loop. The two often coincide and they are not the same axis.
+
+The previous guide already drew a version of this split, framed as whether the trainer or the
+environment drives the episode, and it worked through where each of six frameworks sits on it. Every
+one of them sat on the left-hand side.
+
+What follows is that same axis pushed one step further out. There, the thing that might own the loop
+was another RL framework. Here it is an agent binary that was never written with training in mind.
+
+Two things change when the loop moves, and they are worth separating because they have different
+consequences. The first is control: who makes each call, and in what order. Watch the tails of the
+arrows rather than the boxes.
+
+{/* VIZ: d3-who-drives: sequence diagram, toggled between the two architectures. Arrow colour is
+     the initiating actor and the right rail marks whether the trainer observes each event, so the
+     asymmetry shows up as a count rather than as an assertion. */}
+<HtmlEmbed
+  src="d3-who-drives.html"
+  title="Who makes the call"
+  desc="Who initiates each call, under both architectures."
+  frameless
+/>
+
+The second is what the trainer is left holding afterwards. Control and visibility are not the same
+problem: a trainer could in principle be told about events it did not cause, and the reason it is
+not is that the harness has no obligation to report them. Here is one rollout written out three
+times, once as it happened and once as each architecture records it.
+
+{/* VIZ: d3-trainer-record: the same episode as three columns, ground truth against the record
+     each architecture leaves. Hatched rows never reach the trainer; dashed rows survive only as
+     text echoed into the next prompt. The repaired malformed call is the detail worth pausing on,
+     because it is invisible in the black-box record and it is exactly what reward should punish. */}
+<HtmlEmbed
+  src="d3-trainer-record.html"
+  title="What the trainer is left holding"
+  desc="One rollout, as it happened and as each architecture records it."
+  frameless
+/>
+
+{/* TODO: the white-box code example. A small MCPEnvironment with an @mcp.tool, then the
+     trainer-side loop that steps it. Keep it short; the point is the contrast with the next
+     section, where no such loop exists on the trainer's side. */}
+
+### The capture layer
+
+If the agent owns the loop, the only place a trainer can stand is the wire between the agent and the
+model. Put an OpenAI-spec proxy there and every call the agent makes passes through it. The agent is
+pointed at the proxy by a per-harness seam, usually a single environment variable, and its API key is
+really a capture session id, which is how one proxy serves many concurrent rollouts without needing a
+port each.
+
+Two properties make this general rather than a per-agent hack. Nothing is tokenised locally: the
+inference engine tokenises each prompt in order to serve it and hands back the token ids, so turn
+*k+1*'s prompt is by construction the canonical tokenisation of everything before it, tool results
+included. And four wire dialects are supported, because coding agents never converged on one. That is not completeness for its own sake: a capture layer that speaks only chat-completions cannot see codex, claude-code or gemini-cli at all, so the other three dialects are exactly what buys those agents.
+
+{/* VIZ: d3-capture-proxy: agent in a sandbox, to the capture proxy, to vLLM, and back. Annotate
+     outbound with "detect dialect, normalise to chat, force token ids and logprobs on" and the
+     return path with "replay in the agent's own dialect, SSE if it asked for SSE". Call out the
+     three things lifted off the wire: prompt_token_ids, completion_token_ids, per_token_logps.
+     A mermaid fence would work today with no embed at all; ship that first if D3 slips. */}
+<HtmlEmbed
+  src="d3-capture-proxy.html"
+  title="The capture proxy"
+  desc="One rollout, step by step, through the capture layer."
+  frameless
+/>
+
+{/* VIZ: d3-dialects-funnel: chat-completions, OpenAI Responses, Anthropic Messages and Google
+     generateContent converging into one normalised shape, then fanning back out, replayed in the
+     caller's own dialect. Supporting all four is what buys codex, claude-code and gemini-cli. */}
+<HtmlEmbed
+  src="d3-dialects-funnel.html"
+  title="Four wire dialects, one shape"
+  desc="The same request in four dialects, and one shape in the middle."
+  frameless
+/>
+
+#### Why rewards are not enough
+
+It is tempting to think a reward and the text of a trajectory should be sufficient, and it is worth
+being precise about why they are not. An on-policy policy gradient needs two things per token: which
+token was sampled, and the probability it was sampled with. A harness that hands back text and a
+score gives you neither.
+
+Re-tokenising the text guesses at the first, and it can guess wrong, because decoding is not
+injective. TRL's write-up on getting this right states the rule plainly: "in RL, you optimize on the
+exact tokens the model produced," and the failure is that "decode a sequence, re-encode the text,
+and you can land on different tokens," after which "the gradient ends up on a sequence the model
+never sampled" [@gallouedec2026tito]. Nothing errors. The loss just spikes now and then for no
+reason you can see.
+
+The seam between turns is where this usually bites, because that is where a template appends
+something to what the model wrote. Tool-call serialisation changes whitespace on the way through,
+and some harnesses quietly repair malformed JSON, which hides the model's actual mistake from the
+reward. Recomputing log probabilities in the trainer gives you the current policy's numbers but not
+the sampler's, so the importance ratio silently defaults to one when it is not one, and an
+estimator you believe is on-policy is a biased off-policy estimator instead.
+
+<HtmlEmbed
+  src="d3-token-drift.html"
+  title="Why re-tokenising is a guess"
+  desc="The same characters, tokenised two different ways."
+  frameless
+/>
+
+Fixing either requires the sampler to hand back token ids and per-token log probabilities, and then
+never letting go of them: the rule is not to re-encode anything you decoded, but to keep the sampled
+ids and append the template's suffix by id concatenation. That is workable because the property it
+depends on, a chat template that extends token for token when a tool message is appended, is
+common rather than rare: eighteen of nineteen models tested satisfy it unmodified
+[@gallouedec2026tito]. It is also the real reason every serious multi-harness system intercepts at
+the model endpoint rather than at the text boundary.
+
+{/* VIZ: d3-rollout-graph: turns linked by exact token prefix, not by request id or timestamp.
+     A root, a chain, one abandoned retry branch, and a second root for a subagent with its own
+     system prompt. A path from root to leaf is one training sequence. The prefix condition has a
+     citation now: Agent Lightning's stitching requirement. */}
+<HtmlEmbed
+  src="d3-rollout-graph.html"
+  title="The rollout graph"
+  desc="A trace as a graph of messages, and its trainable branches."
+  frameless
+/>
+
+{/* VIZ: d3-token-contract: per-turn bars. Context log-scaled, because a real first turn is
+     roughly 8k prompt tokens against 80 sampled and one linear scale renders every completion as a
+     single pixel. Sampled tokens linear and highlighted, discarded branches excluded. */}
+<HtmlEmbed
+  src="d3-token-contract.html"
+  title="What a rollout returns"
+  desc="What one rollout hands back, turn by turn."
+  frameless
+/>
+
+#### Downsides and limitations
+
+The capture layer is not free, and the failure modes are specific enough to be worth listing.
+
+**Capture has to happen on the wire.** Re-rendering a prompt offline with `apply_chat_template`
+drifts from what the model actually saw, and a prompt that is off by a single token silently
+fragments one long conversation into several short ones. There is no fixing this after the fact.
+
+**The endpoint has to cooperate.** vLLM needs `--return-tokens-as-token-ids` and
+`--logprobs-mode processed_logprobs`. Without them any OpenAI-spec endpoint still works, you just get
+evaluations rather than trainable rollouts. SGLang cannot return token ids at all today, which rules
+it out entirely.
+
+**A hosted proxy has to be publicly reachable.** A private Space needs an auth header that the agent
+inside the sandbox does not send, so the capture endpoint has to be public. That is safe here only
+because the proxy rejects any caller without a registered session id.
+
+**`reward=None` is not zero.** It means the verifier never ran. Collapsing the two makes a dead
+sandbox look like a wrong answer, which is the kind of bug that quietly poisons a training run rather
+than crashing it.
+
+**Validation is only as good as its independence.** Reconciling captured calls against the harness's
+own trace format is the one check that is not self-referential, and it can come back as a mismatch.
+A proxy can be internally consistent and still wrong.
+
+**The word sandbox is overloaded.** An OpenEnv provider hosts the environment server. A Harbor
+backend is the sandbox the agent executes in. They are different things, and `--sandbox` refers to
+the second.
+
+{/* VIZ: d3-nm-hub: N harnesses by M sandboxes fully connected on the left, versus the same
+     columns fanning through one shared capture layer on the right. The line count is the argument.
+     Label the left "paths to maintain" with the actual product, not a placeholder. */}
+<HtmlEmbed
+  src="d3-nm-hub.html"
+  title="Why a middle layer"
+  desc="Every harness and sandbox pair, or one capture layer they all share."
+  frameless
+/>
+
+There is one honest caveat to close on. Not everyone agrees the token-level machinery is necessary.
+OpenForgeRL builds the same proxy architecture and then reconstructs training samples from plain
+text prompt and response pairs, with no token ids and no log probabilities, and still reports the
+strongest multi-harness results published so far [@yu2026openforgerl]. Same year, same architecture,
+opposite answer on what the trainer needs. This article takes the token-faithful side, and the
+question is not settled.

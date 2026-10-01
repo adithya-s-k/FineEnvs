@@ -1,0 +1,63 @@
+<div class="overfit-modes" style="width:100%;margin:14px 0;"></div>
+<style>
+  .overfit-modes { position: relative; }
+  .overfit-modes svg { display:block; width:100%; height:auto; overflow:visible; }
+  .overfit-modes .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .overfit-modes .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .overfit-modes .k { display:inline-flex; align-items:center; gap:7px; }
+  .overfit-modes .sw { width:13px; height:3px; border-radius:2px; }
+  .overfit-modes .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'overfit-modes';
+    const boot = () => {
+      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const M3 = [
+          ['Format','the action format it was trained to emit','the tool protocol changes, and parse failures spike'],
+          ['Context structure','the order its training harness concatenated history in','the context is laid out differently, and behaviour degrades'],
+          ['Control flow','someone else\u2019s reflection timing and stopping conditions','that scaffolding is absent, and it cannot plan for itself'],
+        ];
+        const rowH = 64, H = 34 + M3.length*rowH;
+        const lx = Math.min(150, W*0.19), mx = lx + Math.min(250, W*0.30);
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Three ways a model overfits to the harness it was trained in">`;
+        s += `<text x="${lx}" y="14" font-size="10" fill="${mu}" font-family="ui-monospace,Menlo,monospace" letter-spacing="1">ANCHORED TO</text>`;
+        s += `<text x="${mx}" y="14" font-size="10" fill="${mu}" font-family="ui-monospace,Menlo,monospace" letter-spacing="1">BREAKS WHEN</text>`;
+        M3.forEach((m,i) => {
+          const y = 42 + i*rowH, c = P(i);
+          s += `<rect x="0" y="${y-20}" width="${W}" height="${rowH-14}" rx="8" fill="${c}" fill-opacity=".05"/>`;
+          s += `<rect x="0" y="${y-20}" width="3" height="${rowH-14}" rx="1.5" fill="${c}"/>`;
+          s += `<text x="14" y="${y}" font-size="13" font-weight="700" fill="${tx}">${m[0]}</text>`;
+          s += `<text x="14" y="${y+17}" font-size="10.5" fill="${mu}">overfitting</text>`;
+          const wrap = (t,cx2,limit) => {
+            const w = t.split(' '); const out=[]; let cur='';
+            w.forEach(x2 => { if ((cur+' '+x2).trim().length > limit) { out.push(cur); cur=x2; } else cur=(cur+' '+x2).trim(); });
+            if (cur) out.push(cur);
+            return out.map((ln,j) => `<text x="${cx2}" y="${y+j*15}" font-size="11.5" fill="${j===0?tx:mu}">${ln}</text>`).join('');
+          };
+          s += wrap(m[1], lx, 34) + wrap(m[2], mx, 40);
+        });
+        s += '</svg>';
+        r.innerHTML = s + `<div class="nt">Named by the KAT-Coder team, and worth keeping to hand: the rest of this article is about removing all three at once by varying the harness during rollouts, rather than patching each of them separately.</div>`;
+      };
+      draw();
+      if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
+      else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

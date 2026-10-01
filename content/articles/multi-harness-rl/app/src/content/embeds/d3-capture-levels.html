@@ -1,0 +1,54 @@
+<div class="capture-levels" style="width:100%;margin:14px 0;"></div>
+<style>
+  .capture-levels { position: relative; }
+  .capture-levels svg { display:block; width:100%; height:auto; overflow:visible; }
+  .capture-levels .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .capture-levels .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .capture-levels .k { display:inline-flex; align-items:center; gap:7px; }
+  .capture-levels .sw { width:13px; height:3px; border-radius:2px; }
+  .capture-levels .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'capture-levels';
+    const boot = () => {
+      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const L = [
+          ['tokens','prompt ids, sampled ids, aligned logprobs','trainable', 0],
+          ['logprobs','logprobs, but no ids to attach them to','not trainable', 3],
+          ['text','neither','not trainable', 3],
+        ];
+        const rowH = 54, H = 30 + L.length*rowH;
+        const lx = Math.min(130, W*0.17), rx = W - 16;
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Three levels of capture and which of them can be trained against">`;
+        L.forEach((l,i) => {
+          const y = 34 + i*rowH, ok = l[3] === 0, c = P(l[3]);
+          s += `<rect x="0" y="${y-20}" width="${W}" height="${rowH-12}" rx="8" fill="${c}" fill-opacity="${ok?.07:.04}"/>`;
+          s += `<text x="14" y="${y+2}" font-size="13" font-weight="700" fill="${ok?tx:mu}" font-family="ui-monospace,Menlo,monospace">${l[0]}</text>`;
+          s += `<text x="${lx}" y="${y+2}" font-size="12" fill="${ok?tx:mu}">${l[1]}</text>`;
+          s += `<text x="${rx}" y="${y+2}" text-anchor="end" font-size="11.5" font-weight="600" fill="${c}">${l[2]}</text>`;
+        });
+        s += '</svg>';
+        r.innerHTML = s + `<div class="nt">An endpoint missing the token-id flags still returns text, a 200 and plausible usage numbers. It just returns nothing trainable, so the first symptom is a loss curve that never moved, noticed days later. That is why the server refuses to start instead of degrading quietly.</div>`;
+      };
+      draw();
+      if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
+      else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

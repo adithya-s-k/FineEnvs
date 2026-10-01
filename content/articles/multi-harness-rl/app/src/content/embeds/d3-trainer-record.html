@@ -1,0 +1,163 @@
+<div class="trainer-record" style="width:100%;margin:14px 0;"></div>
+<style>
+  .trainer-record { position: relative; }
+  .trainer-record svg { display:block; width:100%; height:auto; overflow:visible; }
+  .trainer-record .tr-lg { display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .trainer-record .tr-lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .trainer-record .tr-k { display:inline-flex; align-items:center; gap:7px; }
+  .trainer-record .tr-sw { width:13px; height:11px; border-radius:3px; }
+  .trainer-record .tr-hatch { background-image: repeating-linear-gradient(45deg,
+    var(--muted-color) 0 1.5px, transparent 1.5px 5px); opacity:.55; }
+  .trainer-record .tr-tally { display:flex; flex-direction:column; gap:3px; margin-top:9px;
+    font-size:11px; color:var(--muted-color); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .trainer-record .tr-tally b { color:var(--text-color); font-weight:600; }
+  .trainer-record .tr-nt { margin-top:10px; font-size:12px; line-height:1.55; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'trainer-record';
+    const boot = () => {
+      const nodes = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = nodes[nodes.length-1]; if (!r) return; r.dataset.mounted = 'true';
+
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+      // The same task run both ways. Column 1 is the agent's episode in full;
+      // columns 2 and 3 are the record a trainer is left holding under each
+      // architecture. Compaction is listed because it happens in the agent run and
+      // has no counterpart in the trainer-driven one.
+      // kind: 'sampled' is policy output (the only thing a gradient can be taken on),
+      // 'ctx' is context the model was conditioned on, 'work' is everything else.
+      const EVENTS = [
+        { t:'system + task prompt',      s:'prompt',    kind:'ctx',     white:'full', black:'full'  },
+        { t:'assistant turn 1',          s:'turn 1',    kind:'sampled', white:'full', black:'full'  },
+        { t:'tool call: ls',             s:'ls',        kind:'work',    white:'full', black:'none'  },
+        { t:'tool result: 3 files',      s:'3 files',   kind:'work',    white:'full', black:'echo'  },
+        { t:'history compacted',         s:'compacted', kind:'work',    white:'n/a',  black:'none'  },
+        { t:'assistant turn 2',          s:'turn 2',    kind:'sampled', white:'full', black:'full'  },
+        { t:'tool call: wc -l',          s:'wc -l',     kind:'work',    white:'full', black:'none'  },
+        { t:'tool result: 150 lines',    s:'150 lines', kind:'work',    white:'full', black:'echo'  },
+        { t:'malformed call, retried',   s:'retry',     kind:'work',    white:'full', black:'none'  },
+        { t:'assistant turn 3, submit',  s:'turn 3',    kind:'sampled', white:'full', black:'full'  },
+        { t:'grader verdict, reward',    s:'reward',    kind:'work',    white:'full', black:'side'  },
+      ];
+
+      const COLS = [
+        { key:'truth', title:'WHAT HAPPENED',      short:'RAN',   sub:'every event, as it ran' },
+        { key:'white', title:"WHITE BOX RECORD",   short:'WHITE', sub:'the trainer ran it' },
+        { key:'black', title:'BLACK BOX RECORD',   short:'BLACK', sub:'the agent ran it' },
+      ];
+
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const narrow = W < 640;
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const mono = 'ui-monospace,SFMono-Regular,Menlo,monospace';
+        const cSampled = P(0), cCtx = P(2), cWork = P(3);
+        const kindColor = (k) => k === 'sampled' ? cSampled : (k === 'ctx' ? cCtx : cWork);
+
+        // Narrow keeps the shared label column and drops every in-bar caption:
+        // three captioned columns cannot fit on a phone, and truncating them was
+        // worse than losing them, since the left column already names each row.
+        const labW = narrow ? 92 : 186;
+        const gap = 12;
+        const nCol = COLS.length;
+        const colW = (W - labW - gap*nCol) / nCol;
+        const headH = narrow ? 26 : 40, rowH = 24, top = headH + 16;
+        const H = top + EVENTS.length*rowH + (narrow ? 24 : 46);
+
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="The same rollout under both architectures. The white-box record keeps every event; the black-box record keeps only the model turns, loses the tool calls and the compaction, and sees tool results only as text echoed back in the next prompt.">`;
+        s += `<defs><pattern id="tr-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">`
+           + `<line x1="0" y1="0" x2="0" y2="6" stroke="${mu}" stroke-opacity=".38" stroke-width="1.6"/></pattern></defs>`;
+
+        // event labels
+        EVENTS.forEach((e, i) => {
+          const y = top + i*rowH + rowH/2;
+          s += `<circle cx="5" cy="${y}" r="3.2" fill="${kindColor(e.kind)}"/>`;
+          s += `<text x="14" y="${y+4}" font-size="${narrow?10:11.5}" fill="${mu}">${esc(narrow ? e.s : e.t)}</text>`;
+        });
+
+        const tallies = [];
+        COLS.forEach((col, ci) => {
+          const x = labW + gap/2 + ci*(colW + gap);
+          const isTruth = col.key === 'truth';
+          s += `<rect x="${x}" y="${headH-24}" width="${colW}" height="${H - headH - 4}" rx="10"
+                 fill="${sf}" stroke="${bd}"/>`;
+          s += `<text x="${x+(narrow?7:12)}" y="${headH-7}" font-size="${narrow?9:10.5}" fill="${mu}" font-family="${mono}" letter-spacing=".5">${esc(narrow ? col.short : col.title)}</text>`;
+          if (!narrow) s += `<text x="${x+12}" y="${headH+8}" font-size="11" fill="${mu}" fill-opacity=".8">${esc(col.sub)}</text>`;
+
+          let kept = 0, sampled = 0;
+          EVENTS.forEach((e, i) => {
+            const y = top + i*rowH + rowH/2;
+            const pad = narrow ? 6 : 12;
+            const bx = x + pad, bw = colW - pad*2, bh = rowH - 8;
+            const state = isTruth ? 'full' : e[col.key];
+            const c = kindColor(e.kind);
+            if (state === 'full') {
+              kept++; if (e.kind === 'sampled') sampled++;
+              s += `<rect x="${bx}" y="${y-bh/2}" width="${bw}" height="${bh}" rx="4" fill="${c}" fill-opacity="${e.kind==='sampled'?0.55:0.22}" stroke="${c}" stroke-opacity=".55"/>`;
+
+            } else if (state === 'echo') {
+              // survives only as text inside the next prompt: present, but not as an
+              // observed event with its own tokens
+              s += `<rect x="${bx}" y="${y-bh/2}" width="${bw}" height="${bh}" rx="4" fill="none" stroke="${c}" stroke-opacity=".5" stroke-dasharray="4 3"/>`;
+              s += `<text x="${bx+7}" y="${y+3.5}" font-size="9.5" fill="${mu}" font-family="${mono}">${narrow ? "echoed" : "echoed in next prompt"}</text>`;
+            } else if (state === 'side') {
+              s += `<rect x="${bx}" y="${y-bh/2}" width="${bw}" height="${bh}" rx="4" fill="none" stroke="${c}" stroke-opacity=".5" stroke-dasharray="4 3"/>`;
+              s += `<text x="${bx+7}" y="${y+3.5}" font-size="9.5" fill="${mu}" font-family="${mono}">${narrow ? "out of band" : "arrives out of band"}</text>`;
+            } else if (state === 'n/a') {
+              s += `<line x1="${bx}" y1="${y}" x2="${bx+bw}" y2="${y}" stroke="${bd}" stroke-dasharray="2 4"/>`;
+              s += `<text x="${bx+bw/2}" y="${y-3}" text-anchor="middle" font-size="9.5" fill="${mu}" fill-opacity=".7" font-family="${mono}">${narrow ? "n/a" : "does not occur"}</text>`;
+            } else {
+              s += `<rect x="${bx}" y="${y-bh/2}" width="${bw}" height="${bh}" rx="4" fill="url(#tr-hatch)" stroke="${mu}" stroke-opacity=".3"/>`;
+            }
+          });
+
+          // per-column footer tally
+          const fy = H - 16;
+          const occurs = EVENTS.filter(e => e[col.key] !== 'n/a').length;
+          const txt = isTruth
+            ? `${EVENTS.length} events in the episode`
+            : (col.key === 'white'
+                ? `all ${occurs} recorded · ids + logprobs`
+                : `${kept} of ${occurs} recorded · text only`);
+          tallies.push({ title: narrow ? col.short : col.title, txt });
+          if (!narrow) s += `<text x="${x+12}" y="${fy}" font-size="10.5" fill="${mu}" font-family="${mono}">${esc(txt)}</text>`;
+        });
+
+        s += '</svg>';
+
+        const legend = `<div class="tr-lg"><span class="tr-lg-t">Each bar is one event in the episode</span>`
+          + `<span class="tr-k"><span class="tr-sw" style="background:${cSampled};opacity:.75"></span>sampled by the policy</span>`
+          + `<span class="tr-k"><span class="tr-sw" style="background:${cCtx};opacity:.4"></span>context it was conditioned on</span>`
+          + `<span class="tr-k"><span class="tr-sw" style="background:${cWork};opacity:.4"></span>everything the harness did</span>`
+          + `<span class="tr-k"><span class="tr-sw tr-hatch" style="border:1px solid ${bd}"></span>never reaches the trainer</span>`
+          + `</div>`;
+
+        const note = `<div class="tr-nt">The retry is the row to notice. The model emitted a malformed call, the harness quietly repaired it, and the black-box record has no idea it happened.</div>`;
+
+        const tallyHtml = narrow
+          ? `<div class="tr-tally">` + tallies.map(t =>
+              `<span><b>${esc(t.title)}</b> ${esc(t.txt)}</span>`).join('') + `</div>`
+          : '';
+        r.innerHTML = s + tallyHtml + legend + note;
+      };
+
+      draw();
+      if ('ResizeObserver' in window) {
+        let t; new ResizeObserver(() => { clearTimeout(t); t = setTimeout(draw, 120); }).observe(r);
+      } else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

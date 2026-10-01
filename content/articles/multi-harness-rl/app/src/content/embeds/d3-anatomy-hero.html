@@ -1,0 +1,409 @@
+<!-- Carried over from The ultimate guide to RL environments, unchanged, so the two
+     articles share one visual vocabulary. Source: content/articles/rl-environments-guide/
+     app/src/content/embeds/d3-anatomy-hero.html -->
+<div class="anatomy-hero" style="width:100%;margin:14px 0;"></div>
+<style>
+  .anatomy-hero {
+    position: relative;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 45%, color-mix(in oklab, var(--primary-color) 7%, transparent), transparent 60%),
+      var(--surface-bg);
+    color: var(--text-color);
+  }
+  .anatomy-hero svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+
+  /* typography */
+  .anatomy-hero .ah-badge {
+    fill: var(--muted-color);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+  }
+  .anatomy-hero .ah-zone-label {
+    fill: var(--muted-color);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+  }
+  .anatomy-hero .ah-zone-sub {
+    fill: var(--muted-color);
+    font-size: 10.5px;
+    font-weight: 500;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* dashed boundaries (env + episode control) */
+  .anatomy-hero .ah-boundary {
+    fill: color-mix(in oklab, var(--primary-color) 4%, var(--surface-bg));
+    stroke: var(--text-color);
+    stroke-width: 1.6;
+    stroke-dasharray: 8 5;
+    stroke-opacity: 0.55;
+  }
+
+  /* component cards (inside env, square-ish 138x92) */
+  .anatomy-hero .ah-card { stroke-width: 1.6; }
+  .anatomy-hero .ah-icon-bg { stroke: none; }
+  .anatomy-hero .ah-card-name {
+    fill: var(--text-color);
+    font-size: 12.5px;
+    font-weight: 700;
+    text-anchor: middle;
+  }
+  .anatomy-hero .ah-card-sub {
+    fill: var(--muted-color);
+    font-size: 10px;
+    font-weight: 500;
+    text-anchor: middle;
+  }
+
+  /* episode-control wide cards (icon left, text right) */
+  .anatomy-hero .ah-wide-name {
+    fill: var(--text-color);
+    font-size: 14.5px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .anatomy-hero .ah-wide-sub {
+    fill: var(--muted-color);
+    font-size: 11.5px;
+    font-weight: 500;
+  }
+
+  /* arrow flow */
+  .anatomy-hero .ah-arrow {
+    stroke: var(--muted-color);
+    stroke-width: 1.7;
+    fill: none;
+  }
+  .anatomy-hero .ah-arrow-label {
+    fill: var(--muted-color);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    paint-order: stroke;
+    stroke: var(--surface-bg);
+    stroke-width: 5;
+  }
+  /* inner-loop arrows inside Episode Control */
+  .anatomy-hero .ah-inner-arrow {
+    stroke: color-mix(in oklab, var(--muted-color) 70%, transparent);
+    stroke-width: 1.6;
+    fill: none;
+  }
+  .anatomy-hero .ah-return-loop {
+    stroke: color-mix(in oklab, var(--primary-color) 65%, var(--muted-color));
+    stroke-width: 1.6;
+    stroke-dasharray: 5 4;
+    fill: none;
+  }
+  .anatomy-hero .ah-loop-inner-label {
+    fill: color-mix(in oklab, var(--primary-color) 80%, var(--text-color));
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .anatomy-hero .ah-loop-label {
+    fill: color-mix(in oklab, var(--primary-color) 80%, var(--text-color));
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    paint-order: stroke;
+    stroke: var(--surface-bg);
+    stroke-width: 6;
+  }
+
+  /* clickable env header */
+  .anatomy-hero a.ah-env-link { text-decoration: none; cursor: pointer; }
+  .anatomy-hero a.ah-env-link:hover .ah-zone-label { fill: var(--primary-color); }
+  .anatomy-hero a.ah-env-link:hover .ah-link-arrow { fill: var(--primary-color); }
+  .anatomy-hero .ah-link-arrow {
+    fill: var(--muted-color);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  /* card entrance animation */
+  @keyframes ah-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .anatomy-hero .ah-card-group {
+    animation: ah-fade-in 0.55s cubic-bezier(.25,.8,.4,1) backwards;
+  }
+  .anatomy-hero .ah-card-group:nth-of-type(1)  { animation-delay: 0.04s; }
+  .anatomy-hero .ah-card-group:nth-of-type(2)  { animation-delay: 0.08s; }
+  .anatomy-hero .ah-card-group:nth-of-type(3)  { animation-delay: 0.12s; }
+  .anatomy-hero .ah-card-group:nth-of-type(4)  { animation-delay: 0.16s; }
+  .anatomy-hero .ah-card-group:nth-of-type(5)  { animation-delay: 0.20s; }
+  .anatomy-hero .ah-card-group:nth-of-type(6)  { animation-delay: 0.24s; }
+  .anatomy-hero .ah-card-group:nth-of-type(7)  { animation-delay: 0.28s; }
+  .anatomy-hero .ah-card-group:nth-of-type(8)  { animation-delay: 0.32s; }
+  .anatomy-hero .ah-card-group:nth-of-type(9)  { animation-delay: 0.36s; }
+  .anatomy-hero .ah-card-group:nth-of-type(10) { animation-delay: 0.42s; }
+  .anatomy-hero .ah-card-group:nth-of-type(11) { animation-delay: 0.46s; }
+  .anatomy-hero .ah-card-group:nth-of-type(12) { animation-delay: 0.50s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .anatomy-hero .ah-card-group { animation: none; }
+  }
+</style>
+<script>
+  (() => {
+    const bootstrap = () => {
+      const scriptEl = document.currentScript;
+      let container = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(container && container.classList && container.classList.contains('anatomy-hero'))) {
+        const cands = Array.from(document.querySelectorAll('.anatomy-hero'))
+          .filter(el => !(el.dataset && el.dataset.mounted === 'true'));
+        container = cands[cands.length - 1] || null;
+      }
+      if (!container || (container.dataset && container.dataset.mounted === 'true')) return;
+      container.dataset.mounted = 'true';
+
+      // ── Lucide-style icons (24x24 viewBox, stroke=white, fill=none) ──
+      const ICONS = {
+        tasks: '<rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h2"/>',
+        prompt: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h5"/>',
+        initial: '<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>',
+        tools: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+        state: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/>',
+        exec: '<rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>',
+        observation: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+        reward: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+        done: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+        llm: '<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/><line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="15" x2="22" y2="15"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="2" y1="15" x2="4" y2="15"/>',
+        loop: '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/>',
+        trainer: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+        weights: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+      };
+
+      const renderIcon = (key, x, y, size = 22) => `
+        <svg x="${x}" y="${y}" width="${size}" height="${size}" viewBox="0 0 24 24"
+             fill="none" stroke="white" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">${ICONS[key]}</svg>
+      `;
+
+      // ── Geometry ────────────────────────────────────────────────────
+      // Inside env: 3x3 grid of small component cards
+      const cardW = 138, cardH = 96, cardGapX = 16, cardGapY = 16;
+      const envInnerPad = 24;
+      const envW = envInnerPad * 2 + cardW * 3 + cardGapX * 2;     // 494
+      const envH = envInnerPad * 2 + cardH * 3 + cardGapY * 2;     // 368
+
+      // Inside Episode Control: 4 wide cards stacked vertically
+      // (LLM Agent · Training loop · Trainer · Weight update)
+      const wideW = 220, wideH = 76, wideGapY = 14;
+      const ecInnerPadL = 24;
+      const ecInnerPadR = 50;        // extra room on the right for the inner-loop curve
+      const ecInnerPadV = 24;
+      const ecW = ecInnerPadL + wideW + ecInnerPadR;               // 294
+      const ecH = ecInnerPadV * 2 + wideH * 4 + wideGapY * 3;      // 48 + 304 + 42 = 394
+
+      const padX = 40, padTop = 96, padBottom = 56;
+      const gapBetween = 110;
+
+      const contentH = Math.max(envH, ecH);                        // 372
+      const envX = padX;
+      const envY = padTop + (contentH - envH) / 2;
+      const ecX  = envX + envW + gapBetween;
+      const ecY  = padTop + (contentH - ecH) / 2;
+      const W = ecX + ecW + padX;
+      const H = padTop + contentH + padBottom;
+
+      // ── Components inside env ───────────────────────────────────────
+      const COMPONENTS = [
+        { name: 'Tasks',         icon: 'tasks',      color: '#f97316', sub: 'dataset' },
+        { name: 'Prompt template', icon: 'prompt',   color: '#a855f7', sub: 'task → prompt' },
+        { name: 'Initial state', icon: 'initial',    color: '#6366f1', sub: 'reset()' },
+        { name: 'Tools / Harness', icon: 'tools',    color: '#eab308', sub: 'tool defs + wiring' },
+        { name: 'State',         icon: 'state',      color: '#14b8a6', sub: 'world state' },
+        { name: 'Execution backend', icon: 'exec',   color: '#22c55e', sub: 'where tools run' },
+        { name: 'Observation',   icon: 'observation',color: '#06b6d4', sub: 'next-turn input' },
+        { name: 'Reward',        icon: 'reward',     color: '#3b82f6', sub: 'rubric / verify' },
+        { name: 'Done',          icon: 'done',       color: '#ec4899', sub: 'termination' },
+      ];
+
+      const renderEnvCard = (c, i) => {
+        const col = i % 3;
+        const row = Math.floor(i / 3);
+        const x = envX + envInnerPad + col * (cardW + cardGapX);
+        const y = envY + envInnerPad + row * (cardH + cardGapY);
+        const fill   = `color-mix(in oklab, ${c.color} 14%, var(--surface-bg))`;
+        const iconSize = 30;
+        const iconBgX = x + (cardW - iconSize) / 2;
+        const iconBgY = y + 12;
+        const iconInnerSize = 20;
+        const iconInnerX = iconBgX + (iconSize - iconInnerSize) / 2;
+        const iconInnerY = iconBgY + (iconSize - iconInnerSize) / 2;
+        return `
+          <g class="ah-card-group">
+            <rect class="ah-card" x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="11" ry="11"
+                  fill="${fill}" stroke="${c.color}"/>
+            <rect class="ah-icon-bg" x="${iconBgX}" y="${iconBgY}" width="${iconSize}" height="${iconSize}"
+                  rx="8" ry="8" fill="${c.color}"/>
+            ${renderIcon(c.icon, iconInnerX, iconInnerY, iconInnerSize)}
+            <text class="ah-card-name" x="${x + cardW/2}" y="${y + 64}">${c.name}</text>
+            <text class="ah-card-sub"  x="${x + cardW/2}" y="${y + 80}">${c.sub}</text>
+          </g>
+        `;
+      };
+      const envCardsSvg = COMPONENTS.map(renderEnvCard).join('');
+
+      // ── Components inside Episode Control ───────────────────────────
+      const EC_COMPONENTS = [
+        { name: 'LLM Agent',     icon: 'llm',     color: '#8b5cf6', sub: 'policy · token gen' },
+        { name: 'Rollout',       icon: 'loop',    color: '#0ea5e9', sub: 'collect episode' },
+        { name: 'Trainer',       icon: 'trainer', color: '#f59e0b', sub: 'loss + gradient' },
+        { name: 'Weight update', icon: 'weights', color: '#f43f5e', sub: 'apply update' },
+      ];
+
+      const renderEcCard = (c, i) => {
+        const x = ecX + ecInnerPadL;
+        const y = ecY + ecInnerPadV + i * (wideH + wideGapY);
+        const fill = `color-mix(in oklab, ${c.color} 14%, var(--surface-bg))`;
+        const iconBgSize = 38;
+        const iconBgX = x + 14;
+        const iconBgY = y + (wideH - iconBgSize) / 2;
+        const iconInnerSize = 22;
+        const iconInnerX = iconBgX + (iconBgSize - iconInnerSize) / 2;
+        const iconInnerY = iconBgY + (iconBgSize - iconInnerSize) / 2;
+        const textX = iconBgX + iconBgSize + 14;
+        return `
+          <g class="ah-card-group">
+            <rect class="ah-card" x="${x}" y="${y}" width="${wideW}" height="${wideH}" rx="12" ry="12"
+                  fill="${fill}" stroke="${c.color}" stroke-width="1.7"/>
+            <rect class="ah-icon-bg" x="${iconBgX}" y="${iconBgY}" width="${iconBgSize}" height="${iconBgSize}"
+                  rx="9" ry="9" fill="${c.color}"/>
+            ${renderIcon(c.icon, iconInnerX, iconInnerY, iconInnerSize)}
+            <text class="ah-wide-name" x="${textX}" y="${y + wideH/2 - 2}" style="font-size: 13.5px;">${c.name}</text>
+            <text class="ah-wide-sub"  x="${textX}" y="${y + wideH/2 + 15}" style="font-size: 11px;">${c.sub}</text>
+          </g>
+        `;
+      };
+      const ecCardsSvg = EC_COMPONENTS.map(renderEcCard).join('');
+
+      // ── Inner-loop arrows: vertical down between consecutive cards,
+      //    plus a curved return arrow on the right from Weight update → LLM
+      const ecCenterX  = ecX + ecInnerPadL + wideW / 2;
+      const downArrowsSvg = EC_COMPONENTS.slice(0, -1).map((_, i) => {
+        const fromY = ecY + ecInnerPadV + (i + 1) * wideH + i * wideGapY;
+        const toY   = fromY + wideGapY;
+        return `<path class="ah-inner-arrow" d="M${ecCenterX},${fromY + 1} L${ecCenterX},${toY - 1}"
+                      marker-end="url(#ah-arrow-inner)"/>`;
+      }).join('');
+
+      const cardRightX = ecX + ecInnerPadL + wideW;       // right edge of every EC card
+      const llmCenterY    = ecY + ecInnerPadV + wideH / 2;
+      const weightCenterY = ecY + ecInnerPadV + (3 * wideH + 3 * wideGapY) + wideH / 2;
+      const curveOutX     = cardRightX + 36;              // how far right the loop bulges
+      const returnLoopSvg = `
+        <path class="ah-return-loop"
+              d="M${cardRightX},${weightCenterY}
+                 C${curveOutX},${weightCenterY} ${curveOutX},${llmCenterY} ${cardRightX},${llmCenterY}"
+              marker-end="url(#ah-arrow-loop)"/>
+        <text class="ah-loop-inner-label" x="${curveOutX + 4}"
+              y="${(weightCenterY + llmCenterY) / 2}" text-anchor="start">policy<tspan x="${curveOutX + 4}" dy="14">update</tspan></text>
+      `;
+
+      // ── Arrows between env and Episode Control ──────────────────────
+      // Anchor at LLM Agent's vertical center (top card in EC).
+      const envRight = envX + envW;
+      const ecLeft   = ecX;
+      const llmCardCenterY = ecY + ecInnerPadV + wideH / 2;
+      const actionY = llmCardCenterY - 16;
+      const obsY    = llmCardCenterY + 16;
+
+      const flowSvg = `
+        <defs>
+          <marker id="ah-arrow" viewBox="0 -5 10 10" refX="9" refY="0"
+                  markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,-4L10,0L0,4" fill="var(--muted-color)"/>
+          </marker>
+          <marker id="ah-arrow-inner" viewBox="0 -5 10 10" refX="9" refY="0"
+                  markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,-4L10,0L0,4" fill="color-mix(in oklab, var(--muted-color) 70%, transparent)"/>
+          </marker>
+          <marker id="ah-arrow-loop" viewBox="0 -5 10 10" refX="9" refY="0"
+                  markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,-4L10,0L0,4"
+                  fill="color-mix(in oklab, var(--primary-color) 65%, var(--muted-color))"/>
+          </marker>
+        </defs>
+
+        <!-- action: LLM (in EC) → env -->
+        <path class="ah-arrow" d="M${ecLeft - 2},${actionY} L${envRight + 2},${actionY}"
+              marker-end="url(#ah-arrow)"/>
+        <text class="ah-arrow-label" x="${(envRight + ecLeft) / 2}" y="${actionY - 7}"
+              text-anchor="middle">action</text>
+
+        <!-- observation: env → LLM (in EC) -->
+        <path class="ah-arrow" d="M${envRight + 2},${obsY} L${ecLeft - 2},${obsY}"
+              marker-end="url(#ah-arrow)"/>
+        <text class="ah-arrow-label" x="${(envRight + ecLeft) / 2}" y="${obsY + 14}"
+              text-anchor="middle">observation</text>
+
+        <!-- episode-control label sits above the action/observation pair -->
+        <text class="ah-loop-label" x="${(envRight + ecLeft) / 2}" y="${actionY - 30}"
+              text-anchor="middle">episode control</text>
+      `;
+
+      // ── Headers / zone labels ───────────────────────────────────────
+      const COMPONENTS_ANCHOR = '#what-makes-an-rl-environment-for-llms-the-components';
+      const headersSvg = `
+        <text class="ah-badge" x="${padX - 4}" y="34">Anatomy of an RL environment</text>
+
+        <a class="ah-env-link" href="${COMPONENTS_ANCHOR}">
+          <text class="ah-zone-label" x="${envX}" y="${envY - 24}">RL ENVIRONMENT</text>
+          <text class="ah-link-arrow" x="${envX + 142}" y="${envY - 24}">↗ components</text>
+          <text class="ah-zone-sub"   x="${envX}" y="${envY - 9}">docker · in-venv</text>
+        </a>
+
+        <text class="ah-zone-label" x="${ecX}" y="${ecY - 24}">TRAINING LOOP</text>
+        <text class="ah-zone-sub"   x="${ecX}" y="${ecY - 9}">agent · collector · trainer</text>
+      `;
+
+      // ── Final SVG ────────────────────────────────────────────────────
+      container.innerHTML = `
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+          ${headersSvg}
+
+          <!-- env dashed boundary -->
+          <rect class="ah-boundary"
+                x="${envX}" y="${envY}" width="${envW}" height="${envH}"
+                rx="20" ry="20"/>
+
+          <!-- episode-control dashed boundary -->
+          <rect class="ah-boundary"
+                x="${ecX}" y="${ecY}" width="${ecW}" height="${ecH}"
+                rx="20" ry="20"/>
+
+          ${envCardsSvg}
+          ${ecCardsSvg}
+          ${downArrowsSvg}
+          ${returnLoopSvg}
+          ${flowSvg}
+        </svg>
+      `;
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootstrap, { once: true });
+    } else {
+      bootstrap();
+    }
+  })();
+</script>

@@ -1,0 +1,730 @@
+<div class="d3-opaque-wire" style="width:100%;margin:10px 0;aspect-ratio:5/2;min-height:280px;"></div>
+<style>
+    .d3-opaque-wire { position: relative; }
+    .d3-opaque-wire canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: crosshair;
+    }
+    .d3-opaque-wire .ow-counter {
+        position: absolute;
+        top: 14px;
+        left: 18px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.0px;
+        text-transform: uppercase;
+        color: var(--muted-color);
+        pointer-events: none;
+        z-index: 5;
+        font-variant-numeric: tabular-nums;
+    }
+    .d3-opaque-wire .ow-counter strong {
+        color: var(--text-color);
+        font-weight: 800;
+        font-size: 16px;
+        margin-right: 4px;
+        letter-spacing: 0;
+    }
+    .d3-opaque-wire .ow-counter .div { opacity: 0.45; margin: 0 7px; }
+    .d3-opaque-wire .d3-tooltip {
+        position: absolute;
+        top: 0; left: 0;
+        transform: translate(-9999px, -9999px);
+        pointer-events: none;
+        padding: 10px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        line-height: 1.35;
+        border: 1px solid var(--border-color);
+        background: var(--surface-bg);
+        color: var(--text-color);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.12);
+        opacity: 0;
+        transition: opacity 0.12s ease;
+        backdrop-filter: saturate(1.12) blur(8px);
+        z-index: 20;
+        min-width: 200px;
+    }
+    .d3-opaque-wire .d3-tooltip__inner {
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .d3-opaque-wire .d3-tooltip .swatch {
+        display: inline-block;
+        width: 8px; height: 8px;
+        border-radius: 2px;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+</style>
+<script>
+    (() => {
+        const ROOT_CLASS = 'd3-opaque-wire';
+
+        const bootstrap = () => {
+            const scriptEl = document.currentScript;
+            let container = scriptEl ? scriptEl.previousElementSibling : null;
+            if (!(container && container.classList && container.classList.contains(ROOT_CLASS))) {
+                const cands = Array.from(document.querySelectorAll('.' + ROOT_CLASS))
+                    .filter((el) => !(el.dataset && el.dataset.mounted === 'true'));
+                container = cands[cands.length - 1] || null;
+            }
+            if (!container) return;
+            if (container.dataset) {
+                if (container.dataset.mounted === 'true') return;
+                container.dataset.mounted = 'true';
+            }
+
+            // Same three anchors as the guide banner and banner-seam.html, so the set
+            // reads as one family. Hue is per harness — but it only ever appears on the
+            // wire and in the tokens, never on a box. Identity is not observable from
+            // outside the agent; it becomes observable the moment it makes a call.
+            const A0 = [78, 165, 183], A1 = [206, 192, 250], A2 = [232, 137, 171];
+            const ramp = (t) => {
+                t = Math.max(0, Math.min(1, t));
+                const [c, d, u] = t <= 0.5 ? [A0, A1, t / 0.5] : [A1, A2, (t - 0.5) / 0.5];
+                return [0, 1, 2].map((k) => Math.round(c[k] + (d[k] - c[k]) * u));
+            };
+
+            // Harnesses that ship a recognisable mark. Logos live in
+            // app/public/logos/ and are served from the Space at /logos/<name>.png.
+            const HARNESSES = [
+                'claude-code', 'codex', 'gemini-cli', 'opencode',
+                'goose', 'qwen-coder', 'swe-agent', 'openhands-sdk',
+                'hermes', 'kimi-cli', 'terminus-2', 'trae-agent',
+            ];
+            // Where the project publishes a real vector mark on its own site we use
+            // that; the rest fall back to the organisation avatar. Format makes no
+            // difference to the layout — every mark is drawn into the same chip.
+            const SVG_MARKS = new Set(['opencode', 'openhands-sdk', 'swe-agent', 'claude-code']);
+            const LOGOS = {};
+            // A dozen brands means a dozen brand colours, which fight each other
+            // and the palette. Desaturate each mark once on load into an offscreen
+            // canvas and draw that instead. Doing it here rather than with a CSS
+            // filter is necessary because these are painted onto a canvas, and
+            // doing it per mark rather than with ctx.filter keeps it working in
+            // browsers that do not implement canvas filters. Source files are left
+            // untouched, so app/public/logos/README.md stays accurate.
+            const desaturate = (img) => {
+                const N = 128;
+                const off = document.createElement('canvas');
+                off.width = off.height = N;
+                const c = off.getContext('2d', { willReadFrequently: true });
+                try {
+                    c.drawImage(img, 0, 0, N, N);
+                    const d = c.getImageData(0, 0, N, N), px = d.data;
+                    for (let i = 0; i < px.length; i += 4) {
+                        // Rec.709 luma. Alpha is untouched, so marks with
+                        // transparent grounds stay transparent.
+                        const y = 0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2];
+                        px[i] = px[i + 1] = px[i + 2] = y;
+                    }
+                    c.putImageData(d, 0, 0);
+                    return off;
+                } catch (e) {
+                    return img;   // a colour mark beats no mark
+                }
+            };
+            const ready = (m) => !!m && (m.tagName === 'CANVAS' || (m.complete && m.naturalWidth));
+            for (const name of HARNESSES) {
+                const img = new Image();
+                img.decoding = 'async';
+                img.onload = () => { LOGOS[name] = desaturate(img); };
+                img.src = '/logos/' + name + (SVG_MARKS.has(name) ? '.svg' : '.png');
+                LOGOS[name] = img;   // colour original until the grey copy exists
+            }
+            const HUE = HARNESSES.map((_, i) =>
+                ramp(HARNESSES.length > 1 ? i / (HARNESSES.length - 1) : 0.5));
+
+            const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
+
+            // No slab may repeat a harness that is already on screen — two boxes
+            // labelled the same read as a bug, not as a fleet.
+            const pickUnused = (taken) => {
+                const free = HARNESSES.map((_, i) => i).filter((i) => !taken.has(i));
+                const pool = free.length ? free : HARNESSES.map((_, i) => i);
+                return pool[Math.floor(Math.random() * pool.length)];
+            };
+            const cssVar = (name, fallback) => {
+                const v = getComputedStyle(container).getPropertyValue(name).trim();
+                return v || fallback;
+            };
+            const parseRGB = (str) => {
+                const m = String(str).match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+                return m ? [+m[1], +m[2], +m[3]] : null;
+            };
+            const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+            const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+            const easeOutBack = (t) => {
+                const c1 = 0.9, c3 = c1 + 1;
+                return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+            };
+            const rnd = (a, b) => a + Math.random() * (b - a);
+            // Cluster rows toward the middle so the stream reads as a current with a
+            // soft edge rather than a filled rectangle of noise.
+            const gaussRow = () => {
+                const u = (Math.random() + Math.random() + Math.random()) / 3;
+                return Math.max(0, Math.min(STREAM_ROWS - 1, Math.floor(u * STREAM_ROWS)));
+            };
+
+            const reduceMotion = window.matchMedia
+                && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            container.style.position = container.style.position || 'relative';
+            const canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+
+            const counterEl = document.createElement('div');
+            counterEl.className = 'ow-counter';
+            counterEl.innerHTML =
+                '<strong id="ow-h">0</strong><span style="opacity:.6">harnesses</span>' +
+                '<span class="div">·</span>' +
+                '<strong id="ow-c">0</strong><span style="opacity:.6">calls intercepted</span>' +
+                '<span class="div">·</span>' +
+                '<strong id="ow-t">0</strong><span style="opacity:.6">tokens on the wire</span>';
+            container.appendChild(counterEl);
+            const outH = counterEl.querySelector('#ow-h');
+            const outC = counterEl.querySelector('#ow-c');
+            const outT = counterEl.querySelector('#ow-t');
+
+            const tip = document.createElement('div');
+            tip.className = 'd3-tooltip';
+            const tipInner = document.createElement('div');
+            tipInner.className = 'd3-tooltip__inner';
+            tip.appendChild(tipInner);
+            container.appendChild(tip);
+
+            // ─── Layout ───────────────────────────────────────────────────────────
+            const PAD_TOP = 64, PAD_BOTTOM = 32, PAD_X = 24;
+            const GRID_RIGHT_FRAC = 0.52;  // the harness grid ends here
+            const BUS_FRAC = 0.645;        // the capture proxy
+            const CARD_MIN_W = 122, CARD_MIN_H = 92;
+            const TRACE_STEP = 3;   // px per sample in a card's activity trace
+            const STOP_D = 52, BOOT_D = 74;   // teardown and boot, in frames
+            const TOK = 4, TOK_GAP = 1;
+            let STREAM_ROWS = 9;   // set from the available height in layout()
+
+            let W = 0, H = 0, dpr = 1;
+            let lastBoxH = -1;   // the container height layout() last measured
+            let boxes = [], gridRight = 0, busX = 0, gcols = 0, grows = 0;
+            let streamX0 = 0, streamY0 = 0, streamW = 0;
+            let hover = -1;
+            let frame = 0, calls = 0, tokensSeen = 0;
+            let pulses = [], ticks = [], stream = [];
+
+            // The host can be shorter than we are — the article hero clips this embed
+            // to a fixed height — so measure what is actually visible.
+            const visibleHeight = (rect) => {
+                let h = rect.height;
+                let node = container.parentElement;
+                while (node && node !== document.body) {
+                    const cs = getComputedStyle(node);
+                    if (cs.overflow !== 'visible' || cs.overflowY !== 'visible') {
+                        h = Math.min(h, node.getBoundingClientRect().bottom - rect.top);
+                    }
+                    node = node.parentElement;
+                }
+                return Math.max(140, h);
+            };
+
+            const layout = () => {
+                const rect = container.getBoundingClientRect();
+                W = Math.max(1, Math.round(rect.width));
+                H = Math.max(1, Math.round(visibleHeight(rect)));
+
+                // Break a circular dependency. In the hero this container's own
+                // aspect-ratio and min-height do not apply, so it is content-sized: it
+                // takes its height from the canvas, and the canvas takes its height
+                // from the container. Mount once while hidden and the pair latch at the
+                // clamped floor and never recover. So when our own box looks collapsed,
+                // adopt the nearest ancestor that has a real one, and pin our height to
+                // it so the collapse cannot come back.
+                if (H < 200) {
+                    let n = container.parentElement, best = 0;
+                    while (n && n !== document.body && best < 200) {
+                        best = Math.max(best, Math.round(n.getBoundingClientRect().height));
+                        n = n.parentElement;
+                    }
+                    if (best > H) H = Math.min(best, 560);
+                }
+                container.style.height = H + 'px';
+                canvas.style.height = H + 'px';
+                lastBoxH = Math.round(container.getBoundingClientRect().height);
+                dpr = Math.max(1, window.devicePixelRatio || 1);
+                canvas.width = Math.round(W * dpr);
+                canvas.height = Math.round(H * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+                gridRight = Math.round(W * GRID_RIGHT_FRAC);
+                busX = Math.round(W * BUS_FRAC);
+
+                const usable = H - PAD_TOP - PAD_BOTTOM;
+                const gridW = gridRight - PAD_X;
+                gcols = Math.max(2, Math.min(4, Math.floor(gridW / CARD_MIN_W)));
+                grows = Math.max(2, Math.min(4, Math.floor(usable / CARD_MIN_H)));
+                const n = Math.min(HARNESSES.length, gcols * grows);
+                const cw = gridW / gcols, ch = usable / grows;
+
+                const prev = boxes;
+                const taken = new Set();
+                boxes = [];
+                for (let i = 0; i < n; i++) {
+                    const p = prev[i];
+                    const hi = p ? p.hi : pickUnused(taken);
+                    taken.add(hi);
+                    const col = i % gcols, row = Math.floor(i / gcols);
+                    boxes.push({
+                        hi, name: HARNESSES[hi], rgb: HUE[hi],
+                        x: PAD_X + col * cw + 4, y: PAD_TOP + row * ch + 4,
+                        w: cw - 12, h: ch - 12,
+                        interval: p ? p.interval : Math.round(rnd(170, 420)),
+                        timer: p ? p.timer : Math.round(rnd(0, 400)),
+                        calls: p ? p.calls : 0,
+                        flash: 0,
+                        // a decaying spike train: one spike per model call, scrolling
+                        // left, so each harness's cadence is visible at a glance
+                        trace: new Array(Math.max(8, Math.floor((cw - 32) / TRACE_STEP))).fill(0),
+                        spike: 0,
+                        idle: rnd(0, Math.PI * 2),
+                        phase: 'run', pt: 0,
+                        swap: p ? p.swap : Math.round(rnd(1500, 3800)),
+                    });
+                }
+
+                STREAM_ROWS = Math.max(6, Math.floor((usable * 0.62) / (TOK + TOK_GAP)));
+                streamX0 = busX + 18;
+                streamW = Math.max(40, W - PAD_X - streamX0);
+                streamY0 = Math.round(H / 2 - (STREAM_ROWS * (TOK + TOK_GAP)) / 2);
+                stream = stream.filter((c) => c.x < streamX0 + streamW);
+            };
+
+            // ─── Update ───────────────────────────────────────────────────────────
+            const emit = (b) => {
+                pulses.push({
+                    b, t: 0, dur: Math.round(rnd(120, 200)),
+                    sx: b.x + b.w, sy: b.y + b.h / 2,
+                    ty: streamY0 + rnd(4, STREAM_ROWS * (TOK + TOK_GAP) - 4),
+                    n: Math.round(rnd(20, 40)),
+                });
+                b.calls++; calls++;
+                b.flash = 38;   // drives the ring on the logo and the label hue
+                b.spike = 0.66; // and the peak in the card's activity trace
+            };
+
+            const update = () => {
+                frame++;
+                for (const b of boxes) {
+                    if (b.flash > 0) b.flash--;
+                    b.idle += 0.028;
+
+                    if (b.phase === 'run') {
+                        if (--b.timer <= 0) { b.timer = b.interval; emit(b); }
+                        // the sandbox is recycled and another harness takes the slot
+                        if (--b.swap <= 0) { b.phase = 'stop'; b.pt = STOP_D; b.spike = 0; }
+                    } else if (b.phase === 'stop') {
+                        if (--b.pt <= 0) {
+                            const taken = new Set(boxes.filter((o) => o !== b).map((o) => o.hi));
+                            b.hi = pickUnused(taken);
+                            b.name = HARNESSES[b.hi];
+                            b.rgb = HUE[b.hi];
+                            b.calls = 0;
+                            b.trace.fill(0);
+                            b.phase = 'boot'; b.pt = BOOT_D;
+                        }
+                    } else if (--b.pt <= 0) {
+                        b.phase = 'run';
+                        b.swap = Math.round(rnd(1500, 3800));
+                        b.timer = Math.round(rnd(60, 200));
+                    }
+                    // Sample slowly: a card holds roughly four seconds of history, so a
+                    // call's peak is still on screen when the next one lands. At two
+                    // frames per sample the peak scrolled off before you could see it.
+                    if (frame % 8 === 0 && b.phase !== 'run') {
+                        b.trace.push(b.phase === 'boot' ? Math.random() * 0.05 : 0);
+                        b.trace.shift();
+                    } else if (frame % 8 === 0) {
+                        // A sandbox is busy between model calls too — running tools,
+                        // reading files. The floor is that work; the peaks are the
+                        // calls the proxy actually sees.
+                        const floor = 0.09 + 0.06 * Math.sin(b.idle * 1.7 + b.hi)
+                            + Math.random() * 0.05;
+                        b.trace.push(Math.min(1, b.spike + floor));
+                        b.trace.shift();
+                        b.spike *= 0.88;
+                    }
+                    // the set is larger than what fits, so slabs hand over occasionally
+                    if (--b.swap <= 0) {
+                        b.swap = Math.round(rnd(900, 2400));
+                        const taken = new Set(boxes.filter((o) => o !== b).map((o) => o.hi));
+                        b.hi = pickUnused(taken);
+                        b.name = HARNESSES[b.hi];
+                        b.rgb = HUE[b.hi];
+                    }
+                }
+                for (let i = pulses.length - 1; i >= 0; i--) {
+                    const p = pulses[i];
+                    if (++p.t >= p.dur) {
+                        ticks.push({ y: p.ty, t: 0, rgb: p.b.rgb });
+                        // Only past the proxy does anything become visible. It flows
+                        // rather than stacking — each token drifts at its own rate, so
+                        // the field reads as a current, not as columns.
+                        for (let k = 0; k < p.n; k++) {
+                            stream.push({
+                                x: streamX0 - rnd(0, 26),
+                                row: gaussRow(),
+                                rgb: p.b.rgb,
+                                bright: Math.random() < 0.24,
+                                v: rnd(0.18, 0.42),
+                            });
+                            tokensSeen += 26 + Math.floor(Math.random() * 90);
+                        }
+                        pulses.splice(i, 1);
+                    }
+                }
+                for (let i = ticks.length - 1; i >= 0; i--) if (++ticks[i].t > 44) ticks.splice(i, 1);
+                for (let i = stream.length - 1; i >= 0; i--) {
+                    stream[i].x += stream[i].v;
+                    if (stream[i].x > streamX0 + streamW) stream.splice(i, 1);
+                }
+            };
+
+            // ─── Draw ─────────────────────────────────────────────────────────────
+            const draw = () => {
+                const muted = cssVar('--muted-color', 'rgba(128,128,128,0.75)');
+                const border = cssVar('--border-color', 'rgba(128,128,128,0.28)');
+                const txt = parseRGB(cssVar('--text-color', 'rgb(20,22,28)')) || [20, 22, 28];
+                const darkTheme = (txt[0] + txt[1] + txt[2]) / 3 > 140;
+                const card = darkTheme ? [30, 34, 44] : [249, 250, 252];
+
+                ctx.clearRect(0, 0, W, H);
+
+                // ── section eyebrows: name the two halves
+                ctx.fillStyle = muted;
+                ctx.globalAlpha = 0.5;
+                ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
+                ctx.textAlign = 'left';
+                drawTracked('AGENT HARNESSES', PAD_X, PAD_TOP - 16, 1.6);
+                drawTracked('TRAINABLE TOKENS', streamX0, PAD_TOP - 16, 1.6);
+                ctx.globalAlpha = 1;
+
+                // ── wires first, so the cards sit over the crossings
+                for (const b of boxes) {
+                    const sy = b.y + b.h / 2;
+                    ctx.strokeStyle = border;
+                    ctx.globalAlpha = 0.7;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(b.x + b.w, sy);
+                    ctx.bezierCurveTo((gridRight + busX) / 2, sy, (gridRight + busX) / 2, H / 2, busX, H / 2);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                }
+
+                // ── the harnesses: who they are is on the card, what they do is not
+                ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
+                for (let i = 0; i < boxes.length; i++) {
+                    const b = boxes[i];
+                    const hot = b.flash / 38;
+
+                    // A swap is a container going down and another coming up. The box
+                    // itself carries it: it collapses toward its centre and dims, then
+                    // springs back as the next harness boots.
+                    let dy = 0, ca = 1, bootK = 1, cScale = 1, cAlpha = 1;
+                    if (b.phase === 'stop') {
+                        const k = 1 - b.pt / STOP_D;
+                        dy = easeInOutSine(k) * 18;
+                        ca = 1 - k;
+                        bootK = 0;
+                        cScale = 1 - 0.13 * easeInOutSine(k);
+                        cAlpha = 1 - 0.55 * k;
+                    } else if (b.phase === 'boot') {
+                        const k = 1 - b.pt / BOOT_D;
+                        dy = (1 - easeOutCubic(k)) * 18;   // rises from below, where the old one went
+                        ca = k;
+                        bootK = k;
+                        cScale = 0.87 + 0.13 * easeOutBack(k);
+                        cAlpha = 0.45 + 0.55 * k;
+                    }
+
+                    ctx.save();
+                    ctx.translate(b.x + b.w / 2, b.y + b.h / 2);
+                    ctx.scale(cScale, cScale);
+                    ctx.translate(-(b.x + b.w / 2), -(b.y + b.h / 2));
+                    ctx.globalAlpha = cAlpha;
+
+                    ctx.fillStyle = rgba(card, 1);
+                    roundRect(b.x, b.y, b.w, b.h, 11);
+                    ctx.fill();
+                    ctx.strokeStyle = hot > 0 || hover === i
+                        ? rgba(b.rgb, Math.max(hot, hover === i ? 0.85 : 0))
+                        : border;
+                    ctx.lineWidth = hot > 0 || hover === i ? 1.5 : 1;
+                    roundRect(b.x, b.y, b.w, b.h, 11);
+                    ctx.stroke();
+
+                    // Every mark gets the same chip: same size, same corner radius,
+                    // same backing. The projects' own marks are wildly inconsistent —
+                    // some are dark filled squares, some are transparent line art — and
+                    // without a common chip the grid reads as a scrapbook. Drawing each
+                    // one edge to edge inside the chip makes both kinds land identically.
+                    // a running light, so a card is never fully still
+                    const breathe = 0.5 + 0.5 * Math.sin(b.idle * (b.phase === 'boot' ? 4 : 1));
+                    ctx.fillStyle = b.phase === 'run'
+                        ? rgba(b.rgb, 0.30 + 0.55 * breathe)
+                        : b.phase === 'boot'
+                            ? rgba(b.rgb, 0.35 + 0.6 * breathe)
+                            : rgba([150, 150, 158], 0.35);
+                    ctx.beginPath();
+                    ctx.arc(b.x + 13, b.y + 13, 2.4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    const img = LOGOS[b.name];
+                    const S = Math.min(32, b.h * 0.36);
+                    const lx = Math.round(b.x + b.w / 2 - S / 2);
+                    const ly = Math.round(b.y + b.h * 0.30 - S / 2 + 2 + dy);
+
+                    ctx.save();
+                    ctx.globalAlpha = ca;
+                    roundRect(lx, ly, S, S, 7);
+                    ctx.clip();
+                    ctx.fillStyle = 'rgb(252,252,253)';
+                    ctx.fillRect(lx, ly, S, S);
+                    if (ready(img)) {
+                        ctx.drawImage(img, lx, ly, S, S);
+                    } else {
+                        ctx.fillStyle = rgba(b.rgb, 0.45);
+                        ctx.fillRect(lx, ly, S, S);
+                    }
+                    ctx.restore();
+                    ctx.globalAlpha = ca;
+                    ctx.strokeStyle = darkTheme ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)';
+                    ctx.lineWidth = 1;
+                    roundRect(lx + 0.5, ly + 0.5, S - 1, S - 1, 7);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+
+                    if (hot > 0 && b.phase === 'run') {
+                        ctx.strokeStyle = rgba(b.rgb, 0.55 * hot);
+                        ctx.lineWidth = 1.2;
+                        const g = (1 - hot) * 9;
+                        roundRect(lx - g, ly - g, S + g * 2, S + g * 2, 7 + g);
+                        ctx.stroke();
+                    }
+
+                    ctx.font = '10px ui-monospace, SFMono-Regular, Menlo, monospace';
+                    ctx.fillStyle = hover === i || hot > 0 ? rgba(b.rgb, 1) : muted;
+                    ctx.globalAlpha = (hover === i || hot > 0 ? 1 : 0.8) * ca;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(b.name, b.x + b.w / 2, b.y + b.h - 26 + dy);
+                    ctx.globalAlpha = 1;
+                    ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
+
+                    // live activity: one decaying spike per model call, scrolling left.
+                    // Cadences differ per harness, so no two cards move alike.
+                    const tx = b.x + 16, tw = b.trace.length * TRACE_STEP;
+                    const tb = b.y + b.h - 11, th = 10;
+                    ctx.strokeStyle = border;
+                    ctx.globalAlpha = 0.5;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(tx, tb + 0.5);
+                    ctx.lineTo(tx + tw, tb + 0.5);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                    if (b.phase === 'boot') {
+                        ctx.fillStyle = rgba(b.rgb, 0.75);
+                        ctx.fillRect(tx, tb - 2, tw * bootK, 2);
+                    } else if (b.phase === 'run') {
+                        for (let k = 0; k < b.trace.length; k++) {
+                            const v = b.trace[k];
+                            if (v < 0.015) continue;
+                            const bh = Math.max(1, Math.pow(v, 0.8) * th);
+                            ctx.fillStyle = rgba(b.rgb, 0.30 + 0.6 * v);
+                            ctx.fillRect(tx + k * TRACE_STEP, tb - bh, 2, bh);
+                        }
+                    }
+                    ctx.restore();
+                }
+
+                // ── calls travelling the wire: the first thing that is observable
+                for (const p of pulses) {
+                    const t = easeInOutSine(p.t / p.dur);
+                    const x0 = p.sx, y0 = p.sy;
+                    const c1x = (gridRight + busX) / 2, c2x = (gridRight + busX) / 2;
+                    const mt = 1 - t;
+                    const x = mt * mt * mt * x0 + 3 * mt * mt * t * c1x + 3 * mt * t * t * c2x + t * t * t * busX;
+                    const y = mt * mt * mt * y0 + 3 * mt * mt * t * y0 + 3 * mt * t * t * (H / 2) + t * t * t * (H / 2);
+                    ctx.fillStyle = rgba(p.b.rgb, 0.95);
+                    ctx.beginPath();
+                    ctx.arc(x, y, 2.1, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = rgba(p.b.rgb, 0.22);
+                    ctx.beginPath();
+                    ctx.arc(x, y, 5.2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // ── the proxy
+                const grad = ctx.createLinearGradient(0, PAD_TOP - 10, 0, H - PAD_BOTTOM + 8);
+                grad.addColorStop(0, 'rgba(140,140,150,0.06)');
+                grad.addColorStop(0.5, 'rgba(140,140,150,0.78)');
+                grad.addColorStop(1, 'rgba(140,140,150,0.06)');
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = 1.75;
+                ctx.beginPath();
+                ctx.moveTo(busX, PAD_TOP - 10);
+                ctx.lineTo(busX, H - PAD_BOTTOM + 8);
+                ctx.stroke();
+                for (const tk of ticks) {
+                    const a = 1 - tk.t / 44;
+                    ctx.strokeStyle = rgba(tk.rgb, a * 0.9);
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(busX, H / 2 - 9 * a);
+                    ctx.lineTo(busX, H / 2 + 9 * a);
+                    ctx.stroke();
+                }
+                ctx.save();
+                ctx.translate(busX - 11, H / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillStyle = muted;
+                ctx.globalAlpha = 0.62;
+                ctx.textAlign = 'center';
+                ctx.fillText('CAPTURE PROXY', 0, 0);
+                ctx.restore();
+                ctx.globalAlpha = 1;
+
+                // ── downstream of the proxy, and only there, the tokens
+                for (const c of stream) {
+                    if (c.x < streamX0 - 2) continue;
+                    const outEdge = Math.min(1, (streamX0 + streamW - c.x) / 90);
+                    const inEdge = Math.min(1, (c.x - streamX0) / 26 + 0.25);
+                    const edge = Math.min(outEdge, inEdge);
+                    ctx.fillStyle = rgba(c.rgb, (c.bright ? 1 : 0.46) * edge);
+                    ctx.fillRect(c.x, streamY0 + c.row * (TOK + TOK_GAP), TOK, TOK);
+                }
+
+                ctx.fillStyle = muted;
+                ctx.globalAlpha = 0.55;
+                ctx.textAlign = 'left';
+                ctx.fillText('each drives its own loop — one endpoint out', PAD_X, H - PAD_BOTTOM + 20);
+                ctx.globalAlpha = 1;
+
+                outH.textContent = String(new Set(boxes.map((b) => b.name)).size);
+                outC.textContent = calls.toLocaleString();
+                outT.textContent = tokensSeen.toLocaleString();
+            };
+
+            const drawTracked = (str, x, y, sp) => {
+                let cx = x;
+                for (const ch of str) {
+                    ctx.fillText(ch, cx, y);
+                    cx += ctx.measureText(ch).width + sp;
+                }
+            };
+
+            const roundRect = (x, y, w, h, r) => {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.arcTo(x + w, y, x + w, y + h, r);
+                ctx.arcTo(x + w, y + h, x, y + h, r);
+                ctx.arcTo(x, y + h, x, y, r);
+                ctx.arcTo(x, y, x + w, y, r);
+                ctx.closePath();
+            };
+
+            // ─── Interaction ──────────────────────────────────────────────────────
+            canvas.addEventListener('mousemove', (e) => {
+                const r = canvas.getBoundingClientRect();
+                const x = e.clientX - r.left, y = e.clientY - r.top;
+                hover = -1;
+                for (let i = 0; i < boxes.length; i++) {
+                    const b = boxes[i];
+                    if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { hover = i; break; }
+                }
+                if (hover < 0) { tip.style.opacity = '0'; return; }
+                const b = boxes[hover];
+                tipInner.innerHTML =
+                    '<div style="font-weight:800;">' +
+                        '<span class="swatch" style="background:' + rgba(b.rgb, 1) + '"></span>' + b.name +
+                    '</div>' +
+                    '<div style="font-size:11px;color:var(--muted-color);">' +
+                        '<strong>Observable</strong> its model calls, nothing else' +
+                    '</div>' +
+                    '<div style="padding-top:4px;border-top:1px solid var(--border-color);font-size:11px;">' +
+                        '<strong>Calls intercepted</strong> ' + b.calls +
+                    '</div>';
+                tip.style.opacity = '1';
+                let tx = x + 14, ty = y + 16;
+                if (tx + 230 > W) tx = x - 230;
+                if (ty + 96 > H) ty = y - 96;
+                tip.style.transform = 'translate(' + Math.round(tx) + 'px,' + Math.round(ty) + 'px)';
+            });
+            canvas.addEventListener('mouseleave', () => { hover = -1; tip.style.opacity = '0'; });
+
+            // ─── Run ──────────────────────────────────────────────────────────────
+            // Re-measure and re-prime. Needed because this banner can mount while it is
+            // display:none (behind the hero's visualisation toggle), where its box is
+            // zero and visibleHeight clamps to its floor. A ResizeObserver on the
+            // container does not save us: the height that changes on becoming visible
+            // belongs to an ancestor, so the container's own box never moves.
+            const relayout = () => {
+                layout();
+                for (let i = 0; i < 900; i++) update();
+                draw();
+            };
+
+            layout();
+            // Run in so the stream is already flowing when the hero first paints.
+            for (let i = 0; i < 900; i++) update();
+
+            if (reduceMotion) {
+                draw();
+            } else {
+                let visible = true;
+                if ('IntersectionObserver' in window) {
+                    new IntersectionObserver((es) => {
+                        const was = visible;
+                        visible = es[0].isIntersecting;
+                        if (visible && !was) relayout();
+                    }, { rootMargin: '120px' }).observe(container);
+                }
+                let tick = 0;
+                const loop = () => {
+                    // Cheap self-heal. This banner can mount while display:none behind
+                    // the hero toggle, measure a zero box, and clamp to its floor. Neither
+                    // a ResizeObserver on the container nor an IntersectionObserver is
+                    // dependable there, because the height that changes belongs to an
+                    // ancestor. So check the box against what layout() last saw.
+                    // Deliberately NOT gated on `visible`: the whole failure mode is that
+                    // the observers do not fire when an ancestor flips display, so `visible`
+                    // is exactly the flag we cannot trust here. The box read is cheap and a
+                    // zero height means hidden, which we skip anyway.
+                    if (tick++ % 15 === 0) {
+                        const h = Math.round(container.getBoundingClientRect().height);
+                        if (h > 0 && Math.abs(h - lastBoxH) > 2) { visible = true; relayout(); }
+                    }
+                    if (visible) { update(); draw(); }
+                    requestAnimationFrame(loop);
+                };
+                requestAnimationFrame(loop);
+            }
+
+            let rt;
+            const onResize = () => { clearTimeout(rt); rt = setTimeout(relayout, 120); };
+            if ('ResizeObserver' in window) new ResizeObserver(onResize).observe(container);
+            else window.addEventListener('resize', onResize);
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootstrap);
+        } else {
+            bootstrap();
+        }
+    })();
+</script>

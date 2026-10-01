@@ -1,0 +1,35 @@
+## Training runs and checkpoint results
+
+Three asynchronous Qwen3.5-2B runs reached **1,000 optimizer steps**: Harbor with four
+training harnesses, native OpenCode, and Harbor with OpenCode alone. All three are
+evaluated under the same four harnesses. These are observational comparisons;
+backend, task exposure, rollout filtering and resume history differ. They do not
+isolate a causal benefit of multi-harness training.
+
+| Run | Baseline pass@1 | Best measured checkpoint | Final step 1,000 |
+| --- | ---: | ---: | ---: |
+| Harbor multi-harness | 14.6% | **37.0% at 500** | 26.3% |
+| Native OpenCode | 15.9% | **29.8% at 1,000** | 29.8% |
+| Harbor OpenCode-only | 14.6% | **39.5% at 700** | 26.4% |
+
+![All accepted checkpoint evaluations and training histories](https://raw.githubusercontent.com/adithya-s-k/HuggingEnvs/04-data-agent/04-data-agent/reports/async-comparison-20260916/comparison.png)
+
+The [full table and counts](https://github.com/adithya-s-k/HuggingEnvs/blob/04-data-agent/04-data-agent/reports/async-comparison-20260916/REPORT.md) include
+steps 900 and 1,000, whose recovery evaluations are now complete. “Best” is selected
+from the measured checkpoints on this test set; it is not an independently selected
+validation checkpoint. The peak difference of 39.5% versus 37.0% is not clearly
+separated by paired task-level uncertainty.
+
+### Equal steps do not mean equal training exposure
+
+| Run | Distinct training tasks | Supervised tokens | Zero-fresh-gradient steps |
+| --- | ---: | ---: | ---: |
+| Harbor multi-harness | 482 | 22.15M | 349/1,000 |
+| Native OpenCode | 566 | 5.33M | 583/1,000 |
+| Harbor OpenCode-only | 523 | 14.63M | 380/1,000 |
+
+The 1,000-step limit did not cover the full 1,000-task pool. Uniform-reward groups
+supply no fresh GRPO contrast, although optimizer momentum can still change weights.
+Captured training rows also differ from independent tasks: prompt forks preserve
+supervision but duplicate context. See the [token and tool accounting](https://github.com/adithya-s-k/HuggingEnvs/blob/04-data-agent/04-data-agent/reports/three-run-analysis-20260917/TRAINING.md)
+for definitions, coverage and per-harness breakdowns.

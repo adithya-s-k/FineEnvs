@@ -1,0 +1,77 @@
+<div class="harness-lockin" style="width:100%;margin:14px 0;"></div>
+<style>
+  .harness-lockin { position: relative; }
+  .harness-lockin svg { display:block; width:100%; height:auto; overflow:visible; }
+  .harness-lockin .lg { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted-color); }
+  .harness-lockin .lg-t { width:100%; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .harness-lockin .k { display:inline-flex; align-items:center; gap:7px; }
+  .harness-lockin .sw { width:13px; height:3px; border-radius:2px; }
+  .harness-lockin .nt { margin-top:10px; font-size:12px; line-height:1.5; color:var(--muted-color); }
+</style>
+<script>
+  (() => {
+    const C = 'harness-lockin';
+    const boot = () => {
+      const n = [...document.querySelectorAll('.'+C)].filter(e => e.dataset.mounted !== 'true');
+      const r = n[n.length-1]; if (!r) return; r.dataset.mounted = 'true';
+      const V = (k,f) => (getComputedStyle(r).getPropertyValue(k).trim() || f);
+      const P = (i) => {
+        if (window.ColorPalettes && window.ColorPalettes.categorical) {
+          try { return window.ColorPalettes.categorical(4)[i%4]; } catch(e) {}
+        }
+        return ['rgb(78,165,183)','rgb(146,176,234)','rgb(206,192,250)','rgb(232,137,171)'][i%4];
+      };
+      const draw = () => {
+        const W = Math.max(320, r.clientWidth);
+        const bd = V('--border-color','rgba(128,128,128,.3)');
+        const mu = V('--muted-color','rgba(128,128,128,.8)');
+        const tx = V('--text-color','#16181d');
+        const sf = V('--surface-bg','#fff');
+        const HN = ['OpenHands','mini-swe-agent','Kimi-CLI'];
+        const R = [
+          {n:'OpenSWE-32B, trained in one harness', v:[62.4,54.9,3.6],  c:P(3), flag:1},
+          {n:'Orchard-SWE, trained across several', v:[62.1,64.3,45.0], c:P(0)},
+        ];
+        const H = Math.max(240, Math.round(W/2.5));
+        const M = {t:30, r:34, b:44, l:52};
+        const iw = W-M.l-M.r, ih = H-M.t-M.b;
+        const x = i => M.l + (i/(HN.length-1))*iw;
+        const y = v => M.t + ih - (v/70)*ih;
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="A single-harness model collapsing across harnesses while a multi-harness model holds a band">`;
+        [0,20,40,60].forEach(g => {
+          s += `<line x1="${M.l}" y1="${y(g)}" x2="${W-M.r}" y2="${y(g)}" stroke="${bd}" stroke-opacity=".55"/>`;
+          s += `<text x="${M.l-8}" y="${y(g)+4}" text-anchor="end" font-size="10.5" fill="${mu}" font-family="ui-monospace,Menlo,monospace">${g}</text>`;
+        });
+        HN.forEach((h,i) => s += `<text x="${x(i)}" y="${H-22}" text-anchor="middle" font-size="11.5" fill="${mu}" font-family="ui-monospace,Menlo,monospace">${h}</text>`);
+        // the band the multi-harness model stays inside
+        const mh = R[1].v, lo = Math.min(...mh), hi = Math.max(...mh);
+        s += `<rect x="${M.l}" y="${y(hi)}" width="${iw}" height="${y(lo)-y(hi)}" fill="${P(0)}" fill-opacity=".08"/>`;
+        s += `<text x="${W-M.r-6}" y="${y(hi)-6}" text-anchor="end" font-size="10.5" fill="${P(0)}">holds a 19-point band</text>`;
+        R.forEach((r, ri) => {
+          s += `<polyline fill="none" stroke="${r.c}" stroke-width="2.4" stroke-linecap="round" points="${r.v.map((v,i)=>`${x(i)},${y(v)}`).join(' ')}"/>`;
+          r.v.forEach((v,i) => {
+            s += `<circle cx="${x(i)}" cy="${y(v)}" r="4.6" fill="${r.c}"/>`;
+            // Two series can land within a point of each other, so push the labels
+            // apart rather than stacking them, and keep the end labels inside the box.
+            const other = R[1-ri].v[i];
+            const close = Math.abs(v - other) < 6;
+            const below = (r.flag && i === r.v.length-1) || (close && v < other);
+            const anchor = i === 0 ? 'start' : i === r.v.length-1 ? 'end' : 'middle';
+            const lx2 = i === 0 ? x(i) - 4 : i === r.v.length-1 ? x(i) + 4 : x(i);
+            s += `<text x="${lx2}" y="${y(v)+(below?21:-12)}" text-anchor="${anchor}" font-size="12" font-weight="600" fill="${r.c}" font-family="ui-monospace,Menlo,monospace">${v.toFixed(1)}</text>`;
+          });
+        });
+        s += `<text x="${x(2)-14}" y="${y(14)}" text-anchor="end" font-size="11" fill="${P(3)}">not a worse score, a broken one</text>`;
+        s += '</svg>';
+        r.innerHTML = s +
+          `<div class="lg"><div class="lg-t">Legend</div>` +
+          R.map(q => `<span class="k"><span class="sw" style="background:${q.c}"></span>${q.n}</span>`).join('') +
+          `</div><div class="nt">Same benchmark, same three harnesses, two training recipes. The model trained in one harness resolves 62.4 percent inside it and 3.6 percent in a harness it has never seen. Percentage points on the axis, so the drop is a cliff rather than a slope.</div>`;
+      };
+      draw();
+      if ('ResizeObserver' in window) { let t; new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(draw,120);}).observe(r); }
+      else window.addEventListener('resize', draw);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+</script>

@@ -1,0 +1,676 @@
+<div class="d3-harness-seam" style="width:100%;margin:10px 0;aspect-ratio:3/1;min-height:280px;"></div>
+<style>
+    .d3-harness-seam { position: relative; }
+    .d3-harness-seam canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: crosshair;
+    }
+    .d3-harness-seam .seam-counter {
+        position: absolute;
+        top: 14px;
+        left: 18px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.0px;
+        text-transform: uppercase;
+        color: var(--muted-color);
+        pointer-events: none;
+        z-index: 5;
+        font-variant-numeric: tabular-nums;
+    }
+    .d3-harness-seam .seam-counter strong {
+        color: var(--text-color);
+        font-weight: 800;
+        font-size: 16px;
+        margin-right: 4px;
+        letter-spacing: 0;
+    }
+    .d3-harness-seam .seam-counter .div {
+        opacity: 0.45;
+        margin: 0 7px;
+    }
+    .d3-harness-seam .d3-tooltip {
+        position: absolute;
+        top: 0; left: 0;
+        transform: translate(-9999px, -9999px);
+        pointer-events: none;
+        padding: 10px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        line-height: 1.35;
+        border: 1px solid var(--border-color);
+        background: var(--surface-bg);
+        color: var(--text-color);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.12);
+        opacity: 0;
+        transition: opacity 0.12s ease;
+        backdrop-filter: saturate(1.12) blur(8px);
+        z-index: 20;
+        min-width: 190px;
+    }
+    .d3-harness-seam .d3-tooltip__inner {
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .d3-harness-seam .d3-tooltip .swatch {
+        display: inline-block;
+        width: 8px; height: 8px;
+        border-radius: 2px;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+</style>
+<script>
+    (() => {
+        const ROOT_CLASS = 'd3-harness-seam';
+
+        const bootstrap = () => {
+            const scriptEl = document.currentScript;
+            let container = scriptEl ? scriptEl.previousElementSibling : null;
+            if (!(container && container.classList && container.classList.contains(ROOT_CLASS))) {
+                const cands = Array.from(document.querySelectorAll('.' + ROOT_CLASS))
+                    .filter((el) => !(el.dataset && el.dataset.mounted === 'true'));
+                container = cands[cands.length - 1] || null;
+            }
+            if (!container) return;
+            if (container.dataset) {
+                if (container.dataset.mounted === 'true') return;
+                container.dataset.mounted = 'true';
+            }
+
+            // ─── Palette ──────────────────────────────────────────────────────────
+            // Deliberate exception to "colours from window.ColorPalettes": these are
+            // the same three anchors as the RL-environments guide's own banner
+            // (banner-grid-scaling.html hardcodes them too), so the two articles read
+            // as a series. A generated palette would drift between them.
+            // Hue encodes the wire dialect a harness speaks; the rarer the dialect,
+            // the more vivid, so codex / claude-code / gemini-cli stand out of the
+            // chat-completions field.
+            const DIALECTS = [
+                { id: 'chat',      label: 'chat-completions',       short: 'chat',      rgb: [78, 165, 183] },
+                { id: 'responses', label: 'OpenAI Responses',       short: 'responses', rgb: [146, 176, 234] },
+                { id: 'anthropic', label: 'Anthropic Messages',     short: 'anthropic', rgb: [206, 192, 250] },
+                { id: 'google',    label: 'Google generateContent', short: 'google',    rgb: [232, 137, 171] },
+            ];
+
+            // Whichever harnesses are validated end to end at time of writing.
+            // The count is not load-bearing: the grid, the stagger and the counter
+            // all derive from HARNESSES.length, so rows can be added or removed freely.
+            const HARNESSES = [
+                ['opencode', 0], ['goose', 0], ['qwen-coder', 0], ['swe-agent', 0],
+                ['mini-swe-agent', 0], ['openhands-sdk', 0], ['openclaw', 0], ['hermes', 0],
+                ['kimi-cli', 0], ['pi', 0], ['vibe', 0], ['terminus-2', 0],
+                ['codex', 1], ['trae-agent', 1],
+                ['claude-code', 2],
+                ['gemini-cli', 3],
+            ];
+
+            const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
+
+            // Every harness gets its own hue, walked along the guide banner's ramp
+            // (teal -> lavender -> pink) so the fleet reads as varied without leaving
+            // the palette. Which hue is which is answered by hovering, not a legend:
+            // at this count a legend would cost more room than it returns.
+            const A0 = [78, 165, 183], A1 = [206, 192, 250], A2 = [232, 137, 171];
+            const ramp = (t) => {
+                t = Math.max(0, Math.min(1, t));
+                const [c, d, u] = t <= 0.5 ? [A0, A1, t / 0.5] : [A1, A2, (t - 0.5) / 0.5];
+                return [0, 1, 2].map((k) => Math.round(c[k] + (d[k] - c[k]) * u));
+            };
+            const HUE = HARNESSES.map((_, i) =>
+                ramp(HARNESSES.length > 1 ? i / (HARNESSES.length - 1) : 0.5));
+
+            const cssVar = (name, fallback) => {
+                const v = getComputedStyle(container).getPropertyValue(name).trim();
+                return v || fallback;
+            };
+            const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+            const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+
+            const reduceMotion = window.matchMedia
+                && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            container.style.position = container.style.position || 'relative';
+            const canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+
+            const counterEl = document.createElement('div');
+            counterEl.className = 'seam-counter';
+            counterEl.innerHTML =
+                '<strong id="sm-h">0</strong><span style="opacity:.6">harnesses</span>' +
+                '<span class="div">·</span>' +
+                '<strong id="sm-r">0</strong><span style="opacity:.6">rollouts</span>' +
+                '<span class="div">·</span>' +
+                '<strong id="sm-t">0</strong><span style="opacity:.6">tokens captured</span>';
+            container.appendChild(counterEl);
+            const outH = counterEl.querySelector('#sm-h');
+            const outR = counterEl.querySelector('#sm-r');
+            const outT = counterEl.querySelector('#sm-t');
+
+            const tip = document.createElement('div');
+            tip.className = 'd3-tooltip';
+            const tipInner = document.createElement('div');
+            tipInner.className = 'd3-tooltip__inner';
+            tip.appendChild(tipInner);
+            container.appendChild(tip);
+
+            // ─── Layout ───────────────────────────────────────────────────────────
+            const PAD_TOP = 46, PAD_BOTTOM = 30, PAD_X = 22;
+            const SEAM_FRAC = 0.55;      // where the proxy line sits, as a fraction of width
+            const CELL_W = 26, CELL_H = 21;     // target size of one rollout cell
+            const MAX_PULSES = 17;              // concurrent calls drawn crossing the seam
+            // The captured field is packed one block per model call, not as one
+            // undifferentiated mass: a block is a turn, its dim cells the context it
+            // conditioned on and its bright tail the tokens it sampled.
+            const TOK = 4, TOK_GAP = 1;   // token square and gap
+            const STEP = TOK + TOK_GAP;
+            const BLOCK_ROWS = 3;         // cells tall per call block
+            const BLOCK_GAP = 6, ROW_GAP = 7;
+            let GRID_COLS = 1, GRID_ROWS = 1;   // derived from the available area, see layout()
+
+            let W = 0, H = 0, dpr = 1;
+            let lastBoxH = -1;   // the container height layout() last measured
+            let cells = [];
+            let seamX = 0, seamTop = 0, seamBottom = 0;
+            let field = { x: 0, y: 0, w: 0, h: 0 };
+            let cursor = { x: 0, y: 0 };
+            let landed = [];             // captured tokens, absolute positions
+            let fieldFull = false, wipeT = 0;
+            let hover = -1;
+
+            // The host can be shorter than we are. The article hero, for one, clips
+            // this embed to a fixed height with overflow:hidden, so drawing to our own
+            // box put the last rows of everything under the cut. Measure the real
+            // visible height instead of trusting our own.
+            const visibleHeight = (rect) => {
+                let h = rect.height;
+                let node = container.parentElement;
+                while (node && node !== document.body) {
+                    const cs = getComputedStyle(node);
+                    if (cs.overflow !== 'visible' || cs.overflowY !== 'visible') {
+                        h = Math.min(h, node.getBoundingClientRect().bottom - rect.top);
+                    }
+                    node = node.parentElement;
+                }
+                return Math.max(140, h);
+            };
+
+            const layout = () => {
+                const rect = container.getBoundingClientRect();
+                W = Math.max(1, Math.round(rect.width));
+                H = Math.max(1, Math.round(visibleHeight(rect)));
+
+                // Break a circular dependency. In the hero this container's own
+                // aspect-ratio and min-height do not apply, so it is content-sized: it
+                // takes its height from the canvas, and the canvas takes its height
+                // from the container. Mount once while hidden and the pair latch at the
+                // clamped floor and never recover. So when our own box looks collapsed,
+                // adopt the nearest ancestor that has a real one, and pin our height to
+                // it so the collapse cannot come back.
+                if (H < 200) {
+                    let n = container.parentElement, best = 0;
+                    while (n && n !== document.body && best < 200) {
+                        best = Math.max(best, Math.round(n.getBoundingClientRect().height));
+                        n = n.parentElement;
+                    }
+                    if (best > H) H = Math.min(best, 560);
+                }
+                container.style.height = H + 'px';
+                canvas.style.height = H + 'px';
+                lastBoxH = Math.round(container.getBoundingClientRect().height);
+                dpr = Math.max(1, window.devicePixelRatio || 1);
+                canvas.width = Math.round(W * dpr);
+                canvas.height = Math.round(H * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+                seamX = Math.round(W * SEAM_FRAC);
+                seamTop = PAD_TOP - 10;
+                seamBottom = H - PAD_BOTTOM + 6;
+
+                const gx = PAD_X, gy = PAD_TOP;
+                const gw = seamX - 30 - PAD_X;
+                const gh = H - PAD_TOP - PAD_BOTTOM;
+
+                // Density is the point: many concurrent rollouts, not one box per
+                // harness. Cell count follows the available area.
+                GRID_COLS = Math.max(4, Math.floor(gw / CELL_W));
+                GRID_ROWS = Math.max(3, Math.floor(gh / CELL_H));
+                const cw = gw / GRID_COLS, ch = gh / GRID_ROWS;
+                const n = GRID_COLS * GRID_ROWS;
+
+                const prevCells = cells;
+                cells = [];
+                for (let i = 0; i < n; i++) {
+                    const col = i % GRID_COLS, row = Math.floor(i / GRID_COLS);
+                    const hi = (i * 7 + row * 3) % HARNESSES.length;
+                    const h = HARNESSES[hi];
+                    const prev = prevCells[i];
+                    cells.push({
+                        name: h[0],
+                        dialect: DIALECTS[h[1]],
+                        rgb: HUE[hi],
+                        x: gx + col * cw, y: gy + row * ch, w: cw - 2, h: ch - 2,
+                        // Each harness keeps its own loop shape and cadence, so the
+                        // fleet reads as heterogeneous rather than as one thing tiled.
+                        lobes: 2 + (h[0].length % 4),
+                        speed: 0.011 + ((i * 37) % 11) * 0.0019,
+                        phase: prev ? prev.phase : (i * 1.7) % (Math.PI * 2),
+                        interval: 135 + ((i * 53) % 265),
+                        timer: prev ? prev.timer : ((i * 29) % 380),
+                        activateAt: reduceMotion ? 0 : Math.round((i % 13) * 6 + Math.random() * 620),
+                        calls: prev ? prev.calls : 0,
+                        flash: 0,
+                        trail: prev ? prev.trail : [],
+                    });
+                }
+
+                field.x = seamX + 22;
+                field.y = PAD_TOP;
+                field.w = Math.max(0, W - PAD_X - field.x);
+                field.h = H - PAD_TOP - PAD_BOTTOM;
+                cursor.x = field.x;
+                cursor.y = field.y;
+                landed = [];
+            };
+
+            // Shelf-pack one call's tokens as a block; null when the field is full.
+            const blockH = () => BLOCK_ROWS * STEP - TOK_GAP;
+            const rowH = () => blockH() + ROW_GAP;
+
+            const allocBlock = (n) => {
+                const bw = Math.ceil(n / BLOCK_ROWS);
+                const blockW = bw * STEP - TOK_GAP;
+                if (cursor.x + blockW > field.x + field.w) {
+                    cursor.x = field.x;
+                    cursor.y += rowH();
+                }
+                if (cursor.y + blockH() > field.y + field.h) return null;   // field is full
+                const out = [];
+                for (let k = 0; k < n; k++) {
+                    const col = Math.floor(k / BLOCK_ROWS), row = k % BLOCK_ROWS;
+                    out.push([cursor.x + col * STEP, cursor.y + row * STEP]);
+                }
+                cursor.x += blockW + BLOCK_GAP;
+                return out;
+            };
+
+            // ─── State ────────────────────────────────────────────────────────────
+            let frame = 0;
+            let pulses = [];     // model calls in flight, cell → seam
+            let flying = [];     // token squares in flight, seam → field
+            let ticks = [];      // brief marks on the seam where a pulse landed
+            let tokensSeen = 0;
+            let activeHarnesses = 0;
+            let activeRollouts = 0;
+
+            const emitCall = (c) => {
+                const p = orbitPoint(c, c.phase);
+                const ty = seamTop + 18 + Math.random() * (seamBottom - seamTop - 36);
+                pulses.push({
+                    sx: p[0], sy: p[1],
+                    cx: (p[0] + seamX) / 2, cy: p[1] + (ty - p[1]) * 0.15 - 26,
+                    ty, t: 0, dur: 78 + Math.random() * 40,
+                    rgb: c.rgb,
+                    // A real turn is thousands of context tokens against tens sampled;
+                    // the burst keeps that ratio without rendering thousands of squares.
+                    ctxN: 5 + Math.floor(Math.random() * 7),
+                    genN: 1 + Math.floor(Math.random() * 3),
+                });
+                c.calls++;
+            };
+
+            const orbitPoint = (c, ang) => {
+                const cx = c.x + c.w / 2, cy = c.y + c.h / 2;
+                const R = Math.min(c.w, c.h) * 0.34;
+                const r = R * (0.70 + 0.30 * Math.cos(c.lobes * ang));
+                return [cx + Math.cos(ang) * r, cy + Math.sin(ang) * r * 0.86];
+            };
+
+            const burst = (p) => {
+                ticks.push({ y: p.ty, t: 0, rgb: p.rgb });
+                const n = p.ctxN + p.genN;
+                const pos = allocBlock(n);
+                if (!pos) { fieldFull = true; return; }
+                for (let k = 0; k < n; k++) {
+                    flying.push({
+                        sx: seamX, sy: p.ty,
+                        tx: pos[k][0], ty: pos[k][1],
+                        t: 0, dur: 36 + Math.random() * 24,
+                        bright: k >= p.ctxN,          // the sampled tail is the trainable part
+                        rgb: p.rgb,
+                    });
+                    tokensSeen += 26 + Math.floor(Math.random() * 90);
+                }
+            };
+
+            // ─── Update ───────────────────────────────────────────────────────────
+            const update = () => {
+                frame++;
+                activeRollouts = 0;
+                const seen = new Set();
+                for (const c of cells) {
+                    if (frame < c.activateAt) continue;
+                    activeRollouts++;
+                    seen.add(c.name);
+                    c.phase += c.speed;
+                    if (c.flash > 0) c.flash--;
+                    if (frame % 3 === 0) {
+                        c.trail.push(orbitPoint(c, c.phase));
+                        if (c.trail.length > 7) c.trail.shift();
+                    }
+                    if (--c.timer <= 0) {
+                        c.timer = c.interval;
+                        c.calls++;
+                        c.flash = 24;
+                        // Every rollout calls the model, but only a budget of those
+                        // are drawn crossing the seam — otherwise it is noise.
+                        if (pulses.length < MAX_PULSES) emitCall(c);
+                    }
+                }
+                activeHarnesses = seen.size;
+
+                for (let i = pulses.length - 1; i >= 0; i--) {
+                    const p = pulses[i];
+                    if (++p.t >= p.dur) { burst(p); pulses.splice(i, 1); }
+                }
+                for (let i = flying.length - 1; i >= 0; i--) {
+                    const f = flying[i];
+                    if (++f.t >= f.dur) {
+                        landed.push({ x: f.tx, y: f.ty, rgb: f.rgb, bright: f.bright, born: frame });
+                        flying.splice(i, 1);
+                    }
+                }
+                for (let i = ticks.length - 1; i >= 0; i--) {
+                    if (++ticks[i].t > 34) ticks.splice(i, 1);
+                }
+
+                // Full field → wipe and start again from the top.
+                if (wipeT > 0) {
+                    if (--wipeT === 0) {
+                        landed = []; cursor.x = field.x; cursor.y = field.y; fieldFull = false;
+                    }
+                } else if (fieldFull && flying.length === 0) {
+                    wipeT = 30;
+                }
+
+                // Field full → the batch goes to the trainer and the field clears.
+
+            };
+
+            // ─── Draw ─────────────────────────────────────────────────────────────
+            const draw = () => {
+                const border = cssVar('--border-color', 'rgba(128,128,128,0.28)');
+                const muted = cssVar('--muted-color', 'rgba(128,128,128,0.75)');
+                ctx.clearRect(0, 0, W, H);
+
+                // the rollout fleet
+                for (let i = 0; i < cells.length; i++) {
+                    const c = cells[i];
+                    if (frame < c.activateAt) continue;
+                    const woke = Math.min(1, (frame - c.activateAt) / 34);
+                    const a = easeOutCubic(woke);
+
+                    ctx.strokeStyle = border;
+                    ctx.globalAlpha = 0.30 * a;
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(c.x + 0.5, c.y + 0.5, c.w, c.h);
+                    ctx.globalAlpha = 1;
+
+                    if (hover === i) {
+                        ctx.fillStyle = rgba(c.rgb, 0.20);
+                        ctx.fillRect(c.x, c.y, c.w, c.h);
+                    }
+
+                    if (c.trail.length > 1) {
+                        ctx.strokeStyle = rgba(c.rgb, 0.26 * a);
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(c.trail[0][0], c.trail[0][1]);
+                        for (let k = 1; k < c.trail.length; k++) ctx.lineTo(c.trail[k][0], c.trail[k][1]);
+                        ctx.stroke();
+                    }
+                    const p = orbitPoint(c, c.phase);
+                    if (c.flash > 0) {
+                        // a model call just left this rollout
+                        const f = c.flash / 24;
+                        ctx.strokeStyle = rgba(c.rgb, 0.5 * f * a);
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.arc(p[0], p[1], 2.5 + (1 - f) * 5.5, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                    ctx.fillStyle = rgba(c.rgb, (c.flash > 0 ? 1 : 0.82) * a);
+                    ctx.fillRect(p[0] - 1.4, p[1] - 1.4, 2.8, 2.8);
+                }
+
+                // calls in flight
+                const bez = (p, t) => {
+                    const mt = 1 - t;
+                    return [
+                        mt * mt * p.sx + 2 * mt * t * p.cx + t * t * seamX,
+                        mt * mt * p.sy + 2 * mt * t * p.cy + t * t * p.ty,
+                    ];
+                };
+                for (const p of pulses) {
+                    const t = easeInOutSine(p.t / p.dur);
+                    const head = bez(p, t);
+                    // A short comet tail. Drawing the whole curve from the source cell
+                    // turns twenty concurrent calls into spaghetti.
+                    const SEG = 6;
+                    for (let k = SEG; k > 0; k--) {
+                        const t0 = Math.max(0, t - k * 0.009);
+                        const t1 = Math.max(0, t - (k - 1) * 0.009);
+                        if (t1 <= 0) continue;
+                        const a = (1 - k / SEG) * 0.42;
+                        const p0 = bez(p, t0), p1 = bez(p, t1);
+                        ctx.strokeStyle = rgba(p.rgb, a);
+                        ctx.lineWidth = 1.1;
+                        ctx.beginPath();
+                        ctx.moveTo(p0[0], p0[1]);
+                        ctx.lineTo(p1[0], p1[1]);
+                        ctx.stroke();
+                    }
+                    ctx.fillStyle = rgba(p.rgb, 0.95);
+                    ctx.beginPath();
+                    ctx.arc(head[0], head[1], 1.9, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // the seam — the one place you can stand
+                const grad = ctx.createLinearGradient(0, seamTop, 0, seamBottom);
+                grad.addColorStop(0, 'rgba(140,140,150,0.05)');
+                grad.addColorStop(0.5, 'rgba(140,140,150,0.55)');
+                grad.addColorStop(1, 'rgba(140,140,150,0.05)');
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(seamX, seamTop);
+                ctx.lineTo(seamX, seamBottom);
+                ctx.stroke();
+                for (const tk of ticks) {
+                    const a = 1 - tk.t / 34;
+                    ctx.strokeStyle = rgba(tk.rgb, a * 0.85);
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(seamX, tk.y - 7 * a);
+                    ctx.lineTo(seamX, tk.y + 7 * a);
+                    ctx.stroke();
+                }
+                ctx.save();
+                ctx.translate(seamX - 11, (seamTop + seamBottom) / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillStyle = muted;
+                ctx.globalAlpha = 0.6;
+                ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('CAPTURE PROXY', 0, 0);
+                ctx.restore();
+                ctx.globalAlpha = 1;
+
+                // tokens in flight
+                for (const f of flying) {
+                    const t = easeOutCubic(f.t / f.dur);
+                    const x = f.sx + (f.tx - f.sx) * t;
+                    const y = f.sy + (f.ty - f.sy) * t;
+                    ctx.fillStyle = rgba(f.rgb, f.bright ? 1 : 0.5);
+                    ctx.fillRect(x, y, TOK, TOK);
+                }
+
+                // the captured field
+                const wipeFade = wipeT > 0 ? wipeT / 30 : 1;
+                for (const t of landed) {
+                    const settle = Math.min(1, (frame - t.born) / 10);
+                    ctx.fillStyle = rgba(t.rgb, (t.bright ? 1 : 0.42) * settle * wipeFade);
+                    ctx.fillRect(t.x, t.y, TOK, TOK);
+                }
+
+                ctx.fillStyle = muted;
+                ctx.globalAlpha = 0.55;
+                ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
+                ctx.textAlign = 'right';
+                ctx.fillText('token ids + logprobs → trainer', field.x + field.w, H - PAD_BOTTOM + 16);
+                ctx.globalAlpha = 1;
+
+                outH.textContent = String(activeHarnesses);
+                outR.textContent = activeRollouts.toLocaleString();
+                outT.textContent = tokensSeen.toLocaleString();
+            };
+
+            const roundRect = (x, y, w, h, r) => {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.arcTo(x + w, y, x + w, y + h, r);
+                ctx.arcTo(x + w, y + h, x, y + h, r);
+                ctx.arcTo(x, y + h, x, y, r);
+                ctx.arcTo(x, y, x + w, y, r);
+                ctx.closePath();
+            };
+
+            // ─── Interaction ──────────────────────────────────────────────────────
+            canvas.addEventListener('mousemove', (e) => {
+                const r = canvas.getBoundingClientRect();
+                const x = e.clientX - r.left, y = e.clientY - r.top;
+                hover = -1;
+                for (let i = 0; i < cells.length; i++) {
+                    const c = cells[i];
+                    if (x >= c.x && x <= c.x + c.w + 2 && y >= c.y && y <= c.y + c.h + 2) { hover = i; break; }
+                }
+                if (hover < 0) { tip.style.opacity = '0'; return; }
+                const c = cells[hover];
+                const waking = frame < c.activateAt;
+                tipInner.innerHTML =
+                    '<div style="font-weight:800;">' +
+                        '<span class="swatch" style="background:' + rgba(c.rgb, 1) + '"></span>' +
+                        c.name +
+                    '</div>' +
+                    '<div style="font-size:11px;color:var(--muted-color);">' +
+                        '<strong>Dialect</strong> ' + c.dialect.label +
+                    '</div>' +
+                    '<div style="padding-top:4px;border-top:1px solid var(--border-color);">' +
+                        (waking
+                            ? '<strong>Status</strong> waiting to start'
+                            : '<strong>Model calls</strong> ' + c.calls + ' this rollout') +
+                    '</div>';
+                tip.style.opacity = '1';
+                let tx = x + 14, ty = y + 16;
+                if (tx + 210 > W) tx = x - 210;
+                if (ty + 92 > H) ty = y - 92;
+                tip.style.transform = 'translate(' + Math.round(tx) + 'px,' + Math.round(ty) + 'px)';
+            });
+            canvas.addEventListener('mouseleave', () => { hover = -1; tip.style.opacity = '0'; });
+
+            // ─── Run ──────────────────────────────────────────────────────────────
+            // A hero that loads empty wastes its first impression, so start with a
+            // field that already has history in it.
+            const seedField = (fraction) => {
+                const target = field.h * fraction;
+                let guard = 0;
+                while (cursor.y - field.y + blockH() <= target && guard++ < 6000) {
+                    const hi = Math.floor(Math.random() * HARNESSES.length);
+                    const ctxN = 5 + Math.floor(Math.random() * 7);
+                    const genN = 1 + Math.floor(Math.random() * 3);
+                    const pos = allocBlock(ctxN + genN);
+                    if (!pos) break;
+                    for (let k = 0; k < pos.length; k++) {
+                        landed.push({
+                            x: pos[k][0], y: pos[k][1], rgb: HUE[hi],
+                            bright: k >= ctxN, born: -100,
+                        });
+                    }
+                    tokensSeen += (ctxN + genN) * (26 + Math.floor(Math.random() * 90));
+                }
+            };
+
+            // Re-measure and re-fill. Needed because this banner can mount while it is
+            // display:none (behind the hero's visualisation toggle), where its box is
+            // zero and visibleHeight clamps to its floor. A ResizeObserver on the
+            // container does not save us: the height that changes on becoming visible
+            // belongs to an ancestor, so the container's own box never moves.
+            const relayout = () => {
+                // A relayout is a re-entry, not a first load: the reader has switched to
+                // this banner and should not watch it fill from empty again. So skip the
+                // wake-in stagger and seed the field further than on first paint.
+                layout();
+                for (const c of cells) c.activateAt = 0;
+                seedField(0.62);
+                draw();
+            };
+
+            layout();
+            seedField(0.3);
+
+            if (reduceMotion) {
+                // Compose one representative still: a partly-filled field, no motion.
+                for (let i = 0; i < 260; i++) {
+                    for (const c of cells) { c.phase += c.speed; }
+                    update();
+                }
+                draw();
+            } else {
+                let visible = true;
+                if ('IntersectionObserver' in window) {
+                    new IntersectionObserver((es) => {
+                        const was = visible;
+                        visible = es[0].isIntersecting;
+                        if (visible && !was) relayout();
+                    }, { rootMargin: '120px' }).observe(container);
+                }
+                let tick = 0;
+                const loop = () => {
+                    // Cheap self-heal. This banner can mount while display:none behind
+                    // the hero toggle, measure a zero box, and clamp to its floor. Neither
+                    // a ResizeObserver on the container nor an IntersectionObserver is
+                    // dependable there, because the height that changes belongs to an
+                    // ancestor. So check the box against what layout() last saw.
+                    // Deliberately NOT gated on `visible`: the whole failure mode is that
+                    // the observers do not fire when an ancestor flips display, so `visible`
+                    // is exactly the flag we cannot trust here. The box read is cheap and a
+                    // zero height means hidden, which we skip anyway.
+                    if (tick++ % 15 === 0) {
+                        const h = Math.round(container.getBoundingClientRect().height);
+                        if (h > 0 && Math.abs(h - lastBoxH) > 2) { visible = true; relayout(); }
+                    }
+                    if (visible) { update(); draw(); }
+                    requestAnimationFrame(loop);
+                };
+                requestAnimationFrame(loop);
+            }
+
+            let rt;
+            const onResize = () => { clearTimeout(rt); rt = setTimeout(relayout, 120); };
+            if ('ResizeObserver' in window) new ResizeObserver(onResize).observe(container);
+            else window.addEventListener('resize', onResize);
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootstrap);
+        } else {
+            bootstrap();
+        }
+    })();
+</script>

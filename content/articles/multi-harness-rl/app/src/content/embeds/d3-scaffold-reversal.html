@@ -1,0 +1,163 @@
+<div class="scaffold-reversal" style="width:100%;margin:14px 0;"></div>
+
+<style>
+  .scaffold-reversal { position: relative; }
+  .scaffold-reversal svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .scaffold-reversal .sr-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--muted-color);
+  }
+  .scaffold-reversal .sr-legend-title {
+    width: 100%;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-color);
+    opacity: 0.75;
+  }
+  .scaffold-reversal .sr-key { display: inline-flex; align-items: center; gap: 7px; }
+  .scaffold-reversal .sr-swatch { width: 14px; height: 3px; border-radius: 2px; }
+  .scaffold-reversal .sr-note {
+    margin-top: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted-color);
+    }
+  .scaffold-reversal .sr-err {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: #b3261e;
+    font-size: 12px;
+    white-space: pre-wrap;
+  }
+</style>
+
+<script>
+  (() => {
+    const ROOT = 'scaffold-reversal';
+
+    const bootstrap = () => {
+      const nodes = Array.from(document.querySelectorAll('.' + ROOT))
+        .filter((el) => !(el.dataset && el.dataset.mounted === 'true'));
+      const root = nodes[nodes.length - 1];
+      if (!root) return;
+      root.dataset.mounted = 'true';
+
+      const cssVar = (n, f) => (getComputedStyle(root).getPropertyValue(n).trim() || f);
+
+      const palette = (i, total) => {
+        // Fall back to the article's own ramp when ColorPalettes is unavailable.
+        if (window.ColorPalettes && typeof window.ColorPalettes.categorical === 'function') {
+          try { return window.ColorPalettes.categorical(total)[i]; } catch (e) { /* fall through */ }
+        }
+        const A = [[78,165,183],[146,176,234],[206,192,250],[232,137,171]];
+        const c = A[i % A.length];
+        return `rgb(${c[0]},${c[1]},${c[2]})`;
+      };
+
+      const fetchFirst = async (urls) => {
+        for (const u of urls) {
+          try {
+            const r = await fetch(u, { cache: 'no-cache' });
+            if (r.ok) return await r.json();
+          } catch (e) { /* try the next one */ }
+        }
+        throw new Error('could not load scaffold-reversal.json');
+      };
+
+      const render = (data) => {
+        const models = data.models;
+        const cols = data.scaffolds;
+        const flips = new Set();
+        for (const r of data.reversals) { flips.add(r.a); flips.add(r.b); }
+
+        const draw = () => {
+          const W = Math.max(320, root.clientWidth);
+          const H = Math.max(240, Math.round(W / 2.4));
+          const M = { t: 26, r: Math.min(180, W * 0.24), b: 34, l: Math.min(180, W * 0.24) };
+          const iw = W - M.l - M.r;
+          const ih = H - M.t - M.b;
+
+          const all = cols.flatMap((c) => c.scores);
+          const lo = Math.floor(Math.min(...all) / 5) * 5 - 2;
+          const hi = Math.ceil(Math.max(...all) / 5) * 5 + 2;
+          const y = (v) => M.t + ih - ((v - lo) / (hi - lo)) * ih;
+          const x = (i) => M.l + (cols.length === 1 ? 0 : (i / (cols.length - 1)) * iw);
+
+          const border = cssVar('--border-color', 'rgba(128,128,128,0.3)');
+          const muted = cssVar('--muted-color', 'rgba(128,128,128,0.8)');
+          const text = cssVar('--text-color', '#16181d');
+
+          let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="SWE-Bench Verified scores for four models under two scaffolds, showing two rank reversals">`;
+
+          // the two scaffold axes
+          cols.forEach((c, i) => {
+            s += `<line x1="${x(i)}" y1="${M.t - 8}" x2="${x(i)}" y2="${M.t + ih + 8}" stroke="${border}" stroke-width="1"/>`;
+            s += `<text x="${x(i)}" y="${M.t + ih + 26}" text-anchor="middle" font-size="11.5" fill="${muted}" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">${c.name}</text>`;
+          });
+
+          // one line per model, crossings are the whole point
+          models.forEach((m, mi) => {
+            const flip = flips.has(m);
+            const col = palette(mi, models.length);
+            const pts = cols.map((c, ci) => [x(ci), y(c.scores[mi])]);
+            s += `<polyline fill="none" stroke="${col}" stroke-width="${flip ? 2.6 : 1.4}"
+                    stroke-opacity="${flip ? 0.95 : 0.4}" stroke-linecap="round"
+                    points="${pts.map((p) => p.join(',')).join(' ')}"/>`;
+            pts.forEach((p, pi) => {
+              s += `<circle cx="${p[0]}" cy="${p[1]}" r="${flip ? 4.2 : 3}" fill="${col}" fill-opacity="${flip ? 1 : 0.5}"/>`;
+              const v = cols[pi].scores[mi].toFixed(1);
+              const anchor = pi === 0 ? 'end' : 'start';
+              const dx = pi === 0 ? -10 : 10;
+              s += `<text x="${p[0] + dx}" y="${p[1] + 4}" text-anchor="${anchor}" font-size="12"
+                      font-family="ui-monospace,SFMono-Regular,Menlo,monospace"
+                      fill="${flip ? text : muted}" fill-opacity="${flip ? 1 : 0.75}">${v}</text>`;
+            });
+          });
+
+          s += '</svg>';
+
+          const legend =
+            '<div class="sr-legend"><div class="sr-legend-title">Legend</div>' +
+            models.map((m, i) =>
+              `<span class="sr-key"><span class="sr-swatch" style="background:${palette(i, models.length)};opacity:${flips.has(m) ? 1 : 0.45}"></span>${m}</span>`
+            ).join('') +
+            '</div>' +
+            `<div class="sr-note">Lines that cross are rank reversals: the two models swap order when only the scaffold changes.
+             ${data.note} Source:
+             <a href="${data.url}" target="_blank" rel="noopener noreferrer">${data.source}</a>.</div>`;
+
+          root.innerHTML = s + legend;
+        };
+
+        draw();
+        if ('ResizeObserver' in window) {
+          let t;
+          new ResizeObserver(() => { clearTimeout(t); t = setTimeout(draw, 120); }).observe(root);
+        } else {
+          window.addEventListener('resize', draw);
+        }
+      };
+
+      const files = (root.closest('[data-datafiles]') || {}).dataset;
+      const name = (files && files.datafiles) || 'scaffold-reversal.json';
+      fetchFirst([
+        name.includes('/') ? name : '/data/' + name,
+        'assets/data/' + name,
+      ]).then(render).catch((e) => {
+        root.innerHTML = `<pre class="sr-err">${e.message}</pre>`;
+      });
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootstrap);
+    } else {
+      bootstrap();
+    }
+  })();
+</script>
