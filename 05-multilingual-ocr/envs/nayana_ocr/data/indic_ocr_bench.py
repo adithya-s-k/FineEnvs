@@ -3,10 +3,15 @@
 6,909 human-reviewed text-block crops in 23 languages, from
 https://huggingface.co/datasets/sarvamai/indic-ocr-bench (Apache-2.0, Sarvam AI).
 
-The benchmark is evaluation-only by construction: its family is not in FAMILIES, so no
-training sampler can draw it, and its tasks look to an agent exactly like section OCR -
-the same observation fields, the same prompt, one text answer - so a model trained on
-the corpus is measured here without learning a new interface.
+Each crop is served as an ordinary section-OCR task: the same prompt, the same single
+text answer, the same reward and the same observation as a corpus region, so a model is
+measured on the benchmark exactly as it is trained and scored everywhere else. What
+keeps the benchmark out of training is the split, not the task: its tasks exist only
+in the indic_ocr_bench_* splits, and no sampler ever draws from those.
+
+Storage mirrors the corpus. The crops and index are built once and published to a
+bucket; a deployment mounts it read-only and reads in place, and anything else fetches
+from it on first use. Building from the pinned dataset revision is only a fallback.
 """
 
 import hashlib
@@ -24,13 +29,22 @@ from .catalog import PUBLIC_FIELDS
 
 REPO = "sarvamai/indic-ocr-bench"
 REVISION = "84ce7ce447456a92bcbf25f3c0a55d6a5a44a24b"
-SNAPSHOT_ID = f"{REPO}@{REVISION[:12]}"
-FAMILY = "indic_ocr_bench"
-PREFIX = "indic-ocr-bench"
+VERSION = REVISION[:12]
+SNAPSHOT_ID = f"{REPO}@{VERSION}"
+SOURCE = "indic-ocr-bench"
+BUCKET = "FineEnvs/indic-ocr-bench-bucket"
+FAMILY = "section_ocr"  # deliberately the corpus family: same task, reward and serving
+LICENSE = "apache-2.0"
+CITATION = """@misc{sarvam-indic-ocr-bench,
+  title={Sarvam Indic OCR Bench},
+  author={Sarvam AI},
+  year={2026},
+  url={https://huggingface.co/datasets/sarvamai/indic-ocr-bench}
+}"""
 
 # Served split -> (directory in the dataset repo, row count at the pinned revision).
-# Counts are known in advance so a manifest can list the splits without downloading
-# 730 MB; the first real load checks them and refuses a revision that disagrees.
+# Counts are known in advance so a manifest can list the splits without fetching
+# anything; a load whose count disagrees is refused rather than served.
 SPLITS = {
     "indic_ocr_bench_test": ("test", 6909),
     "indic_ocr_bench_small": ("small_representative", 1173),
@@ -64,8 +78,13 @@ LANGUAGES = {
     "Telugu": "te",
     "Urdu": "ur",
 }
+LANGUAGE_NAMES = {code: name for name, code in LANGUAGES.items()}
 
 MIMES = {"PNG": "image/png", "JPEG": "image/jpeg", "WEBP": "image/webp"}
+
+
+def is_bench_task(task_id):
+    return isinstance(task_id, str) and task_id.startswith(f"{SOURCE}.")
 
 
 def prompt(language):
@@ -76,8 +95,16 @@ def prompt(language):
     )
 
 
+def index_path(root, split):
+    return Path(root) / VERSION / f"{split}.json"
+
+
+def asset_path(root, sha):
+    return Path(root) / VERSION / "assets" / sha
+
+
 def download_split(directory):
-    """Fetch one split's parquet files at the pinned revision; returns local paths."""
+    """Fetch one split's parquet files at the pinned dataset revision."""
     from huggingface_hub import HfApi, hf_hub_download
 
     files = sorted(
@@ -86,21 +113,106 @@ def download_split(directory):
         if f.startswith(f"{directory}/") and f.endswith(".parquet")
     )
     if not files:
-        raise FileNotFoundError(f"{REPO}@{REVISION[:12]} has no {directory} parquet")
+        raise FileNotFoundError(f"{SNAPSHOT_ID} has no {directory} parquet")
     return [
         hf_hub_download(REPO, f, repo_type="dataset", revision=REVISION) for f in files
     ]
 
 
-class BenchCatalog:
-    """The Nayana catalog interface, for a source that is one fixed set of crops."""
+def _write_atomic(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_bytes(data)
+    os.replace(tmp, path)
 
-    def __init__(self, cache_dir, fetch=download_split):
-        self.root = Path(cache_dir) / PREFIX / REVISION[:12]
+
+def build_split(split, root, fetch=download_split):
+    """Extract one split from the dataset into root: content-addressed crops + index.
+
+    This is what publishing runs, once, to fill the bucket. Serving never calls it
+    unless the bucket is unavailable.
+    """
+    import pyarrow.parquet as pq
+
+    directory, expected = SPLITS[split]
+    rows, seen = [], set()
+    for path in fetch(directory):
+        for batch in pq.ParquetFile(path).iter_batches(
+            batch_size=64, columns=["image", "image_name", "gt", "language"]
+        ):
+            for record in batch.to_pylist():
+                task = _extract(split, record, root)
+                if task["task_id"] in seen:
+                    raise ValueError(f"Duplicate image_name {record['image_name']!r}")
+                seen.add(task["task_id"])
+                rows.append(task)
+    if len(rows) != expected:
+        raise ValueError(
+            f"{SNAPSHOT_ID} {directory} has {len(rows)} rows, expected {expected}; "
+            "refusing to serve a split that is not the pinned one"
+        )
+    _write_atomic(index_path(root, split), json.dumps(rows, ensure_ascii=False).encode())
+    return rows
+
+
+def _extract(split, record, root):
+    image = record["image"] or {}
+    raw = image.get("bytes")
+    if not raw:
+        raise ValueError(f"{record['image_name']}: image has no embedded bytes")
+    name = record["language"]
+    if name not in LANGUAGES:
+        raise ValueError(f"{record['image_name']}: unknown language {name!r}")
+    with Image.open(io.BytesIO(raw)) as decoded:
+        width, height = decoded.size
+        # The card says PNG; at the pinned revision some crops are JPEG. Read the bytes.
+        mime = MIMES.get(decoded.format)
+    if mime is None:
+        raise ValueError(f"{record['image_name']}: unsupported image format")
+    sha = hashlib.sha256(raw).hexdigest()
+    if not asset_path(root, sha).exists():
+        _write_atomic(asset_path(root, sha), raw)
+    language = LANGUAGES[name]
+    image_name = record["image_name"]
+    return {
+        "task_id": f"{SOURCE}.{VERSION}.{split}.{image_name}",
+        "split": split,
+        "language": language,
+        "family": FAMILY,
+        "unit": image_name,
+        "page_id": image_name,
+        "document_id": image_name,
+        "prompt": prompt(language),
+        "reference": record["gt"],
+        "asset_sha256": sha,
+        "mime": mime,
+        "width": width,
+        "height": height,
+        "bbox": None,
+        "page_width": width,
+        "page_height": height,
+    }
+
+
+class BenchCatalog:
+    """The Nayana catalog interface, for a source that is one fixed set of crops.
+
+    root: a mounted copy of the bucket, read in place (a Space or a job).
+    Otherwise each split is fetched from `bucket` into cache_dir on first use - index and
+    every crop in one batch, since an evaluation visits them all - and, failing that,
+    built from the pinned dataset revision when `fallback` allows it.
+    """
+
+    def __init__(self, cache_dir, *, root=None, bucket=BUCKET, fetch=download_split,
+                 fallback=True):
+        self.root = Path(root) if root else None
+        self.cache = Path(cache_dir) / SOURCE
+        self.bucket = bucket
         self.fetch = fetch
+        self.fallback = fallback
         self._lock = threading.Lock()
-        self._rows = {}  # served split -> [task, ...]
-        self._by_id = {}  # task_id -> task
+        self._rows = {}
+        self._by_id = {}
 
     # -- ownership, so a composite catalog can route requests -------------------------
 
@@ -111,117 +223,86 @@ class BenchCatalog:
         return split in SPLITS
 
     def owns_task(self, task_id):
-        return isinstance(task_id, str) and task_id.startswith(f"{PREFIX}.")
+        return is_bench_task(task_id)
 
     @property
     def languages(self):
-        return sorted(set(LANGUAGES.values()))
+        return sorted(LANGUAGE_NAMES)
 
     def eval_ids(self):
         return {name: f"{SNAPSHOT_ID}:{directory}" for name, (directory, _) in SPLITS.items()}
 
-    # -- loading ----------------------------------------------------------------------
+    @property
+    def storage(self):
+        return str(self.root) if self.root else f"hf://buckets/{self.bucket} -> {self.cache}"
 
-    def _task_id(self, split, image_name):
-        return f"{PREFIX}.{REVISION[:12]}.{split}.{image_name}"
+    # -- loading ----------------------------------------------------------------------
 
     def _load(self, split):
         if split not in SPLITS:
             raise ValueError(f"Unknown split {split!r}")
-        if split in self._rows:
-            return self._rows[split]
-        with self._lock:
-            if split not in self._rows:
-                rows = self._read_index(split) or self._build(split)
-                self._rows[split] = rows
-                self._by_id.update((t["task_id"], t) for t in rows)
+        if split not in self._rows:
+            with self._lock:
+                if split not in self._rows:
+                    rows = self._resolve(split)
+                    _, expected = SPLITS[split]
+                    if len(rows) != expected:
+                        raise ValueError(
+                            f"{split} index has {len(rows)} tasks, expected {expected}"
+                        )
+                    self._rows[split] = rows
+                    self._by_id.update((t["task_id"], t) for t in rows)
         return self._rows[split]
 
-    def _index_path(self, split):
-        return self.root / f"{split}.json"
+    def _resolve(self, split):
+        if self.root:
+            path = index_path(self.root, split)
+            if not path.exists():
+                raise FileNotFoundError(
+                    f"{path} is missing: publish {SNAPSHOT_ID} to the mounted bucket"
+                )
+            return json.loads(path.read_text())
+        local = index_path(self.cache, split)
+        if local.exists():
+            rows = json.loads(local.read_text())
+            if all(asset_path(self.cache, t["asset_sha256"]).exists() for t in rows):
+                return rows
+        try:
+            return self._pull(split)
+        except Exception as error:  # noqa: BLE001 - any bucket failure may fall back
+            if not self.fallback:
+                raise
+            print(f"{SOURCE}: bucket unavailable ({error}); building {split} from "
+                  f"{SNAPSHOT_ID}", flush=True)
+            return build_split(split, self.cache, self.fetch)
 
-    def _asset_path(self, sha):
-        return self.root / "assets" / f"{sha}"
+    def _pull(self, split):
+        from huggingface_hub import HfApi
 
-    def _read_index(self, split):
-        path = self._index_path(split)
-        if not path.exists():
-            return None
-        rows = json.loads(path.read_text())
-        _, expected = SPLITS[split]
-        # A partial or stale index is rebuilt, never served.
-        if len(rows) != expected or not all(
-            self._asset_path(t["asset_sha256"]).exists() for t in rows
-        ):
-            return None
-        return rows
-
-    def _build(self, split):
-        import pyarrow.parquet as pq
-
-        directory, expected = SPLITS[split]
-        (self.root / "assets").mkdir(parents=True, exist_ok=True)
-        rows, seen = [], set()
-        for path in self.fetch(directory):
-            parquet = pq.ParquetFile(path)
-            for batch in parquet.iter_batches(
-                batch_size=64, columns=["image", "image_name", "gt", "language"]
-            ):
-                for record in batch.to_pylist():
-                    rows.append(self._extract(split, record))
-                    if rows[-1]["task_id"] in seen:
-                        raise ValueError(f"Duplicate image_name {record['image_name']!r}")
-                    seen.add(rows[-1]["task_id"])
-        if len(rows) != expected:
-            raise ValueError(
-                f"{REPO}@{REVISION[:12]} {directory} has {len(rows)} rows, expected "
-                f"{expected}; refusing to serve a split that is not the pinned one"
+        api = HfApi()
+        remote = f"{VERSION}/{split}.json"
+        local = index_path(self.cache, split)
+        local.parent.mkdir(parents=True, exist_ok=True)
+        # The client skips missing files silently by default; a missing index must be
+        # an error here, so the fallback runs instead of a partial split being served.
+        api.download_bucket_files(
+            self.bucket, [(remote, str(local))], raise_on_missing_files=True
+        )
+        rows = json.loads(local.read_text())
+        assets = self.cache / VERSION / "assets"
+        have = {p.name for p in assets.glob("*")} if assets.exists() else set()
+        missing = sorted({t["asset_sha256"] for t in rows} - have)
+        if missing:
+            assets.mkdir(parents=True, exist_ok=True)
+            api.download_bucket_files(
+                self.bucket,
+                [(f"{VERSION}/assets/{sha}", str(asset_path(self.cache, sha))) for sha in missing],
+                raise_on_missing_files=True,
             )
-        tmp = self._index_path(split).with_suffix(".tmp")
-        tmp.write_text(json.dumps(rows, ensure_ascii=False))
-        os.replace(tmp, self._index_path(split))
         return rows
 
-    def _extract(self, split, record):
-        image = record["image"] or {}
-        raw = image.get("bytes")
-        if not raw:
-            raise ValueError(f"{record['image_name']}: image has no embedded bytes")
-        name = record["language"]
-        if name not in LANGUAGES:
-            raise ValueError(f"{record['image_name']}: unknown language {name!r}")
-        with Image.open(io.BytesIO(raw)) as decoded:
-            width, height = decoded.size
-            mime = MIMES.get(decoded.format)
-        if mime is None:
-            raise ValueError(f"{record['image_name']}: unsupported image format")
-        sha = hashlib.sha256(raw).hexdigest()
-        asset = self._asset_path(sha)
-        if not asset.exists():
-            tmp = asset.with_suffix(".tmp")
-            tmp.write_bytes(raw)
-            os.replace(tmp, asset)
-        language = LANGUAGES[name]
-        image_name = record["image_name"]
-        return {
-            "task_id": self._task_id(split, image_name),
-            "split": split,
-            "language": language,
-            "language_name": name,
-            "family": FAMILY,
-            "unit": image_name,
-            "page_id": image_name,
-            "document_id": image_name,
-            "prompt": prompt(language),
-            "reference": record["gt"],
-            "asset_sha256": sha,
-            "mime": mime,
-            "width": width,
-            "height": height,
-            "bbox": None,
-            "page_width": width,
-            "page_height": height,
-        }
+    def _asset_file(self, sha):
+        return asset_path(self.root or self.cache, sha)
 
     # -- the catalog interface --------------------------------------------------------
 
@@ -240,7 +321,7 @@ class BenchCatalog:
         if not self.owns_task(task_id):
             raise KeyError("Not an Indic OCR Bench task")
         parts = task_id.split(".", 3)
-        if len(parts) != 4 or parts[1] != REVISION[:12] or parts[2] not in SPLITS:
+        if len(parts) != 4 or parts[1] != VERSION or parts[2] not in SPLITS:
             raise KeyError("Task belongs to another benchmark revision or split")
         self._load(parts[2])
         try:
@@ -274,12 +355,12 @@ class BenchCatalog:
         return ids.index(task_id) if task_id in ids else None
 
     def public(self, task):
-        # Only the shared public fields: the reference never leaves the server.
+        # Exactly the corpus's public fields; the reference never leaves the server.
         result = {key: task.get(key) for key in PUBLIC_FIELDS}
         result.update(
             snapshot_id=SNAPSHOT_ID,
             media_ready=True,
-            block_id=PREFIX,
+            block_id=SOURCE,
             asset_path=f"/assets/{task['asset_sha256']}?task_id={quote(task['task_id'])}",
         )
         return result
@@ -293,15 +374,19 @@ class BenchCatalog:
         task = self.get(task_id)
         if task["asset_sha256"] != sha:
             raise KeyError("Asset does not match this task")
-        raw = self._asset_path(sha).read_bytes()
+        raw = self._asset_file(sha).read_bytes()
         if hashlib.sha256(raw).hexdigest() != sha:
-            raise ValueError("Cached image checksum mismatch")
+            raise ValueError("Benchmark image checksum mismatch")
         return raw, task["mime"]
 
     def image(self, task):
         raw, _ = self.asset_bytes(task["asset_sha256"], task["task_id"])
         with Image.open(io.BytesIO(raw)) as image:
             return image.copy()
+
+    def prefetch(self, *, task_ids=(), block_ids=()):
+        # A split's crops arrive together on first use, so there is nothing to warm.
+        return {"task_ids": 0, "block_ids": 0}
 
     def close(self):
         pass

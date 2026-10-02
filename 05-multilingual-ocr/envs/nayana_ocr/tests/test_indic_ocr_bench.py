@@ -1,4 +1,4 @@
-"""Sarvam Indic OCR Bench as an evaluation-only source beside the corpus."""
+"""Sarvam Indic OCR Bench as evaluation splits served exactly like the corpus."""
 
 import hashlib
 import io
@@ -11,118 +11,135 @@ from nayana_ocr.data.catalog import PUBLIC_FIELDS
 from nayana_ocr.data.composite import CompositeCatalog
 from nayana_ocr.models import NayanaAction, NayanaObservation
 from nayana_ocr.server import indic_ocr_bench_metrics as official
-from nayana_ocr.server.bench_rewards import POLICY, score_bench
+from nayana_ocr.server.bench_rewards import official_metrics
 from nayana_ocr.server.environment import NayanaEnvironment
+from nayana_ocr.server.rewards import score
 from PIL import Image
 
+SPLIT = "indic_ocr_bench_test"
 ROWS = [
-    ("indic_ocr_bench_test_kan_1", "ಕನ್ನಡ ಪಠ್ಯ", "Kannada", (40, 12)),
-    ("indic_ocr_bench_test_brx_2", "बड़ो लिरनाय", "Bodo", (32, 10)),
-    ("indic_ocr_bench_test_kan_3", "ಮತ್ತೊಂದು ಸಾಲು", "Kannada", (48, 14)),
+    ("indic_ocr_bench_test_kan_1", "ಕನ್ನಡ ಪಠ್ಯ", "Kannada", (40, 12), "PNG"),
+    ("indic_ocr_bench_test_brx_2", "बड़ो लिरनाय", "Bodo", (32, 10), "JPEG"),
+    ("indic_ocr_bench_test_kan_3", "ಮತ್ತೊಂದು ಸಾಲು", "Kannada", (48, 14), "PNG"),
 ]
 
 
-def png(size, shade):
+def encoded(size, shade, fmt):
     buffer = io.BytesIO()
-    Image.new("L", size, shade).save(buffer, format="PNG")
+    Image.new("L", size, shade).save(buffer, format=fmt)
     return buffer.getvalue()
 
 
 def write_parquet(path, rows):
-    table = pa.table(
-        {
-            "image": [
-                {"bytes": png(size, 40 * i + 10), "path": f"{name}.png"}
-                for i, (name, _, _, size) in enumerate(rows)
-            ],
-            "image_name": [r[0] for r in rows],
-            "gt": [r[1] for r in rows],
-            "language": [r[2] for r in rows],
-        }
+    pq.write_table(
+        pa.table(
+            {
+                "image": [
+                    {"bytes": encoded(size, 40 * i + 10, fmt), "path": f"{name}.img"}
+                    for i, (name, _, _, size, fmt) in enumerate(rows)
+                ],
+                "image_name": [r[0] for r in rows],
+                "gt": [r[1] for r in rows],
+                "language": [r[2] for r in rows],
+            }
+        ),
+        path,
     )
-    pq.write_table(table, path)
-    return path
+    return str(path)
 
 
 @pytest.fixture
-def source(tmp_path, monkeypatch):
-    monkeypatch.setattr(
-        bench, "SPLITS", {"indic_ocr_bench_test": ("test", len(ROWS))}
-    )
+def splits(monkeypatch):
+    monkeypatch.setattr(bench, "SPLITS", {SPLIT: ("test", len(ROWS))})
+
+
+@pytest.fixture
+def published(tmp_path, splits):
+    """A bucket as publishing leaves it, read in place the way a Space reads its mount."""
     parquet = write_parquet(tmp_path / "test.parquet", ROWS)
-    calls = []
-
-    def fetch(directory):
-        calls.append(directory)
-        return [str(parquet)]
-
-    return bench.BenchCatalog(tmp_path / "cache", fetch=fetch), calls
+    root = tmp_path / "bucket"
+    bench.build_split(SPLIT, root, fetch=lambda d: [parquet])
+    return bench.BenchCatalog(tmp_path / "cache", root=root, fallback=False)
 
 
-def test_tasks_present_exactly_as_section_ocr_tasks_do(source):
-    catalog, _ = source
-    assert catalog.count("indic_ocr_bench_test") == 3
-    task = catalog.at("indic_ocr_bench_test", 0)
-    public = catalog.public(task)
-    # The shared public fields and nothing else - in particular never the reference.
+def test_crops_are_served_as_ordinary_section_ocr_tasks(published):
+    task = published.at(SPLIT, 0)
+    public = published.public(task)
+    assert task["family"] == "section_ocr"
     assert set(PUBLIC_FIELDS) <= set(public)
-    assert "reference" not in public and "ಕನ್ನಡ" not in str(public)
-    assert public["family"] == bench.FAMILY
+    # The reference never leaves the server.
+    assert "reference" not in public and ROWS[0][1] not in str(public)
     assert public["language"] == "kn"
     assert public["prompt"] == bench.prompt("kn")
-    assert public["asset_path"].startswith(f"/assets/{task['asset_sha256']}?task_id=")
     assert (public["width"], public["height"]) == (40, 12)
+    assert public["asset_path"].startswith(f"/assets/{task['asset_sha256']}?task_id=")
 
 
-def test_task_ids_round_trip_and_reject_other_revisions(source):
-    catalog, _ = source
-    task = catalog.at("indic_ocr_bench_test", 1)
-    assert catalog.get(task["task_id"]) is task
-    assert task["language"] == "brx"  # a language the Nayana corpus does not have
-    stale = task["task_id"].replace(bench.REVISION[:12], "0" * 12)
+def test_image_formats_are_read_from_the_bytes_not_the_card(published):
+    assert published.at(SPLIT, 0)["mime"] == "image/png"
+    assert published.at(SPLIT, 1)["mime"] == "image/jpeg"
+
+
+def test_task_ids_round_trip_and_reject_other_revisions(published):
+    task = published.at(SPLIT, 1)
+    assert published.get(task["task_id"]) is task
+    assert task["language"] == "brx"  # not a corpus language
     with pytest.raises(KeyError):
-        catalog.get(stale)
+        published.get(task["task_id"].replace(bench.VERSION, "0" * 12))
 
 
-def test_assets_are_served_only_for_the_task_they_belong_to(source):
-    catalog, _ = source
-    first, second = (catalog.at("indic_ocr_bench_test", i) for i in (0, 1))
-    raw, mime = catalog.asset_bytes(first["asset_sha256"], first["task_id"])
+def test_assets_are_served_only_for_their_own_task(published):
+    first, second = published.at(SPLIT, 0), published.at(SPLIT, 1)
+    raw, mime = published.asset_bytes(first["asset_sha256"], first["task_id"])
     assert hashlib.sha256(raw).hexdigest() == first["asset_sha256"]
     assert mime == "image/png"
     with pytest.raises(KeyError):
-        catalog.asset_bytes(first["asset_sha256"], second["task_id"])
+        published.asset_bytes(first["asset_sha256"], second["task_id"])
     with pytest.raises(KeyError):
-        catalog.asset_bytes("not-a-hash", first["task_id"])
+        published.asset_bytes("not-a-hash", first["task_id"])
 
 
-def test_extraction_happens_once_and_is_reused(source, tmp_path):
-    catalog, calls = source
-    catalog.at("indic_ocr_bench_test", 0)
+def test_a_mount_without_the_revision_is_an_error_not_a_silent_fallback(tmp_path, splits):
+    catalog = bench.BenchCatalog(tmp_path / "cache", root=tmp_path / "empty-mount")
+    with pytest.raises(FileNotFoundError, match="publish"):
+        catalog.at(SPLIT, 0)
+
+
+def test_without_a_bucket_it_builds_once_and_then_reuses_the_cache(
+    tmp_path, splits, monkeypatch
+):
+    parquet = write_parquet(tmp_path / "test.parquet", ROWS)
+    fetched = []
+
+    def unreachable(self, split):
+        raise ConnectionError("bucket unreachable")
+
+    monkeypatch.setattr(bench.BenchCatalog, "_pull", unreachable)
+    first = bench.BenchCatalog(
+        tmp_path / "cache", fetch=lambda d: fetched.append(d) or [parquet]
+    )
+    assert first.count(SPLIT) == 3 and first.at(SPLIT, 2)["unit"] == ROWS[2][0]
 
     def refuse(directory):
-        raise AssertionError("the cached index should have been reused")
+        raise AssertionError("the local cache should have been reused")
 
-    again = bench.BenchCatalog(tmp_path / "cache", fetch=refuse)
-    assert again.count("indic_ocr_bench_test") == 3
-    assert again.at("indic_ocr_bench_test", 2)["unit"] == ROWS[2][0]
-    assert calls == ["test"]
+    second = bench.BenchCatalog(tmp_path / "cache", fetch=refuse)
+    assert second.at(SPLIT, 0)["unit"] == ROWS[0][0]
+    assert fetched == ["test"]
 
 
 def test_a_split_that_is_not_the_pinned_one_is_refused(tmp_path, monkeypatch):
-    monkeypatch.setattr(bench, "SPLITS", {"indic_ocr_bench_test": ("test", 99)})
+    monkeypatch.setattr(bench, "SPLITS", {SPLIT: ("test", 99)})
     parquet = write_parquet(tmp_path / "t.parquet", ROWS)
-    catalog = bench.BenchCatalog(tmp_path / "cache", fetch=lambda d: [str(parquet)])
     with pytest.raises(ValueError, match="expected 99"):
-        catalog.at("indic_ocr_bench_test", 0)
+        bench.build_split(SPLIT, tmp_path / "bucket", fetch=lambda d: [parquet])
 
 
 def test_an_unknown_language_is_an_error_not_a_guess(tmp_path, monkeypatch):
-    monkeypatch.setattr(bench, "SPLITS", {"indic_ocr_bench_test": ("test", 1)})
-    parquet = write_parquet(tmp_path / "t.parquet", [("x_1", "text", "Klingon", (8, 8))])
-    catalog = bench.BenchCatalog(tmp_path / "cache", fetch=lambda d: [str(parquet)])
+    monkeypatch.setattr(bench, "SPLITS", {SPLIT: ("test", 1)})
+    parquet = write_parquet(tmp_path / "t.parquet", [("x_1", "t", "Klingon", (8, 8), "PNG")])
     with pytest.raises(ValueError, match="unknown language"):
-        catalog.at("indic_ocr_bench_test", 0)
+        bench.build_split(SPLIT, tmp_path / "bucket", fetch=lambda d: [parquet])
 
 
 def test_every_listed_language_has_a_distinct_code():
@@ -139,25 +156,18 @@ def test_every_listed_language_has_a_distinct_code():
         ("दो पंक्तियाँ\nयहाँ", "दो पंक्तियाँ यहाँ"),
     ],
 )
-def test_reward_uses_the_benchmarks_own_scores(gt, pred):
-    reward, metrics = score_bench(pred, gt)
-    summary, results = official.compute_metrics(
+def test_reported_metrics_are_the_benchmarks_own(gt, pred):
+    ours = official_metrics(pred, gt)
+    _, results = official.compute_metrics(
         [{"image_name": "x", "gt": gt, "pred": pred}], normalize=True, replace_n=False
     )
-    assert metrics["char_error_rate"] == results[0]["metrics"]["cer"]
-    assert metrics["word_error_rate"] == results[0]["metrics"]["wer"]
-    assert reward == pytest.approx(1.0 - summary["avg_metrics"]["cer"])
+    assert ours["official_cer"] == results[0]["metrics"]["cer"]
+    assert ours["official_wer"] == results[0]["metrics"]["wer"]
 
 
-def test_an_empty_answer_scores_zero_and_is_flagged():
-    reward, metrics = score_bench("   ", "ಕನ್ನಡ")
-    assert reward == 0.0
-    assert metrics["missing_prediction"] is True
-
-
-def test_runaway_repetition_is_flagged_as_the_benchmark_flags_it():
-    _, metrics = score_bench("ಕನ್ನಡ " * 40, "ಕನ್ನಡ")
-    assert metrics["loop_or_catastrophic"] is True
+def test_empty_and_runaway_answers_carry_the_benchmarks_flags():
+    assert official_metrics("  ", "ಕನ್ನಡ")["missing_prediction"] is True
+    assert official_metrics("ಕನ್ನಡ " * 40, "ಕನ್ನಡ")["loop_or_catastrophic"] is True
 
 
 class Primary:
@@ -166,6 +176,9 @@ class Primary:
     manifest = {"snapshot_id": "corpus"}
     eval_splits = {"eval_22_validation": [1, 2]}
     eval_ids = {"eval_22_validation": "abc"}
+
+    def __init__(self):
+        self.prefetched = []
 
     def splits(self):
         return ["train", "validation", "test", "eval_22_validation"]
@@ -176,35 +189,42 @@ class Primary:
     def blocks(self, *args, **kwargs):
         return ["corpus-block"]
 
+    def prefetch(self, *, task_ids=(), block_ids=()):
+        self.prefetched.extend(task_ids)
 
-def test_composite_routes_benchmark_calls_and_leaves_the_corpus_alone(source):
-    catalog, _ = source
-    composite = CompositeCatalog(Primary(), [catalog])
-    assert composite.splits()[-1] == "indic_ocr_bench_test"
-    assert composite.count("validation") == 7
-    assert composite.count("indic_ocr_bench_test") == 3
-    assert composite.blocks() == ["corpus-block"]
+
+def test_composite_routes_benchmark_calls_and_leaves_the_corpus_alone(published):
+    primary = Primary()
+    composite = CompositeCatalog(primary, [published])
+    assert composite.splits()[-1] == SPLIT
+    assert composite.count("validation") == 7 and composite.count(SPLIT) == 3
+    assert composite.blocks() == ["corpus-block"]  # training samplers see the corpus only
     assert composite.manifest["snapshot_id"] == "corpus"
-    assert len(composite.eval_splits["indic_ocr_bench_test"]) == 3
-    assert "eval_22_validation" in composite.eval_ids
-    task = composite.at("indic_ocr_bench_test", 0)
+    assert len(composite.eval_splits[SPLIT]) == 3
+    task = composite.at(SPLIT, 0)
     assert composite.get(task["task_id"]) is task
+    # The playground prefetches neighbours; a benchmark ID must never reach the corpus.
+    composite.prefetch(task_ids=["nayana-c1.x.kn.train.1", task["task_id"]])
+    assert primary.prefetched == ["nayana-c1.x.kn.train.1"]
 
 
-def test_reset_and_step_through_the_unchanged_environment(source):
-    catalog, _ = source
-    env = NayanaEnvironment(catalog=CompositeCatalog(Primary(), [catalog]))
-    task = catalog.at("indic_ocr_bench_test", 0)
+def test_reward_and_grading_are_identical_to_corpus_section_ocr(published):
+    env = NayanaEnvironment(catalog=CompositeCatalog(Primary(), [published]))
+    task = published.at(SPLIT, 2)
     observation = env.reset(task_id=task["task_id"])
-    assert observation.family == bench.FAMILY and observation.language == "kn"
-    result = env.step(NayanaAction(answer=ROWS[0][1]))
-    assert result.done and result.reward == pytest.approx(1.0)
-    assert result.grading_policy_id == POLICY
-    assert result.metrics["char_error_rate"] == 0.0
+    assert observation.family == "section_ocr" and observation.language == "kn"
+    answer = ROWS[2][1][:-2]
+    result = env.step(NayanaAction(answer=answer))
+    expected_reward, expected_metrics = score("section_ocr", answer, ROWS[2][1])
+    assert result.reward == pytest.approx(expected_reward)
+    assert result.grading_policy_id == ""  # exactly what a corpus section task reports
+    for key, value in expected_metrics.items():
+        assert result.metrics[key] == value
+    # The benchmark's own scores ride along, reported and never rewarded.
+    assert result.metrics["official_cer"] == official_metrics(answer, ROWS[2][1])["official_cer"]
 
 
 def test_the_tool_surface_is_unchanged():
-    # Adding a benchmark must not change what an agent sends or receives.
     assert sorted(NayanaAction.model_fields) == ["answer", "metadata"]
     assert sorted(NayanaObservation.model_fields) == [
         "annotation_masked", "asset_path", "asset_sha256", "done", "family",
@@ -228,10 +248,11 @@ def test_the_harness_reports_what_the_benchmarks_scorer_reports():
         ("brx", "बड़ो लिरनाय", ""),  # empty: dropped from the official means
         ("brx", "बड़ो", "बड़ो " * 40),  # runaway: kept, but outside valid_*
     ]
-    samples = []
-    for i, (lang, gt, pred) in enumerate(pairs):
-        _, metrics = score_bench(pred, gt)
-        samples.append({"task_id": str(i), "language": lang, "family": bench.FAMILY, **metrics})
+    samples = [
+        {"task_id": f"{bench.SOURCE}.{bench.VERSION}.{SPLIT}.x{i}", "language": lang,
+         "family": "section_ocr", **official_metrics(pred, gt)}
+        for i, (lang, gt, pred) in enumerate(pairs)
+    ]
     ours = module.bench_report(samples)
     theirs, _ = official.compute_metrics(
         [{"image_name": str(i), "gt": gt, "pred": pred, "language": lang}
@@ -245,4 +266,5 @@ def test_the_harness_reports_what_the_benchmarks_scorer_reports():
                 "loop_failure_count", "benchmark_sample_count"):
         assert ours[key] == theirs[key], key
     assert ours["word_accuracy"] == pytest.approx(theirs["word_accuracy"])
-    assert module.bench_report([{"family": "section_ocr"}]) is None
+    # A corpus task is not benchmark data, even though it shares the family.
+    assert module.bench_report([{"task_id": "nayana-c1.x", "family": "section_ocr"}]) is None

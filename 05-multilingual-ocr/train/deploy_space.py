@@ -51,6 +51,17 @@ def main():
         default=[],
         help="Frozen set to ship and serve as its own split; repeat for several",
     )
+    parser.add_argument(
+        "--bench-bucket",
+        default=None,
+        help="Bucket holding the published Sarvam Indic OCR Bench (default: the package's); "
+        "mounted read-only at /indic-ocr-bench",
+    )
+    parser.add_argument(
+        "--no-bench",
+        action="store_true",
+        help="Serve the corpus alone, without the Indic OCR Bench evaluation splits",
+    )
     parser.add_argument("--sessions", type=int, default=16)
     parser.add_argument(
         "--judge-concurrency",
@@ -100,6 +111,18 @@ def main():
             "Publish and verify every index file in the bucket before deploying"
         )
     project = Path(__file__).resolve().parents[1] / "envs" / "nayana_ocr"
+    from nayana_ocr.data import indic_ocr_bench as bench
+
+    bench_bucket = None if args.no_bench else (args.bench_bucket or bench.BUCKET)
+    if bench_bucket:
+        wanted = [f"{bench.VERSION}/{split}.json" for split in bench.SPLITS]
+        present = {r.path for r in api.get_bucket_paths_info(bench_bucket, wanted)}
+        if set(wanted) - present:
+            raise ValueError(
+                f"Publish {bench.SNAPSHOT_ID} to {bench_bucket} first "
+                f"(missing {sorted(set(wanted) - present)}); see publish_indic_ocr_bench.py"
+            )
+
     with tempfile.TemporaryDirectory(prefix="nayana-space-") as directory:
         staging = Path(directory)
         catalog = CorpusCatalog(args.corpus_manifest, staging / "validation-cache")
@@ -146,6 +169,16 @@ def main():
             card.write(
                 f"Snapshot: `{manifest['snapshot_id']}`. Image bounds are validated when a task is loaded.\n"
             )
+            if bench_bucket:
+                card.write(
+                    "\nEvaluation benchmark: [Sarvam Indic OCR Bench]"
+                    f"(https://huggingface.co/datasets/{bench.REPO}) by Sarvam AI "
+                    f"(Apache-2.0), revision `{bench.VERSION}`, served from "
+                    f"[{bench_bucket}](https://huggingface.co/buckets/{bench_bucket}) as "
+                    + ", ".join(f"`{s}` ({n:,})" for s, (_, n) in bench.SPLITS.items())
+                    + ". Scored as Section OCR with the same reward; the benchmark's own "
+                    "CER/WER are reported alongside.\n"
+                )
             if served:
                 card.write("\nFrozen evaluation splits: ")
                 card.write(", ".join(f"`{name}`" for name in sorted(served.values())))
@@ -179,7 +212,8 @@ def main():
 
         # Preserve unrelated mounts; this path is owned by the Nayana deployment.
         runtime = api.space_info(args.space_id).runtime
-        volumes = [v for v in (runtime.volumes or []) if v.mount_path != "/corpus"]
+        owned = {"/corpus", "/indic-ocr-bench"}
+        volumes = [v for v in (runtime.volumes or []) if v.mount_path not in owned]
         volumes.append(
             Volume(
                 type="bucket",
@@ -188,6 +222,15 @@ def main():
                 read_only=True,
             )
         )
+        if bench_bucket:
+            volumes.append(
+                Volume(
+                    type="bucket",
+                    source=bench_bucket,
+                    mount_path="/indic-ocr-bench",
+                    read_only=True,
+                )
+            )
         if [v.to_dict() for v in volumes] != [
             v.to_dict() for v in (runtime.volumes or [])
         ]:
@@ -211,6 +254,12 @@ def main():
         for key, value in {
             "NAYANA_CORPUS_MANIFEST": "/app/corpus-manifest.json",
             "NAYANA_SOURCE_ROOT": "/corpus",
+            "NAYANA_INDIC_OCR_BENCH": "true" if bench_bucket else "false",
+            **(
+                {"NAYANA_INDIC_OCR_BENCH_ROOT": "/indic-ocr-bench"}
+                if bench_bucket
+                else {}
+            ),
             "NAYANA_CACHE_DIR": "/tmp/nayana-cache",
             "NAYANA_INDEX_CACHE_BYTES": str(index_bytes),
             # Concurrent evaluation needs a session per worker and a judge slot per
@@ -229,6 +278,9 @@ def main():
             "bucket_id": manifest["bucket_id"],
             "mount_bucket": mount_bucket,
             "volumes": [v.to_dict() for v in volumes],
+            "indic_ocr_bench": (
+                {"bucket": bench_bucket, "revision": bench.REVISION} if bench_bucket else None
+            ),
             "bundled": "code and corpus manifest only; indexes and images fetched lazily",
             "index_cache_bytes": index_bytes,
             "sessions": args.sessions,

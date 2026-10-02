@@ -14,6 +14,7 @@ Evaluation benchmark: Sarvam AI, Sarvam Indic OCR Bench (sarvamai/indic-ocr-benc
 https://huggingface.co/datasets/sarvamai/indic-ocr-bench
 Pinned revision 84ce7ce447456a92bcbf25f3c0a55d6a5a44a24b. Licensed Apache License 2.0:
 https://www.apache.org/licenses/LICENSE-2.0
-Benchmark images and ground truth are served unmodified for evaluation only. Its scorer,
+Benchmark images and ground truth are served unmodified, for evaluation only, from a
+serving copy in the bucket FineEnvs/indic-ocr-bench-bucket. Its scorer,
 server/indic_ocr_bench_metrics.py, is copied unmodified from that revision's metrics.py
 (Copyright Sarvam AI, Apache-2.0); only an attribution header was added above it.

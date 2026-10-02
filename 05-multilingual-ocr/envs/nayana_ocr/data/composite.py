@@ -87,6 +87,18 @@ class CompositeCatalog:
     def image(self, task):
         return self._for_task(task["task_id"]).image(task)
 
+    def prefetch(self, *, task_ids=(), block_ids=()):
+        # The playground prefetches neighbouring task IDs. A benchmark ID handed to the
+        # corpus loader would fail to parse, so each source warms only its own tasks.
+        mine = [t for t in task_ids if self._for_task(t) is self._primary]
+        for extra in self._extras:
+            ids = [t for t in task_ids if extra.owns_task(t)]
+            if ids and hasattr(extra, "prefetch"):
+                extra.prefetch(task_ids=ids)
+        if hasattr(self._primary, "prefetch"):
+            return self._primary.prefetch(task_ids=mine, block_ids=block_ids)
+        return None
+
     def asset_bytes(self, sha, task_id):
         owner = self._for_task(task_id)
         if owner is not self._primary or hasattr(self._primary, "asset_bytes"):
