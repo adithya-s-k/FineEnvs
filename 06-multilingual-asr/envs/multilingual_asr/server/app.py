@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from ..models import AsrAction, AsrObservation
 from .environment import AsrEnvironment, configured_catalog
 from .gradio_ui import build_ui
-from .rewards import ERROR_WEIGHT, EXACT_WEIGHT, GRADING_POLICY
+from .rewards import ERROR_WEIGHT, EXACT_WEIGHT, POLICIES, reward_unit
 
 
 class GroupRequest(BaseModel):
@@ -23,9 +23,11 @@ class GroupTasksRequest(GroupRequest):
 
 def create_server():
     catalog = configured_catalog()
+    # Read once, so every session and the manifest grade by the same policy.
+    unit = reward_unit()
     os.environ.setdefault("ENABLE_WEB_INTERFACE", "true")
     app = create_app(
-        lambda: AsrEnvironment(catalog),
+        lambda: AsrEnvironment(catalog, unit),
         AsrAction,
         AsrObservation,
         env_name="multilingual_asr",
@@ -54,9 +56,14 @@ def create_server():
                 for name, rows in getattr(catalog, "eval_splits", {}).items()
             },
             "grading": {
-                "policy": GRADING_POLICY,
+                "policy": POLICIES[unit],
                 "reward": f"{ERROR_WEIGHT} * max(0, 1 - error_rate) + {EXACT_WEIGHT} * exact_match",
-                "error_unit": "cer for scripts without word spacing, wer otherwise",
+                "error_unit": (
+                    "cer for every language"
+                    if unit == "cer"
+                    else "cer for scripts without word spacing, wer otherwise"
+                ),
+                "reported": "cer for every language, and wer where words are spaced",
             },
         }
 

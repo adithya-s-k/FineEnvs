@@ -209,3 +209,23 @@ def test_sampling_is_balanced_and_reproducible_without_listing(monkeypatch):
 
     with pytest.raises(ValueError, match="Missing language/task groups"):
         training.sampled_rows("http://x", "train", ["xx_xx"], ["transcription"], 42, 3)
+
+
+def test_the_reward_unit_is_named_by_the_observation_it_grades(snapshot):
+    """A score is only readable beside the policy and unit it was computed in."""
+    catalog, _ = snapshot
+    task = next(
+        catalog.at("test", i)
+        for i in range(catalog.count("test"))
+        if catalog.at("test", i)["family"] == "transcription"
+        and catalog.at("test", i)["language"] == "en_us"
+    )
+    default, cer = AsrEnvironment(catalog), AsrEnvironment(catalog, "cer")
+    first, second = default.reset(task_id=task["task_id"]), cer.reset(task_id=task["task_id"])
+    assert first.error_unit == "wer" and second.error_unit == "cer"
+    near = "x" + task["reference"][1:]  # one letter wrong: a whole word by word rate
+    a = default.step(AsrAction(transcript=near))
+    b = cer.step(AsrAction(transcript=near))
+    assert a.grading_policy_id == "fleurs-asr-error-rate-v1"
+    assert b.grading_policy_id == "fleurs-asr-cer-v1"
+    assert a.metrics == b.metrics and b.reward > a.reward

@@ -13,7 +13,9 @@ decoded or resampled on the way.
 import argparse
 import base64
 import json
+import math
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -28,7 +30,8 @@ import requests
 from multilingual_asr.client import AsrClient, connect
 from multilingual_asr.models import AsrAction
 from multilingual_asr.runtime import local_server
-from multilingual_asr.training import task_rows
+from multilingual_asr.server.rewards import REWARD_UNITS
+from multilingual_asr.training import READY, checkpoint_complete, task_rows
 
 VLLM_SPEC = "vllm[audio]==0.30.0"
 
@@ -297,8 +300,10 @@ def headroom(greedy, sampled):
         "greedy_mean": sum(g) / len(g),
         "sampled_mean": sum(mean) / len(mean),
         "best_of_n_mean": sum(best) / len(best),
-        "best_minus_greedy": sum(b - x for b, x in zip(best, g)) / len(g),
-        "tasks_with_a_better_sample": sum(b > x + 1e-9 for b, x in zip(best, g)) / len(g),
+        "best_minus_greedy": sum(b - x for b, x in zip(best, g, strict=True)) / len(g),
+        "tasks_with_a_better_sample": sum(
+            b > x + 1e-9 for b, x in zip(best, g, strict=True)
+        ) / len(g),
         "mean_share_of_samples_beating_greedy": sum(better) / len(better),
     }
 
@@ -345,6 +350,128 @@ def grade(env_url, prepared, predictions, timeout, workers):
                 print(f"  session close failed: {error}", flush=True)
     print(f"  grading done in {time.monotonic() - started:.0f}s", flush=True)
     return samples, groups
+
+
+CURVE_METRICS = ("reward", "cer", "wer", "exact_match")
+
+
+def paired(base, other, metric):
+    """Mean of other minus base over the tasks both scored, with a 95% interval.
+
+    Both sides are scored on the same clips, so the per-clip difference removes how hard
+    each clip is, and its spread is far smaller than either score's. This is what makes
+    a half-point change on 838 clips readable at all.
+    """
+    before = {s["task_id"]: s[metric] for s in base if metric in s}
+    pairs = [
+        float(s[metric]) - float(before[s["task_id"]])
+        for s in other
+        if metric in s and s["task_id"] in before
+    ]
+    if len(pairs) < 2:
+        return None
+    mean = sum(pairs) / len(pairs)
+    spread = math.sqrt(sum((d - mean) ** 2 for d in pairs) / (len(pairs) - 1))
+    half = 1.96 * spread / math.sqrt(len(pairs))
+    return {"delta": mean, "low": mean - half, "high": mean + half, "tasks": len(pairs)}
+
+
+def curve_point(step, body, base):
+    """One checkpoint's row of the run's curve: means, and paired change from base."""
+    samples = body["samples"]
+    point = {"step": step, "model": body["model"], "tasks": len(samples)}
+    for metric in CURVE_METRICS:
+        observed = [float(s[metric]) for s in samples if metric in s]
+        if observed:
+            point[metric] = sum(observed) / len(observed)
+        if base is not None:
+            change = paired(base["samples"], samples, metric)
+            if change:
+                point[f"{metric}_change"] = change
+    return point
+
+
+def checkpoint_steps(paths, prefix):
+    """Steps whose checkpoint has been marked ready under `prefix`."""
+    pattern = re.compile(rf"^{re.escape(prefix)}/checkpoint-(\d+)/{READY}$")
+    return sorted({int(m.group(1)) for p in paths if (m := pattern.match(p))})
+
+
+class RunWatcher:
+    """Follow a training run's bucket and hand over each checkpoint once complete.
+
+    The bucket is read through the Hub API, not a mount: a mount may cache a listing,
+    and the run is being written by another machine. A checkpoint counts as complete
+    once its ready.json exists and every adapter byte matches the hashes in it. A
+    checkpoint that is listed but still uploading is retried on the next poll.
+    """
+
+    TERMINAL = {"COMPLETED", "ERROR", "CANCELED", "DELETED"}
+
+    def __init__(self, location, work, job=None):
+        from huggingface_hub import HfApi
+
+        parts = location.strip("/").split("/")
+        if len(parts) < 3:
+            raise ValueError("Use --watch namespace/bucket/run-prefix")
+        self.bucket, self.prefix = "/".join(parts[:2]), "/".join(parts[2:])
+        self.work, self.job, self.api = Path(work), job, HfApi()
+
+    def listing(self):
+        return [
+            getattr(item, "path", "")
+            for item in self.api.list_bucket_tree(
+                self.bucket, prefix=self.prefix + "/", recursive=True
+            )
+        ]
+
+    def finished(self, paths):
+        """The run is over: its job is terminal, or it wrote its final summary."""
+        if f"{self.prefix}/summary.json" in paths:
+            return True
+        if self.job:
+            stage = self.api.inspect_job(job_id=self.job).status.stage
+            return str(getattr(stage, "value", stage)) in self.TERMINAL
+        return False
+
+    def fetch(self, step, names):
+        """Download one checkpoint's adapter, or return None if it is not all there."""
+        remote = f"{self.prefix}/checkpoint-{step}"
+        local = self.work / f"checkpoint-{step}"
+        local.mkdir(parents=True, exist_ok=True)
+        self.api.download_bucket_files(
+            self.bucket, [(f"{remote}/{n}", str(local / n)) for n in names]
+        )
+        ready = json.loads((local / READY).read_text())
+        return local if checkpoint_complete(local, ready) else None
+
+    def trainer_state(self, step):
+        """The run's log history as of a checkpoint, for plotting the training side."""
+        local = self.work / f"checkpoint-{step}" / "trainer_state.json"
+        try:
+            self.api.download_bucket_files(
+                self.bucket,
+                [(f"{self.prefix}/checkpoint-{step}/trainer_state.json", str(local))],
+            )
+        except Exception as error:  # noqa: BLE001 - a plot without it still has evals
+            print(f"  no trainer state for step {step}: {error}", flush=True)
+            return None
+        return local
+
+
+def plot(curve_path, trainer_state, out_dir, title):
+    """Redraw the run's figures. A failed plot is reported and never stops scoring."""
+    script = Path(__file__).with_name("plot_run.py")
+    command = ["uv", "run", "--script", str(script), "--curve", str(curve_path),
+               "--out", str(out_dir), "--title", title]
+    if trainer_state:
+        command += ["--trainer-state", str(trainer_state)]
+    try:
+        subprocess.run(command, check=True, timeout=600)
+    except Exception as error:  # noqa: BLE001
+        print(f"  plotting failed: {error}", flush=True)
+        return []
+    return sorted(Path(out_dir).glob("*.png"))
 
 
 def summarize(samples, groups, elapsed):
@@ -447,11 +574,38 @@ def main():
     parser.add_argument("--vllm-arg", action="append", default=[])
     parser.add_argument("--progress", type=int, default=50)
     parser.add_argument(
+        "--reward-unit",
+        choices=REWARD_UNITS,
+        default="script",
+        help="Grade with the same policy the run trained on",
+    )
+    parser.add_argument(
+        "--watch",
+        default="",
+        help="namespace/bucket/run-prefix of a training run: score the base model, "
+        "then every checkpoint as it lands, until the run finishes",
+    )
+    parser.add_argument(
+        "--follow-job", default="", help="Training job to wait on while watching"
+    )
+    parser.add_argument("--poll-seconds", type=int, default=60)
+    parser.add_argument(
+        "--idle-hours",
+        type=float,
+        default=3.0,
+        help="Give up watching after this long without a new checkpoint",
+    )
+    parser.add_argument("--trackio-space", default="")
+    parser.add_argument("--trackio-project", default="huggingface")
+    parser.add_argument("--run-name", default="")
+    parser.add_argument(
         "--output-dir", default=os.environ.get("OUTPUT_DIR", "artifacts/eval")
     )
     args = parser.parse_args()
-    if not args.models and not (args.base and args.adapters):
-        parser.error("Provide --models, or --base with --adapters")
+    if args.watch and not args.base:
+        parser.error("--watch scores checkpoints over --base")
+    if not args.models and not (args.base and (args.adapters or args.watch)):
+        parser.error("Provide --models, or --base with --adapters or --watch")
     if args.models and args.adapters:
         parser.error("Score whole models or adapters of one base, not both at once")
     if bool(args.corpus) == bool(args.env_url):
@@ -464,7 +618,7 @@ def main():
     with ExitStack() as stack:
         # Sessions are what bounds concurrency: a worker holds one for the whole run.
         env_url = args.env_url or stack.enter_context(
-            local_server(args.corpus, args.workers + 4)
+            local_server(args.corpus, args.workers + 4, args.reward_unit)
         )
         with connect(env_url) as client:
             manifest = client.manifest()
@@ -559,7 +713,9 @@ def main():
                 args.request_timeout, args.workers, args.progress,
                 temperature=args.temperature, n=args.samples,
             )
-            flat_prepared = [item for item, texts in zip(prepared, drawn) for _ in texts]
+            flat_prepared = [
+                item for item, texts in zip(prepared, drawn, strict=True) for _ in texts
+            ]
             flat_texts = [text for texts in drawn for text in texts]
             sampled_rows_scored, _ = grade(
                 env_url, flat_prepared, flat_texts, args.request_timeout, args.workers
@@ -572,6 +728,10 @@ def main():
             stats["temperature"] = args.temperature
             print("  headroom " + json.dumps(stats), flush=True)
             return result, stats
+
+        if args.watch:
+            watch(args, stack, score, record, rows, output)
+            return
 
         if args.adapters:
             revision = model_info(args.base).sha
@@ -630,6 +790,122 @@ def main():
             + "\n"
         )
         print("\n" + json.dumps(leaderboard, ensure_ascii=False, indent=2))
+
+
+def watch(args, stack, score, record, rows, output):
+    """Score the base, then each checkpoint of a live run, on one engine.
+
+    Every result is written as it is taken. The curve, the figures, and the Trackio run
+    are redrawn after each checkpoint, so the run can be read while it trains, and a
+    watcher that dies loses nothing it already scored.
+    """
+    import trackio
+    from huggingface_hub import model_info
+
+    watcher = RunWatcher(args.watch, output / "checkpoints", args.follow_job or None)
+    revision = model_info(args.base).sha
+    run_name = args.run_name or f"{watcher.prefix.split('/')[-1][:12]}-eval"
+    tracker = None
+    if args.trackio_space:
+        tracker = trackio.init(
+            project=args.trackio_project,
+            name=run_name,
+            space_id=args.trackio_space,
+            resume="allow",
+            config={
+                "watch": args.watch,
+                "eval_split": args.eval_split,
+                "tasks": len(rows),
+                "base": args.base,
+                "reward_unit": args.reward_unit,
+            },
+        )
+    vllm_url = stack.enter_context(
+        vllm_server(
+            args.base,
+            revision,
+            max_model_len=args.max_model_len,
+            gpu_fraction=args.gpu_fraction,
+            extra_args=args.vllm_arg,
+            boot_seconds=args.boot_seconds,
+            loras=args.max_loras,
+            max_lora_rank=args.max_lora_rank,
+        )
+    )
+    curve_path, plots = output / "curve.json", output / "plots"
+    curve = json.loads(curve_path.read_text()) if curve_path.exists() else []
+    done = {point["step"] for point in curve}
+    base_file = output / f"{args.base.replace('/', '__')}.json"
+    if base_file.exists():
+        base = json.loads(base_file.read_text())
+    else:
+        print(f"\n=== {args.base} (no adapter) ===", flush=True)
+        result, extra = score(vllm_url, args.base)
+        base = record(args.base, revision, result, len(rows), extra=extra)
+
+    def publish(point, trainer_state):
+        curve[:] = sorted([p for p in curve if p["step"] != point["step"]] + [point],
+                          key=lambda p: p["step"])
+        curve_path.write_text(json.dumps(curve, indent=2) + "\n")
+        figures = plot(curve_path, trainer_state, plots, f"{run_name} - {args.eval_split}")
+        if tracker is None:
+            return
+        logged = {f"eval/{k}": v for k, v in point.items() if isinstance(v, float)}
+        for metric in CURVE_METRICS:
+            change = point.get(f"{metric}_change")
+            if change:
+                logged[f"eval/{metric}_change"] = change["delta"]
+                logged[f"eval/{metric}_change_low"] = change["low"]
+                logged[f"eval/{metric}_change_high"] = change["high"]
+        logged.update({f"plots/{f.stem}": trackio.Image(str(f)) for f in figures})
+        trackio.log(logged, step=point["step"])
+
+    if 0 not in done:
+        publish(curve_point(0, base, None), None)
+        done.add(0)
+    idle_since, attempts = time.monotonic(), {}
+    names = (READY, "adapter_config.json", "adapter_model.safetensors")
+    while True:
+        paths = watcher.listing()
+        over = watcher.finished(paths)  # read before the listing is acted on
+        pending = [s for s in checkpoint_steps(paths, watcher.prefix) if s not in done]
+        for step in pending:
+            try:
+                local = watcher.fetch(step, names)
+            except Exception as error:  # noqa: BLE001 - a missing file is retried too
+                print(f"  checkpoint-{step} not readable yet: {error}", flush=True)
+                local = None
+            if local is None:
+                attempts[step] = attempts.get(step, 0) + 1
+                # Once the run is over nothing more will arrive; a checkpoint that is
+                # still incomplete then was cut off mid-write and cannot be scored.
+                if over and attempts[step] >= 5:
+                    print(f"  checkpoint-{step} never completed; skipped", flush=True)
+                    done.add(step)
+                else:
+                    print(f"  checkpoint-{step} still uploading; retrying", flush=True)
+                continue
+            name = f"step-{step}"
+            print(f"\n=== {name} (adapter over {args.base}) ===", flush=True)
+            with adapter(vllm_url, name, local):
+                result, extra = score(vllm_url, name)
+            body = record(name, revision, result, len(rows), adapter_path=local, extra=extra)
+            point = curve_point(step, body, base)
+            print("  curve " + json.dumps({k: v for k, v in point.items() if k != "model"}),
+                  flush=True)
+            publish(point, watcher.trainer_state(step))
+            done.add(step)
+            idle_since = time.monotonic()
+        if over and not [s for s in checkpoint_steps(watcher.listing(), watcher.prefix)
+                         if s not in done]:
+            print(f"run finished; scored {len(done) - 1} checkpoints", flush=True)
+            break
+        if time.monotonic() - idle_since > args.idle_hours * 3600:
+            print(f"no new checkpoint in {args.idle_hours}h; stopping", flush=True)
+            break
+        time.sleep(args.poll_seconds)
+    if tracker is not None:
+        trackio.finish()
 
 
 if __name__ == "__main__":

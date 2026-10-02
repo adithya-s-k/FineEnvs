@@ -9,7 +9,7 @@ from openenv.core.env_server.types import State
 
 from ..data.catalog import SPLITS, Catalog
 from ..models import AsrAction, AsrObservation
-from .rewards import GRADING_POLICY, score
+from .rewards import POLICIES, reward_unit, score
 
 
 @lru_cache(maxsize=4)
@@ -64,9 +64,10 @@ def configured_catalog():
 class AsrEnvironment(Environment):
     SUPPORTS_CONCURRENT_SESSIONS = True
 
-    def __init__(self, catalog=None):
+    def __init__(self, catalog=None, unit=None):
         super().__init__()
         self.catalog = catalog if catalog is not None else configured_catalog()
+        self.reward_unit = reward_unit(unit)
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self._task = None
 
@@ -115,7 +116,7 @@ class AsrEnvironment(Environment):
             done=done,
             reward=reward,
             metrics=metrics or {},
-            grading_policy_id=GRADING_POLICY,
+            grading_policy_id=POLICIES[self.reward_unit],
             **{
                 key: public[key]
                 for key in (
@@ -132,9 +133,10 @@ class AsrEnvironment(Environment):
                     "sampling_rate",
                     "num_samples",
                     "duration_seconds",
-                    "error_unit",
                 )
             },
+            # The unit the reward is computed in, which a CER policy changes.
+            error_unit="cer" if self.reward_unit == "cer" else public["error_unit"],
         )
 
     def step(self, action: AsrAction):
@@ -144,7 +146,7 @@ class AsrEnvironment(Environment):
         # One answer per episode: a second step must not re-grade a consumed task.
         self._task = None
         self._state.step_count += 1
-        reward, metrics = score(task, action.transcript)
+        reward, metrics = score(task, action.transcript, self.reward_unit)
         return self._observation(task, reward=reward, metrics=metrics, done=True)
 
     @property

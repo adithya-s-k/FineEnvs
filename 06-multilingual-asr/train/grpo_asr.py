@@ -14,10 +14,14 @@ from multilingual_asr.client import connect
 from multilingual_asr.data.schema import FAMILIES
 from multilingual_asr.models import AsrAction
 from multilingual_asr.runtime import local_server
+from multilingual_asr.server.rewards import POLICIES, REWARD_UNITS
 from multilingual_asr.training import (
     AssetCache,
     TrainingEnvironment,
+    audio_grpo_trainer,
     env_reward,
+    mark_checkpoint_ready,
+    pad_audio_features,
     sampled_rows,
     task_rows,
 )
@@ -58,9 +62,16 @@ class Config:
     # held-out predictions and half of those went backwards: the gradient was noise.
     gradient_accumulation_steps: int = 1
     max_completion_length: int = 256
-    # Longest FLEURS kn_in validation clip is 28.7s; 30 truncates nothing there.
+    # Longest FLEURS kn_in validation clip is 28.7s; 30 truncates nothing there. The
+    # features are padded to this span with the padding masked, never the waveform.
     audio_seconds: float = 30.0
     learning_rate: float = 1e-5
+    # Linear decay from the first step reproduces the runs before a schedule was
+    # configurable; a higher rate wants a warmup and a cosine tail.
+    lr_scheduler_type: str = "linear"
+    warmup_ratio: float = 0.0
+    beta: float = 0.0
+    reward_unit: str = "script"
     seed: int = 42
     output_dir: str = "artifacts/local-run"
     run_name: str = "asr-grpo"
@@ -86,6 +97,14 @@ class Config:
             raise ValueError("Use positive limits")
         if set(self.families) - set(FAMILIES):
             raise ValueError(f"Unknown task family in {self.families}")
+        if self.reward_unit not in REWARD_UNITS:
+            raise ValueError(f"Unknown reward unit {self.reward_unit!r}")
+        if not 0 <= self.warmup_ratio < 1 or self.beta < 0:
+            raise ValueError("Use a warmup ratio in [0, 1) and a non-negative beta")
+
+    @property
+    def warmup_steps(self):
+        return round(self.warmup_ratio * self.max_steps)
 
 
 SKIPPED_TOWERS = ("audio_tower", "vision_tower")
@@ -222,8 +241,8 @@ def run(config):
     from datasets import Dataset
     from huggingface_hub import model_info
     from peft import LoraConfig
-    from transformers import AutoProcessor
-    from trl import GRPOConfig, GRPOTrainer
+    from transformers import AutoProcessor, TrainerCallback
+    from trl import GRPOConfig
 
     config.validate()
     if not torch.cuda.is_available():
@@ -239,10 +258,19 @@ def run(config):
         url = config.env_url or stack.enter_context(
             # TRL opens a session per rollout, and accumulation multiplies the
             # rollouts in flight: generations * accumulation, not generations.
-            local_server(config.corpus, config.rollouts_in_flight + 4)
+            local_server(
+                config.corpus, config.rollouts_in_flight + 4, config.reward_unit
+            )
         )
         with connect(url) as client:
             manifest = client.manifest()
+        # A remote server grades by its own policy; training against a different one
+        # than the run claims would make every number in it mislabelled.
+        policy = (manifest.get("grading") or {}).get("policy")
+        if policy != POLICIES[config.reward_unit]:
+            raise ValueError(
+                f"Server grades by {policy!r}, not {POLICIES[config.reward_unit]!r}"
+            )
         languages, families = list(config.languages), list(config.families)
 
         # Only immutable identifiers reach the sampler. A "prompt" column would be read
@@ -305,8 +333,11 @@ def run(config):
             json.dumps(metadata, ensure_ascii=False, indent=2) + "\n"
         )
 
-        processor = AutoProcessor.from_pretrained(config.model, revision=revision)
-        cache = AssetCache(url, pad_seconds=config.audio_seconds)
+        processor = pad_audio_features(
+            AutoProcessor.from_pretrained(config.model, revision=revision),
+            config.audio_seconds,
+        )
+        cache = AssetCache(url)
 
         # TRL calls the factory once per parallel environment and owns the pool, so
         # this returns a single session rather than a list of them.
@@ -315,7 +346,21 @@ def run(config):
             stack.callback(environment._close)
             return environment
 
-        trainer = GRPOTrainer(
+        class CheckpointReady(TrainerCallback):
+            """Name each checkpoint's adapter by hash once it is saved.
+
+            A watcher evaluates checkpoints while the run is still going, reading them
+            from the bucket this run writes to. A file can be listed there before all of
+            it has arrived. The hashes let the watcher tell a complete adapter from a
+            partial one instead of scoring whatever bytes it finds.
+            """
+
+            def on_save(self, args, state, control, **kwargs):
+                mark_checkpoint_ready(
+                    output / f"checkpoint-{state.global_step}", state.global_step
+                )
+
+        trainer = audio_grpo_trainer()(
             model=config.model,
             processing_class=processor,
             train_dataset=Dataset.from_list(train_rows),
@@ -343,6 +388,9 @@ def run(config):
                 max_completion_length=config.max_completion_length,
                 max_steps=config.max_steps,
                 learning_rate=config.learning_rate,
+                lr_scheduler_type=config.lr_scheduler_type,
+                warmup_steps=config.warmup_steps,
+                beta=config.beta,
                 temperature=0.9,
                 seed=config.seed,
                 bf16=True,
@@ -359,6 +407,7 @@ def run(config):
                 save_total_limit=config.save_total_limit or None,
                 run_name=config.run_name,
             ),
+            callbacks=[] if config.smoke else [CheckpointReady()],
         )
 
         baseline = evaluate(
@@ -413,6 +462,9 @@ def run(config):
             "adapter_updated": changed,
             "reward_groups_without_variance": degenerate,
             "lora_target_count": len(targets),
+            "grading_policy": POLICIES[config.reward_unit],
+            # How much the clip raises its own transcripts' log-prob in the loss forward.
+            "audio_check": trainer.audio_check,
             "evalset_id": evalset_id,
             "baseline": baseline,
             "trained": trained,
@@ -453,6 +505,25 @@ def main():
         "0 disables padding and only works when a batch holds one task",
     )
     parser.add_argument("--learning-rate", type=float, default=Config.learning_rate)
+    parser.add_argument(
+        "--lr-scheduler-type", default=Config.lr_scheduler_type, help="e.g. cosine"
+    )
+    parser.add_argument(
+        "--warmup-ratio",
+        type=float,
+        default=Config.warmup_ratio,
+        help="Share of max steps spent warming the learning rate up from zero",
+    )
+    parser.add_argument(
+        "--beta", type=float, default=Config.beta, help="KL penalty to the base model"
+    )
+    parser.add_argument(
+        "--reward-unit",
+        choices=REWARD_UNITS,
+        default=Config.reward_unit,
+        help="script: words where words are spaced, characters otherwise (the "
+        "deployed policy); cer: characters for every language",
+    )
     parser.add_argument(
         "--output-dir", default=os.environ.get("OUTPUT_DIR", Config.output_dir)
     )

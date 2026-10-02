@@ -75,7 +75,8 @@ def test_metrics_are_numeric_and_keyed_by_the_unit_measured():
     """A trainer averages these, so a string in the dict would break the observation."""
     _, word = score(task("en_us", "transcription", "one two"), "one three")
     _, char = score(task("th_th", "transcription", "สวัสดี"), "สวัสดีครับ")
-    assert "wer" in word and "cer" not in word
+    # Spaced scripts report both rates; a word rate on an unspaced script is meaningless.
+    assert "wer" in word and "cer" in word
     assert "cer" in char and "wer" not in char
     for metrics in (word, char):
         assert all(isinstance(v, (int, float, bool)) for v in metrics.values())
@@ -95,3 +96,45 @@ def test_language_id_is_matched_exactly_and_not_normalized_as_text():
 def test_score_tokens_drops_whitespace_only_for_character_scored_scripts():
     assert score_tokens("a b", "en_us") == ["a", "b"]
     assert score_tokens("我 们", "cmn_hans_cn") == ["我", "们"]
+
+
+def test_the_default_policy_rewards_words_and_the_cer_policy_rewards_characters():
+    """Kannada words are long: three letters fixed in one word is no gain in word rate."""
+    reference = "ಬೆಂಗಳೂರು ನಗರ"
+    near = "ಬೆಂಗಳುರು ನಗರ"  # one vowel sign wrong in the first word
+    by_word, metrics = score(task("kn_in", "transcription", reference), near)
+    by_char, same = score(task("kn_in", "transcription", reference), near, "cer")
+    assert metrics == same  # the policy changes the reward, never what is reported
+    assert metrics["wer"] == pytest.approx(1 / 2)
+    assert 0 < metrics["cer"] < 0.2
+    assert by_word == pytest.approx(0.8 * (1 - metrics["wer"]))
+    assert by_char == pytest.approx(0.8 * (1 - metrics["cer"]))
+    assert by_char > by_word
+
+
+def test_character_rate_counts_dropped_word_boundaries():
+    """Without spaces in the rate, deleting every boundary would be free."""
+    from multilingual_asr.server.rewards import character_error_rate
+
+    reference = "one two three"
+    assert character_error_rate("onetwothree", reference, "en_us", "transcription") > 0
+    assert character_error_rate("one  two three", reference, "en_us", "transcription") == 0
+    reward, _ = score(task("en_us", "transcription", reference), "onetwothree", "cer")
+    assert reward < 0.8
+
+
+def test_an_exact_answer_scores_one_under_either_policy():
+    for unit in ("script", "cer"):
+        reward, _ = score(task("kn_in", "transcription", "ಒಂದು ಎರಡು"), "ಒಂದು ಎರಡು", unit)
+        assert reward == 1.0
+
+
+def test_an_unknown_reward_unit_is_refused(monkeypatch):
+    from multilingual_asr.server.rewards import reward_unit
+
+    with pytest.raises(ValueError, match="Unknown reward unit"):
+        reward_unit("bleu")
+    monkeypatch.setenv("ASR_REWARD_UNIT", "cer")
+    assert reward_unit() == "cer"
+    monkeypatch.delenv("ASR_REWARD_UNIT")
+    assert reward_unit() == "script"
