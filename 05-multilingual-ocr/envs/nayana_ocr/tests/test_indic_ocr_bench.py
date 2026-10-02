@@ -51,7 +51,10 @@ def write_parquet(path, rows):
 
 @pytest.fixture
 def splits(monkeypatch):
+    # Fake rows under the real split name, so pin the fake split's (empty) exclusions
+    # too - otherwise the guard against an upstream change fires, correctly, on them.
     monkeypatch.setattr(bench, "SPLITS", {SPLIT: ("test", len(ROWS))})
+    monkeypatch.setattr(bench, "EXCLUDED", {SPLIT: ()})
 
 
 @pytest.fixture
@@ -299,3 +302,10 @@ def test_rows_without_an_image_are_excluded_recorded_and_pinned(tmp_path, monkey
     catalog = bench.BenchCatalog(tmp_path / "cache", root=tmp_path / "c", fallback=False)
     assert catalog.count(SPLIT) == 3
     assert catalog.at(SPLIT, 2)["unit"] == ROWS[2][0]
+
+
+def test_the_real_pins_describe_the_real_revision():
+    # The one imageless row at the pinned revision, found by --discover.
+    assert bench.EXCLUDED["indic_ocr_bench_test"] == ("indic_ocr_bench_test_eng_5",)
+    assert bench.served_count("indic_ocr_bench_test") == 6908
+    assert bench.served_count("indic_ocr_bench_small") == 1173
