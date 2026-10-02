@@ -13,6 +13,7 @@ tags:
   - ocr
 datasets:
   - Cognitive-Lab/NayanaOCR_Corpus_2025
+  - sarvamai/indic-ocr-bench
 ---
 
 # Nayana multilingual OCR environment
@@ -50,6 +51,28 @@ commit-pinned. This compares against source answers, not independent image verif
 Visual inspection found missing/distorted glyphs in an original Arabic source page
 (`document_10026_page_106`), before masking. The playground flags this source caveat.
 The corpus index is not an image-quality audit or evidence of model performance.
+
+**Evaluation benchmark: [Sarvam Indic OCR Bench](https://huggingface.co/datasets/sarvamai/indic-ocr-bench)**
+by Sarvam AI (Apache-2.0) - 6,909 text-block crops in 23 languages, all 22 languages of the
+Eighth Schedule plus English, with ground truth reviewed twice by human language experts. It is
+served as two evaluation-only splits, `indic_ocr_bench_test` (6,909) and `indic_ocr_bench_small`
+(1,173, ~51 per language), pinned to revision `84ce7ce`. Its family, `indic_ocr_bench`, is never
+offered to training samplers. Tasks use the section-OCR prompt and the same action and
+observation as every other task, so nothing about the interface changes. Scores come from the
+benchmark's own `metrics.py` with its content normalization, vendored unmodified: reward is
+1 - CER, and CER/WER are reported as the benchmark defines them. An empty answer scores 0 here
+(the official report instead drops it from its means; a `missing_prediction` flag lets a report
+do the same). Crops download on first use of a split. Set `NAYANA_INDIC_OCR_BENCH=false` to
+serve the corpus alone. Please cite:
+
+```bibtex
+@misc{sarvam-indic-ocr-bench,
+  title={Sarvam Indic OCR Bench},
+  author={Sarvam AI},
+  year={2026},
+  url={https://huggingface.co/datasets/sarvamai/indic-ocr-bench}
+}
+```
 
 Source: [CognitiveLab's NayanaOCR_Corpus_2025](https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025),
 **CC BY-NC 4.0**. Copied annotations, page images, and OCR crops retain this license and
