@@ -26,6 +26,7 @@ from nayana_ocr.training import (
     TrainingEnvironment,
     balanced_rows,
     env_reward,
+    mark_checkpoint_ready,
     step_with_judge_retry,
     task_rows,
 )
@@ -60,12 +61,21 @@ class Config:
     max_completion_length: int = 2048
     max_pixels: int = 1_048_576
     learning_rate: float = 1e-5
+    # Linear decay from the first step reproduces the runs before a schedule was
+    # configurable; a higher rate wants a warmup and a cosine tail.
+    lr_scheduler_type: str = "linear"
+    warmup_ratio: float = 0.0
+    beta: float = 0.0
     seed: int = 42
     output_dir: str = "artifacts/local-run"
     trackio_space: str = ""
     run_name: str = "nayana-ocr-grpo"
     resume: str = ""
     smoke: bool = False
+
+    @property
+    def warmup_steps(self):
+        return round(self.warmup_ratio * self.max_steps)
 
     @property
     def rollouts_in_flight(self):
@@ -97,6 +107,8 @@ class Config:
             raise ValueError("Use positive limits and at least two generations")
         if not 0 <= self.prefetch_blocks <= 4:
             raise ValueError("Use 0 to 4 prefetched source blocks")
+        if not 0 <= self.warmup_ratio < 1 or self.beta < 0:
+            raise ValueError("Use a warmup ratio in [0, 1) and a non-negative beta")
         if self.resume and self.task_input in {"iterable", "corpus"}:
             raise ValueError(
                 "Trainer checkpoint replay is supported for map task input only in this milestone"
@@ -500,6 +512,9 @@ def run(config):
                 max_steps=config.max_steps,
                 max_completion_length=config.max_completion_length,
                 learning_rate=config.learning_rate,
+                lr_scheduler_type=config.lr_scheduler_type,
+                warmup_steps=config.warmup_steps,
+                beta=config.beta,
                 seed=config.seed,
                 temperature=0.9,
                 chat_template_kwargs={"enable_thinking": False},
@@ -539,8 +554,23 @@ def run(config):
                     if p.requires_grad
                 }
 
+        class CheckpointReady(TrainerCallback):
+            """Name each checkpoint's adapter by hash once it is saved.
+
+            A watcher evaluates checkpoints while the run is still going, reading them
+            from the bucket this run writes to. A file can be listed there before all of
+            it has arrived. The hashes let the watcher tell a complete adapter from a
+            partial one instead of scoring whatever bytes it finds.
+            """
+
+            def on_save(self, args, state, control, **kwargs):
+                mark_checkpoint_ready(
+                    output / f"checkpoint-{state.global_step}", state.global_step
+                )
+
         capture = CaptureAdapter()
         trainer.add_callback(capture)
+        trainer.add_callback(CheckpointReady())
         result = trainer.train(resume_from_checkpoint=config.resume or None)
         changed = any(
             not torch.equal(capture.before[name], p.detach().cpu())
@@ -628,6 +658,18 @@ def main():
         # Default None so --smoke can fill only what the caller left unset.
         parser.add_argument("--" + name.replace("_", "-"), type=int, default=None)
     parser.add_argument("--learning-rate", type=float, default=Config.learning_rate)
+    parser.add_argument(
+        "--lr-scheduler-type", default=Config.lr_scheduler_type, help="e.g. cosine"
+    )
+    parser.add_argument(
+        "--warmup-ratio",
+        type=float,
+        default=Config.warmup_ratio,
+        help="Share of max steps spent warming the learning rate up from zero",
+    )
+    parser.add_argument(
+        "--beta", type=float, default=Config.beta, help="KL penalty to the base model"
+    )
     parser.add_argument(
         "--output-dir", default=os.environ.get("OUTPUT_DIR", Config.output_dir)
     )

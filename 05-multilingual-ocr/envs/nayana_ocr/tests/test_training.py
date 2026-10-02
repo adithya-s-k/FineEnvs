@@ -247,3 +247,68 @@ def test_accumulation_gives_an_optimizer_step_several_distinct_prompts(tmp_path)
     assert len(seen) == accumulation, (
         f"one optimizer step covered {len(seen)} distinct tasks, expected {accumulation}"
     )
+
+
+def _eval_module():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[3] / "train" / "eval_vllm.py"
+    spec = importlib.util.spec_from_file_location("eval_vllm_watch", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_a_checkpoint_is_complete_only_when_every_adapter_byte_has_arrived(tmp_path):
+    """A watcher reads checkpoints while they upload; a partial adapter must not score."""
+    import json
+
+    from nayana_ocr.training import READY, checkpoint_complete, mark_checkpoint_ready
+
+    saved = tmp_path / "checkpoint-25"
+    saved.mkdir()
+    (saved / "adapter_config.json").write_text('{"r": 16}')
+    (saved / "adapter_model.safetensors").write_bytes(b"w" * 4096)
+    mark_checkpoint_ready(saved, 25)
+    ready = json.loads((saved / READY).read_text())
+    assert ready["step"] == 25
+    copy = tmp_path / "copy"
+    copy.mkdir()
+    (copy / "adapter_config.json").write_text('{"r": 16}')
+    (copy / "adapter_model.safetensors").write_bytes(b"w" * 1024)
+    assert not checkpoint_complete(copy, ready)
+    (copy / "adapter_model.safetensors").write_bytes(b"x" * 4096)
+    assert not checkpoint_complete(copy, ready)
+    (copy / "adapter_model.safetensors").write_bytes(b"w" * 4096)
+    assert checkpoint_complete(copy, ready)
+
+
+def test_curve_points_pair_with_base_and_keep_the_benchmark_report():
+    """Benchmark crops carry the reward, CER and Sarvam's own CER/WER; all are tracked."""
+    module = _eval_module()
+    base = {"model": "base", "samples": [
+        {"task_id": "a", "reward": 0.4, "char_error_rate": 0.5, "official_cer": 0.4},
+        {"task_id": "b", "reward": 0.6, "char_error_rate": 0.3, "official_cer": 0.2},
+    ]}
+    step = {"model": "step-25", "indic_ocr_bench": {"avg_metrics": {"cer": 0.25, "wer": 0.5}},
+            "samples": [
+        {"task_id": "a", "reward": 0.5, "char_error_rate": 0.4, "official_cer": 0.3},
+        {"task_id": "b", "reward": 0.7, "char_error_rate": 0.2, "official_cer": 0.2},
+    ]}
+    point = module.curve_point(25, step, base)
+    assert abs(point["reward_change"]["delta"] - 0.1) < 1e-9
+    assert abs(point["official_cer_change"]["delta"] + 0.05) < 1e-9
+    assert point["sarvam_cer"] == 0.25 and point["sarvam_wer"] == 0.5
+    assert module.paired(base["samples"], step["samples"][:1], "reward") is None
+
+
+def test_only_checkpoints_marked_ready_are_picked_up_in_step_order():
+    module = _eval_module()
+    paths = [
+        "rev/checkpoint-50/ready.json",
+        "rev/checkpoint-25/ready.json",
+        "rev/checkpoint-75/adapter_model.safetensors",
+        "rev/evals/checkpoints/checkpoint-25/ready.json",
+    ]
+    assert module.checkpoint_steps(paths, "rev") == [25, 50]
