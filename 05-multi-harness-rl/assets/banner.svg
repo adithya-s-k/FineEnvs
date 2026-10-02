@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="400" viewBox="0 0 1400 400" role="img" aria-labelledby="title description">
+  <title id="title">SmolDataEnvs: multi-harness RL</title>
+  <desc id="description">Train a small model with SETA, native OpenCode or Harbor, then evaluate it on the same held-out tasks.</desc>
+  <defs>
+    <linearGradient id="background" x2="1" y2="1">
+      <stop stop-color="#102239"/>
+      <stop offset="1" stop-color="#142f40"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="400" rx="24" fill="url(#background)"/>
+  <g font-family="Inter, DejaVu Sans, Arial, sans-serif">
+    <text x="58" y="68" fill="#91c5ff" font-size="19" letter-spacing="3">FINEENVS / THE MULTI-HARNESS RL TUTORIAL</text>
+    <text x="56" y="152" fill="#fff" font-size="62" font-weight="700">SmolDataEnvs</text>
+    <text x="58" y="211" fill="#fff" font-size="36">One model. Three ways to train.</text>
+    <text x="58" y="261" fill="#c4d5e6" font-size="23">Real data tasks, tool use and a checkable answer.</text>
+    <rect x="58" y="309" width="215" height="42" rx="21" fill="#233d53"/>
+    <text x="165" y="336" text-anchor="middle" fill="#e6f1ff" font-size="18">Read · Run · Compare</text>
+    <path d="M785 88 V314 M785 106 H832 M785 202 H832 M785 298 H832" fill="none" stroke="#5b7e96" stroke-width="2"/>
+    <g transform="translate(850 66)">
+      <rect width="492" height="80" rx="14" fill="#203b50" stroke="#42647b"/>
+      <circle cx="32" cy="40" r="7" fill="#82d8b6"/>
+      <text x="56" y="34" fill="#fff" font-size="23" font-weight="600">SETA whitebox</text>
+      <text x="56" y="60" fill="#c4d5e6" font-size="18">TRL runs the tools</text>
+    </g>
+    <g transform="translate(850 162)">
+      <rect width="492" height="80" rx="14" fill="#203b50" stroke="#42647b"/>
+      <circle cx="32" cy="40" r="7" fill="#8ab4ff"/>
+      <text x="56" y="34" fill="#fff" font-size="23" font-weight="600">Native OpenCode</text>
+      <text x="56" y="60" fill="#c4d5e6" font-size="18">OpenCode runs its own loop</text>
+    </g>
+    <g transform="translate(850 258)">
+      <rect width="492" height="80" rx="14" fill="#203b50" stroke="#42647b"/>
+      <circle cx="32" cy="40" r="7" fill="#ffcb80"/>
+      <text x="56" y="34" fill="#fff" font-size="23" font-weight="600">Harbor multi-harness</text>
+      <text x="56" y="60" fill="#c4d5e6" font-size="18">Four harnesses share one model</text>
+    </g>
+  </g>
+</svg>

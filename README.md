@@ -54,6 +54,8 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **01** | **[LaTeX OCR](./01-latex-ocr/)** | Train Qwen3-VL-2B to read math images into LaTeX, with a verifiable reward. | 1 | 1 | 1 | ✅ stable |
 | **02** | **[Watercolour](./02-watercolour/)** | Train Qwen3.5-35B-A3B to paint watercolours by writing p5.brush sketches, rewarded by an aesthetic preference model. | 1 | 1 | 0 | ✅ trained |
 | **03** | **[GeoGuesser](./03-geoguesser/)** | Drop a VLM at a random street corner on Earth and score it on kilometres of error. | 1 | 1 | 1 | ✅ stable |
+| **04** | **[SmolDataEnvs](./04-smoldataenvs/)** | Data-analysis tasks, verified SFT traces and a single-turn GRPO tutorial on HF Jobs. | 1 | 1 | 0 | 🚧 wip |
+| **05** | **[SmolDataEnvs: multi-harness RL](./05-multi-harness-rl/)** | Train on SmolDataEnvs with SETA, native OpenCode or Harbor, using HF Jobs or Slurm. | 3 | 1 | 0 | 🚧 wip |
 | **06** | **[Multilingual ASR](./06-multilingual-asr/)** | Serve FLEURS speech through OpenEnv with script-aware word and character error scoring. | 1 | 1 | 0 | 🚧 wip |
 <!-- END:projects -->
 
@@ -111,6 +113,25 @@ Mapillary panoramas, scored on kilometres of error. It ends up ahead of `gpt-5.4
 Ten hours on four A100s, or one GPU if you are in no hurry. Three training runs, the reward
 redesigned once, and every measurement bug written down in
 [the article](https://huggingface.co/spaces/FineEnvs/geoguesser-article).
+
+### [04 · SmolDataEnvs](./04-smoldataenvs/) &nbsp;<sub>5.5K+ RL tasks in code and data science</sub>
+
+**A dataset, not a single run.** The first three projects each train one model against one
+environment. This one ships the environments: **5,394 verified data-analysis tasks** built from real
+Kaggle notebooks, where the agent gets a sandbox with the tables in it and has to compute the answer.
+
+Grading is an exact comparison against a known answer — numeric tolerances, list normalisation,
+symbolic equivalence — so **no LLM sits in the reward path**. Every task had to be solved in a live
+sandbox before it was let in, which means a zero says something about your model rather than about
+the task. Three ways in: [flat rows](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs) with a
+bundled grader, [4,677 verified trajectories](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-sft)
+to fine-tune on, and three
+[Harbor suites](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs-harbor-train) you can serve
+straight into a trainer. A notebook takes you from one task to a trained small model in a sitting.
+
+Browse the tasks in the
+[Harbor Visualiser](https://huggingface.co/spaces/HuggingFaceH4/harbor-visualiser?dataset=FineEnvs/SmolDataEnvs-harbor-train),
+or the whole [SmolDataEnvs collection](https://huggingface.co/collections/FineEnvs/smoldataenvs).
 
 > **More coming.** Each new project is another end-to-end recipe: an environment, a training run, and
 > the artifacts on the Hub. [Proposals and contributions welcome →](./CONTRIBUTING.md)

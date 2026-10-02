@@ -1,0 +1,102 @@
+import { defineConfig } from 'astro/config';
+import mdx from '@astrojs/mdx';
+import svelte from '@astrojs/svelte';
+// @astrojs/sitemap 3.7 needs Astro 5 and crashes on this Astro 4 build; public/sitemap.xml covers the one page.
+import mermaid from 'astro-mermaid';
+import compressor from 'astro-compressor';
+import generateLlmsTxt from './plugins/astro/generate-llms-txt.mjs';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkFootnotes from 'remark-footnotes';
+import rehypeSlug from 'rehype-slug';
+import rehypeAutolinkHeadings from 'rehype-autolink-headings';
+import rehypeCitation from 'rehype-citation';
+import rehypeCodeCopy from './plugins/rehype/code-copy.mjs';
+import rehypeReferencesAndFootnotes from './plugins/rehype/post-citation.mjs';
+import remarkIgnoreCitationsInCode from './plugins/remark/ignore-citations-in-code.mjs';
+import remarkUnwrapCitationLinks from './plugins/remark/unwrap-citation-links.mjs';
+import remarkDirective from 'remark-directive';
+import remarkOutputContainer from './plugins/remark/output-container.mjs';
+import rehypeRestoreAtInCode from './plugins/rehype/restore-at-in-code.mjs';
+import rehypeWrapTables from './plugins/rehype/wrap-tables.mjs';
+import rehypeWrapOutput from './plugins/rehype/wrap-outputs.mjs';
+// Built-in Shiki (dual themes) — no rehype-pretty-code
+
+// Plugins moved to app/plugins/*
+
+// Auto-detect HF Space URL for SEO (og:image needs absolute URLs)
+const spaceId = process.env.SPACE_ID; // e.g. "tfrere/research-article-template"
+// SPACE_ID is only set at runtime on Spaces, not during the Docker build, so fall back to
+// this article's Space. Without a site, canonical URLs point at localhost and no sitemap is built.
+const siteUrl = process.env.SITE_URL
+  || (spaceId ? `https://${spaceId.replace('/', '-').toLowerCase()}.hf.space` : 'https://fineenvs-multi-harness-rl.hf.space');
+
+export default defineConfig({
+  ...(siteUrl ? { site: siteUrl } : {}),
+  output: 'static',
+  integrations: [
+    mermaid({ theme: 'neutral', autoTheme: true }),
+    mdx(),
+    svelte(),
+    generateLlmsTxt(),
+    // Precompress output with Gzip only (Brotli disabled due to server module mismatch)
+    compressor({ brotli: false, gzip: true })
+  ],
+  devToolbar: {
+    enabled: false
+  },
+  // In development, the review API (review/server.py) runs on its own port; in the Space nginx
+  // proxies the same paths.
+  vite: {
+    server: {
+      proxy: {
+        // Keep the browser's host, so sign-in redirects come back through this dev server.
+        '/api/review': { target: 'http://127.0.0.1:7861', changeOrigin: false, xfwd: true },
+        '/oauth': { target: 'http://127.0.0.1:7861', changeOrigin: false, xfwd: true },
+      },
+    },
+  },
+  markdown: {
+    shikiConfig: {
+      themes: {
+        light: 'github-light',
+        dark: 'github-dark'
+      },
+      defaultColor: false,
+      wrap: false,
+      langAlias: {
+        // Map MDX fences to TSX for better JSX tokenization
+        mdx: 'tsx'
+      }
+    },
+    remarkPlugins: [
+      remarkUnwrapCitationLinks,
+      remarkIgnoreCitationsInCode,
+      remarkMath,
+      [remarkFootnotes, { inlineNotes: true }],
+      remarkDirective,
+      remarkOutputContainer
+    ],
+    rehypePlugins: [
+      rehypeSlug,
+      [rehypeAutolinkHeadings, { behavior: 'wrap' }],
+      [rehypeKatex, {
+        trust: true,
+      }],
+      [rehypeCitation, {
+        bibliography: 'src/content/bibliography.bib',
+        linkCitations: true,
+        csl: "apa",
+        noCite: false,
+        suppressBibliography: false,
+      }],
+      rehypeReferencesAndFootnotes,
+      rehypeRestoreAtInCode,
+      rehypeCodeCopy,
+      rehypeWrapOutput,
+      rehypeWrapTables
+    ]
+  }
+});
+
+

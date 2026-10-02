@@ -68,7 +68,8 @@ def test_empty_prediction_scores_zero():
 
 def test_empty_target_only_empty_prediction_correct():
     r = rubric.LatexOCRRubric()
-    assert r.grade("", "").exact_match is True
+    assert r.grade("", "").exact_match is False
+    assert r.grade("", "").reward == 0.0
     assert r.grade("x", "").exact_match is False
 
 
@@ -83,7 +84,7 @@ def test_default_exact_weight_is_point_four():
 
 def test_zero_floor_and_empty_target_do_not_divide_by_zero():
     reward = rubric.LatexOCRRubric(overlong_floor=0)
-    assert reward.grade("", "").reward == 1.0
+    assert reward.grade("", "").reward == 0.0
     assert reward.grade(" ", "").reward == 0.0
 
 

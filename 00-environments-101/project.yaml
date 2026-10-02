@@ -31,9 +31,9 @@ envs:
     backend: none
     tools: 1
     frameworks:
-      openenv:   {transport: http-mcp,      space: AdithyaSK/wordle-openenv,   verified: true}
-      ors:       {transport: http-rest-sse, space: AdithyaSK/wordle-ors,       verified: true}
-      nemo_gym:  {transport: http-rest,     space: AdithyaSK/wordle-nemo-gym,  verified: deployed-only}
+      openenv:   {transport: http-mcp,      space: FineEnvs/wordle-openenv,   verified: true}
+      ors:       {transport: http-rest-sse, space: FineEnvs/wordle-ors,       verified: true}
+      nemo_gym:  {transport: http-rest,     space: FineEnvs/wordle-nemo-gym,  verified: deployed-only}
       verifiers: {transport: in-process,    verified: true}
       skyrl_gym: {transport: in-process,    verified: true}
       gem:       {transport: in-process,    verified: true}

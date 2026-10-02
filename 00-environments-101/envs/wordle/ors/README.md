@@ -2,7 +2,7 @@
 
 A multi-turn Wordle environment, packaged using **[ORS / OpenReward](https://openrewardstandard.io)** (REST + SSE protocol with bundled tasks).
 
-**Deployed:** [`AdithyaSK/wordle-ors`](https://huggingface.co/spaces/AdithyaSK/wordle-ors)
+**Deployed:** [`FineEnvs/wordle-ors`](https://huggingface.co/spaces/FineEnvs/wordle-ors)
 
 ## What this environment exposes
 
@@ -13,14 +13,14 @@ The ORS server registers two `@tool`-decorated methods:
 | `guess(word: str)` | Submit a 5-letter word. Returns colored feedback (`🟩🟨⬛`). Per-call `reward`. |
 | `get_history()` | List all previous guesses with feedback. |
 
-Tasks are bundled with the env: 50 hand-crafted answers in the `train` split, each shaped as `Task(task_spec={"task": "...", "answer": "<word>"})`. Reward arrives **per tool call** as `ToolOutput.reward`, with `finished=True` set on win/loss.
+Tasks are bundled with the env: 50 hand-crafted answers in the `train` split, each shaped as `Task(task_spec={"task": "...", "answer": "<word>"})`. Reward arrives **per tool call** as `ToolOutput.reward`, with `finished=True` set on win/loss. The terminal reward is paid once; later calls after the game is over keep `finished=True` but return `reward=None`.
 
 ## How to consume it
 
 ```python
 from openreward import EnvironmentsAPI
 
-api = EnvironmentsAPI(base_url="https://AdithyaSK-wordle-ors.hf.space", api_key="")
+api = EnvironmentsAPI(base_url="https://fineenvs-wordle-ors.hf.space", api_key="")
 env = api.get("wordleors")
 tasks = env.list_tasks("train")              # 50 tasks
 with env.session(task=tasks[0]) as session:
@@ -43,7 +43,7 @@ ORS_URL=http://localhost:8080 uv run python rollout.py
 ### Sample output
 
 ```
-ORS server: https://AdithyaSK-wordle-ors.hf.space
+ORS server: https://fineenvs-wordle-ors.hf.space
 Env name:   wordleors    split=train  task_index=0
 Provider:   hf-router    Model: Qwen/Qwen3-Coder-480B-A35B-Instruct:together
 
@@ -62,7 +62,7 @@ Discovered 2 tools: ['get_history', 'guess']
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `ORS_URL` | `https://AdithyaSK-wordle-ors.hf.space` | ORS server URL. |
+| `ORS_URL` | `https://fineenvs-wordle-ors.hf.space` | ORS server URL. |
 | `ORS_ENV_NAME` | `wordleors` | Env name registered on the server. |
 | `TASK_INDEX` | `0` | Which task in the train split. |
 | `ROLLOUT_MODEL` | `Qwen/Qwen3-Coder-480B-A35B-Instruct:together` | If contains `:` → HF Router. Else → OpenAI native. |

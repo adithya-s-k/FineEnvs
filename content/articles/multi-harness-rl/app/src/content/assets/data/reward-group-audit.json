@@ -1,0 +1,65 @@
+{
+  "description": "GRPO groups with at least one rollout admitted to a retained optimizer update. Counts include partially scorable groups. Optimizer steps are not group counts.",
+  "audited_at": "2026-10-01",
+  "method": "Join group rollout_ids to efficiency records and optimizer_rollouts.jsonl. All scorable correctness values must be 1, and max(reward)-min(reward) must exceed 1e-9 for efficiency-only contrast.",
+  "retained_segments": {
+    "opencode": {
+      "train-83820": [
+        1,
+        428
+      ],
+      "train-84025": [
+        429,
+        1000
+      ]
+    },
+    "multi-harness": {
+      "train-83822": [
+        1,
+        292
+      ],
+      "train-84027": [
+        293,
+        850
+      ],
+      "train-84319": [
+        851,
+        1000
+      ]
+    }
+  },
+  "excluded_updates": "Multi-harness train-84027 steps 851\u2013867 were discarded on resume from checkpoint 850.",
+  "source_root": "experiments/lfm25-medium-hard1000-20260921",
+  "runs": {
+    "opencode": {
+      "groups_with_committed_optimizer_admission": {
+        "mixed": 308,
+        "all_wrong": 134,
+        "all_correct_efficiency_contrast": 97,
+        "all_correct_no_contrast": 16
+      },
+      "total": 555,
+      "eight_scorable_rollouts": {
+        "mixed": 301,
+        "all_wrong": 133,
+        "all_correct_efficiency_contrast": 96,
+        "all_correct_no_contrast": 16
+      }
+    },
+    "multi-harness": {
+      "groups_with_committed_optimizer_admission": {
+        "all_wrong": 172,
+        "mixed": 358,
+        "all_correct_efficiency_contrast": 155,
+        "all_correct_no_contrast": 1
+      },
+      "total": 686,
+      "eight_scorable_rollouts": {
+        "all_wrong": 158,
+        "mixed": 348,
+        "all_correct_efficiency_contrast": 153,
+        "all_correct_no_contrast": 1
+      }
+    }
+  }
+}

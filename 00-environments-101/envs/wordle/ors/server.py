@@ -63,6 +63,7 @@ class WordleORS(Environment):
             secrets = {}
         super().__init__(task_spec=task_spec, secrets=secrets)
         self._game = None
+        self._rewarded_game = None
 
     # -- ORS lifecycle ------------------------------------------------------
 
@@ -70,6 +71,7 @@ class WordleORS(Environment):
         """Called on first tool invocation — create WordleGame."""
         answer = self.task_spec.get("answer", "")
         self._game = WordleGame(answer=answer) if answer else WordleGame()
+        self._rewarded_game = None
 
     def teardown(self):
         """Called on session delete."""
@@ -117,6 +119,11 @@ class WordleORS(Environment):
 
         result = self._game.guess(params.word)
         reward = self._game.reward
+        if self._game.done:
+            if self._game is self._rewarded_game:
+                reward = None
+            else:
+                self._rewarded_game = self._game
 
         return ToolOutput(
             blocks=[TextBlock(text=result)],
