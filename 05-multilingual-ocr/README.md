@@ -134,7 +134,7 @@ Source supervision and language-specific rendering need auditing before making m
 
 **Sarvam Indic OCR Bench** ([sarvamai/indic-ocr-bench](https://huggingface.co/datasets/sarvamai/indic-ocr-bench),
 **Sarvam AI**, Apache-2.0) is served beside the corpus as evaluation-only splits:
-`indic_ocr_bench_test` (6,909 human-reviewed text blocks, 23 languages) and
+`indic_ocr_bench_test` (6,908 of its 6,909 human-reviewed text blocks, 23 languages) and
 `indic_ocr_bench_small` (1,173). Eleven of its languages - Assamese, Bodo, Dogri, Kashmiri,
 Konkani, Maithili, Manipuri, Nepali, Santhali, Sindhi, Urdu - are not in the Nayana corpus.
 Every crop is an ordinary Section OCR task with the same reward, so benchmark and corpus
@@ -159,7 +159,7 @@ hf jobs uv run --flavor a100-large -s HF_TOKEN \
   --adapters step-250=/outputs/<rev>/checkpoint-250
 ```
 
-The card says crops are PNG; at the pinned revision some are JPEG (141 of the 1,173 small-split
+One test row, `indic_ocr_bench_test_eng_5`, has ground truth but no image in the source data and is not served, so test scores are over 6,908 rather than 6,909. The card says crops are PNG; at the pinned revision some are JPEG (141 of the 1,173 small-split
 crops), and are served as such. All credit for the benchmark belongs to Sarvam AI; please cite:
 
 ```bibtex
