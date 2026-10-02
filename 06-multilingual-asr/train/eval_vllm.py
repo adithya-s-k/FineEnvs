@@ -163,8 +163,11 @@ def parse_adapter(spec):
     return name, path
 
 
-def answer(vllm_url, model, prompt, wav, max_tokens, timeout):
-    """One chat completion carrying the clip as base64 WAV, as OpenAI defines it."""
+def answer(vllm_url, model, prompt, wav, max_tokens, timeout, temperature=0.0, n=1):
+    """One chat completion carrying the clip as base64 WAV, as OpenAI defines it.
+
+    With n > 1 this returns n sampled transcripts for the clip instead of one string.
+    """
     response = requests.post(
         f"{vllm_url}/v1/chat/completions",
         json={
@@ -185,13 +188,17 @@ def answer(vllm_url, model, prompt, wav, max_tokens, timeout):
                 }
             ],
             "max_completion_tokens": max_tokens,
-            # Greedy, so a re-run of the same checkpoint gives the same score.
-            "temperature": 0.0,
+            # Greedy by default, so a re-run of the same checkpoint gives the same score.
+            # Sampling exists to ask a different question: what the policy the trainer
+            # optimised (it samples at T=0.9) actually does on held-out clips.
+            "temperature": temperature,
+            "n": n,
         },
         timeout=timeout,
     )
     response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"].strip()
+    texts = [c["message"]["content"].strip() for c in response.json()["choices"]]
+    return texts if n > 1 else texts[0]
 
 
 def open_client(env_url, timeout):
@@ -236,7 +243,10 @@ def prefetch(env_url, rows, timeout, progress):
     return prepared
 
 
-def predict(vllm_url, model, prepared, max_tokens, timeout, workers, progress):
+def predict(
+    vllm_url, model, prepared, max_tokens, timeout, workers, progress,
+    temperature=0.0, n=1,
+):
     """Ask vLLM for every answer at once. Nothing here touches the environment."""
     started = time.monotonic()
     done = [0]
@@ -244,7 +254,7 @@ def predict(vllm_url, model, prepared, max_tokens, timeout, workers, progress):
 
     def one(item):
         _, prompt, wav = item
-        text = answer(vllm_url, model, prompt, wav, max_tokens, timeout)
+        text = answer(vllm_url, model, prompt, wav, max_tokens, timeout, temperature, n)
         with lock:
             done[0] += 1
             if progress and done[0] % progress == 0:
@@ -263,6 +273,34 @@ def predict(vllm_url, model, prepared, max_tokens, timeout, workers, progress):
         flush=True,
     )
     return predictions
+
+
+def headroom(greedy, sampled):
+    """Compare a model's greedy answer with its own samples, task by task.
+
+    GRPO can only shift probability among answers the policy already produces. If no
+    sample beats the greedy answer, no amount of reweighting moves greedy evaluation;
+    if many do, the headroom is there and the question becomes why training missed it.
+
+    greedy: {task_id: reward}; sampled: {task_id: [reward, ...]}.
+    """
+    keys = [k for k in greedy if sampled.get(k)]
+    if not keys:
+        return {}
+    best = [max(sampled[k]) for k in keys]
+    mean = [sum(sampled[k]) / len(sampled[k]) for k in keys]
+    g = [greedy[k] for k in keys]
+    better = [sum(r > greedy[k] + 1e-9 for r in sampled[k]) / len(sampled[k]) for k in keys]
+    return {
+        "headroom_tasks": len(keys),
+        "samples_per_task": len(sampled[keys[0]]),
+        "greedy_mean": sum(g) / len(g),
+        "sampled_mean": sum(mean) / len(mean),
+        "best_of_n_mean": sum(best) / len(best),
+        "best_minus_greedy": sum(b - x for b, x in zip(best, g)) / len(g),
+        "tasks_with_a_better_sample": sum(b > x + 1e-9 for b, x in zip(best, g)) / len(g),
+        "mean_share_of_samples_beating_greedy": sum(better) / len(better),
+    }
 
 
 def grade(env_url, prepared, predictions, timeout, workers):
@@ -372,6 +410,27 @@ def main():
         default=[],
         help="name=/path/to/checkpoint, scored one after another on the live engine",
     )
+    parser.add_argument(
+        "--samples",
+        type=int,
+        default=1,
+        help="Also draw this many sampled transcripts per clip and report sampled mean "
+        "and best-of-n beside the greedy score. 1 scores greedy only.",
+    )
+    parser.add_argument("--temperature", type=float, default=0.9)
+    parser.add_argument(
+        "--rows-from",
+        type=Path,
+        default=None,
+        help="Score the train_tasks listed in a run-metadata.json instead of the eval "
+        "split -- the clips a run trained on, to tell learning from memorising",
+    )
+    parser.add_argument(
+        "--output-tag",
+        default="",
+        help="Prefix for result files, so two sweeps of one revision cannot overwrite "
+        "each other's results",
+    )
     parser.add_argument("--max-loras", type=int, default=2)
     parser.add_argument("--max-lora-rank", type=int, default=16)
     parser.add_argument("--eval-split", default="eval_21_validation")
@@ -422,6 +481,11 @@ def main():
         rows = sorted(task_rows(env_url, args.eval_split), key=lambda r: r["language"])
         if args.families:
             rows = [r for r in rows if r["family"] in args.families]
+        if args.rows_from:
+            listed = json.loads(Path(args.rows_from).read_text())["train_tasks"]
+            rows = sorted(listed, key=lambda r: r["language"])
+            if args.families:
+                rows = [r for r in rows if r["family"] in args.families]
         if args.limit:
             rows = rows[:: max(1, len(rows) // args.limit)][: args.limit]
         print(
@@ -436,7 +500,7 @@ def main():
 
         leaderboard = []
 
-        def record(model_id, revision, result, rows_scored, adapter_path=None):
+        def record(model_id, revision, result, rows_scored, adapter_path=None, extra=None):
             body = {
                 "model": model_id,
                 "model_revision": revision,
@@ -448,9 +512,11 @@ def main():
                 "families": args.families or "all",
                 "tasks": rows_scored,
                 **({"adapter_path": str(adapter_path)} if adapter_path else {}),
+                **({"rows_from": str(args.rows_from)} if args.rows_from else {}),
                 **result,
+                **(extra or {}),
             }
-            (output / f"{model_id.replace('/', '__')}.json").write_text(
+            (output / f"{args.output_tag}{model_id.replace('/', '__')}.json").write_text(
                 json.dumps(body, ensure_ascii=False, indent=2) + "\n"
             )
             leaderboard.append(
@@ -475,6 +541,38 @@ def main():
             print(f"RESULT-END {model_id}", flush=True)
             return body
 
+        def score(vllm_url, served_name):
+            """Greedy score, plus sampled and best-of-n when --samples asks for them."""
+            started = time.monotonic()
+            predictions = predict(
+                vllm_url, served_name, prepared, args.max_new_tokens,
+                args.request_timeout, args.workers, args.progress,
+            )
+            samples, groups = grade(
+                env_url, prepared, predictions, args.request_timeout, args.workers
+            )
+            result = summarize(samples, groups, time.monotonic() - started)
+            if args.samples <= 1:
+                return result, None
+            drawn = predict(
+                vllm_url, served_name, prepared, args.max_new_tokens,
+                args.request_timeout, args.workers, args.progress,
+                temperature=args.temperature, n=args.samples,
+            )
+            flat_prepared = [item for item, texts in zip(prepared, drawn) for _ in texts]
+            flat_texts = [text for texts in drawn for text in texts]
+            sampled_rows_scored, _ = grade(
+                env_url, flat_prepared, flat_texts, args.request_timeout, args.workers
+            )
+            greedy = {s["task_id"]: s["reward"] for s in samples}
+            sampled = defaultdict(list)
+            for s in sampled_rows_scored:
+                sampled[s["task_id"]].append(s["reward"])
+            stats = headroom(greedy, sampled)
+            stats["temperature"] = args.temperature
+            print("  headroom " + json.dumps(stats), flush=True)
+            return result, stats
+
         if args.adapters:
             revision = model_info(args.base).sha
             print(f"\n=== base {args.base} @ {revision[:12]} ===", flush=True)
@@ -493,49 +591,14 @@ def main():
                 # and the trainer's own baseline uses a different harness and task
                 # count, so it is not comparable with these numbers.
                 print(f"\n=== {args.base} (no adapter) ===", flush=True)
-                started = time.monotonic()
-                predictions = predict(
-                    vllm_url,
-                    args.base,
-                    prepared,
-                    args.max_new_tokens,
-                    args.request_timeout,
-                    args.workers,
-                    args.progress,
-                )
-                samples, groups = grade(
-                    env_url, prepared, predictions, args.request_timeout, args.workers
-                )
-                record(
-                    args.base,
-                    revision,
-                    summarize(samples, groups, time.monotonic() - started),
-                    len(rows),
-                )
+                result, extra = score(vllm_url, args.base)
+                record(args.base, revision, result, len(rows), extra=extra)
 
                 for name, path in args.adapters:
                     print(f"\n=== {name} (adapter over {args.base}) ===", flush=True)
                     with adapter(vllm_url, name, path):
-                        started = time.monotonic()
-                        predictions = predict(
-                            vllm_url,
-                            name,
-                            prepared,
-                            args.max_new_tokens,
-                            args.request_timeout,
-                            args.workers,
-                            args.progress,
-                        )
-                    samples, groups = grade(
-                        env_url, prepared, predictions, args.request_timeout, args.workers
-                    )
-                    record(
-                        name,
-                        revision,
-                        summarize(samples, groups, time.monotonic() - started),
-                        len(rows),
-                        adapter_path=path,
-                    )
+                        result, extra = score(vllm_url, name)
+                    record(name, revision, result, len(rows), adapter_path=path, extra=extra)
 
         for model_id in args.models:
             revision = model_info(model_id).sha
@@ -548,25 +611,8 @@ def main():
                 extra_args=args.vllm_arg,
                 boot_seconds=args.boot_seconds,
             ) as vllm_url:
-                started = time.monotonic()
-                predictions = predict(
-                    vllm_url,
-                    model_id,
-                    prepared,
-                    args.max_new_tokens,
-                    args.request_timeout,
-                    args.workers,
-                    args.progress,
-                )
-            samples, groups = grade(
-                env_url, prepared, predictions, args.request_timeout, args.workers
-            )
-            record(
-                model_id,
-                revision,
-                summarize(samples, groups, time.monotonic() - started),
-                len(rows),
-            )
+                result, extra = score(vllm_url, model_id)
+            record(model_id, revision, result, len(rows), extra=extra)
 
         leaderboard.sort(key=lambda e: e["macro_reward"], reverse=True)
         (output / "leaderboard.json").write_text(

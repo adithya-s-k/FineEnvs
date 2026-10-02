@@ -176,6 +176,9 @@ def task_rows(url, split):
     return rows
 
 
+POSITIONS_PER_REQUEST = 1000
+
+
 def sampled_rows(url, split, languages, families, seed, per_group):
     """Equal counts per language/family, so a short run is not one language's score.
 
@@ -194,7 +197,12 @@ def sampled_rows(url, split, languages, families, seed, per_group):
                     missing.append((lang, fam))
                     continue
                 drawn = sorted(rng.sample(range(count), min(per_group, count)))
-                selected.extend(client.get_group_tasks(split, lang, fam, drawn))
+                # The server answers at most 1000 positions per request. A run that asked
+                # for all 2,282 Kannada training clips in one call died at startup with a
+                # 400, so the draw is fetched in pieces the endpoint accepts.
+                for start in range(0, len(drawn), POSITIONS_PER_REQUEST):
+                    piece = drawn[start : start + POSITIONS_PER_REQUEST]
+                    selected.extend(client.get_group_tasks(split, lang, fam, piece))
     if missing:
         raise ValueError(f"Missing language/task groups: {missing}")
     rng.shuffle(selected)
