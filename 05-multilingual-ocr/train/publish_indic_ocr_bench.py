@@ -30,20 +30,37 @@ def main():
         "--private", action="store_true", help="Create the bucket private (default public)"
     )
     parser.add_argument("--dry-run", action="store_true", help="Build and verify only")
+    parser.add_argument(
+        "--discover",
+        action="store_true",
+        help="Report rows that have no image, for pinning in EXCLUDED, then stop",
+    )
     args = parser.parse_args()
 
     root = args.work
     splits = {}
     for split in bench.SPLITS:
-        rows = bench.build_split(split, root)
+        rows = bench.build_split(split, root, discover=args.discover)
         index = bench.index_path(root, split)
+        excluded = json.loads(index.read_text())["excluded"]
         splits[split] = {
             "directory": bench.SPLITS[split][0],
+            "total_rows": bench.SPLITS[split][1],
             "tasks": len(rows),
+            "excluded": excluded,
             "languages": len({r["language"] for r in rows}),
             "index_sha256": hashlib.sha256(index.read_bytes()).hexdigest(),
         }
-        print(f"{split}: {len(rows)} tasks, {splits[split]['languages']} languages", flush=True)
+        print(f"{split}: {len(rows)} tasks served, {len(excluded)} excluded "
+              f"(no image), {splits[split]['languages']} languages", flush=True)
+        for e in excluded:
+            print(f"   excluded {e['image_name']} ({e['language']}): {e['reason']}", flush=True)
+    if args.discover:
+        print("EXCLUDED = " + json.dumps(
+            {s: [e["image_name"] for e in v["excluded"]] for s, v in splits.items()},
+            indent=2), flush=True)
+        print("discover: pin these in indic_ocr_bench.EXCLUDED, then publish", flush=True)
+        return
 
     # Read it back exactly as a deployment will - in place, every crop checksummed - so a
     # bad build fails here rather than on the Space.

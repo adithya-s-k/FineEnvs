@@ -42,13 +42,32 @@ CITATION = """@misc{sarvam-indic-ocr-bench,
   url={https://huggingface.co/datasets/sarvamai/indic-ocr-bench}
 }"""
 
-# Served split -> (directory in the dataset repo, row count at the pinned revision).
+# Served split -> (directory in the dataset repo, total rows at the pinned revision).
 # Counts are known in advance so a manifest can list the splits without fetching
-# anything; a load whose count disagrees is refused rather than served.
+# anything; a build or load whose count disagrees is refused rather than served.
 SPLITS = {
     "indic_ocr_bench_test": ("test", 6909),
     "indic_ocr_bench_small": ("small_representative", 1173),
 }
+
+# Rows the pinned revision ships with no image at all - the crop is absent from the
+# source data, so the row cannot be answered and is not served. A served model would
+# only score zero on it. Pinned by name, so a row gaining or losing its image upstream
+# is caught at build time rather than silently absorbed into a changed benchmark.
+EXCLUDED = {
+    "indic_ocr_bench_test": (),
+    "indic_ocr_bench_small": (),
+}
+
+
+def served_count(split):
+    return SPLITS[split][1] - len(EXCLUDED[split])
+
+
+def read_index(path):
+    """Tasks from an index file; the excluded rows travel alongside for provenance."""
+    data = json.loads(Path(path).read_text())
+    return data["tasks"] if isinstance(data, dict) else data
 
 # The dataset names languages in English; these are the codes its own card lists -
 # ISO 639-1 where one exists, ISO 639-3 otherwise. An unknown name is an error rather
@@ -126,32 +145,47 @@ def _write_atomic(path, data):
     os.replace(tmp, path)
 
 
-def build_split(split, root, fetch=download_split):
+def build_split(split, root, fetch=download_split, discover=False):
     """Extract one split from the dataset into root: content-addressed crops + index.
 
     This is what publishing runs, once, to fill the bucket. Serving never calls it
-    unless the bucket is unavailable.
+    unless the bucket is unavailable. discover=True reports imageless rows instead of
+    checking them against EXCLUDED - for pinning them, never for serving.
     """
     import pyarrow.parquet as pq
 
-    directory, expected = SPLITS[split]
-    rows, seen = [], set()
+    directory, total = SPLITS[split]
+    rows, excluded, seen, read = [], [], set(), 0
     for path in fetch(directory):
         for batch in pq.ParquetFile(path).iter_batches(
             batch_size=64, columns=["image", "image_name", "gt", "language"]
         ):
             for record in batch.to_pylist():
-                task = _extract(split, record, root)
-                if task["task_id"] in seen:
+                read += 1
+                if record["image_name"] in seen:
                     raise ValueError(f"Duplicate image_name {record['image_name']!r}")
-                seen.add(task["task_id"])
-                rows.append(task)
-    if len(rows) != expected:
+                seen.add(record["image_name"])
+                if not (record["image"] or {}).get("bytes"):
+                    excluded.append({
+                        "image_name": record["image_name"],
+                        "language": LANGUAGES.get(record["language"], record["language"]),
+                        "reason": "no image in the source row",
+                    })
+                    continue
+                rows.append(_extract(split, record, root))
+    if read != total:
         raise ValueError(
-            f"{SNAPSHOT_ID} {directory} has {len(rows)} rows, expected {expected}; "
+            f"{SNAPSHOT_ID} {directory} has {read} rows, expected {total}; "
             "refusing to serve a split that is not the pinned one"
         )
-    _write_atomic(index_path(root, split), json.dumps(rows, ensure_ascii=False).encode())
+    found = sorted(e["image_name"] for e in excluded)
+    if not discover and found != sorted(EXCLUDED[split]):
+        raise ValueError(
+            f"{split}: rows without an image are {found}, pinned "
+            f"{sorted(EXCLUDED[split])}; the source changed - re-pin before serving"
+        )
+    body = {"total_rows": read, "tasks": rows, "excluded": excluded}
+    _write_atomic(index_path(root, split), json.dumps(body, ensure_ascii=False).encode())
     return rows
 
 
@@ -245,7 +279,7 @@ class BenchCatalog:
             with self._lock:
                 if split not in self._rows:
                     rows = self._resolve(split)
-                    _, expected = SPLITS[split]
+                    expected = served_count(split)
                     if len(rows) != expected:
                         raise ValueError(
                             f"{split} index has {len(rows)} tasks, expected {expected}"
@@ -261,10 +295,10 @@ class BenchCatalog:
                 raise FileNotFoundError(
                     f"{path} is missing: publish {SNAPSHOT_ID} to the mounted bucket"
                 )
-            return json.loads(path.read_text())
+            return read_index(path)
         local = index_path(self.cache, split)
         if local.exists():
-            rows = json.loads(local.read_text())
+            rows = read_index(local)
             if all(asset_path(self.cache, t["asset_sha256"]).exists() for t in rows):
                 return rows
         try:
@@ -288,7 +322,7 @@ class BenchCatalog:
         api.download_bucket_files(
             self.bucket, [(remote, str(local))], raise_on_missing_files=True
         )
-        rows = json.loads(local.read_text())
+        rows = read_index(local)
         assets = self.cache / VERSION / "assets"
         have = {p.name for p in assets.glob("*")} if assets.exists() else set()
         missing = sorted({t["asset_sha256"] for t in rows} - have)
@@ -309,7 +343,7 @@ class BenchCatalog:
     def count(self, split):
         if split not in SPLITS:
             raise ValueError(f"Unknown split {split!r}")
-        return len(self._rows[split]) if split in self._rows else SPLITS[split][1]
+        return len(self._rows[split]) if split in self._rows else served_count(split)
 
     def at(self, split, index):
         rows = self._load(split)

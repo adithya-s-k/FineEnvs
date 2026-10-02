@@ -35,7 +35,8 @@ def write_parquet(path, rows):
         pa.table(
             {
                 "image": [
-                    {"bytes": encoded(size, 40 * i + 10, fmt), "path": f"{name}.img"}
+                    None if size is None
+                    else {"bytes": encoded(size, 40 * i + 10, fmt), "path": f"{name}.img"}
                     for i, (name, _, _, size, fmt) in enumerate(rows)
                 ],
                 "image_name": [r[0] for r in rows],
@@ -268,3 +269,33 @@ def test_the_harness_reports_what_the_benchmarks_scorer_reports():
     assert ours["word_accuracy"] == pytest.approx(theirs["word_accuracy"])
     # A corpus task is not benchmark data, even though it shares the family.
     assert module.bench_report([{"task_id": "nayana-c1.x", "family": "section_ocr"}]) is None
+
+
+def test_rows_without_an_image_are_excluded_recorded_and_pinned(tmp_path, monkeypatch):
+    """The pinned test split ships rows with no image; they are not answerable."""
+    rows = ROWS + [("indic_ocr_bench_test_eng_5", "no picture", "English", None, None)]
+    monkeypatch.setattr(bench, "SPLITS", {SPLIT: ("test", len(rows))})
+    parquet = write_parquet(tmp_path / "t.parquet", rows)
+    fetch = lambda d: [parquet]  # noqa: E731
+
+    # Unpinned, the build refuses: a source change must be noticed, not absorbed.
+    monkeypatch.setattr(bench, "EXCLUDED", {SPLIT: ()})
+    with pytest.raises(ValueError, match="re-pin"):
+        bench.build_split(SPLIT, tmp_path / "a", fetch=fetch)
+    # Discovery reports it without serving it.
+    bench.build_split(SPLIT, tmp_path / "b", fetch=fetch, discover=True)
+
+    monkeypatch.setattr(bench, "EXCLUDED", {SPLIT: ("indic_ocr_bench_test_eng_5",)})
+    served = bench.build_split(SPLIT, tmp_path / "c", fetch=fetch)
+    assert [t["unit"] for t in served] == [r[0] for r in ROWS]
+    import json
+
+    index = json.loads(bench.index_path(tmp_path / "c", SPLIT).read_text())
+    assert index["total_rows"] == 4
+    assert index["excluded"] == [{
+        "image_name": "indic_ocr_bench_test_eng_5", "language": "en",
+        "reason": "no image in the source row",
+    }]
+    catalog = bench.BenchCatalog(tmp_path / "cache", root=tmp_path / "c", fallback=False)
+    assert catalog.count(SPLIT) == 3
+    assert catalog.at(SPLIT, 2)["unit"] == ROWS[2][0]
