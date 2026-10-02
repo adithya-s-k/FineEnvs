@@ -221,3 +221,38 @@ def balanced_rows(rows, languages, families, seed=42, per_group=64):
         groups[key].sort(key=lambda row: row["task_id"])
         rng.shuffle(groups[key])
     return [groups[key][i] for i in range(count) for key in keys]
+
+
+ADAPTER_FILES = ("adapter_config.json", "adapter_model.safetensors")
+READY = "ready.json"
+
+
+def mark_checkpoint_ready(directory, step):
+    """Record a saved checkpoint's adapter by size and hash, for a watcher to verify."""
+    import json
+    from pathlib import Path
+
+    directory = Path(directory)
+    files = {}
+    for name in ADAPTER_FILES:
+        digest = hashlib.sha256()
+        with (directory / name).open("rb") as handle:
+            for block in iter(lambda: handle.read(1 << 20), b""):
+                digest.update(block)
+        files[name] = {"size": (directory / name).stat().st_size, "sha256": digest.hexdigest()}
+    (directory / READY).write_text(json.dumps({"step": step, "files": files}) + "\n")
+    return files
+
+
+def checkpoint_complete(directory, ready):
+    """True when every adapter file in `directory` matches its ready.json record."""
+    from pathlib import Path
+
+    directory = Path(directory)
+    for name, expected in ready["files"].items():
+        path = directory / name
+        if not path.is_file() or path.stat().st_size != expected["size"]:
+            return False
+        if hashlib.sha256(path.read_bytes()).hexdigest() != expected["sha256"]:
+            return False
+    return True
