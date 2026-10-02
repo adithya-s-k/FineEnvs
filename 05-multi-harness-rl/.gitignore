@@ -1,0 +1,11 @@
+.runtime/
+.venv/
+__pycache__/
+.pytest_cache/
+runs/
+prepared/
+.env
+.gradio/
+
+temp/
+.deps/

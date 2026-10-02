@@ -1,0 +1,124 @@
+---
+interface Props {
+  title?: string;
+  emoji?: string;
+  class?: string;
+  variant?: "neutral" | "info" | "success" | "danger";
+}
+const {
+  title,
+  emoji,
+  class: className,
+  variant = "neutral",
+  ...props
+} = Astro.props as Props;
+const wrapperClass = ["note", `note--${variant}`, className]
+  .filter(Boolean)
+  .join(" ");
+---
+
+<div class={wrapperClass} {...props}>
+  {title ? (
+    <!-- When there's a title, emoji is inline with title -->
+    <div class="note__body">
+      <div class="note__header">
+        {emoji && <span class="note__emoji-inline" aria-hidden="true">{emoji}</span>}
+        <div class="note__title">{title}</div>
+      </div>
+      <div class="note__content">
+        <slot />
+      </div>
+    </div>
+  ) : (
+    <!-- When there's no title, emoji is above content -->
+    <div class="note__layout">
+      {
+        emoji && (
+          <div class="note__icon" aria-hidden="true">
+            <span class="note__emoji">{emoji}</span>
+          </div>
+        )
+      }
+      <div class="note__body">
+        <div class="note__content">
+          <slot />
+        </div>
+      </div>
+    </div>
+  )}
+</div>
+
+<style>
+  .note {
+    background: var(--surface-bg);
+    border-left: 2px solid var(--border-color);
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    padding: 20px 18px;
+    margin: var(--block-spacing-y) 0;
+  }
+  .note__layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .note__icon {
+    flex: 0 0 auto;
+    line-height: 1;
+    padding-top: 2px;
+  }
+  .note__emoji {
+    font-size: 32px;
+    line-height: 1;
+    display: block;
+  }
+  .note__body {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .note__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .note__emoji-inline {
+    font-size: 20px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .note__title {
+    font-size: 16px;
+    letter-spacing: 0.2px;
+    font-weight: 600;
+    color: var(--text-color);
+    text-align: left;
+  }
+  .note__content {
+    color: var(--text-color);
+    font-size: 0.95rem;
+    text-align: left;
+  }
+  /* Ensure the very last slotted element has no bottom margin */
+  .note .note__content > :global(*:last-child) {
+    margin-bottom: 0 !important;
+  }
+
+  /* Variants */
+  .note.note--neutral {
+    border-left-color: var(--border-color);
+    background: var(--surface-bg);
+  }
+  .note.note--info {
+    border-left-color: #f39c12;
+    background: color-mix(in oklab, #f39c12 10%, var(--surface-bg));
+  }
+  .note.note--success {
+    border-left-color: #2ecc71;
+    background: color-mix(in oklab, #2ecc71 8%, var(--surface-bg));
+  }
+  .note.note--danger {
+    border-left-color: #e74c3c;
+    background: color-mix(in oklab, #e74c3c 8%, var(--surface-bg));
+  }
+</style>

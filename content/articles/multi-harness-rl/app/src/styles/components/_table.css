@@ -1,0 +1,121 @@
+.content-grid main table {
+  border-collapse: collapse;
+  table-layout: auto;
+  margin: 0;
+  background-color: var(--surface-bg);
+}
+
+.content-grid main th,
+.content-grid main td {
+  border-bottom: 1px solid var(--border-color);
+  padding: 6px 8px;
+  font-size: 15px;
+  white-space: nowrap;
+  /* prevent squashing; allow horizontal scroll instead */
+  word-break: auto-phrase;
+  /* white-space: break-spaces; */
+  vertical-align: top;
+}
+
+.content-grid main thead th {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.content-grid main thead th {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.content-grid main thead th {
+  background: var(--table-header-bg);
+  padding-top: 10px;
+  padding-bottom: 10px;
+  font-weight: 600;
+}
+
+.content-grid main hr {
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  margin: var(--spacing-5) 0;
+}
+
+/* Scroll wrapper: keeps table 100% width but enables horizontal scroll when needed */
+.content-grid main .table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border-color);
+  border-radius: var(--table-border-radius);
+  background: var(--surface-bg);
+  margin: 0 0 var(--block-spacing-y);
+}
+
+.content-grid main .table-scroll>table {
+  width: fit-content;
+  min-width: 100%;
+  max-width: none;
+}
+
+/* Vertical dividers between columns (no outer right border) */
+.content-grid main .table-scroll>table th,
+.content-grid main .table-scroll>table td {
+  border-right: 1px solid var(--border-color);
+}
+
+.content-grid main .table-scroll>table th:last-child,
+.content-grid main .table-scroll>table td:last-child {
+  border-right: none;
+}
+
+.content-grid main .table-scroll>table thead th:first-child {
+  border-top-left-radius: var(--table-border-radius);
+}
+
+.content-grid main .table-scroll>table thead th:last-child {
+  border-top-right-radius: var(--table-border-radius);
+}
+
+.content-grid main .table-scroll>table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: var(--table-border-radius);
+}
+
+.content-grid main .table-scroll>table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: var(--table-border-radius);
+}
+
+/* Zebra striping for odd rows */
+.content-grid main .table-scroll>table tbody tr:nth-child(odd) td {
+  background: var(--table-row-odd-bg);
+}
+
+/* Remove bottom border on last row */
+.content-grid main .table-scroll>table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Accordion context: remove outer borders/radius and fit content flush */
+.accordion .accordion__content .table-scroll {
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  margin-bottom: 0 !important;
+}
+
+/* Ensure no bottom margin even if table isn't wrapped (fallback) */
+.accordion .accordion__content table {
+  margin: 0 !important;
+}
+
+.accordion .accordion__content .table-scroll>table thead th:first-child,
+.accordion .accordion__content .table-scroll>table thead th:last-child,
+.accordion .accordion__content .table-scroll>table tbody tr:last-child td:first-child,
+.accordion .accordion__content .table-scroll>table tbody tr:last-child td:last-child {
+  border-radius: 0;
+}
+
+/* Fallback for browsers without fit-content support */
+@supports not (width: fit-content) {
+  .content-grid main .table-scroll>table {
+    width: max-content;
+    min-width: 100%;
+  }
+}

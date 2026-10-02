@@ -1,0 +1,6 @@
+spec_version: 1
+name: smoldataenv_harbor
+type: space
+runtime: fastapi
+app: smoldataenv_harbor.server:app
+port: 7860

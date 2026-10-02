@@ -1,0 +1,55 @@
+import Image from "../../components/Image.astro";
+import joelPlot from "../assets/image/joel-harness-pairing.png";
+
+## Introduction
+
+If you use AI to write code, you have probably used the same model through more than one tool:
+Claude models in [Claude Code](https://code.claude.com/docs/en/overview), [Cursor](https://cursor.com), [Pi](https://pi.dev), or [Cline](https://cline.bot). And you may have noticed it doesn't behave
+the same way in each. It plans differently, reaches for different tools, and finishes tasks in one
+that it gets stuck on in another.
+
+The difference can be measured, and it comes from the program wrapped around the model, called an
+**agent harness**. It runs the loop, decides which tools the model gets, writes the context the
+model reads, makes sense of what the model sends back, and decides when to stop. Change the harness,
+and you change what the model sees and what it is allowed to do, so the results change too. On
+SWE-bench Pro, [Joel Niklaus measured](https://x.com/joelniklaus/status/2085725862142623875) the same
+model, GLM-5.2, at 23% in one harness and 52% in another. The ranking doesn't carry over between
+models either: Codex was the second-best of ten harnesses for GLM-5.2 and the ninth for Gemma 4
+26B-A4B.
+
+<Image
+  src={joelPlot}
+  width={2200}
+  format="webp"
+  quality={90}
+  data-zoom-src={joelPlot.src}
+  alt="Pass@1 against cost per task on SWE-bench Pro for GLM-5.2 and Gemma 4 26B-A4B, each run under several coding-agent harnesses. The harnesses that do best differ between the two models."
+  caption="Pass@1 against cost per task for two models across coding-agent harnesses on SWE-bench Pro. Plot by <a href='https://x.com/joelniklaus/status/2085725862142623875'>Joel Niklaus</a>."
+  zoomable
+/>
+
+The harness matters most for the open-weight models you run yourself. A model that was never
+trained in your harness can struggle there. It calls tools the harness doesn't have, or writes
+output the harness can't read. Training it in one harness doesn't fix this either, because it then
+learns that harness's habits and struggles in the others.
+
+The fix is to train the model inside the harnesses themselves, with reinforcement learning on
+multi-step tool use, which is called **agentic reinforcement learning (agentic RL)**. The question
+behind this work is whether you can take a small open model, train it that way inside the harnesses
+people actually use, such as Claude Code, Codex and OpenCode, and see it improve across all of them.
+The harnesses run exactly as they ship: none of them was written with training in mind, and we don't
+change their code. This article introduces an open
+framework that makes it possible, built on [OpenEnv](https://github.com/huggingface/OpenEnv), with
+[Harbor](https://harborframework.com/) supplying the tasks and sandboxes and [TRL](https://github.com/huggingface/trl) as the trainer.
+
+The article has two parts. The first is a guide: [the basics](#the-basics) of harnesses, agentic RL and
+RL environments, then [why models need training across harnesses](#why-train-across-harnesses), with
+what recent papers and model reports show. The second is our own work: [how the framework
+works](#how-the-framework-works), and [what happened when we used it](#training-small-models-across-harnesses) to
+train a small open model, [LFM2.5-2.6B](https://huggingface.co/LiquidAI/LFM2.5-2.6B), across four harnesses at once.
+Trained across all four, it went from solving 42% of held-out tasks to 54%, averaged over the four
+harnesses, and used 31% fewer tool calls on the tasks it already solved. The same model trained in
+OpenCode alone improved mostly in OpenCode, and much less in the three harnesses it never trained in.
+We also compare RL with **supervised fine-tuning (SFT)** on a larger model's successful rollouts,
+which helped less. Our earlier runs with [Qwen3.5-2B](https://huggingface.co/Qwen/Qwen3.5-2B) are in
+a collapsible section of the training chapter.

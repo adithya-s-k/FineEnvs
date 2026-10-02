@@ -1,0 +1,126 @@
+/* ============================================================================ */
+/* Design Tokens */
+/* ============================================================================ */
+:root {
+  /* Neutrals */
+  --neutral-900: rgb(17, 24, 39);
+  --neutral-600: rgb(107, 114, 128);
+  --neutral-400: rgb(185, 185, 185);
+  --neutral-300: rgb(228, 228, 228);
+  --neutral-200: rgb(245, 245, 245);
+  --neutral-50: rgb(249, 250, 251);
+
+  --default-font-family: Source Sans Pro, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Brand (OKLCH base + derived states) */
+  --primary-base: oklch(0.75 0.12 47);
+  --primary-color: var(--primary-base);
+  --primary-color-hover: oklch(from var(--primary-color) calc(l - 0.05) c h);
+  --primary-color-active: oklch(from var(--primary-color) calc(l - 0.10) c h);
+  --on-primary: #ffffff;
+
+  /* Semantic colors */
+  --danger-color: oklch(0.65 0.19 25);
+  --success-color: oklch(0.65 0.15 145);
+  --info-color: oklch(0.65 0.12 230);
+
+  /* Text & Surfaces */
+  --page-bg: #fff;
+  --surface-bg: #f9f9f9;
+  --text-color: rgba(0, 0, 0, .85);
+  --transparent-page-contrast: rgba(255, 255, 255, .85);
+  --muted-color: rgba(0, 0, 0, .6);
+  --border-color: rgba(0, 0, 0, .1);
+  --code-bg: #f6f8fa;
+
+  /* Links */
+  --link-underline: var(--primary-color);
+  --link-underline-hover: var(--primary-color-hover);
+
+  /* Spacing scale */
+  --spacing-1: 8px;
+  --spacing-2: 12px;
+  --spacing-3: 16px;
+  --spacing-4: 24px;
+  --spacing-5: 32px;
+  --spacing-6: 40px;
+  --spacing-7: 48px;
+  --spacing-8: 56px;
+  --spacing-9: 64px;
+  --spacing-10: 72px;
+
+  /* Custom Media aliases compiled by PostCSS */
+  @custom-media --bp-xxs (max-width: 320px);
+  @custom-media --bp-xs (max-width: 480px);
+  @custom-media --bp-sm (max-width: 640px);
+  @custom-media --bp-md (max-width: 768px);
+  @custom-media --bp-lg (max-width: 1024px);
+  @custom-media --bp-xl (max-width: 1280px);
+  @custom-media --bp-content-collapse (max-width: 1100px);
+
+  /* Layout */
+  --content-padding-x: 16px;
+  /* default page gutter */
+  --block-spacing-y: var(--spacing-4);
+  /* default vertical spacing between block components */
+
+  /* Config */
+  --palette-count: 8;
+
+  /* Button tokens */
+  --button-radius: 6px;
+  --button-padding-x: 16px;
+  --button-padding-y: 10px;
+  --button-font-size: 14px;
+  --button-icon-padding: 8px;
+  /* Big button */
+  --button-big-padding-x: 16px;
+  --button-big-padding-y: 12px;
+  --button-big-font-size: 16px;
+  --button-big-icon-padding: 12px;
+
+  /* Table tokens */
+  --table-border-radius: 8px;
+  --table-header-bg: oklch(from var(--surface-bg) calc(l - 0.02) c h);
+  --table-row-odd-bg: oklch(from var(--surface-bg) calc(l - 0.01) c h);
+
+  /* Z-index */
+  --z-base: 0;
+  --z-content: 1;
+  --z-elevated: 10;
+  --z-overlay: 1000;
+  --z-modal: 1100;
+  --z-tooltip: 1200;
+
+  /* Charts (global) */
+  --axis-color: var(--muted-color);
+  --tick-color: var(--text-color);
+  --grid-color: rgba(0, 0, 0, .08);
+}
+
+/* ============================================================================ */
+/* Dark Theme Overrides */
+/* ============================================================================ */
+[data-theme="dark"] {
+  --page-bg: #0f1115;
+  --surface-bg: #07080a;
+  --text-color: rgba(255, 255, 255, .9);
+  --muted-color: rgba(255, 255, 255, .7);
+  --border-color: rgba(255, 255, 255, .15);
+  --code-bg: #12151b;
+  --transparent-page-contrast: rgba(0, 0, 0, .85);
+
+  /* Charts (global) */
+  --axis-color: var(--muted-color);
+  --tick-color: var(--muted-color);
+  --grid-color: rgba(255, 255, 255, .10);
+
+  /* Primary (lower L in dark) */
+  --primary-color-hover: oklch(from var(--primary-color) calc(l - 0.05) c h);
+  --primary-color-active: oklch(from var(--primary-color) calc(l - 0.10) c h);
+  --on-primary: #0f1115;
+
+  color-scheme: dark;
+  background: var(--page-bg);
+}

@@ -1,0 +1,177 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## Why train across harnesses
+
+### Benchmark scores now come with a harness attached
+
+Model cards have started saying which harness a score came from. GLM-4.7 promises "significant
+improvements on complex tasks in mainstream agent frameworks such as Claude Code, Kilo Code, Cline,
+and Roo Code" [@zai2025glm47]. Kimi K2 reports Terminal-Bench [@merrill2026terminalbench] twice: 25.0 under Terminus and 30.0
+under Moonshot's own framework [@kimi2025k2]. MiniMax M2 names a harness for almost every benchmark
+it lists [@minimax2025m2card]. DeepSeek-V3.2's thinking mode wouldn't run under Terminus at all, so
+its Terminal-Bench number had to come from a different harness [@deepseek2025v32].
+
+The harness can even change which model comes out ahead. @zhang2026stopcomparing took three models that sit
+within three points of each other on a public coding leaderboard: GLM-5.1, GPT-5.4, and Kimi K2.6.
+They ran all three on the same 100 SWE-bench Verified [@jimenez2024swebench] tasks under three
+harness configurations, with everything else held fixed. The configurations build on each other:
+**Minimal** has verbose tools, no context compression and no retries, **Improved** trims the tools
+and adds compression and retries, and **Full** adds self-checks, drift checks and rollback.
+
+<HtmlEmbed
+  src="d3-scaffold-reversal.html"
+  title="Same models, same tasks, three harness configurations"
+  desc="Each of the three models is the best model under a different harness configuration."
+  frameless
+/>
+
+Each model comes out on top under a different harness. Swapping the harness moved GLM-5.1 by 13
+points, while swapping the model inside the same harness moved the score by only 2.5 to 5.
+[Joel Niklaus found the same](https://x.com/joelniklaus/status/2085725862142623875) across ten harnesses on SWE-bench Pro.
+
+You can see the same thing outside a controlled test. Claude Opus 4.5 scores 45.9% on SWE-bench Pro [@deng2025swebenchpro]
+on Scale's [SEAL leaderboard](https://labs.scale.com/leaderboard/swe_bench_pro) and 55.4% inside Claude Code, with the same weights
+[@zhang2026stopcomparing].
+
+### When a model leaves the harness it was trained in
+
+A model can perform well in the harness it was trained in and struggle when moved to another.
+The Orchard paper measured this transfer across harnesses [@peng2026orchard]. It took two
+open coding models trained with one or two harnesses and ran them under three, including Kimi-CLI,
+which none of the systems compared had used in training. Orchard's own model ran alongside them. It
+was fine-tuned on trajectories from OpenHands and Mini-SWE-Agent, then trained with RL in
+Mini-SWE-Agent.
+
+<HtmlEmbed
+  src="d3-harness-lockin.html"
+  title="What training in one or two harnesses costs"
+  desc="Resolve rates for three systems, each run under three harnesses."
+  frameless
+/>
+
+Moving OpenSWE-32B from [OpenHands](https://github.com/OpenHands/OpenHands), the harness the paper treats as its native one, to [Mini-SWE-Agent](https://github.com/SWE-agent/mini-swe-agent)
+costs 7.5 points. Under [Kimi-CLI](https://github.com/MoonshotAI/kimi-cli), it drops 58.8 points, to 3.6% on SWE-bench Verified, and scores
+zero on Terminal-Bench 2.0. Scale-SWE stops producing valid tool calls anywhere but its home harness.
+Orchard's model stays between 45.0 and 64.3 on SWE-bench Verified across all three.
+
+The paper calls these a **degraded resolve rate**, where the model still works but solves less, and
+a **catastrophic format failure**, where its output stops being usable at all. Each row of that
+figure is one fixed model, and each benchmark uses the same tasks under every harness, so the drop
+comes from the harness.
+
+### Why models overfit to a single harness
+
+The KwaiKAT team names the cause [@kwaikat2026katcoder]:
+
+> "In agentic RL, if training relies solely on a single fixed harness, the model often learns not
+> 'how to solve the task' but 'how to solve the task under that particular harness's interface
+> conventions.'"
+
+They split it into three kinds of overfitting: to the harness's action **format**, to its **context
+structure**, and to its **control flow**, the retries and stop conditions the model learns to lean on.
+
+<HtmlEmbed
+  src="d3-overfit-modes.html"
+  title="Three ways a model overfits to its harness"
+  desc="What the model anchored to, and what breaks when that changes."
+  frameless
+/>
+
+Harnesses differ along exactly those lines. They speak different **API dialects**, meaning the
+request and response format they use to talk to a model server: OpenAI chat-completions, OpenAI
+Responses, Anthropic Messages, Google Gemini. They differ in whether they use tool calling at all,
+how they compact context, and how much of the control flow they take away from the model.
+
+{/* VIZ: harness-ecosystem-matrix: scannable HTML table. Columns: harness, then the API dialects
+     it speaks, and whether it uses tool calls. */}
+<HtmlEmbed
+  src="harness-ecosystem-matrix.html"
+  title="The harness landscape"
+  desc="The model APIs each harness speaks. Hover a harness for its maker and what sets it apart."
+  frameless
+/>
+
+Mini-SWE-Agent's [README](https://github.com/SWE-agent/mini-swe-agent) lists avoiding scaffold
+overfitting as a reason for its simple design. [Aider](https://aider.chat/) uses a different interface:
+it asks the model to write [edit blocks](https://aider.chat/docs/more/edit-formats.html) in prose
+instead of structured tool calls. A model trained on tool calls has to learn that output format too.
+
+In practice, the failure often shows up as an error rather than a lower score. A model trained in one
+harness calls a tool by that harness's name for it, with that harness's argument names, and a
+harness that spells them differently rejects the call before the tool ever runs.
+
+<HtmlEmbed
+  src="d3-format-mismatch.html"
+  title="What harness overfitting looks like"
+  desc="One tool call, accepted by the harness the model trained in and rejected by one it never saw."
+  frameless
+/>
+
+The list of harnesses keeps growing. [Harbor 0.22.0](https://github.com/harbor-framework/harbor/releases/tag/v0.22.0) ships adapters for more than 40 of them, and [OpenEnv](https://github.com/huggingface/OpenEnv) has
+validated ten end-to-end, so a model trained on a few will keep meeting ones it never saw.
+
+### Frontier labs now train across harnesses on purpose
+
+KwaiKAT's answer, which they call harness scaling, is to vary the harness during training.
+Poolside's Laguna report does this [@poolside2026laguna]:
+
+> "To encourage generalization across diverse agent harnesses, our training data includes
+> trajectories from external frameworks such as OpenHands, OpenCode, and Mini-SWE-Agent."
+
+They added 1.3 billion tokens of these trajectories to their supervised training and kept each
+harness's own habits in on purpose. Reinforcement learning then runs only in the harness they ship in
+production, `pool`, and the report doesn't say why the other harnesses stop there.
+
+Kimi K3's RL environment builds harnesses such as Claude Code and [Codex](https://github.com/openai/codex) from composable modules, so
+the model trains on many harness configurations instead of one [@kimi2026k3]. Qwen3-Coder-Next
+generates its agentic coding data in six different harnesses [@qwen2026codernext], and MiMo-V2.6
+trains on a pool of task-adapted mini-harnesses [@xiaomi2026mimov26]. Liquid AI does the same at a
+much smaller size. For [LFM2.5-2.6B](https://www.liquid.ai/blog/lfm2-5-2-6b), the model we train later,
+Liquid picks a harness at random for each training task. Their release post gives the reason:
+"training directly inside Hermes Agent, OpenClaw, and other harnesses exposes the model to their
+tools, system prompts, and interaction patterns, helping it work reliably across agent environments."
+
+OpenForgeRL checked whether that variety costs peak performance. It trained the same model on one
+harness and on three, and the three-harness model scored higher even on the single harness's home
+turf, 48.5 to 46.0, and almost twice as high under Codex [@yu2026openforgerl].
+
+{/* VIZ: paper-receipts: tabbed excerpt viewer. Each tab shows a real crop from the official
+     PDF of the passage being cited, with page reference and a link. Crops live in
+     app/public/papers/, with provenance in that folder's README. */}
+<HtmlEmbed
+  src="paper-receipts.html"
+  title="The claims, in the papers themselves"
+  desc="Eight 2026 reports, at the page cited."
+  frameless
+/>
+
+Model reports have only recently started saying which harness a number came from. In 2025, most
+named none or one per benchmark. By 2026, every report on the timeline below trains across several.
+
+<HtmlEmbed
+  src="d3-posttraining-timeline.html"
+  title="From naming no harness to training across several"
+  desc="Recent model releases over time, by the most each report says about harnesses. Hover or tap a dot for details."
+  frameless
+/>
+
+### What is missing
+
+What is still missing is an open, reliable way to do this with any harness. It has to capture
+everything RL training uses from harnesses you don't control, and plug into whichever trainer you
+already use.
+
+It also doesn't take a frontier-sized budget. Agent Lightning takes Qwen3.5-9B from 41.8% to 56.4% on SWE-bench
+Verified with roughly 6,000 training examples [@he2026agentlightning]. The same paper names the hard
+part. The harness owns the loop, so the trainer only sees requests and responses going past, and
+turning those back into training samples is still an open problem.
+
+We built this on OpenEnv [@openenv2026], around a capture proxy that sits between the harness and the model. Every
+call the agent makes passes through the proxy, which records the prompt and completion tokens as the
+model saw and produced them, with their log probabilities. It speaks the API formats coding agents
+use, so Claude Code, Codex, and [OpenCode](https://opencode.ai) run unmodified, and a custom harness only has to point at it.
+Because it all sits behind OpenEnv's open environment interface, the same setup can feed different
+trainers, and ours was TRL [@trl].
+
+On top of that, the Harbor integration [@openenv2026harbor] serves [Harbor's](https://harborframework.com/) containerized tasks as
+OpenEnv environments, so the harness and the sandbox become settings you choose per rollout.

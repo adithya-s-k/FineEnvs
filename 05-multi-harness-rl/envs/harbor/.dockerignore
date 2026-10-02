@@ -1,0 +1,10 @@
+.deps/
+.venv/
+prepared/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.env
+.gradio/
+.archive/
+.git/

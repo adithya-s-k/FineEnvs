@@ -1,1 +1,4 @@
 trackio[spaces,mcp]==0.37.1
+# trackio 0.37.1 imports CommitOperationAdd from huggingface_hub.hf_api, which
+# huggingface_hub 1.32.0 (2026-09-17) stopped exporting there.
+huggingface_hub<1.32

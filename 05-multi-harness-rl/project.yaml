@@ -1,0 +1,33 @@
+name: multi-harness-rl
+title: "SmolDataEnvs: multi-harness RL"
+tagline: "Train on SmolDataEnvs with SETA, native OpenCode or Harbor, using HF Jobs or Slurm."
+order: 5
+status: wip
+hub:
+  org: FineEnvs
+  collection: FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212
+  datasets:
+    - FineEnvs/SmolDataEnvs-harbor-train
+    - FineEnvs/SmolDataEnvs-harbor-test
+  spaces:
+    - FineEnvs/smoldataenv-multi-harness-whitebox
+    - FineEnvs/smoldataenv-multi-harness-opencode
+    - FineEnvs/smoldataenv-multi-harness-harbor
+  trackio:
+    - FineEnvs/data-agent-training-comparison-trackio
+envs:
+  - name: seta
+    summary: "Native bash/SETA tools driven by synchronous GRPO."
+    frameworks:
+      openenv:
+        verified: false
+  - name: native-opencode
+    summary: "Native OpenCode owns its loop; AsyncGRPO consumes captured tokens."
+    frameworks:
+      openenv:
+        verified: false
+  - name: harbor
+    summary: "Rotate four Harbor harnesses between task groups."
+    frameworks:
+      openenv:
+        verified: false

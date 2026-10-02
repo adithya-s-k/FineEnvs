@@ -46,7 +46,7 @@ class WordleGemEnv(Env):
     """GEM environment for Wordle.
 
     Follows the standard GEM Env API: reset() -> step() -> (obs, reward, done, truncated, info).
-    Actions are free-form text with embedded guess words.
+    Actions are text holding a <guess>word</guess> tag, or just the 5-letter word.
     """
 
     def __init__(
@@ -54,16 +54,20 @@ class WordleGemEnv(Env):
         answer: str = "",
         max_turns: int = 6,
         task_index: int = -1,
+        lenient_parsing: bool = False,
         **kwargs,
     ):
         super().__init__()
         self._answer = answer
         self._max_turns = max_turns
         self._task_index = task_index
+        self._lenient_parsing = lenient_parsing
         self._game = None
         self.last_output = ""
         self.step_count = 0
         self.error_count = 0
+        self._episode_done = False
+        self._episode_truncated = False
 
     def reset(self, seed: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
         """Reset: create new game, return instruction."""
@@ -72,6 +76,8 @@ class WordleGemEnv(Env):
         self.last_output = ""
         self.step_count = 0
         self.error_count = 0
+        self._episode_done = False
+        self._episode_truncated = False
 
         # Pick answer
         if self._answer:
@@ -101,9 +107,26 @@ class WordleGemEnv(Env):
 
     def step(self, action: str) -> Tuple[str, SupportsFloat, bool, bool, Dict[str, Any]]:
         """Parse action for guess word, submit to game, return observation + reward."""
-        self.step_count += 1
+        if self._episode_done:
+            result = (
+                f"The game is over. The word was '{self._game.answer}'."
+                if self._game.done
+                else "The episode is over."
+            )
+            self.last_output = result
+            info = {
+                "step_count": self.step_count,
+                "error_count": self.error_count,
+                "last_output": self.last_output,
+                "won": self._game.won,
+                "suffix": "Game over.",
+            }
+            return result, 0.0, self._game.done, self._episode_truncated, info
 
-        word = _extract_guess(action)
+        self.step_count += 1
+        already_done = self._game.done
+
+        word = _extract_guess(action, lenient=self._lenient_parsing)
         if not word:
             self.error_count += 1
             result = "Could not parse a 5-letter word. Use <guess>word</guess> tags."
@@ -113,9 +136,12 @@ class WordleGemEnv(Env):
                 self.error_count += 1
 
         self.last_output = result
-        reward = self._game.reward
+        reward = 0.0 if already_done else self._game.reward
         terminated = self._game.done
         truncated = self.step_count >= self._max_turns and not terminated
+        if terminated or truncated:
+            self._episode_done = True
+            self._episode_truncated = truncated
 
         info = {
             "step_count": self.step_count,
@@ -133,6 +159,7 @@ class WordleGemEnv(Env):
             answer=self._answer if same_state else "",
             max_turns=self._max_turns,
             task_index=self._task_index,
+            lenient_parsing=self._lenient_parsing,
             **kwargs,
         )
 
@@ -140,11 +167,23 @@ class WordleGemEnv(Env):
         self._game = None
 
 
-def _extract_guess(text: str) -> str:
-    """Extract a 5-letter word guess from free-form text."""
+def _extract_guess(text: str, lenient: bool = False) -> str:
+    """Extract a 5-letter guess: a <guess>word</guess> tag, or a reply that is only the word.
+
+    Words are not pulled out of surrounding prose, so "Could you share your last guess?" is not played as the
+    guess "guess". lenient=True restores the earlier fallback (a "guess is X" phrase, then the last 5-letter
+    word anywhere in the text), e.g. to reproduce results produced before this change.
+    """
     match = re.search(r"<guess>(.*?)</guess>", text, re.IGNORECASE)
     if match:
         return match.group(1).strip().lower()
+
+    bare = text.strip().strip(".!?\"'`*").strip()
+    if re.fullmatch(r"[A-Za-z]{5}", bare):
+        return bare.lower()
+
+    if not lenient:
+        return ""
 
     match = re.search(r"guess(?:\s+is)?[:\s]+([a-zA-Z]{5})\b", text, re.IGNORECASE)
     if match:

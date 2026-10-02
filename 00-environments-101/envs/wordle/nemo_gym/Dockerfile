@@ -8,10 +8,11 @@
 #
 # Run:
 #   docker run -p 11000:11000 wordle-nemo-gym
+#
+# Dependencies come from uv.lock, which pins the NeMo Gym commit the tests run
+# against. NeMo Gym's HEAD needs Python >= 3.13, so an unpinned install fails here.
 
 FROM python:3.12-slim AS builder
-
-WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc git \
@@ -19,12 +20,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip install --no-cache-dir uv
 
-COPY nemo_gym/pyproject.toml ./
-RUN uv venv /app/.venv && \
-    . /app/.venv/bin/activate && \
-    uv pip install --no-cache \
-        "nemo_gym @ git+https://github.com/NVIDIA-NeMo/Gym" \
-        "pydantic>=2.0.0"
+WORKDIR /app
+COPY nemo_gym/pyproject.toml nemo_gym/uv.lock ./
+RUN uv sync --frozen --no-install-project --no-cache
 
 FROM python:3.12-slim
 
@@ -37,10 +35,10 @@ ENV PYTHONPATH="/app"
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Copy shared game logic + server
-COPY game.py .
+# Shared game logic + server
+COPY core ./core
+COPY nemo_gym/configs ./configs
 COPY nemo_gym/server.py .
-COPY nemo_gym/__init__.py .
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:11000/health')" || exit 1
