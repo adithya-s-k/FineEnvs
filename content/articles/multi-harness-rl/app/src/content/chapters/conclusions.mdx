@@ -1,0 +1,37 @@
+## Conclusions
+
+*Results compiled through 29 September 2026. Article updated 1 October 2026.*
+
+**Multi-harness RL improved both task performance and tool use in our small-model experiments.**
+On SmolDataEnvs, LFM2.5-2.6B went from 42.2% to 54.2% pass@1, with gains under all four harnesses:
+OpenCode, Claude Code, Codex and Mini-SWE-Agent. Training only in OpenCode also improved the model,
+including in other harnesses, but the multi-harness run spread its efficiency gains across all four.
+A small open model can learn to work better with several agent interfaces through the same training
+pipeline.
+
+The tool-efficiency reward made the way an agent solves a task part of the training objective.
+Our earlier Qwen runs rewarded correctness alone, and some learned to make increasingly long
+sequences of tool calls. For LFM, we added a small bonus for correct solutions that used fewer
+calls. Tool calls fell during training. At the final checkpoint, the multi-harness model used
+**31% fewer tool calls on held-out tasks that both it and the base model solved**, with savings
+under every harness. The bonus also gave GRPO a learning signal when all scorable rollouts in a
+group were correct but took different numbers of calls. Correctness remained essential: a wrong
+answer earned no efficiency bonus.
+
+OpenEnv's capture proxy makes this practical without rewriting the harnesses or building a separate
+training loop for each one. With a compatible inference backend, it records the exact prompt and
+completion tokens, generation log probabilities and loss masks that training needs. Harbor supplies
+the tasks and sandboxes, and the same TRL trainer learns from the resulting traces. The harness
+keeps its own tools, context management and execution loop. Changing which harness produces the
+rollout does not require reimplementing those behaviours inside the trainer.
+
+These are small experiments on one task family, with one seed per setup and unequal data and compute
+exposure. They support the gains over the base model, but do not establish a general ranking of
+harness mixes. RL produced larger accuracy gains than SFT in these runs; SFT also reduced tool use.
+We did not run LFM without the efficiency bonus, so its contribution cannot be separated from the
+other changes to the recipe.
+
+The broader opportunity is to train for both successful answers and efficient execution across the
+interfaces people actually use. This work provides an open, working path to do that: keep the real
+harnesses, capture the evidence needed for learning, and improve the model through its own
+interactions with them.

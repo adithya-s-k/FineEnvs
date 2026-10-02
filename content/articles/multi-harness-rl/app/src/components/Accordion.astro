@@ -1,0 +1,196 @@
+---
+const { title, open = false, class: className, ...props } = Astro.props;
+const wrapperClass = ["accordion", className].filter(Boolean).join(" ");
+---
+<details class={wrapperClass} open={open} {...props}>
+  <summary class="accordion__summary">
+    <span class="accordion__title">{title}</span>
+    <svg class="accordion__chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  </summary>
+  <div class="accordion__content-wrapper">
+    <div class="accordion__content">
+      <slot />
+    </div>
+  </div>
+</details>
+
+<script>
+  // Animate open/close by transitioning explicit height
+  document.addEventListener('DOMContentLoaded', () => {
+    const accordions = document.querySelectorAll('.accordion') as NodeListOf<HTMLDetailsElement>;
+    accordions.forEach((acc) => {
+      const summary = acc.querySelector('summary.accordion__summary') as HTMLElement | null;
+      const wrapper = acc.querySelector('.accordion__content-wrapper') as HTMLElement | null;
+      const content = acc.querySelector('.accordion__content') as HTMLElement | null;
+      if (!summary || !wrapper || !content) return;
+
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const duration = reduceMotion ? 0 : 240;
+
+      // Initial state
+      wrapper.style.overflow = 'hidden';
+      wrapper.style.height = acc.open ? 'auto' : '0px';
+
+      const open = () => {
+        wrapper.style.height = '0px';
+        void wrapper.offsetHeight; // reflow
+        const target = content.scrollHeight;
+        wrapper.style.transition = `height ${duration}ms ease`;
+        wrapper.style.height = `${target}px`;
+        const onEnd = () => {
+          wrapper.style.transition = '';
+          wrapper.style.height = 'auto';
+          wrapper.removeEventListener('transitionend', onEnd);
+        };
+        wrapper.addEventListener('transitionend', onEnd);
+      };
+
+      const close = () => {
+        const start = wrapper.offsetHeight || content.scrollHeight;
+        wrapper.style.height = `${start}px`;
+        void wrapper.offsetHeight; // reflow
+        wrapper.style.transition = `height ${duration}ms ease`;
+        wrapper.style.height = '0px';
+        const onEnd = () => {
+          wrapper.style.transition = '';
+          wrapper.removeEventListener('transitionend', onEnd);
+          acc.removeAttribute('open');
+        };
+        wrapper.addEventListener('transitionend', onEnd);
+      };
+
+      summary.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (acc.open) {
+          close();
+        } else {
+          acc.setAttribute('open', '');
+          open();
+        }
+      });
+    });
+  });
+  </script>
+
+<style>
+  .accordion {
+    margin: 0 0 var(--spacing-4);
+    padding: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--table-border-radius);
+    background: var(--surface-bg);
+    transition: box-shadow 180ms ease, border-color 180ms ease;
+  }
+
+  .accordion[open] {
+    border-color: color-mix(in oklab, var(--border-color), var(--primary-color) 20%);
+  }
+
+  .accordion[open] .accordion__summary {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .accordion__summary {
+    margin: 0;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding: var(--spacing-2) var(--spacing-3);
+    cursor: pointer;
+    color: var(--text-color);
+    user-select: none;
+  }
+
+  /* Remove conditional padding to avoid jump on close */
+
+  /* Remove native marker */
+  .accordion__summary::-webkit-details-marker {
+    display: none;
+  }
+  .accordion__summary::marker {
+    content: "";
+  }
+
+  .accordion[size="big"] .accordion__summary {
+    padding: 16px;
+  }
+
+  .accordion__title {
+    font-weight: 600;
+  }
+
+  .accordion__chevron {
+    flex: 0 0 auto;
+    transition: transform 220ms ease;
+    opacity: .85;
+  }
+
+  .accordion[open] .accordion__chevron {
+    transform: rotate(180deg);
+  }
+
+  /* Animated expand/collapse using height (controlled in JS) */
+  .accordion__content-wrapper {
+    overflow: hidden;
+    height: 0px;
+    will-change: height;
+    position: relative;
+  }
+
+  /* Subtle top shadow overlay when open (visible above children) */
+  .accordion[open] .accordion__content-wrapper::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 6px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.025), rgba(0,0,0,0));
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .accordion__content {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Ensure the very last slotted element has no bottom margin */
+  .accordion .accordion__content > :global(*:last-child) {
+    margin-bottom: 0 !important;
+  }
+  /* Remove bottom padding on last child, except for code-output blocks */
+  .accordion .accordion__content > :global(:not(.code-output):last-child) {
+    padding-bottom: 0 !important;
+  }
+
+  /* Ensure the very first slotted element has no top spacing */
+  .accordion .accordion__content > :global(*:first-child) {
+    margin-top: 0 !important;
+  }
+
+  /* Content padding: default for direct children, opt-out for code/tables */
+  .accordion .accordion__content > :global(*) {
+    padding: 8px;
+  }
+  .accordion .accordion__content > :global(.table-scroll),
+  .accordion .accordion__content > :global(pre),
+  .accordion .accordion__content > :global(.code-card) {
+    padding: 0;
+  }
+
+  /* Focus styles for accessibility */
+  .accordion__summary:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 3px;
+    border-radius: var(--table-border-radius);
+  }
+
+
+</style>
+
+

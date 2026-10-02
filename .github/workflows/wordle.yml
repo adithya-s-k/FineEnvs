@@ -1,0 +1,30 @@
+name: Wordle
+on:
+  pull_request:
+    paths: ['00-environments-101/envs/wordle/**', '.github/workflows/wordle.yml']
+  push:
+    branches: [main]
+    paths: ['00-environments-101/envs/wordle/**', '.github/workflows/wordle.yml']
+permissions:
+  contents: read
+jobs:
+  test:
+    # Six flavors share core/game.py, so a change to one can break another; test them all.
+    name: ${{ matrix.flavor }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: [gem, skyrl_gym, openenv, nemo_gym, ors, verifiers]
+    defaults:
+      run:
+        working-directory: 00-environments-101/envs/wordle/${{ matrix.flavor }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'   # nemo_gym needs >=3.12; every other flavor accepts it
+      - run: uv sync --frozen --extra dev
+      # exit 5 is "no tests collected": allowed so a flavor without tests yet does not block the rest
+      - run: uv run --frozen python -m pytest tests -q || [ $? -eq 5 ]

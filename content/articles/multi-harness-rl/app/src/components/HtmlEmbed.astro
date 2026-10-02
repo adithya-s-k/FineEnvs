@@ -1,0 +1,927 @@
+---
+interface Props {
+  src: string;
+  title?: string;
+  desc?: string;
+  caption?: string;
+  frameless?: boolean;
+  wide?: boolean;
+  align?: "left" | "center" | "right";
+  id?: string;
+  data?: string | string[];
+  config?: any;
+  downloadable?: boolean;
+}
+const {
+  src,
+  title,
+  desc,
+  caption,
+  frameless = false,
+  wide = false,
+  align = "left",
+  id: providedId,
+  data,
+  config,
+  downloadable = false,
+} = Astro.props as Props;
+
+// Generate filename from src (used for download and as default ID)
+const downloadFilename = src.replace(/\.html$/, '').replace(/^.*\//, '');
+
+// Use provided ID or generate from filename
+const id = providedId || downloadFilename;
+
+// Load all .html embeds under src/content/embeds/** as strings (dev & build)
+const embeds = (import.meta as any).glob("../content/embeds/**/*.html", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+function resolveFragment(requested: string): string | null {
+  // Allow both "banner.html" and "embeds/banner.html"
+  const needle = requested.replace(/^\/*/, "");
+  for (const [key, html] of Object.entries(embeds)) {
+    if (
+      key.endsWith("/" + needle) ||
+      key.endsWith("/" + needle.replace(/^embeds\//, ""))
+    ) {
+      return html;
+    }
+  }
+  return null;
+}
+
+const html = resolveFragment(src);
+const mountId = `frag-${Math.random().toString(36).slice(2)}`;
+const dataAttr = Array.isArray(data)
+  ? JSON.stringify(data)
+  : typeof data === "string"
+    ? data
+    : undefined;
+const configAttr =
+  typeof config === "string"
+    ? config
+    : config != null
+      ? JSON.stringify(config)
+      : undefined;
+
+// Apply the ID to the HTML content if provided
+const htmlWithId =
+  id && html
+    ? html.replace(/<div class="([^"]*)"[^>]*>/, `<div class="$1" id="${id}">`)
+    : html;
+---
+
+{
+  html ? (
+    <figure class={`html-embed${wide ? " html-embed--wide" : ""}${downloadable ? " html-embed--downloadable" : ""}`} id={id}>
+      {title && (
+        <figcaption class="html-embed__title" style={`text-align:${align}`}>
+          {title}
+        </figcaption>
+      )}
+      <div class={`html-embed__card${frameless ? " is-frameless" : ""}`}>
+        <div
+          id={mountId}
+          data-datafiles={dataAttr}
+          data-config={configAttr}
+          set:html={htmlWithId}
+        />
+        {downloadable && (
+          <button 
+            class="html-embed__download" 
+            data-filename={downloadFilename}
+            title="Download as PNG"
+            aria-label="Download visualization as PNG"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+        )}
+      </div>
+      {(desc || caption) && (
+        <figcaption
+          class="html-embed__desc"
+          style={`text-align:${align}`}
+          set:html={caption || desc}
+        />
+      )}
+    </figure>
+  ) : (
+    <figure class="html-embed html-embed--error" id={id}>
+      <div class="html-embed__card html-embed__card--error">
+        <div class="html-embed__error">
+          <strong>Embed not found</strong>
+          <p>
+            The requested embed could not be loaded: <code>{src}</code>
+          </p>
+        </div>
+      </div>
+    </figure>
+  )
+}
+
+<script>
+  // Download functionality for HtmlEmbed
+  (() => {
+    // ========================================
+    // BATCH EXPORT: Export all embeds to a ZIP
+    // Usage: window.exportAllEmbeds()     - all embeds
+    //        window.exportAllEmbeds(5)    - first 5 only
+    // ========================================
+    (window as any).exportAllEmbeds = async (limit?: number) => {
+      let embeds = Array.from(document.querySelectorAll('.html-embed'));
+      if (embeds.length === 0) {
+        console.log('No embeds found');
+        return;
+      }
+      
+      if (limit && limit > 0) {
+        embeds = embeds.slice(0, limit);
+        console.log(`Limiting to first ${limit} embeds`);
+      }
+      
+      console.log(`Found ${embeds.length} embeds. Starting capture...`);
+      const dpr = window.devicePixelRatio || 1;
+      
+      // Load JSZip
+      const JSZip = (await import('jszip')).default;
+      const zip = new JSZip();
+      
+      // Request screen capture once
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { 
+            displaySurface: 'browser',
+            width: { ideal: 4096 },
+            height: { ideal: 4096 },
+          },
+          preferCurrentTab: true,
+        } as any);
+      } catch (e) {
+        console.error('Screen capture denied');
+        return;
+      }
+      
+      const [track] = stream.getVideoTracks();
+      const settings = track.getSettings();
+      
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.muted = true;
+      await video.play();
+      await new Promise(r => setTimeout(r, 200));
+      
+      const captureScale = (settings.width || video.videoWidth) / window.innerWidth;
+      
+      for (let i = 0; i < embeds.length; i++) {
+        const embed = embeds[i] as HTMLElement;
+        const contentDiv = embed.querySelector('[id^="frag-"]') as HTMLElement;
+        if (!contentDiv) continue;
+        
+        // Get filename from button or generate one
+        const btn = embed.querySelector('.html-embed__download');
+        const filename = btn?.getAttribute('data-filename') || `embed-${i + 1}`;
+        
+        console.log(`[${i + 1}/${embeds.length}] Capturing: ${filename}`);
+        
+        // Scroll into view
+        contentDiv.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });
+        await new Promise(r => setTimeout(r, 400));
+        
+        // Get bounds and capture
+        const rect = contentDiv.getBoundingClientRect();
+        
+        const cropX = rect.left * captureScale;
+        const cropY = rect.top * captureScale;
+        const cropW = rect.width * captureScale;
+        const cropH = rect.height * captureScale;
+        
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = rect.width * dpr;
+        exportCanvas.height = rect.height * dpr;
+        const ctx = exportCanvas.getContext('2d')!;
+        
+        ctx.drawImage(
+          video,
+          cropX, cropY, cropW, cropH,
+          0, 0, exportCanvas.width, exportCanvas.height
+        );
+        
+        // Add to ZIP as blob
+        const blob = await new Promise<Blob>((resolve) => {
+          exportCanvas.toBlob((b) => resolve(b!), 'image/png');
+        });
+        zip.file(`${filename}.png`, blob);
+      }
+      
+      // Stop capture
+      stream.getTracks().forEach(t => t.stop());
+      
+      // Generate and download ZIP
+      console.log('Creating ZIP file...');
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      
+      const link = document.createElement('a');
+      link.download = 'embeds-export.zip';
+      link.href = URL.createObjectURL(zipBlob);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      
+      console.log('All embeds exported to embeds-export.zip!');
+    };
+    
+    console.log('To export all embeds, run: exportAllEmbeds()');
+
+    document.addEventListener('click', async (e) => {
+      const btn = e.target instanceof Element ? e.target.closest('.html-embed__download') : null;
+      if (!btn || (btn as HTMLButtonElement).disabled) return;
+      
+      // Prevent double-clicks
+      (btn as HTMLButtonElement).disabled = true;
+      const oldHTML = btn.innerHTML;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4"/></svg>';
+
+      const card = btn.closest('.html-embed__card');
+      if (!card) {
+        (btn as HTMLButtonElement).disabled = false;
+        btn.innerHTML = oldHTML;
+        return;
+      }
+
+      const filename = btn.getAttribute('data-filename') || 'visualization';
+      
+      try {
+        const contentDiv = card.querySelector('[id^="frag-"]') as HTMLElement;
+        if (!contentDiv) {
+          throw new Error('Content not found');
+        }
+        
+        const svg = contentDiv.querySelector('svg');
+        const canvas = contentDiv.querySelector('canvas') as HTMLCanvasElement;
+        const dpr = window.devicePixelRatio || 1;
+        
+        let dataUrl: string;
+        
+        if (canvas) {
+          // Canvas: direct export (Three.js, etc.)
+          dataUrl = canvas.toDataURL('image/png');
+          
+        } else if (svg) {
+          // SVG: native export - fast and accurate
+          const svgClone = svg.cloneNode(true) as SVGElement;
+          const rect = svg.getBoundingClientRect();
+          
+          // Set dimensions
+          svgClone.setAttribute('width', String(rect.width));
+          svgClone.setAttribute('height', String(rect.height));
+          if (!svgClone.getAttribute('xmlns')) {
+            svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+          }
+          
+          // Serialize and create image
+          const svgString = new XMLSerializer().serializeToString(svgClone);
+          const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+          const url = URL.createObjectURL(svgBlob);
+          
+          // Draw to canvas for PNG export
+          const img = new Image();
+          await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = reject;
+            img.src = url;
+          });
+          
+          const exportCanvas = document.createElement('canvas');
+          exportCanvas.width = rect.width * dpr;
+          exportCanvas.height = rect.height * dpr;
+          const ctx = exportCanvas.getContext('2d')!;
+          ctx.scale(dpr, dpr);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, rect.width, rect.height);
+          ctx.drawImage(img, 0, 0, rect.width, rect.height);
+          
+          URL.revokeObjectURL(url);
+          dataUrl = exportCanvas.toDataURL('image/png');
+          
+        } else {
+          // HTML: use Screen Capture API for pixel-perfect screenshot
+          try {
+            // 1. Scroll element into view and center it
+            contentDiv.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });
+            
+            // 2. Wait for scroll and render to stabilize
+            await new Promise(r => setTimeout(r, 300));
+            
+            // 3. Get fresh bounds after scroll
+            const rect = contentDiv.getBoundingClientRect();
+            
+            // 4. Request screen capture
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+              video: { 
+                displaySurface: 'browser',
+                width: { ideal: 4096 },
+                height: { ideal: 4096 },
+              },
+              preferCurrentTab: true,
+            } as any);
+            
+            const [track] = stream.getVideoTracks();
+            const settings = track.getSettings();
+            
+            // 5. Create video element to capture frame
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.muted = true;
+            await video.play();
+            
+            // Wait for video to be fully ready
+            await new Promise(r => setTimeout(r, 200));
+            
+            // 6. Calculate crop coordinates
+            const captureScale = (settings.width || video.videoWidth) / window.innerWidth;
+            
+            const cropX = rect.left * captureScale;
+            const cropY = rect.top * captureScale;
+            const cropW = rect.width * captureScale;
+            const cropH = rect.height * captureScale;
+            
+            // 7. Draw cropped region to canvas
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = rect.width * dpr;
+            exportCanvas.height = rect.height * dpr;
+            const ctx = exportCanvas.getContext('2d')!;
+            
+            ctx.drawImage(
+              video,
+              cropX, cropY, cropW, cropH,
+              0, 0, exportCanvas.width, exportCanvas.height
+            );
+            
+            // 8. Stop capture
+            stream.getTracks().forEach(t => t.stop());
+            
+            dataUrl = exportCanvas.toDataURL('image/png');
+            
+          } catch (captureErr) {
+            // Fallback to html2canvas if user denies or API unavailable
+            console.log('Screen Capture failed, falling back to html2canvas:', captureErr);
+            const { default: html2canvas } = await import('html2canvas');
+            
+            const exportCanvas = await html2canvas(contentDiv, {
+              scale: dpr,
+              backgroundColor: '#ffffff',
+              useCORS: true,
+              allowTaint: true,
+              logging: false,
+            });
+            
+            dataUrl = exportCanvas.toDataURL('image/png');
+          }
+        }
+        
+        // Trigger download
+        const link = document.createElement('a');
+        link.download = `${filename}.png`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Success feedback
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+        setTimeout(() => {
+          btn.innerHTML = oldHTML;
+          (btn as HTMLButtonElement).disabled = false;
+        }, 1500);
+        
+      } catch (err) {
+        console.error('Download failed:', err);
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        setTimeout(() => {
+          btn.innerHTML = oldHTML;
+          (btn as HTMLButtonElement).disabled = false;
+        }, 2000);
+      }
+    });
+  })();
+</script>
+
+<script>
+  // Re-execute <script> tags inside the injected fragment (innerHTML doesn't run scripts)
+  // Uses IntersectionObserver for lazy loading - only executes when embed is visible
+  (() => {
+    const scriptEl = document.currentScript;
+    const figure = scriptEl?.previousElementSibling?.closest(".html-embed");
+    const mount = scriptEl ? scriptEl.previousElementSibling : null;
+
+    if (!mount || !figure) return;
+
+    let executed = false;
+    const execute = () => {
+      if (executed || !mount) return;
+      executed = true;
+
+      const scripts = mount.querySelectorAll("script");
+      scripts.forEach((old) => {
+        // ignore non-executable types (e.g., application/json)
+        if (
+          old.type &&
+          old.type !== "text/javascript" &&
+          old.type !== "module" &&
+          old.type !== ""
+        )
+          return;
+        if (old.dataset.executed === "true") return;
+        old.dataset.executed = "true";
+        if (old.src) {
+          const s = document.createElement("script");
+          Array.from(old.attributes).forEach((attr) =>
+            s.setAttribute(attr.name, attr.value),
+          );
+          document.body.appendChild(s);
+        } else {
+          try {
+            // run inline
+            (0, eval)(old.text || "");
+          } catch (e) {
+            console.error("HtmlEmbed inline script error:", e);
+          }
+        }
+      });
+
+      // Mark as loaded
+      figure.classList.add("html-embed--loaded");
+    };
+
+    // Check if IntersectionObserver is supported
+    if ("IntersectionObserver" in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && !executed) {
+              observer.disconnect();
+              // Small delay to ensure DOM is ready
+              if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", execute, {
+                  once: true,
+                });
+              } else {
+                // Use requestAnimationFrame to ensure execution after DOM is fully ready
+                requestAnimationFrame(() => {
+                  setTimeout(execute, 0);
+                });
+              }
+            }
+          });
+        },
+        {
+          // Start loading when element is 100px away from viewport
+          rootMargin: "100px",
+          threshold: 0.01,
+        },
+      );
+
+      observer.observe(figure);
+
+      // Fallback: if still not loaded after 3 seconds, load anyway (for edge cases)
+      setTimeout(() => {
+        if (!executed) {
+          observer.disconnect();
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", execute, {
+              once: true,
+            });
+          } else {
+            requestAnimationFrame(() => {
+              setTimeout(execute, 0);
+            });
+          }
+        }
+      }, 3000);
+    } else {
+      // Fallback for browsers without IntersectionObserver support
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", execute, { once: true });
+      } else {
+        requestAnimationFrame(() => {
+          setTimeout(execute, 0);
+        });
+      }
+    }
+  })();
+</script>
+
+<style is:global>
+  .html-embed {
+    margin: 0 0 var(--block-spacing-y);
+    z-index: var(--z-elevated);
+    position: relative;
+  }
+
+  /* Download button */
+  .html-embed__download {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--surface-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 10;
+  }
+
+  .html-embed__download svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .html-embed__card:hover .html-embed__download,
+  .html-embed__download:focus {
+    opacity: 1;
+  }
+
+  .html-embed__download:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+  }
+
+  .html-embed__download:active {
+    transform: scale(0.95);
+  }
+
+  .html-embed__download:disabled {
+    opacity: 0.7;
+    cursor: wait;
+  }
+
+  .html-embed__download .spin {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Hide download button in print */
+  @media print {
+    .html-embed__download {
+      display: none !important;
+    }
+  }
+
+  /* Wide mode - same styling as Wide.astro component */
+  .html-embed--wide {
+    /* Target up to ~1100px while staying within viewport minus page gutters */
+    width: min(1100px, 100vw - var(--content-padding-x) * 4);
+    margin-left: 50%;
+    transform: translateX(-50%);
+    padding: calc(var(--content-padding-x) * 4);
+    border-radius: calc(var(--button-radius) * 4);
+    background-color: var(--page-bg);
+    -webkit-mask: linear-gradient(
+        to right,
+        transparent 0px,
+        black 20px,
+        black calc(100% - 20px),
+        transparent 100%
+      ),
+      linear-gradient(
+        to bottom,
+        transparent 0px,
+        black 20px,
+        black calc(100% - 20px),
+        transparent 100%
+      );
+    -webkit-mask-composite: intersect;
+    mask: linear-gradient(
+        to right,
+        transparent 0px,
+        black 20px,
+        black calc(100% - 20px),
+        transparent 100%
+      ),
+      linear-gradient(
+        to bottom,
+        transparent 0px,
+        black 20px,
+        black calc(100% - 20px),
+        transparent 100%
+      );
+    mask-composite: intersect;
+  }
+
+  .html-embed--wide > * {
+    margin-bottom: 0 !important;
+  }
+
+  /* Responsive adjustments for wide mode */
+  @media (max-width: 1100px) {
+    .html-embed--wide {
+      width: 100%;
+      margin-left: 0;
+      margin-right: 0;
+      padding: 0;
+      transform: none;
+    }
+  }
+
+  .html-embed__title {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    padding-bottom: var(--spacing-1);
+    position: relative;
+    display: block;
+    width: 100%;
+    background: var(--page-bg);
+    z-index: var(--z-elevated);
+  }
+  .html-embed__card {
+    background-color: var(--surface-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 24px;
+    z-index: calc(var(--z-elevated) + 1);
+    position: relative;
+  }
+  .html-embed__card.is-frameless {
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+  .html-embed__desc {
+    text-align: left;
+    font-size: 0.9rem;
+    color: var(--muted-color);
+    margin: 0;
+    padding: 0;
+    padding-top: var(--spacing-1);
+    position: relative;
+    z-index: var(--z-elevated);
+    display: block;
+    width: 100%;
+    background: var(--page-bg);
+  }
+  /* Error state for missing embeds */
+  .html-embed__card--error {
+    background: color-mix(in srgb, var(--danger-color) 8%, var(--surface-bg));
+    border: 2px solid var(--danger-color);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .html-embed__error {
+    text-align: center;
+    color: var(--danger-color);
+  }
+  .html-embed__error strong {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .html-embed__error p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .html-embed__error code {
+    background: color-mix(in srgb, var(--danger-color) 10%, transparent);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    word-break: break-all;
+  }
+  /* Plotly – fragments & controls */
+  .html-embed__card svg text {
+    fill: var(--text-color);
+  }
+  .html-embed__card label {
+    color: var(--text-color);
+  }
+  .plotly-graph-div {
+    width: 100%;
+    min-height: 320px;
+  }
+  @media (max-width: 768px) {
+    .plotly-graph-div {
+      min-height: 260px;
+    }
+  }
+  [id^="plot-"] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+  .plotly_caption {
+    font-style: italic;
+    margin-top: 10px;
+  }
+  .plotly_controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+  }
+  .plotly_input_container {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .plotly_input_container > select {
+    padding: 2px 4px;
+    line-height: 1.5em;
+    text-align: center;
+    border-radius: 4px;
+    font-size: 12px;
+    background-color: var(--neutral-200);
+    outline: none;
+    border: 1px solid var(--neutral-300);
+  }
+  .plotly_slider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .plotly_slider > input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 2px;
+    background: var(--neutral-400);
+    border-radius: 5px;
+    outline: none;
+  }
+  .plotly_slider > input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+  }
+  .plotly_slider > input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+  }
+  .plotly_slider > span {
+    font-size: 14px;
+    line-height: 1.6em;
+    min-width: 16px;
+  }
+  /* Dark mode overrides for Plotly readability */
+  [data-theme="dark"] .html-embed__card .xaxislayer-above text,
+  [data-theme="dark"] .html-embed__card .yaxislayer-above text,
+  [data-theme="dark"] .html-embed__card .infolayer text,
+  [data-theme="dark"] .html-embed__card .legend text,
+  [data-theme="dark"] .html-embed__card .annotation text,
+  [data-theme="dark"] .html-embed__card .colorbar text,
+  [data-theme="dark"] .html-embed__card .hoverlayer text {
+    fill: #fff !important;
+  }
+  [data-theme="dark"] .html-embed__card .xaxislayer-above path,
+  [data-theme="dark"] .html-embed__card .yaxislayer-above path,
+  [data-theme="dark"] .html-embed__card .xlines-above,
+  [data-theme="dark"] .html-embed__card .ylines-above {
+    stroke: rgba(255, 255, 255, 0.35) !important;
+  }
+  [data-theme="dark"] .html-embed__card .gridlayer path {
+    stroke: rgba(255, 255, 255, 0.15) !important;
+  }
+  [data-theme="dark"] .html-embed__card .legend rect.bg {
+    fill: rgba(0, 0, 0, 0.25) !important;
+    stroke: rgba(255, 255, 255, 0.2) !important;
+  }
+  [data-theme="dark"] .html-embed__card .hoverlayer .bg {
+    fill: rgba(0, 0, 0, 0.8) !important;
+    stroke: rgba(255, 255, 255, 0.2) !important;
+  }
+  [data-theme="dark"] .html-embed__card .colorbar .cbbg {
+    fill: rgba(0, 0, 0, 0.25) !important;
+    stroke: rgba(255, 255, 255, 0.2) !important;
+  }
+  @media print {
+    .html-embed,
+    .html-embed__card {
+      max-width: 100% !important;
+      width: 100% !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+    }
+    .html-embed__card {
+      padding: 6px;
+    }
+    .html-embed__card.is-frameless {
+      padding: 0;
+    }
+    .html-embed__card svg,
+    .html-embed__card canvas,
+    .html-embed__card img {
+      max-width: 100% !important;
+      height: auto !important;
+    }
+    .html-embed__card > div[id^="frag-"] {
+      width: 100% !important;
+    }
+  }
+  @media print {
+    /* Avoid breaks inside embeds */
+    .html-embed,
+    .html-embed__card {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    /* Constrain width and scale inner content */
+    .html-embed,
+    .html-embed__card {
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+    .html-embed__card {
+      padding: 6px;
+    }
+    .html-embed__card.is-frameless {
+      padding: 0;
+    }
+    .html-embed__card svg,
+    .html-embed__card canvas,
+    .html-embed__card img,
+    .html-embed__card video,
+    .html-embed__card iframe {
+      max-width: 100% !important;
+      height: auto !important;
+    }
+    .html-embed__card > div[id^="frag-"] {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    /* Center and constrain all banners when printing */
+    .html-embed .d3-galaxy,
+    .html-embed .threejs-galaxy,
+    .html-embed .d3-latent-space,
+    .html-embed .neural-flow,
+    .html-embed .molecular-space,
+    .html-embed [class*="banner"] {
+      width: 100% !important;
+      max-width: 980px !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+    }
+    /* Better rendering for d3-loss-curves when printing */
+    .html-embed .d3-loss-curves {
+      width: 100% !important;
+      height: auto !important;
+      min-height: 300px !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      overflow: visible !important;
+    }
+    .html-embed .d3-loss-curves svg {
+      width: 100% !important;
+      height: auto !important;
+      max-height: 500px !important;
+    }
+    /* Ensure legend is visible in print */
+    .html-embed .d3-loss-curves .legend {
+      position: relative !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 4px !important;
+      margin-top: 10px !important;
+      bottom: auto !important;
+      left: auto !important;
+      max-width: 100% !important;
+    }
+    /* Hide annotation in print */
+    .html-embed .d3-loss-curves .annotation {
+      display: none !important;
+    }
+  }
+</style>

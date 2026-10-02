@@ -139,3 +139,14 @@ Full findings, including the six measurement bugs, are in [`LEARNINGS.md`](./LEA
 Both trained adapters are on the Hub, and everything is gathered in the [GeoGuesser Env collection](https://huggingface.co/collections/HuggingEnvs/geoguesser-env-6a969f8db267fe0e85fa1ab6).
 
 A reproduction that disagrees with the tables above is a bug report we want.
+
+## Citation
+
+```bibtex
+@misc{fineenvs,
+  author = {Kolavi, Adithya S},
+  title  = {FineEnvs: Open Source RL Environments for LLM Agents},
+  year   = {2026},
+  url    = {https://github.com/adithya-s-k/FineEnvs}
+}
+```

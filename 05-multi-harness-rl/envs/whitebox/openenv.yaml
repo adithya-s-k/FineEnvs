@@ -1,0 +1,6 @@
+spec_version: 1
+name: smoldataenv_whitebox
+type: space
+runtime: fastapi
+app: smoldataenv_whitebox.server:app
+port: 7860

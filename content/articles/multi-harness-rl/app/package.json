@@ -1,0 +1,90 @@
+{
+  "name": "research-article-template",
+  "version": "1.0.0",
+  "description": "A modern, interactive template for scientific writing that brings papers to life with web-native features",
+  "keywords": [
+    "research",
+    "scientific-writing",
+    "template",
+    "markdown",
+    "mdx",
+    "astro",
+    "interactive",
+    "academic",
+    "distill",
+    "web-native"
+  ],
+  "homepage": "https://huggingface.co/spaces/tfrere/research-article-template",
+  "repository": {
+    "type": "git",
+    "url": "https://huggingface.co/spaces/tfrere/research-article-template"
+  },
+  "bugs": {
+    "url": "https://huggingface.co/spaces/tfrere/research-article-template/discussions"
+  },
+  "author": {
+    "name": "Thibaud Frere",
+    "url": "https://huggingface.co/tfrere"
+  },
+  "license": "CC-BY-4.0",
+  "private": false,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview --port 8080 --host",
+    "export:pdf": "node ./scripts/export-pdf.mjs",
+    "export:pdf:book": "node ./scripts/export-pdf-book.mjs",
+    "export:pdf:book:simple": "node ./scripts/export-pdf-book-simple.mjs",
+    "export:images": "node ./scripts/screenshot-elements.mjs",
+    "export:latex": "node ./scripts/export-latex.mjs",
+    "sync:template": "node ./scripts/sync-template.mjs",
+    "sync:template:dry": "node ./scripts/sync-template.mjs --dry-run",
+    "sync:template:force": "node ./scripts/sync-template.mjs --force",
+    "latex:convert": "cd scripts/latex-importer && node index.mjs",
+    "notion:import": "cd scripts/notion-importer && node index.mjs",
+    "release:patch": "node ../scripts/release.mjs patch",
+    "release:minor": "node ../scripts/release.mjs minor",
+    "release:major": "node ../scripts/release.mjs major"
+  },
+  "devDependencies": {
+    "@astrojs/mdx": "^3.1.9",
+    "@astrojs/svelte": "^5.5.0",
+    "astro": "^4.10.0",
+    "astro-compressor": "^0.4.1",
+    "astro-mermaid": "^1.0.4",
+    "mermaid": "^11.10.1",
+    "pagedjs": "^0.4.3",
+    "playwright": "^1.55.0",
+    "postcss": "^8.5.6",
+    "postcss-custom-media": "^11.0.6",
+    "postcss-preset-env": "^10.3.1",
+    "rehype-autolink-headings": "^7.1.0",
+    "rehype-citation": "^2.3.1",
+    "rehype-katex": "^7.0.1",
+    "rehype-slug": "^6.0.0",
+    "remark-directive": "^3.0.0",
+    "remark-footnotes": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "svelte": "^4.2.19"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.0",
+    "@zumer/snapdom": "^2.0.1",
+    "buffer": "^6.0.3",
+    "d3": "^7.9.0",
+    "docx": "^9.5.1",
+    "fonteditor-core": "^2.6.3",
+    "html2canvas": "^1.4.1",
+    "jszip": "^3.10.1",
+    "katex": "^0.16.22",
+    "looks-same": "^10.0.1",
+    "opentype.js": "^1.3.4",
+    "prism-themes": "^1.9.0",
+    "sharp": "^0.33.5",
+    "stream-browserify": "^3.0.0"
+  }
+}

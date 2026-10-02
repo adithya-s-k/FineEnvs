@@ -1,0 +1,9 @@
+# OpenEnv main is installed by install.sh. No trainer or GPU packages are needed.
+harbor[daytona]>=0.22.0
+daytona>=0.203.0
+fastmcp>=2
+uvicorn[standard]
+gradio
+huggingface-hub
+math-verify
+tomli-w

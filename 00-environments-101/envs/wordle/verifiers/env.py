@@ -30,8 +30,15 @@ class WordleToolkit:
         self.step_count = 0
         self.error_count = 0
 
-    def reset(self):
-        """Reset for new episode."""
+    def reset(self, answer: str = "", **kwargs):
+        """Reset for a new episode, optionally pinning the hidden word.
+
+        TRL calls reset(**row) with the dataset row, so an `answer` column fixes the word for that
+        episode; with no answer the game picks one at random. This replaces a public set_answer():
+        TRL exposes every public method except reset as a tool, so the model could have set the
+        word itself and then guessed it.
+        """
+        self._answer = answer
         self._game = None
         self.last_output = ""
         self.step_count = 0
@@ -81,8 +88,3 @@ class WordleToolkit:
         if self._game:
             return self._game.reward
         return 0.0
-
-    def set_answer(self, answer: str):
-        """Set the target word before the game starts."""
-        self._answer = answer
-        self._game = WordleGame(answer=answer)

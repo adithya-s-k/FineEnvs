@@ -1,0 +1,23 @@
+name: smoldataenvs
+title: "SmolDataEnvs"
+tagline: "Data-analysis tasks, verified SFT traces and a single-turn GRPO tutorial on HF Jobs."
+order: 4
+status: wip
+hub:
+  org: FineEnvs
+  collection: FineEnvs/smoldataenvs
+  datasets:
+    - FineEnvs/SmolDataEnvs
+    - FineEnvs/SmolDataEnvs-sft
+    - FineEnvs/SmolDataEnvs-harbor-train
+    - FineEnvs/SmolDataEnvs-harbor-test
+    - FineEnvs/SmolDataEnvs-harbor-eval
+  trackio:
+    - AdithyaSK/smoldataenvs-trackio
+envs:
+  - name: python-sandbox
+    summary: "Run one generated Python program against task data and grade its answer."
+    backend: hf-jobs
+    frameworks:
+      trl:
+        verified: false
