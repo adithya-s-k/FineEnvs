@@ -83,13 +83,25 @@ def create_server():
         ):
             if key in catalog.manifest:
                 result[key] = catalog.manifest[key]
-        from ..data.indic_ocr_bench import FAMILY as BENCH_FAMILY
+        from ..data import indic_ocr_bench as bench
         from .bench_rewards import POLICY as BENCH_POLICY
 
         result["grading"] = {
             "descriptive_vqa": judge_info(),
             "layout_detection": POLICY,
-            BENCH_FAMILY: BENCH_POLICY,
+        }
+        result["benchmarks"] = {
+            "indic_ocr_bench": {
+                "source": f"https://huggingface.co/datasets/{bench.REPO}",
+                "revision": bench.REVISION,
+                "license": bench.LICENSE,
+                "credit": "Sarvam AI, Sarvam Indic OCR Bench",
+                "citation": bench.CITATION,
+                "splits": sorted(bench.SPLITS),
+                "family": bench.FAMILY,
+                "reward": "section_ocr (identical to corpus section OCR)",
+                "reported_metrics": BENCH_POLICY,
+            }
         }
         # What this deployment actually serves, so a client can discover the frozen sets
         # instead of being told which files to go and read.

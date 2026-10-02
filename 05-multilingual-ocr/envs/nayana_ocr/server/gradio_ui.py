@@ -4,6 +4,7 @@ import random
 
 import gradio as gr
 
+from ..data import indic_ocr_bench as bench
 from ..data.catalog import SPLITS
 from ..models import NayanaAction
 from .environment import NayanaEnvironment
@@ -40,7 +41,13 @@ LANGUAGE_NAMES = {
     "te": "Telugu",
     "th": "Thai",
     "zh": "Chinese",
+    # Languages only Sarvam Indic OCR Bench covers.
+    **{k: v for k, v in bench.LANGUAGE_NAMES.items()},
 }
+BENCH_CREDIT = (
+    "[Sarvam Indic OCR Bench](https://huggingface.co/datasets/sarvamai/indic-ocr-bench) "
+    "by Sarvam AI · Apache-2.0 · evaluation only"
+)
 
 
 class Playground:
@@ -68,7 +75,10 @@ class Playground:
         task = self.catalog.materialize(task)
         preview = self.catalog.image(task)
         progress = f"**Task {index + 1:,} of {count:,}** · `{task['page_id']}`"
-        if family == "section_ocr":
+        if bench.is_bench_task(task["task_id"]):
+            # Credit travels with every benchmark crop, not only in the footer.
+            progress += f"\n\n{BENCH_CREDIT}"
+        elif family == "section_ocr":
             progress += f" · region {task['unit']}"
         if language == "ar":
             progress += (
@@ -168,7 +178,15 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
     catalog = web_manager.env.catalog
     playground = Playground(catalog)
     languages = catalog.manifest["config"]["languages"]
-    splits = [split for split in SPLITS if catalog.count(split)]
+    # Benchmark splits sit after the corpus splits; their eleven extra languages after
+    # the corpus's, so the default view is the corpus as before.
+    languages = list(languages) + [
+        lang for lang in bench.LANGUAGE_NAMES if lang not in languages
+    ]
+    served = catalog.splits() if hasattr(catalog, "splits") else list(SPLITS)
+    splits = [split for split in SPLITS if catalog.count(split)] + [
+        split for split in served if split in bench.SPLITS
+    ]
     page_count = sum(catalog.manifest["pages"].values())
     task_count = sum(item["tasks"] for item in catalog.manifest["counts"])
 
@@ -301,10 +319,14 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
                 "VQA uses the original page. Full-page references join the corpus's text regions using geometric column and reading order, "
                 "with right-to-left columns for Arabic. This is annotation-based OCR, not table-format reconstruction. "
                 "Pages with incomplete or overlapping text-region annotations are excluded from full-page OCR. "
-                "The reference is revealed only after you score your answer in this playground."
+                "The reference is revealed only after you score your answer in this playground.\n\n"
+                "The `indic_ocr_bench_test` and `indic_ocr_bench_small` splits are Sarvam Indic OCR Bench: "
+                "human-reviewed text blocks in 23 languages, scored as Section OCR with exactly the same reward. "
+                "The benchmark's own CER and WER, computed by its official scorer, are reported alongside. "
+                "Choose Section OCR to browse them."
             )
         gr.Markdown(
             "[Nayana corpus · CognitiveLab](https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025) "
-            "· CC BY-NC 4.0 · [Source and reproduction](https://github.com/adithya-s-k/HuggingEnvs/tree/codex/multilingual-ocr/05-multilingual-ocr)"
+            "· CC BY-NC 4.0 · " + BENCH_CREDIT + " · [Source and reproduction](https://github.com/adithya-s-k/FineEnvs/tree/codex/multilingual-ocr/05-multilingual-ocr)"
         )
     return demo

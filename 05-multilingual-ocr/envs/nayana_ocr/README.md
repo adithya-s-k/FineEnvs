@@ -23,7 +23,7 @@ section OCR, layout detection, multiple-choice and descriptive document VQA**. O
 indexed navigation, a full-size image viewer, and reward/CER feedback. References are revealed
 after scoring in the playground. OpenEnv task discovery and observations exclude references.
 
-The source lives in [HuggingEnvs/NayanaOCR_Corpus_2025_bucket](https://huggingface.co/buckets/HuggingEnvs/NayanaOCR_Corpus_2025_bucket),
+The source lives in [FineEnvs/NayanaOCR_Corpus_2025_bucket](https://huggingface.co/buckets/FineEnvs/NayanaOCR_Corpus_2025_bucket),
 attached read-only at `/corpus`. The Docker image bundles code and a small provenance manifest.
 Per-language indexes and source image groups are fetched lazily into bounded local caches.
 `/manifest` identifies the served corpus; `/docs` describes the API; `/data/cache` reports cache
@@ -53,17 +53,17 @@ Visual inspection found missing/distorted glyphs in an original Arabic source pa
 The corpus index is not an image-quality audit or evidence of model performance.
 
 **Evaluation benchmark: [Sarvam Indic OCR Bench](https://huggingface.co/datasets/sarvamai/indic-ocr-bench)**
-by Sarvam AI (Apache-2.0) - 6,909 text-block crops in 23 languages, all 22 languages of the
-Eighth Schedule plus English, with ground truth reviewed twice by human language experts. It is
-served as two evaluation-only splits, `indic_ocr_bench_test` (6,909) and `indic_ocr_bench_small`
-(1,173, ~51 per language), pinned to revision `84ce7ce`. Its family, `indic_ocr_bench`, is never
-offered to training samplers. Tasks use the section-OCR prompt and the same action and
-observation as every other task, so nothing about the interface changes. Scores come from the
-benchmark's own `metrics.py` with its content normalization, vendored unmodified: reward is
-1 - CER, and CER/WER are reported as the benchmark defines them. An empty answer scores 0 here
-(the official report instead drops it from its means; a `missing_prediction` flag lets a report
-do the same). Crops download on first use of a split. Set `NAYANA_INDIC_OCR_BENCH=false` to
-serve the corpus alone. Please cite:
+by **Sarvam AI** (Apache-2.0) - 6,909 text-block crops in 23 languages (all 22 languages of the
+Eighth Schedule plus English), ground truth reviewed twice by human language experts. Eleven
+of those languages are not in the Nayana corpus. It is served as evaluation splits
+`indic_ocr_bench_test` (6,909) and `indic_ocr_bench_small` (1,173, ~51 per language) at revision
+`84ce7ce`, from a serving copy in [FineEnvs/indic-ocr-bench-bucket](https://huggingface.co/buckets/FineEnvs/indic-ocr-bench-bucket)
+mounted read-only at `/indic-ocr-bench`. Each crop is an ordinary **Section OCR** task - same
+prompt, same answer, same reward and same observation as a corpus region - so results are
+directly comparable. The benchmark's own CER and WER, from its official `metrics.py` (vendored
+unmodified), are reported alongside as `official_cer` / `official_wer`; they are never rewarded.
+These splits are never offered to training samplers. All credit for the benchmark belongs to
+Sarvam AI; please cite:
 
 ```bibtex
 @misc{sarvam-indic-ocr-bench,
@@ -78,4 +78,4 @@ Source: [CognitiveLab's NayanaOCR_Corpus_2025](https://huggingface.co/datasets/C
 **CC BY-NC 4.0**. Copied annotations, page images, and OCR crops retain this license and
 attribution. Environment source is Apache-2.0; see `LICENSE` and `NOTICE`.
 
-[Source, reproduction guide, notebook, training scripts and checks](https://github.com/adithya-s-k/HuggingEnvs/tree/codex/multilingual-ocr/05-multilingual-ocr).
+[Source, reproduction guide, notebook, training scripts and checks](https://github.com/adithya-s-k/FineEnvs/tree/codex/multilingual-ocr/05-multilingual-ocr).

@@ -433,8 +433,8 @@ def summarize(samples, groups, failures, elapsed):
             "reward": sum(v["reward"] for v in values) / len(values),
         }
         for metric in (
-            "exact_match", "cer", "wer", "char_error_rate", "word_error_rate", "iou",
-            "accuracy",
+            "exact_match", "cer", "wer", "char_error_rate", "official_cer",
+            "official_wer", "iou", "accuracy",
         ):
             observed = [v[metric] for v in values if metric in v]
             if observed:
@@ -483,10 +483,11 @@ def bench_report(samples):
     the valid_* figures also drop runaway or catastrophic outputs. Returns None when
     the run held no benchmark tasks.
     """
-    from nayana_ocr.data.indic_ocr_bench import FAMILY
+    from nayana_ocr.data.indic_ocr_bench import is_bench_task
     from nayana_ocr.server.bench_rewards import POLICY
 
-    rows = [s for s in samples if s.get("family") == FAMILY]
+    # Benchmark crops are ordinary section-OCR tasks; their source is in the task ID.
+    rows = [s for s in samples if is_bench_task(s.get("task_id"))]
     if not rows:
         return None
     scored = [s for s in rows if not s.get("missing_prediction")]
@@ -498,8 +499,8 @@ def bench_report(samples):
     by_language = defaultdict(list)
     for s in scored:
         by_language[s["language"]].append(s)
-    cer, wer = avg(scored, "char_error_rate"), avg(scored, "word_error_rate")
-    vcer, vwer = avg(valid, "char_error_rate"), avg(valid, "word_error_rate")
+    cer, wer = avg(scored, "official_cer"), avg(scored, "official_wer")
+    vcer, vwer = avg(valid, "official_cer"), avg(valid, "official_wer")
     return {
         "scorer": POLICY,
         "avg_metrics": {"cer": cer, "wer": wer},
@@ -514,8 +515,8 @@ def bench_report(samples):
         "loop_failure_count": sum(1 for s in scored if s.get("loop_or_catastrophic")),
         "lang_wise_scores": {
             lang: {
-                "cer": avg(v, "char_error_rate"),
-                "wer": avg(v, "word_error_rate"),
+                "cer": avg(v, "official_cer"),
+                "wer": avg(v, "official_wer"),
                 "sample_count": len(v),
             }
             for lang, v in sorted(by_language.items())

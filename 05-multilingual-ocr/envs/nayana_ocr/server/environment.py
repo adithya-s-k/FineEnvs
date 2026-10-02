@@ -7,7 +7,7 @@ from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
 from ..data.catalog import SPLITS, Catalog
-from ..data.indic_ocr_bench import FAMILY as BENCH_FAMILY
+from ..data.indic_ocr_bench import is_bench_task
 from ..models import NayanaAction, NayanaObservation
 from .rewards import score
 
@@ -21,10 +21,15 @@ def with_benchmarks(catalog):
     if os.environ.get("NAYANA_INDIC_OCR_BENCH", "true").lower() == "false":
         return catalog
     from ..data.composite import CompositeCatalog
-    from ..data.indic_ocr_bench import BenchCatalog
+    from ..data.indic_ocr_bench import BUCKET, BenchCatalog
 
-    cache = os.environ.get("NAYANA_CACHE_DIR", "/tmp/nayana-cache")
-    return CompositeCatalog(catalog, [BenchCatalog(cache)])
+    bench = BenchCatalog(
+        os.environ.get("NAYANA_CACHE_DIR", "/tmp/nayana-cache"),
+        # A deployment mounts the published bucket here and reads it in place.
+        root=os.environ.get("NAYANA_INDIC_OCR_BENCH_ROOT") or None,
+        bucket=os.environ.get("NAYANA_INDIC_OCR_BENCH_BUCKET", BUCKET),
+    )
+    return CompositeCatalog(catalog, [bench])
 
 
 @lru_cache(maxsize=4)
@@ -156,14 +161,17 @@ class NayanaEnvironment(Environment):
                 self._task["height"],
             )
             policy_id = POLICY
-        elif family == BENCH_FAMILY:
-            from .bench_rewards import POLICY as BENCH_POLICY
-            from .bench_rewards import score_bench
-
-            reward, metrics = score_bench(action.answer, self._task["reference"])
-            policy_id = BENCH_POLICY
         else:
             reward, metrics = score(family, action.answer, self._task["reference"])
+            if is_bench_task(self._task["task_id"]):
+                # Same reward as every section-OCR task; the benchmark's own CER/WER
+                # ride along so a run can also be read against published numbers.
+                from .bench_rewards import official_metrics
+
+                metrics = {
+                    **metrics,
+                    **official_metrics(action.answer, self._task["reference"]),
+                }
         self._state.step_count = 1
         return self._observation(
             done=True, reward=reward, metrics=metrics, grading_policy_id=policy_id

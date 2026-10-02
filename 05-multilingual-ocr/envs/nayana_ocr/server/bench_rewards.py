@@ -1,26 +1,26 @@
-"""Reward for Sarvam Indic OCR Bench tasks, scored by the benchmark's own scorer.
+"""Sarvam Indic OCR Bench's own scores, reported beside the standard OCR reward.
 
-A benchmark number is only comparable with published ones when it is computed the way
-the benchmark defines it, so CER and WER come from the vendored metrics.py with its
-content normalization (--normalize), unchanged. The reward is 1 - CER.
+Benchmark crops are graded exactly like every other section-OCR task: the reward is the
+corpus OCR reward, so numbers are comparable across sources and a policy is never
+trained or judged on two definitions of "correct". What the benchmark adds is its own
+CER and WER, computed by its vendored metrics.py with content normalization, so results
+can also be read against published ones. These are reported, never rewarded.
 
-One deliberate departure: the official report drops empty predictions from its means.
-That is reasonable for a leaderboard and wrong for a reward - it would make answering
-nothing free - so an empty answer scores 0 here and carries missing_prediction, which
-lets a summary exclude it again and reproduce the official numbers exactly.
+The official report drops empty predictions from its means and keeps runaway outputs
+out of its valid-sample figures; the two flags here let a summary do the same.
 """
 
-from ..data.indic_ocr_bench import REVISION
+from ..data.indic_ocr_bench import VERSION
 from . import indic_ocr_bench_metrics as official
 
-POLICY = f"sarvam-indic-ocr-bench-metrics@{REVISION[:12]}"
+POLICY = f"sarvam-indic-ocr-bench-metrics@{VERSION}"
 
 
-def score_bench(prediction, reference):
+def official_metrics(prediction, reference):
     if official.is_missing_prediction(prediction):
-        return 0.0, {
-            "char_error_rate": 1.0,
-            "word_error_rate": 1.0,
+        return {
+            "official_cer": 1.0,
+            "official_wer": 1.0,
             "missing_prediction": True,
             "loop_or_catastrophic": False,
         }
@@ -29,9 +29,9 @@ def score_bench(prediction, reference):
     )
     rates = official.calculate_ocr_metrics(gt, pred)
     looped, _ = official.is_loop_or_catastrophic(reference, prediction)
-    return 1.0 - rates["cer"], {
-        "char_error_rate": rates["cer"],
-        "word_error_rate": rates["wer"],
+    return {
+        "official_cer": rates["cer"],
+        "official_wer": rates["wer"],
         "missing_prediction": False,
         "loop_or_catastrophic": looped,
     }

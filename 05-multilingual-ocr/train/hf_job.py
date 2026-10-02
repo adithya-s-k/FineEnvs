@@ -23,7 +23,9 @@ def main():
     parser.add_argument("--repo", default="adithya-s-k/FineEnvs")
     parser.add_argument(
         "--mode",
-        choices=("env-smoke", "real-smoke", "train", "eval-vllm", "evalset"),
+        choices=(
+            "env-smoke", "real-smoke", "train", "eval-vllm", "evalset", "publish-bench",
+        ),
         default="env-smoke",
     )
     parser.add_argument(
@@ -106,6 +108,16 @@ def main():
         base = ["uv", "run", "--frozen", "--project", str(project)]
         print(f"Source: {args.repo}@{args.revision}; mode={args.mode}", flush=True)
         try:
+            if args.mode == "publish-bench":
+                # Sarvam Indic OCR Bench: build once, verify, sync to its serving bucket.
+                subprocess.run(
+                    base
+                    + ["python", str(root / "train" / "publish_indic_ocr_bench.py"),
+                       "--work", str(directory / "indic-ocr-bench")]
+                    + extra,
+                    check=True,
+                )
+                return
             if args.mode == "env-smoke":
                 subprocess.run(
                     base + ["--extra", "dev", "pytest", str(project / "tests"), "-q"],
