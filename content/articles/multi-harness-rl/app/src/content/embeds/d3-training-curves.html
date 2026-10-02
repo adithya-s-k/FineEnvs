@@ -1,0 +1,65 @@
+<div class="training-curves" style="width:100%;margin:14px 0;"></div>
+
+<style>
+  .training-curves {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 200px;
+    padding: 28px 26px;
+    border: 1px dashed var(--border-color);
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--primary-color) 4%, transparent);
+  }
+  .training-curves .ph-tag {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--primary-color);
+  }
+  .training-curves .ph-title {
+    font-size: 17px;
+    font-weight: 650;
+    color: var(--text-color);
+  }
+  .training-curves .ph-desc {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--muted-color);
+  }
+  .training-curves .ph-file {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    color: var(--muted-color);
+    padding: 3px 7px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background: var(--surface-bg);
+  }
+</style>
+
+<script>
+  (function () {
+    function bootstrap() {
+      var nodes = document.querySelectorAll('.training-curves');
+      for (var i = 0; i < nodes.length; i++) {
+        var root = nodes[i];
+        if (root.getAttribute('data-mounted')) continue;
+        root.setAttribute('data-mounted', '1');
+        root.innerHTML =
+          '<div class="ph-tag">Visualization to build</div>' +
+          '<div class="ph-title">Reward over training</div>' +
+          '<div class="ph-desc">Every run on shared axes with the best checkpoint marked, including the runs that did not work.</div>' +
+          '<div class="ph-file">d3-training-curves.html</div>';
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootstrap);
+    } else {
+      bootstrap();
+    }
+  })();
+</script>

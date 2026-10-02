@@ -1,0 +1,231 @@
+{
+  "about": "LFM2.5-2.6B on the 1,000 test cells (250 tasks x 4 harnesses), pass@1. SFT runs are two epochs of TRL SFT on successful Qwen3.8-27B rollouts (FineEnvs/SmolDataEnvs-multiharness-sft); RL runs are the article's Async GRPO runs at their best evaluated checkpoint (step 900 for OpenCode only, step 700 for multi-harness), picked on this test set. Tool-call savings = 100 x (1 - sum(run calls) / sum(base calls)) over task/harness pairs solved by both the base model and the run; n = matched pairs. The base model has 998 of 1,000 cells graded. Source: SFT/RL handoff packet, 29 September 2026.",
+  "harnesses": [
+    "opencode",
+    "claude-code",
+    "codex",
+    "mini-swe-agent"
+  ],
+  "harness_labels": {
+    "opencode": "OpenCode",
+    "claude-code": "Claude Code",
+    "codex": "Codex",
+    "mini-swe-agent": "Mini-SWE-Agent"
+  },
+  "runs": {
+    "base": {
+      "label": "LFM base model",
+      "method": "base",
+      "data": null,
+      "pass": {
+        "overall": 42.2,
+        "opencode": 33.6,
+        "claude-code": 33.2,
+        "codex": 40.0,
+        "mini-swe-agent": 62.1
+      },
+      "savings": {
+        "overall": 0,
+        "n": 421
+      }
+    },
+    "sft_opencode_e1": {
+      "label": "SFT · OpenCode only, epoch 1",
+      "method": "sft",
+      "data": "opencode",
+      "epoch": 1,
+      "pass": {
+        "overall": 45.1,
+        "opencode": 51.2,
+        "claude-code": 28.8,
+        "codex": 42.4,
+        "mini-swe-agent": 58.0
+      },
+      "savings": {
+        "overall": 14.0,
+        "n": 310,
+        "opencode": [
+          26.2,
+          67
+        ],
+        "claude-code": [
+          -2.0,
+          43
+        ],
+        "codex": [
+          36.9,
+          77
+        ],
+        "mini-swe-agent": [
+          -1.5,
+          123
+        ]
+      }
+    },
+    "sft_opencode_e2": {
+      "label": "SFT · OpenCode only",
+      "method": "sft",
+      "data": "opencode",
+      "epoch": 2,
+      "pass": {
+        "overall": 47.5,
+        "opencode": 51.6,
+        "claude-code": 33.2,
+        "codex": 46.4,
+        "mini-swe-agent": 58.8
+      },
+      "savings": {
+        "overall": 8.5,
+        "n": 309,
+        "opencode": [
+          17.1,
+          61
+        ],
+        "claude-code": [
+          -10.5,
+          46
+        ],
+        "codex": [
+          31.7,
+          80
+        ],
+        "mini-swe-agent": [
+          -4.8,
+          122
+        ]
+      }
+    },
+    "sft_multi_e1": {
+      "label": "SFT · multi-harness, epoch 1",
+      "method": "sft",
+      "data": "multi",
+      "epoch": 1,
+      "pass": {
+        "overall": 38.3,
+        "opencode": 22.4,
+        "claude-code": 40.8,
+        "codex": 42.4,
+        "mini-swe-agent": 47.6
+      },
+      "savings": {
+        "overall": 23.5,
+        "n": 255,
+        "opencode": [
+          22.6,
+          28
+        ],
+        "claude-code": [
+          20.4,
+          57
+        ],
+        "codex": [
+          44.3,
+          69
+        ],
+        "mini-swe-agent": [
+          11.0,
+          101
+        ]
+      }
+    },
+    "sft_multi_e2": {
+      "label": "SFT · multi-harness",
+      "method": "sft",
+      "data": "multi",
+      "epoch": 2,
+      "pass": {
+        "overall": 43.1,
+        "opencode": 38.0,
+        "claude-code": 42.4,
+        "codex": 46.8,
+        "mini-swe-agent": 45.2
+      },
+      "savings": {
+        "overall": 24.2,
+        "n": 276,
+        "opencode": [
+          18.0,
+          46
+        ],
+        "claude-code": [
+          27.1,
+          57
+        ],
+        "codex": [
+          41.8,
+          74
+        ],
+        "mini-swe-agent": [
+          10.8,
+          99
+        ]
+      }
+    },
+    "rl_opencode": {
+      "label": "RL · OpenCode only, best checkpoint (step 900)",
+      "method": "rl",
+      "data": "opencode",
+      "step": 900,
+      "pass": {
+        "overall": 52.4,
+        "opencode": 56.0,
+        "claude-code": 43.6,
+        "codex": 48.4,
+        "mini-swe-agent": 61.6
+      },
+      "savings": {
+        "overall": 13.2,
+        "n": 342,
+        "opencode": [
+          34.9,
+          73
+        ],
+        "claude-code": [
+          7.3,
+          62
+        ],
+        "codex": [
+          18.2,
+          79
+        ],
+        "mini-swe-agent": [
+          3.4,
+          128
+        ]
+      }
+    },
+    "rl_multi": {
+      "label": "RL · multi-harness, best checkpoint (step 700)",
+      "method": "rl",
+      "data": "multi",
+      "step": 700,
+      "pass": {
+        "overall": 54.6,
+        "opencode": 51.2,
+        "claude-code": 48.8,
+        "codex": 53.6,
+        "mini-swe-agent": 64.8
+      },
+      "savings": {
+        "overall": 26.7,
+        "n": 361,
+        "opencode": [
+          31.4,
+          68
+        ],
+        "claude-code": [
+          19.2,
+          71
+        ],
+        "codex": [
+          46.8,
+          88
+        ],
+        "mini-swe-agent": [
+          14.8,
+          134
+        ]
+      }
+    }
+  }
+}

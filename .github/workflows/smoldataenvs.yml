@@ -1,0 +1,22 @@
+name: SmolDataEnvs
+on:
+  pull_request:
+    paths: ['04-smoldataenvs/**', '.github/workflows/smoldataenvs.yml']
+  push:
+    branches: [main]
+    paths: ['04-smoldataenvs/**', '.github/workflows/smoldataenvs.yml']
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test runner
+        run: python -m pip install pytest
+      - name: Script unit tests (no sandbox, GPU, or network)
+        run: python -m pytest 04-smoldataenvs/tests -q

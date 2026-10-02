@@ -1,0 +1,16 @@
+# TRL and OpenEnv are installed from upstream main by jobs/install.sh.
+vllm==0.25.1
+transformers @ git+https://github.com/huggingface/transformers.git@main
+datasets
+accelerate
+bitsandbytes
+kernels
+trackio
+harbor[daytona]>=0.22.0
+daytona>=0.203.0
+math-verify
+tomli-w
+pytest
+# Compatible with Harbor's websocket dependencies and vLLM's Numba.
+websockets>=15,<16
+numpy>=2.2,<2.4

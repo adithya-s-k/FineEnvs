@@ -1,0 +1,21 @@
+name: SmolDataEnvs RL recipe
+on:
+  pull_request:
+    paths: ['05-multi-harness-rl/**', '.github/workflows/multi-harness-rl.yml']
+  push:
+    branches: [main]
+    paths: ['05-multi-harness-rl/**', '.github/workflows/multi-harness-rl.yml']
+permissions:
+  contents: read
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pytest==9.1.1 httpx
+      - name: Check recipe contracts without GPUs or sandbox credentials
+        run: python -m pytest 05-multi-harness-rl/tests -q
