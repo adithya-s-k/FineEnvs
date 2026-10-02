@@ -83,9 +83,13 @@ def create_server():
         ):
             if key in catalog.manifest:
                 result[key] = catalog.manifest[key]
+        from ..data.indic_ocr_bench import FAMILY as BENCH_FAMILY
+        from .bench_rewards import POLICY as BENCH_POLICY
+
         result["grading"] = {
             "descriptive_vqa": judge_info(),
             "layout_detection": POLICY,
+            BENCH_FAMILY: BENCH_POLICY,
         }
         # What this deployment actually serves, so a client can discover the frozen sets
         # instead of being told which files to go and read.

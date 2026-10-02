@@ -210,8 +210,10 @@ def main():
                         str(run),
                     ]
                     if args.mode == "eval-vllm":
-                        if not args.evalset:
-                            parser.error("--mode eval-vllm needs --evalset")
+                        # A served split (--split, e.g. indic_ocr_bench_test) reaches
+                        # the script through `extra` like any other option.
+                        if not args.evalset and "--split" not in extra:
+                            parser.error("--mode eval-vllm needs --evalset or --split")
                         # --evalset already reaches the script through `extra`, which is
                         # resolved to this checkout above; adding it here passed it twice.
                     if not remote:

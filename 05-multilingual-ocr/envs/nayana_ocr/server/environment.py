@@ -7,8 +7,24 @@ from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
 from ..data.catalog import SPLITS, Catalog
+from ..data.indic_ocr_bench import FAMILY as BENCH_FAMILY
 from ..models import NayanaAction, NayanaObservation
 from .rewards import score
+
+
+def with_benchmarks(catalog):
+    """Serve evaluation-only benchmarks beside the corpus, unless switched off.
+
+    Nothing is downloaded until a benchmark split is first used, so a deployment that
+    never evaluates on one pays nothing for it.
+    """
+    if os.environ.get("NAYANA_INDIC_OCR_BENCH", "true").lower() == "false":
+        return catalog
+    from ..data.composite import CompositeCatalog
+    from ..data.indic_ocr_bench import BenchCatalog
+
+    cache = os.environ.get("NAYANA_CACHE_DIR", "/tmp/nayana-cache")
+    return CompositeCatalog(catalog, [BenchCatalog(cache)])
 
 
 @lru_cache(maxsize=4)
@@ -31,7 +47,7 @@ def get_catalog(directory):
             except Exception as error:  # noqa: BLE001 - a bad file must not stop serving
                 print(f"skipping {path.name}: {error}", flush=True)
 
-        return CorpusCatalog(
+        return with_benchmarks(CorpusCatalog(
             directory,
             os.environ.get("NAYANA_CACHE_DIR", "/tmp/nayana-cache"),
             source_root=os.environ.get("NAYANA_SOURCE_ROOT"),
@@ -51,8 +67,8 @@ def get_catalog(directory):
             max_group_bytes=int(os.environ.get("NAYANA_MAX_GROUP_BYTES", "512000000")),
             prefetch_workers=int(os.environ.get("NAYANA_PREFETCH_WORKERS", "2")),
             prefetch_pending=int(os.environ.get("NAYANA_PREFETCH_PENDING", "4")),
-        )
-    return Catalog(directory)
+        ))
+    return with_benchmarks(Catalog(directory))
 
 
 def configured_catalog():
@@ -140,6 +156,12 @@ class NayanaEnvironment(Environment):
                 self._task["height"],
             )
             policy_id = POLICY
+        elif family == BENCH_FAMILY:
+            from .bench_rewards import POLICY as BENCH_POLICY
+            from .bench_rewards import score_bench
+
+            reward, metrics = score_bench(action.answer, self._task["reference"])
+            policy_id = BENCH_POLICY
         else:
             reward, metrics = score(family, action.answer, self._task["reference"])
         self._state.step_count = 1

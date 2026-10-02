@@ -432,7 +432,10 @@ def summarize(samples, groups, failures, elapsed):
             "samples": len(values),
             "reward": sum(v["reward"] for v in values) / len(values),
         }
-        for metric in ("exact_match", "cer", "wer", "iou", "accuracy"):
+        for metric in (
+            "exact_match", "cer", "wer", "char_error_rate", "word_error_rate", "iou",
+            "accuracy",
+        ):
             observed = [v[metric] for v in values if metric in v]
             if observed:
                 entry[metric] = sum(observed) / len(observed)
@@ -468,7 +471,55 @@ def summarize(samples, groups, failures, elapsed):
         "by_language_task": by_group,
         "failures": failures,
         "elapsed_seconds": round(elapsed, 1),
+        **({"indic_ocr_bench": report} if (report := bench_report(samples)) else {}),
         "samples": sorted(samples, key=lambda s: s["task_id"]),
+    }
+
+
+def bench_report(samples):
+    """Sarvam Indic OCR Bench numbers, computed the way its metrics.py reports them.
+
+    Means are over scored samples (empty predictions dropped, as the benchmark does);
+    the valid_* figures also drop runaway or catastrophic outputs. Returns None when
+    the run held no benchmark tasks.
+    """
+    from nayana_ocr.data.indic_ocr_bench import FAMILY
+    from nayana_ocr.server.bench_rewards import POLICY
+
+    rows = [s for s in samples if s.get("family") == FAMILY]
+    if not rows:
+        return None
+    scored = [s for s in rows if not s.get("missing_prediction")]
+    valid = [s for s in scored if not s.get("loop_or_catastrophic")]
+
+    def avg(values, key):
+        return sum(v[key] for v in values) / len(values) if values else None
+
+    by_language = defaultdict(list)
+    for s in scored:
+        by_language[s["language"]].append(s)
+    cer, wer = avg(scored, "char_error_rate"), avg(scored, "word_error_rate")
+    vcer, vwer = avg(valid, "char_error_rate"), avg(valid, "word_error_rate")
+    return {
+        "scorer": POLICY,
+        "avg_metrics": {"cer": cer, "wer": wer},
+        "word_accuracy": None if wer is None else 100.0 * (1.0 - wer),
+        "valid_samples_cer": vcer,
+        "valid_samples_wer": vwer,
+        "valid_word_accuracy": None if vwer is None else 100.0 * (1.0 - vwer),
+        "benchmark_sample_count": len(rows),
+        "scored_sample_count": len(scored),
+        "valid_sample_count": len(valid),
+        "missing_prediction_count": len(rows) - len(scored),
+        "loop_failure_count": sum(1 for s in scored if s.get("loop_or_catastrophic")),
+        "lang_wise_scores": {
+            lang: {
+                "cer": avg(v, "char_error_rate"),
+                "wer": avg(v, "word_error_rate"),
+                "sample_count": len(v),
+            }
+            for lang, v in sorted(by_language.items())
+        },
     }
 
 
@@ -485,7 +536,13 @@ def main():
         "--corpus", default="", help="Corpus manifest JSON, or a snapshot"
     )
     parser.add_argument("--env-url", default="")
-    parser.add_argument("--evalset", type=Path, required=True)
+    parser.add_argument("--evalset", type=Path, default=None)
+    parser.add_argument(
+        "--split",
+        default="",
+        help="Score a split the environment serves, e.g. indic_ocr_bench_test, "
+        "instead of a frozen evalset file",
+    )
     parser.add_argument(
         "--base",
         default="",
@@ -538,6 +595,8 @@ def main():
         "--output-dir", default=os.environ.get("OUTPUT_DIR", "artifacts/eval")
     )
     args = parser.parse_args()
+    if bool(args.evalset) == bool(args.split):
+        parser.error("Score exactly one of --evalset FILE or --split NAME")
     if bool(args.corpus) == bool(args.env_url):
         parser.error("Provide exactly one of --corpus or --env-url")
     if not args.models and not (args.base and args.adapters):
@@ -559,7 +618,28 @@ def main():
         )
         with connect(env_url) as client:
             manifest = client.manifest()
-        frozen = load_evalset(args.evalset, manifest.get("snapshot_id"))
+        if args.split:
+            if args.split not in (manifest.get("splits") or []):
+                raise SystemExit(
+                    f"{args.split!r} is not served here; this deployment serves "
+                    f"{sorted(manifest.get('splits') or [])}"
+                )
+            listed = []
+            with connect(env_url) as client:
+                total = client.num_tasks(args.split)
+                for start in range(0, total, 1000):
+                    listed.extend(
+                        client.get_task_range(args.split, start, min(start + 1000, total))
+                    )
+            described = (manifest.get("eval_splits") or {}).get(args.split) or {}
+            frozen = {
+                "tasks": listed,
+                "evalset_id": described.get("evalset_id") or f"split:{args.split}",
+            }
+            label = args.split
+        else:
+            frozen = load_evalset(args.evalset, manifest.get("snapshot_id"))
+            label = args.evalset.name
         rows = [
             {k: t[k] for k in ("task_id", "language", "family")}
             for t in frozen["tasks"]
@@ -574,7 +654,7 @@ def main():
             raise SystemExit("No tasks left after filtering")
         langs = {r["language"] for r in rows}
         print(
-            f"{args.evalset.name}: {len(rows)} tasks · {len(langs)} languages "
+            f"{label}: {len(rows)} tasks · {len(langs)} languages "
             f"({len(langs & set(INDIC))} Indic, "
             f"{sum(1 for r in rows if r['language'] in INDIC)} tasks) · "
             f"{len({r['family'] for r in rows})} families · "
@@ -593,7 +673,7 @@ def main():
 
         common = {
             "engine": VLLM_SPEC,
-            "evalset": args.evalset.name,
+            "evalset": label,
             "evalset_id": frozen["evalset_id"],
             "snapshot_id": manifest.get("snapshot_id"),
             "grading": manifest.get("grading"),
