@@ -30,8 +30,56 @@ records the set's `evalset_id` and the limit, so a slice is never mistaken for a
 **LoRA targets are resolved from the real module tree**, not named. Gemma 4 wraps
 projections in `Gemma4ClippableLinear`, which PEFT cannot adapt, and a short target name
 matches both a wrapper and a leaf, so injection fails outright. Full module names name one
-leaf each. Unlike the OCR environment nothing is skipped here: the audio tower is the part
-this task must adapt, which is why the target counts are 106 and 122 rather than 82 and 98.
+leaf each. Only the language model is adapted. TRL never backpropagates through the audio
+tower, so adapters there stayed exactly zero.
+
+**The loss hears the clip.** TRL 1.13 builds its loss inputs from images only. The audio
+features a completion was generated from were dropped before the log-prob forward, so
+every run before this one optimised p(transcript | no audio). That is a language prior
+over the training sentences, not listening, which is why training reward rose while
+held-out ASR barely moved. `AudioGRPOTrainer` carries `input_features` and their mask
+through the generation batch into every log-prob forward. On the first batch it checks
+that the clip makes its own transcripts more likely. The first run with it measured
+-0.20 nats/token with the clip against -4.53 without, a gap the old gradient never saw.
+
+**Features are padded, not audio.** A batch of clips needs one feature shape. Padding the
+waveform to 30 s made the extractor mark about 18 s of silence as valid speech, which vLLM
+never sees. The extractor now pads features to the span with the padding masked, and only
+real frames become audio tokens.
+
+**A higher learning rate gets a warmup and a cosine tail.** `--lr-scheduler-type cosine
+--warmup-ratio 0.05` keeps steps small while advantage estimates are noisiest. `--beta`
+adds a KL penalty to the base model; it is 0 by default, as in TRL.
+
+**Every checkpoint is scored while the run trains.** Each save writes `ready.json`, the
+adapter's size and hash. A second job runs `eval_vllm.py --watch` against the run's
+bucket. It holds one vLLM engine, scores the base model once, then scores each checkpoint
+once all its bytes have arrived. Results go under `<run>/evals/`. `curve.json` holds each
+checkpoint's means and its paired change from base with a 95% interval, `plots/` the
+figures from `plot_run.py`, and every point is logged to Trackio beside the training run.
+
+```bash
+# The run: all 2,282 Kannada training clips, character-error reward.
+hf jobs uv run -d --flavor a100-large -s HF_TOKEN --timeout 14h \
+  -v hf://buckets/FineEnvs/fleurs-bucket:/fleurs:ro \
+  -v hf://buckets/<you>/fineenvs-asr-runs:/outputs \
+  train/hf_job.py --revision <commit> --mode train --source-root /fleurs --output-root /outputs \
+  --model google/gemma-4-E4B-it --languages kn_in --families transcription \
+  --train-per-group 2282 --max-steps 575 --num-generations 16 --gradient-accumulation-steps 4 \
+  --max-completion-length 448 --learning-rate 5e-5 --lr-scheduler-type cosine --warmup-ratio 0.05 \
+  --reward-unit cer --eval-split eval_1_validation --eval-limit 48 --save-steps 25 \
+  --trackio-space <you>/fineenvs-asr-trackio --run-name asr-kn-full-v3
+
+# Its watcher: the 838-clip Kannada test set, scored at every checkpoint.
+hf jobs uv run -d --flavor l40sx1 -s HF_TOKEN --timeout 16h \
+  -v hf://buckets/FineEnvs/fleurs-bucket:/fleurs:ro \
+  -v hf://buckets/<you>/fineenvs-asr-runs:/outputs \
+  train/hf_job.py --revision <commit> --mode eval-vllm --source-root /fleurs --output-root /outputs \
+  --base google/gemma-4-E4B-it --watch <you>/fineenvs-asr-runs/<commit> --follow-job <train job id> \
+  --eval-split eval_1_test --max-new-tokens 448 --reward-unit cer \
+  --output-dir /outputs/<commit>/evals \
+  --trackio-space <you>/fineenvs-asr-trackio --run-name asr-kn-full-v3-eval
+```
 
 **A GRPO run needs reward variance.** Identical rewards within a group make the advantage
 zero by construction, the adapter cannot change, and the run proves nothing. The runner
