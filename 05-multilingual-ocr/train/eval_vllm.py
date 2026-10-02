@@ -93,7 +93,8 @@ def vllm_server(model, revision, *, args):
         # Data parallel, not tensor parallel: this is a throughput problem, not a
         # latency one, so a whole engine per card beats splitting one across both.
         command += ["--data-parallel-size", str(args.gpus)]
-    if args.adapters:
+    # A watched run's checkpoints arrive as adapters too, just later.
+    if args.adapters or getattr(args, "watch", ""):
         command += [
             "--enable-lora",
             "--max-loras",
