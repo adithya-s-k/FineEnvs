@@ -14,24 +14,135 @@ def test_env_sessions_cover_every_rollout_an_optimizer_step_holds_open():
     assert module.Config(num_generations=8).rollouts_in_flight == 8
 
 
-def test_padding_gives_every_clip_one_feature_shape():
-    """Batches spanning several tasks need one audio shape, or TRL raises."""
+def test_features_are_padded_with_a_mask_so_padding_is_not_heard():
+    """Waveform padding was heard as ~18s of silence; feature padding is masked out."""
+    import types
+
     import numpy
-    from multilingual_asr.training import SAMPLING_RATE, AssetCache
+    import pytest as pt
 
-    cache = AssetCache("http://localhost", pad_seconds=30.0)
-    short = cache._fit(numpy.ones(4 * SAMPLING_RATE, dtype="float32"))
-    long = cache._fit(numpy.ones(28 * SAMPLING_RATE, dtype="float32"))
-    assert short.shape == long.shape == (30 * SAMPLING_RATE,)
-    # Real samples survive; only the tail is padding.
-    assert short[: 4 * SAMPLING_RATE].all() and not short[4 * SAMPLING_RATE :].any()
+    module = pt.importorskip("transformers.models.gemma4.feature_extraction_gemma4")
+    from multilingual_asr.training import SAMPLING_RATE, pad_audio_features
 
-    over = cache._fit(numpy.ones(35 * SAMPLING_RATE, dtype="float32"))
-    assert over.shape == (30 * SAMPLING_RATE,)
+    extractor = module.Gemma4AudioFeatureExtractor()
+    rng = numpy.random.default_rng(0)
+    short = rng.standard_normal(4 * SAMPLING_RATE).astype("float32") * 0.1
+    long = rng.standard_normal(28 * SAMPLING_RATE).astype("float32") * 0.1
+    bare = extractor([short], sampling_rate=SAMPLING_RATE)
+    pad_audio_features(types.SimpleNamespace(feature_extractor=extractor), 30)
+    pad_audio_features(types.SimpleNamespace(feature_extractor=extractor), 30)  # idempotent
+    padded = [extractor([clip], sampling_rate=SAMPLING_RATE) for clip in (short, long)]
+    shapes = {numpy.asarray(p["input_features"]).shape for p in padded}
+    assert len(shapes) == 1  # one shape, so TRL can stack a batch of different clips
+    frames = numpy.asarray(bare["input_features"]).shape[1]
+    mask = numpy.asarray(padded[0]["input_features_mask"])[0]
+    # Only the real frames are marked valid, and they are the unpadded features exactly.
+    assert mask.sum() == numpy.asarray(bare["input_features_mask"]).sum() and not mask[frames:].any()
+    assert numpy.allclose(
+        numpy.asarray(padded[0]["input_features"])[0][:frames],
+        numpy.asarray(bare["input_features"])[0],
+    )
+    # A saved processor still names the real class, so it reloads anywhere.
+    assert extractor.to_dict()["feature_extractor_type"] == "Gemma4AudioFeatureExtractor"
 
-    unpadded = AssetCache("http://localhost")
-    kept = numpy.ones(4 * SAMPLING_RATE, dtype="float32")
-    assert unpadded._fit(kept).shape == kept.shape
+
+def test_audio_rows_stack_per_prompt_fields_into_tensors():
+    import numpy
+    import pytest as pt
+
+    torch = pt.importorskip("torch")
+    from multilingual_asr.training import audio_rows
+
+    fields = {
+        "input_features": [numpy.zeros((5, 2)), numpy.ones((5, 2))],
+        "input_features_mask": [numpy.ones(5, bool), numpy.zeros(5, bool)],
+        "token_type_ids": [[0, 0]],
+    }
+    rows = audio_rows(fields)
+    assert set(rows) == {"input_features", "input_features_mask"}
+    assert rows["input_features"].shape == (2, 5, 2) and rows["input_features"][1].eq(1).all()
+    assert audio_rows({"token_type_ids": [[0]]}) == {}
+    with pt.raises(RuntimeError, match="Expected both"):
+        audio_rows({"input_features": [numpy.zeros((5, 2))]})
+    assert isinstance(rows["input_features_mask"], torch.Tensor)
+
+
+def _recorder():
+    import torch
+
+    class Recorder(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.seen = []
+
+        def forward(self, input_ids=None, input_features=None, input_features_mask=None):
+            self.seen.append(None if input_features is None else input_features[:, 0, 0].tolist())
+            return input_ids
+
+    return Recorder()
+
+
+def test_audio_forward_gives_each_chunk_its_own_clips_in_order():
+    """TRL scores a batch in chunks; every chunk must carry the audio of its own rows."""
+    import pytest as pt
+
+    torch = pt.importorskip("torch")
+    from multilingual_asr.training import audio_forward
+
+    model = _recorder()
+    rows = {
+        "input_features": torch.arange(5.0).view(5, 1, 1).expand(5, 3, 2).clone(),
+        "input_features_mask": torch.ones(5, 3, dtype=torch.bool),
+    }
+    with audio_forward(model, rows):
+        model(input_ids=torch.zeros(2, 4, dtype=torch.long))
+        model(input_ids=torch.zeros(3, 4, dtype=torch.long))
+    assert model.seen == [[0.0, 1.0], [2.0, 3.0, 4.0]]
+    # Outside the block nothing is attached.
+    model(input_ids=torch.zeros(1, 4, dtype=torch.long))
+    assert model.seen[-1] is None
+
+
+def test_audio_forward_leaves_generation_inputs_alone_and_catches_misalignment():
+    import pytest as pt
+
+    torch = pt.importorskip("torch")
+    from multilingual_asr.training import audio_forward
+
+    model = _recorder()
+    rows = {
+        "input_features": torch.zeros(2, 3, 2),
+        "input_features_mask": torch.ones(2, 3, dtype=torch.bool),
+    }
+    own = torch.full((1, 3, 2), 7.0)
+    with pt.raises(RuntimeError, match="misaligned"):
+        with audio_forward(model, rows):
+            # A forward that brings its own features (generation) is not touched...
+            model(input_ids=torch.zeros(1, 4, dtype=torch.long), input_features=own)
+            # ...and a batch that does not use every row is an error, not a silent skip.
+            model(input_ids=torch.zeros(1, 4, dtype=torch.long))
+    assert model.seen == [[7.0], [0.0]]
+    with pt.raises(RuntimeError, match="wants rows"):
+        with audio_forward(model, rows):
+            model(input_ids=torch.zeros(3, 4, dtype=torch.long))
+
+
+def test_the_audio_trainer_carries_clips_into_every_log_prob_forward():
+    """TRL 1.13 drops audio before the loss; the subclass must route it back in."""
+    import pytest as pt
+
+    pt.importorskip("trl")
+    from multilingual_asr.training import audio_grpo_trainer
+
+    trainer = audio_grpo_trainer()
+    for name in (
+        "_tokenize_prompts",
+        "_generate_and_score_completions",
+        "_compute_loss",
+        "_get_per_token_logps_and_entropies",
+    ):
+        # Each override must still exist upstream, or it silently stops being called.
+        assert name in vars(trainer) and hasattr(trainer.__mro__[1], name)
 
 
 def test_adapter_spec_parsing_and_mutually_exclusive_candidates():
@@ -150,3 +261,92 @@ def test_large_draws_are_fetched_within_the_servers_position_limit(monkeypatch):
     rows = training.sampled_rows("http://x", "train", ["kn_in"], ["transcription"], 42, 2282)
     assert len(rows) == 2282
     assert sizes == [1000, 1000, 282]
+
+
+def test_a_checkpoint_is_complete_only_when_every_adapter_byte_has_arrived(tmp_path):
+    """A watcher reads checkpoints while they upload; a partial adapter must not score."""
+    import json
+
+    from multilingual_asr.training import (
+        READY,
+        checkpoint_complete,
+        mark_checkpoint_ready,
+    )
+
+    saved = tmp_path / "checkpoint-25"
+    saved.mkdir()
+    (saved / "adapter_config.json").write_text('{"r": 16}')
+    (saved / "adapter_model.safetensors").write_bytes(b"w" * 4096)
+    mark_checkpoint_ready(saved, 25)
+    ready = json.loads((saved / READY).read_text())
+    assert ready["step"] == 25 and set(ready["files"]) == {
+        "adapter_config.json",
+        "adapter_model.safetensors",
+    }
+    copy = tmp_path / "copy"
+    copy.mkdir()
+    (copy / "adapter_config.json").write_text('{"r": 16}')
+    (copy / "adapter_model.safetensors").write_bytes(b"w" * 1024)  # still arriving
+    assert not checkpoint_complete(copy, ready)
+    (copy / "adapter_model.safetensors").write_bytes(b"x" * 4096)  # right size, wrong bytes
+    assert not checkpoint_complete(copy, ready)
+    (copy / "adapter_model.safetensors").write_bytes(b"w" * 4096)
+    assert checkpoint_complete(copy, ready)
+
+
+def _eval_module():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[3] / "train" / "eval_vllm.py"
+    spec = importlib.util.spec_from_file_location("eval_vllm_watch", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_paired_change_is_per_clip_and_carries_an_interval():
+    """Pairing removes clip difficulty; the interval says whether a change is real."""
+    import pytest as pt
+
+    module = _eval_module()
+    base = [{"task_id": f"t{i}", "reward": 0.2 + i / 100} for i in range(50)]
+    better = [{"task_id": s["task_id"], "reward": s["reward"] + 0.05} for s in base]
+    change = module.paired(base, better, "reward")
+    assert change["delta"] == pt.approx(0.05) and change["tasks"] == 50
+    assert change["low"] == pt.approx(0.05) == change["high"]  # identical shift
+    noisy = [{"task_id": s["task_id"], "reward": s["reward"] + (0.1 if i % 2 else -0.1)}
+             for i, s in enumerate(base)]
+    spread = module.paired(base, noisy, "reward")
+    assert spread["low"] < 0 < spread["high"]
+    # A task only one side scored is left out rather than paired with nothing.
+    assert module.paired(base, better[:1], "reward") is None
+
+
+def test_curve_points_average_every_metric_and_compare_to_base():
+    module = _eval_module()
+    base = {"model": "base", "samples": [
+        {"task_id": "a", "reward": 0.4, "cer": 0.3, "exact_match": False},
+        {"task_id": "b", "reward": 0.6, "cer": 0.1, "exact_match": True},
+    ]}
+    step = {"model": "step-25", "samples": [
+        {"task_id": "a", "reward": 0.5, "cer": 0.2, "exact_match": True},
+        {"task_id": "b", "reward": 0.6, "cer": 0.1, "exact_match": True},
+    ]}
+    point = module.curve_point(25, step, base)
+    assert point["step"] == 25 and point["reward"] == 0.55 and point["exact_match"] == 1.0
+    assert abs(point["cer_change"]["delta"] + 0.05) < 1e-9
+    assert "wer" not in point and "reward_change" in point
+    assert "reward_change" not in module.curve_point(0, base, None)
+
+
+def test_only_checkpoints_marked_ready_are_picked_up_in_step_order():
+    module = _eval_module()
+    paths = [
+        "rev/checkpoint-50/ready.json",
+        "rev/checkpoint-25/ready.json",
+        "rev/checkpoint-75/adapter_model.safetensors",  # saved, not yet marked
+        "rev/evals/checkpoints/checkpoint-25/ready.json",  # the watcher's own copy
+        "other/checkpoint-100/ready.json",
+    ]
+    assert module.checkpoint_steps(paths, "rev") == [25, 50]

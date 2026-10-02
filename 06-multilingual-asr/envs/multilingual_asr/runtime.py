@@ -12,7 +12,7 @@ import requests
 
 
 @contextmanager
-def local_server(corpus, sessions=16):
+def local_server(corpus, sessions=16, reward_unit=None):
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         port = sock.getsockname()[1]
@@ -20,6 +20,8 @@ def local_server(corpus, sessions=16):
     resolved = Path(corpus).resolve()
     key = "FLEURS_CORPUS_MANIFEST" if resolved.is_file() else "ASR_SNAPSHOT"
     env = {**os.environ, key: str(resolved), "ASR_MAX_SESSIONS": str(sessions)}
+    if reward_unit:
+        env["ASR_REWARD_UNIT"] = reward_unit
     process = subprocess.Popen(
         [
             sys.executable,
