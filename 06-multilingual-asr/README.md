@@ -42,6 +42,14 @@ The reward is the part of this environment worth arguing about, so it is explici
   negative, and the raw rate is still reported.
 - **An unscorable reference is rejected, not scored.** A reference that normalizes to
   nothing cannot define an error rate, so it raises instead of silently scoring 0 or 1.
+- **Two policies, one set of metrics.** The default, `fleurs-asr-error-rate-v1`, rewards
+  the script's natural unit. A word rate is coarse on an agglutinative language, though.
+  One Kannada word is a long inflected string, so fixing three of its letters earns
+  nothing. A Kannada run cut character errors 14% while word errors moved 2%. With
+  `ASR_REWARD_UNIT=cer` the server grades by `fleurs-asr-cer-v1` instead: characters for
+  every language, spaces included, so a transcript cannot gain by dropping word boundaries.
+  Spaced scripts report both `wer` and `cer` under either policy, and the observation's
+  `error_unit` and `grading_policy_id` name the one rewarded.
 - `language_id` is matched exactly after trimming and case folding. It is a code, not
   prose; normalizing it as text would only mask a wrong answer.
 
