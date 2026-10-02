@@ -100,3 +100,53 @@ def test_lora_targets_skip_towers_that_cannot_receive_gradient():
         "language_model.layers.0.self_attn.v_proj",
     ]
     assert not [c for c in chosen if "audio_tower" in c or "vision_tower" in c]
+
+
+def test_headroom_compares_greedy_with_the_policys_own_samples():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[3] / "train" / "eval_vllm.py"
+    spec = importlib.util.spec_from_file_location("eval_vllm_headroom", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    stats = module.headroom(
+        {"a": 0.5, "b": 0.8},
+        {"a": [0.4, 0.6, 0.5], "b": [0.8, 0.8]},
+    )
+    assert stats["headroom_tasks"] == 2
+    assert abs(stats["greedy_mean"] - 0.65) < 1e-9
+    assert abs(stats["best_of_n_mean"] - 0.7) < 1e-9
+    assert abs(stats["best_minus_greedy"] - 0.05) < 1e-9
+    # Only task a has any sample above its greedy answer, and one of its three does.
+    assert abs(stats["tasks_with_a_better_sample"] - 0.5) < 1e-9
+    assert abs(stats["mean_share_of_samples_beating_greedy"] - (1 / 3) / 2) < 1e-9
+    assert module.headroom({"a": 0.5}, {}) == {}
+
+
+def test_large_draws_are_fetched_within_the_servers_position_limit(monkeypatch):
+    """2,282 positions in one request is a 400; the draw must arrive in pieces."""
+    from multilingual_asr import training
+
+    sizes = []
+
+    class Client:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def num_group_tasks(self, split, lang, fam):
+            return 2282
+
+        def get_group_tasks(self, split, lang, fam, positions):
+            assert len(positions) <= training.POSITIONS_PER_REQUEST
+            sizes.append(len(positions))
+            return [{"task_id": f"{lang}-{p}", "language": lang, "family": fam}
+                    for p in positions]
+
+    monkeypatch.setattr(training, "connect", lambda url: Client())
+    rows = training.sampled_rows("http://x", "train", ["kn_in"], ["transcription"], 42, 2282)
+    assert len(rows) == 2282
+    assert sizes == [1000, 1000, 282]
