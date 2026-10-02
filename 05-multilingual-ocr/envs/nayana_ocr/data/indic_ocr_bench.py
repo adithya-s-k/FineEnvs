@@ -55,7 +55,8 @@ SPLITS = {
 # only score zero on it. Pinned by name, so a row gaining or losing its image upstream
 # is caught at build time rather than silently absorbed into a changed benchmark.
 EXCLUDED = {
-    "indic_ocr_bench_test": (),
+    # Ground truth present, image None in the source parquet (confirmed in the viewer).
+    "indic_ocr_bench_test": ("indic_ocr_bench_test_eng_5",),
     "indic_ocr_bench_small": (),
 }
 

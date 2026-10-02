@@ -56,13 +56,13 @@ The corpus index is not an image-quality audit or evidence of model performance.
 by **Sarvam AI** (Apache-2.0) - 6,909 text-block crops in 23 languages (all 22 languages of the
 Eighth Schedule plus English), ground truth reviewed twice by human language experts. Eleven
 of those languages are not in the Nayana corpus. It is served as evaluation splits
-`indic_ocr_bench_test` (6,909) and `indic_ocr_bench_small` (1,173, ~51 per language) at revision
+`indic_ocr_bench_test` (6,908 of 6,909) and `indic_ocr_bench_small` (1,173, ~51 per language) at revision
 `84ce7ce`, from a serving copy in [FineEnvs/indic-ocr-bench-bucket](https://huggingface.co/buckets/FineEnvs/indic-ocr-bench-bucket)
 mounted read-only at `/indic-ocr-bench`. Each crop is an ordinary **Section OCR** task - same
 prompt, same answer, same reward and same observation as a corpus region - so results are
 directly comparable. The benchmark's own CER and WER, from its official `metrics.py` (vendored
 unmodified), are reported alongside as `official_cer` / `official_wer`; they are never rewarded.
-These splits are never offered to training samplers. All credit for the benchmark belongs to
+These splits are never offered to training samplers. One test row, `indic_ocr_bench_test_eng_5`, has ground truth but no image in the source data, so it is not served; scores on `indic_ocr_bench_test` are over 6,908. All credit for the benchmark belongs to
 Sarvam AI; please cite:
 
 ```bibtex

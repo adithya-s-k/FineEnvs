@@ -175,9 +175,15 @@ def main():
                     f"(https://huggingface.co/datasets/{bench.REPO}) by Sarvam AI "
                     f"(Apache-2.0), revision `{bench.VERSION}`, served from "
                     f"[{bench_bucket}](https://huggingface.co/buckets/{bench_bucket}) as "
-                    + ", ".join(f"`{s}` ({n:,})" for s, (_, n) in bench.SPLITS.items())
+                    + ", ".join(
+                        f"`{s}` ({bench.served_count(s):,} of {n:,})"
+                        for s, (_, n) in bench.SPLITS.items()
+                    )
                     + ". Scored as Section OCR with the same reward; the benchmark's own "
-                    "CER/WER are reported alongside.\n"
+                    "CER/WER are reported alongside. Not served, because the source row "
+                    "has no image: "
+                    + ", ".join(f"`{x}`" for v in bench.EXCLUDED.values() for x in v)
+                    + ".\n"
                 )
             if served:
                 card.write("\nFrozen evaluation splits: ")
