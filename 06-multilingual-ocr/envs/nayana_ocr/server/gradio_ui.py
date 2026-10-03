@@ -327,6 +327,6 @@ def build_ui(web_manager, action_fields, metadata, is_chat_env, title, quick_sta
             )
         gr.Markdown(
             "[Nayana corpus · CognitiveLab](https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025) "
-            "· CC BY-NC 4.0 · " + BENCH_CREDIT + " · [Source and reproduction](https://github.com/adithya-s-k/FineEnvs/tree/codex/multilingual-ocr/05-multilingual-ocr)"
+            "· CC BY-NC 4.0 · " + BENCH_CREDIT + " · [Source and reproduction](https://github.com/adithya-s-k/FineEnvs/tree/codex/multilingual-ocr/06-multilingual-ocr)"
         )
     return demo

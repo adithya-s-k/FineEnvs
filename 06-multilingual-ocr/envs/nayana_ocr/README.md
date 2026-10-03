@@ -6,6 +6,7 @@ colorTo: green
 sdk: docker
 app_port: 8000
 license: cc-by-nc-4.0
+short_description: OpenEnv document OCR, layout and VQA over 22 languages
 tags:
   - openenv
   - reinforcement-learning
@@ -22,6 +23,11 @@ One OpenEnv environment serves the **complete 22-language Nayana corpus** for **
 section OCR, layout detection, multiple-choice and descriptive document VQA**. Open `/web` for language/task selection,
 indexed navigation, a full-size image viewer, and reward/CER feedback. References are revealed
 after scoring in the playground. OpenEnv task discovery and observations exclude references.
+
+**Trained against it:** [gemma-4-E4B-it-kannada-ocr-grpo](https://huggingface.co/FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo),
+GRPO on 4,000 Kannada section crops, cuts Sarvam Indic OCR Bench character error on Kannada from
+0.428 to 0.360. Part of the [Multilingual Multimodal Envs](https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4) collection; source in
+[`06-multilingual-ocr/`](https://github.com/adithya-s-k/FineEnvs/tree/codex/multilingual-ocr/06-multilingual-ocr).
 
 The source lives in [FineEnvs/NayanaOCR_Corpus_2025_bucket](https://huggingface.co/buckets/FineEnvs/NayanaOCR_Corpus_2025_bucket),
 attached read-only at `/corpus`. The Docker image bundles code and a small provenance manifest.
@@ -78,4 +84,4 @@ Source: [CognitiveLab's NayanaOCR_Corpus_2025](https://huggingface.co/datasets/C
 **CC BY-NC 4.0**. Copied annotations, page images, and OCR crops retain this license and
 attribution. Environment source is Apache-2.0; see `LICENSE` and `NOTICE`.
 
-[Source, reproduction guide, notebook, training scripts and checks](https://github.com/adithya-s-k/FineEnvs/tree/codex/multilingual-ocr/05-multilingual-ocr).
+[Source, reproduction guide, notebook, training scripts and checks](https://github.com/adithya-s-k/FineEnvs/tree/codex/multilingual-ocr/06-multilingual-ocr).

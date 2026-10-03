@@ -31,11 +31,11 @@ def main():
     parser.add_argument(
         "--corpus-manifest",
         help="Published full-corpus manifest HF URI, local path, or 'repo' for the "
-        "manifest committed at 05-multilingual-ocr/data/",
+        "manifest committed at 06-multilingual-ocr/data/",
     )
     parser.add_argument(
         "--evalset",
-        help="Frozen evaluation set committed under 05-multilingual-ocr/data/, by file "
+        help="Frozen evaluation set committed under 06-multilingual-ocr/data/, by file "
         "name; the job resolves it inside its own checkout",
     )
     parser.add_argument(
@@ -82,7 +82,7 @@ def main():
                     if not (source / name).resolve().is_relative_to(source.resolve()):
                         raise ValueError("Unsafe path in source archive")
                 archive.extractall(source)
-        root = next(source.iterdir()) / "05-multilingual-ocr"
+        root = next(source.iterdir()) / "06-multilingual-ocr"
         # Paths inside the job's checkout are not knowable when the job is submitted,
         # so repo-relative data is named by file and resolved here.
         if args.corpus_manifest == "repo":

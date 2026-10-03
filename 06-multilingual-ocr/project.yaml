@@ -1,0 +1,30 @@
+name: multilingual-ocr
+title: "Multilingual OCR"
+tagline: "A million Nayana pages in 22 languages behind one OpenEnv server, plus Sarvam Indic OCR Bench, and a Kannada OCR model trained against it."
+order: 6
+status: trained   # environment + Space; Kannada GRPO run scored at every checkpoint on Sarvam Indic OCR Bench
+
+hub:
+  org: FineEnvs
+  spaces:
+    - FineEnvs/nayana-ocr-env
+  models:
+    - FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo
+  datasets:
+    - Cognitive-Lab/NayanaOCR_Corpus_2025
+    - sarvamai/indic-ocr-bench
+    - FineEnvs/nayana-evalsets
+    - FineEnvs/multilingual-multimodal-rl-runs
+  trackio:
+    - FineEnvs/multilingual-multimodal-trackio
+  buckets:
+    - FineEnvs/NayanaOCR_Corpus_2025_bucket
+    - FineEnvs/indic-ocr-bench-bucket
+  collection: FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4
+
+envs:
+  - name: nayana_ocr
+    summary: "Full-page and section OCR, six-class layout detection, MCQ and Gemma-judged descriptive VQA over 22 languages, plus Sarvam Indic OCR Bench."
+    backend: http
+    frameworks:
+      openenv: {transport: http-websocket, verified: true, space: FineEnvs/nayana-ocr-env}
