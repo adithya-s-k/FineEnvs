@@ -1,0 +1,27 @@
+name: multilingual-asr
+title: "Multilingual ASR"
+tagline: "All 102 FLEURS languages behind one OpenEnv server, and a Gemma 4 that learned to hear Kannada: held-out CER −45%."
+order: 7
+status: trained   # environment + Space; Kannada GRPO run scored at every checkpoint
+
+hub:
+  org: FineEnvs
+  spaces:
+    - FineEnvs/fleurs-asr-env
+  models:
+    - FineEnvs/gemma-4-E4B-it-kannada-asr-grpo
+  datasets:
+    - google/fleurs
+    - FineEnvs/multilingual-multimodal-rl-runs
+  trackio:
+    - FineEnvs/multilingual-multimodal-trackio
+  buckets:
+    - FineEnvs/fleurs-bucket
+  collection: FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4
+
+envs:
+  - name: multilingual_asr
+    summary: "Normalized and verbatim transcription plus spoken language identification over 102 FLEURS languages, scored per word or per character."
+    backend: http
+    frameworks:
+      openenv: {transport: http-websocket, space: FineEnvs/fleurs-asr-env, verified: true}

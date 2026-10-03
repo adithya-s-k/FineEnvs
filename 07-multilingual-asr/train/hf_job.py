@@ -57,7 +57,7 @@ def main():
                     if not (source / name).resolve().is_relative_to(source.resolve()):
                         raise ValueError("Unsafe path in source archive")
                 archive.extractall(source)
-        root = next(source.iterdir()) / "06-multilingual-asr"
+        root = next(source.iterdir()) / "07-multilingual-asr"
         project = root / "envs" / "multilingual_asr"
         # Checkpoints belong on durable storage while they are being written, not in
         # the container. --artifact-repo uploads in a finally, which a timeout kill or an

@@ -1,6 +1,6 @@
 # Reproduce the multilingual ASR environment
 
-Every command runs from `06-multilingual-asr/`. The whole 878 GB corpus is **addressable
+Every command runs from `07-multilingual-asr/`. The whole 878 GB corpus is **addressable
 without copying it**: `data/corpus-manifest.json` indexes every eligible utterance and where
 it physically lives, and audio is fetched from the bucket on demand into a bounded cache.
 
