@@ -1,0 +1,24 @@
+{
+  "model": "FineEnvs/gemma-4-E4B-it-kannada-asr-grpo",
+  "selected_checkpoint": 575,
+  "github": {
+    "repo": "adithya-s-k/FineEnvs",
+    "revision": "ac6393008d78527aeb1f17a61c3f89471382fc5f",
+    "folder": "06-multilingual-asr (now 07-multilingual-asr)"
+  },
+  "jobs": {
+    "train": "6abff1acfbc85ba682372b98",
+    "eval_watcher": "6abff1b6fbc85ba682372b9d"
+  },
+  "hardware": {
+    "train": "a100-large, 4.7 h",
+    "eval_watcher": "l40sx1"
+  },
+  "train_command": "hf jobs uv run -d --flavor a100-large -s HF_TOKEN --timeout 14h -v hf://buckets/FineEnvs/fleurs-bucket:/fleurs:ro -v hf://buckets/AdithyaSK/fineenvs-asr-runs:/outputs train/hf_job.py --revision ac6393008d78527aeb1f17a61c3f89471382fc5f --mode train --source-root /fleurs --output-root /outputs --model google/gemma-4-E4B-it --languages kn_in --families transcription --train-per-group 2282 --max-steps 575 --num-generations 16 --gradient-accumulation-steps 4 --max-completion-length 448 --learning-rate 5e-5 --lr-scheduler-type cosine --warmup-ratio 0.05 --reward-unit cer --eval-split eval_1_validation --eval-limit 48 --save-steps 25 --save-total-limit 30 --trackio-space AdithyaSK/fineenvs-asr-trackio --run-name asr-kn-full-v3",
+  "eval_command": "hf jobs uv run -d --flavor l40sx1 -s HF_TOKEN --timeout 16h -v hf://buckets/FineEnvs/fleurs-bucket:/fleurs:ro -v hf://buckets/AdithyaSK/fineenvs-asr-runs:/outputs train/hf_job.py --revision ac6393008d78527aeb1f17a61c3f89471382fc5f --mode eval-vllm --source-root /fleurs --output-root /outputs --base google/gemma-4-E4B-it --watch AdithyaSK/fineenvs-asr-runs/ac6393008d78527aeb1f17a61c3f89471382fc5f --follow-job 6abff1acfbc85ba682372b98 --eval-split eval_1_test --max-new-tokens 448 --reward-unit cer --output-dir /outputs/ac6393008d78527aeb1f17a61c3f89471382fc5f/evals --trackio-space AdithyaSK/fineenvs-asr-trackio --run-name asr-kn-full-v3-eval",
+  "eval_set": {
+    "name": "FLEURS kn_in test",
+    "items": 838,
+    "evalset_id": "591deaeafb2bf4d37be5809d6afcf79b6cb7a25c8bdf337c8ec969b0a2d18d7b"
+  }
+}

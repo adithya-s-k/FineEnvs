@@ -56,7 +56,7 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **03** | **[GeoGuesser](./03-geoguesser/)** | Drop a VLM at a random street corner on Earth and score it on kilometres of error. | 1 | 1 | 1 | ✅ stable |
 | **04** | **[SmolDataEnvs](./04-smoldataenvs/)** | Data-analysis tasks, verified SFT traces and a single-turn GRPO tutorial on HF Jobs. | 1 | 1 | 0 | 🚧 wip |
 | **05** | **[SmolDataEnvs: multi-harness RL](./05-multi-harness-rl/)** | Train on SmolDataEnvs with SETA, native OpenCode or Harbor, using HF Jobs or Slurm. | 3 | 1 | 0 | 🚧 wip |
-| **06** | **[Multilingual ASR](./06-multilingual-asr/)** | Serve FLEURS speech through OpenEnv with script-aware word and character error scoring. | 1 | 1 | 0 | 🚧 wip |
+| **07** | **[Multilingual ASR](./07-multilingual-asr/)** | All 102 FLEURS languages behind one OpenEnv server, and a Gemma 4 that learned to hear Kannada: held-out CER −45%. | 1 | 1 | 1 | ✅ trained |
 <!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
@@ -137,6 +137,16 @@ or the whole [SmolDataEnvs collection](https://huggingface.co/collections/FineEn
 > the artifacts on the Hub. [Proposals and contributions welcome →](./CONTRIBUTING.md)
 
 ---
+
+### [07 · Multilingual ASR](./07-multilingual-asr/) &nbsp;<sub>102 languages of speech, one server</sub>
+
+**Audio, and a trainer that has to hear it.** One OpenEnv server serves all of FLEURS, 102
+languages and 1.15M tasks across transcription, verbatim transcription and language ID, with
+per-script error scoring.
+
+Gemma 4 E4B trained on every Kannada clip cuts held-out character error by 45%, once the trainer
+actually feeds the audio into the loss: TRL dropped it, and the fix is measured in the README. One
+A100, 4.7 hours. Part of the [Multilingual Multimodal Envs](https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4) collection.
 
 ## Articles &amp; talks
 
