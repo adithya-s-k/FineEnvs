@@ -1,0 +1,669 @@
+{
+  "status": "passed",
+  "smoke": true,
+  "steps": 4,
+  "training_loss": 0.0386414541862905,
+  "adapter_updated": true,
+  "reward_groups_without_variance": false,
+  "trained": {
+    "macro_reward": 0.4026250921200143,
+    "by_language_task": {
+      "ar/descriptive_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "judge_accepted": 0.0
+      },
+      "ar/layout_detection": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0,
+        "mean_f1": 0.0
+      },
+      "bn/page_ocr": {
+        "samples": 1,
+        "reward": 0.6637362637362637,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.17032967032967034
+      },
+      "fr/layout_detection": {
+        "samples": 2,
+        "reward": 0.0,
+        "exact_match": 0.0,
+        "mean_f1": 0.0
+      },
+      "fr/section_ocr": {
+        "samples": 1,
+        "reward": 0.7984147952443857,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.0019815059445178335
+      },
+      "it/layout_detection": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0,
+        "mean_f1": 0.0
+      },
+      "it/section_ocr": {
+        "samples": 1,
+        "reward": 1.0,
+        "exact_match": 1.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.0
+      },
+      "ja/mcq_vqa": {
+        "samples": 1,
+        "reward": 1.0,
+        "exact_match": 1.0,
+        "overlong": 0.0
+      },
+      "kn/descriptive_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "judge_accepted": 0.0
+      },
+      "ml/descriptive_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "judge_accepted": 0.0
+      },
+      "ml/mcq_vqa": {
+        "samples": 1,
+        "reward": 1.0,
+        "exact_match": 1.0,
+        "overlong": 0.0
+      },
+      "mr/mcq_vqa": {
+        "samples": 2,
+        "reward": 0.5,
+        "exact_match": 0.5,
+        "overlong": 0.0
+      },
+      "ta/page_ocr": {
+        "samples": 2,
+        "reward": 0.3608247422680413,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.8187842672368171
+      },
+      "ta/section_ocr": {
+        "samples": 1,
+        "reward": 0.716400580551524,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.10449927431059507
+      },
+      "zh/descriptive_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "judge_accepted": 0.0
+      }
+    },
+    "samples": [
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ar.validation.22032",
+        "language": "ar",
+        "family": "descriptive_vqa",
+        "block_id": "ar:276",
+        "prediction": "موضوع الكتاب هو \"Aged Care in Australia\" (الرعاية لكبار السن في أستراليا)، وهو الطبعة الثانية.",
+        "reward": 0.0,
+        "grading_policy_id": "d7169c5ab653515ca9160a3ad1d28025b3a991e63a1cbf135d70f27be0bef899",
+        "judge_accepted": false,
+        "correct": true,
+        "complete": true,
+        "no_contradiction": true,
+        "no_unsupported_claims": false,
+        "answers_question": true,
+        "no_grading_manipulation": true
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ar.validation.22079",
+        "language": "ar",
+        "family": "layout_detection",
+        "block_id": "ar:276",
+        "prediction": "[{\"box_2d\": [74, 213, 125, 484], \"label\": \"text\"}, {\"box_2d\": [137, 213, 190, 484], \"label\": \"text\"}, {\"box_2d\": [202, 213, 255, 484], \"label\": \"text\"}, {\"box_2d\": [267, 213, 320, 484], \"label\": \"text\"}, {\"box_2d\": [332, 213, 385, 484], \"label\": \"text\"}, {\"box_2d\": [397, 213, 450, 484], \"label\": \"text\"}, {\"box_2d\": [462, 213, 515, 484], \"label\": \"text\"}, {\"box_2d\": [527, 213, 580, 484], \"label\": \"text\"}, {\"box_2d\": [592, 213, 645, 484], \"label\": \"text\"}, {\"box_2d\": [657, 213, 710, 484], \"label\": \"text\"}, {\"box_2d\": [722, 213, 775, 484], \"label\": \"text\"}, {\"box_2d\": [787, 213, 840, 484], \"label\": \"text\"}, {\"box_2d\": [852, 213, 905, 484], \"label\": \"text\"}]",
+        "reward": 0.0,
+        "grading_policy_id": "layout-mean-f1-iou-50-95-v1",
+        "valid_format": false,
+        "mean_f1": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.bn.validation.19048",
+        "language": "bn",
+        "family": "page_ocr",
+        "block_id": "bn:222",
+        "prediction": "বিবাদ\n\nযা সম্পর্কে আমাদের ধারণা আছে। আমাদের শুধু সেখানে যেতে\nহবে, কারণ সংযুক্ত শিল্পীদের আরেকটি দরজা থাকবে সেখানে\nআশা করি যদি দুর্গের বাইরে দিয়ে আমি তাহলে যেতে পারব যেখানে\nআশাা চাই।\"",
+        "reward": 0.6637362637362637,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.17032967032967034,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.fr.validation.44327",
+        "language": "fr",
+        "family": "layout_detection",
+        "block_id": "fr:475",
+        "prediction": "[{\"box_2d\": [22, 58, 37, 354], \"label\": \"title\"}, {\"box_2d\": [77, 58, 136, 212], \"label\": \"text\"}, {\"box_2d\": [187, 58, 201, 235], \"label\": \"text\"}, {\"box_2d\": [221, 58, 235, 404], \"label\": \"text\"}, {\"box_2d\": [252, 58, 309, 835], \"label\": \"text\"}, {\"box_2d\": [324, 58, 381, 835], \"label\": \"text\"}, {\"box_2d\": [397, 58, 411, 434], \"label\": \"text\"}, {\"box_2d\": [427, 58, 441, 285], \"label\": \"text\"}, {\"box_2d\": [458, 58, 531, 835], \"label\": \"text\"}, {\"box_2d\": [961, 740, 974, 939], \"label\": \"text\"}]",
+        "reward": 0.0,
+        "grading_policy_id": "layout-mean-f1-iou-50-95-v1",
+        "valid_format": false,
+        "mean_f1": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.fr.validation.46348",
+        "language": "fr",
+        "family": "layout_detection",
+        "block_id": "fr:502",
+        "prediction": "[{\"box_2d\": [35, 414, 51, 584], \"label\": \"title\"}, {\"box_2d\": [93, 118, 213, 879], \"label\": \"text\"}, {\"box_2d\": [227, 118, 398, 879], \"label\": \"text\"}, {\"box_2d\": [412, 118, 553, 879], \"label\": \"text\"}, {\"box_2d\": [567, 118, 864, 879], \"label\": \"text\"}, {\"box_2d\": [893, 484, 908, 515], \"label\": \"text\"}]",
+        "reward": 0.0,
+        "grading_policy_id": "layout-mean-f1-iou-50-95-v1",
+        "valid_format": false,
+        "mean_f1": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.fr.validation.46340",
+        "language": "fr",
+        "family": "section_ocr",
+        "block_id": "fr:502",
+        "prediction": "\"Un bateau jouet, un bateau jouet, un bateau jouet\", a-t-elle répété, appliquant\nainsi sur elle-même le fait que ce ne sont pas des articles de Nick Greene sur John\nDonne ni Les projets de loi de huit heures ni les clauses restrictives ni les actes\nd'usine importent; c'est quelque chose chose inutile, soudaine, violente; quelque\nchose qui coûte une vie; Rouge, bleu, violet; un esprit; une éclaboussure; comme\nces jacinthes (elle passait une amende lit d'eux); sans souillure, dépendance, sol de\nl'humanité ou des soins pour son genre; quelque chose de téméraire, ridicule,\ncomme mon jacinthe, mari je Mean, Bonthrop: c'est ce que c'est - un bateau jouet\nsur la serpentine, l'extase - C'est l'ecstasy qui compte. Elle parlait ainsi à haute voix,\nattendant la voiture riage à passer à Stanhope Gate, pour la conséquence de ne pas\nvivre avec son mari, sauf lorsque le vent est coulé, est que l'on ne parle pas Sentez à\nhaute voix à Park Lane. Il aurait sans aucun doute été différent avait Elle a vécu\ntoute l'année avec lui comme la reine Victoria l'a recommandé. Comme c'était la\npensée de lui venait d'elle en un éclair. Elle j'ai trouvé absolument nécessaire de lui\nparler instantanément. Elle n'a pas se souciez du moins quel non-sens il pourrait\nfaire, ou quelle dislocation pourrait infliger au récit. L'article de Nick Greene\nl'avait plongée les profondeurs du désespoir; Le bateau jouet l'avait élevée à la\nhauteur de la joie. Alors elle a répété: «Ecstasy, Ecstasy», alors qu'elle attendait de\ntraverser.",
+        "reward": 0.7984147952443857,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.0019815059445178335,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.it.validation.26946",
+        "language": "it",
+        "family": "layout_detection",
+        "block_id": "it:313",
+        "prediction": "[{\"box_2d\": [55, 142, 81, 284], \"label\": \"text\"}, {\"box_2d\": [55, 814, 68, 864], \"label\": \"text\"}, {\"box_2d\": [126, 142, 143, 596], \"label\": \"text\"}, {\"box_2d\": [161, 142, 193, 275], \"label\": \"text\"}, {\"box_2d\": [161, 416, 177, 555], \"label\": \"text\"}, {\"box_2d\": [213, 416, 229, 614], \"label\": \"text\"}, {\"box_2d\": [251, 142, 267, 414], \"label\": \"text\"}, {\"box_2d\": [287, 142, 367, 857], \"label\": \"text\"}, {\"box_2d\": [387, 142, 695, 857], \"label\": \"text\"}, {\"box_2d\": [715, 142, 795, 857], \"label\": \"text\"}, {\"box_2d\": [815, 142, 847, 857], \"label\": \"text\"}]",
+        "reward": 0.0,
+        "grading_policy_id": "layout-mean-f1-iou-50-95-v1",
+        "valid_format": false,
+        "mean_f1": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.it.validation.26938",
+        "language": "it",
+        "family": "section_ocr",
+        "block_id": "it:313",
+        "prediction": "Fonti: Hynek (1978) 139",
+        "reward": 1.0,
+        "grading_policy_id": "",
+        "exact_match": true,
+        "char_error_rate": 0.0,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ja.validation.12532",
+        "language": "ja",
+        "family": "mcq_vqa",
+        "block_id": "ja:157",
+        "prediction": "C",
+        "reward": 1.0,
+        "grading_policy_id": "",
+        "exact_match": true,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.kn.validation.40384",
+        "language": "kn",
+        "family": "descriptive_vqa",
+        "block_id": "kn:441",
+        "prediction": "ಹೊಸ ಆಟಗಳ ಅಭಿವೃದ್ಧಿ ಮತ್ತು ಪ್ರಾರಂಭದೊಂದಿಗೆ ಸಂಬಂಧಿಸಿರುವ ಅಪಾಯಗಳು ಹೀಗಿವೆ:\n\n* **ಆರ್ಥಿಕ ಅಪಾಯಗಳು:** ಆಟದ ಅಭಿವೃದ್ಧಿ ಮತ್ತು ಬಿಡುಗಡೆಗೆ ಹೆಚ್ಚಿನ ಹಣ ಹೂಡಿಕೆ ಅಗತ್ಯವಿರುತ್ತದೆ. ಆಟ ಯಶಸ್ವಿಯಾಗದಿದ್ದರೆ, ಆರ್ಥಿಕ ನಷ್ಟ ಉಂಟಾಗಬಹುದು.\n* **ಸಾಂಕೇതിക ಅಪಾಯಗಳು:** ಆಟದ ಕಾರ್ಯನಿರ್ವಹಣೆಯಲ್ಲಿ ತಾಂತ್ರಿಕ ದೋಷಗಳು (Bugs), ಕಾರ್ಯಕ್ಷಮತೆಯ ಸಮಸ್ಯೆಗಳು ಅಥವಾ ವೇದಿಕೆಗಳೊಂದಿಗೆ ಹೊಂದಾಣಿಕೆಯ ಸಮಸ್ಯೆಗಳು ಎದುರಾಗಬಹುದು.\n* **ಮಾರುಕಟ್ಟೆ ಅಪಾಯಗಳು:** ಮಾರುಕಟ್ಟೆಯಲ್ಲಿ ಈಗಾಗಲೇ ಇರುವ ಸ್ಪರ್ಧಾತ್ಮಕ ಆಟಗಳು, ಬದಲಾಗುತ್ತಿರುವ ಬಳಕೆದಾರರ ಆದ್ಯತೆಗಳು ಅಥವಾ ಆಟದ ಪರಿಕಲ್ಪನೆ ಮಾರುಕಟ್ಟೆಗೆ ಸೂಕ್ತವಾಗಿಲ್ಲದಿರುವುದು ಅಪಾಯಕಾರಿ.\n* **ಬಳಕೆದಾರರ ಸ್ವೀಕಾರದ ಅಪಾಯ (Adoption Risk):** ಆಟವು ಉದ್ದೇಶಿತ ಬಳಕೆದಾರರಿಂದ ಸರಿಯಾಗಿ ಸ್ವೀಕರಿಸಲ್ಪಡದಿರಬಹುದು ಅಥವಾ ಆಕರ್ಷಕವಾಗಿರದಿರಬಹುದು.\n* **ಕಾನೂನು ಮತ್ತು ನಿಯಂತ್ರಣ ಅಪಾಯಗಳು:** ಆಟದ ವಿಷಯ ಅಥವಾ ಕಾರ್ಯವಿಧಾನಗಳು ಸ್ಥಳೀಯ ಕಾನೂನುಗಳು ಅಥವಾ ನಿಯಂತ್ರಣಗಳನ್ನು ಉಲ್ಲಂಘಿಸುವ ಸಾಧ್ಯತೆ ಇರುತ್ತದೆ.\n* **ಪ್ರಚಾರ ಮತ್ತು ಮಾರ್ಕೆಟಿಂಗ್ ಅಪಾಯಗಳು:** ಆಟವನ್ನು ಸರಿಯಾಗಿ ಪ್ರಚಾರ ಮಾಡದಿದ್ದರೆ, ಅದು ಮಾರುಕಟ್ಟೆಯಲ್ಲಿ ಗುರುತಿಸಿಕೊಳ್ಳಲು ವಿಫಲವಾಗಬಹುದು.",
+        "reward": 0.0,
+        "grading_policy_id": "d7169c5ab653515ca9160a3ad1d28025b3a991e63a1cbf135d70f27be0bef899",
+        "judge_accepted": false,
+        "correct": false,
+        "complete": false,
+        "no_contradiction": true,
+        "no_unsupported_claims": false,
+        "answers_question": false,
+        "no_grading_manipulation": true
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ml.validation.28342",
+        "language": "ml",
+        "family": "descriptive_vqa",
+        "block_id": "ml:350",
+        "prediction": "നിരീക്ഷിച്ച റഡാർ എക്കോയുടെ പ്രാധാന്യം, അജ്ഞാത വസ്തുവിന്റെ സാന്നിധ്യം തിരിച്ചറിയാനും അതിനെക്കുറിച്ച് കൂടുതൽ വിവരങ്ങൾ ശേഖരിക്കാനും സഹായിക്കുന്നു.",
+        "reward": 0.0,
+        "grading_policy_id": "d7169c5ab653515ca9160a3ad1d28025b3a991e63a1cbf135d70f27be0bef899",
+        "judge_accepted": false,
+        "correct": false,
+        "complete": false,
+        "no_contradiction": true,
+        "no_unsupported_claims": false,
+        "answers_question": false,
+        "no_grading_manipulation": true
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ml.validation.28185",
+        "language": "ml",
+        "family": "mcq_vqa",
+        "block_id": "ml:350",
+        "prediction": "B",
+        "reward": 1.0,
+        "grading_policy_id": "",
+        "exact_match": true,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.mr.validation.30554",
+        "language": "mr",
+        "family": "mcq_vqa",
+        "block_id": "mr:325",
+        "prediction": "C",
+        "reward": 1.0,
+        "grading_policy_id": "",
+        "exact_match": true,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.mr.validation.4815",
+        "language": "mr",
+        "family": "mcq_vqa",
+        "block_id": "mr:49",
+        "prediction": "B",
+        "reward": 0.0,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ta.validation.12058",
+        "language": "ta",
+        "family": "page_ocr",
+        "block_id": "ta:157",
+        "prediction": "பத்தாம் வகுப்பு பொதுத் தேர்வு\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\n",
+        "reward": 0.0,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 1.5396303901437371,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ta.validation.44118",
+        "language": "ta",
+        "family": "page_ocr",
+        "block_id": "ta:491",
+        "prediction": "அறைகள் இலவச த<>\nபாகம் 25\n\nஇலவச மின்புத்தீக்கள் திறக்கப்படுவதை\nஉறுதிசெயய்யவும் உங்கள் சாதனம் அல்லது பயன்பபாடு.\nஒவ்வொரு மின்-வாசக்கும் மற்றும் இ-வாசகர்\nபயன்பாட்டில் சில வகையான கோப்பુકள் உள்ளன\nஅவர்களுடன் இணைந்து பணியாற்றுவார். நீங்கள்\nசொல்லும்போது இலவச மின்புத்தீத்தếp\nபதிவிறக்கம், நீங்கள் விரும்பியவர்கள் நீங்கள் தான்\nமின்புத்தீ கோப்பு என்பதை உறுதிப்படுத்தவும்\nபதிவிறக்கம் திறக்கும்.",
+        "reward": 0.7216494845360826,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.0979381443298969,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ta.validation.27509",
+        "language": "ta",
+        "family": "section_ocr",
+        "block_id": "ta:340",
+        "prediction": "மே 21, 2018 — உண்மைமக்கள்101 உங்களுடைத்து\nகிசியாலஜிக்கான முழுமையான வழிகாட்டி இந்த\nபுத்தகத்தில் நீங்கள் தசைக்குறிடு அமைப்பு போன்ற\nதலைப்புக்களத் கற்றுக்கொள்வார்கள் உங்க்கள்\nபுத்தகம் மேலும் சாவியுடன் அதிகம் மக்கள் மற்றும்\nமுக்கிய விதிமுறைகள் போன்ற அம்சங்கள்\nஇடங்கள் உண்மைமக்கள்101 உங்களுக்கு\nஅனைத்தையும் தருகிறது உங்களுக்காக நீங்கள்\nதயார் செய்ய வேண்டிய தகவல் androidx\nதேர்வு\"கிசியாலஜி ஆப் தி தசைக்குறிடு\nஅமைப்பு auditedங்கள் ஜூன் 21, 2018 —இதếp\nபெருங்கள் நூலகம் இயக்கவியல் தசைக்குறிடு\nஅமைப்பு auditedங்கள் மறுவாழ்வு டொனலட் ஏ\nறியும் புத்தசாலித்தனமாகவும் ஏராளமானாகவும்\nவிளக்கப்பட்டுள்ளது இந்த ஆற்றில் வளம் மிகவும்\nஅதிகமாக உள்ளது விரிவான ஆராய்ச்சி\nஅடிப்படையிலான வaskar இயக்கவியல் பற்றிய\nநட்பு உரை'",
+        "reward": 0.716400580551524,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.10449927431059507,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.zh.validation.16611",
+        "language": "zh",
+        "family": "descriptive_vqa",
+        "block_id": "zh:206",
+        "prediction": "这段文本的主要重点是：\n\n1. **介绍和推广**：提供下载丹尼尔·哈特（Daniel Hart）的电子产品。\n2. **课程/主题介绍**：介绍一个关于“以顺序的灵活性”的主题，该主题的大部分内容涉及使用 **PSpice** 进行**电路分析和解决方案技术**。\n3. **资料来源**：指出这些内容来源于《丹尼尔的电力电子》的第25/85页。",
+        "reward": 0.0,
+        "grading_policy_id": "d7169c5ab653515ca9160a3ad1d28025b3a991e63a1cbf135d70f27be0bef899",
+        "judge_accepted": false,
+        "correct": false,
+        "complete": false,
+        "no_contradiction": true,
+        "no_unsupported_claims": false,
+        "answers_question": false,
+        "no_grading_manipulation": true
+      }
+    ]
+  },
+  "baseline": {
+    "macro_reward": 0.4007309323343937,
+    "by_language_task": {
+      "ar/descriptive_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "judge_accepted": 0.0
+      },
+      "ar/layout_detection": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0,
+        "mean_f1": 0.0
+      },
+      "bn/page_ocr": {
+        "samples": 1,
+        "reward": 0.6461538461538462,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.19230769230769232
+      },
+      "fr/layout_detection": {
+        "samples": 2,
+        "reward": 0.0,
+        "exact_match": 0.0,
+        "mean_f1": 0.0
+      },
+      "fr/section_ocr": {
+        "samples": 1,
+        "reward": 0.7984147952443857,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.0019815059445178335
+      },
+      "it/layout_detection": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0,
+        "mean_f1": 0.0
+      },
+      "it/section_ocr": {
+        "samples": 1,
+        "reward": 1.0,
+        "exact_match": 1.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.0
+      },
+      "ja/mcq_vqa": {
+        "samples": 1,
+        "reward": 1.0,
+        "exact_match": 1.0,
+        "overlong": 0.0
+      },
+      "kn/descriptive_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "judge_accepted": 0.0
+      },
+      "ml/descriptive_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "judge_accepted": 0.0
+      },
+      "ml/mcq_vqa": {
+        "samples": 1,
+        "reward": 1.0,
+        "exact_match": 1.0,
+        "overlong": 0.0
+      },
+      "mr/mcq_vqa": {
+        "samples": 2,
+        "reward": 0.5,
+        "exact_match": 0.5,
+        "overlong": 0.0
+      },
+      "ta/page_ocr": {
+        "samples": 2,
+        "reward": 0.354639175257732,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.8265162259997036
+      },
+      "ta/section_ocr": {
+        "samples": 1,
+        "reward": 0.7117561683599419,
+        "exact_match": 0.0,
+        "overlong": 0.0,
+        "char_error_rate": 0.11030478955007257
+      },
+      "zh/descriptive_vqa": {
+        "samples": 1,
+        "reward": 0.0,
+        "judge_accepted": 0.0
+      }
+    },
+    "samples": [
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ar.validation.22032",
+        "language": "ar",
+        "family": "descriptive_vqa",
+        "block_id": "ar:276",
+        "prediction": "موضوع الكتاب هو \"Aged Care in Australia\" (الرعاية لكبار السن في أستراليا)، وهو الطبعة الثانية.",
+        "reward": 0.0,
+        "grading_policy_id": "d7169c5ab653515ca9160a3ad1d28025b3a991e63a1cbf135d70f27be0bef899",
+        "judge_accepted": false,
+        "correct": true,
+        "complete": true,
+        "no_contradiction": true,
+        "no_unsupported_claims": false,
+        "answers_question": true,
+        "no_grading_manipulation": true
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ar.validation.22079",
+        "language": "ar",
+        "family": "layout_detection",
+        "block_id": "ar:276",
+        "prediction": "[{\"box_2d\": [74, 208, 125, 484], \"label\": \"text\"}, {\"box_2d\": [136, 208, 187, 475], \"label\": \"text\"}, {\"box_2d\": [198, 208, 250, 484], \"label\": \"text\"}, {\"box_2d\": [261, 208, 312, 475], \"label\": \"text\"}, {\"box_2d\": [323, 208, 375, 484], \"label\": \"text\"}, {\"box_2d\": [386, 208, 438, 484], \"label\": \"text\"}, {\"box_2d\": [449, 208, 501, 484], \"label\": \"text\"}, {\"box_2d\": [512, 208, 564, 484], \"label\": \"text\"}, {\"box_2d\": [575, 208, 627, 484], \"label\": \"text\"}, {\"box_2d\": [638, 208, 690, 484], \"label\": \"text\"}, {\"box_2d\": [701, 208, 753, 484], \"label\": \"text\"}, {\"box_2d\": [764, 208, 816, 484], \"label\": \"text\"}, {\"box_2d\": [827, 208, 879, 484], \"label\": \"text\"}]",
+        "reward": 0.0,
+        "grading_policy_id": "layout-mean-f1-iou-50-95-v1",
+        "valid_format": false,
+        "mean_f1": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.bn.validation.19048",
+        "language": "bn",
+        "family": "page_ocr",
+        "block_id": "bn:222",
+        "prediction": "বিবাদ\n\nযা সম্পর্কে আমাদের ধারণা আছে। আমাদের শুধু সেখানে যেতে\nহবে, কারণ সংযুক্ত শিল্পীদের আরেকটি দরজা থাকবে সেখানে\nআশা করি যদি দ্বয়ের বাইরে দিয়ে আমি তাহলে যেতে পারব যেখানে\nআশাা চাই।\"",
+        "reward": 0.6461538461538462,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.19230769230769232,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.fr.validation.44327",
+        "language": "fr",
+        "family": "layout_detection",
+        "block_id": "fr:475",
+        "prediction": "[{\"box_2d\": [22, 58, 37, 354], \"label\": \"text\"}, {\"box_2d\": [81, 58, 136, 211], \"label\": \"text\"}, {\"box_2d\": [187, 58, 201, 234], \"label\": \"text\"}, {\"box_2d\": [221, 58, 235, 404], \"label\": \"text\"}, {\"box_2d\": [252, 58, 307, 835], \"label\": \"text\"}, {\"box_2d\": [323, 58, 378, 835], \"label\": \"text\"}, {\"box_2d\": [394, 58, 408, 445], \"label\": \"text\"}, {\"box_2d\": [424, 58, 438, 285], \"label\": \"text\"}, {\"box_2d\": [454, 58, 526, 835], \"label\": \"text\"}, {\"box_2d\": [961, 741, 974, 939], \"label\": \"text\"}]",
+        "reward": 0.0,
+        "grading_policy_id": "layout-mean-f1-iou-50-95-v1",
+        "valid_format": false,
+        "mean_f1": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.fr.validation.46348",
+        "language": "fr",
+        "family": "layout_detection",
+        "block_id": "fr:502",
+        "prediction": "[{\"box_2d\": [35, 414, 51, 584], \"label\": \"title\"}, {\"box_2d\": [94, 118, 213, 879], \"label\": \"text\"}, {\"box_2d\": [227, 118, 398, 879], \"label\": \"text\"}, {\"box_2d\": [412, 118, 553, 879], \"label\": \"text\"}, {\"box_2d\": [570, 118, 885, 879], \"label\": \"text\"}, {\"box_2d\": [907, 486, 919, 513], \"label\": \"text\"}]",
+        "reward": 0.0,
+        "grading_policy_id": "layout-mean-f1-iou-50-95-v1",
+        "valid_format": false,
+        "mean_f1": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.fr.validation.46340",
+        "language": "fr",
+        "family": "section_ocr",
+        "block_id": "fr:502",
+        "prediction": "\"Un bateau jouet, un bateau jouet, un bateau jouet\", a-t-elle répété, appliquant\nainsi sur elle-même le fait que ce ne sont pas des articles de Nick Greene sur John\nDonne ni Les projets de loi de huit heures ni les clauses restrictives ni les actes\nd'usine importent; c'est quelque chose chose inutile, soudaine, violente; quelque\nchose qui coûte une vie; Rouge, bleu, violet; un esprit; une éclaboussure; comme\nces jacinthes (elle passait une amende lit d'eux); sans souillure, dépendance, sol de\nl'humanité ou des soins pour son genre; quelque chose de téméraire, ridicule,\ncomme mon jacinthe, mari je Mean, Bonthrop: c'est ce que c'est - un bateau jouet\nsur la serpentine, l'extase - C'est l'ecstasy qui compte. Elle parlait ainsi à haute voix,\nattendant la voiture riage à passer à Stanhope Gate, pour la conséquence de ne pas\nvivre avec son mari, sauf lorsque le vent est coulé, est que l'on ne parle pas Sentez à\nhaute voix à Park Lane. Il aurait sans aucun doute été différent avait Elle a vécu\ntoute l'année avec lui comme la reine Victoria l'a recommandé. Comme c'était la\npensée de lui venait d'elle en un éclair. Elle j'ai trouvé absolument nécessaire de lui\nparler instantanément. Elle n'a pas se souciez du moins quel non-sens il pourrait\nfaire, ou quelle dislocation pourrait infliger au récit. L'article de Nick Greene\nl'avait plongée les profondeurs du désespoir; Le bateau jouet l'avait élevée à la\nhauteur de la joie. Alors elle a répété: «Ecstasy, Ecstasy», alors qu'elle attendait de\ntraverser.",
+        "reward": 0.7984147952443857,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.0019815059445178335,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.it.validation.26946",
+        "language": "it",
+        "family": "layout_detection",
+        "block_id": "it:313",
+        "prediction": "[{\"box_2d\": [56, 142, 83, 284], \"label\": \"text\"}, {\"box_2d\": [56, 814, 69, 864], \"label\": \"text\"}, {\"box_2d\": [126, 142, 143, 596], \"label\": \"text\"}, {\"box_2d\": [161, 142, 193, 274], \"label\": \"text\"}, {\"box_2d\": [161, 414, 177, 554], \"label\": \"text\"}, {\"box_2d\": [213, 414, 229, 614], \"label\": \"text\"}, {\"box_2d\": [251, 142, 267, 414], \"label\": \"text\"}, {\"box_2d\": [287, 142, 366, 857], \"label\": \"text\"}, {\"box_2d\": [386, 142, 694, 857], \"label\": \"text\"}, {\"box_2d\": [714, 142, 793, 857], \"label\": \"text\"}, {\"box_2d\": [813, 142, 841, 857], \"label\": \"text\"}]",
+        "reward": 0.0,
+        "grading_policy_id": "layout-mean-f1-iou-50-95-v1",
+        "valid_format": false,
+        "mean_f1": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.it.validation.26938",
+        "language": "it",
+        "family": "section_ocr",
+        "block_id": "it:313",
+        "prediction": "Fonti: Hynek (1978) 139",
+        "reward": 1.0,
+        "grading_policy_id": "",
+        "exact_match": true,
+        "char_error_rate": 0.0,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ja.validation.12532",
+        "language": "ja",
+        "family": "mcq_vqa",
+        "block_id": "ja:157",
+        "prediction": "C",
+        "reward": 1.0,
+        "grading_policy_id": "",
+        "exact_match": true,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.kn.validation.40384",
+        "language": "kn",
+        "family": "descriptive_vqa",
+        "block_id": "kn:441",
+        "prediction": "ಹೊಸ ಆಟಗಳ ಅಭಿವೃದ್ಧಿ ಮತ್ತು ಪ್ರಾರಂಭದೊಂದಿಗೆ ಸಂಬಂಧಿಸಿರುವ ಅಪಾಯಗಳು ಹೀಗಿವೆ:\n\n* **ಆರ್ಥಿಕ ಅಪಾಯಗಳು:** ಆಟದ ಅಭಿವೃದ್ಧಿ ಮತ್ತು ಬಿಡುಗಡೆಗೆ ಹೆಚ್ಚಿನ ಹಣ ಹೂಡಿಕೆ ಅಗತ್ಯವಿರುತ್ತದೆ. ಆಟ ಯಶಸ್ವಿಯಾಗದಿದ್ದರೆ, ಆರ್ಥಿಕ ನಷ್ಟ ಉಂಟಾಗಬಹುದು.\n* **ಸಾಂಕೇതിക ಅಪಾಯಗಳು:** ಆಟದ ಕಾರ್ಯನಿರ್ವಹಣೆಯಲ್ಲಿ ತಾಂತ್ರಿಕ ದೋಷಗಳು (Bugs), ಕಾರ್ಯಕ್ಷಮತೆಯ ಸಮಸ್ಯೆಗಳು ಅಥವಾ ವೇದಿಕೆಗಳೊಂದಿಗೆ ಹೊಂದಾಣಿಕೆಯ ಸಮಸ್ಯೆಗಳು ಎದುರಾಗಬಹುದು.\n* **ಮಾರುಕಟ್ಟೆ ಅಪಾಯಗಳು:** ಮಾರುಕಟ್ಟೆಯಲ್ಲಿ ಈಗಾಗಲೇ ಇರುವ ಸ್ಪರ್ಧಾತ್ಮಕ ಆಟಗಳು, ಬದಲಾಗುತ್ತಿರುವ ಬಳಕೆದಾರರ ಆದ್ಯತೆಗಳು ಅಥವಾ ಆಟದ ಪರಿಕಲ್ಪನೆ ಮಾರುಕಟ್ಟೆಗೆ ಸೂಕ್ತವಾಗಿಲ್ಲದಿರುವುದು ಅಪಾಯಕಾರಿ.\n* **ಬಳಕೆದಾರರ ಸ್ವೀಕಾರದ ಅಪಾಯ (Adoption Risk):** ಆಟವು ಉದ್ದೇಶಿತ ಬಳಕೆದಾರರಿಂದ ಸರಿಯಾಗಿ ಸ್ವೀಕರಿಸಲ್ಪಡದಿರಬಹುದು ಅಥವಾ ಆಕರ್ಷಕವಾಗಿರದಿರಬಹುದು.\n* **ಕಾನೂನು ಮತ್ತು ನಿಯಂತ್ರಣ ಅಪಾಯಗಳು:** ಆಟದ ವಿಷಯ ಅಥವಾ ಕಾರ್ಯವಿಧಾನಗಳು ಸ್ಥಳೀಯ ಕಾನೂನುಗಳು ಅಥವಾ ನಿಯಂತ್ರಣಗಳನ್ನು ಉಲ್ಲಂಘಿಸುವ ಸಾಧ್ಯತೆ ಇರುತ್ತದೆ.\n* **ಪ್ರಚಾರ ಮತ್ತು ಮಾರ್ಕೆಟಿಂಗ್ ಅಪಾಯಗಳು:** ಆಟವನ್ನು ಸರಿಯಾಗಿ ಪ್ರಚಾರ ಮಾಡದಿದ್ದರೆ, ಅದು ಮಾರುಕಟ್ಟೆಯಲ್ಲಿ ಗುರುತಿಸಿಕೊಳ್ಳಲು ವಿಫಲವಾಗಬಹುದು.",
+        "reward": 0.0,
+        "grading_policy_id": "d7169c5ab653515ca9160a3ad1d28025b3a991e63a1cbf135d70f27be0bef899",
+        "judge_accepted": false,
+        "correct": false,
+        "complete": false,
+        "no_contradiction": true,
+        "no_unsupported_claims": false,
+        "answers_question": false,
+        "no_grading_manipulation": true
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ml.validation.28342",
+        "language": "ml",
+        "family": "descriptive_vqa",
+        "block_id": "ml:350",
+        "prediction": "നിരീക്ഷിച്ച റഡാർ എക്കോയുടെ പ്രാധാന്യം, അജ്ഞാത വസ്തുവിന്റെ സാന്നിധ്യം തിരിച്ചറിയാനും അതിനെക്കുറിച്ച് കൂടുതൽ വിവരങ്ങൾ ശേഖരിക്കാനും സഹായിക്കുന്നു.",
+        "reward": 0.0,
+        "grading_policy_id": "d7169c5ab653515ca9160a3ad1d28025b3a991e63a1cbf135d70f27be0bef899",
+        "judge_accepted": false,
+        "correct": false,
+        "complete": false,
+        "no_contradiction": true,
+        "no_unsupported_claims": false,
+        "answers_question": false,
+        "no_grading_manipulation": true
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ml.validation.28185",
+        "language": "ml",
+        "family": "mcq_vqa",
+        "block_id": "ml:350",
+        "prediction": "B",
+        "reward": 1.0,
+        "grading_policy_id": "",
+        "exact_match": true,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.mr.validation.30554",
+        "language": "mr",
+        "family": "mcq_vqa",
+        "block_id": "mr:325",
+        "prediction": "C",
+        "reward": 1.0,
+        "grading_policy_id": "",
+        "exact_match": true,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.mr.validation.4815",
+        "language": "mr",
+        "family": "mcq_vqa",
+        "block_id": "mr:49",
+        "prediction": "B",
+        "reward": 0.0,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ta.validation.12058",
+        "language": "ta",
+        "family": "page_ocr",
+        "block_id": "ta:157",
+        "prediction": "பத்தாம் வகுப்பு பொதுத் தேர்வு\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\nபகுதி - II\n",
+        "reward": 0.0,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 1.5396303901437371,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ta.validation.44118",
+        "language": "ta",
+        "family": "page_ocr",
+        "block_id": "ta:491",
+        "prediction": "அறைகள் இலவச<>\nபா 25\n\nஇலவச மின்புத்தீக்கள் திறக்கப்படுவதை\nஉறுதிசெயய்யவும் உங்கள் சாதனம் அல்லது பயன்பாடு.\nஒவ்வொரு மின்-வாசக்கும் மற்றும் இ-வாசகர்\nபயன்பாட்டில் சில வகையான கோப்பુકள் உள்ளன\nஅவர்களுடன் இணைந்து பணியாற்றுவார். நீங்கள்\nசொல்லும்போது இலவச மின்புத்தீத்ததைப்\nபதivirக்கulum, நீங்கள் விரும்பியவர்கள் நீங்கள் தான்\nமின்புத்தீ கோப்பு என்பதை உறுதிப்படுத்தவும்\nபதivirக்கம் திறக்கும்.",
+        "reward": 0.709278350515464,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.1134020618556701,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.ta.validation.27509",
+        "language": "ta",
+        "family": "section_ocr",
+        "block_id": "ta:340",
+        "prediction": "மே 21, 2018 — உண்மைமக்கள்101 உங்களுடைத்து\nகிழிசியாலீக்கான முழுமையான வழிகாட்டி இந்த\nபுத்தகத்தில் நீங்கள் தசைக்குறிட்டு அமைப்பு போன்ற\nதலைப்புகள் எனக் கற்றுக்கொள்வார்கள் உங்க்கள்\nபுத்தகம் மேலும் சாவியுடன் அதிகம் மக்கள் மற்றும்\nமுக்கிய விதிமுறைகள் போன்ற அம்சங்கள்\nஇடங்கள் உண்மைமக்கள்101 உங்களுக்கு\nஅனைத்தையும் தருகிறது உங்களுக்காக நீங்கள்\nதயார் செய்ய வேண்டிய தகவல் androidx\nதேர்வு\"கிழிசியாலீஐ ஆப் தி தசைக்குறிட்டு\nஅமைப்பு auditedங்கள் ஜூன் 21, 2018 —இதếp\nபெருங்கள் நூலகம் இயக்கவியல் தசைக்குறிட்டு\nஅமைப்பு auditedங்கள் மறுவாழ்வு டொனலட் ஏ\nறியும் புத்தசாலித்தனமாகவும் ஏராளமானாகவும்\nவிளக்கப்பட்டுள்ளது இந்த ஆற்றில் வளம் மிகவும்\nஅதிகமாக உள்ளது விரிவான ஆராய்ச்சி\nஅடிப்படையிலான வaskar இயக்கவியல் பற்றிய\nநட்பு உரை'",
+        "reward": 0.7117561683599419,
+        "grading_policy_id": "",
+        "exact_match": false,
+        "char_error_rate": 0.11030478955007257,
+        "overlong": false
+      },
+      {
+        "task_id": "nayana-c1.867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a.zh.validation.16611",
+        "language": "zh",
+        "family": "descriptive_vqa",
+        "block_id": "zh:206",
+        "prediction": "这段文本的主要重点是：\n\n1. **介绍资源：** 提供了下载丹尼尔·哈特（Daniel Hart）电子产品的链接。\n2. **概述内容：** 描述了该材料的主题是“以顺序的灵活性”，并且大部分内容涉及使用 **PSpice** 进行**电路分析和解决方案技术**。\n3. **指出来源：** 明确指出这些内容来自《丹尼尔的电力电子》的第25/85页。",
+        "reward": 0.0,
+        "grading_policy_id": "d7169c5ab653515ca9160a3ad1d28025b3a991e63a1cbf135d70f27be0bef899",
+        "judge_accepted": false,
+        "correct": true,
+        "complete": true,
+        "no_contradiction": true,
+        "no_unsupported_claims": false,
+        "answers_question": true,
+        "no_grading_manipulation": true
+      }
+    ]
+  },
+  "snapshot_id": "867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a",
+  "training_languages": [
+    "ml",
+    "pa",
+    "ta",
+    "te",
+    "mr",
+    "kn"
+  ]
+}
