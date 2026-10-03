@@ -1,6 +1,6 @@
 # Reproduce the complete-corpus environment
 
-Run commands from `05-multilingual-ocr/`. Python 3.12, OpenEnv 0.4.2, PyArrow 25.0.1,
+Run commands from `06-multilingual-ocr/`. Python 3.12, OpenEnv 0.4.2, PyArrow 25.0.1,
 Hugging Face Hub 1.31.0, Datasets 5.0.1, and TRL 1.13.0 are pinned by the package/lockfile.
 `uv run --frozen` installs the checked-in dependency resolution. The corpus source is
 `Cognitive-Lab/NayanaOCR_Corpus_2025@b220b074a8c82bb90427051e856e4c4edc79885b`.

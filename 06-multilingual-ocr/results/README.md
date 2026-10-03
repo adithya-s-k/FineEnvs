@@ -6,6 +6,7 @@ tell what was actually checked and at which source revision.
 
 | File | Run |
 |---|---|
+| [`kannada-grpo/`](./kannada-grpo/) | Kannada GRPO run: every checkpoint scored on a held-out set, launch commands, figures |
 | `a100-smoke-gemma-4-E2B-it.json` | Single-A100 GRPO smoke, Gemma 4 E2B |
 | `a100-smoke-gemma-4-E4B-it.json` | Single-A100 GRPO smoke, Gemma 4 E4B |
 

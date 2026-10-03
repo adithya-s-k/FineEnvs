@@ -44,7 +44,7 @@ def main():
         root = (
             folder
             / f"{args.repo.split('/')[-1]}-{args.revision}"
-            / "05-multilingual-ocr"
+            / "06-multilingual-ocr"
         )
         output = folder / "speed-job.json"
         subprocess.run(

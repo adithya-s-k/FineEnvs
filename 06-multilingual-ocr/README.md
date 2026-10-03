@@ -1,14 +1,91 @@
-# 05 · Multilingual OCR
+# 06 · Multilingual OCR
 
-**Serve the complete Nayana corpus through OpenEnv, with indexed task access and bounded image caches.**
-The source is [CognitiveLab's NayanaOCR_Corpus_2025](https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025):
-**1,006,170 pages, 22 languages, 1,784 Parquet shards, and 813.7 GB of pinned repository files**.
-The full index provides **11,020,101 task candidates**: 4,477,445 section OCR, 639,448 full-page OCR,
-872,448 MCQ VQA, 1,006,168 layout detection, and 4,024,592 descriptive VQA tasks.
-The complete source copy lives in the existing
-[HuggingEnvs bucket](https://huggingface.co/buckets/HuggingEnvs/NayanaOCR_Corpus_2025_bucket).
-One environment serves it locally and in the
-[OpenEnv Space](https://huggingface.co/spaces/FineEnvs/nayana-ocr-env).
+<div align="center">
+
+[![Collection](https://img.shields.io/badge/%F0%9F%A4%97%20Collection-Multilingual%20Multimodal%20Envs-FFD21E?style=for-the-badge&labelColor=1a1a1a)](https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4)
+[![Space](https://img.shields.io/badge/%F0%9F%A4%97%20Space-nayana--ocr--env-FFD21E?style=for-the-badge&labelColor=1a1a1a)](https://huggingface.co/spaces/FineEnvs/nayana-ocr-env)
+[![Model](https://img.shields.io/badge/%F0%9F%A4%97%20Model-kannada--ocr--grpo-FFD21E?style=for-the-badge&labelColor=1a1a1a)](https://huggingface.co/FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo)
+[![Trackio](https://img.shields.io/badge/%F0%9F%93%88%20Trackio-runs-FFD21E?style=for-the-badge&labelColor=1a1a1a)](https://huggingface.co/spaces/FineEnvs/multilingual-multimodal-trackio)
+
+</div>
+
+> **One OpenEnv server for a million document pages in 22 languages, and a Kannada OCR model trained against it.**
+
+<div align="center">
+
+<img src="./assets/curves.gif" alt="Training reward and held-out Sarvam CER/WER over 500 GRPO steps" width="100%">
+
+<sub>Gemma 4 E4B, GRPO on 4,000 Kannada section crops. Right: Sarvam Indic OCR Bench, 300 Kannada crops it never trains on, scored by the benchmark's own metric.</sub>
+
+</div>
+
+The environment serves [CognitiveLab's NayanaOCR_Corpus_2025](https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025)
+in place: **1,006,170 pages, 22 languages, 1,784 Parquet shards and 813.7 GB**, indexed into
+**11,020,101 tasks** across five task families, without copying a page out of the
+[bucket](https://huggingface.co/buckets/FineEnvs/NayanaOCR_Corpus_2025_bucket). It also serves
+[Sarvam Indic OCR Bench](https://huggingface.co/datasets/sarvamai/indic-ocr-bench) as evaluation-only
+splits, with the benchmark's own metrics reported beside the reward.
+
+| Part | Where |
+|---|---|
+| Environment: server, catalog, rewards, playground, Docker, tests | [`envs/nayana_ocr/`](./envs/nayana_ocr/) |
+| GRPO trainer, HF Jobs launcher, live checkpoint evaluation, deployment | [`train/`](./train/) |
+| Kannada run: per-checkpoint scores, curves, launch commands | [`results/kannada-grpo/`](./results/kannada-grpo/) |
+| Published index manifest and frozen evaluation sets | [`data/`](./data/) |
+| Walkthrough notebook | [`notebooks/06_multilingual_ocr.ipynb`](./notebooks/06_multilingual_ocr.ipynb) |
+| Exact commands, defaults, provenance | [`REPRODUCE.md`](./REPRODUCE.md) |
+| Hosted environment and playground | [FineEnvs/nayana-ocr-env](https://huggingface.co/spaces/FineEnvs/nayana-ocr-env) |
+| Trained adapter | [FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo](https://huggingface.co/FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo) |
+| Every held-out prediction, curves, logs, job scripts | [FineEnvs/multilingual-multimodal-rl-runs](https://huggingface.co/datasets/FineEnvs/multilingual-multimodal-rl-runs) |
+| Training and evaluation dashboard | [FineEnvs/multilingual-multimodal-trackio](https://huggingface.co/spaces/FineEnvs/multilingual-multimodal-trackio) |
+| Collection, with the ASR sibling project | [Multilingual Multimodal Envs](https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4) |
+
+## Result: Kannada document OCR
+
+`google/gemma-4-E4B-it` with a LoRA adapter, trained by GRPO on 4,000 Kannada section crops streamed
+from the corpus, 500 steps on one A100 (10.5 hours). A second job scored every checkpoint on the
+Kannada part of Sarvam Indic OCR Bench as it was saved, using the benchmark's own `metrics.py`.
+
+| Sarvam Indic OCR Bench · Kannada · 300 crops | base | step 300 | change (95% CI) |
+|---|---:|---:|---:|
+| **Sarvam CER** | 0.4277 | **0.3601** | **−0.068** (−0.083, −0.052) |
+| Sarvam WER | 0.773 | 0.748 | −0.025 (−0.037, −0.014) |
+| Sarvam word accuracy | 22.7% | 25.2% | |
+| loop or catastrophic outputs | 16 | 10 | |
+| crops containing another Indic script | 37 (12.3%) | 15 (5.0%) | |
+| environment reward | 0.455 | 0.513 | +0.058 |
+
+Changes are paired crop by crop against the untuned base on the same engine. 223 crops improve,
+62 get worse. Most of the gain comes in the first 100 steps; held-out CER is flat from step 300 to
+500 (0.3602 at step 500), so step 300 is the published adapter. Every checkpoint is in
+[`results/kannada-grpo/`](./results/kannada-grpo/).
+
+**What it learned first: stay in the script.** The untuned model writes Devanagari or Latin into
+Kannada text. The crop below is at the 25th percentile of improvement, not picked by hand:
+
+<img src="./assets/example-crop.jpg" alt="Kannada text crop from Sarvam Indic OCR Bench" width="60%">
+
+| | text | Sarvam CER |
+|---|---|---:|
+| reference | ಬಯ್ತ - ಅಡಗಿಸಿಟ್ಟ (ದಿವಿಜತತಿ ಬಯ್ತು ಕೈದುವಂ ಅವಸರದೊಳ್ / ಬೇಡೆ ಸುರಭಿಯ ನಕ್ಕಿಸೆ .. .. ಕಯ್ದುವಾದುವಾ / ಗೊರವನೆಲ್ವು: ಸಮಯಪ, ೧೦. ೧೪೨) | |
+| base | ಬತ್ತು - ಅಡಗಿಸಿಟ್ಟಿ (ದವಿಚತೇ **वायु** ಕೃಡಮ ಅವಕಾಶದೊಳ / ಬೇದ ಸುರಭೆಯ ನಕ್ಷೆ ... ... ಕಮ್ಯುದದಾ / ಗೌರವ**nel**: ಸಮುಮ, ೧೦.೧೭) | 0.455 |
+| step 300 | ಬತ್ತು - ಅಡಗಿಸಿಟಿ (ದಿವಸತೇ ಬತ್ತು ಕಡಮಂ ಅವಕಾಶದೊಳ / ಬೇಡ ಸುರಭಿಯ ನಕ್ಷೆ ... ... ಕಮ್ಯುವಾದುಹಾ / ಗಾರ್ದನಲ್ಯ: ಸಮಯವ, ೧೦.೧೭) | 0.347 |
+
+Word error barely moves and no crop is transcribed exactly: the remaining errors are a letter or two
+inside most words, which a character reward fixes slowly and a word metric does not credit.
+
+### How it trains
+
+<img src="./assets/how-it-trains.gif" alt="One GRPO step, stage by stage, beside the code that runs it" width="100%">
+
+The environment owns the task and the reward; the trainer only ever sees task IDs. TRL's
+`GRPOTrainer` resets one OpenEnv session per rollout through `environment_factory`, samples 8
+transcriptions per crop, and asks the server to grade each. Each saved checkpoint writes a hash
+manifest beside its adapter; a second job (`eval_vllm.py --watch`) follows the run's bucket, loads
+each complete adapter into one vLLM engine, scores it on the benchmark, and logs the curve, plots
+and paired intervals to Trackio. Commands are in [`train/README.md`](./train/README.md).
+
+## Tasks and reward
 
 | Task | Observation | Answer | Reward |
 |---|---|---|---|
@@ -18,10 +95,12 @@ One environment serves it locally and in the
 | `layout_detection` | Original page and its pixel dimensions | JSON array of labeled pixel boxes | Mean class-aware region F1 at IoU .50:.05:.95 |
 | `descriptive_vqa` | Original page and question | Concise free-form answer | Strict Gemma judge: all six checks must pass |
 
+
 The [playground](https://fineenvs-nayana-ocr-env.hf.space/web/) has language/task filters,
 indexed navigation, shuffle, a page viewer, layout overlays, scoring, and reference reveal after submission.
 The OpenEnv observation and discovery APIs exclude reference answers. The public UI deliberately
 reveals them after scoring, matching the LaTeX OCR interaction.
+
 
 <!-- BEGIN:matrix -->
 | Env | Tools | Backend | `openenv` |
@@ -101,7 +180,7 @@ uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana
   --output-dir artifacts/local-gpu-smoke
 ```
 
-The [notebook](notebooks/05_multilingual_ocr.ipynb) uses the same data and training code.
+The [notebook](notebooks/06_multilingual_ocr.ipynb) uses the same data and training code.
 Run outputs and calibration reports go under the ignored `artifacts/` directory. CI runs
 regression and transport checks and retains reports as workflow artifacts. See
 [REPRODUCE.md](REPRODUCE.md#7-checks-and-task-policy) for local verification and benchmarks.
@@ -128,7 +207,8 @@ are validated when a task is loaded; invalid image/annotation pairs fail explici
 therefore describe indexed annotation candidates, not an image-quality-audited benchmark.
 Serving rejects images above 50 million pixels, including a known 69.7-megapixel source page.
 Preflight fixed training/evaluation sets; unattended full-corpus runs need a versioned resize
-or eligibility policy. The GPU optimizer recipe remains unverified.
+or eligibility policy. The GRPO recipe is verified on Kannada section OCR (above); the other four
+task families have smoke runs, not trained results.
 An original Arabic page has known missing/distorted glyphs; the UI flags this source caveat.
 Source supervision and language-specific rendering need auditing before making model claims.
 
@@ -180,10 +260,23 @@ catalog, bucket adapter, caching, sampling, and OCR policy around those interfac
 ```text
 envs/nayana_ocr/     OpenEnv package, data adapters, playground, tests, Docker, lockfile
 data/               published index manifest and data contract
-train/              GRPO, HF Jobs, deployment, calibration, and benchmark commands
+train/              GRPO, HF Jobs, live checkpoint evaluation, deployment, calibration, benchmarks
+results/            smoke records and the Kannada run (kannada-grpo/)
+assets/             README figures and the scripts that draw them from the published run data
 notebooks/          full-corpus data handling and optional training walkthrough
 REPRODUCE.md        exact commands, defaults, provenance, and replay limits
 ```
 
 Environment code is Apache-2.0. Source data, copied annotations, and derived images retain
 **CC BY-NC 4.0** and CognitiveLab attribution; see [data/README.md](data/README.md).
+
+## Citation
+
+```bibtex
+@misc{fineenvs,
+  author = {Kolavi, Adithya S},
+  title  = {FineEnvs: Open Source RL Environments for LLM Agents},
+  year   = {2026},
+  url    = {https://github.com/adithya-s-k/FineEnvs}
+}
+```
