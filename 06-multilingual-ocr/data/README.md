@@ -2,7 +2,7 @@
 
 Source: [CognitiveLab / NayanaOCR_Corpus_2025](https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025/tree/b220b074a8c82bb90427051e856e4c4edc79885b),
 revision `b220b074a8c82bb90427051e856e4c4edc79885b`, **CC BY-NC 4.0**.
-Copy: [HuggingEnvs/NayanaOCR_Corpus_2025_bucket](https://huggingface.co/buckets/HuggingEnvs/NayanaOCR_Corpus_2025_bucket).
+Copy: [FineEnvs/NayanaOCR_Corpus_2025_bucket](https://huggingface.co/buckets/FineEnvs/NayanaOCR_Corpus_2025_bucket).
 There are 45,735 pages per language, 22 languages, 1,784 Parquet shards, 1,807 source files,
 and 813,665,107,295 bytes of pinned files. Sizes include repository metadata; they are not
 image-only byte counts. Historical revisions are excluded.
