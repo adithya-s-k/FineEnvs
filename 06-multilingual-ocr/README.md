@@ -1,106 +1,135 @@
-# 06 · Multilingual OCR
-
 <div align="center">
 
-[![Collection](https://img.shields.io/badge/%F0%9F%A4%97%20Collection-Multilingual%20Multimodal%20Envs-FFD21E?style=for-the-badge&labelColor=1a1a1a)](https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4)
-[![Space](https://img.shields.io/badge/%F0%9F%A4%97%20Space-nayana--ocr--env-FFD21E?style=for-the-badge&labelColor=1a1a1a)](https://huggingface.co/spaces/FineEnvs/nayana-ocr-env)
-[![Model](https://img.shields.io/badge/%F0%9F%A4%97%20Model-kannada--ocr--grpo-FFD21E?style=for-the-badge&labelColor=1a1a1a)](https://huggingface.co/FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo)
-[![Trackio](https://img.shields.io/badge/%F0%9F%93%88%20Trackio-runs-FFD21E?style=for-the-badge&labelColor=1a1a1a)](https://huggingface.co/spaces/FineEnvs/multilingual-multimodal-trackio)
+<img src="./assets/playground.jpg" alt="The Nayana playground: a Kannada crop from Sarvam Indic OCR Bench, the trained model's transcription scored, and the reference revealed after scoring" width="100%">
+
+<h1>Multilingual OCR</h1>
+
+<h3>A million document pages in 22 languages, behind one OpenEnv server</h3>
+
+<p>The whole Nayana corpus as an RL environment, Sarvam Indic OCR Bench served beside it, and a Gemma 4 trained to read Kannada.</p>
+
+<a href="https://huggingface.co/spaces/FineEnvs/nayana-ocr-env"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Space-Try%20it%20now-FFD21E?style=for-the-badge&labelColor=1a1a1a" alt="Try the environment" height="32"></a>
+<a href="https://huggingface.co/FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Model-Kannada%20OCR-4F46E5?style=for-the-badge&labelColor=1a1a1a" alt="The trained model" height="32"></a>
+<a href="https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Collection-Multilingual%20Multimodal%20Envs-10B981?style=for-the-badge&labelColor=1a1a1a" alt="The collection" height="32"></a>
+<a href="https://github.com/huggingface/OpenEnv"><img src="https://img.shields.io/badge/framework-OpenEnv-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="OpenEnv" height="32"></a>
 
 </div>
 
-> **One OpenEnv server for a million document pages in 22 languages, and a Kannada OCR model trained against it.**
+---
 
-<div align="center">
+## The result
+
+Gemma 4 E4B, trained with GRPO on 4,000 Kannada text crops, makes **16% fewer character errors** on
+the Kannada part of [Sarvam Indic OCR Bench](https://huggingface.co/datasets/sarvamai/indic-ocr-bench),
+a benchmark it never trained on. 500 steps, one A100, 10.5 hours.
 
 <img src="./assets/curves.gif" alt="Training reward and held-out Sarvam CER/WER over 500 GRPO steps" width="100%">
 
-<sub>Gemma 4 E4B, GRPO on 4,000 Kannada section crops. Right: Sarvam Indic OCR Bench, 300 Kannada crops it never trains on, scored by the benchmark's own metric.</sub>
-
-</div>
-
-The environment serves [CognitiveLab's NayanaOCR_Corpus_2025](https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025)
-in place: **1,006,170 pages, 22 languages, 1,784 Parquet shards and 813.7 GB**, indexed into
-**11,020,101 tasks** across five task families, without copying a page out of the
-[bucket](https://huggingface.co/buckets/FineEnvs/NayanaOCR_Corpus_2025_bucket). It also serves
-[Sarvam Indic OCR Bench](https://huggingface.co/datasets/sarvamai/indic-ocr-bench) as evaluation-only
-splits, with the benchmark's own metrics reported beside the reward.
-
-| Part | Where |
-|---|---|
-| Environment: server, catalog, rewards, playground, Docker, tests | [`envs/nayana_ocr/`](./envs/nayana_ocr/) |
-| GRPO trainer, HF Jobs launcher, live checkpoint evaluation, deployment | [`train/`](./train/) |
-| Kannada run: per-checkpoint scores, curves, launch commands | [`results/kannada-grpo/`](./results/kannada-grpo/) |
-| Published index manifest and frozen evaluation sets | [`data/`](./data/) |
-| Walkthrough notebook | [`notebooks/06_multilingual_ocr.ipynb`](./notebooks/06_multilingual_ocr.ipynb) |
-| Exact commands, defaults, provenance | [`REPRODUCE.md`](./REPRODUCE.md) |
-| Hosted environment and playground | [FineEnvs/nayana-ocr-env](https://huggingface.co/spaces/FineEnvs/nayana-ocr-env) |
-| Trained adapter | [FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo](https://huggingface.co/FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo) |
-| Every held-out prediction, curves, logs, job scripts | [FineEnvs/multilingual-multimodal-rl-runs](https://huggingface.co/datasets/FineEnvs/multilingual-multimodal-rl-runs) |
-| Training and evaluation dashboard | [FineEnvs/multilingual-multimodal-trackio](https://huggingface.co/spaces/FineEnvs/multilingual-multimodal-trackio) |
-| Collection, with the ASR sibling project | [Multilingual Multimodal Envs](https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4) |
-
-## Result: Kannada document OCR
-
-`google/gemma-4-E4B-it` with a LoRA adapter, trained by GRPO on 4,000 Kannada section crops streamed
-from the corpus, 500 steps on one A100 (10.5 hours). A second job scored every checkpoint on the
-Kannada part of Sarvam Indic OCR Bench as it was saved, using the benchmark's own `metrics.py`.
-
-| Sarvam Indic OCR Bench · Kannada · 300 crops | base | step 300 | change (95% CI) |
+| Sarvam Indic OCR Bench, Kannada, 300 crops | base | trained | change, 95% CI |
 |---|---:|---:|---:|
-| **Sarvam CER** | 0.4277 | **0.3601** | **−0.068** (−0.083, −0.052) |
-| Sarvam WER | 0.773 | 0.748 | −0.025 (−0.037, −0.014) |
-| Sarvam word accuracy | 22.7% | 25.2% | |
-| loop or catastrophic outputs | 16 | 10 | |
-| crops containing another Indic script | 37 (12.3%) | 15 (5.0%) | |
-| environment reward | 0.455 | 0.513 | +0.058 |
+| **character error rate** | 0.4277 | **0.3601** | −0.068 (−0.083, −0.052) |
+| word error rate | 0.773 | 0.748 | −0.025 (−0.037, −0.014) |
+| word accuracy | 22.7% | 25.2% | |
+| outputs that loop or collapse | 16 | 10 | |
+| outputs that slip into another script | 12.3% | 5.0% | |
 
-Changes are paired crop by crop against the untuned base on the same engine. 223 crops improve,
-62 get worse. Most of the gain comes in the first 100 steps; held-out CER is flat from step 300 to
-500 (0.3602 at step 500), so step 300 is the published adapter. Every checkpoint is in
-[`results/kannada-grpo/`](./results/kannada-grpo/).
+The error rates are the benchmark's own, from Sarvam's `metrics.py`, run unmodified, so they can be
+compared with Sarvam's published numbers. Each change is paired crop by crop against the untuned
+model, on the same vLLM engine. 223 crops get better and 62 get worse.
 
-**What it learned first: stay in the script.** The untuned model writes Devanagari or Latin into
-Kannada text. The crop below is at the 25th percentile of improvement, not picked by hand:
+The gain is real but modest, and it stops early: the curve is flat from step 300. [What it
+learned](#what-it-learned) says why.
+
+## What this is
+
+You get a crop from a scanned book: three lines of Kannada verse, a caption, a column of a
+dictionary. You type out the text. A server compares it with what a human transcribed and pays you
+for every character you got right.
+
+That is one of five tasks this environment serves from
+[CognitiveLab's Nayana corpus](https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025):
+1,006,170 pages in 22 languages, indexed into 11 million tasks. The other four read a whole page,
+draw the layout boxes, or answer a question about the page, either multiple choice or in free text.
+The pages stay in a [bucket](https://huggingface.co/buckets/FineEnvs/NayanaOCR_Corpus_2025_bucket)
+and are fetched one at a time, so you can train on 813 GB of documents without downloading them.
+
+Sarvam Indic OCR Bench is served next to the corpus as evaluation-only splits: 6,908 human-checked
+text blocks in 23 languages, eleven of which are not in Nayana. A benchmark crop is an ordinary
+section-OCR task with the same reward, so the two read on one scale. Sarvam's own error rates are
+reported beside the reward.
+
+## What it learned
+
+It learned to stay in the script.
+
+The untuned model reads Kannada reasonably well, but one crop in eight comes back with letters
+from another Indic script in the middle. Training cuts that to one in twenty, and outputs that loop or
+fall apart drop from 16 to 10. A crop at the 25th percentile of improvement:
 
 <img src="./assets/example-crop.jpg" alt="Kannada text crop from Sarvam Indic OCR Bench" width="60%">
 
-| | text | Sarvam CER |
+| | transcription | Sarvam CER |
 |---|---|---:|
 | reference | ಬಯ್ತ - ಅಡಗಿಸಿಟ್ಟ (ದಿವಿಜತತಿ ಬಯ್ತು ಕೈದುವಂ ಅವಸರದೊಳ್ / ಬೇಡೆ ಸುರಭಿಯ ನಕ್ಕಿಸೆ .. .. ಕಯ್ದುವಾದುವಾ / ಗೊರವನೆಲ್ವು: ಸಮಯಪ, ೧೦. ೧೪೨) | |
-| base | ಬತ್ತು - ಅಡಗಿಸಿಟ್ಟಿ (ದವಿಚತೇ **वायु** ಕೃಡಮ ಅವಕಾಶದೊಳ / ಬೇದ ಸುರಭೆಯ ನಕ್ಷೆ ... ... ಕಮ್ಯುದದಾ / ಗೌರವ**nel**: ಸಮುಮ, ೧೦.೧೭) | 0.455 |
-| step 300 | ಬತ್ತು - ಅಡಗಿಸಿಟಿ (ದಿವಸತೇ ಬತ್ತು ಕಡಮಂ ಅವಕಾಶದೊಳ / ಬೇಡ ಸುರಭಿಯ ನಕ್ಷೆ ... ... ಕಮ್ಯುವಾದುಹಾ / ಗಾರ್ದನಲ್ಯ: ಸಮಯವ, ೧೦.೧೭) | 0.347 |
+| before | ಬತ್ತು - ಅಡಗಿಸಿಟ್ಟಿ (ದವಿಚತೇ **वायु** ಕೃಡಮ ಅವಕಾಶದೊಳ / ಬೇದ ಸುರಭೆಯ ನಕ್ಷೆ ... ... ಕಮ್ಯುದದಾ / ಗೌರವ**nel**: ಸಮುಮ, ೧೦.೧೭) | 0.455 |
+| after | ಬತ್ತು - ಅಡಗಿಸಿಟಿ (ದಿವಸತೇ ಬತ್ತು ಕಡಮಂ ಅವಕಾಶದೊಳ / ಬೇಡ ಸುರಭಿಯ ನಕ್ಷೆ ... ... ಕಮ್ಯುವಾದುಹಾ / ಗಾರ್ದನಲ್ಯ: ಸಮಯವ, ೧೦.೧೭) | 0.347 |
 
-Word error barely moves and no crop is transcribed exactly: the remaining errors are a letter or two
-inside most words, which a character reward fixes slowly and a word metric does not credit.
+What it did not learn is to read the letters it gets wrong. Word error barely moves, and no crop
+is transcribed exactly, before or after. The remaining mistakes are a letter or two inside most
+words. A character reward improves those slowly, and a word metric gives no credit until the whole
+word is right.
 
-### How it trains
+Most of the gain arrives in the first 100 steps, and the curve is flat from step 300 to 500. More
+steps on the same mix will not help much. Different data or a larger model might.
+[LEARNINGS.md](./LEARNINGS.md) has the details.
+
+## How a training step works
 
 <img src="./assets/how-it-trains.gif" alt="One GRPO step, stage by stage, beside the code that runs it" width="100%">
 
-The environment owns the task and the reward; the trainer only ever sees task IDs. TRL's
-`GRPOTrainer` resets one OpenEnv session per rollout through `environment_factory`, samples 8
-transcriptions per crop, and asks the server to grade each. Each saved checkpoint writes a hash
-manifest beside its adapter; a second job (`eval_vllm.py --watch`) follows the run's bucket, loads
-each complete adapter into one vLLM engine, scores it on the benchmark, and logs the curve, plots
-and paired intervals to Trackio. Commands are in [`train/README.md`](./train/README.md).
+The environment owns the task and the reward. The trainer only ever handles task IDs: TRL's
+`GRPOTrainer` opens one OpenEnv session per rollout, the model writes eight transcriptions of the
+crop, and the server grades each one.
 
-## Tasks and reward
+Every 25 steps a checkpoint is saved. A second job follows the run's bucket, loads each new adapter
+into one vLLM engine, scores it on the benchmark, and logs the result to Trackio. You can read the
+curve while the run is still going.
 
-| Task | Observation | Answer | Reward |
-|---|---|---|---|
-| `page_ocr` | Native-size page, with unannotated areas masked | Annotated text in geometric reading order | `0.8 × max(0, 1−CER) + 0.2 × exact_match` |
-| `section_ocr` | Lossless crop of an annotated region | Transcription in its source language | Same OCR reward |
-| `mcq_vqa` | Original page JPEG, question, options | Uppercase option letter | Exact letter match |
-| `layout_detection` | Original page and its pixel dimensions | JSON array of labeled pixel boxes | Mean class-aware region F1 at IoU .50:.05:.95 |
-| `descriptive_vqa` | Original page and question | Concise free-form answer | Strict Gemma judge: all six checks must pass |
+## Layout
 
+```
+06-multilingual-ocr/
+├── envs/nayana_ocr/        the environment: corpus index, bucket reader, caches, rewards, benchmark, playground, tests
+├── train/                  GRPO, the HF Jobs launcher, live checkpoint scoring, benchmark publishing, deployment
+├── results/kannada-grpo/   every checkpoint's benchmark score, the figures, the exact commands
+├── data/                   the published index manifest and the frozen evaluation sets
+├── notebooks/              a walkthrough of the corpus and a small training run
+└── assets/                 the images above, and the scripts that draw the GIFs from the published data
+```
 
-The [playground](https://fineenvs-nayana-ocr-env.hf.space/web/) has language/task filters,
-indexed navigation, shuffle, a page viewer, layout overlays, scoring, and reference reveal after submission.
-The OpenEnv observation and discovery APIs exclude reference answers. The public UI deliberately
-reveals them after scoring, matching the LaTeX OCR interaction.
+[DESIGN.md](./DESIGN.md) explains how the environment works, [LEARNINGS.md](./LEARNINGS.md) what
+the runs taught, [JUDGE.md](./JUDGE.md) how free-text answers are graded, and
+[REPRODUCE.md](./REPRODUCE.md) gives every command.
 
+## Try it
+
+Nothing to install. **[Open the Space](https://fineenvs-nayana-ocr-env.hf.space/web/)**, pick a
+task and a language, read the page, and score an answer. Pick the `indic_ocr_bench_test` split to
+browse the benchmark.
+
+To serve the corpus yourself, from the committed index:
+
+```bash
+NAYANA_CORPUS_MANIFEST="$PWD/data/corpus-manifest.json" \
+  uv run --frozen --project envs/nayana_ocr nayana-server     # http://localhost:8000/web
+
+uv run --frozen --project envs/nayana_ocr nayana-smoke         # no download at all
+```
+
+To train, [`train/README.md`](./train/README.md) has the two HF Jobs commands that produced the run
+above, one for training and one for scoring every checkpoint on the benchmark.
+
+## The environment
 
 <!-- BEGIN:matrix -->
 | Env | Tools | Backend | `openenv` |
@@ -108,167 +137,37 @@ reveals them after scoring, matching the LaTeX OCR interaction.
 | **nayana_ocr** | — | `http` | ✅ |
 <!-- END:matrix -->
 
-## Data flow
+| Task | You see | You answer | Reward |
+|---|---|---|---|
+| `section_ocr` | a crop of one text region | its text | `0.8 × (1 − character error) + 0.2 × exact match` |
+| `page_ocr` | a whole page | all of its annotated text, in reading order | the same |
+| `layout_detection` | a whole page | boxes for text, titles, captions, tables, images and formulas | how well the boxes match, across overlap thresholds |
+| `mcq_vqa` | a page and a question with options | a letter | exact match |
+| `descriptive_vqa` | a page and an open question | a short answer | a Gemma 4 judge, strict: all six checks must pass |
 
-```mermaid
-flowchart LR
-    A[Pinned Nayana source] -->|server-side copy| B[HF bucket: all source shards]
-    B -->|annotation columns only| C[Versioned per-language SQLite indexes]
-    C --> D[Metadata lookup and task IDs]
-    D --> E[Shuffled source blocks and prefetch]
-    B -->|mounted reads or HTTP ranges| F[Bounded row-group cache]
-    E --> F
-    F --> G[Bounded rendered-task cache]
-    D --> H[TRL repeats task ID G times]
-    G --> I[Independent OpenEnv sessions]
-    H --> I
-```
+The trainer never sees a reference answer; the playground reveals it after you score.
+[DESIGN.md](./DESIGN.md) covers the index, the caches, the frozen evaluation sets, how the
+benchmark is served, and the known limits.
 
-- **All pages are addressable.** The build reads every shard's annotations and records physical
-  file, row group, and row offsets. It derives all eligible tasks, with no page-window limit.
-  Metadata queries do not fetch JPEGs. Each language's SQLite index is copied to local disk
-  lazily and checksum-verified; SQLite is never queried through a remote mount.
-- **Images load on demand.** Source JPEGs stay in Parquet in the bucket. Locally the server can
-  issue validated HTTP range requests or read a mounted/downloaded source directory. The Space
-  attaches the same bucket at `/corpus`, read-only. Its image contains code and the manifest.
-- **Training uses physical locality.** A seeded block order visits every selected task once per
-  epoch, shuffling bounded metadata chunks within each block. Prefetch overlaps upcoming reads;
-  GRPO owns repetition of each task ID. This is a natural-proportion full pass. Evaluation uses
-  a frozen, block-local 500-task set: 100 per family, 22-23 per language, every task load-checked
-  and pinned. See [REPRODUCE.md](REPRODUCE.md#8-fixed-evaluation-set).
-- **Caches have explicit budgets.** Defaults: 6 GB index files (the published 22-language
-  set is 4.30 GB), 4 GB row groups, 512 MB rendered tasks; at most two concurrent cold group loads and four pending prefetches. Reader leases
-  protect active files from eviction. Concurrent requests share loads and renders. An evicted
-  asset can be reconstructed from its pinned task ID and verified hash.
-- **Replay follows source identity.** IDs include the immutable index snapshot. Document-based
-  splits keep all pages and languages of a document together. Cold source reads check the
-  expected bucket object identity; a changed snapshot or source fails explicitly.
+## Published
 
-**Cold random access has a real cost:** source row groups generally contain 100 pages and
-a median of 75 MB of compressed JPEG data (95th percentile: 116 MB). This implementation caches those groups; it does not
-claim one-page network reads or convert all images into new objects. Adjacent tasks and repeated
-rollouts reuse them. Cache limits cover published cache files; loading, decoding, and responses
-also need transient memory/disk. See [REPRODUCE.md](REPRODUCE.md) for budgets and measurements.
+| | |
+|---|---|
+| Environment | [`nayana-ocr-env`](https://huggingface.co/spaces/FineEnvs/nayana-ocr-env) |
+| Trained model | [`gemma-4-E4B-it-kannada-ocr-grpo`](https://huggingface.co/FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo) |
+| Every prediction, curve and job script | [`multilingual-multimodal-rl-runs`](https://huggingface.co/datasets/FineEnvs/multilingual-multimodal-rl-runs) |
+| Training curves | [`multilingual-multimodal-trackio`](https://huggingface.co/spaces/FineEnvs/multilingual-multimodal-trackio) |
+| Corpus | [`NayanaOCR_Corpus_2025_bucket`](https://huggingface.co/buckets/FineEnvs/NayanaOCR_Corpus_2025_bucket), with its published index |
+| Benchmark | [`indic-ocr-bench-bucket`](https://huggingface.co/buckets/FineEnvs/indic-ocr-bench-bucket), Sarvam Indic OCR Bench ready to serve |
 
-## Run it
+Everything is gathered, with the ASR sibling project, in the
+[Multilingual Multimodal Envs collection](https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4).
 
-From this directory, use the committed manifest for the published full index:
+The environment code is Apache-2.0. Nayana pages, annotations and crops keep CognitiveLab's
+**CC BY-NC 4.0**, and so does the trained adapter. Sarvam Indic OCR Bench is Apache-2.0, and all
+credit for it belongs to Sarvam AI.
 
-```bash
-NAYANA_CORPUS_MANIFEST="$PWD/data/corpus-manifest.json" \
-NAYANA_CACHE_DIR="$PWD/data/corpus-cache-local" \
-  uv run --frozen --project envs/nayana_ocr nayana-server
-# Open http://localhost:8000/web
-```
-
-For descriptive VQA on a local server, use an HF Inference Providers token in
-`NAYANA_JUDGE_TOKEN` / `HF_TOKEN` (or your locally saved HF token); see [JUDGE.md](JUDGE.md).
-
-For a mounted bucket, also set `NAYANA_SOURCE_ROOT=/corpus`. An ordinary local copy can use
-that root with `NAYANA_LOCAL_SOURCE=true` to verify local SHA-256 values and work offline.
-Keep all language index databases next to `manifest.json` for fully offline metadata access.
-The [reproduction guide](REPRODUCE.md) covers copying, resumable indexing, publication, mounts,
-local serving, training, HF Jobs, deployment, and cursor boundaries.
-
-```bash
-# No dataset download: synthetic HTTP/WebSocket/cache smoke.
-uv run --frozen --project envs/nayana_ocr nayana-smoke
-
-# Single-GPU GRPO; auto selects the full-corpus iterator for this Space.
-uv run --frozen --project envs/nayana_ocr --extra train python train/grpo_nayana.py \
-  --env-url https://fineenvs-nayana-ocr-env.hf.space --smoke \
-  --output-dir artifacts/local-gpu-smoke
-```
-
-The [notebook](notebooks/06_multilingual_ocr.ipynb) uses the same data and training code.
-Run outputs and calibration reports go under the ignored `artifacts/` directory. CI runs
-regression and transport checks and retains reports as workflow artifacts. See
-[REPRODUCE.md](REPRODUCE.md#7-checks-and-task-policy) for local verification and benchmarks.
-
-## Task and evaluation limits
-
-Full-page OCR joins annotated regions using `whitespace-columns-v1`, including RTL column
-order for Arabic. It masks unannotated areas because source headers can lack transcription
-labels. Incomplete or overlapping region annotations exclude a page from this task. This is
-annotated full-page transcription; table reconstruction and semantic reading-order labels are
-not supplied. VQA and layout detection preserve original JPEG bytes. Layout uses the six supplied
-`layout_type` labels: text, title, caption, table, image, formula; it is document-region detection.
-Unknown or incomplete layout annotation sets are excluded (two pages).
-
-Descriptive VQA uses **Gemma 4 31B via DeepInfra on HF Inference Providers**. A correct, complete,
-relevant answer with no contradiction, unsupported claims, or grading manipulation receives 1;
-otherwise 0. Faithful paraphrases and translations are accepted. The judge compares the question
-and corpus reference; it does not independently inspect the image or repair bad source answers.
-Transport errors and malformed verdicts raise errors without consuming the episode.
-See [JUDGE.md](JUDGE.md) for the rubric, explicit model/provider, calibration, and reproduction.
-
-The full index validates annotations without decoding a million images. Actual image bounds
-are validated when a task is loaded; invalid image/annotation pairs fail explicitly. Counts
-therefore describe indexed annotation candidates, not an image-quality-audited benchmark.
-Serving rejects images above 50 million pixels, including a known 69.7-megapixel source page.
-Preflight fixed training/evaluation sets; unattended full-corpus runs need a versioned resize
-or eligibility policy. The GRPO recipe is verified on Kannada section OCR (above); the other four
-task families have smoke runs, not trained results.
-An original Arabic page has known missing/distorted glyphs; the UI flags this source caveat.
-Source supervision and language-specific rendering need auditing before making model claims.
-
-**Sarvam Indic OCR Bench** ([sarvamai/indic-ocr-bench](https://huggingface.co/datasets/sarvamai/indic-ocr-bench),
-**Sarvam AI**, Apache-2.0) is served beside the corpus as evaluation-only splits:
-`indic_ocr_bench_test` (6,908 of its 6,909 human-reviewed text blocks, 23 languages) and
-`indic_ocr_bench_small` (1,173). Eleven of its languages - Assamese, Bodo, Dogri, Kashmiri,
-Konkani, Maithili, Manipuri, Nepali, Santhali, Sindhi, Urdu - are not in the Nayana corpus.
-Every crop is an ordinary Section OCR task with the same reward, so benchmark and corpus
-numbers sit on one scale. The benchmark's official CER/WER (its `metrics.py`, vendored
-unmodified) are reported beside the reward, and `train/eval_vllm.py --split
-indic_ocr_bench_test` also writes its report format: average and valid-sample CER/WER, word
-accuracy, loop and missing counts, per-language scores.
-
-Serving mirrors the corpus. [`train/publish_indic_ocr_bench.py`](train/publish_indic_ocr_bench.py)
-builds the crops and index once and publishes them to
-[FineEnvs/indic-ocr-bench-bucket](https://huggingface.co/buckets/FineEnvs/indic-ocr-bench-bucket);
-the Space mounts it at `/indic-ocr-bench`, a job mounts it the same way, and a local server
-fetches a split on first use. To evaluate a checkpoint:
-
-```bash
-hf jobs uv run --flavor a100-large -s HF_TOKEN \
-  -v hf://buckets/FineEnvs/NayanaOCR_Corpus_2025_bucket:/corpus:ro \
-  -v hf://buckets/FineEnvs/indic-ocr-bench-bucket:/indic-ocr-bench:ro \
-  -e NAYANA_INDIC_OCR_BENCH_ROOT=/indic-ocr-bench \
-  train/hf_job.py --revision <commit> --mode eval-vllm --corpus-manifest repo \
-  --source-root /corpus --split indic_ocr_bench_small --base google/gemma-4-E4B-it \
-  --adapters step-250=/outputs/<rev>/checkpoint-250
-```
-
-One test row, `indic_ocr_bench_test_eng_5`, has ground truth but no image in the source data and is not served, so test scores are over 6,908 rather than 6,909. The card says crops are PNG; at the pinned revision some are JPEG (141 of the 1,173 small-split
-crops), and are served as such. All credit for the benchmark belongs to Sarvam AI; please cite:
-
-```bibtex
-@misc{sarvam-indic-ocr-bench,
-  title={Sarvam Indic OCR Bench},
-  author={Sarvam AI},
-  year={2026},
-  url={https://huggingface.co/datasets/sarvamai/indic-ocr-bench}
-}
-```
-
-OpenEnv already supplies TaskProvider and session transport. This experiment implements the
-catalog, bucket adapter, caching, sampling, and OCR policy around those interfaces.
-[OPENENV_UPSTREAM.md](OPENENV_UPSTREAM.md) proposes reusable contributions supported by this work.
-
-## Files
-
-```text
-envs/nayana_ocr/     OpenEnv package, data adapters, playground, tests, Docker, lockfile
-data/               published index manifest and data contract
-train/              GRPO, HF Jobs, live checkpoint evaluation, deployment, calibration, benchmarks
-results/            smoke records and the Kannada run (kannada-grpo/)
-assets/             README figures and the scripts that draw them from the published run data
-notebooks/          full-corpus data handling and optional training walkthrough
-REPRODUCE.md        exact commands, defaults, provenance, and replay limits
-```
-
-Environment code is Apache-2.0. Source data, copied annotations, and derived images retain
-**CC BY-NC 4.0** and CognitiveLab attribution; see [data/README.md](data/README.md).
+A reproduction that disagrees with the tables above is a bug report we want.
 
 ## Citation
 
@@ -278,5 +177,12 @@ Environment code is Apache-2.0. Source data, copied annotations, and derived ima
   title  = {FineEnvs: Open Source RL Environments for LLM Agents},
   year   = {2026},
   url    = {https://github.com/adithya-s-k/FineEnvs}
+}
+
+@misc{sarvam-indic-ocr-bench,
+  title  = {Sarvam Indic OCR Bench},
+  author = {Sarvam AI},
+  year   = {2026},
+  url    = {https://huggingface.co/datasets/sarvamai/indic-ocr-bench}
 }
 ```

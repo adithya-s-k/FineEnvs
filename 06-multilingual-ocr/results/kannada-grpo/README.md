@@ -1,14 +1,23 @@
-# Kannada OCR: GRPO on Nayana section crops, scored on Sarvam Indic OCR Bench
+# The Kannada OCR run
 
-`google/gemma-4-E4B-it` + LoRA, GRPO on 4,000 distinct Kannada section crops streamed from the corpus (500 steps × 8 crops × 8 transcriptions) on one A100 in 10.5 hours. Every checkpoint was scored on the 300 Kannada crops of Sarvam Indic OCR Bench (`test`) by a second job as it was saved: greedy vLLM decoding, graded by the same environment, with the benchmark's own `metrics.py` for Sarvam CER/WER.
+Gemma 4 E4B with a LoRA adapter, trained with GRPO on 4,000 Kannada text crops streamed from the
+Nayana corpus: 500 steps, 8 transcriptions per crop and 8 crops per step, rewarded on character
+error. It ran on one A100 for 10.5 hours. While it trained, a second job scored every checkpoint on
+the 300 Kannada crops of Sarvam Indic OCR Bench, a benchmark it never trains on, with greedy decoding
+and the benchmark's own scoring script.
 
 ![Training reward and held-out curves](./curves.png)
 
-Published adapter: **step 300**, [FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo](https://huggingface.co/FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo), the best Sarvam CER of all 20 checkpoints; step 500 scores the same (0.3602).
+The published adapter is **step 300**:
+[FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo](https://huggingface.co/FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo).
+It has the lowest Sarvam CER of all 20 checkpoints, and the final step 500 is level with it (0.3602).
 
 ## Every checkpoint
 
-Change is paired item by item against the untuned base, with a 95% interval. Sarvam CER/WER are the benchmark's own, capped at 1 per crop by its `metrics.py`. Env CER is the environment's NFC character error, capped at 1 per crop here.
+Each change is measured crop by crop against the untuned model, with a 95% interval. Sarvam CER and
+WER come from the benchmark's own `metrics.py`, which caps each crop at 1. "Env CER" is the
+environment's own character error, capped the same way here. Every crop's prediction is in the
+[runs dataset](https://huggingface.co/datasets/FineEnvs/multilingual-multimodal-rl-runs).
 
 | step | Sarvam CER | Sarvam WER | env CER | reward | change in Sarvam CER (95% CI) |
 |---:|---:|---:|---:|---:|---:|
@@ -38,7 +47,7 @@ Change is paired item by item against the untuned base, with a 95% interval. Sar
 ![Paired change from base, with 95% intervals](./eval_change.png)
 ![Training signals](./training.png)
 
-## Reproduce
+## Run it again
 
 Training, at commit [`6e8dd18`](https://github.com/adithya-s-k/FineEnvs/commit/6e8dd1825baa127d58ba828fc67c6eb0b52b2599) (job `6abff37afbc85ba682372c8b`, a100-large, 10.5 h):
 
@@ -62,8 +71,8 @@ hf jobs uv run -d --flavor a100-large -s HF_TOKEN --timeout 14h -e NAYANA_INDIC_
   --base google/gemma-4-E4B-it --watch AdithyaSK/fineenvs-ocr-runs/6e8dd1825baa127d58ba828fc67c6eb0b52b2599 --follow-job 6abff37afbc85ba682372c8b --output-dir /outputs/6e8dd1825baa127d58ba828fc67c6eb0b52b2599/evals --trackio-space AdithyaSK/fineenvs-ocr-trackio --run-name ocr-kn-v2-eval
 ```
 
-The commands ran when this folder was `05-multilingual-ocr`; replace the `AdithyaSK/...` output buckets
-and Trackio Spaces with your own. `curve.json` here and
+These commands ran when this folder was still called `05-multilingual-ocr`. Swap the `AdithyaSK/...` output bucket
+and Trackio Space for your own. `curve.json` here and
 [FineEnvs/multilingual-multimodal-rl-runs](https://huggingface.co/datasets/FineEnvs/multilingual-multimodal-rl-runs)
 (`ocr-kannada/`) hold the full record: every held-out prediction, the trainer log, and the job
 scripts at that commit.
