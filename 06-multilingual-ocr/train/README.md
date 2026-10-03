@@ -59,3 +59,7 @@ hf jobs uv run -d --flavor l40sx1 -s HF_TOKEN --timeout 16h \
   --output-dir /outputs/<commit>/evals \
   --trackio-space <you>/fineenvs-ocr-trackio --run-name ocr-kn-v2-eval
 ```
+
+The watcher needs about 20 GB of GPU memory and is idle between checkpoints. L40S capacity was
+scarce when these runs launched: the OCR watcher waited 1.5 hours and was relaunched on
+`a100-large`, which resumes from `evals/curve.json` without rescoring anything.
