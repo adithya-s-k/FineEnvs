@@ -13,7 +13,6 @@ hub:
   datasets:
     - Cognitive-Lab/NayanaOCR_Corpus_2025
     - sarvamai/indic-ocr-bench
-    - FineEnvs/nayana-evalsets
     - FineEnvs/multilingual-multimodal-rl-runs
   trackio:
     - FineEnvs/multilingual-multimodal-trackio
