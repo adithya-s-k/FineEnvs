@@ -175,6 +175,10 @@ def test_lora_targets_skip_towers_that_cannot_receive_gradient():
     import importlib.util
     from pathlib import Path
 
+    import pytest as pt
+
+    pt.importorskip("torch")  # CI installs the dev extra only; torch comes with train
+
     path = Path(__file__).resolve().parents[3] / "train" / "grpo_asr.py"
     spec = importlib.util.spec_from_file_location("grpo_asr_targets", path)
     module = importlib.util.module_from_spec(spec)
