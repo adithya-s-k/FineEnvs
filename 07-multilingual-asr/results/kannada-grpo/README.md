@@ -1,14 +1,22 @@
-# Kannada ASR: GRPO on all of FLEURS kn_in
+# The Kannada ASR run
 
-`google/gemma-4-E4B-it` + LoRA, GRPO with the character-error reward, one epoch over all 2,282 FLEURS `kn_in` training clips (575 steps × 4 clips × 16 transcripts) on one A100 in 4.7 hours. Every checkpoint was scored on all 838 `kn_in` test clips by a second job as it was saved: greedy vLLM decoding, graded by the same environment.
+Gemma 4 E4B with a LoRA adapter, trained with GRPO on all 2,282 Kannada clips in FLEURS: one epoch,
+575 steps, 16 transcripts per clip and 4 clips per step, rewarded on character error. It ran on one
+A100 for 4.7 hours. While it trained, a second job scored every checkpoint on the 838 Kannada test
+clips, with greedy decoding, graded by the same environment.
 
 ![Training reward and held-out curves](./curves.png)
 
-Published adapter: **step 575**, [FineEnvs/gemma-4-E4B-it-kannada-asr-grpo](https://huggingface.co/FineEnvs/gemma-4-E4B-it-kannada-asr-grpo), the best capped CER of all 23 checkpoints.
+The published adapter is the last checkpoint, **step 575**:
+[FineEnvs/gemma-4-E4B-it-kannada-asr-grpo](https://huggingface.co/FineEnvs/gemma-4-E4B-it-kannada-asr-grpo).
+It has the lowest error of all 23.
 
 ## Every checkpoint
 
-Change is paired item by item against the untuned base, with a 95% interval. CER and WER are capped at 1 per clip before averaging, so one looping transcript cannot swing a checkpoint. Uncapped means and per-clip predictions are in the runs dataset.
+Each change is measured clip by clip against the untuned model, with a 95% interval. Error rates
+are capped at 1 per clip before averaging, so a single transcript that loops cannot swing a
+checkpoint. The uncapped means and every clip's prediction are in the
+[runs dataset](https://huggingface.co/datasets/FineEnvs/multilingual-multimodal-rl-runs).
 
 | step | CER | WER | reward | change in CER (95% CI) |
 |---:|---:|---:|---:|---:|
@@ -41,7 +49,7 @@ Change is paired item by item against the untuned base, with a 95% interval. CER
 ![Paired change from base, with 95% intervals](./eval_change.png)
 ![Training signals](./training.png)
 
-## Reproduce
+## Run it again
 
 Training, at commit [`ac63930`](https://github.com/adithya-s-k/FineEnvs/commit/ac6393008d78527aeb1f17a61c3f89471382fc5f) (job `6abff1acfbc85ba682372b98`, a100-large, 4.7 h):
 
@@ -63,8 +71,8 @@ hf jobs uv run -d --flavor l40sx1 -s HF_TOKEN --timeout 16h \
   --base google/gemma-4-E4B-it --watch AdithyaSK/fineenvs-asr-runs/ac6393008d78527aeb1f17a61c3f89471382fc5f --follow-job 6abff1acfbc85ba682372b98 --eval-split eval_1_test --max-new-tokens 448 --reward-unit cer --output-dir /outputs/ac6393008d78527aeb1f17a61c3f89471382fc5f/evals --trackio-space AdithyaSK/fineenvs-asr-trackio --run-name asr-kn-full-v3-eval
 ```
 
-The commands ran when this folder was `06-multilingual-asr`; replace the `AdithyaSK/...` output buckets
-and Trackio Spaces with your own. `curve.json` here and
+These commands ran when this folder was still called `06-multilingual-asr`. Swap the `AdithyaSK/...` output bucket
+and Trackio Space for your own. `curve.json` here and
 [FineEnvs/multilingual-multimodal-rl-runs](https://huggingface.co/datasets/FineEnvs/multilingual-multimodal-rl-runs)
 (`asr-kannada/`) hold the full record: every held-out prediction, the trainer log, and the job
 scripts at that commit.
