@@ -1,0 +1,63 @@
+{
+  "attempts_per_task": 1,
+  "endpoint": "https://openrouter.ai/api/v1",
+  "max_empty_turns": 2,
+  "max_turns": 16,
+  "merged_shards": [
+    {
+      "path": "benchmark/retroeval-v1/model-runs/board-v1/shards/qwen-00.jsonl",
+      "start_index": 0,
+      "tasks": 5
+    },
+    {
+      "path": "benchmark/retroeval-v1/model-runs/board-v1/shards/qwen-05.jsonl",
+      "start_index": 5,
+      "tasks": 5
+    },
+    {
+      "path": "benchmark/retroeval-v1/model-runs/board-v1/shards/qwen-10.jsonl",
+      "start_index": 10,
+      "tasks": 5
+    },
+    {
+      "path": "benchmark/retroeval-v1/model-runs/board-v1/shards/qwen-15.jsonl",
+      "start_index": 15,
+      "tasks": 5
+    }
+  ],
+  "request_timeout_seconds": 180.0,
+  "requested_model": "qwen/qwen3.8-27b",
+  "schema_version": "retro-model-run-v1",
+  "split": "eval",
+  "start_index": 0,
+  "stocks_sha256": {
+    "paroutes-v2-n1": "a0505d832bccaa5ab74a259d0af1d5d1b06bc7b5a62eae9b61abbee99771f5c7"
+  },
+  "task_ids": [
+    "retro_0190cef6c2870d17dd24",
+    "retro_04284c492ac61283e7c8",
+    "retro_04868d4962b96b2ad115",
+    "retro_09bc321a96bb43cd5585",
+    "retro_22c9060fea72b14074ee",
+    "retro_37c9242696a8310d7b0c",
+    "retro_5a060aed2f746e4ba07f",
+    "retro_5e2cf9db65017d281e12",
+    "retro_64a9a3341d84ea519eec",
+    "retro_7dad530ff095d6369295",
+    "retro_7f5fbbf03657c916e394",
+    "retro_80aee79b1e6a8fe69502",
+    "retro_9698f95a63e122625d89",
+    "retro_bc2fee2d44bd84e5d8b6",
+    "retro_c3f5a65b20f3e267dfe2",
+    "retro_e022b58c25861352337a",
+    "retro_e0a006e0caa676e1197e",
+    "retro_ee7198bc50d44cc8fe4f",
+    "retro_f5a4f241f89cbc3b52f2",
+    "retro_fa750a37e7d289aeb0f5"
+  ],
+  "tasks": 20,
+  "tasks_sha256": "9415099054a2170fc3883f71355022ced8f727982a7c46fb9cb6adc153b1e36b",
+  "temperature": 0.0,
+  "tool_choice": "required",
+  "tool_schema_sha256": "37af7fbfa2210c5dc4eadd36db1bb73c89593a61cf067e8196fd8958396aa79c"
+}

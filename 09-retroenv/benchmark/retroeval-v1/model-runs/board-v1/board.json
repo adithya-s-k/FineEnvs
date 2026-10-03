@@ -1,0 +1,178 @@
+{
+  "complete": false,
+  "expected_tasks": 20,
+  "failures": [
+    "missing configured model runs: openai/gpt-5.5"
+  ],
+  "models": [
+    {
+      "exact_reference_match": 0.6,
+      "graph_validity": 0.85,
+      "invalid_proposal_rate": 0.313636,
+      "label": "Claude Opus 5.5",
+      "latency_seconds": 1129.575,
+      "mean_reward": 0.7425,
+      "model": "anthropic/claude-opus-5.5",
+      "pass@1": 0.35,
+      "pass@1_ci95": [
+        0.181192,
+        0.567146
+      ],
+      "reported_cost_usd": 7.428808,
+      "route_diversity": 0.475,
+      "route_validity": 0.35,
+      "step_validity": 0.725,
+      "stock_completion": 0.8,
+      "tasks": 20,
+      "tasks_with_predictions": 20
+    },
+    {
+      "exact_reference_match": 0.3,
+      "graph_validity": 0.845313,
+      "invalid_proposal_rate": 0.240708,
+      "label": "Qwen3.8 Max",
+      "latency_seconds": 8138.481,
+      "mean_reward": 0.626198,
+      "model": "qwen/qwen3.8-max-0902",
+      "pass@1": 0.15,
+      "pass@1_ci95": [
+        0.052369,
+        0.360419
+      ],
+      "reported_cost_usd": 3.030594,
+      "route_diversity": 0.275,
+      "route_validity": 0.15,
+      "step_validity": 0.5,
+      "stock_completion": 0.8125,
+      "tasks": 20,
+      "tasks_with_predictions": 20
+    },
+    {
+      "exact_reference_match": 0.25,
+      "graph_validity": 0.695312,
+      "invalid_proposal_rate": 0.195477,
+      "label": "DeepSeek V4 Pro 0813",
+      "latency_seconds": 7358.939,
+      "mean_reward": 0.521615,
+      "model": "deepseek/deepseek-v4-pro-0813",
+      "pass@1": 0.1,
+      "pass@1_ci95": [
+        0.027866,
+        0.301034
+      ],
+      "reported_cost_usd": 1.049602,
+      "route_diversity": 0.2,
+      "route_validity": 0.1,
+      "step_validity": 0.425,
+      "stock_completion": 0.654167,
+      "tasks": 20,
+      "tasks_with_predictions": 20
+    },
+    {
+      "exact_reference_match": 0.35,
+      "graph_validity": 0.99375,
+      "invalid_proposal_rate": 0.160959,
+      "label": "Claude Sonnet 5",
+      "latency_seconds": 989.251,
+      "mean_reward": 0.683125,
+      "model": "anthropic/claude-sonnet-5",
+      "pass@1": 0.05,
+      "pass@1_ci95": [
+        0.008881,
+        0.236131
+      ],
+      "reported_cost_usd": 5.658396,
+      "route_diversity": 0.2,
+      "route_validity": 0.05,
+      "step_validity": 0.5,
+      "stock_completion": 0.920833,
+      "tasks": 20,
+      "tasks_with_predictions": 20
+    },
+    {
+      "exact_reference_match": 0.25,
+      "graph_validity": 0.829688,
+      "invalid_proposal_rate": 0.321678,
+      "label": "GPT-5.6 Sol",
+      "latency_seconds": 1402.632,
+      "mean_reward": 0.645469,
+      "model": "openai/gpt-5.6-sol",
+      "pass@1": 0.05,
+      "pass@1_ci95": [
+        0.008881,
+        0.236131
+      ],
+      "reported_cost_usd": 1.144564,
+      "route_diversity": 0.2,
+      "route_validity": 0.05,
+      "step_validity": 0.7,
+      "stock_completion": 0.725,
+      "tasks": 20,
+      "tasks_with_predictions": 20
+    },
+    {
+      "exact_reference_match": 0.25,
+      "graph_validity": 0.74375,
+      "invalid_proposal_rate": 0.21547,
+      "label": "DeepSeek V4.1 Flash",
+      "latency_seconds": 4123.98,
+      "mean_reward": 0.523292,
+      "model": "deepseek/deepseek-v4.1-flash",
+      "pass@1": 0.05,
+      "pass@1_ci95": [
+        0.008881,
+        0.236131
+      ],
+      "reported_cost_usd": 0.283134,
+      "route_diversity": 0.175,
+      "route_validity": 0.05,
+      "step_validity": 0.358333,
+      "stock_completion": 0.733333,
+      "tasks": 20,
+      "tasks_with_predictions": 20
+    },
+    {
+      "exact_reference_match": 0.1,
+      "graph_validity": 0.913021,
+      "invalid_proposal_rate": 0.20438,
+      "label": "GPT-5.6 Luna",
+      "latency_seconds": 1325.149,
+      "mean_reward": 0.555469,
+      "model": "openai/gpt-5.6-luna",
+      "pass@1": 0.0,
+      "pass@1_ci95": [
+        0.0,
+        0.161125
+      ],
+      "reported_cost_usd": 0.145926,
+      "route_diversity": 0.075,
+      "route_validity": 0.0,
+      "step_validity": 0.325,
+      "stock_completion": 0.85,
+      "tasks": 20,
+      "tasks_with_predictions": 20
+    },
+    {
+      "exact_reference_match": 0.0,
+      "graph_validity": 0.4375,
+      "invalid_proposal_rate": 0.239496,
+      "label": "Qwen3.8 27B",
+      "latency_seconds": 7930.128,
+      "mean_reward": 0.252917,
+      "model": "qwen/qwen3.8-27b",
+      "pass@1": 0.0,
+      "pass@1_ci95": [
+        0.0,
+        0.161125
+      ],
+      "reported_cost_usd": 1.434581,
+      "route_diversity": 0.025,
+      "route_validity": 0.0,
+      "step_validity": 0.075,
+      "stock_completion": 0.4,
+      "tasks": 20,
+      "tasks_with_predictions": 20
+    }
+  ],
+  "schema_version": "retro-model-board-results-v1"
+}

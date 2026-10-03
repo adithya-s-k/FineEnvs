@@ -1,0 +1,4 @@
+raw/*
+!raw/README.md
+!raw/DOWNLOAD_RECEIPTS.json
+!raw/RAW_INVENTORY.json

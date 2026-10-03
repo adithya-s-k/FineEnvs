@@ -1,0 +1,79 @@
+{
+  "schema_version": "retro-model-board-v1",
+  "pricing_source": "https://openrouter.ai/api/v1/models",
+  "pricing_snapshot_date": "2026-09-24",
+  "run": {
+    "split": "eval",
+    "tasks": 20,
+    "attempts": 1,
+    "max_turns": 16,
+    "max_empty_turns": 2,
+    "temperature": 0.0,
+    "tool_choice": "required"
+  },
+  "models": [
+    {
+      "label": "Claude Opus 5.5",
+      "id": "anthropic/claude-opus-5.5",
+      "prompt_usd_per_token": 0.000004,
+      "completion_usd_per_token": 0.00002,
+      "token_proxy": "sample/model-runs/quick-benchmark/claude-sonnet-5.episodes.jsonl"
+    },
+    {
+      "label": "Claude Sonnet 5",
+      "id": "anthropic/claude-sonnet-5",
+      "prompt_usd_per_token": 0.000002,
+      "completion_usd_per_token": 0.00001,
+      "token_proxy": "sample/model-runs/quick-benchmark/claude-sonnet-5.episodes.jsonl"
+    },
+    {
+      "label": "GPT-5.6 Luna",
+      "id": "openai/gpt-5.6-luna",
+      "prompt_usd_per_token": 0.0000002,
+      "completion_usd_per_token": 0.0000012,
+      "token_proxy": "benchmark/retroeval-v1/model-runs/schema-pilot/gpt-5.6-luna.episodes.jsonl"
+    },
+    {
+      "label": "GPT-5.6 Sol",
+      "id": "openai/gpt-5.6-sol",
+      "prompt_usd_per_token": 0.000002,
+      "completion_usd_per_token": 0.00001,
+      "token_proxy": "sample/model-runs/quick-benchmark/gpt-5.6-luna.episodes.jsonl"
+    },
+    {
+      "label": "GPT-5.5",
+      "id": "openai/gpt-5.5",
+      "prompt_usd_per_token": 0.000005,
+      "completion_usd_per_token": 0.00003,
+      "token_proxy": "sample/model-runs/quick-benchmark/gpt-5.6-luna.episodes.jsonl"
+    },
+    {
+      "label": "Qwen3.8 Max",
+      "id": "qwen/qwen3.8-max-0902",
+      "prompt_usd_per_token": 0.000002,
+      "completion_usd_per_token": 0.000006,
+      "token_proxy": "sample/model-runs/quick-benchmark/qwen3.6-max-preview.episodes.jsonl"
+    },
+    {
+      "label": "Qwen3.8 27B",
+      "id": "qwen/qwen3.8-27b",
+      "prompt_usd_per_token": 0.00000042,
+      "completion_usd_per_token": 0.000003,
+      "token_proxy": "sample/model-runs/quick-benchmark/qwen3.8-27b.episodes.jsonl"
+    },
+    {
+      "label": "DeepSeek V4.1 Flash",
+      "id": "deepseek/deepseek-v4.1-flash",
+      "prompt_usd_per_token": 0.00000015,
+      "completion_usd_per_token": 0.0000006,
+      "token_proxy": "sample/model-runs/quick-benchmark/deepseek-v3.2.episodes.jsonl"
+    },
+    {
+      "label": "DeepSeek V4 Pro 0813",
+      "id": "deepseek/deepseek-v4-pro-0813",
+      "prompt_usd_per_token": 0.000000462,
+      "completion_usd_per_token": 0.000001386,
+      "token_proxy": "sample/model-runs/quick-benchmark/deepseek-v3.2.episodes.jsonl"
+    }
+  ]
+}

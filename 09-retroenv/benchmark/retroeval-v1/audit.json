@@ -1,0 +1,25 @@
+{
+  "counts": {
+    "dev": 20,
+    "eval": 20,
+    "stress": 20,
+    "train": 40
+  },
+  "cross_split_near_duplicates": [],
+  "failures": [],
+  "near_duplicate_threshold": 0.9,
+  "oracle_graph_replay_failures": 0,
+  "passed": true,
+  "public_tasks": 100,
+  "reference_route_replay_failures": 0,
+  "reference_routes": 203,
+  "reference_steps": 452,
+  "root": "benchmark/retroeval-v1",
+  "schema_version": "retro-benchmark-audit-v1",
+  "split_audit": {
+    "overlaps": [],
+    "passed": true
+  },
+  "tasks": 100,
+  "train_precedents": 171
+}

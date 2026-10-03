@@ -1,0 +1,2 @@
+{"attempts": [{"invalid_proposals": 0, "submission": {"routes": []}, "tool_calls": 0}], "task_id": "retro_f5b2876a403a58596f85"}
+{"attempts": [{"invalid_proposals": 3, "submission": {"routes": []}, "tool_calls": 32}], "task_id": "retro_f640b474eb1de6f22cff"}

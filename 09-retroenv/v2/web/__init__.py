@@ -1,0 +1,1 @@
+"""Static diagnostic frontend builder."""

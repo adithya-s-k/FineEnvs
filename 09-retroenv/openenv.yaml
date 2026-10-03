@@ -1,0 +1,13 @@
+spec_version: 1
+name: retro_route_env
+type: space
+runtime: fastapi
+app: retroenv.server.app:app
+port: 8000
+
+variables:
+  RETROENV_TASKS_DIR: /data/tasks
+  RETROENV_STOCKS_DIR: /data/stocks
+  RETROENV_DEFAULT_SPLIT: train
+  RETROENV_MAX_TOOL_CALLS: "32"
+  RETROENV_PUBCHEM_CACHE: ""

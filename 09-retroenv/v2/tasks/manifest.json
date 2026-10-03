@@ -1,0 +1,17 @@
+{
+  "references_private": true,
+  "schema_version": "retro-pilot-manifest-v2",
+  "source_benchmark": "benchmark/retroeval-v1",
+  "source_indices": [
+    0,
+    4,
+    10
+  ],
+  "source_split": "eval",
+  "task_ids": [
+    "retro_0190cef6c2870d17dd24",
+    "retro_22c9060fea72b14074ee",
+    "retro_7f5fbbf03657c916e394"
+  ],
+  "tasks": 3
+}

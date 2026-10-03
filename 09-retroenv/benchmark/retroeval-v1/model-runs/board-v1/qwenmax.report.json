@@ -1,0 +1,38 @@
+{
+  "attempts": 20,
+  "average_successful_steps": 0.0,
+  "average_tool_calls_per_success": 30.666667,
+  "by_split": {
+    "eval": {
+      "pass@1": 0.15,
+      "tasks": 20
+    }
+  },
+  "invalid_proposal_rate": 0.240708,
+  "pass@1": 0.15,
+  "pass_ci95": {
+    "pass@1": [
+      0.052369,
+      0.360419
+    ]
+  },
+  "schema_version": "retro-eval-v1",
+  "successful_attempts": 3,
+  "tasks": 20,
+  "tasks_with_predictions": 20,
+  "top1_building_block_completion": 0.8125,
+  "top1_exact_reference_match": 0.3,
+  "top1_graph_validity": 0.845313,
+  "top1_molecule_validity": 0.85,
+  "top1_parse_validity": 1.0,
+  "top1_reference_similarity": 0.404167,
+  "top1_reward": 0.626198,
+  "top1_route_validity": 0.15,
+  "top1_step_validity": 0.5,
+  "top1_verified_route_diversity": 0.275,
+  "verification_tiers": {
+    "dataset_supported": 8,
+    "rejected": 12,
+    "template_supported": 0
+  }
+}

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RetroEnv v2 · three-task diagnostic</title>
+  <link rel="stylesheet" href="styles.css?v=4">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">RETROENV / MULTI-MODEL PILOT</p>
+      <h1>How do models build a retrosynthesis route?</h1>
+    </div>
+    <div id="model-chip" class="model-chip"><span></span></div>
+  </header>
+
+  <div class="shell">
+    <aside class="task-rail">
+      <p class="rail-label">TASKS</p>
+      <nav id="task-tabs" aria-label="Pilot tasks"></nav>
+      <div class="rail-note">
+        <strong>One honest pilot.</strong>
+        <p>Actual saved outputs and private deterministic scores. Legacy trees are converted only for visualization and clearly labeled.</p>
+      </div>
+    </aside>
+
+    <main>
+      <section class="model-switcher" aria-label="Model trajectories">
+        <div id="model-tabs" class="model-tabs"></div>
+        <p id="comparison-note" class="comparison-note"></p>
+      </section>
+
+      <section class="hero panel">
+        <div>
+          <div class="status-line">
+            <span id="status-pill" class="status-pill"></span>
+            <span id="task-id" class="mono muted"></span>
+          </div>
+          <h2 id="task-title"></h2>
+          <p id="target-smiles" class="target mono"></p>
+        </div>
+        <div class="reward-block">
+          <span>reward</span>
+          <strong id="reward"></strong>
+          <small id="strict-result"></small>
+        </div>
+      </section>
+
+      <section class="compact-grid">
+        <article class="panel contract-card">
+          <div class="section-head"><div><p class="eyebrow">01 · CONTRACT</p><h3>What the model receives</h3></div><button id="prompt-toggle" class="text-button">Show prompt</button></div>
+          <div id="contract-facts" class="facts"></div>
+          <pre id="prompt" class="prompt hidden"></pre>
+        </article>
+        <article class="panel diagnosis-card">
+          <div class="section-head"><div><p class="eyebrow">02 · RESULT</p><h3>What worked / what did not</h3></div></div>
+          <div class="diagnosis-columns"><div><span class="mini-label good">WORKED</span><ul id="worked"></ul></div><div><span class="mini-label bad">FAILED</span><ul id="failed"></ul></div></div>
+        </article>
+      </section>
+
+      <section class="panel runtime-panel">
+        <div class="section-head runtime-heading">
+          <div><p class="eyebrow">03 · AGENT RUNTIME</p><h3>How one rollout moves</h3><p class="section-copy">Select a stage to inspect the data boundary, tool gateway, and state returned to the agent.</p></div>
+          <div id="runtime-progress" class="counter"></div>
+        </div>
+        <div id="runtime-stages" class="runtime-stages" role="tablist" aria-label="Agent rollout stages"></div>
+        <div class="runtime-map" aria-live="polite">
+          <article class="runtime-block runtime-source-block">
+            <span class="runtime-block-label">DATA SOURCE</span>
+            <h4 id="runtime-source-title"></h4>
+            <div id="runtime-source-copy"></div>
+          </article>
+          <div class="runtime-connector" aria-hidden="true"><span></span></div>
+          <article class="runtime-block runtime-gateway-block">
+            <span class="runtime-block-label">BOUNDED GATEWAY</span>
+            <h4 id="runtime-gateway-title"></h4>
+            <div id="runtime-gateway-copy"></div>
+          </article>
+          <div class="runtime-connector" aria-hidden="true"><span></span></div>
+          <article class="runtime-block runtime-state-block">
+            <span class="runtime-block-label">AGENT STATE</span>
+            <h4 id="runtime-state-title"></h4>
+            <div id="runtime-state-copy"></div>
+          </article>
+        </div>
+        <div class="tool-belt-wrap">
+          <span class="runtime-block-label">TOOLS AVAILABLE THROUGHOUT THE RUN</span>
+          <div id="tool-belt" class="tool-belt"></div>
+        </div>
+      </section>
+
+      <section class="panel graph-panel">
+        <div class="section-head graph-heading">
+          <div><p class="eyebrow">04 · FINAL ANSWER</p><h3>Submitted route graph</h3><p id="graph-note" class="section-copy"></p></div>
+          <div class="graph-tools">
+            <div id="route-filters" class="segmented"></div>
+            <button id="zoom-out" aria-label="Zoom out">−</button>
+            <button id="fit" aria-label="Fit graph">Fit</button>
+            <button id="zoom-in" aria-label="Zoom in">+</button>
+          </div>
+        </div>
+        <div class="graph-layout">
+          <div id="graph-wrap" class="graph-wrap"><svg id="graph" role="img" aria-label="Retrosynthesis evidence DAG"></svg></div>
+          <aside id="inspector" class="inspector"></aside>
+        </div>
+        <div class="legend"><span><i class="dot molecule"></i>Molecule</span><span><i class="dot reaction"></i>Reaction</span><span><i class="line reactant"></i>Reactant edge</span><span><i class="line product"></i>Product edge</span></div>
+      </section>
+
+      <section class="compact-grid lower-grid">
+        <article class="panel metric-panel">
+          <div class="section-head"><div><p class="eyebrow">05 · VERIFIER</p><h3>Reward composition</h3></div></div>
+          <div id="metrics" class="metrics"></div>
+          <p class="formula mono">R = Σ weight × component</p>
+        </article>
+        <article class="panel dataset-panel">
+          <div class="section-head"><div><p class="eyebrow">06 · DATA</p><h3>Hidden evaluation shape</h3></div></div>
+          <div id="dataset-facts" class="facts"></div>
+          <p class="privacy-note">Reference structures stayed private during rollout. The verifier uses them only after submission.</p>
+        </article>
+      </section>
+
+      <section class="panel trajectory-panel">
+        <div class="section-head"><div><p class="eyebrow">07 · TRAJECTORY</p><h3 id="trajectory-title">Tool evidence ledger</h3><p id="trajectory-copy" class="section-copy"></p></div><div id="tool-count" class="counter"></div></div>
+        <div id="trajectory" class="trajectory"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="data.js?v=4"></script>
+  <script src="app.js?v=4"></script>
+</body>
+</html>

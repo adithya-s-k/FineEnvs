@@ -1,0 +1,2 @@
+{"route_id":"fixture-paracetamol-2step","target_smiles":"CC(=O)Nc1ccc(O)cc1","steps":[{"product":"CC(=O)Nc1ccc(O)cc1","reactants":["CC(=O)O","Nc1ccc(O)cc1"],"reaction_class":"amide formation","reaction_id":"fixture-step-a","mapping_status":"unmapped"},{"product":"Nc1ccc(O)cc1","reactants":["O=[N+]([O-])c1ccc(O)cc1"],"reaction_class":"nitro reduction","reaction_id":"fixture-step-b","mapping_status":"unmapped"}],"source":[{"name":"fixture_routes","license":"CC0-1.0","record_id":"fixture-route-1","group_id":"fixture-route-group-1"}]}
+

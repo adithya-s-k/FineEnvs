@@ -1,0 +1,16 @@
+.venv
+.venv/
+build/
+*.egg-info/
+__pycache__/
+.pytest_cache/
+
+# Raw datasets live under data/ and are ignored via data/.gitignore
+# (multi-GB downloads + nested git clones). Metadata is kept there.
+
+# Large data/model binaries anywhere in this env
+*.7z
+*.zip
+*.gz
+*.parquet
+*.ckpt

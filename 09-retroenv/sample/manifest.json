@@ -1,0 +1,53 @@
+{
+  "schema_version": "retro-training-sample-v1",
+  "selection": {
+    "counters": {
+      "distinct_target_first_cuts": 29112,
+      "duplicate_first_cuts": 55865,
+      "raw_routes": 457166,
+      "raw_shape_stock_or_depth_rejected": 372189,
+      "targets_with_alternate_first_cuts": 125
+    },
+    "max_steps": 3,
+    "requires_distinct_first_cuts": true,
+    "requires_exact_stock_closure": true,
+    "requires_serving_verifier_replay": true,
+    "sample_size": 12
+  },
+  "source": {
+    "archive": "data/raw/paroutes-v2-benchmark/all_loaded_routes.json.gz",
+    "archive_sha256": "d504e5964af1b09632d4048f6ab81d626babc5d344dff1be00ece312716f2405",
+    "license": "CC-BY-4.0",
+    "name": "paroutes-v2-benchmark",
+    "url": "https://zenodo.org/records/7341155"
+  },
+  "split": {
+    "audit": {
+      "overlaps": [],
+      "passed": true
+    },
+    "components": 12,
+    "counts": {
+      "dev": 2,
+      "eval": 2,
+      "stress": 2,
+      "train": 6
+    },
+    "largest_component": 1,
+    "near_duplicate_edges": 0,
+    "near_duplicate_threshold": 0.9,
+    "ratios": {
+      "dev": 0.16666666666666666,
+      "eval": 0.16666666666666666,
+      "stress": 0.16666666666666666,
+      "train": 0.5
+    },
+    "strategy": "strict_scaffold_source_near_duplicate_components"
+  },
+  "stock": {
+    "id": "paroutes-v2-n1",
+    "molecules": 13432,
+    "sha256": "b8641e2028846d995953b30f7acd36e7521d0301159518d172497340a0bfb115",
+    "source_path": "data/raw/paroutes-v2-benchmark/stock_n1.txt"
+  }
+}

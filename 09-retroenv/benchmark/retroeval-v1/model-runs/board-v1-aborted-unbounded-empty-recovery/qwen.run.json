@@ -1,0 +1,39 @@
+{
+  "attempts_per_task": 1,
+  "endpoint": "https://openrouter.ai/api/v1",
+  "max_turns": 16,
+  "request_timeout_seconds": 180.0,
+  "requested_model": "qwen/qwen3.8-27b",
+  "schema_version": "retro-model-run-v1",
+  "split": "eval",
+  "stocks_sha256": {
+    "paroutes-v2-n1": "a0505d832bccaa5ab74a259d0af1d5d1b06bc7b5a62eae9b61abbee99771f5c7"
+  },
+  "task_ids": [
+    "retro_04868d4962b96b2ad115",
+    "retro_09bc321a96bb43cd5585",
+    "retro_0ae5689a9be35ffcc2ad",
+    "retro_1139c7d6fb4731f5f381",
+    "retro_200f1fbaefed63a9c2a5",
+    "retro_249dfff9c1c7aac1bb95",
+    "retro_58e9e07a2edbaa16a7b5",
+    "retro_5e2cf9db65017d281e12",
+    "retro_68c8ed10ced8d0b8384f",
+    "retro_7dad530ff095d6369295",
+    "retro_7f5fbbf03657c916e394",
+    "retro_83c94c195acda05afa92",
+    "retro_8deeb324492848c84f22",
+    "retro_c2ea0142f1351928618c",
+    "retro_c5097311d8bb4eb620ad",
+    "retro_c7e9382dad4d0ff60020",
+    "retro_ed1f4b1465e6c7923aac",
+    "retro_f5b2876a403a58596f85",
+    "retro_fdd151c1d82ec4774535",
+    "retro_ff8269a8dfe3f3dc9936"
+  ],
+  "tasks": 20,
+  "tasks_sha256": "e0a65baa2e5442b35e4ddf5679358df66add79ff70dd62fc0a56756b4db14bd9",
+  "temperature": 0.0,
+  "tool_choice": "required",
+  "tool_schema_sha256": "37af7fbfa2210c5dc4eadd36db1bb73c89593a61cf067e8196fd8958396aa79c"
+}

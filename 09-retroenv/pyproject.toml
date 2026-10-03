@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openenv-retroenv"
+version = "0.1.0"
+description = "Reproducible, verifier-backed retrosynthesis tasks and OpenEnv environment"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "rdkit>=2024.3.5",
+    "openenv==0.4.2",
+    "fastmcp>=2.0,<4",
+    "fastapi>=0.115",
+    "pydantic>=2.8",
+    "uvicorn>=0.30",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "httpx>=0.27"]
+ord = ["ord-schema>=0.3", "pyarrow>=15"]
+sources = ["ord-schema>=0.3", "pyarrow>=15", "py7zr>=0.22"]
+eval = ["openai>=1.55"]
+
+[project.scripts]
+retroenv-server = "retroenv.server.app:main"
+retroenv-build-corpus = "retroenv.corpus:main"
+retroenv-build-tasks = "retroenv.taskgen:main"
+retroenv-eval = "retroenv.evaluation:main"
+retroenv-prepare-source = "retroenv.adapters:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

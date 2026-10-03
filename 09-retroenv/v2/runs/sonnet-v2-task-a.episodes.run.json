@@ -1,0 +1,15 @@
+{
+  "episodes": 1,
+  "max_turns": 32,
+  "model": "anthropic/claude-sonnet-5",
+  "parallel_tool_calls": true,
+  "schema_version": "retro-evidence-dag-run-v2",
+  "task_ids": [
+    "retro_0190cef6c2870d17dd24"
+  ],
+  "task_indices": [
+    0
+  ],
+  "temperature": 0,
+  "tool_choice": "auto"
+}

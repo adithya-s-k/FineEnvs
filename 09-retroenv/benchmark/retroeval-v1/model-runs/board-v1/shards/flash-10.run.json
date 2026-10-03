@@ -1,0 +1,26 @@
+{
+  "attempts_per_task": 1,
+  "endpoint": "https://openrouter.ai/api/v1",
+  "max_empty_turns": 2,
+  "max_turns": 16,
+  "request_timeout_seconds": 180.0,
+  "requested_model": "deepseek/deepseek-v4.1-flash",
+  "schema_version": "retro-model-run-v1",
+  "split": "eval",
+  "start_index": 10,
+  "stocks_sha256": {
+    "paroutes-v2-n1": "a0505d832bccaa5ab74a259d0af1d5d1b06bc7b5a62eae9b61abbee99771f5c7"
+  },
+  "task_ids": [
+    "retro_7f5fbbf03657c916e394",
+    "retro_80aee79b1e6a8fe69502",
+    "retro_9698f95a63e122625d89",
+    "retro_bc2fee2d44bd84e5d8b6",
+    "retro_c3f5a65b20f3e267dfe2"
+  ],
+  "tasks": 5,
+  "tasks_sha256": "9415099054a2170fc3883f71355022ced8f727982a7c46fb9cb6adc153b1e36b",
+  "temperature": 0.0,
+  "tool_choice": "required",
+  "tool_schema_sha256": "37af7fbfa2210c5dc4eadd36db1bb73c89593a61cf067e8196fd8958396aa79c"
+}

@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="RetroEval: a verifiable, multi-step retrosynthesis benchmark and trajectory explorer.">
+  <title>RetroEval — Verifiable retrosynthesis</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="RetroEval home">
+      <span class="brand-mark" aria-hidden="true">R</span>
+      <span>RetroEval</span>
+    </a>
+    <nav aria-label="Main navigation">
+      <a href="#task">Task</a>
+      <a href="#scoring">Scoring</a>
+      <a href="#results">Results</a>
+      <a href="#explorer">Trajectories</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero page-shell" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">A verifiable retrosynthesis environment</p>
+        <h1 id="hero-title">Plan backwards.<br>Verify every step.</h1>
+        <p class="hero-lede">An agent receives a target molecule, searches bounded tools, and returns synthesis trees. Chemistry—not prose—earns the score.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#explorer">Explore trajectories</a>
+          <a class="button quiet" href="#scoring">Understand the score</a>
+        </div>
+      </div>
+      <aside class="hero-proof" aria-label="Benchmark summary">
+        <div class="proof-number">20</div>
+        <p>held-out route-planning tasks</p>
+        <div class="proof-grid">
+          <div><strong>8</strong><span>models</span></div>
+          <div><strong>160</strong><span>episodes</span></div>
+          <div><strong>16</strong><span>turn cap</span></div>
+        </div>
+        <p class="proof-note">Private references. Public prompts. Deterministic verification.</p>
+      </aside>
+    </section>
+
+    <section id="task" class="section page-shell" aria-labelledby="task-title">
+      <div class="section-heading">
+        <p class="eyebrow">The task</p>
+        <h2 id="task-title">One target. Several defensible ways back.</h2>
+        <p>The model must propose two distinct routes, validate every cut, and stop only at confirmed stock.</p>
+      </div>
+
+      <div class="task-grid">
+        <article class="panel prompt-panel">
+          <div class="panel-kicker">What the agent sees</div>
+          <pre id="promptExample" aria-label="Example task prompt"></pre>
+          <p class="microcopy">Hidden: reference routes, source IDs, and the full stock list.</p>
+        </article>
+        <article class="panel loop-panel">
+          <div class="panel-kicker">One bounded loop</div>
+          <ol class="loop-list">
+            <li><span>01</span><div><strong>Inspect</strong><p>Read structure and constraints.</p></div></li>
+            <li><span>02</span><div><strong>Propose</strong><p>Choose a disconnection.</p></div></li>
+            <li><span>03</span><div><strong>Validate</strong><p>Check chemistry and precedent.</p></div></li>
+            <li><span>04</span><div><strong>Ground</strong><p>Confirm terminal stock exactly.</p></div></li>
+            <li><span>05</span><div><strong>Emit</strong><p>Return renderable route trees.</p></div></li>
+          </ol>
+        </article>
+      </div>
+
+      <div class="tool-strip" aria-label="Available agent tools">
+        <span>inspect molecule</span>
+        <span>search precedent</span>
+        <span>validate cut</span>
+        <span>look up class</span>
+        <span>find conditions</span>
+        <span>retrieve stock</span>
+        <span>emit routes</span>
+      </div>
+    </section>
+
+    <section id="scoring" class="section scoring-section" aria-labelledby="scoring-title">
+      <div class="page-shell">
+        <div class="section-heading compact">
+          <p class="eyebrow">Scoring</p>
+          <h2 id="scoring-title">Partial credit explains. Hard gates decide.</h2>
+          <p>The reward measures progress from parseable output to diverse, supported routes. Pass@1 remains stricter.</p>
+        </div>
+
+        <article class="reward-card">
+          <div class="reward-intro">
+            <span class="formula">R = Σ weight × component</span>
+            <span>Each component is scored from 0 to 1.</span>
+          </div>
+          <div id="rewardBar" class="reward-bar" aria-label="Reward composition"></div>
+          <div id="rewardLegend" class="reward-legend"></div>
+        </article>
+
+        <div class="metric-grid">
+          <article><span class="metric-symbol graph">G</span><h3>Graph</h3><p>Is the molecule → reaction → molecule structure connected and well formed?</p></article>
+          <article><span class="metric-symbol steps">S</span><h3>Steps</h3><p>Are the proposed reactions supported, structurally valid, and atom-consistent?</p></article>
+          <article><span class="metric-symbol stock">$</span><h3>Stock</h3><p>Do all terminal leaves exist in the selected inventory after an exact lookup?</p></article>
+          <article><span class="metric-symbol diversity">Δ</span><h3>Diversity</h3><p>Do verified routes begin with genuinely different first disconnections?</p></article>
+          <article><span class="metric-symbol invalid">!</span><h3>Invalid proposals</h3><p>How often did the agent ask the verifier to check an unsupported or malformed cut?</p></article>
+          <article><span class="metric-symbol exact">≡</span><h3>Any exact route</h3><p>Did at least one submitted tree exactly match any hidden reference route?</p></article>
+        </div>
+
+        <div class="pass-note">
+          <div><strong>Any exact route</strong><span>At least one tree matches a reference.</span></div>
+          <div class="pass-arrow" aria-hidden="true">→</div>
+          <div><strong>Strict Pass@1</strong><span>The whole answer also passes chemistry, stock, count, and diversity gates.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="results" class="section page-shell" aria-labelledby="results-title">
+      <div class="section-heading compact">
+        <p class="eyebrow">Results</p>
+        <h2 id="results-title">A small benchmark, read honestly.</h2>
+        <p>Twenty tasks make this directional, not definitive. Exact-route success and strict success answer different questions.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="leaderboard">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Strict Pass@1</th>
+              <th>Any exact route</th>
+              <th>Reward</th>
+              <th>Graph</th>
+              <th>Steps</th>
+              <th>Stock</th>
+              <th>Diversity</th>
+              <th>Invalid</th>
+              <th>Cost</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody"></tbody>
+        </table>
+      </div>
+      <p class="table-note">Scores are means over the same 20 held-out tasks. Click a model row to inspect its episodes.</p>
+    </section>
+
+    <section id="explorer" class="section explorer-section" aria-labelledby="explorer-title">
+      <div class="page-shell explorer-shell">
+        <div class="section-heading compact explorer-heading">
+          <div>
+            <p class="eyebrow">Trajectory explorer</p>
+            <h2 id="explorer-title">See how each answer was built.</h2>
+          </div>
+          <p>Choose a model, then a task. Every tool call and final route below comes from the saved evaluation episode.</p>
+        </div>
+
+        <div id="modelTabs" class="model-tabs" role="tablist" aria-label="Models"></div>
+
+        <div class="explorer-app">
+          <aside class="task-sidebar" aria-label="Evaluation tasks">
+            <div class="task-sidebar-head">
+              <span>Tasks</span>
+              <span id="taskCount">20</span>
+            </div>
+            <div id="taskList" class="task-list"></div>
+          </aside>
+
+          <div class="episode-view" aria-live="polite">
+            <header class="episode-header">
+              <div>
+                <p id="episodeLabel" class="episode-label"></p>
+                <h3 id="targetSmiles" class="target-smiles"></h3>
+                <p id="taskMeta" class="task-meta"></p>
+              </div>
+              <span id="episodeStatus" class="status-pill"></span>
+            </header>
+
+            <div id="episodeStats" class="episode-stats"></div>
+
+            <section class="route-section" aria-labelledby="route-heading">
+              <div class="subsection-head">
+                <div>
+                  <p class="subsection-kicker">Final answer</p>
+                  <h3 id="route-heading">Route graph</h3>
+                </div>
+                <div id="routeTabs" class="route-tabs" role="tablist" aria-label="Submitted routes"></div>
+              </div>
+              <div id="routeSummary" class="route-summary"></div>
+              <div id="graphViewport" class="graph-viewport">
+                <svg id="routeGraph" role="img" aria-labelledby="graphTitle graphDescription">
+                  <title id="graphTitle">Submitted retrosynthesis route</title>
+                  <desc id="graphDescription">A left-to-right graph from target molecule to reactions and precursor molecules.</desc>
+                </svg>
+              </div>
+              <div id="nodeDetail" class="node-detail" aria-live="polite"></div>
+            </section>
+
+            <section class="trajectory-section" aria-labelledby="trajectory-heading">
+              <div class="subsection-head">
+                <div>
+                  <p class="subsection-kicker">Agent work</p>
+                  <h3 id="trajectory-heading">Tool trajectory</h3>
+                </div>
+                <span id="trajectoryCount" class="trajectory-count"></span>
+              </div>
+              <ol id="trajectoryList" class="trajectory-list"></ol>
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer page-shell">
+    <p><strong>RetroEval v1</strong> · Deterministic verification over public reaction data.</p>
+    <p>Dataset-supported does not mean experimentally proven.</p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
