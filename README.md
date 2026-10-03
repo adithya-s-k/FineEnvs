@@ -140,13 +140,12 @@ or the whole [SmolDataEnvs collection](https://huggingface.co/collections/FineEn
 
 ### [06 · Multilingual OCR](./06-multilingual-ocr/) &nbsp;<sub>a million pages, 22 languages, one server</sub>
 
-**A corpus as an environment.** One OpenEnv server serves all 1,006,170 pages of the Nayana corpus
-in place from a bucket, as 11M tasks across five families (page and section OCR, layout detection,
-two kinds of document VQA), with indexed access and bounded caches. Sarvam Indic OCR Bench rides
-alongside as evaluation-only splits, scored by its own metrics.
+**A corpus as an environment.** A million scanned pages in 22 languages, served in place from a
+bucket as 11 million tasks: transcribe a region or a page, mark the layout, or answer a question
+about it. Sarvam Indic OCR Bench sits beside it as evaluation splits, scored by its own metric.
 
-Gemma 4 E4B trained on 4,000 Kannada crops cuts Sarvam CER on the benchmark's Kannada slice from
-0.428 to 0.360, with every checkpoint scored live by a second job. One A100, 10.5 hours. Part of the
+Gemma 4 E4B trained on 4,000 Kannada crops makes 16% fewer character errors on the benchmark's
+Kannada slice, mostly by learning to stay in the script. One A100, 10.5 hours. Part of the
 [Multilingual Multimodal Envs](https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4) collection.
 
 ## Articles &amp; talks

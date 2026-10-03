@@ -250,7 +250,7 @@ or establish a reward increase. Metrics separate languages/families; OCR include
 
 Map-input optimizer resume validates configuration, selected IDs, model commit, and manifest.
 Iterable/corpus optimizer resume is rejected until validated. Use a pinned model revision to
-avoid drift in future runs. GPU optimizer training remains unverified. The serving limit
+avoid drift in future runs. A full GPU run is recorded in `results/kannada-grpo/`. The serving limit
 rejects indexed pages above 50 million pixels, so preflight fixed task sets before training
 or evaluation and resolve eligibility before an unattended full-corpus run.
 
@@ -631,3 +631,10 @@ warm the selected blocks before comparing model latency.
 The CPU Job returns a compressed JSON report through numbered `NAYANA_SPEED_REPORT_PART`
 log entries. Concatenate payloads in numeric order, base64-decode, zlib-decompress, and check
 the SHA-256 in `NAYANA_SPEED_REPORT_BEGIN`. Archive run reports outside source control.
+
+## 10. The Kannada run
+
+The run behind the README's result: one training job, and one job that scores every checkpoint on
+Sarvam Indic OCR Bench as it lands. Both commands, with the hardware and the job ids, are in
+[`results/kannada-grpo/`](./results/kannada-grpo/), and the general form is in
+[`train/README.md`](./train/README.md).
