@@ -4,7 +4,7 @@
 The database is the one the training job wrote to, so these are the numbers the
 run actually logged rather than anything retyped. Download it first:
 
-    hf download --repo-type bucket HuggingEnvs/geoguesser-trackio-bucket \
+    hf download --repo-type bucket FineEnvs/geoguesser-trackio-bucket \
         trackio/geoguesser.db --local-dir .
 
 Per-step training reward is one task per optimizer step at temperature 1.0, so

@@ -24,7 +24,7 @@ A few things about that interface we had to read off the source rather than the 
 
 We pointed the trainer at the environment hosted on a Space rather than running it in-process, because that is the same thing the eval talks to. Whatever else is wrong, we are not training against one environment and measuring against another. The capacity check from the previous section is what makes that safe.
 
-Before you start, send every run to **one** dashboard. We use [Trackio](https://huggingface.co/spaces/HuggingEnvs/geoguesser-trackio), which is a Space plus a bucket, so the runs outlive the Jobs that produced them and sit on a shared axis where they can actually be compared. Reading three runs in three tabs is how you end up believing things that are not true. The whole dashboard is embedded at the end of this article, and every training figure below is built from its database.
+Before you start, send every run to **one** dashboard. We use [Trackio](https://huggingface.co/spaces/FineEnvs/geoguesser-trackio), which is a Space plus a bucket, so the runs outlive the Jobs that produced them and sit on a shared axis where they can actually be compared. Reading three runs in three tabs is how you end up believing things that are not true. The whole dashboard is embedded at the end of this article, and every training figure below is built from its database.
 
 ### The first run
 

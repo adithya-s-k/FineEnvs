@@ -2,7 +2,7 @@
 
 Source for the research article of the same name. Built with
 [research-article-template](https://huggingface.co/spaces/tfrere/research-article-template) and
-deployed as a Docker Space: **[HuggingEnvs/geoguesser-article](https://huggingface.co/spaces/HuggingEnvs/geoguesser-article)**.
+deployed as a Docker Space: **[FineEnvs/geoguesser-article](https://huggingface.co/spaces/FineEnvs/geoguesser-article)**.
 
 The project it documents lives in [`03-geoguesser/`](../../../03-geoguesser/): the environment, the
 dataset pipeline, the eval harness, the training script and the results.
@@ -37,7 +37,7 @@ typed by hand. The scripts that build them:
 python3 scripts/build_hero_guesses.py ../../../03-geoguesser/results/raw/passk-run1-full
 
 # the run 1 curves, from the Trackio database
-hf download --repo-type bucket HuggingEnvs/geoguesser-trackio-bucket trackio/geoguesser.db --local-dir .
+hf download --repo-type bucket FineEnvs/geoguesser-trackio-bucket trackio/geoguesser.db --local-dir .
 python3 scripts/build_run1_curve.py trackio/geoguesser.db --run run1-4b
 python3 scripts/build_runs_std.py trackio/geoguesser.db
 
@@ -53,7 +53,7 @@ python3 scripts/build_task_thumbs.py --env ../../../03-geoguesser/env
 ## Deploying
 
 ```bash
-python3 tools/deploy.py content/articles/geoguesser HuggingEnvs/geoguesser-article
+python3 tools/deploy.py content/articles/geoguesser FineEnvs/geoguesser-article
 ```
 
 The Space builds the Astro app itself, so `node_modules/` and `dist/` are excluded from the upload.
