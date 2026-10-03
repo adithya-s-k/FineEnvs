@@ -43,7 +43,7 @@ METADATA_COLUMNS = [
 
 # The OCR corpus names languages by ISO 639-1; FLEURS names them language_region. Only
 # the pairs that are genuinely the same language are listed, so an overlap set can be
-# compared with 05-multilingual-ocr language for language.
+# compared with 06-multilingual-ocr language for language.
 OCR_LANGUAGE_MAP = {
     "ar": "ar_eg",
     "bn": "bn_in",
