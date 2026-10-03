@@ -21,7 +21,7 @@ two languages at four tasks each take 2.9 s. The draw is seeded, so a run reprod
 column would be read by TRL as a conversation, and the environment already owns the prompt.
 
 **Evaluation uses a frozen split, or no two runs are comparable.** `--eval-split
-eval_21_test` scores the 21 languages shared with `05-multilingual-ocr`, so an ASR result
+eval_21_test` scores the 21 languages shared with `06-multilingual-ocr`, so an ASR result
 can be read against an OCR result language for language; `eval_102_test` covers all 102.
 The `_validation` variants exist so model selection never touches the set a final number is
 reported on. A frozen split is used whole unless `--eval-limit` is given, and the run
@@ -80,6 +80,10 @@ hf jobs uv run -d --flavor l40sx1 -s HF_TOKEN --timeout 16h \
   --output-dir /outputs/<commit>/evals \
   --trackio-space <you>/fineenvs-asr-trackio --run-name asr-kn-full-v3-eval
 ```
+
+The watcher needs about 20 GB of GPU memory and is idle between checkpoints. L40S capacity was
+scarce when these runs launched: the OCR watcher waited 1.5 hours and was relaunched on
+`a100-large`, which resumes from `evals/curve.json` without rescoring anything.
 
 **A GRPO run needs reward variance.** Identical rewards within a group make the advantage
 zero by construction, the adapter cannot change, and the run proves nothing. The runner

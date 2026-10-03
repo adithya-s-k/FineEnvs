@@ -95,23 +95,26 @@ answer scores 0.000 in both units.
 
 ## 6. Frozen evaluation sets
 
-Four sets are committed, a **test** and a **validation** variant of each, so model selection
+Six sets are committed, a **test** and a **validation** variant of each, so model selection
 during training never touches the set a final number is reported on. The two splits share no
 task.
 
 | File | Languages | Tasks | Per language | Per family |
 |---|---|---|---|---|
-| `data/eval-fleurs-all-{test,validation}.json` | 102 | 510 | 5 | 170 |
-| `data/eval-fleurs-ocr-overlap-{test,validation}.json` | 21 | 504 | 24 | 168 |
+| `data/eval-fleurs-all-{test,validation}.json` | 102 | 1,836 | 18 | 612 |
+| `data/eval-fleurs-ocr-overlap-{test,validation}.json` | 21 | 1,050 | 50 | 350 |
+| `data/eval-fleurs-kn-transcription-{test,validation}.json` | 1 | 838 / 200 | the whole split | transcription only |
 
-The overlap set covers the languages shared with `05-multilingual-ocr`, so an ASR score can
+The overlap set covers the languages shared with `06-multilingual-ocr`, so an ASR score can
 be read against an OCR score language for language. **The overlap is 21, not 22:** the OCR
 corpus includes Sanskrit and FLEURS does not, which the mapping records explicitly rather
-than dropping silently.
+than dropping silently. 18 per language is the most every one of the 102 languages supports in
+both splits: each family takes a disjoint slice of a language's recordings, and Oromo has 19
+eligible validation utterances. The Kannada sets are the whole `kn_in` transcription split.
 
 **They nest.** Families take bands of the hash order fixed by family position rather than
 by how many tasks are wanted, so a larger set is a superset of a smaller one for any shared
-language. All 105 `fleurs-all` tasks in the 21 shared languages are also in the overlap
+language. All 378 `fleurs-all` tasks in the 21 shared languages are also in the overlap
 set, so the two agree on every task they share instead of sampling independently.
 
 **Each is served as its own split**, named for what it covers, so a frozen set is browsed
@@ -120,8 +123,9 @@ and served like any other split rather than only loaded from JSON:
 | Split | Tasks |
 |---|---|
 | `train` / `validation` / `test` | 815,226 / 103,326 / 233,388 |
-| `eval_21_test` / `eval_21_validation` | 504 each |
-| `eval_102_test` / `eval_102_validation` | 510 each |
+| `eval_21_test` / `eval_21_validation` | 1,050 each |
+| `eval_102_test` / `eval_102_validation` | 1,836 each |
+| `eval_1_test` / `eval_1_validation` | 838 / 200 |
 
 An evaluation split is a **view over the corpus, not a copy**: its tasks are the same rows
 the source splits serve. Two sets covering the same languages and split would resolve to one
@@ -131,7 +135,7 @@ name, so the server refuses to start rather than serve whichever one won.
 # One pass per source split; each writes both the 102-language and the overlap set.
 for SPLIT in test validation; do
   uv run --frozen --project envs/multilingual_asr asr-evalset build \
-    --output-dir data --split "$SPLIT" --size 510 --overlap-size 504 --workers 4 --verify
+    --output-dir data --split "$SPLIT" --size 1836 --overlap-size 1050 --workers 4 --verify
 done
 
 uv run --frozen --project envs/multilingual_asr asr-evalset verify \

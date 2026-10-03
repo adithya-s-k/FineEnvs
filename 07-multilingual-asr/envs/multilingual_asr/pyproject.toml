@@ -26,7 +26,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "ruff>=0.12,<1"]
-# Pinned to the versions verified on 05-multilingual-ocr, so a Gemma 4 omni
+# Pinned to the versions verified on 06-multilingual-ocr, so a Gemma 4 omni
 # checkpoint loads the same way here.
 train = [
   "trl[vlm]==1.13.0",

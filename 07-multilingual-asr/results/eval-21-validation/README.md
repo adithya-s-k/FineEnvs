@@ -1,7 +1,7 @@
 # Candidate comparison: which model to fine-tune
 
 Four checkpoints scored on `eval_21_validation` — the frozen **1,050-task** set over the 21
-languages shared with `05-multilingual-ocr`, all three task families, **50 tasks per language**.
+languages shared with `06-multilingual-ocr`, all three task families, **50 tasks per language**.
 The **validation** variant is used deliberately: `eval_21_test` stays untouched so a
 post-training number still means something.
 

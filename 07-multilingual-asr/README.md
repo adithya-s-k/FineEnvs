@@ -206,8 +206,8 @@ splits share no task.
 
 | Set | Languages | Tasks |
 |---|---|---|
-| `eval-fleurs-all-{test,validation}.json` | 102 | 510 each |
-| `eval-fleurs-ocr-overlap-{test,validation}.json` | 21 | 504 each |
+| `eval-fleurs-all-{test,validation}.json` | 102 | 1,836 each (18 per language) |
+| `eval-fleurs-ocr-overlap-{test,validation}.json` | 21 | 1,050 each (50 per language) |
 | `eval-fleurs-kn-transcription-{test,validation}.json` | Kannada, transcription | 838 / 200 (the whole split) |
 
 Each is also served as **its own split**, named for what it covers, so a frozen set can
@@ -216,8 +216,8 @@ be browsed and served like any other split rather than only loaded from JSON:
 | Split | Tasks |
 |---|---|
 | `train` / `validation` / `test` | 815,226 / 103,326 / 233,388 |
-| `eval_21_test` / `eval_21_validation` | 504 each |
-| `eval_102_test` / `eval_102_validation` | 510 each |
+| `eval_21_test` / `eval_21_validation` | 1,050 each |
+| `eval_102_test` / `eval_102_validation` | 1,836 each |
 | `eval_1_test` / `eval_1_validation` | 838 / 200 |
 
 An eval split is a **view over the corpus, not a copy**: its tasks are the same rows the

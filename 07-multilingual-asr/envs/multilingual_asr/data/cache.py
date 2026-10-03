@@ -1,6 +1,6 @@
 """Byte-bounded disk cache and HTTP range reader.
 
-Shared verbatim with 05-multilingual-ocr: the caching problem is identical once the unit
+Shared verbatim with 06-multilingual-ocr: the caching problem is identical once the unit
 is "a parquet row group", and a divergent copy would be a second thing to get right.
 """
 

@@ -1,6 +1,6 @@
 """Fetch bucket row groups into a byte-bounded local cache. Audio stays in the bucket.
 
-Mirrors 05-multilingual-ocr's storage: source files are never copied, a read is a range
+Mirrors 06-multilingual-ocr's storage: source files are never copied, a read is a range
 request or a mounted read, and what lands on disk has an explicit budget. The one number
 that differs matters a lot — FLEURS publishes **one row group per file**, 310 MB for a
 test shard and up to 1.5 GB for a train shard, against Nayana's ~75-116 MB groups. A cold
