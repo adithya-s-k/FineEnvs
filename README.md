@@ -140,13 +140,13 @@ or the whole [SmolDataEnvs collection](https://huggingface.co/collections/FineEn
 
 ### [07 · Multilingual ASR](./07-multilingual-asr/) &nbsp;<sub>102 languages of speech, one server</sub>
 
-**Audio, and a trainer that has to hear it.** One OpenEnv server serves all of FLEURS, 102
-languages and 1.15M tasks across transcription, verbatim transcription and language ID, with
-per-script error scoring.
+**Speech, and a trainer that has to hear it.** All of FLEURS, 102 languages of read speech, behind
+one OpenEnv server you can play in the browser.
 
-Gemma 4 E4B trained on every Kannada clip cuts held-out character error by 45%, once the trainer
-actually feeds the audio into the loss: TRL dropped it, and the fix is measured in the README. One
-A100, 4.7 hours. Part of the [Multilingual Multimodal Envs](https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4) collection.
+Gemma 4 E4B trained on every Kannada clip makes 45% fewer character errors on clips it never saw.
+That only happened once the trainer actually fed it the audio: TRL drops audio from the forward pass
+its loss comes from, and the project shows the fix and the numbers. One A100, 4.7 hours. Part of the
+[Multilingual Multimodal Envs](https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4) collection.
 
 ## Articles &amp; talks
 

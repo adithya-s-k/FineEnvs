@@ -194,9 +194,10 @@ uv run --frozen --project envs/multilingual_asr hf jobs uv run \
 **This verifies execution, not quality.** Four optimizer steps over eight evaluation tasks
 cannot establish an improvement, and the macro reward is unchanged in both runs.
 
-Unlike the OCR environment, the audio tower is **adapted, not skipped**: it is the part of
-an omni checkpoint this task depends on, which is why the target counts here (106 and 122)
-are the full sets rather than the 82 and 98 used there.
+These smokes adapted the audio tower too, hence 106 and 122 target modules. That turned out
+to train nothing: TRL does not pass audio into the loss, so those adapters stay exactly zero.
+The trainer now adapts the language model only (66 modules on E4B) and carries the audio into
+the loss itself. [LEARNINGS.md](./LEARNINGS.md) has the full account.
 
 Five things the smokes settled that reading the code did not:
 
@@ -229,10 +230,19 @@ uv run --frozen --project envs/multilingual_asr python train/deploy_space.py \
   --evalset data/eval-fleurs-all-test.json \
   --evalset data/eval-fleurs-ocr-overlap-test.json \
   --evalset data/eval-fleurs-all-validation.json \
-  --evalset data/eval-fleurs-ocr-overlap-validation.json
+  --evalset data/eval-fleurs-ocr-overlap-validation.json \
+  --evalset data/eval-fleurs-kn-transcription-test.json \
+  --evalset data/eval-fleurs-kn-transcription-validation.json
 ```
 
 The Space bundles code, the manifest, and the evaluation sets; indexes and audio are fetched
 lazily from the bucket mounted at `/fleurs`. Evaluation sets a deployment no longer carries
 are deleted, because an upload adds and replaces but never removes and a leftover set
 collides with its renamed successor under the same split name.
+
+## 9. The Kannada run
+
+The run behind the README's result: one training job and one job that scores every checkpoint as
+it lands. Both commands, with the hardware and the job ids, are in
+[`results/kannada-grpo/`](./results/kannada-grpo/), and the general form is in
+[`train/README.md`](./train/README.md).
