@@ -31,11 +31,11 @@ import rehypeWrapOutput from './plugins/rehype/wrap-outputs.mjs';
 //
 // So: an explicit PUBLIC_SITE_URL wins, SPACE_ID is the convenience, and the
 // deployed URL is the fallback rather than `undefined`.
-const spaceId = process.env.SPACE_ID; // e.g. "HuggingEnvs/geoguesser-article"
+const spaceId = process.env.SPACE_ID; // e.g. "FineEnvs/geoguesser-article"
 const siteUrl =
   process.env.PUBLIC_SITE_URL ||
   (spaceId ? `https://${spaceId.replace('/', '-').toLowerCase()}.hf.space` : null) ||
-  'https://huggingenvs-geoguesser-article.hf.space';
+  'https://fineenvs-geoguesser-article.hf.space';
 
 export default defineConfig({
   site: siteUrl,

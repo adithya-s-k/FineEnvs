@@ -10,7 +10,7 @@ header: mini
 pinned: false
 license: mit
 thumbnail: >-
-  https://huggingenvs-geoguesser-article.hf.space/thumb.auto.jpg
+  https://fineenvs-geoguesser-article.hf.space/thumb.auto.jpg
 tags:
   - research-article-template
   - rl-environments
@@ -34,12 +34,12 @@ at GeoGuessr.
 
 Every figure is built from the published records, and everything it cites is on the Hub:
 
-- **[`geoguesser-env`](https://huggingface.co/spaces/HuggingEnvs/geoguesser-env)** is the environment, playable in a browser
-- **[`geoguesser-tasks`](https://huggingface.co/datasets/HuggingEnvs/geoguesser-tasks)** holds both task splits
-- **[`geoguesser-panos`](https://huggingface.co/buckets/HuggingEnvs/geoguesser-panos)** holds the 22 GB of imagery
-- **[`geoguesser-trackio`](https://huggingface.co/spaces/HuggingEnvs/geoguesser-trackio)** has all four training runs
-- **[the collection](https://huggingface.co/collections/HuggingEnvs/geoguesser-env-6a969f8db267fe0e85fa1ab6)** gathers the lot
+- **[`geoguesser-env`](https://huggingface.co/spaces/FineEnvs/geoguesser-env)** is the environment, playable in a browser
+- **[`geoguesser-tasks`](https://huggingface.co/datasets/FineEnvs/geoguesser-tasks)** holds both task splits
+- **[`geoguesser-panos`](https://huggingface.co/buckets/FineEnvs/geoguesser-panos)** holds the 22 GB of imagery
+- **[`geoguesser-trackio`](https://huggingface.co/spaces/FineEnvs/geoguesser-trackio)** has all four training runs
+- **[the collection](https://huggingface.co/collections/FineEnvs/geoguesser-env-6a969f8db267fe0e85fa1ab6)** gathers the lot
 
 Source, environment, eval harness and training script live in
-[HuggingEnvs](https://github.com/adithya-s-k/HuggingEnvs) under `03-geoguesser/`, with the article
+[FineEnvs](https://github.com/adithya-s-k/FineEnvs) under `03-geoguesser/`, with the article
 itself under `content/articles/geoguesser/`.

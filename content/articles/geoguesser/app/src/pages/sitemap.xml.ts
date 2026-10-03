@@ -16,7 +16,7 @@ const PAGES: { path: string; priority: string; changefreq: string }[] = [
 ];
 
 export const GET: APIRoute = ({ site }) => {
-  const origin = (site ?? new URL("https://huggingenvs-geoguesser-article.hf.space")).origin;
+  const origin = (site ?? new URL("https://fineenvs-geoguesser-article.hf.space")).origin;
   const today = new Date().toISOString().slice(0, 10);
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>

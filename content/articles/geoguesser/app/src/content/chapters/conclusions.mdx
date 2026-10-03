@@ -17,15 +17,15 @@ That last one generalises past this project. In RL the feedback loop is long and
 
 ## Reproduction
 
-Everything is published, including the raw episode records behind every number above, so nothing here is a screenshot of something you cannot check. The whole set is gathered in **[the GeoGuesser Env collection](https://huggingface.co/collections/HuggingEnvs/geoguesser-env-6a969f8db267fe0e85fa1ab6)**.
+Everything is published, including the raw episode records behind every number above, so nothing here is a screenshot of something you cannot check. The whole set is gathered in **[the GeoGuesser Env collection](https://huggingface.co/collections/FineEnvs/geoguesser-env-6a969f8db267fe0e85fa1ab6)**.
 
-**Play it.** [`HuggingEnvs/geoguesser-env`](https://huggingface.co/spaces/HuggingEnvs/geoguesser-env) is the environment as a Space, playable in a browser with the controls exposed. It is the same thing the trainer and the eval talk to.
+**Play it.** [`FineEnvs/geoguesser-env`](https://huggingface.co/spaces/FineEnvs/geoguesser-env) is the environment as a Space, playable in a browser with the controls exposed. It is the same thing the trainer and the eval talk to.
 
-**The data.** [`HuggingEnvs/geoguesser-tasks`](https://huggingface.co/datasets/HuggingEnvs/geoguesser-tasks) holds both splits: 200 held-out eval tasks across 73 countries, and 3,452 training tasks. It is metadata only, which is what makes it small enough to version. [`HuggingEnvs/geoguesser-panos`](https://huggingface.co/buckets/HuggingEnvs/geoguesser-panos) is the 22 GB of Mapillary imagery, in a Storage Bucket because it is a mutable cache instead of a source; `hf sync` pulls it locally.
+**The data.** [`FineEnvs/geoguesser-tasks`](https://huggingface.co/datasets/FineEnvs/geoguesser-tasks) holds both splits: 200 held-out eval tasks across 73 countries, and 3,452 training tasks. It is metadata only, which is what makes it small enough to version. [`FineEnvs/geoguesser-panos`](https://huggingface.co/buckets/FineEnvs/geoguesser-panos) is the 22 GB of Mapillary imagery, in a Storage Bucket because it is a mutable cache instead of a source; `hf sync` pulls it locally.
 
-**The models.** [`geoguesser-qwen3.5-4b-grpo`](https://huggingface.co/HuggingEnvs/geoguesser-qwen3.5-4b-grpo) is run 1, the adapter behind every number in this article. [`geoguesser-qwen3.5-4b-grpo-v3`](https://huggingface.co/HuggingEnvs/geoguesser-qwen3.5-4b-grpo-v3) is run 3, the ablation that isolated why run 1 worked. Both are LoRA adapters on `Qwen/Qwen3.5-4B`, so they are a few megabytes rather than a few gigabytes.
+**The models.** [`geoguesser-qwen3.5-4b-grpo`](https://huggingface.co/FineEnvs/geoguesser-qwen3.5-4b-grpo) is run 1, the adapter behind every number in this article. [`geoguesser-qwen3.5-4b-grpo-v3`](https://huggingface.co/FineEnvs/geoguesser-qwen3.5-4b-grpo-v3) is run 3, the ablation that isolated why run 1 worked. Both are LoRA adapters on `Qwen/Qwen3.5-4B`, so they are a few megabytes rather than a few gigabytes.
 
-**The runs.** [`HuggingEnvs/geoguesser-trackio`](https://huggingface.co/spaces/HuggingEnvs/geoguesser-trackio) has every run in one project on a shared axis, and it is embedded below in full, so you can read the curves yourself instead of taking our word for the ones we chose to draw.
+**The runs.** [`FineEnvs/geoguesser-trackio`](https://huggingface.co/spaces/FineEnvs/geoguesser-trackio) has every run in one project on a shared axis, and it is embedded below in full, so you can read the curves yourself instead of taking our word for the ones we chose to draw.
 
 <HtmlEmbed
   src="trackio-space.html"
@@ -34,7 +34,7 @@ Everything is published, including the raw episode records behind every number a
   frameless
 />
 
-**The code.** [`03-geoguesser`](https://github.com/adithya-s-k/HuggingEnvs/tree/main/03-geoguesser) is the environment, the dataset pipeline, the eval harness and the training script, with a README per directory. `REPRODUCE.md` has the exact commands for each configuration, including the traps that cost us a run each, and every one of them works on a single GPU: `NPROC=1` is the default, and four cards were only ever about wall clock. `results/summaries/` holds the aggregated tables this article cites, and every one of them regenerates from the raw episodes with a single command, so a number that no longer matches its data is a bug in one of them.
+**The code.** [`03-geoguesser`](https://github.com/adithya-s-k/FineEnvs/tree/main/03-geoguesser) is the environment, the dataset pipeline, the eval harness and the training script, with a README per directory. `REPRODUCE.md` has the exact commands for each configuration, including the traps that cost us a run each, and every one of them works on a single GPU: `NPROC=1` is the default, and four cards were only ever about wall clock. `results/summaries/` holds the aggregated tables this article cites, and every one of them regenerates from the raw episodes with a single command, so a number that no longer matches its data is a bug in one of them.
 
 <Note>
 A reproduction that disagrees with the tables above is a bug report we want.
