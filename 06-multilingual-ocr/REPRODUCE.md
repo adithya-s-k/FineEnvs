@@ -14,12 +14,12 @@ The source inventory, local index databases, and image caches are also ignored b
 
 ```bash
 uv run --frozen --project envs/nayana_ocr nayana-mirror \
-  --bucket HuggingEnvs/NayanaOCR_Corpus_2025_bucket \
+  --bucket FineEnvs/NayanaOCR_Corpus_2025_bucket \
   --output data/corpus-source.json
 
 # Read-only audit on subsequent runs.
 uv run --frozen --project envs/nayana_ocr nayana-mirror \
-  --bucket HuggingEnvs/NayanaOCR_Corpus_2025_bucket \
+  --bucket FineEnvs/NayanaOCR_Corpus_2025_bucket \
   --output data/corpus-source.json --verify-only
 ```
 
