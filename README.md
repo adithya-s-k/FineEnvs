@@ -133,6 +133,17 @@ or the whole [SmolDataEnvs collection](https://huggingface.co/collections/FineEn
 > **More coming.** Each new project is another end-to-end recipe: an environment, a training run, and
 > the artifacts on the Hub. [Proposals and contributions welcome →](./CONTRIBUTING.md)
 
+## Tooling
+
+Apps for exploring and evaluating RL environments, in [`tooling/`](./tooling/):
+
+- **[HF RL Explorer](./tooling/hf-rl-explorer/)** ([Space](https://huggingface.co/spaces/FineEnvs/RL-Explorer)):
+  every RL environment on the Hub in one place (Harbor datasets, OpenEnv Spaces, NeMo Gym, Verifiers, verl and
+  SkyRL, MiMo), what each task asks and how it is graded, and agent rollouts on any of them, graded and compared.
+- **[MiMo RL Environment Explorer](./tooling/mimo-rl-explorer/)**
+  ([Space](https://huggingface.co/spaces/FineEnvs/MiMo-RL-Envs-Explorer)): the 7,780 MiMo-V2.6-RL environments,
+  rollouts on MiMo's own harness, and `mimo_harbor`, their conversion to Harbor datasets.
+
 ---
 
 ## Articles &amp; talks
@@ -278,6 +289,9 @@ FineEnvs/
 ├── content/
 │   ├── articles/            long-form sources (Astro → Docker Space)
 │   └── slides/              talk decks (Vite → static Space)
+├── tooling/
+│   ├── hf-rl-explorer/      every RL environment on the Hub, with rollouts (Space + admin)
+│   └── mimo-rl-explorer/    the MiMo-V2.6-RL environments, rollouts, Harbor conversion
 ├── tools/                   launcher, Space deploy, index generation
 ├── assets/                  brand + content thumbnails
 └── .claude/skills/          the five environment-authoring agent skills
