@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>HF RL Explorer admin</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="https://huggingface.co/front/assets/huggingface_logo-noborder.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/app.css">
+  <link rel="stylesheet" href="/rlx.css">
+  <link rel="stylesheet" href="/admin/admin.css">
+  <script src="/js/boot.js"></script>
+</head>
+<body>
+  <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+  <header class="top">
+    <div class="wrap top-inner">
+      <a class="brand" href="#/" aria-label="HF RL Explorer admin, home">
+        <img class="logo" src="https://huggingface.co/front/assets/huggingface_logo-noborder.svg" alt="" width="30" height="30">
+        <span class="name">HF RL Explorer <span>Admin</span></span>
+      </a>
+      <nav class="nav" aria-label="Main"><a href="#/" class="on">Dashboard</a><a id="to-explorer" href="/" target="_blank" rel="noopener">Explorer ↗</a></nav>
+      <div class="top-right">
+        <button class="icon-btn" id="theme" type="button" aria-label="Toggle dark mode" title="Toggle dark mode"></button>
+        <div id="account"></div>
+      </div>
+    </div>
+  </header>
+  <main id="view"><div class="boot" aria-label="Loading"><span class="spinner lg"></span></div></main>
+  <div class="scrim" id="scrim" hidden></div>
+  <div class="modal" id="modal" role="dialog" aria-modal="true" hidden><div class="modal-bar"><span id="modal-icon"></span><span id="modal-title"></span><span class="grow"></span>
+    <a class="btn sm" id="modal-open" target="_blank" rel="noopener" hidden></a><button class="icon-btn" id="modal-close" type="button" aria-label="Close"></button></div><div class="modal-body" id="modal-body"></div></div>
+  <div id="dialog-root"></div>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <footer class="foot"><div class="wrap"><span>HF RL Explorer admin · private to the FineEnvs organization</span><span class="grow"></span><span id="foot-version"></span></div></footer>
+  <script type="module" src="/admin/main.js"></script>
+</body>
+</html>

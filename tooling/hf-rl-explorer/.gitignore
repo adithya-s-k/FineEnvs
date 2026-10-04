@@ -1,0 +1,5 @@
+.local-data/
+__pycache__/
+.venv/
+.gradio/
+.ruff_cache/
