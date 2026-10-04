@@ -16,6 +16,7 @@ from typing import Any, Callable
 
 from .. import catalog
 from .contract import Adapter, Env
+from .capabilities import dataset_support
 from .harbor import HarborAdapter
 from .mimo import MiMoAdapter, harbor_aliases, harbor_to_mimo
 from .rows import RowsAdapter
@@ -86,8 +87,10 @@ def summary(spec: str, token: str | None = None, subset: str | None = None) -> d
         env = resolve("dataset", spec, token)
         s = env.adapter.summary(env, subset)
     how = s.get("how") or {}
+    name = how.get("framework") or env.adapter.framework
     return {"env": {**describe_env(env), "framework": how.get("framework") or env.adapter.framework},
-            "info": {k: v for k, v in env.meta.items() if k != "all_tags"}, "collection": catalog.collection(spec), **s}
+            "info": {k: v for k, v in env.meta.items() if k != "all_tags"}, "collection": catalog.collection(spec), **s,
+            "support": dataset_support(name, state=s.get("state", "ready"), revision=env.meta.get("sha"), restricted=bool(env.meta.get("restricted")))}
 
 
 def tasks(spec: str, token: str | None = None, **kw: Any) -> dict[str, Any]:
@@ -108,6 +111,7 @@ def task(spec: str, ref: str, token: str | None = None) -> dict[str, Any]:
     out.setdefault("collection", catalog.collection(spec))
     out["env"] = {**describe_env(env), "framework": view.get("framework") or env.adapter.framework}
     out["run"] = {"options": options, "note": "" if options else env.adapter.run_note}
+    out["support"] = dataset_support(out["env"]["framework"], options=options, note=env.adapter.run_note, revision=env.meta.get("sha"), restricted=bool(env.meta.get("restricted")))
     out["aliases"] = [{"env": k, "ref": r} for k, r in aliases(env, ref)]
     return out
 

@@ -83,6 +83,23 @@ body:has(.sp-app.full)::after { content: ""; position: fixed; inset: 0; z-index:
 .tk-detail { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); }
 .tk-detail-h { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 12.5px; }
 .tk-detail-h .btn { font-family: var(--font); }
+.tk-detail-h { min-width: 0; }
+.tk-title { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.tk-title small { font: 12px var(--font); color: var(--muted); }
+.tk-title b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tk-detail-h > button { flex: none; }
+.tk-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px 0; }
+.tk-actions .primary { margin-left: auto; }
+.tk-inputs { display: grid; gap: 16px; padding: 6px 0 12px; min-width: 0; }
+.tk-inputs section { min-width: 0; overflow-wrap: anywhere; }
+.tk-inputs h3 { text-transform: capitalize; font-size: 12px; color: var(--muted); margin: 0 0 8px; }
+.tk-record { border-top: 1px solid var(--border); padding-top: 12px; font-size: 13px; min-width: 0; }
+.tk-record summary { cursor: pointer; color: var(--muted); padding-bottom: 8px; }
+.tk .seg { flex-wrap: wrap; max-width: 100%; }
+.tk .seg button { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.tk-bar { flex-wrap: wrap; }
+.tk-detail .rv-kv dd, .tk-detail .rv-str { overflow-wrap: anywhere; }
+.tk-detail .note-box { margin-bottom: 12px; }
 .tk-detail-b { padding: 12px 14px; max-height: 560px; overflow: auto; }
 
 /* connect */
@@ -116,6 +133,7 @@ body:has(.sp-app.full)::after { content: ""; position: fixed; inset: 0; z-index:
 .rv-list span { font: 11.5px var(--mono); padding: 1px 6px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--border); }
 .rv-ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
 .rv-img { max-width: min(100%, 520px); max-height: 420px; border-radius: 6px; border: 1px solid var(--border); background: repeating-conic-gradient(var(--surface-2) 0% 25%, var(--surface) 0% 50%) 50% / 14px 14px; display: block; }
+.rv-video { display: block; max-width: 100%; max-height: 520px; }
 .rv-audio { width: min(100%, 420px); height: 36px; }
 .rv-table { overflow: auto; max-height: 420px; border: 1px solid var(--border); border-radius: 7px; }
 .rv-table table { border-collapse: collapse; font-size: 12px; width: 100%; }

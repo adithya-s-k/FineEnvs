@@ -1985,7 +1985,7 @@
 },
 "instruction_following": {
 "description": "IFEval and IFBench-style instruction following",
-"verification": "LLM judge",
+"verification": "Rule-based instruction checks",
 "readme": "Evaluates language model responses against instruction-following criteria using Open-Instruct and IFEval constraints.",
 "fields": {
 "id": {
@@ -2454,7 +2454,7 @@
 },
 "math_proof_judgement": {
 "description": "Binary proof judgement — model reads a problem and proof, outputs Yes/No",
-"verification": "LLM judge",
+"verification": "Deterministic answer parsing",
 "readme": "Binary judgement of math proofs. The policy model reads a problem + candidate proof and outputs `Judgement: Yes` (proof correct) or `Judgement: No` (proof incorrect). Verification is fully deterministic — a single regex parses the final judgement — so **no external LLM judge is called**. This mirrors NeMo Skills' `answer-judgement` metric (`is_correct_judgement` format 1).",
 "fields": {
 "expected_judgement": {

@@ -127,7 +127,9 @@ function fromTrajectory(run, traj) {
   }
   if (run.reward != null) {
     const named = Object.entries(run.rewards || {});
-    push({ kind: "checks", reward: run.reward, summary: "", checks: named.map(([k, v]) => ({ id: k, score: v, passed: v >= 0.999 ? true : v <= 0 ? false : null })) });
+    // Harbor allows arbitrary named metrics (latency, loss, counts, signed scores).
+    // Their values do not imply pass/fail without the verifier's own criteria.
+    push({ kind: "checks", reward: run.reward, summary: "", checks: named.map(([k, v]) => ({ id: k, score: v, passed: null })) });
   }
   return out;
 }

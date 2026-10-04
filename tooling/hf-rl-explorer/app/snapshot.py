@@ -331,8 +331,21 @@ def size_bucket(n: int | None) -> str:
     return "Not indexed yet" if n is None else "Under 100" if n < 100 else "100 to 1,000" if n < 1000 else "1,000 or more"
 
 
+SPACE_STAGES = {
+    "RUNNING": "Running", "SLEEPING": "Sleeping", "PAUSED": "Paused", "STOPPED": "Paused",
+    "BUILDING": "Building", "APP_STARTING": "Starting", "RUNNING_APP_STARTING": "Starting",
+    "RUNNING_BUILDING": "Building", "BUILD_ERROR": "Error", "RUNTIME_ERROR": "Error",
+    "CONFIG_ERROR": "Error", "NO_APP_FILE": "Error", "DELETING": "Deleting",
+}
+
+
 def stage_value(stage: Any) -> str:
-    return "Running" if stage == "RUNNING" else "Asleep or stopped" if stage else "Unknown"
+    return SPACE_STAGES.get(stage, "Unknown")
+
+
+def stage_sql(column: str) -> str:
+    """Also classify old snapshots from their raw runtime, without trusting the old broad stage_f bucket."""
+    return "CASE " + column + " " + " ".join(f"WHEN '{k}' THEN '{v}'" for k, v in SPACE_STAGES.items()) + " ELSE 'Unknown' END"
 
 
 def blob_of(r: dict[str, Any]) -> str:

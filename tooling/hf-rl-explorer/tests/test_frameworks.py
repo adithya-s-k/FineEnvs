@@ -135,7 +135,9 @@ def test_nemo_gym_pivot_row_reads_as_a_conversation_and_hides_the_experts_next_s
     assert "--agent toolcall_schema_single_step_tool_use_with_argument_comparison_agent" in run and "gym eval run --no-serve" in run
     assert "--repo-id nvidia/Nemotron-RL-Agentic-Function-Calling-Pivot-v1" in run and "sed -n '1p'" in run
     opt = view["framework_run"]
-    assert opt["runner"] == "nemo-gym" and opt["ok"] is False and "NeMo Gym" in opt["why"]
+    # This browsing fixture mixes Chat Completions and Responses tool formats;
+    # execution requires the dataset's native Responses function definitions.
+    assert opt["runner"] == "nemo-gym" and opt["ok"] is False and "native NeMo Gym" in opt["why"]
     assert ["Step", "turn 6 · step 1"] in view["glance"] and card["chips"][0] == "turn 6 · step 1"
 
 
@@ -210,6 +212,8 @@ def test_nemo_gym_blends_route_each_row_and_run_without_one_agent():
 def test_nemo_gym_catalog_is_current_and_complete():
     cat = nemogym.catalog()
     assert len(cat["commit"]) == 40 and len(cat["agents"]) > 100 and len(cat["servers"]) > 100
+    assert cat["servers"]["instruction_following"]["verification"] == "Rule-based instruction checks"
+    assert cat["servers"]["math_proof_judgement"]["verification"] == "Deterministic answer parsing"
     for name in ("mcqa_simple_agent", "workplace_assistant_simple_agent", "calendar_simple_agent", "code_gen_simple_agent",
                  "instruction_following_simple_agent", "reasoning_gym_simple_agent"):
         a = cat["agents"][name]
@@ -406,3 +410,11 @@ def test_search_never_finds_a_row_through_its_withheld_answer(monkeypatch):
     files = rows.Files.__new__(rows.Files)
     monkeypatch.setattr(rows.Files, "_scan", lambda self, c, s, o, match, what: ({"rows": [h for h in found if match(h[1])]}, None))
     assert [i for i, _, _ in files.search("d", "train", "7", 0)[0]["rows"]] == []
+
+
+def test_verifiers_v1_taskdata_system_prompt_is_part_of_the_conversation():
+    row = {"prompt": "Solve the task", "system_prompt": "Use the supplied tools", "answer": "PRIVATE_REFERENCE"}
+    view, _, _, _, text = everything(verifiers_rows.Verifiers(), row, tags=["verifiers"])
+    turns = next(s for s in view["sections"] if s["id"] == "task")["body"][0]["data"]["turns"]
+    assert [(t["role"], t["text"]) for t in turns] == [("system", "Use the supplied tools"), ("user", "Solve the task")]
+    assert "PRIVATE_REFERENCE" not in text

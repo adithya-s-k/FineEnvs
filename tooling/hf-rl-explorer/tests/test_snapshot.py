@@ -324,6 +324,30 @@ def test_indexer_run_publishes_and_prunes(tmp_path, monkeypatch):
     assert snapshot.check(store) and snapshot.current().counts["envs"] == 6
 
 
+def test_cached_listing_publication_preserves_discovery_timestamp(tmp_path):
+    at = time.time() - 1800
+    indexer.run(snapshot.LocalStore(tmp_path / "store"), rows=ROWS, index=False, listing_at=at)
+    data = json.loads(gzip.decompress((config.STORAGE_DIR / "listing.json.gz").read_bytes()))
+    assert data["at"] == at
+    assert catalog._env_list["at"] == at
+
+
+def test_timed_out_build_backs_off_so_later_batches_can_progress(monkeypatch):
+    class Stalled:
+        def __init__(self, **kwargs): pass
+        def start(self): pass
+        def join(self, **kwargs): pass
+        def is_alive(self): return True
+    monkeypatch.setattr(indexer.threading, "Thread", Stalled)
+    items = [{"spec": "snaptest/large", "reason": "new", "tagged": True}]
+    state = {"failed": {}, "not_harbor": {}, "rebuild": []}
+    info = lambda spec: {"sha": "same-revision"}
+    first = indexer.refresh_indexes(items, state, budget_s=90, max_builds=4, info=info)
+    assert first["abandoned"] == ["snaptest/large"]
+    second = indexer.refresh_indexes(items, state, budget_s=90, max_builds=4, info=info)
+    assert second["abandoned"] == [] and second["skipped"][0]["spec"] == "snaptest/large"
+
+
 def test_a_failed_run_publishes_nothing(tmp_path, monkeypatch):
     store = store_of(tmp_path)
     first = indexer.run(store, rows=ROWS, index=False)["pointer"]

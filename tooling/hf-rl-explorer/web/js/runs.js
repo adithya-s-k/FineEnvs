@@ -35,9 +35,8 @@ export async function mount(el) {
       : `<div class="panel">${runs.length ? emptyState("filter", "Nothing in this view", "Try another filter.")
         : emptyState("play", "No rollouts yet", "Open a task and run one. It shows up here with its live trajectory and reward.", `<a class="btn primary" href="/">${icon("grid", 15)}Browse environments</a>`)}</div>`;
     const scored = runs.filter((r) => r.reward != null);
-    const full = scored.filter((r) => r.reward >= 0.999).length;
     $("#rs-stats", el).innerHTML = `<div><b>${runs.length}</b><span>rollouts</span></div>
-      <div><b>${scored.length ? `${full}/${scored.length}` : "–"}</b><span>full marks</span></div>`;
+      <div><b>${scored.length}</b><span>scored rollouts</span></div>`;
   };
   const load = async () => {
     if (!alive) return;
@@ -57,6 +56,6 @@ function row(r) {
     <span class="rs-task"><b>${esc(r.title)}</b><em>${icon(COLL[r.collection] || "database", 12)}${esc(r.dataset)}</em></span>
     <span class="rs-model">${esc(model)}</span>
     <span class="rs-reward">${rewardBadge(r.reward, r.status)}</span>
-    <span class="rs-cost">${esc(r.runner === "mimo" ? (r.domain === "music" ? "MiMo scorer" : "MiMo harness") : r.harness)}</span>
+    <span class="rs-cost">${esc(r.runner === "nemo-gym" ? "NeMo Gym prediction" : r.runner === "mimo" ? (r.domain === "music" ? "MiMo scorer" : "MiMo harness") : r.harness)}</span>
     <span class="rs-when">${ago(r.created_at)}<em>${dur(end - (r.started_at || r.created_at))}</em></span></a>`;
 }

@@ -40,7 +40,7 @@ export async function mount(el, { id }) {
     return;
   }
   if (!alive) return;
-  if (first.run.runner === "mimo") {
+  if (["mimo", "nemo-gym"].includes(first.run.runner)) {
     other = await import("./run-mimo.js");
     if (alive) other.mount(el, id, first);
     return;
@@ -200,8 +200,7 @@ function renderGrade(el, st) {
   const named = Object.entries(r.rewards || {});
   box.innerHTML = `${h}<div class="panel-b">
     <div class="score"><span class="big ${cls}">${rewardText(r.reward)}</span><span class="of">reward, from the task's ${r.judge ? `grader, with <code>${esc(r.judge)}</code> as its judge${r.judge_calls != null ? ` (${r.judge_calls} call${r.judge_calls === 1 ? "" : "s"})` : ""}` : "tests"}</span></div>
-    <div class="meter big ${cls}" style="font-size:0"><i style="width:${Math.max(2, Math.min(1, r.reward) * 100)}%"></i></div>
-    ${named.length > 1 ? `<ul class="gchecks">${named.map(([k, v]) => `<li class="${v >= 0.999 ? "ok" : v > 0 ? "na" : "bad"}"><span class="mk">${icon(v >= 0.999 ? "check" : v > 0 ? "more" : "x", 14)}</span>
+    ${named.length > 1 ? `<ul class="gchecks">${named.map(([k, v]) => `<li class="na"><span class="mk">${icon("more", 14)}</span>
       <div><b>${esc(k)}</b></div><span class="sc">${Number(v).toFixed(2)}</span></li>`).join("")}</ul>` : ""}
     ${(r.findings || []).length ? `<details class="notes"><summary class="disclose">${icon("chevronRight", 14, "chev")}Capture notes (${r.findings.length})</summary>
       <ul class="rules">${r.findings.map((f) => `<li>${esc(f)}</li>`).join("")}</ul></details>` : ""}

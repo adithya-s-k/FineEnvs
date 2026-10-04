@@ -250,7 +250,8 @@ def run_blocks(spec: str, config: str, split: str, agents: list[dict[str, Any]],
     artifact = next((u.get("artifact") for u in cat["datasets"].get(spec.lower()) or [] if u.get("type") == split and u.get("artifact")), None) \
         if config == "default" else None
     what = f"this dataset's {split} split" + ("" if config == "default" else f" of {config}")
-    lines = ["# NeMo Gym, from source (Python 3.13+, uv)", "git clone https://github.com/NVIDIA-NeMo/Gym.git && cd Gym",
+    lines = ["# NeMo Gym, from the revision used by this explorer's catalog (Python 3.13+, uv)",
+             "git clone https://github.com/NVIDIA-NeMo/Gym.git && cd Gym", f"git checkout {cat['commit']}",
              "uv venv --python 3.13.14 && source .venv/bin/activate && uv sync", "",
              f"# the rows: {what}, as JSON Lines" + (", and this row alone" if row is not None else ""), *_download(spec, config, split, local, artifact,
                                                                                                     rowfiles.files_of(spec, meta or {}, config, split) if config != "default" else [])]
@@ -292,8 +293,21 @@ def run_blocks(spec: str, config: str, split: str, agents: list[dict[str, Any]],
     return blocks
 
 
-def run_option(agent: dict[str, Any]) -> dict[str, Any]:
-    """Not here: the run panel says why in one sentence and points at the commands on the page."""
+def run_option(agent: dict[str, Any], row: dict | None = None) -> dict[str, Any]:
+    from .. import nemo_runner
+    if row is not None and nemo_runner.supported(agent):
+        try:
+            nemo_runner.validate(row, agent)
+        except (ValueError, KeyError, TypeError) as error:
+            return c.run_option("nemo-gym", "NeMo Gym prediction", ok=False, why=str(error), endpoint=False, sandbox=False)
+        return c.run_option("nemo-gym", "NeMo Gym prediction", ok=True, endpoint=False, sandbox=False,
+                            about="One model prediction, scored by NVIDIA's NeMo Gym argument comparator. Tool calls are predictions, not executed actions. No sandbox is needed.",
+                            notes=[f"Verifier pinned to NVIDIA-NeMo/Gym `{nemo_runner.REVISION[:12]}` with its native 0.1 word-similarity threshold."] +
+                                  (["Some source tools have invalid strict schemas. Their parameters stay unchanged; strict enforcement is disabled so HF providers accept them."] if nemo_runner.relaxed_tools(row) else []),
+                            harnesses=["opencode"], fields=[
+                                c.field("max_tokens", "Max output tokens", "number", default=2048, min=256, max=8192, advanced=True),
+                                c.field("temperature", "Temperature", "number", min=0, max=2, step=0.1, advanced=True)],
+                            estimate={"tokens_in": 4000, "tokens_out": 1000, "minutes": 0})
     rs = agent.get("resources_server")
     return c.run_option("nemo-gym", "NeMo Gym", ok=False,
                         why=f"it is scored by NeMo Gym's {rs + ' ' if rs else ''}resources server, which runs only inside NeMo Gym",
@@ -430,8 +444,9 @@ class NemoGym(Processor):
             rows = convo.field_rows({**dict(settings), **nested})
             sections.append(section("request", "Request settings", [c.custom("rl", "fields", {"rows": rows}, convo.fields_text(rows))], kind="blocks",
                                     note="the rest of responses_create_params"))
+        option = run_option(agent, row)
         sections.append(section("run", "Run it with NeMo Gym", run_blocks(ds.spec, config, split, [agent], row=i, meta=ds.card), kind="blocks",
-                                note="it doesn't run in this app"))
+                                note="Native CLI alternative; prediction runs are also available here" if option["ok"] else "This task needs the native runtime"))
         rest = {k: v for k, v in clean.items() if k not in task_data and k not in FRAMEWORK and v not in (None, "", [], {})}
         if rest:
             label = "provenance and metrics" if roles_of else "the rest of the row"
@@ -452,7 +467,7 @@ class NemoGym(Processor):
             glance.append(["Pass rate", p])
         card = self.card(row, i, roles)
         return {"title": title[:200], "id": card["id"], "chips": card["chips"], "sections": sections, "withheld": gone, "glance": glance,
-                "framework_run": run_option(agent),
+                "framework_run": option,
                 "summary": "Scored on the next action matching the expert's" if pivot else
                            (f"Verifier: {agent['verification'].lower()}" if agent.get("verification") else "Scored by its resources server")}
 

@@ -141,7 +141,7 @@ function renderHead(el, st) {
     ? `<button class="btn sm" id="rp-vis" type="button" title="Change who can see this rollout">${icon(r.visibility === "public" ? "shield" : "globe", 13)}Make ${r.visibility === "public" ? "private" : "public"}</button>`
     : "";
   $("#rp-head", el).innerHTML = `
-    <div class="kick"><span class="badge" style="--dc:var(--c-${r.domain})">${icon(DOMAIN_ICON[r.domain], 13)}${esc(DOMAIN_NAME[r.domain])}</span>${statusPill(r.status)}${visibilityBadge(r.visibility)}
+    <div class="kick"><span class="badge" style="--dc:var(--c-${r.domain},var(--primary))">${icon(DOMAIN_ICON[r.domain] || "cpu", 13)}${esc(DOMAIN_NAME[r.domain] || (r.runner === "nemo-gym" ? "NeMo Gym" : r.domain))}</span>${statusPill(r.status)}${visibilityBadge(r.visibility)}
       ${owner ? "" : '<span class="when">shared anonymously</span>'}
       <span class="when">${icon("clock", 13)}${dur(end - start)} · started ${ago(r.created_at)}</span></div>
     <h1><a href="${taskOf(r)}">${esc(r.title)}</a></h1>
@@ -149,7 +149,7 @@ function renderHead(el, st) {
       <span>${icon("cpu", 14)}<b>${esc(r.endpoint ? r.model : r.model.split("/")[1] || r.model)}</b> via ${r.endpoint ? `your endpoint <code>${esc(r.endpoint.host)}</code>` : esc(r.provider || "auto")}</span>
       ${paramsText(r.params) ? `<span>${icon("gauge", 14)}${esc(paramsText(r.params))}</span>` : ""}
       ${r.judge ? `<span>${icon("scale", 14)}judge <b>${esc(r.judge.split("/")[1] || r.judge)}</b></span>` : ""}
-      ${r.domain === "music" ? `<span>${icon("message", 14)}single model call</span>` : `<span>${icon("terminal", 14)}OpenCode on the MiMo harness</span>`}${r.flavor ? `<span>${icon("box", 14)}${esc(r.flavor)}</span>` : ""}</div>
+      ${r.runner === "nemo-gym" ? `<span>${icon("check", 14)}One prediction · NeMo Gym verifier</span>` : r.domain === "music" ? `<span>${icon("message", 14)}single model call</span>` : `<span>${icon("terminal", 14)}OpenCode on the MiMo harness</span>`}${r.flavor ? `<span>${icon("box", 14)}${esc(r.flavor)}</span>` : ""}</div>
       <div class="rp-actions"><a class="btn sm ghost" href="${reportUrl({ run: r })}" target="_blank" rel="noopener" title="Report an issue with this rollout">${icon("flag", 13)}Report</a>${vis}
         <a class="btn sm" href="${compareHref(r.dataset || "XiaomiMiMo/MiMo-V2.6-RL-oss", r.path || r.task_id, [r.id])}" title="Compare with other rollouts of this task">${icon("columns", 13)}Compare</a>
         <a class="btn sm" href="${taskOf(r)}">${icon("file", 13)}View task</a>${action}</div></div>
@@ -160,7 +160,7 @@ function renderPhases(el, st) {
   const seen = {};
   st.events.filter((e) => e.kind === "phase").forEach((e) => { (seen[e.name] ||= {})[e.status] = e; });
   const failed = ["failed", "cancelled", "interrupted"].includes(st.run.status);
-  const noSandbox = st.run.domain === "music";
+  const noSandbox = st.run.domain === "music" || st.run.runner === "nemo-gym";
   const list = PHASES.filter(([k]) => !(noSandbox && (k === "sandbox" || k === "setup")));
   const box = $("#rp-phases", el);
   box.style.setProperty("--n", list.length);
@@ -208,8 +208,8 @@ function item(e, st) {
   const t = dur(e.t);
   const summary = (inner) => `<summary>${icon("chevronRight", 13, "chev")}${inner}</summary>`;
   switch (e.kind) {
-    case "prompt": return row("ev-prompt", "doc", t, `<details open>${summary(`<b>Instructions to the model</b><span class="peek">${(e.text || "").length.toLocaleString()} characters</span>`)}
-      <div class="prompt-text">${esc(e.text)}</div><p class="prompt-note">${e.harness === "opencode"
+    case "prompt": return row("ev-prompt", "doc", t, `<details ${e.harness === "nemo-gym" || st.run.runner === "nemo-gym" ? "" : "open"}>${summary(`<b>Instructions to the model</b><span class="peek">${(e.text || "").length.toLocaleString()} characters</span>`)}
+      <div class="prompt-text">${esc(e.text)}</div><p class="prompt-note">${e.harness === "nemo-gym" || st.run.runner === "nemo-gym" ? "The native Responses request: conversation history and function definitions. The reference action is withheld." : e.harness === "opencode"
         ? "The task's instructions, sent as the first user message. OpenCode adds its own system prompt and tool definitions."
         : "The whole request: one user message, no system prompt."}</p></details>`);
     case "text": return row("ev-text", "message", t, `<div class="msg prose">${md(e.text)}</div>`);
@@ -253,14 +253,15 @@ export function diffHtml(text) {
 }
 
 function renderGrade(el, st) {
-  const g = [...st.events].reverse().find((e) => e.kind === "checks");
+  const g = [...st.events].reverse().find((e) => e.kind === "checks") ||
+    (st.run.status === "done" && Number.isFinite(st.run.reward) ? { reward: st.run.reward, summary: "Recorded reward. Detailed grading events are unavailable." } : null);
   const box = $("#rp-grade", el);
   const h = `<div class="panel-h"><h3>${icon("scale", 14)}Grade</h3></div>`;
   if (!g) {
     box.innerHTML = `${h}<div class="panel-b"><p class="muted sm">${isLive(st.run) ? "Appears here once the agent finishes and the task's grader has run." : "This rollout was not graded."}</p></div>`;
     return;
   }
-  const rw = g.reward;
+  const rw = g.reward ?? st.run.reward;
   const img = [...st.events].reverse().find((e) => e.kind === "image");
   const src = img && `/api/runs/${encodeURIComponent(st.id)}/artifacts/${encodeURIComponent(img.name)}`;
   const long = (g.summary || "").length > 180;
@@ -272,8 +273,7 @@ function renderGrade(el, st) {
   const wsum = rubric ? g.checks.reduce((n, c) => n + wt(c), 0) || 1 : 1;
   box.innerHTML = `${h}<div class="panel-b">
     ${src ? `<a class="shot" href="${src}" target="_blank" rel="noopener" title="Open the full-page render"><img src="${src}" alt="What the judge saw"></a>` : ""}
-    <div class="score"><span class="big ${cls}">${rewardText(rw)}</span><span class="of">reward, out of 1</span></div>
-    ${rw != null ? `<div class="meter big ${cls}" style="font-size:0"><i style="width:${Math.max(2, rw * 100)}%"></i></div>` : ""}
+    <div class="score"><span class="big ${cls}">${rewardText(rw)}</span><span class="of">${esc(st.run.reward_key || "reward")}</span></div>
     ${g.formula ? `<p class="muted xs">${esc(g.formula)}</p>` : ""}
     ${long || !g.summary ? "" : `<p class="gsum">${esc(g.summary)}</p>`}
     ${(g.checks || []).length ? `<ul class="gchecks">${g.checks.map((c) => `<li class="${c.passed === true ? "ok" : c.passed === false ? "bad" : "na"}">
@@ -329,8 +329,9 @@ function renderMeta(el, st) {
     ${row("Judge", r.judge ? code(r.judge) : "")}
     ${row("Thinking", esc(think))}
     ${row("Temperature", p.temperature != null ? esc(p.temperature) : "model default")}
-    ${r.domain === "music" ? row("Max tokens", esc(p.max_tokens || p.max_tokens_used || 100000)) : row("Step cap", esc(p.steps || "task default")) + row("Time limit", p.timeout_min ? esc(p.timeout_min + " min") : "task default") + row("Max tokens / step", esc(p.max_tokens || "default"))}
-    ${row("Harness", r.domain === "music" ? "single model call" : `OpenCode ${esc(pv.harness?.installed || pv.harness?.version || "")}`)}
+    ${r.domain === "music" || r.runner === "nemo-gym" ? row("Max tokens", esc(p.max_tokens || p.max_tokens_used || 100000)) : row("Step cap", esc(p.steps || "task default")) + row("Time limit", p.timeout_min ? esc(p.timeout_min + " min") : "task default") + row("Max tokens / step", esc(p.max_tokens || "default"))}
+    ${row("Harness", r.runner === "nemo-gym" ? "Single prediction; tool calls are not executed" : r.domain === "music" ? "single model call" : `OpenCode ${esc(pv.harness?.installed || pv.harness?.version || "")}`)}
+    ${row("Verifier revision", r.runner === "nemo-gym" ? code(pv.commit || "unknown") : "")}
     ${row("Sandbox", r.flavor ? esc(r.flavor) : "")}
     ${row("Image", r.image ? code(r.image.replace("docker.io/", "")) : "")}
     ${row("Explorer", pv.app ? `v${esc(pv.app.version)} · ${code(pv.app.source)}` : "")}

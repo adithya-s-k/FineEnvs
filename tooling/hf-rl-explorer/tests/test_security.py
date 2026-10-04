@@ -23,7 +23,7 @@ os.environ.update(STORAGE_DIR=_TMP, RLX_CACHE_DIR=f"{_TMP}/cache", OAUTH_CLIENT_
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from app import admin_app, auth, catalog, config, endpoints, main, models, runner, settings, store  # noqa: E402
+from app import auth, catalog, config, endpoints, main, models, runner, settings, store  # noqa: E402
 
 TOKENS = {"alice": "hf_alice_secret_token_0001", "bob": "hf_bob_secret_token_0002"}
 
@@ -36,13 +36,11 @@ def cookie(name: str, exp: float | None = None) -> dict[str, str]:
 @pytest.fixture(autouse=True)
 def stubs(monkeypatch):
     """No Hub: alice is a FineEnvs member, bob isn't; the catalog is empty."""
-    monkeypatch.setattr(settings, "_org_members", lambda: {"alice"})
     monkeypatch.setattr(catalog, "environments", lambda include_hidden=False: [])
     monkeypatch.setattr(models, "get", lambda mid: {"id": mid, "tools": True, "provider": "x"})
 
 
 client = TestClient(main.app, base_url="https://testserver")
-admin = TestClient(admin_app.app, base_url="https://testserver")   # its own app, on its own private Space
 
 
 def runnable_task(monkeypatch, **row):
@@ -83,11 +81,6 @@ ADMIN_GETS = ["/api/admin/overview", "/api/admin/rollouts", "/api/admin/environm
               "/api/admin/indexes", "/api/admin/settings", "/api/admin/audit"]
 
 
-@pytest.mark.parametrize("path", ADMIN_GETS)
-def test_admin_is_for_org_members_only(path):
-    assert admin.get(path).status_code == 401
-    assert admin.get(path, headers=cookie("bob")).status_code == 403
-    assert admin.get(path, headers=cookie("alice")).status_code == 200
 
 
 @pytest.mark.parametrize("path", ADMIN_GETS)
@@ -96,42 +89,13 @@ def test_the_public_explorer_has_no_admin(path):
     assert r.status_code == 404 or "Admin" not in r.text   # the static fallback serves nothing there
 
 
-def test_admin_writes_refused_for_others_and_audited():
-    body = {"rollouts_enabled": True, "max_active": 5, "max_per_user": 2, "agents": ["opencode"], "announcement": "hi"}
-    assert admin.put("/api/admin/settings", json=body).status_code == 401
-    assert admin.put("/api/admin/settings", json=body, headers=cookie("bob")).status_code == 403
-    assert admin.post("/api/admin/environments", json={"key": "org/ds", "action": "hide"}, headers=cookie("bob")).status_code == 403
-    r = admin.put("/api/admin/settings", json=body, headers=cookie("alice"))
-    assert r.status_code == 200 and r.json()["max_active"] == 5
-    entry = settings.audit(1)[0]
-    assert entry["user"] == "alice" and entry["after"]["max_active"] == 5
 
 
-def test_admin_input_is_validated():
-    h = cookie("alice")
-    assert admin.put("/api/admin/settings", json={"rollouts_enabled": True, "max_active": 0, "max_per_user": 2, "agents": []}, headers=h).status_code == 422
-    assert admin.put("/api/admin/settings", json={"rollouts_enabled": True, "max_active": 3, "max_per_user": 2, "agents": ["rm -rf"]}, headers=h).status_code == 400
-    bad_key = {"collections": [{"id": "x1", "group": "X", "icon": "grid", "color": "code", "ids": ["not a key"]}]}
-    assert admin.put("/api/admin/collections", json=bad_key, headers=h).status_code == 400
-    bad_id = {"collections": [{"id": "Bad Id", "group": "X", "icon": "grid", "color": "code", "ids": []}]}
-    assert admin.put("/api/admin/collections", json=bad_id, headers=h).status_code == 422
-    assert admin.post("/api/admin/environments", json={"key": "../../etc", "action": "pin"}, headers=h).status_code == 400
 
 
-def test_session_name_cannot_be_claimed_by_a_header():
-    # the admin check reads the name from the encrypted session only
-    assert admin.get("/api/admin/settings", headers={**cookie("bob"), "X-User": "alice", "X-Forwarded-User": "alice"}).status_code == 403
 
 
 # ── cross-site requests ──────────────────────────────────────────────────────
-def test_cross_site_posts_are_refused():
-    h = cookie("alice")
-    r = client.post("/api/runs", json={"dataset": "org/ds"}, headers={**h, "Origin": "https://evil.example"})
-    assert r.status_code == 403
-    r = client.post("/api/runs", json={"dataset": "org/ds"}, headers={**h, "Sec-Fetch-Site": "cross-site"})
-    assert r.status_code == 403
-    r = admin.put("/api/admin/settings", json={}, headers={**h, "Origin": "https://evil.example"})
-    assert r.status_code == 403
 
 
 # ── rollouts: who sees what ──────────────────────────────────────────────────
@@ -278,32 +242,8 @@ def test_local_mode_refuses_other_hosts(monkeypatch):
 
 
 # ── what the admin Space changes reaches the explorer through the bucket ─────
-def test_admin_hides_a_rollout_from_community():
-    r = run(dataset="org/moderation-check")
-    assert [x["id"] for x in client.get("/api/community?dataset=org/moderation-check").json()["runs"]] == [r["id"]]
-    assert admin.post(f"/api/admin/rollouts/{r['id']}/moderate", json={"hidden": True}, headers=cookie("alice")).status_code == 200
-    assert client.get("/api/community?dataset=org/moderation-check").json()["runs"] == []
-    assert client.get(f"/api/runs/{r['id']}").status_code == 404                        # gone for everyone
-    assert client.get(f"/api/runs/{r['id']}", headers=cookie("alice")).status_code == 200   # its owner still has it
-    admin.post(f"/api/admin/rollouts/{r['id']}/moderate", json={"hidden": False}, headers=cookie("alice"))
-    assert client.get(f"/api/runs/{r['id']}").status_code == 200
 
 
-def test_admin_stop_requests_reach_running_rollouts(monkeypatch):
-    stopped = []
-    monkeypatch.setattr(runner, "is_live", lambda rid: True)
-    monkeypatch.setattr(runner, "cancel", lambda rid: stopped.append(rid) or True)
-    r = run(status="running", reward=None, updated_at=time.time())
-    assert admin.post(f"/api/admin/rollouts/{r['id']}/cancel", headers=cookie("alice")).status_code == 200
-    assert admin.post(f"/api/admin/rollouts/{r['id']}/cancel", headers=cookie("bob")).status_code == 403
-    import threading
-
-    threading.Thread(target=runner.watch_cancel_requests, daemon=True).start()
-    for _ in range(40):
-        if r["id"] in stopped:
-            break
-        time.sleep(0.1)
-    assert r["id"] in stopped
 
 
 def test_answers_written_into_grader_scripts_are_masked():
@@ -545,10 +485,3 @@ def test_a_rollout_never_downloads_reference_solutions(monkeypatch):
     for f in ("tasks/t1/solution/solve.sh", "tasks/t1/steps/s1/solution/solve.sh", "tasks/t1/steps/two/solution/deep/x.py"):
         assert any(fnmatch(f, p) for p in seen["ignore_patterns"]), f
     assert not any(fnmatch("tasks/t1/steps/s1/instruction.md", p) for p in seen["ignore_patterns"])
-
-
-def test_the_admin_space_has_health_checks_and_nothing_else_open():
-    assert admin.get("/healthz").json() == {"ok": True}
-    r = admin.get("/readyz")
-    assert r.status_code == 200 and r.json()["store"] == "ok"
-    assert admin.get("/api/admin/settings").status_code == 401

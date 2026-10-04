@@ -1,4 +1,4 @@
-# HF RL Explorer as a Docker Space; the same image runs its admin Space with RLX_APP=app.admin_app:app.
+# Public HF RL Explorer Docker Space. The admin has a separate private deployment.
 #   /data         the private bucket FineEnvs/rl-explorer-data: indexes, packs, rollouts, admin settings; mounted by both
 #   /tmp/...      dataset files read while indexing and the tasks rollouts run on: many small files, local disk
 #   abcmidi       the MiMo release's music scorer renders a piece with abc2midi (app/mimo/vendor/music_scorer)

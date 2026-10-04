@@ -59,7 +59,6 @@ def stubs(monkeypatch):
     monkeypatch.setattr("app.mimo.runner.domains.run_defaults", lambda tid, d: {"steps": 100, "timeout_min": 30, "max_tokens": None})
     monkeypatch.setattr(models, "get", lambda mid: {"id": mid, "tools": True, "provider": "x"})
     monkeypatch.setattr(models, "catalog", lambda: {"text_judges": [{"id": "judge/text"}], "vision_judges": [{"id": "judge/vision"}], "agents": []})
-    monkeypatch.setattr(settings, "_org_members", lambda: set())
     yield
     mimo._order.cache_clear(); mimo._position.cache_clear()
 

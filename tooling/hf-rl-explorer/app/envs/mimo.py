@@ -250,7 +250,7 @@ class MiMoAdapter(c.Adapter):
         if not rows and not how:
             return None
         net = ("Web search and fetch tools are off." if d == "webdev" else "Web search and fetch tools are off, and the sites where answers live "
-               "(code hosting, bug trackers, search engines) are unreachable from the sandbox; everything else, including local services, works as usual.")
+               "(code hosting, bug trackers, search engines) are added to a hosts-file blocklist. This reduces answer leakage but is not an egress firewall. Other connections depend on the hosting provider's network policy.")
         return c.section("setup", "How the sandbox is set up", [c.kv(rows), c.note(f"{how} {net}", "shield") if how else None], icon="box")
 
     def _glance(self, v: dict[str, Any]) -> list[list[str]]:

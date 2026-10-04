@@ -352,7 +352,7 @@ OPENAPI = {"paths": {
 
 def test_routes_are_plain_paths_on_non_openenv_servers_only():
     routes = live._api_routes(OPENAPI, openenv=False)
-    assert {(r["method"], r["path"]) for r in routes} == {("POST", "/guess"), ("GET", "/tasks/{task_id}"), ("POST", "/self")}
+    assert {(r["method"], r["path"]) for r in routes} == {("POST", "/guess"), ("GET", "/tasks/{task_id}"), ("POST", "/self"), ("POST", "/reset")}
     guess = next(r for r in routes if r["path"] == "/guess")
     assert guess["schema"]["properties"]["word"] == {"type": "string", "title": "Word"} and guess["schema"]["required"] == ["word"]
     assert next(r for r in routes if r["path"] == "/tasks/{task_id}")["params"] == ["task_id"]
@@ -383,8 +383,8 @@ def test_route_calls_keep_their_cookies_and_withhold_answers_from_gets(monkeypat
             return httpx.Response(200, json={"output": "ok"}, headers={"set-cookie": "session=abc; path=/"})
         return httpx.Response(200, json={"task_id": "t1", "prompt": "p", "answer": "SECRET", "meta": {"ground_truth": "TRUTHVAL"}})
 
-    real = httpx.Client
-    monkeypatch.setattr(live.httpx, "Client", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
+    real = live.SpaceClient
+    monkeypatch.setattr(live, "SpaceClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
     sid = live.start("org/env", "web:a")["session"]
     out = live.act(sid, "web:a", "http", {"method": "POST", "path": "/guess", "body": {"word": "crane"}})["result"]
     assert out["status"] == 200 and out["json"] == {"output": "ok"}
@@ -397,7 +397,7 @@ def test_route_calls_keep_their_cookies_and_withhold_answers_from_gets(monkeypat
 
 def test_a_reset_step_server_still_lists_its_tools(monkeypatch):
     """No MCP tools of its own (OpenEnv answers "Environment does not support MCP"): the page gets exactly what the MCP
-    bridge offers an agent, step taking the server's own action fields. A tool server gets nothing added."""
+    bridge offers an agent, step taking the server's own action fields. Tool servers use the same descriptor."""
     info = {"running": True, "stage": "RUNNING", "step_api": True, "mcp": None, "task_api": None,
             "schema": {"action": {"type": "object", "properties": {"latex": {"type": "string", "description": "Predicted LaTeX"}}, "required": ["latex"]}}}
     monkeypatch.setattr(live, "probe", lambda spec, fresh=False: info)
@@ -406,4 +406,4 @@ def test_a_reset_step_server_still_lists_its_tools(monkeypatch):
     assert "latex" in json.dumps(tools["step"]["inputSchema"])
     assert tools == {t["name"]: t for t in mcp_bridge._tools(info)}   # the page and the bridge never disagree
     monkeypatch.setattr(live, "probe", lambda spec, fresh=False: {**info, "mcp": [{"name": "look", "inputSchema": {"type": "object"}}]})
-    assert "bridge_tools" not in client.get("/api/spaces/o/geo/live").json()
+    assert {t["name"] for t in client.get("/api/spaces/o/geo/live").json()["bridge_tools"]} == {"look", "reset", "state"}

@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 
 from . import auth, catalog, config, endpoints, envs, http, mcp_bridge, models, runner, runtime, search_api, seo, settings, space_files, spaces_live, store, version
 from .envs import registry
+from . import community as community_data
 
 app = FastAPI(title="HF RL Explorer", docs_url="/api/docs")
 app.include_router(auth.router)
@@ -50,6 +51,10 @@ def _shutdown() -> None:
     """Live rollouts' events to the store, and locally the capture proxy's tunnels closed: gradio starts `frpc` as a child
     that outlives this process otherwise, and stale tunnels pile up across restarts."""
     import sys
+    from . import auto_index, space_checks
+
+    space_checks.stop()
+    auto_index.stop()
 
     store.flush_due(force=True)
     tunneling = sys.modules.get("gradio.tunneling")
@@ -63,9 +68,12 @@ def _shutdown() -> None:
 @app.on_event("startup")
 def _startup() -> None:
     import threading
+    from . import auto_index, space_checks
 
     config.STORAGE_DIR.mkdir(parents=True, exist_ok=True)
     config.INDEX_DIR.mkdir(parents=True, exist_ok=True)
+    space_checks.start()
+    auto_index.start()
     # rollouts whose worker is gone are marked interrupted by the watcher below, once they've been silent a while
     threading.Thread(target=runner.watch_cancel_requests, daemon=True, name="cancel-requests").start()
     if os.environ.get("RLX_WARM", "1") == "1":
@@ -157,8 +165,15 @@ def environments():
 
 @app.get("/api/spaces/{org}/{name}")
 def space_page(org: str, name: str):
-    """An environment Space: its card and README, and what its OpenEnv server says about itself."""
-    return _hub_errors(catalog.space, f"{org}/{name}")
+    """Repository metadata is distinct from verified live OpenEnv support."""
+    from . import space_checks
+    source = _hub_errors(catalog.space, f"{org}/{name}")
+    check = space_checks.inventory().get(f"{org}/{name}", {})
+    verified = space_checks.verified(check)
+    return {**source, "declared_openenv": bool(source.get("openenv")), "openenv": verified,
+            "framework": "openenv" if verified else "ors" if source.get("framework") == "ors" else "space",
+            "badges": [b for b in source.get("badges", []) if verified or b != "OpenEnv"],
+            "api_status": space_checks.status(check)}
 
 
 # ── live Spaces: status, wake/restart, Task API, playground ─────────────────
@@ -181,7 +196,7 @@ def space_live(org: str, name: str, fresh: bool = False):
     with no MCP tools of its own (a reset/step environment) still has tools for an agent: `bridge_tools` are exactly what
     this explorer's MCP bridge offers for it (reset, step with its typed action, state, its Task API), for the page."""
     info = _live(spaces_live.probe, f"{org}/{name}", fresh)
-    if info.get("running") and not info.get("mcp") and (info.get("step_api") or info.get("api") or info.get("task_api")):
+    if info.get("running") and (info.get("mcp") or info.get("step_api") or info.get("api") or info.get("task_api")):
         info = {**info, "bridge_tools": mcp_bridge._tools(info)}
     return info
 
@@ -204,14 +219,14 @@ def space_restart(org: str, name: str, request: Request):
 
 
 @app.get("/api/spaces/{org}/{name}/tasks")
-def space_tasks(org: str, name: str, split: str = "", start: int = 0, stop: int = 20):
+def space_tasks(org: str, name: str, split: str = "", start: int = 0, stop: int = 20, env: str = ""):
     """A page of tasks from the server's Task API (answer-like fields left out)."""
-    return _live(spaces_live.tasks, f"{org}/{name}", split, start, stop)
+    return _live(spaces_live.tasks, f"{org}/{name}", split, start, stop, env)
 
 
 @app.get("/api/spaces/{org}/{name}/task")
-def space_task(org: str, name: str, split: str = "", index: int = 0):
-    return _live(spaces_live.task, f"{org}/{name}", split, index)
+def space_task(org: str, name: str, split: str = "", index: int = 0, env: str = ""):
+    return _live(spaces_live.task, f"{org}/{name}", split, index, env)
 
 
 class PlayIn(BaseModel):
@@ -335,9 +350,10 @@ def env_data(org: str, name: str, request: Request, ref: str, part: str):
 def env_raw(org: str, name: str, request: Request, ref: str, f: str, download: bool = False):
     """One of a task's files as it is (an image, a page for a sandboxed frame). Never runs with this site's origin."""
     data, media = _env(registry.raw, f"{org}/{name}", ref, f, _token(request))
-    fname = f.rsplit("/", 1)[-1].replace('"', "")
+    # RFC 5987 handles Unicode and keeps control characters out of HTTP headers.
+    fname = quote(f.rsplit("/", 1)[-1], safe="")
     return Response(data, media_type=media, headers={"Content-Security-Policy": "sandbox", "X-Content-Type-Options": "nosniff",
-                                                     "Content-Disposition": f'{"attachment" if download else "inline"}; filename="{fname}"'})
+                                                     "Content-Disposition": f"{'attachment' if download else 'inline'}; filename*=UTF-8''{fname}"})
 
 
 @app.get("/api/env/{org}/{name}/random")
@@ -484,19 +500,19 @@ PUBLIC_FIELDS = ("id", "dataset", "path", "task_id", "title", "collection", "dif
 
 def _shareable(r: dict) -> bool:
     """Shown to everyone: finished and graded, on a public dataset, and not taken off Community by an admin."""
-    return (r.get("status") == "done" and r.get("reward") is not None and not r.get("restricted")
-            and r["id"] not in set(settings.get("hidden_runs", [])))
+    return community_data.is_public(r, set(settings.get("hidden_runs", [])))
 
 
 def _public_view(r: dict) -> dict:
     v = {k: r.get(k) for k in PUBLIC_FIELDS}
+    v["runner"] = community_data.runner(r)
     if r.get("endpoint"):
         v["endpoint"] = {"custom": True}
     return {**v, "visibility": "public"}
 
 
 def _owner_view(r: dict) -> dict:
-    return {**r, "is_owner": True}
+    return {**r, "runner": community_data.runner(r), "is_owner": True}
 
 
 def _visible(request: Request, run_id: str) -> tuple[dict, bool]:
@@ -530,7 +546,7 @@ def my_runs(request: Request, d: str = "", p: str | None = None):
 @app.get("/api/runs/{run_id}")
 def run_detail(run_id: str, request: Request, after: int = 0):
     r, owner = _visible(request, run_id)
-    if r.get("runner") == "mimo":   # the MiMo harness: its events, live while it runs (app/mimo/runner/core.py)
+    if community_data.runner(r) in ("mimo", "nemo-gym"):   # event-based hosted runners
         from .mimo.runner import core as mimo
 
         live = mimo.live(run_id)
@@ -570,85 +586,17 @@ def set_visibility(run_id: str, body: VisibilityIn, request: Request):
     return {"run": _owner_view(store.update(run_id, visibility=body.visibility))}
 
 
-DOMAINS = {"code": "Code", "webdev": "Webdev", "cyber": "Cyber", "music": "Music", "general": "General"}
-
-
-def _group(r: dict) -> str:
-    """Where a rollout's task belongs, for the leaderboard's columns: a MiMo domain, else its environment."""
-    if r.get("domain") in DOMAINS:
-        return DOMAINS[r["domain"]]
-    return (r.get("dataset") or "?").split("/")[-1]
-
-
-def _served(r: dict) -> str:
-    return "own endpoint" if r.get("endpoint") else (r.get("provider") or "auto")
-
-
-def _band(r: dict) -> str:
-    rw = r.get("reward")
-    if rw is None or r.get("status") != "done":
-        return "unscored"
-    return "full" if rw >= 0.999 else "zero" if rw <= 0 else "partial"
-
-
-def _stats(runs: list[dict]) -> dict:
-    """How the rollouts shown did: the spread of rewards, each model's mean, and each model in each group."""
-    scored = [r for r in runs if r.get("reward") is not None and r.get("status") == "done"]
-    hist = [0] * 10
-    for r in scored:
-        hist[min(9, max(0, int(float(r["reward"]) * 10)))] += 1
-    by: dict[str, list[float]] = {}
-    for r in scored:
-        by.setdefault(r.get("model") or "custom endpoint", []).append(float(r["reward"]))
-    models_ = sorted(({"model": m, "custom": any(x.get("endpoint") for x in runs if (x.get("model") or "custom endpoint") == m), "runs": len(v),
-                       "mean": round(sum(v) / len(v), 4), "best": max(v), "full": sum(x >= 0.999 for x in v),
-                       "solved": sum(x > 0 for x in v)} for m, v in by.items()), key=lambda x: (-x["mean"], -x["runs"]))
-    cells: dict[str, dict[str, list[float]]] = {}
-    for r in scored:
-        cells.setdefault(r.get("model") or "custom endpoint", {}).setdefault(_group(r), []).append(float(r["reward"]))
-    matrix = {m: {g: {"mean": round(sum(v) / len(v), 4), "runs": len(v)} for g, v in gs.items()} for m, gs in cells.items()}
-    return {"runs": len(runs), "scored": len(scored), "mean": round(sum(float(r["reward"]) for r in scored) / len(scored), 4) if scored else None,
-            "full": sum(float(r["reward"]) >= 0.999 for r in scored), "histogram": hist, "by_model": models_, "models": models_, "matrix": matrix,
-            "datasets": len({r.get("dataset") for r in runs}), "tasks": len({(r.get("dataset"), r.get("path")) for r in runs})}
-
-
-def _counts(runs: list[dict], f) -> list[list]:
-    c: dict[str, int] = {}
-    for r in runs:
-        v = f(r)
-        if v:
-            c[v] = c.get(v, 0) + 1
-    return [[k, n] for k, n in sorted(c.items(), key=lambda kv: -kv[1])]
-
-
 @app.get("/api/community")
 def community(dataset: str = "", group: str = "", model: str = "", served: str = "", judge: str = "", reward: str = "", thinking: str = "",
               runner: str = "", q: str = "", sort: str = "new", d: str = "", p: str | None = None, limit: int = 100, offset: int = 0):
-    """Public, graded rollouts, by anyone, without who ran them: filtered every way a reader might want, and how each
-    model does, overall and in each environment (MiMo's domains count as environments of their own)."""
+    """Finished, graded public rollouts from any saved runner, without account identities or private endpoint locations."""
     everyone = [r for r in store.list_runs(public=True, limit=100000) if _shareable(r)]
-    dataset = dataset or d
-
-    def keep(r):
-        return ((not dataset or r.get("dataset") == dataset) and (p is None or r.get("path") == p) and (not group or _group(r) == group)
-                and (not model or (r.get("model") or "") == model) and (not served or _served(r) == served)
-                and (not judge or (r.get("judge") or "") == judge) and (not reward or _band(r) == reward)
-                and (not thinking or ((r.get("params") or {}).get("thinking") or "default") == thinking)
-                and (not runner or (r.get("runner") or "harbor") == runner)
-                and (not q or q.lower() in f"{r.get('title', '')} {r.get('task_id', '')} {r.get('path', '')}".lower()))
-    runs = [r for r in everyone if keep(r)]
-    key = {"reward_desc": lambda r: -(r.get("reward") if r.get("reward") is not None else -1),
-           "reward_asc": lambda r: (r.get("reward") if r.get("reward") is not None else 2),
-           "cost_asc": lambda r: (r.get("cost") or {}).get("total", 0), "cost_desc": lambda r: -(r.get("cost") or {}).get("total", 0)}.get(sort)
-    if key:
-        runs.sort(key=key)
-    facets = {"group": _counts(everyone, _group), "dataset": _counts(everyone, lambda r: r.get("dataset")),
-              "model": _counts(everyone, lambda r: r.get("model")), "served": _counts(everyone, _served), "judge": _counts(everyone, lambda r: r.get("judge")),
-              "reward": _counts(everyone, _band), "thinking": _counts(everyone, lambda r: (r.get("params") or {}).get("thinking") or "default"),
-              "runner": _counts(everyone, lambda r: r.get("runner") or "harbor")}
-    page = runs[max(0, offset): max(0, offset) + max(1, min(limit, 500))]
-    return {"stats": _stats(runs), "facets": facets, "total": len(runs), "tasks": len({(r.get("dataset"), r.get("path")) for r in runs}),
-            "runs": [{**_public_view(r), "group": _group(r), "shot": r.get("domain") == "webdev" and store.has_artifact(r["id"], "screenshot.jpg")} for r in page]}
+    filters = {"dataset": dataset or d, "path": p, "group": group, "model": model, "served": served, "judge": judge,
+               "reward": reward, "thinking": thinking, "runner": runner, "q": q[:200]}
+    out = community_data.query(everyone, filters, sort=sort, offset=offset, limit=limit)
+    out["runs"] = [{**_public_view(r), "runner": community_data.runner(r), "group": community_data.group(r),
+                    "shot": r.get("domain") == "webdev" and store.has_artifact(r["id"], "screenshot.jpg")} for r in out["runs"]]
+    return out
 
 
 @app.get("/api/community/tasks")
@@ -664,7 +612,7 @@ def community_tasks(dataset: str):
         if r.get("reward") is not None:
             t["scored"] += 1
             t["sum"] += float(r["reward"])
-            t["best"] = max(t["best"] if t["best"] is not None else 0, float(r["reward"]))
+            t["best"] = max(t["best"], float(r["reward"])) if t["best"] is not None else float(r["reward"])
     return {"tasks": {k: {"runs": v["runs"], "mean": round(v["sum"] / v["scored"], 4) if v["scored"] else None, "best": v["best"], "last": v["last"],
                           "title": v["title"]} for k, v in out.items()}}
 
@@ -692,6 +640,14 @@ def run_artifact(run_id: str, name: str, request: Request):
 LLM_REPLY_MAX = 64 * 1024 * 1024
 
 
+@app.get("/api/llm/{cap}/health")
+def llm_health(cap: str):
+    from .mimo.runner import core as events
+    if events.by_cap(cap) is None:
+        raise HTTPException(404, "unknown or finished rollout")
+    return {"status": "ok"}
+
+
 @app.post("/api/llm/{cap}/v1/chat/completions")
 async def llm_proxy(cap: str, request: Request):
     import asyncio
@@ -712,6 +668,8 @@ async def llm_proxy(cap: str, request: Request):
         body = json.loads(raw)
     except ValueError:
         return JSONResponse({"error": {"message": "invalid JSON"}}, 400)
+    if not isinstance(body, dict):
+        return JSONResponse({"error": {"message": "JSON object required"}}, 400)
     up = r.upstream(str(body.get("model") or ""))
     if up is None:
         return JSONResponse({"error": {"message": "this rollout may not call that model"}}, 403)

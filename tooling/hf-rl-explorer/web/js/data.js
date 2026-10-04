@@ -23,5 +23,4 @@ export function myDatasets() {
 }
 export function forgetMine() { mine = null; }
 
-// trending first (the Hub's score, the same scale for datasets and Spaces), then likes, then downloads
-export const trendingKey = (d) => d.trending * 1e9 + d.likes * 1e4 + Math.min(d.downloads || 0, 9999);
+// Ranking is centralized in /api/search so list, filters and individual ranks agree.

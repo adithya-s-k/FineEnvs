@@ -51,6 +51,9 @@ def _limited(owner: str) -> bool:
     now = time.time()
     with _lock:
         hits = [t for t in _hits.get(owner, []) if now - t < RATE[1]]
+        if len(hits) >= RATE[0]:
+            _hits[owner] = hits
+            return True
         hits.append(now)
         _hits[owner] = hits
         if len(_hits) > 5000:
@@ -84,19 +87,31 @@ def _tools(info: dict) -> list[dict[str, Any]]:
         ]
         # a tool server takes its actions as tool calls: it gets reset and state, not step
         tools += [t for t in episode if not (names and t["name"] == "step")]
-    # a server's own routes (NeMo Gym, ORS, custom): one tool each, named after its path, when it has no tools of its own
-    if not info.get("mcp") and info.get("api"):
+    # Keep published grading/seed routes alongside native tools, without naming collisions.
+    if info.get("api"):
         taken = {t["name"] for t in tools}
         for r in info["api"]:
             name = _route_tool(r)
             if name in taken:
                 continue
             taken.add(name)
-            props = {p: {"type": "string", "description": "in the path"} for p in r["params"]}
-            body = r.get("schema") or {}
-            props.update({k: v for k, v in (body.get("properties") or {}).items()})
+            # Separate request locations: a body key named 'id' or 'query' must
+            # not overwrite a path/query parameter with the same name.
+            props, required = {}, []
+            if r["params"]:
+                props["path_params"] = {"type": "object", "properties": {p: {"type": "string"} for p in r["params"]},
+                                        "required": r["params"], "additionalProperties": False}
+                required.append("path_params")
+            if (r.get("query_schema") or {}).get("properties"):
+                props["query"] = r["query_schema"]
+                if r["query_schema"].get("required"):
+                    required.append("query")
+            if r["method"] == "POST":
+                props["body"] = r.get("schema") or {"type": "object"}
+                if r.get("body_required"):
+                    required.append("body")
             tools.append({"name": name, "description": f"{r['method']} {r['path']}" + (f": {r['summary']}" if r["summary"] else ""),
-                          "inputSchema": {"type": "object", "properties": props, "required": list(r["params"]) + list(body.get("required") or [])}})
+                          "inputSchema": {"type": "object", "properties": props, "required": required, "additionalProperties": False}})
     if info.get("task_api"):
         extra = [
             {"name": "list_splits", "description": "The server's task splits and how many tasks each holds.", "inputSchema": {"type": "object", "properties": {}}},
@@ -163,11 +178,12 @@ def _call(spec: str, info: dict, client: dict, name: str, args: dict) -> dict[st
         if name == "list_tasks":
             return _content(live.tasks(spec, str(args.get("split", "")), int(args.get("start", 0) or 0), int(args.get("stop", 20) or 20)))
         return _content(live.task(spec, str(args.get("split", "")), int(args.get("index", 0) or 0)))
-    route = next((r for r in info.get("api") or [] if _route_tool(r) == name), None) if not own else None
+    route = next((r for r in info.get("api") or [] if _route_tool(r) == name), None)
     if route is not None:
-        params = {p: args.get(p) for p in route["params"]}
-        body = {k: v for k, v in args.items() if k not in route["params"]} if route["method"] == "POST" else None
-        out = live.act(_play(spec, client), client["owner"], "http", {"method": route["method"], "path": route["path"], "params": params, "body": body})["result"]
+        params = args.get("path_params") if isinstance(args.get("path_params"), dict) else {}
+        query = args.get("query") if isinstance(args.get("query"), dict) else {}
+        body = args.get("body") if route["method"] == "POST" else None
+        out = live.act(_play(spec, client), client["owner"], "http", {"method": route["method"], "path": route["path"], "params": params, "query": query, "body": body})["result"]
         payload = out.get("json", out.get("text"))
         result = _content(payload if payload is not None else {"status": out["status"]})
         if out["status"] >= 400:

@@ -23,6 +23,8 @@ OPENID_PROVIDER_URL = os.environ.get("OPENID_PROVIDER_URL", "https://huggingface
 SPACE_HOST = os.environ.get("SPACE_HOST", "")
 PUBLIC_URL = (os.environ.get("RLX_PUBLIC_URL") or (f"https://{SPACE_HOST}" if SPACE_HOST else "")).rstrip("/")
 LOCAL_MODE = not OAUTH_CLIENT_ID
+# Enable only behind a proxy that replaces/appends the visitor's address.
+TRUST_PROXY = os.environ.get("RLX_TRUST_PROXY", "1" if os.environ.get("SPACE_ID") else "0") == "1"
 # `jobs` runs the sandbox on the visitor's account, `inference-api` calls Inference Providers as them,
 # `read-repos` opens their private and gated datasets.
 OAUTH_SCOPES = os.environ.get("RLX_OAUTH_SCOPES", "openid profile inference-api jobs read-repos").split()   # the admin Space asks for less

@@ -107,6 +107,15 @@ can't load the renderer show.
 
 ## Running
 
+Every summary and task also receives a versioned `support` descriptor from
+`app/envs/capabilities.py`. It separates the source's framework, lifecycle, reward
+semantics, transport and available capabilities. The UI and dataset MCP tools consume
+the same descriptor. States are `available`, `external`, `unavailable`, and `unknown`;
+only an implemented hosted runner can advertise execution here. Register a new
+framework's documentation/lifecycle there and add its runner to `HOSTED_RUNNERS` only
+after implementing dispatch and validation. See [EXPLORER_AUDIT.md](EXPLORER_AUDIT.md)
+for the framework matrix and live protocol contract.
+
 A run option is one way to run a task, by a **runner**:
 
 - `harbor`: OpenEnv's Harbor runner on an HF Sandbox (`app/runner.py`). Implement `materialize` (the task as a Harbor
@@ -189,8 +198,10 @@ A processor can say more than a row:
   as dotted names, through lists. Put a format's set in `processors.HIDDEN` too: search never looks at them.
 
 **The framework readers.** NeMo Gym, Verifiers and verl / SkyRL rows are read by modules of their own, which show a
-row as its framework sees it and say how to run it there (they never run here: the sandbox runner runs Harbor tasks,
-and these need their framework's servers, sandboxes or trainers):
+row as its framework sees it and say how to run it there. Verifiers, verl / SkyRL and most NeMo
+configurations require their native servers, sandboxes or trainers. The two supported NeMo Pivot tool-simulation
+configurations can also run here through Responses inference and NVIDIA's pinned argument verifier; they predict
+function calls without executing the functions. `nemogym.run_option` validates this narrow hosted subset:
 
 | module | knows | how it's kept current |
 |---|---|---|

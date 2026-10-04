@@ -6,13 +6,16 @@
 // The page: an Interface table (how an agent acts, what it sees, the reward, tasks, web app, episodes), then the
 // playground (awake only), its app, tools, tasks, rewards, schemas, files, connecting, `openenv validate`'s criteria,
 // and the README. Status, wake and restart sit beside it.
-import { $, api, esc, md, ago, sk, emptyState, toast, fmt, spinner, storage, setMeta } from "./util.js";
+import { $, api, esc, md, ago, sk, emptyState, toast, fmt, spinner, storage, setMeta, ownerLink } from "./util.js";
 import { icon } from "./icons.js";
 import { AGENTS, agentHtml, agentName, chosenAgent, copyBtn, snippet } from "./connect.js";
 import { getSession } from "./session.js";
 import { schemaForm, readForm, wireForm } from "./schemaform.js";
 import { value } from "./render.js";
 import { fileViewer } from "./files.js";
+import { supportPanel } from "./support.js";
+import { taskContent } from "./space-task-view.js";
+import { spaceMedia } from "./space-media.js";
 
 const enc = (s) => s.split("/").map(encodeURIComponent).join("/");
 const STAGE = {
@@ -22,7 +25,7 @@ const STAGE = {
 };
 const stageOf = (x) => STAGE[x] || [String(x || "unknown").toLowerCase().replace(/_/g, " "), "faint"];
 const STARTING = new Set(["APP_STARTING", "BUILDING", "RUNNING_BUILDING", "RUNNING_APP_STARTING"]);
-const KIND = { harbor: "OpenEnv × Harbor", openenv: "OpenEnv", "nemo-gym": "NeMo Gym server", ors: "ORS server", mcp: "MCP server", api: "HTTP API" };
+const KIND = { harbor: "OpenEnv × Harbor", openenv: "OpenEnv", "nemo-gym": "NeMo Gym server", gymnasium: "Gymnasium HTTP server", ors: "ORS server", mcp: "MCP server", api: "HTTP API" };
 const shortSplit = (n) => (String(n).includes("/") ? String(n).split("/").filter(Boolean).pop() : String(n));
 const IMAGE = /((^|_)(image|img|frame|screenshot|pixels|png|jpe?g|picture|photo|render)s?(_?(b64|data|url|bytes))?$|base64|(^|_)b64$)/i;
 const HIDDEN_OBS = new Set(["reward", "done", "metadata"]);
@@ -179,7 +182,7 @@ function interfaceTable(me) {
   if (!me.L && !me.F) return ifaceSkeleton();
   const rows = interfaceRows(me);
   const pending = !me.F || !me.L;
-  return `<dl class="kv sp-if">${rows.map(([k, vals]) => `<dt>${esc(k)}</dt><dd>${vals.length ? vals.join("") : pending ? sk.line(40) : NONE(emptyFor(me, k))}</dd>`).join("")}</dl>
+  return `${supportPanel(me.L?.support)}<dl class="kv sp-if">${rows.map(([k, vals]) => `<dt>${esc(k)}</dt><dd>${vals.length ? vals.join("") : pending ? sk.line(40) : NONE(emptyFor(me, k))}</dd>`).join("")}</dl>
     ${me.F?.error ? `<p class="fine sp-note">${icon("alert", 12)} Couldn't read its files: ${esc(me.F.error)}</p>` : ""}`;
 }
 const emptyFor = (me, k) => (k === "Tasks" ? "none declared" : k === "Web app" ? "none declared" : !me.L?.running && !seenOf(me) ? "not declared; wake it to ask its server" : "none");
@@ -229,7 +232,7 @@ function appSection(me) {
 }
 
 // what the playground can do here: call its MCP tools, take actions (reset/step), or call its own HTTP routes
-const modesOf = (L) => [...(L.mcp ? ["tools"] : []), ...(L.step_api && !L.mcp ? ["action"] : []), ...(L.api?.length ? ["routes"] : [])];
+const modesOf = (L) => [...(L.mcp?.length ? ["tools"] : []), ...(L.step_api && !L.mcp?.length ? ["action"] : []), ...(L.api?.length ? ["routes"] : [])];
 const MODE = { tools: "Its tools", action: "Actions", routes: "Its routes" };
 
 function playSection(me) {
@@ -261,7 +264,7 @@ function playground(L) {
     action: () => `<div class="sec-label">Action</div><div id="pg-form">${schemaForm(L.schema?.action || {}, { prefix: "pga" })}</div>
       <button class="btn primary block" type="button" id="pg-step">${icon("play", 14)}Step</button>`,
     routes: () => `<label class="field"><span>Route</span><select class="input mono" id="pg-route">${L.api.map((r, i) => `<option value="${i}">${esc(r.method)} ${esc(r.path)}</option>`).join("")}</select></label>
-      <p class="pg-desc" id="pg-rdesc"></p><div id="pg-rparams"></div><div id="pg-rform"></div>
+      <p class="pg-desc" id="pg-rdesc"></p><div id="pg-rparams"></div><div id="pg-query"></div><div id="pg-rform"></div>
       <button class="btn primary block" type="button" id="pg-send">${icon("send", 14)}Send</button>`,
   };
   return `<div class="pg">
@@ -270,7 +273,7 @@ function playground(L) {
       ${L.openenv && L.step_api ? `${resetOpts}<button class="btn block" type="button" id="pg-reset">${icon("refresh", 14)}New episode</button>` : ""}
       ${modes.length > 1 ? `<span class="seg pg-modes" role="tablist">${modes.map((m, i) => `<button type="button" role="tab" data-mode="${m}" aria-pressed="${i === 0}">${MODE[m]}</button>`).join("")}</span>` : ""}
       ${modes.map((m, i) => `<div class="pg-act" data-pane="${m}" ${i ? "hidden" : ""}>${pane[m]()}</div>`).join("")}
-      <p class="fine">On the Space itself, in a session of its own (cookies included, kept on the explorer) that ends after 10 idle minutes. Its owner pays for its hardware, not you.</p>
+      <p class="fine">Requests go to the Space itself. ${L.openenv ? "An OpenEnv WebSocket keeps your episode together." : L.api?.length ? "HTTP cookies are isolated per explorer session; the server controls episode state." : "Tool state depends on the server's MCP implementation."} Sessions end after 10 idle minutes. The Space's owner pays for its hardware.</p>
     </div>
     <div class="pg-log" id="pg-log" aria-live="polite"></div>
   </div>`;
@@ -278,7 +281,7 @@ function playground(L) {
 
 function tasksSection(me) {
   const P = probeOf(me), d = D(me);
-  if (me.L?.running && me.L.task_api?.splits?.length) return taskBrowser(me.L);
+  if (me.L?.running && me.L.task_api) return taskBrowser(me);
   const out = [];
   if (P?.task_api && !P.task_api.splits?.length) out.push(`<div class="sp-sub"><b>Its Task API lists no splits</b>${probeSrc(me)}</div>`);
   const splits = P?.task_api?.splits || [];
@@ -304,11 +307,20 @@ function tasksSection(me) {
   return out.join("") || `<p class="muted sm">${me.L?.running ? "No Task API, and no tasks declared in its files." : "No tasks declared in its files."}${!me.L?.running && !seenOf(me) ? " Its server may serve some: wake it to ask." : ""}</p>`;
 }
 
-function taskBrowser(L) {
-  const splits = L.task_api.splits;
-  const first = Math.max(0, splits.findIndex((y) => y.default));
+function taskCatalog(me) {
+  const api = me.L.task_api, environments = api.environments || [api];
+  const selected = environments.find((e) => e.env === me.taskPage.env) || environments[0];
+  me.taskPage.env = selected.env;
+  return selected;
+}
+
+function taskBrowser(me) {
+  const { splits } = taskCatalog(me), envs = me.L.task_api.environments || [me.L.task_api];
+  if (!splits.some((s) => s.name === me.taskPage.split)) me.taskPage.split = (splits.find((s) => s.default) || splits[0])?.name || "";
   return `<div class="tk">
-    <div class="tk-bar"><span class="seg" id="tk-split">${splits.map((x, i) => `<button type="button" data-split="${esc(x.name)}" aria-pressed="${i === first}" title="${esc(x.name)}">${esc(shortSplit(x.name))}${x.num_tasks != null ? `<span>${fmt.format(x.num_tasks)}</span>` : ""}</button>`).join("")}</span>
+    ${envs.length > 1 ? `<label class="field"><span>Environment</span><select class="input" id="tk-env">${envs.map((e) => `<option value="${esc(e.env)}" ${e.env === me.taskPage.env ? "selected" : ""}>${esc(e.env)}</option>`).join("")}</select></label>` : ""}
+    <p class="fine">Choose a split, then a task to inspect its inputs. Counts come from this Space's Task API.</p>
+    <div class="tk-bar"><span class="seg" id="tk-split">${splits.map((x) => `<button type="button" data-split="${esc(x.name)}" aria-pressed="${x.name === me.taskPage.split}" title="${esc(x.name)}">${esc(shortSplit(x.name))}${x.num_tasks != null ? `<span>${fmt.format(x.num_tasks)}</span>` : ""}</button>`).join("")}</span>
       <span class="grow"></span><span class="tk-pager"><button class="icon-btn sm" type="button" id="tk-prev" aria-label="Previous page">${icon("chevronRight", 15, "flip")}</button><span id="tk-range"></span><button class="icon-btn sm" type="button" id="tk-next" aria-label="Next page">${icon("chevronRight", 15)}</button></span></div>
     <div id="tk-table">${sk.lines(90, 90, 90, 90)}</div>
     <div class="tk-detail" id="tk-detail" hidden></div>
@@ -317,7 +329,12 @@ function taskBrowser(L) {
 
 function toolsSection(me) {
   const P = probeOf(me), d = D(me);
-  if (P?.mcp?.length) return `${me.L?.running ? "" : `<div class="sp-sub"><b>${fmt.format(P.mcp.length)} tools</b>${probeSrc(me)}</div>`}${toolsRef(P.mcp, !!me.L?.running)}`;
+  if (P?.mcp?.length) {
+    const own = new Set(P.mcp.map((t) => t.name));
+    const extra = (P.bridge_tools || []).filter((t) => !own.has(t.name));
+    return `${me.L?.running ? "" : `<div class="sp-sub"><b>${fmt.format(P.mcp.length)} tools</b>${probeSrc(me)}</div>`}${toolsRef(P.mcp, !!me.L?.running)}
+      ${extra.length ? `<div class="sec-label">Also available through the explorer's bridge</div>${toolsRef(extra, false)}` : ""}`;
+  }
   if (!me.F && !P) return sk.lines(70, 50, 60);
   const e = d.environment;
   if (e?.tools?.length) {
@@ -329,9 +346,8 @@ function toolsSection(me) {
   if (tools?.length) return `<div class="sp-sub"><b>Declared</b>${SRC.file(me, where)}</div><p class="sm">${codes(tools, 40)}</p>`;
   if (P?.bridge_tools?.length) {   // a reset/step server: its tools are its episode calls, with its own action's fields
     const [org, name] = me.spec.split("/");
-    return `<div class="sp-sub"><b>${fmt.format(P.bridge_tools.length)} tools, through reset and step</b>${SRC.live()}</div>
-      <p class="fine">Its server has no MCP tools of its own: an agent acts with <code>reset</code> and <code>step</code>, and
-        <code>step</code> takes its action's fields. Over MCP, this explorer's bridge offers exactly these
+    return `<div class="sp-sub"><b>${fmt.format(P.bridge_tools.length)} tools, through ${P.openenv ? "reset and step" : "its HTTP API"}</b>${SRC.live()}</div>
+      <p class="fine">${P.openenv ? "The bridge exposes reset, step and state with the environment's action schema." : "The bridge exposes the server's published routes. Path parameters, query parameters and body have separate inputs."} These are the available tools
         (<code>/mcp/${esc(org)}/${esc(name)}</code>, under Connect); the playground calls the same ones.</p>
       ${toolsRef(P.bridge_tools, false)}`;
   }
@@ -479,6 +495,10 @@ function schemasSection(me) {
   if (schema && (schema.action || schema.observation)) {
     return `<div class="sp-sub"><b>From its <code>/schema</code></b>${probeSrc(me)}</div>${schemaTable("Action", schema.action) + schemaTable("Observation", schema.observation) + schemaTable("State", schema.state)}`;
   }
+  if (P?.api?.length) return `<div class="sp-sub"><b>From its OpenAPI</b>${probeSrc(me)}</div>` + P.api.map((r) =>
+    `<details><summary class="disclose"><code>${esc(r.method)} ${esc(r.path)}</code></summary>${r.summary ? `<p class="fine">${esc(r.summary)}</p>` : ""}
+      ${r.query_schema?.properties && Object.keys(r.query_schema.properties).length ? schemaTable("Query parameters", r.query_schema) : ""}
+      ${r.schema ? (schemaTable("Request body", r.schema) || snippet(JSON.stringify(r.schema, null, 2))) : '<p class="fine">No request body schema published.</p>'}</details>`).join("");
   if (!me.F) return sk.lines(70, 50, 60);
   const m = d.models;
   if (!m) return `<p class="muted sm">No <code>models.py</code> in its files.${!me.L?.running ? " Wake it to ask its server for <code>/schema</code>." : ""}</p>`;
@@ -518,16 +538,18 @@ function connectPane(me, tab) {
   if (tab === "agents") {
     const url = `${location.origin}/mcp/${spec}`;
     const own = (P?.mcp || []).map((t) => t.name);
-    const routeTools = L?.running && !own.length ? (L.api || []).map((r) => r.path.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "").toLowerCase()).map((b, i) => (L.api[i].method === "POST" || b.startsWith("get_") ? b : `get_${b}`)) : [];
+    const routeTools = L?.running ? (L.api || []).map((r) => r.path.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "").toLowerCase()).map((b, i) => (L.api[i].method === "POST" || b.startsWith("get_") ? b : `get_${b}`)).filter((n) => !own.includes(n)) : [];
     const openenv = P?.openenv || P?.step_api;
-    const tools = P ? [...own, ...(openenv && P.step_api && !own.includes("reset") ? ["reset", ...(own.length ? [] : ["step"]), "state"] : []), ...routeTools, ...(P.task_api ? ["list_splits", "list_tasks", "get_task"] : [])] : [];
+    const tools = P?.bridge_tools ? P.bridge_tools.map((t) => t.name) : P ? [...own, ...(openenv && P.step_api && !own.includes("reset") ? ["reset", ...(own.length ? [] : ["step"]), "state"] : []), ...routeTools, ...(P.task_api ? ["list_splits", "list_tasks", "get_task"] : [])] : [];
     const chosen = chosenAgent();
     return `<div class="sp-url"><div class="sp-url-row"><span class="sp-url-k">MCP</span><code>${esc(url)}</code>${copyBtn(url)}</div>
-      <p class="fine">OpenEnv servers answer <code>tools/list</code> and <code>tools/call</code> but not MCP's handshake, so agents connect through this bridge. Each agent session gets an episode of its own on the Space${tools.length ? `, with these tools: ${tools.slice(0, 16).map((t) => `<code>${esc(t)}</code>`).join(" ")}${tools.length > 16 ? " …" : ""}` : ""}${L && !L.running ? "; a sleeping Space is woken on the first call" : ""}. Images in observations come back as images.</p></div>
+      <p class="fine">Connect through the explorer's MCP bridge. ${openenv ? "An OpenEnv WebSocket keeps each agent's episode together." : "Each agent connection has its own HTTP cookies and MCP session; the server controls episode state."}${tools.length ? ` Available tools: ${tools.slice(0, 16).map((t) => `<code>${esc(t)}</code>`).join(" ")}${tools.length > 16 ? " …" : ""}.` : ""}${L && !L.running ? " A sleeping Space is woken on the first call." : ""} Images in observations come back as images.</p></div>
       <div class="seg sp-agents" role="tablist" aria-label="Agent">${AGENTS.filter(([id]) => id !== "python").map(([id, label]) => `<button type="button" role="tab" data-agent="${id}" aria-pressed="${id === chosen}">${esc(label)}</button>`).join("")}</div>
       <div id="sp-agent">${agentHtml(chosen === "python" ? "claude" : chosen, agentName(spec), url)}</div>`;
   }
   if (tab === "python") {
+    if (P && !P.openenv) return `<p class="fine sp-file">Use the same MCP bridge from Python:</p>${snippet(agentHtmlText(spec))}
+      ${P.api?.length ? `<p class="fine sp-file">Or inspect the HTTP schema directly. Reuse the client for subsequent calls so the server's cookies persist:</p>${snippet(`# pip install httpx\nimport httpx\n\nwith httpx.Client(base_url=${JSON.stringify(host)}, timeout=120) as client:\n    schema = client.get("/openapi.json").json()\n    print(schema["paths"])\n    # Choose a route and supply its required path, query and body fields here.`)}` : ""}`;
     const action = actionExample(me);
     const generic = `# pip install openenv-core     (no package of its own: plain dictionaries)
 from openenv.core.generic_client import GenericEnvClient
@@ -558,6 +580,7 @@ env = AutoEnv.from_env("${spec}")` : null;
       ${snippet(`docker run -it -p 8000:${port} --platform=linux/amd64 registry.hf.space/${sub}:latest`)}
       <p class="fine sp-file">Then <code>http://localhost:8000${esc(path)}</code>, or point a client at <code>http://localhost:8000</code>. Secrets it needs (its own API keys) go in with <code>-e NAME=value</code>.</p>`;
   }
+  if (!L?.openenv_verified) return `<p class="fine sp-file">OpenEnv compatibility has not been verified. To copy this Space, use its Hub repository:</p><a class="btn" href="https://huggingface.co/spaces/${enc(spec)}?duplicate=true" target="_blank" rel="noopener">${icon("external", 14)}Duplicate on Hugging Face</a>`;
   return `<p class="fine sp-file">A copy of this Space on your account, to change and run as your own (needs <code>hf auth login</code>):</p>
     ${snippet(`pip install openenv-core\nopenenv fork ${spec}`)}
     <p class="fine sp-file">Options: <code>--repo-id you/name</code>, <code>--private</code>, <code>--hardware cpu-upgrade</code>, <code>--set-env KEY=VALUE</code>, <code>--set-secret KEY=VALUE</code>.</p>`;
@@ -583,11 +606,16 @@ function actionExample(me) {
 function conformanceSection(me) {
   const L = me.L;
   if (!L) return sk.lines(70, 70, 70, 70, 70, 70);
+  const P = probeOf(me);
+  const declared = me.s.declared_openenv || me.s.openenv || me.s.framework === "openenv" || me.s.manifest || D(me).manifest;
+  if (P && !P.openenv && !declared) return `<p class="sm">This server exposes ${esc(P.support?.framework?.label || KIND[P.framework] || "an HTTP API")}. Its published interface is shown above; OpenEnv-specific checks do not apply.</p>`;
   const rows = L.running ? L.conformance : seenOf(me)?.conformance;
   const where = L.running ? `From the probe ${L.checked ? esc(ago(L.checked)) : "just now"}.` : seenOf(me) ? `From when it was last seen running, ${esc(ago(seenOf(me).checked_at))}.` : "";
   if (!rows?.length) return `<p class="muted sm">${L.running ? "Not checked." : "Not seen running here yet: wake it, and its server is checked against these."}</p>${criteriaList()}`;
   const host = L.host;
-  return `<p class="fine sp-cf-note">${where} The runtime criteria of <code>openenv validate</code>, judged from the explorer's own requests.</p>
+  return `${P && !P.openenv ? `<p class="sm">This repository has OpenEnv-related metadata, but its server did not return the expected OpenEnv schemas in this probe. The checks below show what answered.</p>` : ""}
+    <p class="fine sp-cf-note">${where} Basic endpoint checks corresponding to <code>openenv validate</code>. Passing does not verify an episode, reward correctness, or training quality.</p>
+    <p class="fine sp-cf-note">The MCP endpoint check accepts JSON-RPC error responses. ${P?.mcp?.length ? `Tool discovery returned ${fmt.format(P.mcp.length)} tools; tool execution is untested by this probe.` : `No usable MCP tools were discovered.${P?.mcp_error ? ` Server reply: <code>${esc(P.mcp_error)}</code>.` : ""}`} OpenEnv environments can use typed actions without MCP tools.</p>
     <div class="sp-ft sp-cf"><table><thead><tr><th>Criterion</th><th>Result</th><th>Why</th></tr></thead><tbody>${rows.map((c) =>
       `<tr><td class="ft-d"><code>${esc(c.id)}</code><span class="ft-tag">${esc(c.label)}</span></td><td class="ft-s"><span class="sp-cfs ${esc(c.status)}"><span class="dot"></span>${esc(c.status)}</span></td><td class="ft-d">${esc(c.reason)}</td></tr>`).join("")}</tbody></table></div>
     ${host ? `<p class="fine sp-file">Run it yourself:</p>${snippet(`openenv validate --url ${host}`)}` : ""}`;
@@ -645,7 +673,7 @@ function describe(me) {
 function factsLine(me) {
   const { s, L } = me, d = D(me), P = probeOf(me);
   const [label, tone] = stageOf(L?.stage || s.stage);
-  const kind = KIND[P?.framework] || (s.openenv || d.manifest || d.app?.factory ? "OpenEnv" : "Docker Space");
+  const kind = L?.openenv_verified ? (L.harbor ? "OpenEnv × Harbor" : "OpenEnv · API checked") : P?.framework && !["openenv", "harbor"].includes(P.framework) ? KIND[P.framework] : s.declared_openenv || s.openenv || d.manifest ? "Unverified Space" : "Docker Space";
   const mode = P?.mode || (d.dockerfile?.mode ? String(d.dockerfile.mode).toLowerCase() : d.app?.mode ? String(d.app.mode).toLowerCase() : null);
   const py = d.pyproject && !d.pyproject.error && d.pyproject.openenv ? `${d.pyproject.openenv_package || "openenv-core"} ${d.pyproject.openenv_version || ""}`.trim() : s.openenv_version ? `openenv ${s.openenv_version}` : null;
   const hw = s.hardware || me.F?.hardware;
@@ -670,7 +698,7 @@ function linksLine(me) {
 const SECTIONS = [
   ["interface", "Interface", "gauge"], ["play", "Playground", "play"], ["harbor", "Rollouts here", "box"], ["app", "App", "window"], ["tools", "Tools", "wrench"],
   ["tasks", "Tasks", "list"], ["rewards", "Rewards", "target"], ["schema", "Schemas", "code"], ["files", "Files", "folder"],
-  ["connect", "Connect", "plug"], ["conformance", "Conformance", "check"], ["readme", "README", "doc"],
+  ["connect", "Connect", "plug"], ["conformance", "API checks", "check"], ["readme", "README", "doc"],
 ];
 
 function sectionBody(me, id) {
@@ -705,7 +733,7 @@ const sectionsOf = (me) => SECTIONS.filter(([id]) => id !== "harbor" || (me.L?.r
 function skeleton(spec) {
   const [org, name] = spec.split("/");
   return `<div class="wrap page"><nav class="crumbs">${sk.box(12, "width:220px")}</nav>
-    <header class="tp-head ds-head"><h1><span class="org">${esc(org)}/</span>${esc(name)}</h1>${sk.line(55, 14)}<div class="facts sp-facts"><div class="sp-fi">${sk.line(40, 13)}</div></div></header>
+    <header class="tp-head ds-head"><h1>${ownerLink(org, "/")}${esc(name)}</h1>${sk.line(55, 14)}<div class="facts sp-facts"><div class="sp-fi">${sk.line(40, 13)}</div></div></header>
     <div class="tp-grid"><nav class="toc sk-in sk-toc">${SECTIONS.slice(0, 8).map(() => sk.line(70, 12)).join("")}</nav>
       <div class="tp-body"><section class="panel tp-sec"><div class="panel-h"><h2>${icon("gauge", 15)}Interface</h2></div><div class="panel-b">${ifaceSkeleton()}</div></section>
         <section class="panel tp-sec"><div class="panel-h"><h2>${icon("play", 15)}Playground</h2></div><div class="panel-b">${sk.box(160)}</div></section></div>
@@ -717,15 +745,27 @@ export async function mount(el, { spec }) {
   el.innerHTML = skeleton(spec);
   const me = page = { spec, s: null, F: null, L: null, el, session: null, log: [], episode: null, poll: null, started: null, taskPage: { split: null, start: 0 },
     rank: null, rewards: [], appOpen: false, connectTab: storage.get("sp-ctab") || "agents", filePath: null, viewer: null, rendered: false };
+  const params = new URLSearchParams(location.search), index = Number(params.get("task"));
+  if (params.has("task") && Number.isSafeInteger(index) && index >= 0) {
+    me.taskPage = { env: params.get("env"), split: params.get("split"), start: Math.floor(index / 20) * 20 };
+    me.linkedTask = index;
+  }
   me.onKey = (e) => { if (e.key === "Escape") $(".sp-app.full", el)?.classList.remove("full"); };
   document.addEventListener("keydown", me.onKey);
   el.addEventListener("click", (e) => onClick(me, e));
-  el.addEventListener("change", (e) => { if (e.target.id === "pg-tool") showTool(me); });
+  el.addEventListener("change", (e) => {
+    if (e.target.id === "pg-tool") showTool(me);
+    if (e.target.id === "tk-env") {
+      me.taskPage = { env: e.target.value, split: null, start: 0 };
+      $("#sb-tasks", me.el).innerHTML = taskBrowser(me);
+      loadTasks(me);
+    }
+  });
   // all three at once: the card (and README), what its files declare, what its server says (or said)
   const card = api(`/api/spaces/${enc(spec)}`);
   loadFiles(me);
   loadLive(me, false);
-  api(`/api/search/rank?key=${encodeURIComponent(`space:${spec}`)}`).then((rk) => {   // where it stands among environment Spaces, by trending
+  api(`/api/search/rank?scope=ready&key=${encodeURIComponent(`space:${spec}`)}`).then((rk) => {   // rank among recently checked environment Spaces
     if (page === me) { me.rank = rk; const g = $("#sp-glance", el); if (g) g.innerHTML = glance(me); }
   }).catch(() => {});   // not in the catalog yet: no rank shown
   try { me.s = await card; } catch (e) {
@@ -742,17 +782,18 @@ function render(me) {
   if (!s) return;
   const [org, name] = spec.split("/");
   const sections = sectionsOf(me);
-  const kind = s.framework === "openenv" || s.openenv ? "OpenEnv Space" : s.framework === "ors" ? "ORS Space" : "environment Space";   // as the server-rendered title says
+  const kind = me.L?.openenv_verified ? "OpenEnv Space" : s.declared_openenv || s.openenv || s.manifest ? "Unverified Space" : s.framework === "ors" ? "ORS Space" : "environment Space";   // as the server-rendered title says
   setMeta({ title: `${s.heading || name} · ${kind}`, description: `${spec}: an RL environment Space on Hugging Face. ${describe(me)} See it live: its app, a playground with rewards, its tasks, and MCP for coding agents.` });
   me.viewer?.destroy();
   me.viewer = null;
   el.innerHTML = `<div class="wrap page${me.rendered ? "" : " fade-in"}">
     <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Environments</a>${icon("chevronRight", 13)}<a href="/?k=space">Spaces</a>${icon("chevronRight", 13)}<span>${esc(name)}</span></nav>
     <header class="tp-head ds-head">
-      <h1><span class="org">${esc(org)}/</span>${esc(name)}</h1>
+      <h1>${ownerLink(org, "/")}${esc(name)}</h1>
       <p class="lede" id="sp-lede">${esc(describe(me))}</p>
       <div class="facts sp-facts"><div class="sp-fi" id="sp-facts">${factsLine(me)}</div></div>
-      <div class="facts sp-links" id="sp-links">${linksLine(me)}</div></header>
+      <div class="facts sp-links" id="sp-links">${linksLine(me)}</div>
+      ${(s.declared_openenv || s.openenv || s.manifest) && !me.L?.openenv_verified ? `<div class="note-box" id="sp-protocol-notice"><b>OpenEnv API not verified.</b> This Space was discovered from repository metadata. A file named <code>openenv.yaml</code> or a Hub tag does not establish compatibility.${me.L?.running ? " The current server did not pass the required API checks." : " It needs a successful check while running."}</div>` : ""}</header>
     <div class="tp-grid">
       <nav class="toc" aria-label="On this page"><p>On this page</p>${sections.map(([id, title]) => `<a href="#" data-jump="${id}">${esc(title)}</a>`).join("")}</nav>
       <div class="tp-body">${sections.map(([id, title, ic]) => `<section class="panel tp-sec" id="sec-${id}"><div class="panel-h"><h2>${icon(ic, 15)}${esc(title)}</h2>
@@ -815,7 +856,7 @@ async function loadLive(me, fresh) {
   // the page is drawn again only when what the server offers changed (the first answer, or it woke up); otherwise
   // just the parts that say so, so a playground in progress keeps its episode
   if (!me.rendered) { /* render() runs when the card arrives and reads me.L */ }
-  else if (!was || was.error || was.running !== L.running) { const y = scrollY; render(me); scrollTo(0, y); }
+  else if (!was || was.error || was.running !== L.running || was.openenv_verified !== L.openenv_verified) { const y = scrollY; render(me); scrollTo(0, y); }
   else if (!L.running && was.stage !== L.stage) paint(me, ["play", "app", "interface", "conformance"]);
   else paint(me, ["conformance"]);
   if (STARTING.has(L.stage)) { me.started ||= Date.now(); schedule(me, 4000); }
@@ -934,7 +975,7 @@ async function onClick(me, e) {
   }
   const sp = t.closest("[data-split]");
   if (sp) {
-    me.taskPage = { split: sp.dataset.split, start: 0 };
+    me.taskPage = { env: me.taskPage.env, split: sp.dataset.split, start: 0 };
     me.el.querySelectorAll("[data-split]").forEach((x) => x.setAttribute("aria-pressed", String(x === sp)));
     $("#tk-detail", me.el).hidden = true;
     loadTasks(me);
@@ -953,6 +994,8 @@ async function onClick(me, e) {
     await reset(me);
     return;
   }
+  const nextTask = t.closest("[data-task-move]");
+  if (nextTask) { openTask(me, me.selectedTask + Number(nextTask.dataset.taskMove)); return; }
   if (t.closest("#tk-close")) { $("#tk-detail", me.el).hidden = true; me.el.querySelectorAll("[data-task]").forEach((r) => r.classList.remove("on")); return; }
   const row = t.closest("[data-task]");
   if (row) openTask(me, +row.dataset.task);
@@ -1000,6 +1043,8 @@ function showRoute(me) {
   $("#pg-rdesc", me.el).textContent = r.summary || "";
   $("#pg-rparams", me.el).innerHTML = r.params.length ? `<div class="sf">${r.params.map((p) => `<label class="field sf-f"><span><code>${esc(p)}</code><em>in the path</em></span>
     <input class="input mono" data-rp="${esc(p)}" spellcheck="false" autocomplete="off"></label>`).join("")}</div>` : "";
+  $("#pg-query", me.el).innerHTML = Object.keys(r.query_schema?.properties || {}).length ?
+    `<div class="sec-label">Query parameters</div>${schemaForm(r.query_schema, { prefix: "pgq", skip: [] })}` : "";
   $("#pg-rform", me.el).innerHTML = r.method === "POST" ? (r.schema ? schemaForm(r.schema, { prefix: "pgr", skip: [] })
     : `<label class="field"><span>Body <em>JSON</em></span><textarea class="input mono" id="pg-rbody" rows="3" spellcheck="false">{}</textarea></label>`) : "";
 }
@@ -1008,25 +1053,36 @@ async function sendRoute(me) {
   const r = me.L.api[+$("#pg-route", me.el).value];
   const params = {};
   for (const i of me.el.querySelectorAll("[data-rp]")) {
-    if (!/^[\w.\-~]{1,200}$/.test(i.value)) { toast(`${i.dataset.rp}: letters, digits, . - _ only`); return; }
+    if (!/^[\w.\-~]{1,200}$/.test(i.value) || [".", ".."].includes(i.value)) { toast(`${i.dataset.rp}: enter a path value using letters, digits, . - _`); return; }
     params[i.dataset.rp] = i.value;
   }
-  let body = null;
+  let body = null, query = {};
+  try { if (r.query_schema) query = readForm($("#pg-query", me.el), r.query_schema); }
+  catch (e) { toast(e.message); return; }
   if (r.method === "POST") {
     try {
       if (r.schema) body = readForm($("#pg-rform", me.el), r.schema);
       else body = JSON.parse($("#pg-rbody", me.el)?.value || "{}");
     } catch (e) { toast(e.message || "The body isn't valid JSON"); return; }
   }
-  await send(me, "http", { method: r.method, path: r.path, params, body }, `${r.method} ${r.path}`);
+  await send(me, "http", { method: r.method, path: r.path, params, query, body }, `${r.method} ${r.path}`);
 }
 
 async function ensureSession(me) {
-  if (!me.session) me.session = (await api(`/api/spaces/${enc(me.spec)}/play`, { method: "POST", body: { op: "start" } })).session;
+  if (!me.session) {
+    const generation = me.sessionGeneration || 0;
+    const id = (await api(`/api/spaces/${enc(me.spec)}/play`, { method: "POST", body: { op: "start" } })).session;
+    if (page !== me || generation !== (me.sessionGeneration || 0)) {
+      api(`/api/spaces/${enc(me.spec)}/play`, { method: "POST", body: { op: "end", session: id } }).catch(() => {});
+      throw new Error("This playground was closed.");
+    }
+    me.session = id;
+  }
   return me.session;
 }
 
 function endSession(me) {
+  me.sessionGeneration = (me.sessionGeneration || 0) + 1;
   const id = me.session;
   me.session = null; me.episode = null; me.log = [];
   if (id) api(`/api/spaces/${enc(me.spec)}/play`, { method: "POST", body: { op: "end", session: id } }).catch(() => {});
@@ -1034,6 +1090,8 @@ function endSession(me) {
 }
 
 async function send(me, op, data, label) {
+  if (me.sending) return;
+  me.sending = true;
   const entry = { op, label, pending: true };
   if (op === "reset") me.log = [];
   me.log.push(entry);
@@ -1042,15 +1100,17 @@ async function send(me, op, data, label) {
   const post = () => api(`/api/spaces/${enc(me.spec)}/play`, { method: "POST", body: { op, session: me.session, data } });
   try {
     await ensureSession(me);
+    if (!me.log.includes(entry)) return;
     let r;
     try { r = await post(); } catch (err) {
-      if (err.status !== 410) throw err;
+      if (err.status !== 410 || !me.log.includes(entry)) throw err;
       me.session = null;   // it timed out: a fresh session (an episode in progress is gone, so a step has to start over)
-      if (op === "step") { me.episode = null; throw new Error("The session ended after 10 idle minutes. Start a new episode."); }
+      if (op !== "reset") { me.episode = null; throw new Error("The session ended. Start a new episode before continuing."); }
       await ensureSession(me);
       r = await post();
     }
-    Object.assign(entry, { pending: false, result: r.result, ms: r.ms, stateful: r.stateful });
+    if (page !== me || !me.log.includes(entry)) return;
+    Object.assign(entry, { pending: false, result: spaceMedia(r.result, me.L.host), ms: r.ms, stateful: r.stateful });
     if (op === "reset") me.episode = { steps: 0, total: 0, done: false, task: taskOf(r.result) };
     else {
       me.episode ||= { steps: 0, total: 0, done: false, task: null };
@@ -1062,15 +1122,16 @@ async function send(me, op, data, label) {
   } catch (err) {
     Object.assign(entry, { pending: false, error: err.message });
   } finally {
-    busy(me, false);
-    renderLog(me);
+    me.sending = false;
+    if (page === me) { busy(me, false); renderLog(me); }
   }
 }
 const rewardOf = (op, r) => (op === "http" ? (typeof r?.json?.reward === "number" ? r.json.reward : null) : op === "call" ? (typeof r?.structuredContent?.reward === "number" ? r.structuredContent.reward : typeof r?.structured_content?.reward === "number" ? r.structured_content.reward : null)
   : r?.reward ?? r?.observation?.reward);
-const doneOf = (r) => r?.done ?? r?.observation?.done;
+const doneOf = (r) => Boolean(r?.done || r?.observation?.done || r?.terminated || r?.truncated ||
+  r?.json?.done || r?.json?.terminated || r?.json?.truncated || r?.structuredContent?.done);
 const taskOf = (r) => { const o = r?.observation || {}; return o.task_id || o.metadata?.task_id || (o.index != null ? `#${o.index}` : null); };
-const busy = (me, on) => me.el.querySelectorAll("#pg-reset, #pg-step, #pg-call, #pg-send").forEach((b) => (b.disabled = on));
+const busy = (me, on) => me.el.querySelectorAll("#pg-reset, #pg-step, #pg-call, #pg-send, [data-play-task]").forEach((b) => (b.disabled = on));
 
 function resetParams(me) {
   const out = {};
@@ -1084,7 +1145,7 @@ function resetParams(me) {
   const split = $("#pg-split", me.el)?.value, idx = $("#pg-index", me.el)?.value;
   if (split) out.split = split;
   if (idx !== "" && idx != null) {
-    if (!(Number(idx) >= 0)) throw new Error("The task index should be 0 or more");
+    if (!Number.isSafeInteger(Number(idx)) || Number(idx) < 0) throw new Error("The task index should be a whole number, 0 or more");
     out[me.indexKey || "index"] = Number(idx);   // servers name it their own way: the key their Task API rows use
   }
   return out;
@@ -1127,7 +1188,7 @@ function renderLog(me) {
       : `<span class="dot" style="--dc:var(--faint)"></span><span>No episode yet</span>`;
   }
   if (!me.log.length) {
-    box.innerHTML = `<div class="pg-empty">${icon("play", 22)}<b>${me.L?.openenv ? "Start an episode" : "Call a tool"}</b><p>Each ${me.L?.openenv ? "reset, step and tool call" : "tool call"} shows here with what the environment sent back and the reward it gave.</p></div>`;
+    box.innerHTML = `<div class="pg-empty">${icon("play", 22)}<b>${me.L?.openenv ? "Start an episode" : me.L?.api?.length ? "Send a request" : "Call a tool"}</b><p>Each request shows here with the server's response and any reward it returns.</p></div>`;
     return;
   }
   box.innerHTML = me.log.map((x, i) => {
@@ -1139,7 +1200,7 @@ function renderLog(me) {
       : x.error ? `<div class="note-box err">${icon("alert")}<span>${esc(x.error)}</span></div>`
       : x.op === "call" ? callView(x.result) : x.op === "http" ? httpView(x.result) : obsView(x.result);
     return `<details class="pg-entry" ${recent || x.error ? "open" : ""}><summary>${head}</summary><div class="pg-body">${body}</div></details>`;
-  }).join("") + (me.log.at(-1)?.stateful === false ? `<p class="fine">This server allows one session at a time and it's taken, so each tool call here stands alone.</p>` : "");
+  }).join("") + (me.L?.openenv && me.log.at(-1)?.stateful === false ? `<p class="fine">The WebSocket session is unavailable. These tool calls use HTTP and may not retain episode state.</p>` : "");
 }
 
 // ── what the environment sent back ───────────────────────────────────────────
@@ -1149,7 +1210,7 @@ function renderLog(me) {
 const STATUS_KEYS = ["feedback", "message", "status", "result", "error", "info", "action_result"];
 const ORDER = ["prompt", "instruction", "question", "task", "observation", "text", "content", "dashboard", "output", "stdout", "stderr"];
 const isObj = (v) => v && typeof v === "object" && !Array.isArray(v);
-const isMedia = (html) => /^<(img|audio)\b/.test(html);
+const isMedia = (html) => /^<(img|audio|video)\b/.test(html);
 let foldN = 0;
 
 function textBlock(v) {
@@ -1254,26 +1315,29 @@ function httpView(r) {
 async function loadTasks(me) {
   const L = me.L, box = $("#tk-table", me.el);
   if (!box || !L?.task_api) return;
-  const splits = L.task_api.splits;
+  const splits = taskCatalog(me).splits;
   me.taskPage.split ??= (splits.find((x) => x.default) || splits[0])?.name || "";
-  const { split, start } = me.taskPage;
+  const { split, start, env } = me.taskPage;
+  me.selectedTask = null;
+  $("#tk-detail", me.el).hidden = true;
   const total = splits.find((x) => x.name === split)?.num_tasks;
   box.innerHTML = sk.lines(90, 90, 90, 90);
   $("#tk-range", me.el).textContent = "";
   try {
-    const r = await api(`/api/spaces/${enc(me.spec)}/tasks?split=${encodeURIComponent(split)}&start=${start}&stop=${start + 20}`);
-    if (page !== me || me.taskPage.split !== split || me.taskPage.start !== start) return;
+    const r = await api(`/api/spaces/${enc(me.spec)}/tasks?env=${encodeURIComponent(env)}&split=${encodeURIComponent(split)}&start=${start}&stop=${start + 20}`);
+    if (page !== me || me.taskPage.env !== env || me.taskPage.split !== split || me.taskPage.start !== start) return;
     me.tasks = r.tasks;
     if (r.tasks.length && me.indexKey == null) { me.indexKey = "task_index" in r.tasks[0] ? "task_index" : "index"; L.indexKey = me.indexKey; }
     const keys = columns(r.tasks);
     box.innerHTML = r.tasks.length ? `<div class="tbl tk-tbl"><table><thead><tr>${keys.map((k) => `<th>${esc(k)}</th>`).join("")}</tr></thead><tbody>${r.tasks.map((t, i) =>
-      `<tr data-task="${i}" tabindex="0">${keys.map((k) => `<td>${cellOf(t[k])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+      `<tr data-task="${i}" tabindex="0" aria-label="Inspect task ${start + i + 1}">${keys.map((k) => `<td title="${esc(typeof t[k] === "string" ? t[k] : "")}">${cellOf(t[k])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
       ${r.withheld.length ? `<p class="fine">${icon("shield", 12)} Left out, as they may hold the answer: ${r.withheld.map((k) => `<code>${esc(k)}</code>`).join(", ")}.</p>` : ""}`
       : `<p class="muted sm">No tasks here.</p>`;
     $("#tk-range", me.el).textContent = r.tasks.length ? `${fmt.format(start + 1)}–${fmt.format(start + r.tasks.length)}${total != null ? ` of ${fmt.format(total)}` : ""}` : "";
     $("#tk-prev", me.el).disabled = start === 0;
     $("#tk-next", me.el).disabled = r.tasks.length < 20 || (total != null && start + 20 >= total);
     box.querySelectorAll("[data-task]").forEach((tr) => tr.addEventListener("keydown", (e) => { if (e.key === "Enter") openTask(me, +tr.dataset.task); }));
+    if (me.linkedTask != null) { const target = me.linkedTask; me.linkedTask = null; openTask(me, target - start); }
   } catch (e) { box.innerHTML = `<div class="note-box err">${icon("alert")}<span>${esc(e.message)}</span></div>`; }
 }
 
@@ -1281,26 +1345,45 @@ function columns(rows) {
   const first = ["task_index", "index", "task_id", "id", "task_name", "name", "title"];
   const keys = [...new Set(rows.flatMap((r) => Object.keys(r)))];
   const short = keys.filter((k) => rows.every((r) => r[k] == null || (["string", "number", "boolean"].includes(typeof r[k]) && String(r[k]).length <= 80)));
-  const pick = [...first.filter((k) => short.includes(k)), ...short.filter((k) => !first.includes(k) && !["split", "dataset"].includes(k))].slice(0, 6);
+  const pick = [...first.filter((k) => keys.includes(k)), ...short.filter((k) => !first.includes(k) && !["split", "dataset"].includes(k))].slice(0, 6);
   return pick.length ? pick : keys.slice(0, 4);
 }
 const cellOf = (x) => (x == null ? `<span class="faint">–</span>` : typeof x === "string" ? esc(x.length > 80 ? x.slice(0, 80) + "…" : x)
   : typeof x === "object" ? `<span class="faint">${Array.isArray(x) ? `${x.length} items` : "{…}"}</span>` : `<code>${esc(String(x))}</code>`);
 
-function openTask(me, i) {
+async function openTask(me, i) {
   const t = me.tasks?.[i];
   if (!t) return;
+  me.selectedTask = i;
+  const requestKey = me.taskRequest = (me.taskRequest || 0) + 1;
   me.el.querySelectorAll("[data-task]").forEach((r) => r.classList.toggle("on", +r.dataset.task === i));
   const idx = t.task_index ?? t.index ?? me.taskPage.start + i;
   const d = $("#tk-detail", me.el);
   d.hidden = false;
   const hub = me.L.harbor_caps?.datasets.find((x) => x.name === me.taskPage.split)?.hub;
   const rel = hub && typeof t.task_id === "string" && t.task_id.startsWith(me.taskPage.split + "/") ? t.task_id.slice(me.taskPage.split.length + 1) : null;
-  d.innerHTML = `<div class="tk-detail-h"><b>${esc(t.task_name || t.task_id || t.id || `Task ${idx}`)}</b><span class="grow"></span>
+  const title = t.task_name || t.title || t.task_id || t.id || `Task ${idx + 1}`;
+  const link = new URL(location.href);
+  link.search = new URLSearchParams({ env: me.taskPage.env, split: me.taskPage.split, task: idx });
+  link.hash = "sec-tasks";
+  const canPlay = me.L.openenv && !me.L.harbor && me.taskPage.env === me.L.task_api.env;
+  d.innerHTML = `<div class="tk-detail-h"><div class="tk-title"><small>Task ${fmt.format(me.taskPage.start + i + 1)} · ${esc(shortSplit(me.taskPage.split))}</small><b title="${esc(title)}">${esc(title)}</b></div>
+      <button class="icon-btn sm" type="button" data-task-move="-1" aria-label="Previous task in this page" ${i === 0 ? "disabled" : ""}>${icon("chevronRight", 15, "flip")}</button>
+      <button class="icon-btn sm" type="button" data-task-move="1" aria-label="Next task in this page" ${i + 1 === me.tasks.length ? "disabled" : ""}>${icon("chevronRight", 15)}</button>
+      <button class="icon-btn sm" type="button" id="tk-close" aria-label="Close task">${icon("x", 15)}</button></div>
+    <div class="tk-actions">${copyBtn(link.href, "Copy task link")}
       ${rel ? `<a class="btn sm" href="/t/${enc(hub)}/${enc(rel)}" title="Open it in the explorer, where it runs on your account">${icon("database", 13)}Open in the explorer</a>` : ""}
-      ${me.L.openenv && !me.L.harbor ? `<button class="btn sm primary" type="button" data-play-task="${esc(idx)}">${icon("play", 13)}Play this task</button>` : ""}
-      <button class="icon-btn sm" type="button" id="tk-close" aria-label="Close">${icon("x", 15)}</button></div>
-    <div class="tk-detail-b">${fieldsView(t)}</div>`;
+      ${canPlay ? `<button class="btn sm primary" type="button" data-play-task="${esc(idx)}">${icon("play", 13)}Start this task</button>` : ""}</div>
+    <div class="tk-detail-b">${taskContent(t)}<p class="fine" id="tk-full-status" role="status">Loading the full task…</p></div>`;
   d.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  try {
+    const full = await api(`/api/spaces/${enc(me.spec)}/task?${new URLSearchParams({ env: me.taskPage.env, split: me.taskPage.split, index: idx })}`);
+    if (page !== me || requestKey !== me.taskRequest || me.selectedTask !== i || !d.isConnected || d.hidden) return;
+    if (full.task && typeof full.task === "object" && !Array.isArray(full.task)) {
+      $(".tk-detail-b", d).innerHTML = taskContent(full.task);
+    } else $("#tk-full-status", d).textContent = "Showing the task record returned by the list endpoint.";
+  } catch (error) {
+    if (page === me && requestKey === me.taskRequest && me.selectedTask === i && d.isConnected && !d.hidden)
+      $("#tk-full-status", d).textContent = `Showing the list record. Full task unavailable: ${error.message}`;
+  }
 }
-

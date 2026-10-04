@@ -20,6 +20,8 @@ import re
 import secrets
 import threading
 import time
+import zlib
+from urllib.parse import urlencode
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
@@ -38,9 +40,6 @@ STANDARD_ROUTES = {"/reset", "/step", "/state", "/metadata", "/health", "/health
                    "/{env_name}/splits", "/{env_name}/tasks", "/{env_name}/num_tasks", "/{env_name}/task", "/{env_name}/task_range",
                    "/web/metadata", "/web/reset", "/web/step", "/web/state", "/docs", "/redoc", "/openapi.json"}
 MAX_REPLY = 12 * 2**20          # bytes from a Space for one reply (observations can carry images)
-_client = httpx.Client(timeout=httpx.Timeout(12, connect=6), follow_redirects=False,
-                       headers={"User-Agent": "hf-rl-explorer (+https://huggingface.co/FineEnvs)"},
-                       limits=httpx.Limits(max_connections=64, max_keepalive_connections=16))
 _lock = threading.Lock()
 
 
@@ -50,6 +49,48 @@ class SpaceError(Exception):
     def __init__(self, message: str, status: int = 409):
         super().__init__(message)
         self.status = status
+
+
+class SpaceClient(httpx.Client):
+    """Bound decompressed replies while receiving them, including chunked bodies.
+
+    Space operators control their responses. Checking Response.content after a
+    normal get() is too late: httpx has already buffered the complete response.
+    Keep httpx's cookie jar and connection pooling, but never buffer without a cap.
+    """
+
+    def send(self, request, *, stream=False, **kwargs):
+        # Negotiate only a codec with a bounded decompression API.
+        request.headers["Accept-Encoding"] = "gzip, identity"
+        response = super().send(request, stream=True, **kwargs)
+        try:
+            body = bytearray()
+            codec = response.headers.get("content-encoding", "identity").lower()
+            decoded = response.is_stream_consumed
+            if not decoded and codec not in {"identity", "gzip"}:
+                raise SpaceError("the Space used an unsupported response encoding", 502)
+            decoder = zlib.decompressobj(16 + zlib.MAX_WBITS) if not decoded and codec == "gzip" else None
+            chunks = (response.content,) if decoded else response.iter_raw(chunk_size=64 * 1024)
+            for chunk in chunks:
+                if decoder:
+                    chunk = decoder.decompress(chunk, MAX_REPLY - len(body) + 1)
+                if len(body) + len(chunk) > MAX_REPLY:
+                    raise SpaceError("the Space's reply is too large to show", 502)
+                body.extend(chunk)
+            if decoder and (not decoder.eof or decoder.unused_data):
+                raise SpaceError("the Space returned an invalid compressed response", 502)
+            headers = [(k, v) for k, v in response.headers.multi_items()
+                       if k.lower() not in ("content-encoding", "content-length", "transfer-encoding")]
+            return httpx.Response(response.status_code, headers=headers, content=bytes(body), request=request)
+        except zlib.error:
+            raise SpaceError("the Space returned an invalid compressed response", 502) from None
+        finally:
+            response.close()
+
+
+_client = SpaceClient(timeout=httpx.Timeout(12, connect=6), follow_redirects=False,
+                      headers={"User-Agent": "hf-rl-explorer (+https://huggingface.co/FineEnvs)"},
+                      limits=httpx.Limits(max_connections=64, max_keepalive_connections=16))
 
 
 # ── the Space's record ───────────────────────────────────────────────────────
@@ -99,7 +140,7 @@ def _get_here(rec: dict, path: str, hops: int = 3) -> httpx.Response | None:
         if r.status_code not in (301, 302, 303, 307, 308):
             return r
         nxt = r.url.join(r.headers.get("location", ""))
-        if nxt.scheme != "https" or nxt.host != httpx.URL(rec["host"]).host:
+        if nxt.scheme != "https" or nxt.host != httpx.URL(rec["host"]).host or nxt.port not in (None, 443) or nxt.userinfo:
             return None
         url = str(nxt)
     return None
@@ -133,6 +174,13 @@ def _get_json(rec: dict, path: str) -> Any:
 def mcp_call(rec: dict, method: str, params: dict | None = None, timeout: float = 30, raw: bool = False) -> Any:
     """One JSON-RPC call to the Space's /mcp. Returns `result`; raises SpaceError with the server's message on error.
     `raw`: the whole JSON-RPC reply, an error reply included (HTTP failures still raise)."""
+    if rec.get("mcp_standard"):
+        with SpaceClient(timeout=httpx.Timeout(timeout, connect=6), follow_redirects=False) as client:
+            remote = RemoteMCP(rec, client)
+            try:
+                return remote.call(method, params or {}, timeout, raw=raw)
+            finally:
+                remote.close()
     try:
         r = _client.post(_url(rec, "/mcp"), timeout=httpx.Timeout(timeout, connect=6),
                          headers={"Accept": "application/json, text/event-stream", "Content-Type": "application/json"},
@@ -155,6 +203,100 @@ def mcp_call(rec: dict, method: str, params: dict | None = None, timeout: float 
         err = doc["error"] if isinstance(doc["error"], dict) else {"message": str(doc["error"])}
         raise SpaceError(str(err.get("message") or "error")[:500], 422)
     return doc.get("result")
+
+
+class RemoteMCP:
+    """A Streamable HTTP MCP session, isolated along with the visitor's cookies.
+
+    No credentials from the explorer are forwarded. Expiry never replays an action:
+    callers must explicitly open a new episode after a 410 response.
+    """
+    def __init__(self, rec: dict, client: httpx.Client):
+        self.url = _url(rec, "/mcp")
+        self.client = client
+        self.session = None
+        self.version = None
+        self.initialized = False
+        self.expired = False
+
+    def headers(self):
+        headers = {"Accept": "application/json, text/event-stream", "Content-Type": "application/json"}
+        if self.session:
+            headers["Mcp-Session-Id"] = self.session
+        if self.version:
+            headers["MCP-Protocol-Version"] = self.version
+        return headers
+
+    def request(self, method, params, timeout, *, notification=False):
+        rid = secrets.randbelow(10**9)
+        message = {"jsonrpc": "2.0", "method": method, "params": params}
+        if not notification:
+            message["id"] = rid
+        try:
+            r = self.client.post(self.url, headers=self.headers(), json=message, timeout=httpx.Timeout(timeout, connect=6))
+        except httpx.TimeoutException:
+            raise SpaceError("the MCP server timed out; the action was not retried", 504) from None
+        except httpx.HTTPError as e:
+            raise SpaceError(f"couldn't reach the MCP server: {type(e).__name__}", 502) from None
+        if self.session and r.status_code == 404:
+            self.expired = True
+            raise SpaceError("the MCP session has expired: start a new session", 410)
+        if notification and r.status_code in (200, 202, 204):
+            return {}
+        if r.status_code != 200:
+            raise SpaceError(f"the Space's /mcp answered HTTP {r.status_code}", 502)
+        try:
+            if "text/event-stream" in r.headers.get("content-type", ""):
+                # Notifications can precede the response; SSE data may span lines.
+                docs = [json.loads("\n".join(line[5:].lstrip() for line in event.splitlines() if line.startswith("data:")))
+                        for event in r.text.replace("\r\n", "\n").split("\n\n") if any(line.startswith("data:") for line in event.splitlines())]
+                doc = next((d for d in docs if isinstance(d, dict) and d.get("id") == rid), None)
+            else:
+                doc = r.json()
+        except ValueError:
+            raise SpaceError("the MCP server returned invalid JSON", 502) from None
+        if not isinstance(doc, dict) or doc.get("jsonrpc") != "2.0" or doc.get("id") != rid:
+            raise SpaceError("the MCP server returned no matching JSON-RPC response", 502)
+        if method == "initialize" and not doc.get("error"):
+            sid = r.headers.get("mcp-session-id")
+            if sid and (len(sid) > 2048 or not all(0x21 <= ord(c) <= 0x7e for c in sid)):
+                raise SpaceError("the MCP server returned an invalid session ID", 502)
+            self.session = sid
+        return doc
+
+    def call(self, method, params, timeout, *, raw=False):
+        if self.expired:
+            raise SpaceError("the MCP session has expired: start a new session", 410)
+        if not self.initialized:
+            init = self.request("initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
+                                               "clientInfo": {"name": "hf-rl-explorer", "version": "0.1.0"}}, timeout)
+            error = init.get("error") or {}
+            if not isinstance(error, dict):
+                raise SpaceError("the MCP server returned an invalid initialization error", 502)
+            if error.get("code") != -32601:  # compatibility with simple JSON-RPC tool servers
+                result = init.get("result") or {}
+                if not isinstance(result, dict):
+                    raise SpaceError("the MCP server returned an invalid initialization result", 502)
+                self.version = result.get("protocolVersion")
+                if error or self.version not in {"2025-03-26", "2025-06-18", "2025-11-25"}:
+                    raise SpaceError("the MCP server could not negotiate a supported protocol", 502)
+                self.request("notifications/initialized", {}, timeout, notification=True)
+            self.initialized = True
+        doc = self.request(method, params, timeout)
+        if raw:
+            return doc
+        if doc.get("error"):
+            error = doc["error"]
+            raise SpaceError(str(error.get("message", "MCP error") if isinstance(error, dict) else error)[:500], 422)
+        return doc.get("result")
+
+    def close(self):
+        if self.session and not self.expired:
+            try:
+                self.client.delete(self.url, headers=self.headers(), timeout=3)
+            except Exception:  # best-effort cleanup of an untrusted remote server
+                pass
+        self.expired = True
 
 
 def _tools(rec: dict) -> tuple[list[dict] | None, str | None, dict]:
@@ -182,8 +324,6 @@ def _api_routes(api: Any, openenv: bool) -> list[dict[str, Any]]:
     own plumbing (geoguesser's /geoguesser/task/{i} returns the answer's coordinates). GET and POST only."""
     if openenv or not isinstance(api, dict) or not isinstance(api.get("paths"), dict):
         return []
-    comps = ((api.get("components") or {}).get("schemas") or {}) if isinstance(api.get("components"), dict) else {}
-
     def resolve(x: Any, depth: int = 0) -> Any:
         if not isinstance(x, (dict, list)):
             return x
@@ -191,7 +331,12 @@ def _api_routes(api: Any, openenv: bool) -> list[dict[str, Any]]:
             return {} if isinstance(x, dict) else []
         if isinstance(x, dict):
             if "$ref" in x and isinstance(x["$ref"], str):
-                return resolve(comps.get(x["$ref"].split("/")[-1], {}), depth + 1)
+                target = api
+                if not x["$ref"].startswith("#/"):
+                    return {}
+                for key in x["$ref"][2:].split("/"):
+                    target = target.get(key.replace("~1", "/").replace("~0", "~"), {}) if isinstance(target, dict) else {}
+                return resolve(target, depth + 1)
             return {k: resolve(v, depth + 1) for k, v in x.items() if k != "$defs"}
         if isinstance(x, list):
             return [resolve(v, depth + 1) for v in x[:50]]
@@ -203,7 +348,9 @@ def _api_routes(api: Any, openenv: bool) -> list[dict[str, Any]]:
         if (not isinstance(ops, dict) or not isinstance(path, str) or not re.match(r"^/(?!/)[\w\-.~{}/]{0,199}$", path)
                 or ".." in path):
             continue
-        if path in STANDARD_ROUTES or path.startswith(("/web", "/login", "/logout", "/docs", "/redoc", "/static", "/gradio", "/assets")):
+        # A generic Gymnasium server's reset/step are ordinary HTTP routes, not
+        # evidence that it implements OpenEnv's WebSocket envelope protocol.
+        if path in STANDARD_ROUTES - {"/reset", "/step", "/state"} or path.startswith(("/web", "/login", "/logout", "/docs", "/redoc", "/static", "/gradio", "/assets")):
             continue
         if openenv and path in ("/healthz",):
             continue
@@ -213,15 +360,24 @@ def _api_routes(api: Any, openenv: bool) -> list[dict[str, Any]]:
                 continue
             body = (((op.get("requestBody") or {}).get("content") or {}).get("application/json") or {}).get("schema")
             schema = resolve(body) if body else None
+            parameters = {}
+            for p in [*(ops.get("parameters") or []), *(op.get("parameters") or [])]:
+                p = resolve(p)
+                if isinstance(p, dict) and p.get("in") == "query" and isinstance(p.get("name"), str):
+                    parameters[p["name"]] = p
+            query = {"type": "object", "properties": {k: {**(p.get("schema") or {}), "description": p.get("description") or "Query parameter"}
+                                                       for k, p in parameters.items()},
+                     "required": [k for k, p in parameters.items() if p.get("required")], "additionalProperties": False}
             out.append({"method": method.upper(), "path": path, "summary": str(op.get("summary") or op.get("description") or "")[:200],
                         "params": re.findall(r"\{([A-Za-z_][\w-]{0,40})\}", path),
-                        "schema": schema if isinstance(schema, dict) and schema.get("type") == "object" else None})
+                        "schema": schema if isinstance(schema, dict) else None,
+                        "body_required": bool((op.get("requestBody") or {}).get("required")), "query_schema": query})
         if len(out) >= 40:
             break
     return out
 
 
-def route_url(info: dict, method: str, path: str, params: dict[str, Any]) -> str:
+def route_url(info: dict, method: str, path: str, params: dict[str, Any], query: dict[str, Any] | None = None) -> str:
     """A route the server published, its path parameters filled in safely; anything else is refused."""
     route = next((r for r in info.get("api") or [] if r["method"] == method and r["path"] == path), None)
     if route is None:
@@ -229,9 +385,29 @@ def route_url(info: dict, method: str, path: str, params: dict[str, Any]) -> str
     filled = path
     for name in route["params"]:
         v = str((params or {}).get(name, ""))
-        if not re.match(r"^[\w.\-~]{1,200}$", v):
+        if not re.fullmatch(r"[\w.\-~]{1,200}", v) or v in (".", ".."):
             raise SpaceError(f"{name}: letters, digits, . - _ ~ only", 400)
         filled = filled.replace("{" + name + "}", v)
+    query = query or {}
+    schema = route.get("query_schema") or {}
+    if set(query) - set(schema.get("properties") or {}):
+        raise SpaceError("only this route's published query parameters are allowed", 400)
+    for key in schema.get("required") or []:
+        if key not in query:
+            raise SpaceError(f"query parameter {key} is required", 400)
+    pairs = []
+    for key, value in query.items():
+        for v in value if isinstance(value, list) else [value]:
+            if v is None:
+                continue
+            if not isinstance(v, (str, int, float, bool)):
+                raise SpaceError(f"query parameter {key} must be a scalar or array of scalars", 400)
+            pairs.append((key, str(v).lower() if isinstance(v, bool) else str(v)))
+    encoded = urlencode(pairs)
+    if len(encoded) > 8000:
+        raise SpaceError("query parameters are too large", 400)
+    if encoded:
+        filled += "?" + encoded
     return filled
 
 
@@ -239,8 +415,12 @@ def probe(spec: str, fresh: bool = False) -> dict[str, Any]:
     """Everything a running server says about itself, in one record. Asleep or broken: just the stage."""
     rec = record(spec, fresh=fresh)
     if rec["stage"] != UP or not rec["host"]:
-        return {"running": False, "stage": rec["stage"], "host": rec["host"], "base_path": rec["base_path"],
+        from .envs.capabilities import space_support
+        info = {"running": False, "stage": rec["stage"], "host": rec["host"], "base_path": rec["base_path"],
                 "last_seen": last_seen(rec["id"])}
+        from . import space_checks
+        space_checks.observe(spec, info)
+        return {**info, "support": space_support(info)}
 
     def fetch():
         with ThreadPoolExecutor(6) as pool:
@@ -253,23 +433,11 @@ def probe(spec: str, fresh: bool = False) -> dict[str, Any]:
             api, meta, schema, health, envs, ui = (f.result() for f in (f_api, f_meta, f_schema, f_health, f_envs, f_ui))
         routes = sorted((api or {}).get("paths", {}).keys()) if isinstance(api, dict) else []
         has = set(routes)
-        openenv = isinstance(schema, dict) and ("action" in schema or "observation" in schema)
-        tools, tools_error, rpc = _tools(rec) if ("/mcp" in has or openenv) else (None, None, None)
+        openenv = isinstance(schema, dict) and all(isinstance(schema.get(k), dict) for k in ("action", "observation", "state"))
+        tools, tools_error, rpc = _tools({**rec, "mcp_standard": not openenv}) if ("/mcp" in has or openenv) else (None, None, None)
         env_names = [e for e in envs if isinstance(e, str) and re.match(r"^[\w.-]{1,80}$", e)] if isinstance(envs, list) else []
-        task_api = bool(env_names) and "/{env_name}/splits" in has
-        splits = []
-        if task_api:
-            raw = _get_json(rec, f"/{env_names[0]}/splits")
-            for s in (raw or [])[:40] if isinstance(raw, list) else []:
-                if isinstance(s, dict) and isinstance(s.get("name"), str):
-                    splits.append({"name": s["name"], "type": s.get("type"), "num_tasks": s.get("num_tasks"), "default": s.get("default")})
-            missing = [s for s in splits if not isinstance(s["num_tasks"], int)][:12]
-            for s in missing:
-                try:
-                    r = _client.post(_url(rec, f"/{env_names[0]}/num_tasks"), json={"split": s["name"]}, timeout=8)
-                    s["num_tasks"] = int(_json(r).get("num_tasks")) if r.status_code == 200 else None
-                except Exception:  # noqa: BLE001
-                    s["num_tasks"] = None
+        from . import space_tasks
+        task_api = space_tasks.discover(rec, has, env_names)
         names = {t["name"] for t in tools or []}
         harbor = {"run_rollout", "capabilities"} <= names or "harbor_env" in env_names
         caps = _harbor_caps(rec) if "capabilities" in names and harbor else None
@@ -277,30 +445,37 @@ def probe(spec: str, fresh: bool = False) -> dict[str, Any]:
         version = (api.get("info") or {}).get("version") if isinstance(api, dict) and isinstance(api.get("info"), dict) else None
         info = {
             "running": True, "stage": rec["stage"], "host": rec["host"], "base_path": rec["base_path"],
-            "ui": ui, "openenv": openenv or "/reset" in has,
+            "ui": ui, "openenv": openenv,
             "metadata": meta if isinstance(meta, dict) else None, "health": health if isinstance(health, dict) else None,
             "schema": schema if isinstance(schema, dict) else None,
-            "step_api": "/reset" in has and "/step" in has, "docs": "/openapi.json" in has or api is not None,
+            "step_api": openenv and "/reset" in has and "/step" in has, "docs": "/openapi.json" in has or api is not None,
             "mcp": tools, "mcp_error": None if tools else tools_error,
-            "task_api": {"env": env_names[0], "splits": splits} if task_api else None,
+            "task_api": task_api,
             "harbor": harbor, "harbor_caps": caps,
             "rewards": bool(isinstance(obs, dict) and "reward" in (obs.get("properties") or {})),
             "graders": sorted(n for n in names if re.search(r"(grade|score|submit|verify|reward|judge)", n, re.I)),
             "routes": [r for r in routes if r not in STANDARD_ROUTES][:40],
-            "api": _api_routes(api, openenv or "/reset" in has),
+            "api": _api_routes(api, openenv),
             # which framework the server speaks, from what it serves
-            "framework": "harbor" if harbor else "openenv" if (openenv or "/reset" in has) else
+            "framework": "harbor" if harbor else "openenv" if openenv else
                          "nemo-gym" if {"/seed_session", "/verify"} <= has else
-                         "ors" if {"/create_session", "/{env_name}/call"} <= has else "mcp" if tools else "api" if api else None,
+                         "ors" if {"/create_session", "/{env_name}/call"} <= has else
+                         "gymnasium" if {"/reset", "/step"} <= has else "mcp" if tools else "api" if api else None,
             "openapi_version": version if isinstance(version, str) else None,
+            "endpoint_methods": {p: {m: {} for m in methods if m in ("get", "post")} for p, methods in (api or {}).get("paths", {}).items()
+                                 if p in ("/reset", "/step", "/state", "/mcp") and isinstance(methods, dict)} if isinstance(api, dict) else {},
             # OpenEnv's two modes: simulation serves /reset, /step and /state; production serves only MCP and /ws
-            "mode": ("simulation" if "/reset" in has else "production") if routes else None,
+            "mode": ("simulation" if "/reset" in has else "production") if openenv else None,
             "conformance": conformance({"openapi": api, "health": health, "metadata": meta, "schema": schema, "mcp": rpc,
                                         "mcp_tried": "/mcp" in has or openenv, "paths": routes}),
             "checked": time.time(),
         }
         if api is not None or isinstance(schema, dict) or isinstance(meta, dict) or tools:   # it answered: keep it
             remember(rec["id"], info)
+        from .envs.capabilities import space_support
+        info["support"] = space_support(info)
+        from . import space_checks
+        space_checks.observe(spec, info)
         return info
 
     if fresh:
@@ -518,17 +693,20 @@ def _withhold(v: Any, depth: int = 0) -> tuple[Any, list[str]]:
     return v, gone
 
 
-def _task_api(spec: str) -> tuple[dict, str]:
+def _task_api(spec: str, env: str = "") -> tuple[dict, str]:
     info = probe(spec)
     if not info.get("running"):
         raise SpaceError("this Space isn't running: wake it first", 409)
     if not info.get("task_api"):
         raise SpaceError("this server has no Task API", 404)
-    return record(spec), info["task_api"]["env"]
+    api = info["task_api"]
+    if env and env not in [e["env"] for e in api.get("environments", [api])]:
+        raise SpaceError("this environment is not in the Space's Task API", 400)
+    return record(spec), env or api["env"]
 
 
-def tasks(spec: str, split: str, start: int, stop: int) -> dict[str, Any]:
-    rec, env = _task_api(spec)
+def tasks(spec: str, split: str, start: int, stop: int, env: str = "") -> dict[str, Any]:
+    rec, env = _task_api(spec, env)
     start, stop = max(0, int(start)), max(0, int(stop))
     stop = min(stop, start + 50)
     try:
@@ -542,8 +720,8 @@ def tasks(spec: str, split: str, start: int, stop: int) -> dict[str, Any]:
     return {"tasks": rows, "start": start, "stop": stop, "withheld": sorted(set(gone))}
 
 
-def task(spec: str, split: str, index: int) -> dict[str, Any]:
-    rec, env = _task_api(spec)
+def task(spec: str, split: str, index: int, env: str = "") -> dict[str, Any]:
+    rec, env = _task_api(spec, env)
     try:
         r = _client.post(_url(rec, f"/{env}/task"), json={"split": split, "index": int(index)}, timeout=20)
     except httpx.HTTPError as e:
@@ -570,12 +748,18 @@ class Session:
         self.created = self.used = time.time()
         self.ws = None
         self.ws_failed = False
+        self.broken = False  # a dropped episode may only be recovered by an explicit reset
         self.http: httpx.Client | None = None   # the session's own cookie jar for the server's routes (NeMo Gym keeps state in a cookie)
+        self.remote_mcp: RemoteMCP | None = None
+        self.standard_mcp = False
         self.lock = threading.Lock()
         self.steps = 0
         self.rpc = 0
 
     def close(self) -> None:
+        if self.remote_mcp is not None:
+            self.remote_mcp.close()
+            self.remote_mcp = None
         if self.http is not None:
             try:
                 self.http.close()
@@ -625,6 +809,8 @@ def start(spec: str, owner: str) -> dict[str, Any]:
         if len(_sessions) >= TOTAL:
             raise SpaceError("too many live sessions on this explorer right now: try again in a few minutes", 429)
         s = Session(catalog.check_spec(spec), owner)
+        s.ws_failed = not bool(info.get("openenv"))
+        s.standard_mcp = not bool(info.get("openenv"))
         _sessions[s.id] = s
     return {"session": s.id}
 
@@ -660,6 +846,10 @@ def _open(s: Session) -> None:
 
 
 def _ws_send(s: Session, msg: dict, timeout: float) -> dict:
+    if s.broken and msg.get("type") != "reset":
+        raise SpaceError("the episode was disconnected: reset to start a new episode", 410)
+    if msg.get("type") == "reset":
+        s.broken = False
     if s.ws is None:
         _open(s)
     try:
@@ -667,9 +857,11 @@ def _ws_send(s: Session, msg: dict, timeout: float) -> dict:
         reply = json.loads(s.ws.recv(timeout=timeout))
     except TimeoutError:
         s.close()
+        s.broken = True
         raise SpaceError(f"the Space didn't answer within {int(timeout)} s; the session was closed", 504) from None
     except Exception as e:  # noqa: BLE001 - the socket dropped: the episode is gone
         s.close()
+        s.broken = True
         raise SpaceError(f"the session dropped ({type(e).__name__}): start a new episode", 502) from None
     if not isinstance(reply, dict):
         raise SpaceError("the Space answered something unexpected", 502)
@@ -680,7 +872,7 @@ def _ws_send(s: Session, msg: dict, timeout: float) -> dict:
 
 
 def _rpc(s: Session, method: str, params: dict, timeout: float) -> Any:
-    """An MCP call inside the session's episode; over plain HTTP (stateless) when the server has no socket for it."""
+    """Use OpenEnv's episode socket, standard HTTP MCP, or legacy OpenEnv HTTP fallback."""
     if not s.ws_failed:
         try:
             s.rpc += 1
@@ -696,6 +888,12 @@ def _rpc(s: Session, method: str, params: dict, timeout: float) -> Any:
                 err = data["error"] if isinstance(data["error"], dict) else {"message": str(data["error"])}
                 raise SpaceError(str(err.get("message") or "error")[:600], 422)
             return data.get("result") if isinstance(data, dict) else data
+    if s.standard_mcp:
+        if s.http is None:
+            s.http = SpaceClient(timeout=httpx.Timeout(120, connect=8), follow_redirects=False)
+        if s.remote_mcp is None:
+            s.remote_mcp = RemoteMCP(record(s.spec), s.http)
+        return s.remote_mcp.call(method, params, timeout)
     return mcp_call(record(s.spec), method, params, timeout=timeout)
 
 
@@ -705,14 +903,15 @@ def _http(s: Session, data: dict) -> dict[str, Any]:
     if method not in ("GET", "POST"):
         raise SpaceError("GET or POST only", 400)
     info = probe(s.spec)
-    path = route_url(info, method, str(data.get("path") or ""), data.get("params") if isinstance(data.get("params"), dict) else {})
+    path = route_url(info, method, str(data.get("path") or ""), data.get("params") if isinstance(data.get("params"), dict) else {},
+                     data.get("query") if isinstance(data.get("query"), dict) else {})
     rec = record(s.spec)
     if s.http is None:
-        s.http = httpx.Client(base_url=rec["host"], timeout=httpx.Timeout(120, connect=8), follow_redirects=False,
+        s.http = SpaceClient(base_url=rec["host"], timeout=httpx.Timeout(120, connect=8), follow_redirects=False,
                               headers={"User-Agent": "hf-rl-explorer (+https://huggingface.co/FineEnvs)"})
     body = data.get("body")
     try:
-        r = s.http.request(method, path, json=body if method == "POST" else None)
+        r = s.http.request(method, _url(rec, path), json=body if method == "POST" else None)
     except httpx.TimeoutException:
         raise SpaceError("the Space didn't answer within 120 s", 504) from None
     except httpx.HTTPError as e:
@@ -773,7 +972,8 @@ def act(sid: str, owner: str, op: str, data: dict | None = None) -> dict[str, An
             s.steps += 1
         else:
             raise SpaceError(f"unknown operation {op!r}", 400)
-        return {"result": out, "ms": int((time.time() - t0) * 1000), "steps": s.steps, "stateful": not s.ws_failed}
+        return {"result": out, "ms": int((time.time() - t0) * 1000), "steps": s.steps,
+                "stateful": op == "http" or s.standard_mcp or not s.ws_failed}
 
 
 def live_sessions() -> int:

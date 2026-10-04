@@ -5,14 +5,15 @@
 
 /api/search answers exactly as the Explore page always filtered its full listing in the browser:
 
-  kind        what an environment is: OpenEnv Spaces (a manifest or the tag, and FineEnvs' curated servers), other
+  kind        OpenEnv Spaces require fresh successful API checks. Metadata-only matches are unverified-space; other
               environment Spaces (ORS included), Harbor datasets (tagged, or an index found task folders), Verifiers,
               NeMo Gym, OpenEnv datasets, verl and SkyRL, other RL datasets
+  owner       exact Hub namespace, case-insensitive; applies to datasets and Spaces
   collection  an admin's collection, "other" (in none) or "mine" (the signed-in visitor's datasets, with mine=1)
   f           facet filters as the page's own URL writes them: `type:Benchmark|Neither;tags:code` (values
               URI-encoded); values of one facet are alternatives, facets all apply
   q           every word must be part of the id, heading, brief or tags (substrings, any case)
-  sort        trending (pinned first; with kind=openenv, FineEnvs' curated servers next) | downloads | likes | tasks |
+  sort        trending (Hub score, then likes, then monthly dataset downloads; no editorial boosts) | downloads | likes | tasks |
               rollouts | updated | new; ties keep the listing's order
 
 Each facet is counted over what every *other* filter leaves (so picking a value never hides its alternatives).
@@ -31,20 +32,24 @@ import re
 import threading
 import time
 from collections import OrderedDict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 from urllib.parse import unquote
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 
-from . import snapshot
+from . import snapshot, space_checks
 
 router = APIRouter(on_startup=[snapshot.start])
 
-KINDS = ("all", "harbor", "openenv", "other-space", "verifiers", "nemo-gym", "openenv-data", "verl", "rows")
+KINDS = ("all", "harbor", "openenv", "unverified-space", "other-space", "verifiers", "nemo-gym", "openenv-data", "verl", "rows")
 SORTS = ("trending", "downloads", "likes", "tasks", "rollouts", "updated", "new")
-FACETS = ("type", "size", "stage", "mcp", "oe", "tags")
+FACETS = ("type", "size", "health", "mode", "tools", "stage", "mcp", "oe", "oe_source", "evidence", "tags")
+RANKING = {"version": 2, "source": "Hugging Face Hub", "order": ["trending", "likes", "downloads"],
+           "description": "Hub trending score first; ties use total likes, then dataset downloads over the last month. "
+                          "Spaces have no download metric. Remaining ties keep catalog order. Featured picks do not affect rank.",
+           "scope": "Current search and filters", "quality": "Interest signals, not measured environment quality or live availability."}
 OLD_KINDS = {"dataset": "harbor", "space": "openenv", "ors": "other-space"}   # the page's older links
 FACET_LIMIT = 100       # values returned per facet (most common first); the rest are counted in facets_more
 MAX_WORDS = 16
@@ -55,7 +60,9 @@ MAX_VALUES = 50
 @dataclass
 class Query:
     q: str = ""
+    scope: str = "all"
     kind: str = "all"
+    owner: str | None = None
     coll: str | None = None
     sel: dict[str, list[str]] = field(default_factory=dict)
     sort: str = "trending"
@@ -67,7 +74,7 @@ class Query:
         return self.q.lower().split()[:MAX_WORDS]
 
     def public(self) -> dict[str, Any]:
-        return {"q": self.q, "kind": self.kind, "collection": self.coll, "f": self.sel, "sort": self.sort,
+        return {"q": self.q, "scope": self.scope, "owner": self.owner, "kind": self.kind, "collection": self.coll, "f": self.sel, "sort": self.sort,
                 "page": self.page, "size": self.size}
 
 
@@ -79,6 +86,10 @@ def parse_f(f: str) -> dict[str, list[str]]:
         if k not in FACETS or not v:
             continue
         vals = [unquote(x)[:200] for x in v.split("|") if x]
+        if k == "stage" and "Asleep or stopped" in vals:   # saved links from the former broad bucket
+            vals = [x for x in vals if x != "Asleep or stopped"] + ["Sleeping", "Paused", "Building", "Starting", "Error", "Deleting"]
+        if k == "mcp":
+            vals = ["MCP tagged" if x == "Has MCP tools" else x for x in vals]
         for x in vals:
             if x not in sel.setdefault(k, []) and len(sel[k]) < MAX_VALUES:
                 sel[k].append(x)
@@ -101,7 +112,7 @@ def parse_query(params: Any, collections: list[dict[str, Any]], mine: bool) -> Q
     coll = g("collection", "c")
     known = {c["id"] for c in collections} | {"other"} | ({"mine"} if mine else set())
     sort = g("sort", "s") or "trending"
-    return Query(q=(g("q") or "").strip()[:200], kind=kind if kind in KINDS else "all", coll=coll if coll in known else None,
+    return Query(q=(g("q") or "").strip()[:200], scope="ready" if g("scope") == "ready" else "all", owner=(g("owner") or "").strip()[:200] or None, kind=kind if kind in KINDS else "all", coll=coll if coll in known else None,
                  sel=parse_f(g("f") or ""), sort=sort if sort in SORTS else "trending",
                  page=_int(g("page"), 1, 1, 10_000), size=_int(g("size"), 40, 1, 100))
 
@@ -155,12 +166,14 @@ class Ctx:
     hidden: list[str]
     mine: list[str]
     rolls: dict[str, int]
+    checks: dict[str, dict] = field(default_factory=dict)
 
     def params(self) -> dict[str, str]:
         """The admin settings as query parameters: each collection's keys, pins, hidden ones, the visitor's, rollouts.
         (Lists checked with IN, which SQLite evaluates once per statement: no per-row JSON.)"""
         out = {"pins": json.dumps(self.pins), "hidden": json.dumps(self.hidden), "mine": json.dumps(self.mine),
-               "rolls": json.dumps(self.rolls)}
+               "rolls": json.dumps(self.rolls), "checks": json.dumps([
+                   {**r, "status": space_checks.status(r), "browseable": space_checks.browseable(r)} for r in self.checks.values()])}
         for i, g in enumerate(self.collections):
             out[f"c{i}"] = json.dumps([k for k, c in self.cmap.items() if c == g["id"]])
             out[f"cid{i}"] = g["id"]
@@ -181,32 +194,53 @@ def context(mine: list[str] | None = None) -> Ctx:
         for k in g.get("ids") or []:
             cmap.setdefault(k, g["id"])   # the first collection naming it, as catalog.collection_of
     return Ctx(collections=[{k: v for k, v in g.items() if k != "ids"} for g in colls], cmap=cmap, pins=list(catalog.pinned()),
-               hidden=sorted(catalog.hidden()), mine=list(mine or []), rolls=rollout_counts())
+               hidden=sorted(catalog.hidden()), mine=list(mine or []), rolls=rollout_counts(), checks=space_checks.inventory())
 
 
 # ── SQL over the snapshot ────────────────────────────────────────────────────
 BASE = """
-WITH b0 AS (
+WITH checks AS MATERIALIZED (
+  SELECT CAST(json_extract(value, '$.id') AS TEXT) AS id, value AS check_json FROM json_each(:checks)
+), b0 AS (
   SELECT e.rowid AS rid, e.ord, e.id, e.key, e.kind, e.framework, e.openenv, e.heading, e.brief, e.downloads, e.likes,
          e.trending, e.created, e.updated, e.created_ms, e.updated_ms, e.stage, e.mcp, e.openenv_version, e.manifest,
          e.hardware, e.badges, e.tags, e.tasks, e.indexed, e.size_f, e.stage_f, e.mcp_f, e.oe_f, e.blob,
+         c.check_json,
          {coll} AS coll,
          (e.key IN (SELECT value FROM json_each(:pins))) AS pinned,
          (e.key IN (SELECT value FROM json_each(:mine))) AS mine
   FROM envs e
+  LEFT JOIN checks c ON c.id = e.id AND e.kind = 'space'
   WHERE e.key NOT IN (SELECT value FROM json_each(:hidden))
 ),
-b1 AS (SELECT b0.*, (kind = 'space' AND coll IS 'fineenvs' AND framework IS NOT 'openenv') AS ov FROM b0),
 base AS (
-  SELECT b1.*,
-         CASE WHEN ov THEN 'openenv' ELSE framework END AS framework_q,
-         CASE WHEN ov THEN 1 ELSE openenv END AS openenv_q,
-         CASE WHEN ov THEN '["OpenEnv"]' ELSE badges END AS badges_q,
-         CASE WHEN kind = 'space' THEN (CASE WHEN ov OR framework IS 'openenv' OR openenv THEN 'openenv' ELSE 'other-space' END)
-              ELSE COALESCE(framework, 'harbor') END AS fw
-  FROM b1
+  SELECT b0.*,
+         CASE WHEN kind = 'space' THEN CASE WHEN {verified} THEN 'openenv' WHEN framework = 'ors' THEN 'ors' ELSE 'space' END ELSE framework END AS framework_q,
+         CASE WHEN kind = 'space' AND {verified} THEN 1 ELSE 0 END AS openenv_q,
+         CASE WHEN kind = 'space' AND NOT COALESCE(({verified}), 0) THEN
+           (SELECT json_group_array(value) FROM json_each(badges) WHERE value != 'OpenEnv') ELSE badges END AS badges_q,
+         CASE WHEN kind = 'space' THEN (CASE WHEN {verified} THEN 'openenv' WHEN framework IS 'openenv' OR openenv THEN 'unverified-space' ELSE 'other-space' END)
+              ELSE COALESCE(framework, 'harbor') END AS fw,
+         CASE WHEN kind = 'space' AND (framework IS 'openenv' OR openenv)
+              THEN CASE WHEN manifest IS NOT NULL THEN 'Manifest present' ELSE 'Hub tag only' END END AS evidence_f,
+         CASE WHEN kind = 'space' THEN {stage} END AS runtime_f,
+         CASE WHEN kind = 'space' THEN CASE WHEN mcp THEN 'MCP tagged' ELSE 'No MCP tag' END END AS mcp_tag_f,
+         CASE WHEN kind = 'space' AND (framework IS 'openenv' OR openenv OR ({verified}))
+              THEN COALESCE(json_extract(check_json, '$.status'), 'Not checked') END AS health_f,
+         CASE WHEN json_extract(check_json, '$.status') = 'API checked' THEN json_extract(check_json, '$.mode') END AS mode_f,
+         CASE WHEN kind = 'space' AND (framework IS 'openenv' OR openenv OR ({verified})) THEN
+           CASE WHEN json_extract(check_json, '$.status') IN ('API checked', 'Checks failed') THEN
+             CASE WHEN json_extract(check_json, '$.tools') > 0 THEN 'Tools discovered' ELSE 'No tools discovered' END
+           ELSE 'Not checked' END END AS tools_f,
+         CASE WHEN kind = 'space' AND (framework IS 'openenv' OR openenv OR ({verified})) THEN
+           COALESCE(NULLIF(json_extract(check_json, '$.version.value'), 'Unknown'), openenv_version, 'Unknown') END AS version_f,
+         CASE WHEN kind = 'space' AND (framework IS 'openenv' OR openenv OR ({verified})) THEN
+           CASE WHEN json_extract(check_json, '$.version.value') IS NOT NULL AND json_extract(check_json, '$.version.value') != 'Unknown'
+             THEN json_extract(check_json, '$.version.source') WHEN openenv_version IS NOT NULL THEN 'Hub tag' ELSE 'Unknown' END END AS version_source_f
+  FROM b0
 )
-"""
+""".replace("{stage}", snapshot.stage_sql("stage")).replace("{verified}",
+    "json_extract(check_json, '$.status') = 'API checked' AND json_extract(check_json, '$.stage') = 'RUNNING'")
 ROLLOUTS = "COALESCE((SELECT value FROM json_each(:rolls) WHERE key = b.id), 0)"
 
 
@@ -214,33 +248,51 @@ TYPE_VALUES = "json_each(CASE WHEN json_array_length(b.badges_q) = 0 THEN '[\"Ne
 FACET_FILTER = {
     "type": f"EXISTS (SELECT 1 FROM {TYPE_VALUES} j WHERE j.value IN (SELECT value FROM json_each({{p}})))",
     "size": "b.size_f IN (SELECT value FROM json_each({p}))",
-    "stage": "b.stage_f IN (SELECT value FROM json_each({p}))",
-    "mcp": "b.mcp_f IN (SELECT value FROM json_each({p}))",
-    "oe": "b.oe_f IN (SELECT value FROM json_each({p}))",
+    "stage": "b.runtime_f IN (SELECT value FROM json_each({p}))",
+    "health": "b.health_f IN (SELECT value FROM json_each({p}))",
+    "mode": "b.mode_f IN (SELECT value FROM json_each({p}))",
+    "tools": "b.tools_f IN (SELECT value FROM json_each({p}))",
+    "mcp": "b.mcp_tag_f IN (SELECT value FROM json_each({p}))",
+    "oe": "b.version_f IN (SELECT value FROM json_each({p}))",
+    "oe_source": "b.version_source_f IN (SELECT value FROM json_each({p}))",
+    "evidence": "b.evidence_f IN (SELECT value FROM json_each({p}))",
     "tags": "EXISTS (SELECT 1 FROM json_each(b.tags) j WHERE j.value IN (SELECT value FROM json_each({p})))",
 }
 FACET_COUNT = {   # FROM, value expression, extra condition
     "type": (f"base b, {TYPE_VALUES} j", "j.value", "1"),
     "size": ("base b", "b.size_f", "b.size_f IS NOT NULL"),
-    "stage": ("base b", "b.stage_f", "b.stage_f IS NOT NULL"),
-    "mcp": ("base b", "b.mcp_f", "b.mcp_f IS NOT NULL"),
-    "oe": ("base b", "b.oe_f", "b.oe_f IS NOT NULL"),
+    "stage": ("base b", "b.runtime_f", "b.runtime_f IS NOT NULL"),
+    "health": ("base b", "b.health_f", "b.health_f IS NOT NULL"),
+    "mode": ("base b", "b.mode_f", "b.mode_f IS NOT NULL"),
+    "tools": ("base b", "b.tools_f", "b.tools_f IS NOT NULL"),
+    "mcp": ("base b", "b.mcp_tag_f", "b.mcp_tag_f IS NOT NULL"),
+    "oe": ("base b", "b.version_f", "b.version_f IS NOT NULL"),
+    "oe_source": ("base b", "b.version_source_f", "b.version_source_f IS NOT NULL"),
+    "evidence": ("base b", "b.evidence_f", "b.evidence_f IS NOT NULL"),
     "tags": ("base b, json_each(b.tags) j", "j.value", "1"),
 }
-TRENDING = "((b.pinned * 1e15) + ((b.trending * 1e9 + b.likes * 1e4) + MIN(b.downloads, 9999)))"
+TRENDING = "b.trending"
 SORT_SQL = {"trending": TRENDING, "downloads": "b.downloads", "likes": "b.likes", "tasks": "COALESCE(b.tasks, -1)",
             "rollouts": ROLLOUTS, "updated": "b.updated_ms", "new": "b.created_ms"}
 
 
 def sort_sql(q: Query) -> str:
-    if q.sort == "trending" and q.kind == "openenv":   # FineEnvs' curated servers lead the OpenEnv Spaces
-        return f"((b.coll IS 'fineenvs') * 1e14 + {TRENDING})"
     return SORT_SQL[q.sort]
+
+
+def order_sql(q: Query) -> str:
+    return "sk DESC, " + ("b.likes DESC, b.downloads DESC, " if q.sort == "trending" else "") + "b.ord ASC"
+
+
+def order_key(q: Query, d: dict[str, Any]) -> tuple:
+    return (-d["_sk"],) + ((-(d.get("likes") or 0), -(d.get("downloads") or 0)) if q.sort == "trending" else ()) + (d["_ord"],)
 
 
 def where(q: Query, skip: str | None = None, ignore_coll: bool = False, ignore_kind: bool = False) -> tuple[str, dict[str, Any]]:
     parts: list[str] = []
     params: dict[str, Any] = {}
+    if q.scope == "ready":
+        parts.append("(b.kind = 'dataset' OR json_extract(b.check_json, '$.browseable') = 1)")
     if not ignore_kind and q.kind != "all":
         parts.append("b.fw = :kind")
         params["kind"] = q.kind
@@ -250,6 +302,9 @@ def where(q: Query, skip: str | None = None, ignore_coll: bool = False, ignore_k
         else:
             parts.append("COALESCE(b.coll, 'other') = :coll")
             params["coll"] = q.coll
+    if q.owner:
+        parts.append("substr(b.id, 1, instr(b.id, '/') - 1) = :owner COLLATE NOCASE")
+        params["owner"] = q.owner
     words = q.words
     if words:
         fts = envs_fts_query(words)
@@ -274,6 +329,9 @@ def card(r: Any, rolls: dict[str, int]) -> dict[str, Any]:
             "downloads": r["downloads"], "likes": r["likes"], "trending": r["trending"], "updated": r["updated"],
             "created": r["created"], "stage": r["stage"], "mcp": bool(r["mcp"]), "openenv_version": r["openenv_version"],
             "manifest": r["manifest"], "hardware": r["hardware"], "badges": json.loads(r["badges_q"]), "tags": json.loads(r["tags"]),
+            "evidence": r["evidence_f"], "stage_label": r["runtime_f"],
+            "api_status": r["health_f"], "api_check": json.loads(r["check_json"]) if r["check_json"] else None,
+            "declared_version": r["version_f"], "version_source": r["version_source_f"], "api_mode": r["mode_f"], "tools_status": r["tools_f"],
             "pinned": bool(r["pinned"]), "mine": bool(r["mine"]), "indexed": json.loads(r["indexed"]) if r["indexed"] else None,
             "rollouts": rolls.get(r["id"], 0), "private": False, "_sk": r["sk"], "_ord": r["ord"]}
 
@@ -289,7 +347,7 @@ def sql_search(conn, q: Query, ctx: Ctx, *, facets: bool = True, limit: int | No
     w, p = where(q)
     lim = q.size if limit is None else limit
     off = (q.page - 1) * q.size if offset is None else offset
-    rows = conn.execute(f"{B} SELECT b.*, {sort_sql(q)} AS sk FROM base b WHERE {w} ORDER BY sk DESC, b.ord ASC LIMIT :lim OFFSET :off",
+    rows = conn.execute(f"{B} SELECT b.*, {sort_sql(q)} AS sk FROM base b WHERE {w} ORDER BY {order_sql(q)} LIMIT :lim OFFSET :off",
                         {**base, **p, "lim": lim, "off": off}).fetchall()
     total = conn.execute(f"{B} SELECT COUNT(*) FROM base b WHERE {w}", {**base, **p}).fetchone()[0]
     out: dict[str, Any] = {"rows": [card(r, ctx.rolls) for r in rows], "total": total}
@@ -317,22 +375,46 @@ def sql_search(conn, q: Query, ctx: Ctx, *, facets: bool = True, limit: int | No
     return out
 
 
-def sql_extra(conn, ctx: Ctx, trending: int) -> dict[str, Any]:
-    """The page's header numbers, and the trending row (every environment, pinned first)."""
+def sql_extra(conn, ctx: Ctx, trending: int, q: Query | None = None) -> dict[str, Any]:
+    """Counts, task coverage and editorial picks all follow the current search."""
     base, B = ctx.params(), ctx.base()
-    ds, sp, tasks = conn.execute(f"{B} SELECT SUM(b.kind = 'dataset'), SUM(b.kind = 'space'), SUM(COALESCE(b.tasks, 0)) FROM base b",
-                                 base).fetchone()
-    out: dict[str, Any] = {"stats": {"datasets": ds or 0, "spaces": sp or 0, "tasks": tasks or 0}}
+    w, p = where(q or Query())
+    params = {**base, **p}
+    ds, sp = conn.execute(f"{B} SELECT SUM(b.kind = 'dataset'), SUM(b.kind = 'space') FROM base b WHERE {w}", params).fetchone()
+    # Count actual searchable records, including adapters (MiMo) with no Harbor
+    # summary. Health discovery must never imply that tasks were downloaded.
+    tasks = conn.execute(f"{B} SELECT COUNT(*) FROM tasks t JOIN base b ON b.key=t.env WHERE b.kind='dataset' AND {w}", params).fetchone()[0]
+    from . import space_tasks
+    visible = [r[0] for r in conn.execute(f"{B} SELECT b.id FROM base b WHERE b.kind='space' AND {w}", params)]
+    space_counts = space_tasks.census(ctx.checks, visible)
+    out: dict[str, Any] = {"stats": {"datasets": ds or 0, "spaces": sp or 0, "tasks": tasks,
+                                    "dataset_tasks": tasks, "space_tasks": space_counts["tasks"],
+                                    "space_task_coverage": space_counts}}
+    out["stats"]["openenv"] = dict(conn.execute(f"{B} SELECT b.evidence_f, COUNT(*) FROM base b WHERE b.evidence_f IS NOT NULL AND {w} GROUP BY 1", params))
+    out["stats"]["openenv_running"] = conn.execute(f"{B} SELECT COUNT(*) FROM base b WHERE b.evidence_f IS NOT NULL AND b.stage = 'RUNNING' AND {w}", params).fetchone()[0]
     if trending:
-        rows = conn.execute(f"{B} SELECT b.*, {TRENDING} AS sk FROM base b ORDER BY sk DESC, b.ord ASC LIMIT :n", {**base, "n": trending})
-        out["trending"] = [card(r, ctx.rolls) for r in rows]
+        tq = replace(q or Query(), sort="trending", page=1, size=trending)
+        out["trending"] = sql_search(conn, tq, ctx, facets=False)["rows"]
+        w, p = where(tq)
+        rows = conn.execute(f"{B} SELECT b.*, 0 AS sk FROM base b WHERE b.pinned AND {w} "
+                            "ORDER BY (SELECT CAST(key AS INTEGER) FROM json_each(:pins) WHERE value = b.key) LIMIT 12", {**base, **p})
+        out["featured"] = [card(r, ctx.rolls) for r in rows]
+        # FineEnvs is an explicit editorial section, independent of admin pins
+        # and interest rank. Owner/search filters still apply to it.
+        promoted = conn.execute(f"{B} SELECT b.*, {TRENDING} AS sk FROM base b WHERE {w} "
+                               "AND substr(b.id, 1, instr(b.id, '/') - 1) = 'FineEnvs' COLLATE NOCASE "
+                               "AND (b.kind = 'dataset' OR json_extract(b.check_json, '$.browseable') = 1) "
+                               "ORDER BY (b.kind = 'space') DESC, b.pinned DESC, " + order_sql(tq) + " LIMIT 4", {**base, **p})
+        out["promoted"] = [card(r, ctx.rolls) for r in promoted]
     return out
 
 
 # ── the same, in Python: the visitor's own datasets that aren't in the snapshot, and the tests' reference ────────
-def py_fw(d: dict[str, Any]) -> str:
+def py_fw(d: dict[str, Any], check=None) -> str:
     if d.get("kind") == "space":
-        return "openenv" if d.get("framework") == "openenv" or d.get("openenv") else "other-space"
+        if space_checks.verified(check):
+            return "openenv"
+        return "unverified-space" if d.get("framework") == "openenv" or d.get("openenv") else "other-space"
     return d.get("framework") or "harbor"
 
 
@@ -341,15 +423,19 @@ PY_FACETS = {
     "size": lambda d: [snapshot.size_bucket((d.get("indexed") or {}).get("tasks"))]
     if d.get("kind") == "dataset" and (d.get("framework") or "harbor") == "harbor" else [],
     "stage": lambda d: [snapshot.stage_value(d.get("stage"))] if d.get("kind") == "space" else [],
-    "mcp": lambda d: (["Has MCP tools" if d.get("mcp") else "No MCP tag"]) if d.get("kind") == "space" else [],
-    "oe": lambda d: [d["openenv_version"]] if d.get("kind") == "space" and d.get("openenv_version") else [],
+    "mcp": lambda d: (["MCP tagged" if d.get("mcp") else "No MCP tag"]) if d.get("kind") == "space" else [],
+    "health": lambda d: [d["api_status"]] if d.get("api_status") else [],
+    "mode": lambda d: [d["api_mode"]] if d.get("api_mode") else [],
+    "tools": lambda d: [d["tools_status"]] if d.get("tools_status") else [],
+    "oe": lambda d: [d["declared_version"]] if d.get("declared_version") else [],
+    "oe_source": lambda d: [d["version_source"]] if d.get("version_source") else [],
+    "evidence": lambda d: [d["evidence"]] if d.get("evidence") else [],
     "tags": lambda d: d.get("tags") or [],
 }
 
 
 def py_cards(rows: list[dict[str, Any]], ctx: Ctx, ord0: int = 0) -> list[dict[str, Any]]:
-    """Listing rows as the query sees them: collection, pins, the visitor's, rollouts, and FineEnvs' curated Spaces
-    as OpenEnv (catalog.environments' rule). Hidden ones left out."""
+    """Apply visibility and editorial metadata without changing framework evidence or rank."""
     hidden, pins, mine = set(ctx.hidden), set(ctx.pins), set(ctx.mine)
     out = []
     for i, r in enumerate(rows):
@@ -360,9 +446,26 @@ def py_cards(rows: list[dict[str, Any]], ctx: Ctx, ord0: int = 0) -> list[dict[s
         d = {**r, "key": key, "collection": coll, "pinned": key in pins, "mine": key in mine or bool(r.get("mine")),
              "rollouts": ctx.rolls.get(str(r["id"]), 0), "_ord": ord0 + i, "_blob": snapshot.blob_of(r),
              "badges": list(r.get("badges") or []), "tags": list(r.get("tags") or [])}
-        if d.get("kind") == "space" and coll == "fineenvs" and r.get("framework") != "openenv":
-            d.update(framework="openenv", openenv=True, badges=["OpenEnv"])
-        d["fw"] = py_fw(d)
+        check = ctx.checks.get(d["id"], {}) if d.get("kind") == "space" else {}
+        declared = d.get("kind") == "space" and (d.get("framework") == "openenv" or d.get("openenv"))
+        d["fw"] = py_fw(d, check)
+        d["evidence"] = ("Manifest present" if d.get("manifest") else "Hub tag only") if declared else None
+        d["stage_label"] = snapshot.stage_value(d.get("stage")) if d.get("kind") == "space" else None
+        health = space_checks.status(check)
+        candidate = declared or d["fw"] == "openenv"
+        ver = check.get("version") or {}
+        known_ver = ver.get("value") and ver["value"] != "Unknown"
+        d.update(api_check={**check, "status": health} if check else None, api_status=health if candidate else None,
+                 api_mode=check.get("mode") if health == space_checks.PASS else None,
+                 tools_status=("Tools discovered" if check.get("tools", 0) > 0 else "No tools discovered")
+                     if candidate and health in (space_checks.PASS, "Checks failed") else "Not checked" if candidate else None,
+                 declared_version=(ver["value"] if known_ver else d.get("openenv_version") or "Unknown") if candidate else None,
+                 version_source=(ver.get("source") if known_ver else "Hub tag" if d.get("openenv_version") else "Unknown") if candidate else None)
+        if d.get("kind") == "space":
+            d["openenv"] = d["fw"] == "openenv"
+            d["framework"] = "openenv" if d["openenv"] else "ors" if d.get("framework") == "ors" else "space"
+            if not d["openenv"]:
+                d["badges"] = [b for b in d["badges"] if b != "OpenEnv"]
         out.append(d)
     return out
 
@@ -372,21 +475,21 @@ def _time(iso: Any) -> int:
 
 
 def py_key(q: Query):
-    tk = lambda d: ((d.get("trending") or 0) * 1e9 + (d.get("likes") or 0) * 1e4) + min(d.get("downloads") or 0, 9999)
-    keys = {"trending": lambda d: (1e15 if d["pinned"] else 0) + tk(d), "downloads": lambda d: d.get("downloads") or 0,
+    keys = {"trending": lambda d: d.get("trending") or 0, "downloads": lambda d: d.get("downloads") or 0,
             "likes": lambda d: d.get("likes") or 0, "tasks": lambda d: ((d.get("indexed") or {}).get("tasks") if (d.get("indexed") or {}).get("tasks") is not None else -1),
             "rollouts": lambda d: d["rollouts"], "updated": lambda d: _time(d.get("updated")), "new": lambda d: _time(d.get("created"))}
-    k = keys[q.sort]
-    if q.sort == "trending" and q.kind == "openenv":
-        return lambda d: (1e14 if d.get("collection") == "fineenvs" else 0) + k(d)
-    return k
+    return keys[q.sort]
 
 
 def py_passes(d: dict[str, Any], q: Query, skip: str | None = None, ignore_coll: bool = False, ignore_kind: bool = False) -> bool:
     """The page's own `passes()`, line for line."""
+    if q.scope == "ready" and d.get("kind") == "space" and not space_checks.browseable(d.get("api_check")):
+        return False
     if not ignore_kind and q.kind != "all" and d["fw"] != q.kind:
         return False
     if not ignore_coll and q.coll and not (d["mine"] if q.coll == "mine" else (d.get("collection") or "other") == q.coll):
+        return False
+    if q.owner and d["id"].split("/", 1)[0].lower() != q.owner.lower():
         return False
     if q.words and not all(w in d["_blob"] for w in q.words):
         return False
@@ -401,9 +504,10 @@ def py_passes(d: dict[str, Any], q: Query, skip: str | None = None, ignore_coll:
 def py_search(cards: list[dict[str, Any]], q: Query, *, with_mine: bool = False) -> dict[str, Any]:
     """`cards` (from py_cards) filtered, sorted and counted as the page did it: every match (sorted) and raw facets."""
     key = py_key(q)
-    matches = sorted((d for d in cards if py_passes(d, q)), key=lambda d: (-key(d), d["_ord"]))
+    matches = [d for d in cards if py_passes(d, q)]
     for d in matches:
         d["_sk"] = key(d)
+    matches.sort(key=lambda d: order_key(q, d))
     fc: dict[str, dict[Any, int]] = {"kind": {}, "collection": {}}
     for d in cards:
         if py_passes(d, q, ignore_kind=True):
@@ -428,7 +532,8 @@ def py_search(cards: list[dict[str, Any]], q: Query, *, with_mine: bool = False)
 def _public_card(d: dict[str, Any]) -> dict[str, Any]:
     keep = ("id", "key", "kind", "framework", "fw", "openenv", "collection", "heading", "brief", "downloads", "likes",
             "trending", "updated", "created", "stage", "mcp", "openenv_version", "manifest", "hardware", "badges", "tags",
-            "pinned", "mine", "indexed", "rollouts", "private")
+            "pinned", "mine", "indexed", "rollouts", "private", "evidence", "stage_label", "api_status", "api_check",
+            "declared_version", "version_source", "api_mode", "tools_status")
     out = {k: d.get(k) for k in keep}
     out["openenv"], out["mcp"], out["private"] = bool(out["openenv"]), bool(out["mcp"]), bool(out["private"])
     ix = d.get("indexed")
@@ -557,7 +662,7 @@ def search(request: Request):
                 res = sql_search(conn, q, ctx, facets=facets, limit=off + q.size, offset=0)
                 more = py_search(py_cards([{**r, "key": r.get("key") or r["id"], "kind": "dataset", "mine": True} for r in extras],
                                           ctx, ord0=10**9), q, with_mine=True)
-                merged = sorted(res["rows"] + more["matches"], key=lambda d: (-d["_sk"], d["_ord"]))
+                merged = sorted(res["rows"] + more["matches"], key=lambda d: order_key(q, d))
                 res["rows"], res["total"] = merged[off:off + q.size], res["total"] + more["total"]
                 if facets:
                     for k, counts in more["facets"].items():
@@ -565,15 +670,17 @@ def search(request: Request):
                             res["facets"][k][v] = res["facets"][k].get(v, 0) + n
             else:
                 res = sql_search(conn, q, ctx, facets=facets)
-            head = sql_extra(conn, ctx, trending) if trending or facets else {}
+            head = sql_extra(conn, ctx, trending, q) if trending or facets else {}
             if extras and head:
-                head["stats"]["datasets"] += len(extras)
-                head["stats"]["tasks"] += sum((r.get("indexed") or {}).get("tasks") or 0 for r in extras)
+                head["stats"]["datasets"] += more["total"]
+                private_tasks = sum((r.get("indexed") or {}).get("tasks") or 0 for r in more["matches"])
+                for metric in ("tasks", "dataset_tasks"):
+                    head["stats"][metric] += private_tasks
                 if trending:
-                    tq = Query(sort="trending")
+                    tq = replace(q, sort="trending")
                     more = py_search(py_cards([{**r, "key": r.get("key") or r["id"], "kind": "dataset", "mine": True} for r in extras],
                                               ctx, ord0=10**9), tq)["matches"]
-                    head["trending"] = sorted(head["trending"] + more, key=lambda d: (-d["_sk"], d["_ord"]))[:trending]
+                    head["trending"] = sorted(head["trending"] + more, key=lambda d: order_key(tq, d))[:trending]
             info = {"built_at": snap.built_at, "source": snap.source}
     except snapshot.SnapshotError as e:
         raise HTTPException(503, f"the catalog isn't ready: {e}")
@@ -593,6 +700,11 @@ def search(request: Request):
         out["stats"] = head["stats"]
     if trending:
         out["trending"] = [_public_card(d) for d in head.get("trending", [])]
+        out["featured"] = [_public_card(d) for d in head.get("featured", [])]
+        out["promoted"] = [_public_card(d) for d in head.get("promoted", [])]
+    out["ranking"] = RANKING
+    out["api_checks"] = {"fresh_seconds": space_checks.FRESH, "description": "Running on the Hub and OpenEnv API checks passed within the last hour. "
+                         "No episode or reward validation. Versions come from repository dependencies or Hub tags, not the installed runtime."}
     out["snapshot"] = info
     if key is not None:
         with _answers_lock:
@@ -636,19 +748,18 @@ def search_tasks(request: Request, q: str = "", env: str = "", page: int = 1, si
 
 
 @router.get("/api/search/rank")
-def search_rank(key: str, request: Request):
-    """Where one environment stands among its kind (Spaces, or datasets) by the page's trending order, pins aside:
+def search_rank(key: str, request: Request, scope: str = "all"):
+    """Where one environment stands among its kind (Spaces, or datasets) by the page's trending order:
     {n, of}. One query, so a page can say "#599 of 6,818 Spaces" without loading the whole listing."""
     ctx = context()
-    score = "(%s.trending * 1e9 + %s.likes * 1e4 + MIN(%s.downloads, 9999))"
-    sql = ctx.base() + f"""
-SELECT (SELECT COUNT(*) FROM base b WHERE b.kind = t.kind AND ({score % ('b', 'b', 'b')} > {score % ('t', 't', 't')}
-                                                               OR ({score % ('b', 'b', 'b')} = {score % ('t', 't', 't')} AND b.ord < t.ord))) + 1,
-       (SELECT COUNT(*) FROM base b WHERE b.kind = t.kind)
-FROM base t WHERE t.key = :key"""
+    w, params = where(Query(scope="ready" if scope == "ready" else "all"))
+    sql = ctx.base() + f""", ranked AS (
+SELECT key, ROW_NUMBER() OVER (PARTITION BY kind ORDER BY trending DESC, likes DESC, downloads DESC, ord) AS n,
+       COUNT(*) OVER (PARTITION BY kind) AS total FROM base b WHERE {w})
+SELECT n, total FROM ranked WHERE key = :key"""
     try:
         with snapshot.use() as (_snap, conn):
-            row = conn.execute(sql, {**ctx.params(), "key": key}).fetchone()
+            row = conn.execute(sql, {**ctx.params(), **params, "key": key}).fetchone()
     except snapshot.SnapshotError as e:
         raise HTTPException(503, f"the catalog isn't ready: {e}")
     if not row:

@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 import threading
 import time
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -21,7 +22,7 @@ CSP = ("default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-sr
 def client_ip(request: Request) -> str:
     """The visitor's address: the last X-Forwarded-For entry is the one the Space's proxy added (earlier ones are
     whatever the client claimed)."""
-    fwd = [p.strip() for p in request.headers.get("x-forwarded-for", "").split(",") if p.strip()]
+    fwd = [p.strip() for p in request.headers.get("x-forwarded-for", "").split(",") if p.strip()] if config.TRUST_PROXY else []
     return fwd[-1] if fwd else (request.client.host if request.client else "?")
 
 
@@ -51,9 +52,22 @@ class Limiter:
 
 
 def same_origin(request: Request) -> bool:
+    """Compare complete origins; forwarding headers supplied by a client aren't authority."""
     origin = request.headers.get("origin")
-    host = request.headers.get("x-forwarded-host") or request.headers.get("host")
-    return not origin or origin.split("://", 1)[-1] == host
+    if not origin:
+        return request.headers.get("sec-fetch-site") in (None, "same-origin", "none")
+
+    def canonical(value: str):
+        try:
+            u = urlsplit(value)
+            if u.scheme not in ("http", "https") or not u.hostname or u.username or u.password or u.path or u.query or u.fragment:
+                return None
+            return u.scheme, u.hostname.lower(), u.port or (443 if u.scheme == "https" else 80)
+        except ValueError:
+            return None
+
+    expected = canonical(config.PUBLIC_URL) if config.PUBLIC_URL else canonical(f"{request.url.scheme}://{request.headers.get('host', '')}")
+    return expected is not None and canonical(origin) == expected
 
 
 def install(app: FastAPI) -> None:
@@ -61,7 +75,11 @@ def install(app: FastAPI) -> None:
     async def _revalidate(request: Request, call_next):
         """Code and styles revalidate on every load (cheap: ETag -> 304), so a deploy is never half-cached."""
         resp = await call_next(request)
-        if not request.url.path.startswith("/api/"):
+        if request.url.path.startswith(("/api/", "/mcp/", "/login")):
+            # APIs can contain a visitor's private dataset, run, or account. A shared
+            # proxy or the browser's cache must never reuse them for another visitor.
+            resp.headers["Cache-Control"] = "private, no-store"
+        else:
             resp.headers.setdefault("Cache-Control", "no-cache")
         return resp
 
@@ -88,10 +106,6 @@ def install(app: FastAPI) -> None:
         """The session cookie is SameSite=None (it has to work in the huggingface.co iframe), so a state-changing
         request must prove it came from this page: another site could otherwise start rollouts billed to you."""
         if request.method not in ("GET", "HEAD", "OPTIONS") and request.url.path.startswith("/api/"):
-            origin = request.headers.get("origin")
-            host = request.headers.get("x-forwarded-host") or request.headers.get("host")
-            if origin and origin.split("://", 1)[-1] != host:
-                return JSONResponse({"detail": "cross-site request refused"}, 403)
-            if not origin and request.headers.get("sec-fetch-site") not in (None, "same-origin", "none"):
+            if not same_origin(request):
                 return JSONResponse({"detail": "cross-site request refused"}, 403)
         return await call_next(request)

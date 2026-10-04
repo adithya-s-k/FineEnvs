@@ -49,6 +49,7 @@ def call(spec: str, name: str, args: dict[str, Any]) -> Any:
         if s.get("state") != "ready":
             return {"state": s.get("state"), "note": "Its index is being built; try again in a minute.", "progress": s.get("progress")}
         return {"id": spec, "format": s["env"]["framework"], "read_as": (s.get("how") or {}).get("name"), "about": (s.get("how") or {}).get("about"),
+                "support": s.get("support"),
                 "tasks": s.get("total"), "subsets": [x["id"] for x in s.get("subsets") or []], "subset": s.get("subset"),
                 "facets": {f["key"]: f["label"] for f in s.get("facets") or []},
                 "overview": blocks_text([b for sec in s.get("overview") or [] for b in [{"type": "markdown", "text": f"## {sec['title']}"}, *sec["blocks"]]])}
@@ -101,6 +102,10 @@ def task_text(v: dict[str, Any]) -> str:
     if v.get("withheld"):
         out.append("\nWithheld, as they hold the answer: " + ", ".join(v["withheld"]))
     opts = (v.get("run") or {}).get("options") or []
+    support = v.get("support") or {}
+    if support.get("framework"):
+        f = support["framework"]
+        out.append(f"\nLifecycle: {f['lifecycle']}\nReward: {f['reward']}")
     out.append("\n## Running it\n" + ("\n".join(f"- {o['label']}: " + ("runs here" if o["ok"] else f"can't run here ({o['why']})") for o in opts)
                                      or (v.get("run") or {}).get("note") or ""))
     for link in v.get("links") or []:

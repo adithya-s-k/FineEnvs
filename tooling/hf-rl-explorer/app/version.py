@@ -26,9 +26,9 @@ def app_version() -> str:
 @lru_cache(maxsize=1)
 def source_hash() -> str:
     h = hashlib.sha256()
-    for base in (ROOT / "app", ROOT / "web" / "js"):
+    for base in (ROOT / "app", ROOT / "web"):
         for p in sorted(base.rglob("*")):
-            if p.is_file() and p.suffix in (".py", ".js", ".txt", ".json") and "__pycache__" not in p.parts:
+            if p.is_file() and p.suffix in (".py", ".js", ".txt", ".json", ".css", ".html") and "__pycache__" not in p.parts:
                 h.update(p.relative_to(ROOT).as_posix().encode())
                 h.update(p.read_bytes())
     return h.hexdigest()[:12]

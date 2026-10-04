@@ -231,6 +231,9 @@ def refresh_indexes(items: list[dict[str, Any]], state: dict[str, Any], *, budge
         th.join(timeout=max(60.0, deadline - time.time() + 120))
         if th.is_alive():
             out["abandoned"].append(spec)
+            # A bounded automatic worker exits after publication. Avoid retrying
+            # the same oversized build at the front of every subsequent batch.
+            state["failed"][spec] = {"sha": sha, "at": time.time(), "error": "Index build exceeded its time budget"}
             _ev("build_abandoned", spec=spec, seconds=round(time.time() - t0))
             continue
         if "error" in result:
@@ -318,7 +321,7 @@ def prune(store, keep: int) -> list[str]:
 
 def run(store, *, rows: list[dict[str, Any]] | None = None, budget_s: float = 1800, max_builds: int = 100, keep: int = 5,
         min_ratio: float = 0.8, force: bool = False, index: bool = True, dry_run: bool = False,
-        out: Path | None = None) -> dict[str, Any]:
+        out: Path | None = None, listing_at: float | None = None) -> dict[str, Any]:
     """One indexer run (see the module docstring). `rows` stands in for the Hub listing (tests). Raises IndexerError
     (or anything else) without publishing."""
     from . import catalog, config, snapshot
@@ -330,17 +333,18 @@ def run(store, *, rows: list[dict[str, Any]] | None = None, budget_s: float = 18
         _ev("pointer_unreadable", error=str(e))
         prev = None
     rows = rows if rows is not None else fetch_listing()
+    listing_at = listing_at if listing_at is not None else time.time()
     rows = [r for r in rows if not r.get("private") and not r.get("gated")]
     if not force:
         guard(rows, prev, min_ratio)
     # catalog's own readers (environments, featured lookups) see this listing, and the app's fallback path finds it
     with catalog._listing_lock:
-        catalog._env_list.update(rows=rows, at=time.time(), full=True)
+        catalog._env_list.update(rows=rows, at=listing_at, full=True)
     if not dry_run:
         import gzip
 
         catalog.atomic_write(config.STORAGE_DIR / "listing.json.gz",
-                             gzip.compress(json.dumps({"at": time.time(), "full": True, "rows": rows}, default=str).encode()))
+                             gzip.compress(json.dumps({"at": listing_at, "full": True, "rows": rows}, default=str).encode()))
     report: dict[str, Any] = {"listing": len(rows)}
     state = load_state()
     if index and not dry_run:

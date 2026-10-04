@@ -4,8 +4,8 @@ One JSON file in the bucket (STORAGE_DIR/admin/settings.json) holds the collecti
 environments, the rollout switches and an announcement; every change is appended to admin/audit.jsonl with who
 made it. Values not set here fall back to the defaults in code.
 
-Admins are the members of one Hub organization (RLX_ADMIN_ORG, FineEnvs by default), checked against the Hub,
-plus any usernames in RLX_ADMINS.
+The separate private admin application writes these settings; this public module
+only supplies the shared storage contract.
 """
 
 from __future__ import annotations
@@ -19,8 +19,6 @@ from typing import Any
 
 from . import config
 
-ADMIN_ORG = os.environ.get("RLX_ADMIN_ORG", "FineEnvs")
-EXTRA_ADMINS = {u.strip() for u in os.environ.get("RLX_ADMINS", "").split(",") if u.strip()}
 DIR = config.STORAGE_DIR / "admin"
 PATH = DIR / "settings.json"
 AUDIT = DIR / "audit.jsonl"
@@ -88,38 +86,6 @@ def audit(limit: int = 200) -> list[dict[str, Any]]:
         except ValueError:
             continue
     return out
-
-
-# ── who is an admin ──────────────────────────────────────────────────────────
-_members: tuple[float, set[str]] | None = None
-_members_lock = threading.Lock()
-
-
-def _org_members() -> set[str]:
-    """The admin organization's members, from the Hub, refreshed every 10 minutes."""
-    global _members
-    with _members_lock:
-        if _members and time.time() - _members[0] < 600:
-            return _members[1]
-    from huggingface_hub import HfApi
-
-    try:
-        names = {m.username for m in HfApi(token=False).list_organization_members(ADMIN_ORG)}
-    except Exception:  # noqa: BLE001 - the Hub is down: keep the last list, else nobody
-        with _members_lock:
-            return _members[1] if _members else set()
-    with _members_lock:
-        _members = (time.time(), names)
-    return names
-
-
-def is_admin(user: dict[str, Any] | None) -> bool:
-    """Whether this signed-in user may open the admin dashboard. The name comes from the encrypted session, which
-    the Hub set at sign-in, so it can't be claimed by a request."""
-    if not user or not user.get("name"):
-        return False
-    # the org's public member list, or the memberships the Hub reported when this user signed in (private ones too)
-    return user["name"] in EXTRA_ADMINS or user["name"] in _org_members() or ADMIN_ORG in (user.get("orgs") or [])
 
 
 def path_for(name: str) -> Path:

@@ -9,6 +9,7 @@ dependencies = [
     "httpx>=0.27",
     "huggingface_hub>=1.29",
     "pyyaml>=6",
+    "packaging>=24.2",
     "cryptography>=44",
     "openenv",
     "harbor>=0.23",

@@ -137,7 +137,7 @@ class Rollout:
         self.update(flavor=flavor)
         t = time.time()
         self.sandbox = Sandbox.create(image=image, flavor=flavor, idle_timeout=config.SANDBOX_IDLE_TIMEOUT,
-                                      forward_hf_token=not config.PUBLIC_URL, token=self.token, start_timeout=900,
+                                      forward_hf_token=False, token=self.token, start_timeout=900,
                                       labels={"app": "rl-explorer", "runner": "mimo", "run": self.id})
         self.update(sandbox_id=self.sandbox.id)
         self.phase("sandbox", "done", f"ready in {time.time() - t:.0f}s")
@@ -152,8 +152,30 @@ class Rollout:
         return config.ROUTER, self.token, mid
 
     def llm_base(self) -> str | None:
-        """The OpenAI-compatible base URL the sandbox should use, or None to call the provider directly."""
-        return f"{config.PUBLIC_URL}/api/llm/{self.cap}/v1" if config.PUBLIC_URL else None
+        """Only a per-run capability reaches the sandbox, including local previews."""
+        if config.PUBLIC_URL:
+            return f"{config.PUBLIC_URL}/api/llm/{self.cap}/v1"
+        from ...runner import _proxy_url
+        return f"{_proxy_url().rstrip('/')}/rlx/llm/{self.cap}/v1"
+
+    def check_model_network(self):
+        """Check the exact relay path from the sandbox, without a model call."""
+        url = self.llm_base().removesuffix("/v1") + "/health"
+        script = ("import urllib.request,urllib.error\n"
+                  f"url={url!r}\n"
+                  "try:\n"
+                  " r=urllib.request.urlopen(url,timeout=15)\n"
+                  " print('relay HTTP',r.status)\n"
+                  "except urllib.error.HTTPError as e:\n"
+                  " print('relay HTTP',e.code);raise SystemExit(1)\n"
+                  "except Exception as e:\n"
+                  " print(type(e).__name__);raise SystemExit(1)\n")
+        import shlex
+        result = self.sh("python3 -c " + shlex.quote(script), timeout=25)
+        if result.exit_code:
+            raise RuntimeError("The sandbox cannot reach the model relay. Check HTTPS egress from the sandbox and ingress to the explorer. "
+                               "No account token was forwarded. " + (result.stdout or "")[-120:])
+        self.log("Network check passed: sandbox → model relay. HF account token stays on the explorer.")
 
     def upstream(self, model: str) -> tuple[str, str | None] | None:
         """For the model proxy: (base URL, key) for a model this rollout may call, else None."""
@@ -193,12 +215,16 @@ class Rollout:
     def execute(self) -> None:
         from .domains import ADAPTERS
 
-        adapter = ADAPTERS[self.run["domain"]]
+        if self.run.get("runner") == "nemo-gym":
+            from ... import nemo_runner as adapter
+        else:
+            adapter = ADAPTERS[self.run["domain"]]
         try:
             self.update(status="starting", started_at=time.time())
             self.settle_model()
             result = adapter.run(self)
-            self.update(status="done", reward=result.get("reward"), reward_error=result.get("error"),
+            self.update(status="done", phase="done", reward=result.get("reward"), reward_error=result.get("error"),
+                        graded=result.get("reward") is not None, wall_s=round(time.time() - self.t0, 2),
                         finished_at=time.time(), cost=self.cost_now())
             self.phase("done", "done", f"reward {result.get('reward')}" if result.get("reward") is not None
                        else f"not scored: {result.get('error')}")
@@ -217,10 +243,12 @@ class Rollout:
                 self._flush()
             self.stop_sandbox()
             self.agent_key = None
+            self.native_task = None
             with _live_lock:
                 _caps.pop(self.cap, None)
             with _live_lock:
                 _live.pop(self.id, None)
+            self.token = ""
 
     def stop_sandbox(self) -> None:
         if self.sandbox is None:
@@ -270,11 +298,12 @@ def submit(user: str, token: str, task: dict, model: str, provider: str | None, 
         "facets": task.get("facets"), "model": model, "provider": provider, "judge": judge,
         "status": "queued", "harness": "opencode", "endpoint": endpoint, "params": params or {},
         "visibility": "private" if visibility == "private" else "public",
-        "image": catalog.image_for(task["id"]) if task["domain"] != "music" else None,
+        "image": catalog.image_for(task["id"]) if task["domain"] not in ("music", "nemo-gym") else None,
         "provenance": version.provenance(),
         **(extra or {}),
     })
     r = Rollout(run, token, agent_key)
+    r.native_task = task.get("native_task")  # reference action stays in memory; never in the run record
     with _live_lock:
         _live[r.id] = r
         _caps[r.cap] = r

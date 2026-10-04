@@ -18,6 +18,12 @@ from pathlib import Path
 
 import yaml
 
+# Reviewed against each server's implementation; the upstream environment table
+# incorrectly calls these LLM judges. Keep regenerated catalogs accurate too.
+VERIFICATION_OVERRIDES = {
+    "instruction_following": "Rule-based instruction checks",
+    "math_proof_judgement": "Deterministic answer parsing",
+}
 
 def main(ROOT: Path) -> None:
     OUT = CAT = Path(__file__).with_name("nemo_gym_catalog.json")
@@ -93,6 +99,8 @@ def main(ROOT: Path) -> None:
             continue
         t = table.get(d.name, {})
         servers[d.name] = {k: v for k, v in {"description": t.get("description"), "verification": t.get("verification"), "readme": readme_para(d)}.items() if v}
+        if d.name in VERIFICATION_OVERRIDES:
+            servers[d.name]["verification"] = VERIFICATION_OVERRIDES[d.name]
         for cfg in sorted((d / "configs").glob("*.yaml")):
             flavor = d.name if cfg.stem == d.name else f"{d.name}/{cfg.stem}"
             scan(cfg, d.name, flavor, None)

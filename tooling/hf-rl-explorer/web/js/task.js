@@ -11,6 +11,8 @@ import { picker } from "./picker.js";
 import { fileViewer } from "./files.js";
 import { blocks, inline, loadRenderers } from "./blocks.js";
 import { typeset } from "./math.js";
+import { supportPanel } from "./support.js";
+import { rewardDistribution } from "./reward-stats.js";
 
 let models = null;
 const getModels = () => (models ||= api("/api/models").catch((e) => { models = null; throw e; }));
@@ -36,7 +38,6 @@ export async function mount(el, { spec, path: ref, qs }) {
     <div class="tp-grid"><nav class="toc sk-in sk-toc">${sk.lines(70, 55, 80, 60, 50)}</nav>
       <div class="tp-body">${panel([96, 100, 88, 94, 70, 92, 60])}${panel([90, 70, 84])}${panel([80, 60])}</div>
       <aside class="tp-side">${panel([100, 90, 100, 70])}${panel([60, 80, 50])}</aside></div></div>`;
-  getModels().catch(() => {});   // start fetching models while the page loads
   let v, renderers;
   try {
     v = await api(`${envApi(spec)}/task?ref=${encodeURIComponent(ref)}`, { retry: 2 });
@@ -46,6 +47,7 @@ export async function mount(el, { spec, path: ref, qs }) {
       `<a class="btn" href="/d/${enc(spec)}">${icon("arrowLeft", 15)}Open the environment</a>`)}</div>`;
     return;
   }
+  if (!el.isConnected) return;
   if (v.ref !== ref) {   // an older address of this task (a row number): the page lives at its own ref
     ref = v.ref;
     history.replaceState(null, "", `${taskHref(spec, ref)}${qs.toString() ? `?${qs}` : ""}`);
@@ -83,6 +85,7 @@ export async function mount(el, { spec, path: ref, qs }) {
       ${same.length || related.length ? `<div class="tp-links">${[...same, ...related].map((l) => `<p>${icon(l.rel === "same" ? "link" : "external", 13)}
         <a class="u" href="${esc(l.href)}">${esc(l.label)}</a>${l.note ? ` <span class="faint">${esc(l.note)}</span>` : ""}</p>`).join("")}</div>` : ""}
     </header>
+    ${supportPanel(v.support)}
     <div class="tp-grid">
       <nav class="toc" aria-label="On this page"><p>On this page</p>${sections.map((s) => `<a href="#" data-jump="${esc(s.id)}">${esc(s.title)}${s.count ? `<em>${fmt.format(s.count)}</em>` : ""}</a>`).join("")}</nav>
       <div class="tp-body">${sections.map((s) => `<section class="panel tp-sec" id="sec-${esc(s.id)}">
@@ -203,7 +206,10 @@ export async function runCard(box, v, spec, ref) {
       return;
     }
     if (!o.ok) {
-      box.innerHTML = `${head}<div class="panel-b" style="display:grid;gap:10px">${choose()}${about(o)}<div class="note-box warn">${icon("alert")}<span>This task can't run here: ${esc(o.why || "no runnable form")}.</span></div></div>`;
+      const external = v.support?.capabilities?.some((c) => c.id === "run" && c.state === "external");
+      const guide = v.sections?.find((sec) => sec.id === "run");
+      box.innerHTML = `${head}<div class="panel-b" style="display:grid;gap:10px">${choose()}${about(o)}<div class="note-box ${external ? "" : "warn"}">${icon(external ? "info" : "alert")}<span>${esc(o.why || "No runnable form is available here.")}</span></div>
+        ${guide ? `<button class="btn block" type="button" data-jump="run">${icon("external", 14)}View ${esc(o.label)} run instructions</button>` : ""}</div>`;
       return;
     }
     if (!s.user) {
@@ -405,13 +411,12 @@ function fieldValues(box, fields, pickers) {
 // Every public rollout of it (how rewards spread, how each model does) and yours; tick two or more to compare them.
 function stats(runs) {
   const scored = runs.filter((r) => r.reward != null && r.status === "done");
-  const hist = Array(10).fill(0);
-  scored.forEach((r) => (hist[Math.min(9, Math.floor(r.reward * 10))] += 1));
+  const distribution = rewardDistribution(scored.map((r) => r.reward));
   const by = new Map();
   scored.forEach((r) => { const k = r.endpoint ? `${r.model} (own endpoint)` : r.model || "?"; by.set(k, [...(by.get(k) || []), r.reward]); });
   const models = [...by].map(([m, xs]) => ({ model: m, runs: xs.length, mean: xs.reduce((a, b) => a + b, 0) / xs.length, best: Math.max(...xs) }))
     .sort((a, b) => b.mean - a.mean || b.runs - a.runs);
-  return { runs: runs.length, scored: scored.length, hist, models, full: scored.filter((r) => r.reward >= 0.999).length,
+  return { runs: runs.length, scored: scored.length, ...distribution, models,
            mean: scored.length ? scored.reduce((a, r) => a + r.reward, 0) / scored.length : null };
 }
 
@@ -435,16 +440,16 @@ async function taskRuns(box, spec, ref, v, sync) {
   box.innerHTML = `${s.scored ? `<div class="cm-stats">
       <div class="stat"><span>Public rollouts</span><b>${s.runs}</b></div>
       <div class="stat"><span>Mean reward</span><b>${s.mean == null ? "–" : s.mean.toFixed(2)}</b></div>
-      <div class="stat"><span>Full marks</span><b>${s.full} of ${s.scored}</b></div>
+      <div class="stat"><span>Scored rollouts</span><b>${s.scored}</b></div>
       <div class="stat"><span>Models tried</span><b>${s.models.length}</b></div></div>
     <div class="cm-grid">
       <div><div class="sec-label">Reward spread</div>
-        <div class="hist" title="Rollouts per reward band">${s.hist.map((n, i) => `<i style="height:${Math.round((n / peak) * 100)}%" title="${(i / 10).toFixed(1)}–${((i + 1) / 10).toFixed(1)}: ${n}"></i>`).join("")}</div>
-        <div class="hist-axis"><span>0</span><span>0.5</span><span>1</span></div></div>
+        <div class="hist" title="Rollouts per reward band">${s.hist.map((n, i) => `<i style="height:${Math.round((n / peak) * 100)}%" title="${rewardText(s.min + i * s.width)}–${rewardText(s.min + (i + 1) * s.width)}: ${n}"></i>`).join("")}</div>
+        <div class="hist-axis"><span>${rewardText(s.min)}</span><span>${rewardText((s.min + s.max) / 2)}</span><span>${rewardText(s.max)}</span></div></div>
       <div><div class="sec-label">By model</div>
         <table class="mtable"><thead><tr><th>Model</th><th>Runs</th><th>Mean</th><th>Best</th></tr></thead><tbody>
         ${s.models.slice(0, 8).map((m) => `<tr><td title="${esc(m.model)}">${esc(m.model.split("/")[1] || m.model)}</td><td>${m.runs}</td>
-          <td><span class="bar" style="width:${Math.round(m.mean * 48)}px"></span>${m.mean.toFixed(2)}</td><td>${rewardText(m.best)}</td></tr>`).join("")}</tbody></table></div>
+          <td><span class="bar" style="width:${Math.max(0, Math.min(48, Math.round((m.mean - s.min) / (s.max - s.min) * 48)))}px"></span>${m.mean.toFixed(2)}</td><td>${rewardText(m.best)}</td></tr>`).join("")}</tbody></table></div>
     </div>` : ""}
     <div class="sec-label" style="margin-top:${s.scored ? 18 : 0}px">Rollouts${all.length > 1 ? '<span class="hint">tick two or more to compare them</span>' : ""}</div>
     <div class="runlist cm-list">${all.map((r) => `<div class="runsel"><label class="pick" title="Select to compare">

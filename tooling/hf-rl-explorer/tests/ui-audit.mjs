@@ -205,8 +205,8 @@ async function health(p, label) {
   await go(p, "#/task/music-gK-0768", 600);
   ok("MiMo explorer's addresses still open", await until(p, ".tp-sec", 40000) && (await here(p)) === `/t/${MIMO}/music-gK-0768`);
   await go(p, "#/community?view=tasks", 600);
-  ok("community: the tasks nobody has tried", await until(p, "#ct-rows .runrow", 60000) && /not tried yet/.test(await p.textContent("#cm-top")));
-  await health(p, "community tasks 1440");
+  ok("community: legacy Tasks links open the rollout feed", await until(p, "#cm-filters select[data-f=runner]", 60000) && !(await p.$("#cm-view")));
+  await health(p, "community rollouts 1440");
 
   // a live Space: playground, tasks, connect
   await go(p, "#/s/FineEnvs/geoguesser-env", 600);
@@ -218,7 +218,7 @@ async function health(p, label) {
   await p.click("#pg-reset");
   ok("space: a reset starts an episode with an image", await until(p, "#pg-log .rv-img", 40000));
   await p.selectOption("#pg-tool", "look");
-  await p.fill("#pgt-heading_deg", "90");
+  await p.getByRole("spinbutton", { name: "heading_deg", exact: true }).fill("90");
   await p.click("#pg-call");
   await p.waitForTimeout(5000);
   ok("space: a tool call answers in the episode", /Facing 90/.test(await p.textContent("#pg-log")));
@@ -240,7 +240,7 @@ async function health(p, label) {
   ok("space (reset/step): fills in", await liveIn(p));
   await p.click("#pg-reset");
   ok("space (reset/step): reset shows the image", await until(p, "#pg-log .rv-img", 40000));
-  await p.fill("#pga-latex", "x^2");
+  await p.getByRole("textbox", { name: /^latex$/i }).fill("x^2");
   await p.click("#pg-step");
   ok("space (reset/step): a step earns a reward", await until(p, "#pg-log .pg-entry:last-of-type .rv-reward", 40000));
   await health(p, "space latex 1440");
@@ -253,8 +253,8 @@ async function health(p, label) {
     await p.click("#pg-send");
     await p.waitForTimeout(2500);
     await p.selectOption("#pg-route", { label: "POST /guess" });
-    ok("nemo gym: a short string is a one-line input", await p.$("input#pgr-word"));
-    await p.fill("#pgr-word", "crane");
+    ok("nemo gym: a short string is a one-line input", await p.$('input[data-k="word"]'));
+    await p.getByRole("textbox", { name: "Word", exact: true }).fill("crane");
     await p.click("#pg-send");
     await p.waitForTimeout(2500);
     await p.selectOption("#pg-route", { label: "POST /get_history" });

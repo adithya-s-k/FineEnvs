@@ -54,7 +54,11 @@ async function apiOnce(path, opts) {
   });
   if (!res.ok) {
     let msg = `${res.status}`;
-    try { msg = (await res.json()).detail || msg; } catch { /* not json */ }
+    try {
+      const detail = (await res.json()).detail;
+      if (Array.isArray(detail)) msg = detail.map((x) => `${(x.loc || []).filter((k) => k !== "body").join(".")}: ${x.msg || "invalid value"}`).join("; ");
+      else if (typeof detail === "string") msg = detail;
+    } catch { /* not json */ }
     const err = new Error(msg);
     err.status = res.status;
     throw err;
@@ -253,7 +257,7 @@ export function statusPill(status) {
   return `<span class="status s-${esc(status)}${live ? " live" : ""}">${live ? '<i class="pulse"></i>' : icon(ic, 12)}${esc(label)}</span>`;
 }
 
-export const rewardClass = (r) => (r == null ? "none" : r >= 0.999 ? "full" : r > 0 ? "part" : "zero");
+export const rewardClass = (r) => (r == null || r < 0 || r > 1 ? "none" : r >= 0.999 ? "full" : r > 0 ? "part" : "zero");
 export const rewardText = (r) => (r == null ? "–" : Number(r) % 1 === 0 ? Number(r).toFixed(0) : Number(r).toFixed(2));
 export function rewardBadge(reward, status) {
   if (reward == null) return status === "done" ? `<span class="reward none">not scored</span>` : `<span class="reward none">–</span>`;
@@ -293,7 +297,7 @@ export function sheetGrid(rows) {
 }
 
 // ── community ────────────────────────────────────────────────────────────────
-export const REPORT_URL = "https://huggingface.co/spaces/FineEnvs/MiMo-RL-Envs-Explorer/discussions";
+export const REPORT_URL = "https://huggingface.co/spaces/FineEnvs/RL-Explorer/discussions";
 export const PUBLIC_NOTE = "Public rollouts show on the task for everyone, without your name. They may later be released as an open dataset (for example as SFT traces) to help the community study these environments.";
 export const PRIVATE_NOTE = "Keeping rollouts public helps the broader community compare models on the same tasks and learn from real traces. Private rollouts are visible only to you.";
 
@@ -331,11 +335,12 @@ export function reportUrl({ task, run, version } = {}) {
   if (run) {
     const p = run.params || {}, pv = run.provenance || {};
     title = `Rollout ${run.id}: `;
-    lines.push(`**Rollout:** ${location.origin}/run/${run.id}`, `**Task:** \`${run.task_id}\` (${run.domain})`,
+    lines.push(`**Rollout:** ${location.origin}/run/${run.id}`, `**Task:** \`${run.task_id}\` (${run.domain || run.runner || "Harbor"})`,
+      `**Environment:** ${run.dataset || "unknown"} · runner ${run.runner || "harbor"}`,
       `**Status:** ${run.status}, reward ${run.reward ?? "not scored"}`,
       `**Model:** \`${run.model}\` via ${run.endpoint ? "own endpoint" : run.provider || "auto"}${run.judge ? `, judge \`${run.judge}\`` : ""}`,
       `**Settings:** ${Object.entries(p).filter(([k]) => k !== "max_tokens_used").map(([k, v]) => `${k}=${v}`).join(", ") || "defaults"}`,
-      `**Versions:** explorer ${pv.app?.version || "?"} (${pv.app?.source || "?"}), OpenCode ${pv.harness?.installed || pv.harness?.version || "?"}, dataset ${(pv.dataset?.revision || "?").slice(0, 10)}`);
+      `**Versions:** explorer ${pv.app?.version || "?"} (${pv.app?.source || "?"}), ${run.runner === "nemo-gym" ? `NeMo verifier ${pv.commit || "?"}` : `harness ${pv.harness?.installed || pv.harness?.version || "?"}`}, dataset ${(pv.dataset?.revision || "?").slice(0, 10)}`);
   } else if (task) {
     title = `Task ${task.id}: `;
     lines.push(`**Task:** ${location.origin}/task/${encodeURIComponent(task.id)}`, `**Id:** \`${task.id}\` (${task.domain})`);
@@ -343,4 +348,9 @@ export function reportUrl({ task, run, version } = {}) {
   if (version) lines.push(`**Explorer:** ${version}`);
   const body = `${lines.join("\n")}\n\n### What happened\n\n\n### What you expected\n\n\n### Anything else (screenshots, steps)\n\n`;
   return `${REPORT_URL}/new?title=${encodeURIComponent(title)}&description=${encodeURIComponent(body)}`;
+}
+
+// Namespace navigation is exact, not a text search that also matches descriptions.
+export function ownerLink(owner, suffix = "") {
+  return `<a class="org owner-link" href="/?owner=${encodeURIComponent(owner)}" title="${esc(`Browse environments by ${owner}`)}">${esc(owner + suffix)}</a>`;
 }

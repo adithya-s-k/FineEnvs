@@ -98,7 +98,16 @@ pre.code-block.tall { max-height: 520px; overflow: auto; }
 .fe-hero h1 { font-size: 26px; letter-spacing: -.025em; line-height: 1.2; max-width: 720px; margin-top: 6px; }
 .fe-hero p { color: var(--muted); margin-top: 8px; max-width: 680px; font-size: 14.5px; }
 .fe-kicker { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; letter-spacing: .02em; color: var(--c-amber); }
-.fe-stats { gap: 30px; }
+.ex-head { flex-wrap: wrap; }
+.ex-stats.fe-stats { display: flex; flex-wrap: wrap; gap: 18px 30px; }
+.fe-stats > div { align-content: start; min-width: 0; }
+.fe-stats b { white-space: nowrap; }
+.fe-stats small { color: var(--faint); font-size: 11px; margin-top: 4px; white-space: nowrap; }
+.ex-head > div:first-child { min-width: 0; }
+@media (max-width: 1000px) {
+  .ex-head { flex-wrap: wrap; }
+  .ex-stats.fe-stats { display: flex; flex-wrap: wrap; gap: 18px 28px; }
+}
 .fe-trend { margin-bottom: 18px; }
 .fe-trend-h { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .fe-trend-h h2 { font-size: 14px; display: flex; align-items: center; gap: 8px; }
@@ -147,7 +156,7 @@ pre.code-block.tall { max-height: 520px; overflow: auto; }
 .fe-kinds i { font-style: normal; }
 
 /* the FineEnvs banner: once per browser, closable */
-.fe-banner { border-bottom: 1px solid var(--border); background: linear-gradient(90deg, color-mix(in srgb, var(--c-amber) 13%, var(--bg)), var(--bg) 70%);
+.fe-banner { border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--c-amber) 16%, var(--bg));
              animation: fade .3s ease; transition: opacity .2s, transform .2s; }
 .fe-banner.closing { opacity: 0; transform: translateY(-6px); }
 .fe-banner .wrap { display: flex; align-items: center; gap: 14px; padding-top: 10px; padding-bottom: 10px; }
@@ -241,7 +250,7 @@ pre.code-block.tall { max-height: 520px; overflow: auto; }
 .tr-name .faint { font-weight: 400; }
 .tr-body p { font-size: 12.5px; color: var(--muted); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
              min-height: calc(1.45em * 2); }
-.tr-foot { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); min-width: 0; padding-top: 3px; }
+.tr-foot { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--muted); min-width: 0; padding-top: 3px; }
 .tr-foot span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .tr-foot b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
 .tr-foot .ic { color: var(--faint); }
@@ -290,7 +299,7 @@ pre.code-block.tall { max-height: 520px; overflow: auto; }
 .fe-trend { margin-bottom: 30px; }
 .fe-trend + .domains { margin-top: 4px; }
 /* the banner, more present: a warm band, a bigger logo, a "FineEnvs" kicker */
-.fe-banner { background: linear-gradient(90deg, color-mix(in srgb, var(--c-amber) 26%, var(--bg)), color-mix(in srgb, var(--c-amber) 9%, var(--bg)) 55%, var(--bg));
+.fe-banner { background: color-mix(in srgb, var(--c-amber) 16%, var(--bg));
              border-bottom: 1px solid color-mix(in srgb, var(--c-amber) 35%, var(--border)); box-shadow: inset 3px 0 0 var(--c-amber); }
 .fe-banner .wrap { padding-top: 13px; padding-bottom: 13px; gap: 16px; }
 .fe-banner img { width: 42px; height: 42px; border-radius: 10px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-amber) 45%, transparent), var(--shadow-sm); }
@@ -461,3 +470,66 @@ html:not(.js) #view > .boot { display: none; }
 #sec-run .fv-block, #ov-run .fv-block { max-height: none; }
 /* long identifiers (agent and config names) in a note wrap rather than widen the page */
 .bl-note { overflow-wrap: anywhere; min-width: 0; }
+
+/* Capability status has the same layout for dataset tasks and live Spaces. */
+.support-panel { margin: 16px 0 24px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; min-width: 0; }
+.support-panel h2 { font-size: 14px; margin: 0 0 12px; }
+.support-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.support-item { display: flex; flex-direction: column; gap: 5px; min-width: 0; font-size: 12px; overflow-wrap: anywhere; }
+.support-item strong { font-size: 13px; }
+.support-item p, .support-more p { margin: 0; line-height: 1.55; color: var(--muted); }
+.support-state { display: flex; align-items: center; gap: 5px; }
+.support-item[data-state="available"] .support-state { color: var(--ok); }
+.support-more { margin-top: 14px; font-size: 12px; }
+.support-more summary { cursor: pointer; width: fit-content; padding: 4px 0; }
+.support-more[open] { display: grid; gap: 8px; }
+.sf-hint { font-size: 11px; font-style: normal; color: var(--muted); overflow-wrap: anywhere; }
+.sf-f { min-width: 0; }
+.sf-f .input { width: 100%; min-width: 0; }
+@media (max-width: 600px) { .support-grid { grid-template-columns: 1fr; gap: 14px; } .support-panel { padding: 14px; } }
+/* Catalog provenance and editorial picks stay readable at narrow widths. */
+.catalog-method { margin: 0 0 18px; color: var(--muted); font-size: 12px; }
+.catalog-method summary { cursor: pointer; width: fit-content; }
+.catalog-method p { max-width: 100ch; line-height: 1.6; margin: 10px 0; }
+.catalog-featured { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.catalog-featured[hidden] { display: none; }
+.catalog-featured .chip { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
+.candidate-option { display: flex; align-items: start; gap: 8px; color: var(--muted); font-size: 12px; line-height: 1.5; margin: 0 0 18px; cursor: pointer; }
+.candidate-option input { flex: none; margin-top: 3px; accent-color: var(--text); }
+.cm-filters .input { max-width: 250px; text-overflow: ellipsis; }
+.cm-filters .search { min-width: min(100%, 260px); }
+.cm-pill { max-width: 100%; }
+.cm-pill > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-pill > svg { flex: none; }
+.cm-clip { display: block; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-lb small { display: block; color: var(--faint); font-size: 11px; }
+#cm-result-panel { margin-top: 18px; }
+#cm-result-panel > summary { cursor: pointer; }
+#cm-result-panel > .fine { padding: 0 18px 14px; }
+.cm-list .runrow .c { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 560px) {
+  .cm-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cm-filters .search { flex-basis: 100%; }
+  .cm-filters .input { max-width: 100%; }
+  .cm-pop { min-width: min(240px, calc(100vw - 40px)); max-width: calc(100vw - 40px); }
+}
+@media (max-width: 560px) {
+  .ex-stats.fe-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; gap: 16px; }
+  #fineenvs-featured .fe-trend-h { flex-wrap: wrap; }
+}
+.facet-help { color: var(--muted); font-size: 11px; line-height: 1.5; margin: 6px 0 9px; }
+.fe-trend-h { flex-wrap: wrap; }
+
+@media (max-width: 360px) {
+  .top-inner { gap: 4px; }
+  .brand img.logo { width: 26px; height: 26px; }
+  .top-right { gap: 2px; }
+  .nav { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .nav a { flex-shrink: 0; padding: 0 4px; font-size: 12.5px; }
+}
+
+.owner-link:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.owner-link:focus-visible { outline-offset: 2px; }
+.card[data-open], .tr-card[data-open] { cursor: pointer; }
+.tr-name .owner-link { color: var(--faint); }
+.card.sp .row1 .dn ~ .owner-link { display: inline; }

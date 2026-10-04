@@ -3,3 +3,12 @@ __pycache__/
 .venv/
 .gradio/
 .ruff_cache/
+
+# Admin implementation is maintained outside this public repository.
+web-admin/
+app/admin.py
+app/admin_app.py
+app/admin_access.py
+tests/test_admin*.py
+ADMIN_SPACE_README.md
+EXPLORER_AUDIT.md

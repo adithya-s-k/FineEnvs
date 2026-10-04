@@ -635,6 +635,16 @@ class RowsAdapter(c.Adapter):
 
         config, split, i = parse_ref(ref)
         view = self.task(env, ref)
+        if (view.get("_framework_run") or {}).get("runner") == "nemo-gym":
+            from .nemogym import agent_of
+            from .. import nemo_runner
+            *_, row, truncated = _row(env.id, config, split, i, env.token)
+            if truncated:
+                raise ValueError("This task row is truncated; use the complete dataset with NeMo Gym")
+            agent = agent_of(row, env.id)
+            nemo_runner.validate(row, agent)
+            return {"title": view["title"], "restricted": bool(env.meta.get("restricted")), "sha": env.meta.get("sha"),
+                    "native_task": {"row": row, "agent": agent}}
         if view.get("_packed_run"):
             p = packed(env.id, config, split, i, env.token)
             return {"title": p["title"], "restricted": p["restricted"], "sha": p["sha"], "bytes": p["bytes"], "runnable": p["runnable"],

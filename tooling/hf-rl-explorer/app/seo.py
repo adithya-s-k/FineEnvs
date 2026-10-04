@@ -133,6 +133,8 @@ def kind_of(row: dict[str, Any] | None, spec: str = "") -> str:
     if not row:
         return "RL environment"
     if row.get("kind") == "space":
+        if row.get("fw") == "unverified-space":
+            return "Unverified Space"
         return {"openenv": KIND["openenv"], "ors": "ORS Space"}.get(row.get("framework") or ("openenv" if row.get("openenv") else ""), KIND["space"])
     return KIND.get(row.get("framework") or "", "RL dataset")
 
@@ -283,7 +285,7 @@ def space(request: Request, spec: str) -> HTMLResponse:
            "sameAs": f"https://huggingface.co/spaces/{spec}", "applicationCategory": "DeveloperApplication", "operatingSystem": "Web",
            "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
            "author": {"@type": "Organization", "name": spec.split("/")[0], "url": f"https://huggingface.co/{spec.split('/')[0]}"},
-           "keywords": ["reinforcement learning", "RL environment", "OpenEnv", *((r or {}).get("tags") or [])[:10]]}, cld]
+           "keywords": ["reinforcement learning", "RL environment", *(["OpenEnv"] if (r or {}).get("openenv") else []), *((r or {}).get("tags") or [])[:10]]}, cld]
     return page(request, title=f"{name} · {kind}", description=desc, path=path, body=body, jsonld=ld, image=f"/og{path}.png" if r else None, noindex=not r)
 
 
@@ -291,7 +293,7 @@ def simple(request: Request, path: str) -> HTMLResponse:
     """The app's other pages: community (indexed), a rollout, your rollouts, a comparison (not indexed: they change, or are personal)."""
     if path.startswith("/community"):
         return page(request, title="Community rollouts", path="/community",
-                    description="Public rollouts of RL environments on Hugging Face, by every model: a leaderboard by environment, the traces, and the tasks nobody has tried yet.",
+                    description="Public, graded RL rollouts across Harbor, MiMo, NeMo Gym and other supported runners. Explore traces and model results grouped by environment and scoring metric.",
                     body="<header class=\"tp-head\"><h1>Community rollouts</h1><p class=\"lede\">Public rollouts from everyone, shown without who ran them.</p></header>")
     titles = {"/runs": "My rollouts"}
     return page(request, title=titles.get(path, "Rollout" if path.startswith("/run/") else "Compare rollouts"), path=path,

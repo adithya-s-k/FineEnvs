@@ -90,7 +90,6 @@ def toy(monkeypatch):
     monkeypatch.setattr(registry, "_choice", {})
     monkeypatch.setattr(models, "get", lambda mid: {"id": mid, "tools": True, "provider": "x"})
     monkeypatch.setattr(runner.Rollout, "execute", lambda self: None)
-    monkeypatch.setattr(settings, "_org_members", lambda: set())
 
 
 def test_the_surest_adapter_that_confirms_reads_it():

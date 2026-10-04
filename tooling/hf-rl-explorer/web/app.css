@@ -501,7 +501,7 @@ mark { background: color-mix(in srgb, #f5c542 42%, transparent); color: inherit;
 .gated { margin-top: 14px; }
 
 /* the run panel */
-.tp-side { position: sticky; top: calc(var(--header-h) + 20px); display: grid; gap: 12px; }
+.tp-side { position: sticky; top: calc(var(--header-h) + 20px); display: grid; gap: 12px; max-height: calc(100dvh - var(--header-h) - 32px); overflow: auto; scrollbar-width: thin; }
 /* a long unbreakable value (an image digest, a URL) wraps instead of widening the side column past the page */
 .tp-side, .rp-side { min-width: 0; grid-template-columns: minmax(0, 1fr); }   /* one column, the track's width: a long name inside wraps */
 .runbox, .runbox .panel-b { min-width: 0; }
@@ -738,7 +738,7 @@ a.rs-row:hover { background: var(--surface-2); }
 @media (max-width: 1024px) {
   :root { --gutter: 24px; }
   .tp-grid, .rp-grid { grid-template-columns: minmax(0, 1fr); }
-  .tp-side, .rp-side { position: static; }
+  .tp-side, .rp-side { position: static; max-height: none; overflow: visible; }
   .tp-side { order: -1; }
   .rp-side { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); align-items: start; }
   .ex-stats { display: none; }

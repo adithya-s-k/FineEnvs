@@ -92,7 +92,7 @@ def hidden() -> set[str]:
     return set(settings.get("hidden", []))
 
 
-# FineEnvs' flagship environment servers lead Trending until an admin saves pins of their own (an empty list included)
+# Editorial picks, shown separately from the metric-based trending order.
 DEFAULT_PINNED = ["space:FineEnvs/geoguesser-env", "space:FineEnvs/latex-ocr-env"]
 
 
@@ -263,7 +263,9 @@ def _listing_fetch(full: bool) -> list[dict[str, Any]]:
             for d in _api().list_datasets(filter=tag, sort="trending_score", limit=None if full else 1000, expand=_EXPAND):
                 if d.id not in rows and not d.private and not d.gated:
                     rows[d.id] = _summary(d)
-        except Exception:  # noqa: BLE001 - one tag failing leaves the rest
+        except Exception:  # noqa: BLE001 - only the quick bootstrap tolerates incomplete discovery
+            if full:
+                raise
             continue
     missing = [s for s in featured_datasets() if s not in rows]
     with ThreadPoolExecutor(max_workers=12) as pool:   # one Hub call each: in parallel
@@ -361,9 +363,6 @@ def environments(include_hidden: bool = False) -> list[dict[str, Any]]:
         indexed = headline(r["id"]) if r["kind"] == "dataset" else None
         fw = "harbor" if indexed and indexed.get("tasks") else r.get("framework")   # its index found task folders
         coll = collection_of(r["key"])
-        if r["kind"] == "space" and coll == "fineenvs" and fw != "openenv":   # curated as OpenEnv servers, manifest or not
-            r = {**r, "openenv": True, "badges": ["OpenEnv"]}
-            fw = "openenv"
         out.append({**r, "framework": fw, "collection": coll, "pinned": r["key"] in pins, "indexed": indexed})
     return out
 
@@ -374,12 +373,12 @@ _SPACE_EXPAND = ["likes", "trendingScore", "sdk", "runtime", "tags", "lastModifi
 
 def _space_summary(s: Any) -> dict[str, Any]:
     card = (s.card_data.to_dict() if s.card_data else {}) or {}
-    raw = s.tags or []
+    raw = [str(t).lower() for t in (s.tags or [])]
     stage = getattr(s.runtime, "stage", None) if s.runtime is not None else None
     version = next((t[8:] for t in raw if re.match(r"^openenv-\d", t)), None)
     files = [f.rfilename for f in (getattr(s, "siblings", None) or [])]
     manifest = min((f for f in files if _MANIFEST.match(f) and not _VENDORED.match(f)), key=lambda f: f.count("/"), default=None)
-    openenv = "openenv" in raw or bool(version) or manifest is not None
+    openenv = bool({"openenv", "library:openenv"} & set(raw)) or bool(version) or manifest is not None
     ors = bool({"ors", "openreward"} & set(raw))
     return {"id": s.id, "key": f"space:{s.id}", "kind": "space", "openenv": openenv, "manifest": manifest,
             "framework": "openenv" if openenv else "ors" if ors else "space", "files": len(files) or None,
@@ -395,10 +394,10 @@ def _space_summary(s: Any) -> dict[str, Any]:
             "private": bool(s.private), "gated": False}
 
 
-SPACE_TAGS = ("openenv", "rl-environment", "ors", "openreward")
+SPACE_TAGS = ("openenv", "library:openenv", "rl-environment", "ors", "openreward")
 # a manifest a Space's own environment declares (not one vendored from OpenEnv's source, or its templates)
 _MANIFEST = re.compile(r"^(?:[^/]+/)?openenv\.ya?ml$")
-_VENDORED = re.compile(r"^(src/(openenv|core)/|build/|.*\.egg-info/|envs/[^/]+/)")
+_VENDORED = re.compile(r"^(src/|build/|dist/|templates?/|examples?/|tests?/|vendor/|\.venv/|.*\.egg-info/|envs/)")
 
 
 def spaces(full: bool = True) -> list[dict[str, Any]]:
@@ -415,12 +414,16 @@ def spaces(full: bool = True) -> list[dict[str, Any]]:
                 if sp.private or sp.sdk != "docker" or "research-article-template" in tags:
                     continue
                 rows.setdefault(sp.id, _space_summary(sp))
-        except Exception:  # noqa: BLE001 - Spaces failing leaves the datasets
+        except Exception:  # noqa: BLE001 - a full census must not silently publish partial counts
+            if full:
+                raise
             continue
     for sid in featured:
         if sid not in rows:
             try:
-                rows[sid] = _space_summary(_api().space_info(sid, expand=expand))   # with its files: its manifest
+                sp = _api().space_info(sid, expand=expand)
+                if not sp.private and sp.sdk == "docker" and "research-article-template" not in (sp.tags or []):
+                    rows[sid] = _space_summary(sp)
             except Exception:  # noqa: BLE001
                 continue
     return list(rows.values())

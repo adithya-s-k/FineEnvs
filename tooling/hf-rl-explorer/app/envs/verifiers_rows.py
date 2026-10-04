@@ -196,8 +196,11 @@ def _prompt_turns(row: dict[str, Any], env: dict[str, Any]) -> list[dict[str, An
         ts = [{"kind": "message", "role": "user", "text": row["question"]}]
     else:
         ts = []
-    if env.get("system") and not any(t["role"] == "system" for t in ts):
-        ts.insert(0, {"kind": "message", "role": "system", "text": env["system"]})
+    # v1 TaskData carries an explicit system_prompt. It belongs in the agent's
+    # conversation, ahead of the row's prompt, and overrides a known v0 default.
+    system = row.get("system_prompt") if isinstance(row.get("system_prompt"), str) else env.get("system")
+    if system and not any(t["role"] == "system" for t in ts):
+        ts.insert(0, {"kind": "message", "role": "system", "text": system})
     return ts
 
 
@@ -308,7 +311,7 @@ class Verifiers(Processor):
                 gblocks += [c.note("`info`, which the rewards also get:", "list"), c.custom("rl", "fields", {"rows": rows}, convo.fields_text(rows))]
         sections.append(section("grading", "How it's graded", gblocks, kind="blocks", note="the environment's rewards"))
         sections.append(section("run", "Run it with Verifiers", run_blocks(ds.spec, env, config, split, row=i), kind="blocks", note="it doesn't run in this app"))
-        shown = {"problem_statement", "prompt", "question", "info", "task", *IMAGE_COLS, "repo", "base_commit", "parent_commit", "workdir", "language",
+        shown = {"problem_statement", "prompt", "system_prompt", "question", "info", "task", *IMAGE_COLS, "repo", "base_commit", "parent_commit", "workdir", "language",
                  "repo_language", "version", "test_cmd", "install_config"}
         rest = {k: v for k, v in clean.items() if k not in shown and v not in (None, "", [], {})}
         if rest:
@@ -361,10 +364,10 @@ class Verifiers(Processor):
 
 
 def run_blocks(spec: str, env: dict[str, Any], config: str, split: str, row: int | None = None) -> list[dict[str, Any]]:
-    """Commands that evaluate these rows with Verifiers 0.3.1 (the current release) and the Prime CLI."""
+    """Commands targeting the release that exposes both the v0 and v1 CLIs."""
     eid = env.get("env")
     head = ["# Verifiers (pip: verifiers 0.3.1) and the Prime CLI, in a new uv project",
-            "uv init vf-eval-here && cd vf-eval-here && uv add verifiers", "uv tool install prime"]
+            "uv init vf-eval-here && cd vf-eval-here && uv add 'verifiers==0.3.1'", "uv tool install prime"]
     if not eid:
         lines = head + ["", "# find and install the environment that loads this dataset (its card or repository names it)",
                         "prime env list", "prime env install <owner>/<environment>", "",

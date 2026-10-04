@@ -3,8 +3,9 @@
 //   inline   every task at once (a Harbor index): search and filters run here as you type, with tiles and a map
 //   paged    a page at a time (dataset rows): subsets, search and filters run on the server
 // A Harbor dataset is indexed the first time it's opened; the page shows the indexing's progress meanwhile.
-import { $, api, esc, fmt, ago, sk, emptyState, toast, spinner, nav, setMeta } from "./util.js";
+import { $, api, esc, fmt, ago, sk, emptyState, toast, spinner, nav, setMeta, ownerLink } from "./util.js";
 import { icon } from "./icons.js";
+import { supportPanel } from "./support.js";
 import { blocks, loadRenderers } from "./blocks.js";
 import { taskHref } from "./task.js";
 import { typeset } from "./math.js";
@@ -113,9 +114,11 @@ async function load(el) {
 }
 
 async function loadCards() {
-  try { st.cards = (await api(`${envApi(st.spec)}/tasks?all=1`)).cards; } catch (e) { st.cards = []; toast(e.message); }
-  const n = st.cards.length;
-  st.cards.forEach((c) => { c._blob = `${c.title} ${c.ref} ${c.id || ""} ${c.brief || ""} ${c.text || ""}`.toLowerCase(); });
+  const state = st;
+  try { state.cards = (await api(`${envApi(state.spec)}/tasks?all=1`)).cards; } catch (e) { state.cards = []; if (state === st) toast(e.message); }
+  if (state !== st) return;
+  const n = state.cards.length;
+  state.cards.forEach((c) => { c._blob = `${c.title} ${c.ref} ${c.id || ""} ${c.brief || ""} ${c.text || ""}`.toLowerCase(); });
   // what every task shares says nothing on a card
   const count = new Map();
   st.cards.forEach((c) => c.chips.forEach((x) => count.set(x, (count.get(x) || 0) + 1)));
@@ -140,7 +143,7 @@ function renderHead(el) {
     <header class="tp-head ds-head">
       <div class="kick">${c ? `<span class="badge" style="--dc:var(--c-${c.color || c.id})">${icon(c.icon, 13)}${esc(c.group)}</span>` : ""}
         <span class="chip fw">${esc(s.env.framework)}</span>${(i.badges || []).map((b) => `<span class="chip">${esc(b)}</span>`).join("")}</div>
-      <h1><span class="org">${esc(org)}/</span>${esc(name)}</h1>
+      <h1>${ownerLink(org, "/")}${esc(name)}</h1>
       ${lede ? `<p class="lede">${esc(lede)}</p>` : ""}
       <div class="facts">
         ${n != null ? `<span>${icon("list", 14)}<b>${fmt.format(n)}</b> task${n === 1 ? "" : "s"}</span>` : s.subsets?.length > 1 ? `<span>${icon("columns", 14)}<b>${fmt.format(s.subsets.length)}</b> subsets</span>` : ""}
@@ -151,7 +154,7 @@ function renderHead(el) {
         <span title="the revision this page reads">${icon("flag", 14)}<code>${esc((i.sha || "").slice(0, 8))}</code></span>
         <a class="u" href="https://huggingface.co/datasets/${enc(st.spec)}" target="_blank" rel="noopener">${icon("external", 14)}On the Hub</a>
         <button class="link" type="button" id="copy">${icon("link", 14)}Copy link</button>
-      </div></header>`;
+      </div></header>${supportPanel(s.support)}`;
   $("#copy", el).addEventListener("click", () => navigator.clipboard?.writeText(location.href).then(() => toast("Link copied")));
 }
 

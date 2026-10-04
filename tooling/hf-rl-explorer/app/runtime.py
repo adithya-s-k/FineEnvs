@@ -52,7 +52,7 @@ def more_threads() -> None:
 
 
 # ── logs ─────────────────────────────────────────────────────────────────────
-SECRET_PATH = re.compile(r"(/api/llm/)[^/\s]+|((?:session|cap|token)=)[^&\s]+", re.I)
+SECRET_PATH = re.compile(r"(/(?:api|rlx)/llm/)[^/\s]+|((?:session|cap|token)=)[^&\s]+", re.I)
 
 
 class _Json(logging.Formatter):

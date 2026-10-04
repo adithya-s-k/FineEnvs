@@ -119,6 +119,7 @@ def run(r, prompt: str, cwd: str, *, steps: int, timeout: float, user: str | Non
     steps = params.get("steps") or steps
     timeout = params["timeout_min"] * 60 if params.get("timeout_min") else timeout
     proxy = r.llm_base()
+    r.check_model_network()
     cfg = config_for(r.run["model"], r.run.get("provider"), steps, mcp, ep, params, proxy)
     r.sandbox.files.write("/tmp/opencode.json", json.dumps(cfg))
     r.sandbox.files.write("/tmp/prompt.txt", prompt)
@@ -166,6 +167,10 @@ def run(r, prompt: str, cwd: str, *, steps: int, timeout: float, user: str | Non
             r.sandbox.run("rm -f /root/.agent_key", shell=True, check=False, timeout=30)
     if buf[0].strip():
         _event(r, buf[0], texts)
+    if getattr(r, "agent_failure", None):
+        raise RuntimeError("The agent's model call failed; this run is not graded. " + r.agent_failure[:500])
+    if res.exit_code and not res.timed_out:
+        raise RuntimeError(f"The agent exited with code {res.exit_code}; this run is not graded.")
     if res.timed_out:
         r.emit("error", text=f"The agent hit the {int(timeout // 60)}-minute limit; grading what it left.")
     return texts[-1] if texts else ""
@@ -209,8 +214,8 @@ def _event(r, line: str, texts: list[str]) -> None:
                                  "so OpenCode ends the session there, as it does in Xiaomi's harness.")
     elif typ == "error":
         err = ev.get("error") or part
-        r.emit("error", text=(err.get("data") or {}).get("message") or json.dumps(err)[:800]
-               if isinstance(err, dict) else str(err)[:800])
+        r.agent_failure = ((err.get("data") or {}).get("message") or json.dumps(err)[:800]) if isinstance(err, dict) else str(err)[:800]
+        r.emit("error", text=r.agent_failure)
 
 
 def _scripted(r, cwd: str, user: str | None) -> str:

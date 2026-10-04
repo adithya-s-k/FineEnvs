@@ -20,6 +20,7 @@ import asyncio
 import contextlib
 import contextvars
 import json
+import math
 import logging
 import re
 import secrets
@@ -28,6 +29,7 @@ import threading
 import time
 from pathlib import Path
 from typing import Any
+from fastapi import Request
 
 from . import catalog, config, dockerfile, judge, store
 
@@ -243,6 +245,16 @@ async def _replay(env: Any, plan: Any) -> None:
 
 
 # ── the capture proxy ────────────────────────────────────────────────────────
+async def _event_model_proxy(cap: str, request: Request):
+    from .main import llm_proxy
+    return await llm_proxy(cap, request)
+
+
+def _event_model_health(cap: str):
+    from .main import llm_health
+    return llm_health(cap)
+
+
 def service() -> Any:
     """OpenEnv's Harbor service: the capture proxy, and the URL the sandbox reaches it at."""
     global _service
@@ -253,6 +265,12 @@ def service() -> Any:
             # No default engine: every rollout brings its own (the visitor's token or endpoint).
             _service = HarborService(llm_url=config.ROUTER, model="", datasets=[], provider="hf", capture_level="text",
                                      expose=config.CAPTURE_EXPOSE)
+            _service.capture.app.add_api_route("/rlx/llm/{cap}/v1/chat/completions", _event_model_proxy, methods=["POST"])
+            _service.capture.app.add_api_route("/rlx/llm/{cap}/health", _event_model_health, methods=["GET"])
+            # OpenEnv ends with a catch-all POST capture route. Specific relay
+            # routes must precede it; they keep their own per-run capability auth.
+            routes = _service.capture.app.router.routes
+            routes[:] = routes[-2:] + routes[:-2]
             _patch_hf_sandbox()
             _patch_harbor_env()
             _patch_opencode_install()
@@ -525,10 +543,13 @@ def submit(user: dict[str, Any], dataset: str, path: str, harness: str, model: s
     """Start a rollout of task `path` (the environment's ref) of `dataset`, with agent `harness`, by `runner`; `fields`
     are the run option's own inputs (contract.run_option fields), checked against it."""
     from . import settings
+    from .envs.capabilities import HOSTED_RUNNERS
 
     token = user.get("token")
     if not token:
         raise PermissionError("sign in to run a rollout")
+    if runner not in HOSTED_RUNNERS:
+        raise ValueError(f"The {runner} runtime is not hosted here. Use the task's native framework instructions.")
     if not settings.get("rollouts_enabled", True):
         raise RuntimeError("Rollouts are paused for maintenance. Try again later.")
     if harness not in settings.get("agents", list(AGENT_IDS)):
@@ -547,6 +568,18 @@ def submit(user: dict[str, Any], dataset: str, path: str, harness: str, model: s
     if endpoint and not opt.get("endpoint", True):
         raise ValueError(f"the {opt['label']} runner can't use your own endpoint")
     fields = _check_fields(opt.get("fields") or [], fields or {})
+    if runner == "nemo-gym":
+        from . import nemo_runner
+        from .mimo.runner import core as events
+        with _slot(user["name"], max_user, max_all):
+            return events.submit(user["name"], token,
+                                 {"id": path, "domain": "nemo-gym", "title": row["title"], "native_task": row["native_task"]},
+                                 model, provider, None, params=fields,
+                                 visibility="private" if row.get("restricted") else visibility,
+                                 extra={"dataset": env.id, "path": path, "task_id": f"{env.id}:{path}", "env": env.key, "adapter": env.adapter.id,
+                                        "runner": runner, "harness": "single-prediction", "restricted": bool(row.get("restricted")),
+                                        "sha": row.get("sha"), "provenance": {"framework": "NeMo Gym", "commit": nemo_runner.REVISION,
+                                        "source": "https://github.com/NVIDIA-NeMo/Gym/tree/" + nemo_runner.REVISION}}, reserved=True)
     if runner == "mimo":
         return _submit_mimo(user, env, row, model, provider, endpoint, endpoint_key, fields, visibility, max_user, max_all)
     params = {**params, **{k: fields[k] for k in ("steps", "timeout_min") if k in fields}}   # the Harbor runner's limits
@@ -623,8 +656,10 @@ def _check_fields(spec: list[dict[str, Any]], given: dict[str, Any]) -> dict[str
 
             if not isinstance(v, str) or v not in {m["id"] for m in models.catalog().get(f.get("pool") or "", [])}:
                 raise ValueError(f"{f.get('label', key)}: pick one of the models offered")
-        if kind == "number" and (not isinstance(v, (int, float)) or isinstance(v, bool)):
+        if kind == "number" and (not isinstance(v, (int, float)) or isinstance(v, bool) or not math.isfinite(v)):
             raise ValueError(f"{f.get('label', key)} should be a number")
+        if kind == "number" and f.get("step") == 1 and v != int(v):
+            raise ValueError(f"{f.get('label', key)} should be a whole number")
         if kind == "number" and ((f.get("min") is not None and v < f["min"]) or (f.get("max") is not None and v > f["max"])):
             raise ValueError(f"{f.get('label', key)} should be between {f.get('min')} and {f.get('max')}")
         if kind == "bool" and not isinstance(v, bool):

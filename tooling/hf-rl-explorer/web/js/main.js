@@ -11,7 +11,7 @@
 //   /community                  everyone's public rollouts, by model
 // Older addresses still open: #/… (the hash router this app had), and the MiMo RL Environment Explorer's #/task/<id>,
 // #/compare/<id> and #/rewards.
-import { $, api, esc, storage, closeModal, openDialog, progress, spinner, toast, nav, setMeta } from "./util.js";
+import { $, api, esc, storage, closeModal, openDialog, progress, spinner, toast, nav, setMeta, emptyState } from "./util.js";
 import { icon } from "./icons.js";
 import { getSession, setSession, refreshActive } from "./session.js";
 import { wireTopSearch } from "./topsearch.js";
@@ -24,6 +24,8 @@ const VIEWS = { home: () => import("./home.js"), dataset: () => import("./env.js
 const MIMO = "XiaomiMiMo/MiMo-V2.6-RL-oss";
 const framed = window.top !== window.self;
 
+const decodePath = (s) => { try { return decodeURIComponent(s); } catch { return s; } };
+
 function parse(url) {
   const [path, qs] = url.split("?");
   let m = path.match(/^\/run\/([\w-]+)$/);
@@ -31,9 +33,9 @@ function parse(url) {
   if (/^\/runs\/?$/.test(path)) return { name: "runs", arg: {}, qs };
   if (/^\/community\/?$/.test(path)) return { name: "community", arg: {}, qs };
   m = path.match(/^\/s\/([^/]+)\/([^/]+)\/?$/);
-  if (m) return { name: "space", arg: { spec: `${decodeURIComponent(m[1])}/${decodeURIComponent(m[2])}` }, qs };
+  if (m) return { name: "space", arg: { spec: `${decodePath(m[1])}/${decodePath(m[2])}` }, qs };
   m = path.match(/^\/compare\/([^/]+)\/([^/]+)\/(.+)$/);
-  if (m) return { name: "compare", arg: { spec: `${decodeURIComponent(m[1])}/${decodeURIComponent(m[2])}`, ref: decodeURIComponent(m[3]) }, qs };
+  if (m) return { name: "compare", arg: { spec: `${decodePath(m[1])}/${decodePath(m[2])}`, ref: decodePath(m[3]) }, qs };
   m = path.match(/^\/(task|compare)\/([^/]+)$/);   // the MiMo explorer's addresses
   if (m) return { redirect: `/${m[1] === "task" ? "t" : "compare"}/${MIMO}/${m[2]}${qs ? `?${qs}` : ""}` };
   if (/^\/rewards\/?$/.test(path)) return { redirect: `/d/${MIMO}?rewards=1` };
@@ -44,9 +46,9 @@ function parse(url) {
     return { redirect: `/t/${m[1]}/${m[2]}/${c === "default" ? "" : `${encodeURIComponent(c)}/`}${encodeURIComponent(sp)}/${i}${q.toString() ? `?${q}` : ""}` };
   }
   m = path.match(/^\/d\/([^/]+)\/([^/]+)\/?$/);
-  if (m) return { name: "dataset", arg: { spec: `${decodeURIComponent(m[1])}/${decodeURIComponent(m[2])}` }, qs };
+  if (m) return { name: "dataset", arg: { spec: `${decodePath(m[1])}/${decodePath(m[2])}` }, qs };
   m = path.match(/^\/t\/([^/]+)\/([^/]+)\/?(.*)$/);
-  if (m) return { name: "task", arg: { spec: `${decodeURIComponent(m[1])}/${decodeURIComponent(m[2])}`, path: decodeURIComponent(m[3] || "") }, qs };
+  if (m) return { name: "task", arg: { spec: `${decodePath(m[1])}/${decodePath(m[2])}`, path: decodePath(m[3] || "") }, qs };
   return { name: "home", arg: {}, qs };
 }
 
@@ -74,6 +76,13 @@ async function route() {
     const old = $("#view"), view = old.cloneNode(false);
     old.replaceWith(view);
     await mod.mount(view, { ...arg, qs: qs ? new URLSearchParams(qs) : new URLSearchParams() });
+  } catch (error) {
+    if (token !== routing) return;
+    current?.unmount?.();
+    current = null;
+    $("#view").innerHTML = `<div class="wrap page">${emptyState("alert", "Couldn't load this page", esc(error.message || "Please try again."),
+      '<button class="btn" type="button" id="page-retry">Try again</button><a class="btn" href="/">Explore environments</a>')}</div>`;
+    $("#page-retry").addEventListener("click", route);
   } finally { progress.done(); }
 }
 

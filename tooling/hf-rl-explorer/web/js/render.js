@@ -11,6 +11,11 @@ const AUDIO_URL = /^https:\/\/[^\s"'<>]+\.(wav|mp3|ogg|flac|m4a)(\?[^\s"'<>]*)?$
 
 function mediaOf(key, v, ctx) {
   if (typeof v !== "string" || v.length < 16) return null;
+  if (key === "media_url" && /^https:\/\/[^\s"'<>]+$/.test(v)) {
+    if (/^audio\/[\w.+-]+$/.test(ctx.mime || "")) return `<audio class="rv-audio" aria-label="Task audio" controls preload="none" src="${esc(v)}"></audio>`;
+    if (/^image\/(png|jpeg|gif|webp|avif)$/.test(ctx.mime || "")) return `<img class="rv-img" src="${esc(v)}" alt="Task image" loading="lazy">`;
+    if (/^video\/(mp4|webm|ogg)$/.test(ctx.mime || "")) return `<video class="rv-video" aria-label="Task video" controls preload="none" src="${esc(v)}"></video>`;
+  }
   if (v.startsWith("data:image/") && /^data:image\/(png|jpe?g|gif|webp);base64,/.test(v)) return `<img class="rv-img" src="${esc(v)}" alt="${esc(key)}">`;
   if (v.startsWith("data:audio/") && /^data:audio\/[\w.+-]+;base64,/.test(v)) return `<audio class="rv-audio" controls src="${esc(v)}"></audio>`;
   if (IMG_URL.test(v)) return `<img class="rv-img" src="${esc(v)}" alt="${esc(key)}" loading="lazy">`;
@@ -60,7 +65,7 @@ function table(rows, depth) {
     `<tr>${keys.map((k) => `<td>${scalar(r[k]) ? cell(r[k]) : value(r[k], k, depth + 1)}</td>`).join("")}</tr>`).join("")}</tbody></table>
     ${rows.length > 100 ? `<p class="rv-faint">${fmt.format(rows.length - 100)} more rows</p>` : ""}</div>`;
 }
-const cell = (x) => (x == null ? `<span class="rv-faint">–</span>` : typeof x === "string" ? esc(x.length > 140 ? x.slice(0, 140) + "…" : x) : `<code>${esc(String(x))}</code>`);
+const cell = (x) => (x == null ? `<span class="rv-faint">–</span>` : typeof x === "string" ? `<span title="${esc(x)}">${esc(x.length > 140 ? x.slice(0, 140) + "…" : x)}</span>` : `<code>${esc(String(x))}</code>`);
 
 export function value(v, key = "", depth = 0, ctx = {}) {
   if (depth > 7) return `<code class="rv-faint">…</code>`;

@@ -235,3 +235,10 @@ HF scheduled Job, hourly (scripts/schedule_indexer.py)          Explorer / admin
 5. **Smoke tests on the Space**: `/readyz`; `scripts/check_judge_relay.py`'s path through the Space's `/capture`
    (a model-graded rollout, e.g. a MiMo General twin with Inkling as judge: reward recorded, `judge_calls > 0`);
    `node tests/ui-audit.mjs https://<space>`.
+
+## Admin source boundary
+
+This public tooling directory contains only the Explorer. The dashboard application,
+its assets, membership checks, tests and deployment tooling are maintained separately
+in the private `FineEnvs/RL-Explorer-admin` Space. The Explorer reads shared settings
+and moderation requests from the data bucket without importing the admin app.
