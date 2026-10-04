@@ -76,7 +76,7 @@ is whichever model you pick, and Webdev uses their evaluation-mode grader (train
 ## Run it yourself
 
 ```bash
-git clone https://github.com/adithya-s-k/FineEnvs && cd FineEnvs/mimo-explorer
+git clone https://github.com/adithya-s-k/FineEnvs && cd FineEnvs/tooling/mimo-rl-explorer
 uv run uvicorn app.main:app      # uses your HF token; traces go to ./.local-runs
 ```
 

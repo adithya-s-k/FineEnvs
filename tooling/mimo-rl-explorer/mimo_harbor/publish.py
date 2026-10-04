@@ -20,7 +20,7 @@ from . import adapter, jobs, source
 ORG = "FineEnvs"
 EXPLORER = "https://huggingface.co/spaces/FineEnvs/MiMo-RL-Envs-Explorer"
 VISUALISER = "https://huggingface.co/spaces/HuggingFaceH4/harbor-visualiser?dataset="
-ADAPTER_SRC = "https://github.com/adithya-s-k/FineEnvs/tree/mimo-explorer-rollouts/mimo-explorer/mimo_harbor"
+ADAPTER_SRC = "https://github.com/adithya-s-k/FineEnvs/tree/main/tooling/mimo-rl-explorer/mimo_harbor"
 
 INFO = {
     "code": ("Code", "Fix a real issue in a real repository",
