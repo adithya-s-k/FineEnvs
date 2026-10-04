@@ -7,7 +7,7 @@ sdk: docker
 app_port: 7860
 pinned: false
 license: apache-2.0
-short_description: Discover RL environments, explore tasks and run agent rollouts
+short_description: Explore RL environments, browse tasks and run agent rollouts
 thumbnail: https://huggingface.co/spaces/FineEnvs/RL-Explorer/resolve/main/web/social/rl-explorer.png
 hf_oauth: true
 hf_oauth_expiration_minutes: 1440
