@@ -2,6 +2,7 @@ import json
 import time
 
 import pytest
+import threading
 
 from app import space_checks as checks, spaces_live as live
 
@@ -78,6 +79,55 @@ def test_expiry_future_dates_and_newer_failures(tmp_path, monkeypatch):
     checks.save({**passing, "checked_at": now, "status": "Checks failed"})
     checks.save(passing)  # late completion cannot overwrite a newer failure
     assert checks.status(checks.inventory()["owner/env"], now) == "Checks failed"
+
+
+def test_slow_inventory_refresh_never_blocks_readers_or_overwrites_newer_failure(tmp_path, monkeypatch):
+    monkeypatch.setattr(checks.config, "STORAGE_DIR", tmp_path)
+    old = {"schema": 1, "id": "owner/env", "checked_at": time.time() - 10, "status": checks.PASS}
+    checks.save(old)
+    entered, release = threading.Event(), threading.Event()
+    calls = []
+    def slow_read(directory):
+        calls.append(directory)
+        entered.set()
+        assert release.wait(5)
+        return {old["id"]: old}
+    monkeypatch.setattr(checks, "_read_inventory", slow_read)
+    try:
+        before = checks.inventory()
+        assert entered.wait(2)
+        for _ in range(10):
+            assert checks.inventory() == before
+        assert len(calls) == 1
+        checks.save({**old, "checked_at": time.time(), "status": "Checks failed"})
+        assert checks.inventory()[old["id"]]["status"] == "Checks failed"
+        assert before[old["id"]]["status"] == checks.PASS  # readers keep a consistent snapshot
+    finally:
+        release.set()
+    assert checks.inventory(wait=True)[old["id"]]["status"] == "Checks failed"
+
+
+def test_slow_save_does_not_block_cached_inventory(tmp_path, monkeypatch):
+    monkeypatch.setattr(checks.config, "STORAGE_DIR", tmp_path)
+    rec = {"schema": 1, "id": "owner/env", "checked_at": time.time(), "status": checks.PASS}
+    checks.save(rec)
+    checks.inventory(wait=True)
+    entered, release = threading.Event(), threading.Event()
+    write = checks.catalog.atomic_write
+    def slow_write(*args):
+        entered.set()
+        assert release.wait(5)
+        write(*args)
+    monkeypatch.setattr(checks.catalog, "atomic_write", slow_write)
+    worker = threading.Thread(target=checks.save, args=({**rec, "checked_at": time.time(), "status": "Checks failed"},))
+    worker.start()
+    try:
+        assert entered.wait(2)
+        assert checks.inventory()[rec["id"]]["status"] == checks.PASS
+    finally:
+        release.set()
+        worker.join(3)
+    assert checks.inventory()[rec["id"]]["status"] == "Checks failed"
 
 
 def test_sleeping_space_is_not_contacted_or_woken(tmp_path, monkeypatch):

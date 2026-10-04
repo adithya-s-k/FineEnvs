@@ -258,6 +258,11 @@ Spaces. Their sitemaps expand ranges one shard at a time, without downloading ta
 or creating millions of URLs in memory. These counts describe published entries,
 not individually tested episodes or Google-indexed pages.
 
+Space-check inventory refreshes outside request threads and never holds the reader
+lock during bucket I/O. Writes update the cached record immediately; concurrent
+refreshes preserve newer evidence. A cold process temporarily has no verified
+Spaces, and cached evidence still expires according to its original check time.
+
 Task HTML includes public task text or structured input facts. Public row datasets
 and OpenEnv Task API records can be read anonymously on demand, with four concurrent
 reads and bounded caches. These reads do not build an index, wake a Space, run an
