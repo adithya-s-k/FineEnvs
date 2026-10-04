@@ -200,6 +200,23 @@ def test_home_reads_one_consistent_check_inventory(monkeypatch):
     assert len(calls) == 1
 
 
+def test_sitemap_uses_snapshot_tasks_without_bucket_reads(monkeypatch):
+    from contextlib import contextmanager
+    class Connection:
+        def execute(self, sql, params):
+            assert "org/ds" in json.loads(params[0])
+            return self
+        def fetchall(self):
+            return [{"env": "org/ds", "ref": "tasks/from-snapshot"}]
+    @contextmanager
+    def use():
+        yield None, Connection()
+    monkeypatch.setattr(snapshot, "use", use)
+    monkeypatch.setattr(seo, "listing", lambda: ({r["key"]: r for r in ROWS}, ROWS))
+    monkeypatch.setattr(seo, "index_rows", lambda spec: pytest.fail("must not read bucket indexes"))
+    assert "tasks/from-snapshot" in client.get("/sitemap-tasks-1.xml").text
+
+
 def test_a_card_section_heading_is_not_a_datasets_name():
     from app.catalog import _card_text
 

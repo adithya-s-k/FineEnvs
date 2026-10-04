@@ -408,7 +408,21 @@ def _entries() -> tuple[list[tuple[str, str | None]], list[tuple[str, str | None
     pages += [(_href(r), (r.get("updated") or "")[:10] or None) for r in rows
               if discoverable(r, checks)]
     tasks: list[tuple[str, str | None]] = []
-    for spec in dict.fromkeys(r["id"] for r in rows if r["kind"] == "dataset"):
+    specs = list(dict.fromkeys(r["id"] for r in rows if r["kind"] == "dataset"))
+    covered = set()
+    try:
+        # The snapshot already holds public task refs. One read avoids hundreds
+        # of remote bucket stat/open operations during a crawler's first visit.
+        with snapshot.use() as (_, conn):
+            refs = conn.execute("SELECT env, ref FROM tasks WHERE env IN (SELECT value FROM json_each(?)) ORDER BY env, ref",
+                                (json.dumps(specs),)).fetchall()
+        for r in refs:
+            covered.add(r["env"])
+            tasks.append((f"/t/{enc(r['env'])}/{enc(r['ref'])}", None))
+    except snapshot.SnapshotError:
+        pass
+    for spec in dict.fromkeys(r["id"] for r in rows if r["kind"] == "dataset" and r["id"] not in covered
+                             and (r["id"] == MIMO or (r.get("indexed") or {}).get("tasks"))):
         try:
             tasks += [(f"/t/{enc(spec)}/{enc(t['path'])}", None) for t in index_rows(spec)]
         except Exception:  # noqa: BLE001 - one index unreadable leaves the rest
