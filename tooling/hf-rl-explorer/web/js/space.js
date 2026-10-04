@@ -782,14 +782,17 @@ function render(me) {
   if (!s) return;
   const [org, name] = spec.split("/");
   const sections = sectionsOf(me);
+  const linkedIndex = new URLSearchParams(location.search).get("task");
+  const taskView = /^\d{1,10}$/.test(linkedIndex || "");
   const kind = me.L?.openenv_verified ? "OpenEnv Space" : s.declared_openenv || s.openenv || s.manifest ? "Unverified Space" : s.framework === "ors" ? "ORS Space" : "environment Space";   // as the server-rendered title says
-  setMeta({ title: `${s.heading || name} · ${kind}`, description: `${spec}: an RL environment Space on Hugging Face. ${describe(me)} See it live: its app, a playground with rewards, its tasks, and MCP for coding agents.` });
+  if (!new URLSearchParams(location.search).has("task")) setMeta({ title: `${s.heading || name} · ${kind}`, description: `${spec}: an RL environment Space on Hugging Face. ${describe(me)} See it live: its app, a playground with rewards, its tasks, and MCP for coding agents.` });
   me.viewer?.destroy();
   me.viewer = null;
   el.innerHTML = `<div class="wrap page${me.rendered ? "" : " fade-in"}">
     <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Environments</a>${icon("chevronRight", 13)}<a href="/?k=space">Spaces</a>${icon("chevronRight", 13)}<span>${esc(name)}</span></nav>
     <header class="tp-head ds-head">
-      <h1>${ownerLink(org, "/")}${esc(name)}</h1>
+      <h1>${taskView ? `Task ${Number(linkedIndex) + 1}` : `${ownerLink(org, "/")}${esc(name)}`}</h1>
+      ${taskView ? `<p><a href="/s/${enc(spec)}">All tasks in ${esc(spec)}</a></p>` : ""}
       <p class="lede" id="sp-lede">${esc(describe(me))}</p>
       <div class="facts sp-facts"><div class="sp-fi" id="sp-facts">${factsLine(me)}</div></div>
       <div class="facts sp-links" id="sp-links">${linksLine(me)}</div>
@@ -1371,16 +1374,27 @@ async function openTask(me, i) {
       <button class="icon-btn sm" type="button" data-task-move="-1" aria-label="Previous task in this page" ${i === 0 ? "disabled" : ""}>${icon("chevronRight", 15, "flip")}</button>
       <button class="icon-btn sm" type="button" data-task-move="1" aria-label="Next task in this page" ${i + 1 === me.tasks.length ? "disabled" : ""}>${icon("chevronRight", 15)}</button>
       <button class="icon-btn sm" type="button" id="tk-close" aria-label="Close task">${icon("x", 15)}</button></div>
-    <div class="tk-actions">${copyBtn(link.href, "Copy task link")}
+    <div class="tk-actions"><a class="btn sm" href="${esc(link.href)}">Open task page</a>${copyBtn(link.href, "Copy task link")}
       ${rel ? `<a class="btn sm" href="/t/${enc(hub)}/${enc(rel)}" title="Open it in the explorer, where it runs on your account">${icon("database", 13)}Open in the explorer</a>` : ""}
       ${canPlay ? `<button class="btn sm primary" type="button" data-play-task="${esc(idx)}">${icon("play", 13)}Start this task</button>` : ""}</div>
     <div class="tk-detail-b">${taskContent(t)}<p class="fine" id="tk-full-status" role="status">Loading the full task…</p></div>`;
   d.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  const updateTaskMeta = (task) => {
+    const q = new URLSearchParams(location.search);
+    if (q.get("task") === String(idx) && q.get("env") === me.taskPage.env && q.get("split") === me.taskPage.split) {
+      const prompt = [task.prompt, task.instruction, task.description, task.question].find((v) => typeof v === "string") || "";
+      setMeta({ title: `${title} · ${me.spec}`, description: `${title}: ${me.taskPage.split} task in ${me.spec}, an RL environment on the Hugging Face Hub. ${prompt}` });
+      const heading = $(".tp-head h1", me.el);
+      if (heading) heading.textContent = title;
+    }
+  };
+  updateTaskMeta(t);
   try {
     const full = await api(`/api/spaces/${enc(me.spec)}/task?${new URLSearchParams({ env: me.taskPage.env, split: me.taskPage.split, index: idx })}`);
     if (page !== me || requestKey !== me.taskRequest || me.selectedTask !== i || !d.isConnected || d.hidden) return;
     if (full.task && typeof full.task === "object" && !Array.isArray(full.task)) {
       $(".tk-detail-b", d).innerHTML = taskContent(full.task);
+      updateTaskMeta(full.task);
     } else $("#tk-full-status", d).textContent = "Showing the task record returned by the list endpoint.";
   } catch (error) {
     if (page === me && requestKey === me.taskRequest && me.selectedTask === i && d.isConnected && !d.hidden)

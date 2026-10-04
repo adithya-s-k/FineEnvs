@@ -219,6 +219,17 @@ def assess(api, health, metadata, schema, tools):
             "failed": [k for k, ok in checks.items() if not ok], "tools": len(tools or [])}
 
 
+def _task_splits(task_api):
+    from .seo_tasks import ranges
+
+    out = []
+    for row in ranges(task_api):
+        if len(json.dumps(out + [row]).encode()) > 12000:
+            break
+        out.append(row)
+    return out
+
+
 def check(spec):
     from . import spaces_live as live
     rec = {"schema": 1, "id": catalog.check_spec(spec), "checked_at": time.time(), "status": "Check unavailable"}
@@ -249,6 +260,7 @@ def check(spec):
             from . import space_tasks
             task_api = space_tasks.discover(hub, paths)
             rec["task_catalog"] = space_tasks.summary(task_api)
+            rec["task_splits"] = _task_splits(task_api)
             if rec["status"] == PASS:
                 rec["version"] = declared_version(spec, hub.get("tags"))
             elif rec["version"]["value"] == "Unknown":
@@ -273,6 +285,7 @@ def observe(spec, info):
             rec["interface"] = environment_interface({"info": {"version": info.get("openapi_version")}, "paths": info.get("endpoint_methods")})
             from . import space_tasks
             rec["task_catalog"] = space_tasks.summary(info.get("task_api"))
+            rec["task_splits"] = _task_splits(info.get("task_api"))
         info["openenv_verified"] = verified(rec)
         save(rec)
     except Exception:

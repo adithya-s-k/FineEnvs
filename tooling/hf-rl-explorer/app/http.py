@@ -79,6 +79,7 @@ def install(app: FastAPI) -> None:
             # APIs can contain a visitor's private dataset, run, or account. A shared
             # proxy or the browser's cache must never reuse them for another visitor.
             resp.headers["Cache-Control"] = "private, no-store"
+            resp.headers["X-Robots-Tag"] = "noindex"
         else:
             resp.headers.setdefault("Cache-Control", "no-cache")
         return resp

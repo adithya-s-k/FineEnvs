@@ -11,6 +11,9 @@ from __future__ import annotations
 
 import json
 import re
+import time
+import html as html_lib
+import xml.etree.ElementTree as ET
 
 import pytest
 from fastapi.testclient import TestClient
@@ -34,12 +37,14 @@ def stubs(monkeypatch):
     seo._sitemap.update(at=0.0, pages=[], tasks=[])
     monkeypatch.setattr(seo.catalog, "environments", lambda include_hidden=False: ROWS)
     monkeypatch.setattr(seo, "index_rows", lambda spec: TASKS if spec == "org/ds" else [])
+    monkeypatch.setattr(seo.space_checks, "inventory", lambda: {"org/sp": {"id": "org/sp", "stage": "RUNNING", "status": "API checked", "checked_at": time.time()}})
+    monkeypatch.setattr(seo.spaces_live, "last_seen", lambda spec: None)
 
 
 def head(html: str) -> dict:
     return {"title": re.search(r"<title>(.*?)</title>", html).group(1),
             "description": re.search(r'<meta name="description" content="([^"]*)"', html).group(1),
-            "canonical": re.search(r'rel="canonical" href="([^"]*)"', html).group(1),
+            "canonical": html_lib.unescape(re.search(r'rel="canonical" href="([^"]*)"', html).group(1)),
             "robots": re.search(r'name="robots" content="([^"]*)"', html).group(1),
             "ld": [json.loads(x) for x in re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.S)]}
 
@@ -95,6 +100,7 @@ def test_robots_and_sitemap():
     tasks = client.get("/sitemap-tasks-1.xml").text
     assert "https://testserver/t/org/ds/tasks/a" in tasks
     assert client.get("/sitemap-tasks-99.xml").status_code == 404
+    assert client.get("/api/me").headers["x-robots-tag"] == "noindex"
 
 
 def test_preview_images_are_images():
@@ -105,7 +111,84 @@ def test_preview_images_are_images():
     # nothing listed there: no image drawn (and its page points at the site's card instead)
     for path in ("/og/d/nobody/nothing.png", "/og/s/nobody/nothing.png", "/og/whatever.png", "/og/x/y/z.png"):
         assert client.get(path).status_code == 404, path
-    assert 'content="https://testserver/og.png"' in client.get("/d/nobody/nothing").text
+    assert 'content="https://testserver/social/rl-explorer.png"' in client.get("/d/nobody/nothing").text
+
+
+def test_space_task_has_unique_canonical_prompt_and_preview(monkeypatch):
+    monkeypatch.setattr(seo.seo_tasks, "space", lambda *args: {"title": "Find the landmark", "brief": f"Locate this place {EVIL}", "total": 5})
+    path = "/s/org/sp?task=01&split=test+set&env=game&utm_source=test"
+    response = client.get(path)
+    h = head(response.text)
+    assert response.status_code == 200
+    assert h["canonical"] == "https://testserver/s/org/sp?env=game&split=test+set&task=1"
+    assert "Find the landmark" in h["title"] and h["robots"].startswith("index")
+    assert 'class="seo-prompt"' in response.text and "Locate this place" in response.text
+    assert 'task=0' in response.text and 'task=2' in response.text
+    assert '<script>alert(1)' not in response.text
+    assert '/og/s/org/sp.png?env=game&amp;split=test+set&amp;task=1' in response.text
+    assert "CreativeWork" in [item["@type"] for item in h["ld"]]
+
+
+def test_space_task_missing_and_temporary_failure_have_real_statuses(monkeypatch):
+    for status in (404, 503):
+        def fail(*args):
+            raise seo.seo_tasks.Unavailable(status)
+        monkeypatch.setattr(seo.seo_tasks, "space", fail)
+        response = client.get("/s/org/sp?env=game&split=train&task=0")
+        assert response.status_code == status
+        if status == 503:
+            assert response.headers["retry-after"] == "60"
+            assert not head(response.text)["robots"].startswith("noindex")
+    for query in ("task=-1", "task=0", "task=no&env=game&split=train"):
+        assert client.get("/s/org/sp?" + query).status_code == 404
+
+
+def test_space_sitemaps_partition_ranges_without_fetching_tasks(monkeypatch):
+    monkeypatch.setattr(seo, "SITEMAP_CHUNK", 2)
+    monkeypatch.setattr(seo, "_space_ranges", lambda: [("org/sp", "game", "train & eval", 3), ("org/sp", "game", "test", 2)])
+    def fail(*args):
+        raise AssertionError("sitemaps must not fetch tasks")
+    monkeypatch.setattr(seo.seo_tasks, "space", fail)
+    assert "sitemap-space-tasks-3.xml" in client.get("/sitemap.xml").text
+    urls = []
+    for n in range(1, 4):
+        r = client.get(f"/sitemap-space-tasks-{n}.xml")
+        assert r.status_code == 200
+        urls.extend(x.text for x in ET.fromstring(r.text).iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"))
+    assert len(urls) == len(set(urls)) == 5
+    assert urls[2].endswith("env=game&split=train+%26+eval&task=2")
+    assert urls[3].endswith("env=game&split=test&task=0")
+    assert client.get("/sitemap-space-tasks-4.xml").status_code == 404
+
+
+def test_sitemaps_deduplicate_mimo_and_exclude_hidden_or_private(monkeypatch):
+    rows = [*ROWS, {**ROWS[0], "id": seo.MIMO, "key": seo.MIMO}, {**ROWS[0], "id": "org/private", "key": "org/private", "private": True}]
+    monkeypatch.setattr(seo, "listing", lambda: ({r["key"]: r for r in rows}, rows))
+    monkeypatch.setattr(seo, "index_rows", lambda spec: TASKS)
+    monkeypatch.setattr(seo.catalog, "hidden", lambda: ["org/ds"])
+    tasks = client.get("/sitemap-tasks-1.xml").text
+    assert tasks.count("MiMo-V2.6-RL-oss/tasks/a") == 1
+    assert "org/private" not in tasks and "/t/org/ds/" not in tasks
+    assert head(client.get("/t/org/private/tasks/a").text)["robots"].startswith("noindex")
+    assert "Do it." not in client.get("/t/org/private/tasks/a").text
+
+
+def test_public_row_task_is_rendered_without_login(monkeypatch):
+    rows = [{**ROWS[0], "framework": "nemo-gym", "indexed": None}]
+    monkeypatch.setattr(seo, "listing", lambda: ({r["key"]: r for r in rows}, rows))
+    monkeypatch.setattr(seo, "index_rows", lambda spec: [])
+    monkeypatch.setattr(seo.seo_tasks, "row", lambda *args: {"title": "Follow the instructions", "brief": "Write exactly three words."})
+    response = client.get("/t/org/ds/train/0")
+    assert response.status_code == 200 and "Write exactly three words." in response.text
+    assert head(response.text)["robots"].startswith("index")
+
+
+def test_static_social_card_is_available_without_catalog():
+    import io
+    from PIL import Image
+    response = client.get("/social/rl-explorer.png")
+    assert response.status_code == 200
+    assert Image.open(io.BytesIO(response.content)).size == (1200, 630)
 
 
 def test_a_card_section_heading_is_not_a_datasets_name():

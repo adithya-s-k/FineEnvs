@@ -4,9 +4,9 @@ data (a Dataset for an environment, a SoftwareApplication for a Space, a task as
 in its body, the page's content as plain HTML, for crawlers that don't run JavaScript (the app replaces it as it
 starts). Plus robots.txt, a sitemap of every environment and every indexed task, and a preview image per page.
 
-Cheap and safe by design: only what is already known is used (the catalog's listing of public environments, indexes
-already built, the MiMo release's local index). A crawler never starts indexing a dataset, wakes a Space, or reads
-anything private; task text comes from the same withheld views the pages show.
+Catalog pages use public indexes. Row and Space task pages may make bounded anonymous
+reads of the same withheld task views shown in the UI. Crawlers never start indexing,
+wake a Space, run an episode or receive a visitor's credentials.
 """
 
 from __future__ import annotations
@@ -19,22 +19,22 @@ import threading
 import time
 from functools import lru_cache
 from typing import Any
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from fastapi import Request
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 
-from . import catalog, config
+from . import catalog, config, seo_tasks, snapshot, space_checks, spaces_live
 
 SITE = "HF RL Explorer"
-TAGLINE = "Explore RL environments on Hugging Face"
-DESCRIPTION = ("Explore reinforcement learning environments on Hugging Face across OpenEnv, Harbor, Verifiers, NeMo Gym and "
-               "more: what each task asks, how it's graded, what it runs in, and run an agent on it.")
+TAGLINE = "RL environments on the Hugging Face Hub"
+DESCRIPTION = ("Explore reinforcement learning environments and tasks on the Hugging Face Hub. Browse OpenEnv, Harbor, "
+               "MiMo, NeMo Gym and Verifiers, inspect rewards, and run supported agent rollouts.")
 KIND = {"harbor": "Harbor dataset", "verifiers": "Verifiers environment", "nemo-gym": "NeMo Gym dataset", "rows": "RL dataset",
         "mimo": "MiMo RL release", "openenv": "OpenEnv Space", "space": "environment Space"}
 MIMO = "XiaomiMiMo/MiMo-V2.6-RL-oss"
 NOINDEX = re.compile(r"^/(run/|runs$|compare/)")
-SITEMAP_CHUNK = 40_000
+SITEMAP_CHUNK = 10_000
 
 
 # ── where we are ─────────────────────────────────────────────────────────────
@@ -92,6 +92,15 @@ def listing() -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
     return by, rows
 
 
+def public_rows(rows):
+    hidden = set(catalog.hidden())
+    return [r for r in rows if r["key"] not in hidden and not any(r.get(k) for k in ("private", "gated", "restricted"))]
+
+
+def discoverable(r):
+    return r.get("kind") == "dataset" or space_checks.browseable(space_checks.inventory().get(r["id"]))
+
+
 def index_rows(spec: str) -> list[dict[str, Any]]:
     """An environment's tasks, if they are already known here (never built for a crawler): [{path, title, brief, category}]."""
     if spec == MIMO:
@@ -100,7 +109,10 @@ def index_rows(spec: str) -> list[dict[str, Any]]:
         p = catalog._index_path(spec)
         mtime = p.stat().st_mtime
     except (OSError, ValueError):
-        return []
+        try:
+            return _snapshot_rows(spec, snapshot.get().name)
+        except snapshot.SnapshotError:
+            return []
     return _harbor_rows(spec, mtime)
 
 
@@ -114,7 +126,15 @@ def _mimo_rows() -> list[dict[str, Any]]:
 @lru_cache(maxsize=32)
 def _harbor_rows(spec: str, mtime: float) -> list[dict[str, Any]]:
     idx = catalog._read_index(spec)
+    if not idx or (idx.get("info") or {}).get("restricted"):
+        return []
     return [{"path": t["path"], "title": t.get("title"), "brief": t.get("brief"), "category": t.get("category")} for t in (idx or {}).get("tasks") or []]
+
+
+@lru_cache(maxsize=32)
+def _snapshot_rows(spec: str, revision: str) -> list[dict[str, Any]]:
+    with snapshot.use() as (_, conn):
+        return [dict(r) for r in conn.execute("SELECT ref AS path, title, brief, category FROM tasks WHERE env = ? ORDER BY ref", (spec,))]
 
 
 def display_name(row: dict[str, Any] | None, spec: str) -> str:
@@ -145,9 +165,10 @@ def page(request: Request, *, title: str, description: str, path: str, body: str
     base = base_url(request)
     url = base + path
     full = title if SITE in title else f"{title} · {SITE}"
-    img = base + (image or "/og.png")
+    img = base + (image or "/social/rl-explorer.png")
     head = "\n".join([
         f'<link rel="canonical" href="{esc(url)}">',
+        f'<meta name="rlx-page-url" content="{esc(url)}">',
         '<meta name="robots" content="noindex, follow">' if noindex else '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">',
         f'<meta property="og:site_name" content="{SITE}">',
         f'<meta property="og:type" content="{og_type}">',
@@ -155,6 +176,8 @@ def page(request: Request, *, title: str, description: str, path: str, body: str
         f'<meta property="og:description" content="{esc(description)}">',
         f'<meta property="og:url" content="{esc(url)}">',
         f'<meta property="og:image" content="{esc(img)}">',
+        '<meta property="og:image:type" content="image/png">',
+        '<meta property="og:locale" content="en_US">',
         '<meta property="og:image:width" content="1200">',
         '<meta property="og:image:height" content="630">',
         f'<meta property="og:image:alt" content="{esc(full)}">',
@@ -162,6 +185,7 @@ def page(request: Request, *, title: str, description: str, path: str, body: str
         f'<meta name="twitter:title" content="{esc(full)}">',
         f'<meta name="twitter:description" content="{esc(description)}">',
         f'<meta name="twitter:image" content="{esc(img)}">',
+        f'<meta name="twitter:image:alt" content="{esc(full)}">',
         *[f'<script type="application/ld+json">{_ld(x)}</script>' for x in jsonld or []],
     ])
     doc = template()
@@ -170,7 +194,7 @@ def page(request: Request, *, title: str, description: str, path: str, body: str
     doc = doc.replace("</head>", f"{head}\n</head>", 1)
     if body:   # the page as plain HTML until the app starts (crawlers that don't run JavaScript read this)
         doc = re.sub(r'<main id="view">(.*?)</main>', lambda m: f'<main id="view">{m.group(1)}<div class="wrap page ssr">{body}</div></main>', doc, count=1, flags=re.S)
-    return HTMLResponse(doc, status_code=status, headers={"Cache-Control": "no-cache"})
+    return HTMLResponse(doc, status_code=status, headers={"Cache-Control": "no-cache", **({"Retry-After": "60"} if status == 503 else {})})
 
 
 def _ld(x: dict[str, Any]) -> str:
@@ -191,18 +215,15 @@ def crumbs(base: str, items: list[tuple[str, str]]) -> tuple[str, dict[str, Any]
 def home(request: Request) -> HTMLResponse:
     base = base_url(request)
     by, rows = listing()
+    rows = [r for r in public_rows(rows) if discoverable(r)]
     top = sorted(rows, key=lambda r: (r.get("trending") or 0) * 1e9 + (r.get("downloads") or 0), reverse=True)[:120]
-    ds = sum(1 for r in rows if r["kind"] == "dataset")
-    sp = sum(1 for r in rows if r["kind"] == "space")
-    tasks = sum((r.get("indexed") or {}).get("tasks") or 0 for r in rows)
-    desc = (f"{ds:,} RL environment datasets and {sp:,} environment Spaces on Hugging Face, across OpenEnv, Harbor, Verifiers, "
-            f"NeMo Gym and more: see what each task asks and how it's graded, then run an agent on it." if rows else DESCRIPTION)
+    desc = DESCRIPTION
     body = (f"<header class=\"tp-head\"><h1>{TAGLINE}</h1><p class=\"lede\">{esc(desc)}</p></header>"
             + _env_list(top) + '<p><a href="/community">Community rollouts</a> · <a href="/d/XiaomiMiMo/MiMo-V2.6-RL-oss">MiMo-V2.6 RL</a></p>')
     ld = [{"@type": "WebSite", "name": SITE, "alternateName": TAGLINE, "url": base + "/", "description": desc,
            "potentialAction": {"@type": "SearchAction", "target": {"@type": "EntryPoint", "urlTemplate": base + "/?q={search_term_string}"},
                                "query-input": "required name=search_term_string"},
-           "publisher": {"@type": "Organization", "name": "Hugging Face", "url": "https://huggingface.co"}},
+           "publisher": {"@type": "Organization", "name": "FineEnvs", "url": "https://huggingface.co/FineEnvs"}},
           {"@type": "CollectionPage", "name": TAGLINE, "url": base + "/", "about": "Reinforcement learning environments",
            "mainEntity": {"@type": "ItemList", "numberOfItems": len(top), "itemListElement": [
                {"@type": "ListItem", "position": i + 1, "url": base + _href(r), "name": r.get("heading") or r["id"]} for i, r in enumerate(top[:50])]}}]
@@ -221,10 +242,10 @@ def _env_list(rows: list[dict[str, Any]]) -> str:
 def environment(request: Request, spec: str) -> HTMLResponse:
     base = base_url(request)
     by, _ = listing()
-    r = by.get(spec)
+    r = next((r for r in public_rows(list(by.values())) if r["key"] == spec), None)
     name = display_name(r, spec)
     kind = kind_of(r, spec)
-    tasks = index_rows(spec) if r or spec == MIMO else []
+    tasks = index_rows(spec) if r else []
     n = len(tasks) or ((r or {}).get("indexed") or {}).get("tasks")
     brief = clip((r or {}).get("brief") or "", 300)
     desc = clip(f"{name}: {kind} on Hugging Face{f' with {n:,} tasks' if n else ''}. "
@@ -243,16 +264,24 @@ def environment(request: Request, spec: str) -> HTMLResponse:
            "includedInDataCatalog": {"@type": "DataCatalog", "name": SITE, "url": base + "/"},
            "distribution": [{"@type": "DataDownload", "encodingFormat": "application/octet-stream", "contentUrl": f"https://huggingface.co/datasets/{spec}"}]},
           cld]
-    return page(request, title=f"{name} · {kind}", description=desc, path=path, body=body, jsonld=ld, image=f"/og{path}.png" if (r or spec == MIMO) else None, noindex=not r and spec != MIMO)
+    return page(request, title=f"{name} · {kind}", description=desc, path=path, body=body, jsonld=ld, image=f"/og{path}.png" if r else None, noindex=not r)
 
 
 def task(request: Request, spec: str, ref: str) -> HTMLResponse:
     base = base_url(request)
     by, _ = listing()
-    r = by.get(spec)
+    r = next((r for r in public_rows(list(by.values())) if r["key"] == spec), None)
     env_name = display_name(r, spec)
-    known = r is not None or spec == MIMO
+    known = r is not None
     row = next((t for t in index_rows(spec) if t["path"] == ref), None) if known else None
+    status = 200
+    if known and not row and re.fullmatch(r"(?:[^/]+/){1,2}\d{1,10}", ref):
+        try:
+            row = seo_tasks.row(spec, ref)
+        except seo_tasks.Unavailable as exc:
+            status = exc.status
+    elif known and not row:
+        status = 404
     split, _, n = ref.rpartition("/")
     # a row of a dataset read as rows (no index here): "Row 3 (train)" rather than a bare "3"
     fallback = f"Row {n} ({split})" if split and n.isdigit() and "/" not in split else ref.rsplit("/", 1)[-1]
@@ -262,18 +291,25 @@ def task(request: Request, spec: str, ref: str) -> HTMLResponse:
     path = f"/t/{enc(spec)}/{enc(ref)}"
     cr, cld = crumbs(base, [("Environments", "/"), (env_name, f"/d/{enc(spec)}"), (title, "")])
     body = (cr + f"<header class=\"tp-head\"><h1>{esc(title)}</h1><p class=\"lede\">{esc(desc)}</p></header>"
+            + (f'<section><h2>The task</h2><p class="seo-prompt">{esc(row.get("brief") or "")}</p></section>' if row else "")
             + f'<p>Part of <a href="/d/{enc(spec)}">{esc(spec)}</a>.</p>')
+    if row and type(row.get("total")) is int and n.isdigit():
+        body += '<nav aria-label="Other tasks">' + " · ".join(
+            f'<a href="/t/{enc(spec)}/{enc(split)}/{i}">{label}</a>'
+            for i, label in ((int(n) - 1, "Previous task"), (int(n) + 1, "Next task")) if 0 <= i < row["total"]) + '</nav>'
     ld = [{"@type": "CreativeWork", "name": title, "description": desc, "url": base + path, "learningResourceType": "RL environment task",
            "isPartOf": {"@type": "Dataset", "name": env_name, "url": f"{base}/d/{enc(spec)}", "sameAs": f"https://huggingface.co/datasets/{spec}"},
            "about": "reinforcement learning", **({"genre": row["category"]} if row and row.get("category") else {})}, cld]
     return page(request, title=f"{title} · {env_name}", description=desc, path=path, body=body, jsonld=ld, image=f"/og{path}.png" if known else None,
-                noindex=not row, og_type="article")
+                noindex=not row and status != 503, og_type="article", status=status)
 
 
 def space(request: Request, spec: str) -> HTMLResponse:
     base = base_url(request)
     by, _ = listing()
-    r = by.get(f"space:{spec}")
+    r = next((r for r in public_rows(list(by.values())) if r["key"] == f"space:{spec}"), None)
+    if "task" in request.query_params:
+        return space_task(request, spec, r)
     name = display_name(r, spec)
     kind = kind_of(r, spec) if r else "environment Space"
     desc = clip(f"{name}: an {kind} on Hugging Face. {clip((r or {}).get('brief') or '', 220) or 'See it live: its app, a playground with rewards, its tasks, and MCP for coding agents.'}", 300)
@@ -286,7 +322,49 @@ def space(request: Request, spec: str) -> HTMLResponse:
            "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
            "author": {"@type": "Organization", "name": spec.split("/")[0], "url": f"https://huggingface.co/{spec.split('/')[0]}"},
            "keywords": ["reinforcement learning", "RL environment", *(["OpenEnv"] if (r or {}).get("openenv") else []), *((r or {}).get("tags") or [])[:10]]}, cld]
-    return page(request, title=f"{name} · {kind}", description=desc, path=path, body=body, jsonld=ld, image=f"/og{path}.png" if r else None, noindex=not r)
+    if r and discoverable(r):
+        ranges = seo_tasks.ranges((spaces_live.last_seen(spec) or {}).get("task_api"))
+        body += "".join(f'<section><h2>{esc(split)} tasks</h2><ul>' + "".join(
+            f'<li><a href="{esc(seo_tasks.space_path(spec, env, split, i))}">Task {i + 1}</a></li>' for i in range(min(n, 12)))
+            + "</ul></section>" for env, split, n in ranges)
+    return page(request, title=f"{name} · {kind}", description=desc, path=path, body=body, jsonld=ld, image=f"/og{path}.png" if r else None, noindex=not r or not discoverable(r))
+
+
+def space_task(request: Request, spec: str, environment: dict | None) -> HTMLResponse:
+    q = request.query_params
+    env, split, raw = q.get("env", ""), q.get("split", ""), q.get("task", "")
+    if not environment or not re.fullmatch(r"\d{1,10}", raw) or not env or not split or len(env) > 80 or len(split) > 200:
+        return not_found(request)
+    index = int(raw)
+    path = seo_tasks.space_path(spec, env, split, index)
+    status, row = 200, None
+    try:
+        row = seo_tasks.space(spec, env, split, index)
+    except seo_tasks.Unavailable as exc:
+        status = exc.status
+    except Exception:
+        status = 503
+    if status == 404:
+        return not_found(request)
+    title = clip((row or {}).get("title") or f"Task {index + 1}", 110)
+    desc = clip(f"{title}: {split} task in {spec}, an RL environment on the Hugging Face Hub. {(row or {}).get('brief') or ''}", 300)
+    cr, cld = crumbs(base_url(request), [("Environments", "/"), (spec, f"/s/{enc(spec)}"), (title, "")])
+    body = cr + f'<header class="tp-head"><h1>{esc(title)}</h1><p class="lede">{esc(desc)}</p></header>'
+    if row:
+        body += f'<section><h2>The task</h2><p class="seo-prompt">{esc(row["brief"])}</p></section>'
+        if row.get("fields"):
+            body += '<h2>Task details</h2><dl>' + "".join(
+                f'<dt>{esc(k.replace("_", " "))}</dt><dd>{esc(str(v)[:1000])}</dd>' for k, v in row["fields"].items()) + '</dl>'
+        body += '<nav aria-label="Other tasks">' + " · ".join(
+            f'<a href="{esc(seo_tasks.space_path(spec, env, split, i))}">{label}</a>'
+            for i, label in ((index - 1, "Previous task"), (index + 1, "Next task")) if 0 <= i < row["total"]) + '</nav>'
+    else:
+        body += '<p>The task server is temporarily unavailable. Please try again shortly.</p>'
+    ld = [{"@type": "CreativeWork", "name": title, "description": desc, "url": base_url(request) + path,
+           "isPartOf": {"@type": "SoftwareApplication", "name": spec, "url": base_url(request) + f"/s/{enc(spec)}"}}, cld]
+    return page(request, title=f"{title} · {spec}", description=desc, path=path, body=body, jsonld=ld,
+                image=f"/og/s/{enc(spec)}.png?" + urlencode({"env": env, "split": split, "task": index}),
+                og_type="article", status=status)
 
 
 def simple(request: Request, path: str) -> HTMLResponse:
@@ -310,7 +388,8 @@ def robots(request: Request) -> PlainTextResponse:
     base = base_url(request)
     return PlainTextResponse("\n".join([
         "User-agent: *", "Allow: /", "Disallow: /api/", "Disallow: /mcp/", "Disallow: /capture/", "Disallow: /run/", "Disallow: /runs",
-        "Disallow: /compare/", "Disallow: /login", "Disallow: /logout", "", f"Sitemap: {base}/sitemap.xml", ""]))
+        "Allow: /api/env/", "Allow: /api/spaces/", "Allow: /api/search", "Allow: /api/environments",
+        "Disallow: /api/environments/mine", "Disallow: /compare/", "Disallow: /login", "Disallow: /logout", "", f"Sitemap: {base}/sitemap.xml", ""]))
 
 
 _sitemap: dict[str, Any] = {"at": 0.0, "pages": [], "tasks": []}
@@ -318,29 +397,45 @@ _sitemap: dict[str, Any] = {"at": 0.0, "pages": [], "tasks": []}
 
 def _entries() -> tuple[list[tuple[str, str | None]], list[tuple[str, str | None]]]:
     with _lock:
-        if time.time() - _sitemap["at"] < 3600 and _sitemap["pages"]:
+        if time.time() - _sitemap["at"] < 300 and _sitemap["pages"]:
             return _sitemap["pages"], _sitemap["tasks"]
     by, rows = listing()
+    rows = public_rows(rows)
     pages: list[tuple[str, str | None]] = [("/", None), ("/community", None)]
-    # every dataset; a Space when someone liked it, it runs, or it's featured (thousands are near-copies from hackathons)
+    # Every public dataset and only Spaces with evidence of a supported API.
     pages += [(_href(r), (r.get("updated") or "")[:10] or None) for r in rows
-              if r["kind"] == "dataset" or (r.get("likes") or 0) > 0 or r.get("stage") == "RUNNING" or r.get("collection")]
-    if f"{MIMO}" not in by:
-        pages.append((f"/d/{enc(MIMO)}", None))
+              if discoverable(r)]
     tasks: list[tuple[str, str | None]] = []
-    for spec in [MIMO, *[r["id"] for r in rows if r["kind"] == "dataset" and (r.get("indexed") or {}).get("tasks")]]:
+    for spec in dict.fromkeys(r["id"] for r in rows if r["kind"] == "dataset"):
         try:
             tasks += [(f"/t/{enc(spec)}/{enc(t['path'])}", None) for t in index_rows(spec)]
         except Exception:  # noqa: BLE001 - one index unreadable leaves the rest
             continue
     with _lock:
+        tasks = list(dict.fromkeys(tasks))
         _sitemap.update(at=time.time(), pages=pages, tasks=tasks)
     return pages, tasks
 
 
+def _space_ranges():
+    """Represent task coordinates as ranges; do not allocate millions of URLs or fetch any tasks."""
+    records = space_checks.inventory()
+    _, rows = listing()
+    out = []
+    for r in sorted(public_rows(rows), key=lambda r: r["key"]):
+        if r.get("kind") != "space" or not space_checks.browseable(records.get(r["id"])):
+            continue
+        rec = records[r["id"]]
+        ranges = rec.get("task_splits") or seo_tasks.ranges((spaces_live.last_seen(r["id"]) or {}).get("task_api"))
+        for env, split, n in ranges:
+            if type(n) is int and 0 < n <= 1_000_000_000:
+                out.append((r["id"], env, split, n))
+    return out
+
+
 def _urlset(base: str, items: list[tuple[str, str | None]]) -> Response:
     xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
-    xml += [f"<url><loc>{esc(base + p)}</loc>{f'<lastmod>{esc(m)}</lastmod>' if m else ''}</url>" for p, m in items]
+    xml += [f"<url><loc>{esc(base + p)}</loc>{f'<lastmod>{esc(m)}</lastmod>' if m else ''}</url>" for p, m in items if len((base + p).encode()) <= 2048]
     xml.append("</urlset>")
     return Response("\n".join(xml), media_type="application/xml")
 
@@ -349,6 +444,8 @@ def sitemap_index(request: Request) -> Response:
     base = base_url(request)
     _, tasks = _entries()
     parts = ["/sitemap-pages.xml", *[f"/sitemap-tasks-{i + 1}.xml" for i in range((len(tasks) + SITEMAP_CHUNK - 1) // SITEMAP_CHUNK)]]
+    total = sum(r[3] for r in _space_ranges())
+    parts += [f"/sitemap-space-tasks-{i + 1}.xml" for i in range(min(49000, (total + SITEMAP_CHUNK - 1) // SITEMAP_CHUNK))]
     xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     xml += [f"<sitemap><loc>{esc(base + p)}</loc></sitemap>" for p in parts]
     xml.append("</sitemapindex>")
@@ -368,6 +465,23 @@ def sitemap_tasks(request: Request, n: int) -> Response:
     return _urlset(base_url(request), chunk)
 
 
+def sitemap_space_tasks(request: Request, n: int) -> Response:
+    if not 1 <= n <= 49000:
+        return Response("not found", status_code=404)
+    offset, remaining, urls = (n - 1) * SITEMAP_CHUNK, SITEMAP_CHUNK, []
+    for spec, env, split, count in _space_ranges():
+        if offset >= count:
+            offset -= count
+            continue
+        stop = min(count, offset + remaining)
+        urls.extend((seo_tasks.space_path(spec, env, split, i), None) for i in range(offset, stop))
+        remaining -= stop - offset
+        offset = 0
+        if not remaining:
+            break
+    return _urlset(base_url(request), urls) if urls else Response("not found", status_code=404)
+
+
 # ── preview images ───────────────────────────────────────────────────────────
 # 1200×630, plain: the site's name, what the page is, its title and a line of facts. Drawn once per page and kept.
 W, H = 1200, 630
@@ -377,27 +491,41 @@ W, H = 1200, 630
 def card_png(kind: str, title: str, sub: str, facts: str) -> bytes:
     from PIL import Image, ImageDraw, ImageFont
 
-    img = Image.new("RGB", (W, H), "#ffffff")
+    img = Image.new("RGB", (W, H), "#fffdf7")
     d = ImageDraw.Draw(img)
     font = lambda s: ImageFont.load_default(size=s)  # noqa: E731 - Pillow's own font, so no system fonts are needed
-    d.rectangle([0, 0, W, 6], fill="#111827")
-    d.text((72, 70), SITE, font=font(34), fill="#6b7280")
-    d.text((72, 150), kind.upper(), font=font(28), fill="#9ca3af")
-    y = 200
-    for line in _wrap(d, title, font(66), W - 144)[:3]:
-        d.text((72, y), line, font=font(66), fill="#111827")
-        y += 82
+    d.rectangle([0, 0, W, 12], fill="#ffcd36")
+    d.rounded_rectangle([56, 48, 198, 90], radius=10, fill="#ffdc62")
+    d.text((73, 58), "FINEENVS", font=font(23), fill="#352c0e")
+    d.text((220, 57), SITE, font=font(26), fill="#54504a")
+    d.text((56, 142), _ellipsize(d, kind.upper(), font(23), 1088), font=font(23), fill="#827256")
+    lines = _wrap(d, title, font(65), 1088)
+    size = 65 if len(lines) <= 3 else 54
+    lines = _wrap(d, title, font(size), 1088)[:3]
+    for i, line in enumerate(lines):
+        d.text((56, 194 + i * 77), _ellipsize(d, line, font(size), 1088), font=font(size), fill="#1c1b19")
     if sub:
-        d.text((72, y + 16), clip(sub, 70), font=font(32), fill="#4b5563")
-    if facts:
-        d.text((72, H - 104), facts, font=font(30), fill="#374151")
-    d.text((W - 72, H - 104), "RL environments on Hugging Face", font=font(28), fill="#9ca3af", anchor="ra")
+        d.text((56, 452), _ellipsize(d, sub, font(27), 1088), font=font(27), fill="#665e51")
+    d.line([56, 516, 1144, 516], fill="#e5dfd1", width=2)
+    d.text((56, 550), _ellipsize(d, facts or "Discover tasks. Inspect rewards. Run agents.", font(24), 680), font=font(24), fill="#524d42")
+    d.text((1144, 550), "Hugging Face Hub", font=font(24), fill="#827256", anchor="ra")
     out = io.BytesIO()
     img.save(out, "PNG", optimize=True)
     return out.getvalue()
 
 
+def _ellipsize(d, text, font, width):
+    text = str(text)
+    if d.textlength(text, font=font) <= width:
+        return text
+    while text and d.textlength(text + "…", font=font) > width:
+        text = text[:-1]
+    return text + "…"
+
+
 def _wrap(d, text: str, font, width: int) -> list[str]:
+    if "\n" in text:
+        return [line for part in text.splitlines() for line in _wrap(d, part, font, width)]
     words, lines, cur = str(text).split(), [], ""
     for w in words:
         nxt = f"{cur} {w}".strip()
@@ -415,9 +543,14 @@ def _wrap(d, text: str, font, width: int) -> list[str]:
     return lines or [""]
 
 
-def og_image(path: str) -> Response:
+def og_image(path: str, query=None) -> Response:
     """The preview image of a page, from its path (`/d/org/name`, `/t/org/name/ref`, `/s/org/name`, or the site's)."""
+    if path == "/":
+        return Response(card_png("Reinforcement learning", "Explore RL environments\non the Hugging Face Hub",
+                                 "OpenEnv  ·  Harbor  ·  MiMo  ·  NeMo Gym  ·  Verifiers", ""),
+                        media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
     by, _ = listing()
+    by = {r["key"]: r for r in public_rows(list(by.values()))}
     parts = [p for p in path.strip("/").split("/") if p]
     if parts and not (len(parts) >= 3 and parts[0] in ("d", "s", "t")):
         return Response(status_code=404)
@@ -425,14 +558,30 @@ def og_image(path: str) -> Response:
     if len(parts) >= 3 and parts[0] in ("d", "s", "t"):
         spec = f"{parts[1]}/{parts[2]}"
         r = by.get(spec if parts[0] != "s" else f"space:{spec}")
-        if r is None and spec != MIMO:   # nothing listed there: no image (its page points at the site's), no work done
+        if r is None:
             return Response(status_code=404)
         name = display_name(r, spec)
         k = kind_of(r, spec)
         if parts[0] == "t" and (r or spec == MIMO):
             ref = "/".join(parts[3:])
             row = next((t for t in index_rows(spec) if t["path"] == ref), None)
+            if not row and re.fullmatch(r"(?:[^/]+/){1,2}\d{1,10}", ref):
+                try:
+                    row = seo_tasks.row(spec, ref)
+                except seo_tasks.Unavailable as exc:
+                    return Response(status_code=exc.status)
+            if not row:
+                return Response(status_code=404)
             kind, title, sub = f"A task in {name}", clip((row or {}).get("title") or ref, 140), spec
+        elif parts[0] == "s" and query and "task" in query:
+            raw, env, split = query.get("task", ""), query.get("env", ""), query.get("split", "")
+            if not re.fullmatch(r"\d{1,10}", raw) or not env or not split or len(env) > 80 or len(split) > 200:
+                return Response(status_code=404)
+            try:
+                row = seo_tasks.space(spec, env, split, int(raw))
+            except Exception:
+                return Response(status_code=503, headers={"Retry-After": "60"})
+            kind, title, sub = f"{split} task", clip(row["title"], 140), spec
         else:
             n = ((r or {}).get("indexed") or {}).get("tasks") or (len(index_rows(spec)) if spec == MIMO else None)
             kind, title, sub = k, name, spec

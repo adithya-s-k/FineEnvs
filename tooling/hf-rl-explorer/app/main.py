@@ -809,16 +809,21 @@ def sitemap_tasks(n: int, request: Request):
     return seo.sitemap_tasks(request, n)
 
 
+@app.get("/sitemap-space-tasks-{n}.xml", include_in_schema=False)
+def sitemap_space_tasks(n: int, request: Request):
+    return seo.sitemap_space_tasks(request, n)
+
+
 @app.get("/og.png", include_in_schema=False)
 def og_site():
     return seo.og_image("/")
 
 
 @app.get("/og/{path:path}", include_in_schema=False)
-def og_page(path: str):
+def og_page(path: str, request: Request):
     if not path.endswith(".png") or len(path) > 600:
         raise HTTPException(404, "no such image")
-    return seo.og_image("/" + path[:-4])
+    return seo.og_image("/" + path[:-4], request.query_params)
 
 
 @app.exception_handler(404)
