@@ -28,6 +28,8 @@ from . import config
 
 router = APIRouter()
 COOKIE = "mimo_session"
+STATE_COOKIE = "mimo_oauth"
+STATE_TTL = 600
 _box = Fernet(base64.urlsafe_b64encode(hashlib.sha256(f"mimo-explorer:{config.SESSION_SECRET}".encode()).digest()))
 _states: dict[str, float] = {}
 _local: dict = {}
@@ -142,7 +144,7 @@ def login(request: Request):
         return RedirectResponse("/")
     now = time.time()
     for s, t in list(_states.items()):
-        if now - t > 600:
+        if now - t > STATE_TTL:
             _states.pop(s, None)
     if len(_states) > 5000:   # an unauthenticated route: don't let it grow without bound
         raise HTTPException(429, "Too many sign-ins in progress. Try again in a few minutes.")
@@ -150,12 +152,23 @@ def login(request: Request):
     _states[state] = now
     q = urlencode({"client_id": config.OAUTH_CLIENT_ID, "redirect_uri": _redirect_uri(request), "response_type": "code",
                    "scope": " ".join(config.OAUTH_SCOPES), "state": state})
-    return RedirectResponse(f"{config.OPENID_PROVIDER_URL}/oauth/authorize?{q}")
+    resp = RedirectResponse(f"{config.OPENID_PROVIDER_URL}/oauth/authorize?{q}")
+    resp.set_cookie(STATE_COOKIE, _box.encrypt(state.encode()).decode(), httponly=True, secure=True,
+                    samesite="none", max_age=STATE_TTL, path="/login")
+    return resp
+
+
+def _state_ok(request: Request, state: str) -> bool:
+    try:
+        expected = _box.decrypt(request.cookies.get(STATE_COOKIE, "").encode(), ttl=STATE_TTL).decode()
+    except (InvalidToken, ValueError):
+        return False
+    return bool(state) and secrets.compare_digest(state.encode(), expected.encode())
 
 
 @router.get("/login/callback")
 def callback(request: Request, code: str = "", state: str = ""):
-    if state not in _states:
+    if not _state_ok(request, state) or state not in _states or time.time() - _states[state] > STATE_TTL:
         raise HTTPException(400, "Sign-in expired or was tampered with. Try again.")
     _states.pop(state, None)
     basic = base64.b64encode(f"{config.OAUTH_CLIENT_ID}:{config.OAUTH_CLIENT_SECRET}".encode()).decode()
@@ -169,7 +182,9 @@ def callback(request: Request, code: str = "", state: str = ""):
     granted = set((tok.get("scope") or "").split())
     info = httpx.get(f"{config.OPENID_PROVIDER_URL}/oauth/userinfo", timeout=20,
                      headers={"Authorization": f"Bearer {tok['access_token']}"}).json()
-    return _issue(RedirectResponse("/#/"), {
+    resp = RedirectResponse("/#/")
+    resp.delete_cookie(STATE_COOKIE, path="/login", samesite="none", secure=True)
+    return _issue(resp, {
         "token": tok["access_token"], "name": info.get("preferred_username") or info.get("name"), "avatar": info.get("picture"),
         "exp": time.time() + min(tok.get("expires_in") or 28800, config.SESSION_DAYS * 86400), "via": "oauth",
         "missing_scopes": sorted({"inference-api", "jobs"} - granted)})

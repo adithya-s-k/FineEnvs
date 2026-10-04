@@ -9,6 +9,7 @@ import json
 import mimetypes
 import os
 import random
+import re
 import time
 from functools import lru_cache
 
@@ -530,7 +531,11 @@ def community_tasks():
 
 @app.get("/api/runs/{run_id}/artifacts/{name}")
 def artifact(run_id: str, name: str, request: Request):
-    _visible(request, run_id)
+    _, owner = _visible(request, run_id)
+    if not re.fullmatch(r"[\w.-]{1,80}", name) or name in ("run.json", "events.jsonl"):
+        raise HTTPException(404, "no such artifact")
+    if not owner and not re.search(r"\.(jpe?g|png|webp)$", name, re.I):
+        raise HTTPException(404, "no such artifact")
     data = store.read_artifact(run_id, name)
     if data is None:
         raise HTTPException(404, "no such artifact")
@@ -542,6 +547,10 @@ def artifact(run_id: str, name: str, request: Request):
 # On the Space, a sandbox holds no credential: OpenCode (and the General verifier's judge) call this route with a
 # per-rollout capability in the path. It works only while that rollout is live, only for the rollout's own agent
 # model and judge, and this server adds the user's token or endpoint key on the way out.
+LLM_REPLY_MAX = 64 * 1024 * 1024
+LLM_SSE_LINE_MAX = 1_000_000
+
+
 @app.post("/api/llm/{cap}/v1/chat/completions")
 async def llm_proxy(cap: str, request: Request):
     import asyncio
@@ -559,6 +568,8 @@ async def llm_proxy(cap: str, request: Request):
         body = json.loads(raw)
     except ValueError:
         return JSONResponse({"error": {"message": "invalid JSON"}}, 400)
+    if not isinstance(body, dict):
+        return JSONResponse({"error": {"message": "JSON object required"}}, 400)
     up = r.upstream(str(body.get("model") or ""))
     if up is None:
         return JSONResponse({"error": {"message": "this rollout may not call that model"}}, 403)
@@ -584,10 +595,14 @@ async def llm_proxy(cap: str, request: Request):
         # what streams past here lets the rollout page show the model is still writing, and how much.
         s = r.stream = {"since": time.time(), "text": 0, "thinking": 0, "tool": 0}
         buf = b""
+        total = 0
         try:
             async for chunk in resp.aiter_bytes():
-                yield chunk
+                total += len(chunk)
+                if total > LLM_REPLY_MAX or len(buf) + len(chunk) > LLM_SSE_LINE_MAX:
+                    break
                 buf += chunk
+                yield chunk
                 *lines, buf = buf.split(b"\n")
                 for line in lines:
                     if not line.startswith(b"data: {"):

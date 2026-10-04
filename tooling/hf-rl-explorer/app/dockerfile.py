@@ -13,7 +13,7 @@ import re
 import shlex
 from dataclasses import dataclass, field
 
-IGNORED = {"CMD", "ENTRYPOINT", "EXPOSE", "LABEL", "HEALTHCHECK", "VOLUME", "STOPSIGNAL", "MAINTAINER", "USER", "SHELL"}
+IGNORED = {"CMD", "ENTRYPOINT", "EXPOSE", "LABEL", "HEALTHCHECK", "VOLUME", "STOPSIGNAL", "MAINTAINER"}
 
 
 @dataclass
