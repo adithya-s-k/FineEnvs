@@ -191,6 +191,15 @@ def test_static_social_card_is_available_without_catalog():
     assert Image.open(io.BytesIO(response.content)).size == (1200, 630)
 
 
+def test_home_reads_one_consistent_check_inventory(monkeypatch):
+    calls = []
+    rows = [{**ROWS[1], "id": f"org/space{i}", "key": f"space:org/space{i}"} for i in range(100)]
+    monkeypatch.setattr(seo, "listing", lambda: ({r["key"]: r for r in rows}, rows))
+    monkeypatch.setattr(seo.space_checks, "inventory", lambda: calls.append(True) or {})
+    assert client.get("/").status_code == 200
+    assert len(calls) == 1
+
+
 def test_a_card_section_heading_is_not_a_datasets_name():
     from app.catalog import _card_text
 

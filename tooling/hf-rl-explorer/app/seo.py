@@ -97,8 +97,8 @@ def public_rows(rows):
     return [r for r in rows if r["key"] not in hidden and not any(r.get(k) for k in ("private", "gated", "restricted"))]
 
 
-def discoverable(r):
-    return r.get("kind") == "dataset" or space_checks.browseable(space_checks.inventory().get(r["id"]))
+def discoverable(r, records=None):
+    return r.get("kind") == "dataset" or space_checks.browseable((space_checks.inventory() if records is None else records).get(r["id"]))
 
 
 def index_rows(spec: str) -> list[dict[str, Any]]:
@@ -215,7 +215,8 @@ def crumbs(base: str, items: list[tuple[str, str]]) -> tuple[str, dict[str, Any]
 def home(request: Request) -> HTMLResponse:
     base = base_url(request)
     by, rows = listing()
-    rows = [r for r in public_rows(rows) if discoverable(r)]
+    checks = space_checks.inventory()
+    rows = [r for r in public_rows(rows) if discoverable(r, checks)]
     top = sorted(rows, key=lambda r: (r.get("trending") or 0) * 1e9 + (r.get("downloads") or 0), reverse=True)[:120]
     desc = DESCRIPTION
     body = (f"<header class=\"tp-head\"><h1>{TAGLINE}</h1><p class=\"lede\">{esc(desc)}</p></header>"
@@ -401,10 +402,11 @@ def _entries() -> tuple[list[tuple[str, str | None]], list[tuple[str, str | None
             return _sitemap["pages"], _sitemap["tasks"]
     by, rows = listing()
     rows = public_rows(rows)
+    checks = space_checks.inventory()
     pages: list[tuple[str, str | None]] = [("/", None), ("/community", None)]
     # Every public dataset and only Spaces with evidence of a supported API.
     pages += [(_href(r), (r.get("updated") or "")[:10] or None) for r in rows
-              if discoverable(r)]
+              if discoverable(r, checks)]
     tasks: list[tuple[str, str | None]] = []
     for spec in dict.fromkeys(r["id"] for r in rows if r["kind"] == "dataset"):
         try:
@@ -426,6 +428,8 @@ def _space_ranges():
         if r.get("kind") != "space" or not space_checks.browseable(records.get(r["id"])):
             continue
         rec = records[r["id"]]
+        if not (rec.get("task_catalog") or {}).get("tasks") and not rec.get("task_splits"):
+            continue
         ranges = rec.get("task_splits") or seo_tasks.ranges((spaces_live.last_seen(r["id"]) or {}).get("task_api"))
         for env, split, n in ranges:
             if type(n) is int and 0 < n <= 1_000_000_000:
