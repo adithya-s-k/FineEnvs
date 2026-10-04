@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>MiMo RL Environment Explorer</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta name="description" content="Browse the 7,780 RL environments in XiaomiMiMo/MiMo-V2.6-RL-oss, run a rollout on HF Sandboxes with a model from HF Inference Providers, and watch it get graded.">
+  <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b0b0d" media="(prefers-color-scheme: dark)">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/app.css">
+  <script src="/js/boot.js"></script>
+</head>
+<body>
+  <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+  <header class="top">
+    <div class="wrap top-inner">
+      <a class="brand" href="#/" aria-label="MiMo RL Environment Explorer, home">
+        <svg class="logo" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect width="32" height="32" rx="8" class="lg-bg"/><rect x="3.35" y="5.98" width="4.3" height="4.3" rx="1" class="lg-on"/><rect x="8.60" y="5.98" width="4.3" height="4.3" rx="1" class="lg-off"/><rect x="13.85" y="5.98" width="4.3" height="4.3" rx="1" class="lg-off"/><rect x="19.10" y="5.98" width="4.3" height="4.3" rx="1" class="lg-off"/><rect x="24.35" y="5.98" width="4.3" height="4.3" rx="1" class="lg-on"/><rect x="3.35" y="11.23" width="4.3" height="4.3" rx="1" class="lg-on"/><rect x="8.60" y="11.23" width="4.3" height="4.3" rx="1" class="lg-on"/><rect x="13.85" y="11.23" width="4.3" height="4.3" rx="1" class="lg-off"/><rect x="19.10" y="11.23" width="4.3" height="4.3" rx="1" class="lg-on"/><rect x="24.35" y="11.23" width="4.3" height="4.3" rx="1" class="lg-on"/><rect x="3.35" y="16.48" width="4.3" height="4.3" rx="1" class="lg-on"/><rect x="8.60" y="16.48" width="4.3" height="4.3" rx="1" class="lg-off"/><rect x="13.85" y="16.48" width="4.3" height="4.3" rx="1" class="lg-acc"/><rect x="19.10" y="16.48" width="4.3" height="4.3" rx="1" class="lg-off"/><rect x="24.35" y="16.48" width="4.3" height="4.3" rx="1" class="lg-on"/><rect x="3.35" y="21.73" width="4.3" height="4.3" rx="1" class="lg-on"/><rect x="8.60" y="21.73" width="4.3" height="4.3" rx="1" class="lg-off"/><rect x="13.85" y="21.73" width="4.3" height="4.3" rx="1" class="lg-off"/><rect x="19.10" y="21.73" width="4.3" height="4.3" rx="1" class="lg-off"/><rect x="24.35" y="21.73" width="4.3" height="4.3" rx="1" class="lg-on"/></svg>
+        <span class="name">MiMo RL<span class="long"> Environment</span> <span>Explorer</span></span>
+      </a>
+      <nav class="nav" aria-label="Main">
+        <a href="#/" data-nav="explore">Explore</a>
+        <a href="#/rewards" data-nav="rewards"><span class="long">Reward design</span><span class="short">Rewards</span></a>
+        <a href="#/community" data-nav="community">Community</a>
+        <a href="#/runs" data-nav="runs"><span class="long">My rollouts</span><span class="short">Mine</span> <span class="count" id="nav-active" hidden></span></a>
+      </nav>
+      <div class="top-right">
+        <button class="icon-btn" id="theme" type="button" aria-label="Toggle dark mode" title="Toggle dark mode"></button>
+        <div id="account"><span class="sk" style="width:34px;height:34px;border-radius:50%"></span></div>
+      </div>
+    </div>
+  </header>
+
+  <main id="view"><div class="boot" aria-label="Loading"><span class="spinner lg"></span></div></main>
+
+  <div class="scrim" id="scrim" hidden></div>
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+    <div class="modal-bar"><span id="modal-icon"></span><span id="modal-title"></span><span class="grow"></span>
+      <a class="btn sm" id="modal-open" target="_blank" rel="noopener" hidden></a>
+      <button class="icon-btn" id="modal-close" type="button" aria-label="Close"></button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+  <div id="dialog-root"></div>
+  <div class="tooltip" id="tip" hidden></div>
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <footer class="foot">
+    <div class="wrap">
+      <span>Built by <a href="https://huggingface.co" target="_blank" rel="noopener">Hugging Face</a> · <a href="https://huggingface.co/FineEnvs" target="_blank" rel="noopener">FineEnvs team</a></span>
+      <span>Data: <a href="https://huggingface.co/datasets/XiaomiMiMo/MiMo-V2.6-RL-oss" target="_blank" rel="noopener">XiaomiMiMo/MiMo-V2.6-RL-oss</a> (Apache-2.0)</span>
+      <span>Graders from <a href="https://github.com/XiaomiMiMo/verl" target="_blank" rel="noopener">verl</a> and <a href="https://github.com/XiaomiMiMo/mimoagent" target="_blank" rel="noopener">mimoagent</a>, harness <a href="https://opencode.ai" target="_blank" rel="noopener">OpenCode</a> · <a href="#/rewards">How rewards are designed</a></span>
+      <span>Unofficial, not affiliated with Xiaomi</span>
+      <span class="grow"></span>
+      <a class="report" href="https://huggingface.co/spaces/FineEnvs/MiMo-RL-Envs-Explorer/discussions" target="_blank" rel="noopener"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22V4a1 1 0 0 1 1-1h11l-1.5 4L16 11H5"/></svg>Report an issue</a>
+      <span id="foot-version"></span>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/minisearch@7.1.1/dist/umd/index.min.js"></script>
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+.local-runs/
+.venv/
+__pycache__/
+*.pyc
+.validate

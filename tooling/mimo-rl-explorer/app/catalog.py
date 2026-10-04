@@ -1,0 +1,461 @@
+"""The dataset, as the app needs it.
+
+Two views of every task:
+  * `view(task_id)`: everything a person needs to understand it (brief, environment, how it is
+    graded), shaped per domain. Answers are withheld: rubric `pass_anchor` / `check_code`,
+    `gold_answer`, the Cyber PoC. Hidden tests *are* shown: they are how the task is verified.
+  * `runtime(task_id)`: what the runner needs to set up and grade a rollout.
+
+The browsing index (web/data/*.json.gz, built by build_data.py) and the raw parquet rows are both
+loaded once. A General environment's folder (tools, databases, workspace files, verifier) is fetched
+from the dataset the first time it is opened, then cached.
+"""
+
+from __future__ import annotations
+
+import ast
+import base64
+import gzip
+import json
+import re
+import sqlite3
+import threading
+from functools import lru_cache
+from pathlib import Path
+
+from . import config, judges
+
+_lock = threading.Lock()
+_env_locks: dict[str, threading.Lock] = {}
+
+PARQUETS = {"code": "code.parquet", "cyber": "cyber.parquet", "general": "general/train.parquet",
+            "webdev": "webdev.parquet", "music": "music.parquet"}
+
+
+# ── loading ──────────────────────────────────────────────────────────────────
+@lru_cache(maxsize=1)
+def index() -> dict:
+    doc = json.loads(gzip.decompress((config.WEB_DIR / "data" / "index.json.gz").read_bytes()))
+    doc["by_id"] = {e["id"]: e for e in doc["envs"]}
+    return doc
+
+
+@lru_cache(maxsize=8)
+def detail(domain: str) -> dict:
+    return json.loads(gzip.decompress((config.WEB_DIR / "data" / f"{domain}.json.gz").read_bytes()))
+
+
+@lru_cache(maxsize=1)
+def rows() -> dict[str, dict]:
+    """task id -> {"domain", "prompt", "instance" (parsed instance_json), "extra"}."""
+    import pandas as pd
+    from huggingface_hub import hf_hub_download
+
+    out: dict[str, dict] = {}
+    for domain, fname in PARQUETS.items():
+        df = pd.read_parquet(hf_hub_download(config.DATASET, fname, repo_type="dataset"))
+        for n, r in enumerate(df.to_dict("records")):
+            extra = r.get("extra_info") or {}
+            inst = json.loads(extra["instance_json"]) if extra.get("instance_json") else {}
+            tid = inst.get("instance_id") or f"music-{extra.get('src_id', n)}"
+            out[tid] = {"domain": domain, "prompt": r["prompt"][-1]["content"], "instance": inst,
+                        "extra": {k: v for k, v in extra.items() if k != "instance_json"}}
+    return out
+
+
+@lru_cache(maxsize=1)
+def _repo_files() -> dict[str, list[str]]:
+    """General env id -> its files, from one listing of the dataset (41k files; listing per env is slow)."""
+    from huggingface_hub import HfApi
+
+    out: dict[str, list[str]] = {}
+    for f in HfApi().list_repo_files(config.DATASET, repo_type="dataset"):
+        if f.startswith("general/envs/"):
+            out.setdefault(f.split("/")[2], []).append(f)
+    return out
+
+
+def env_dir(task_id: str) -> Path | None:
+    """A General (simulated workplace) environment's folder, fetched on first use (files in parallel)."""
+    if not task_id.startswith("s3k_"):
+        return None
+    local = config.CACHE_DIR / "general" / task_id
+    if (local / ".complete").exists():
+        return local
+    with _lock:
+        lk = _env_locks.setdefault(task_id, threading.Lock())
+    with lk:
+        if not (local / ".complete").exists():
+            from concurrent.futures import ThreadPoolExecutor
+            from huggingface_hub import hf_hub_download
+
+            files = _repo_files().get(task_id) or []
+            if not files:
+                raise FileNotFoundError(task_id)
+            prefix = f"general/envs/{task_id}/"
+
+            def get(f: str) -> None:
+                dst = local / f[len(prefix):]
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                src = hf_hub_download(config.DATASET, f, repo_type="dataset", cache_dir=str(config.CACHE_DIR / "hub"))
+                dst.write_bytes(Path(src).read_bytes())
+
+            with ThreadPoolExecutor(16) as ex:
+                list(ex.map(get, files))
+            (local / ".complete").touch()
+    return local
+
+
+def warm() -> None:
+    """Load the dataset rows and the file listing in the background at startup."""
+    rows()
+    _repo_files()
+
+
+def record(task_id: str) -> dict | None:
+    return index()["by_id"].get(task_id)
+
+
+# ── per-domain facts ─────────────────────────────────────────────────────────
+DESC = re.compile(r"^(?P<san>\S+):\s+(?P<kind>\S+)\s+in function `(?P<fn>[^`]+)`\s+in file `(?P<file>[^`]+)`")
+
+
+def cyber_expected(desc: str) -> dict:
+    """mimoagent's `_parse_description` (environments/datasets/arvo.py), verbatim, for server_arvo's expected_func.json."""
+    func_m = re.search(r"in function `([^`]+)`", desc)
+    file_m = re.search(r"in file `([^`]+)`", desc)
+    san_m = re.match(r"(\S+):\s+(\S+)", desc)
+    if not func_m:
+        raise ValueError(f"cannot parse function from description: {desc!r}")
+    return {"function": func_m.group(1), "file": file_m.group(1) if file_m else "",
+            "sanitizer": san_m.group(1) if san_m else "", "error_type": san_m.group(2) if san_m else "", "max_submits": 0}
+
+
+def patch_files(patch: str) -> list[dict]:
+    """Files a unified diff touches, with +/- line counts."""
+    files, cur = [], None
+    for line in patch.splitlines():
+        if line.startswith("diff --git "):
+            cur = {"path": line.split(" b/", 1)[-1].strip(), "added": 0, "removed": 0, "new": False}
+            files.append(cur)
+        elif cur is not None:
+            if line.startswith("new file mode"):
+                cur["new"] = True
+            elif line.startswith("+") and not line.startswith("+++"):
+                cur["added"] += 1
+            elif line.startswith("-") and not line.startswith("---"):
+                cur["removed"] += 1
+    return files
+
+
+def patch_file_text(patch: str, path: str) -> str | None:
+    """Content of a file the patch creates, rebuilt from its '+' lines (for small scripts)."""
+    blocks = re.split(r"(?=^diff --git )", patch, flags=re.M)
+    for b in blocks:
+        if b.startswith("diff --git") and b.splitlines()[0].endswith("b/" + path) and "new file mode" in b[:400]:
+            body = b.split("@@", 2)[-1].split("\n", 1)[-1] if "@@" in b else ""
+            return "\n".join(l[1:] for l in body.splitlines() if l.startswith("+"))
+    return None
+
+
+def parse_tools(py: str) -> list[dict]:
+    """Public functions of an MCP tools module: name, parameters, first paragraph of the docstring."""
+    try:
+        tree = ast.parse(py)
+    except SyntaxError:
+        return []
+    tools = []
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and not node.name.startswith("_"):
+            args = node.args
+            defaults = [None] * (len(args.args) - len(args.defaults)) + list(args.defaults)
+            params = []
+            for a, d in zip(args.args, defaults):
+                params.append({"name": a.arg, "type": ast.unparse(a.annotation) if a.annotation else "",
+                               "default": ast.unparse(d) if d is not None else None})
+            doc = (ast.get_docstring(node) or "").strip().split("\n\n")[0].replace("\n", " ")
+            tools.append({"name": node.name, "params": params, "doc": doc[:400]})
+    return tools
+
+
+def db_summary(db: Path) -> list[dict]:
+    """Tables of a system's SQLite state: columns and row count (rows come from db_rows)."""
+    con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    try:
+        out = []
+        for (name,) in con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"):
+            cols = [{"name": c[1], "type": c[2]} for c in con.execute(f'PRAGMA table_info("{name}")')]
+            n = con.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()[0]
+            out.append({"table": name, "columns": cols, "rows": n})
+        return out
+    finally:
+        con.close()
+
+
+def db_rows(db: Path, table: str, limit: int = 50) -> dict:
+    con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    try:
+        tables = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        if table not in tables:
+            raise KeyError(table)
+        cur = con.execute(f'SELECT * FROM "{table}" LIMIT ?', (limit,))
+        return {"columns": [d[0] for d in cur.description], "rows": [list(r) for r in cur.fetchall()]}
+    finally:
+        con.close()
+
+
+KIND = {"xlsx": "spreadsheet", "xls": "spreadsheet", "csv": "spreadsheet", "docx": "document", "doc": "document",
+        "pdf": "pdf", "pptx": "slides", "png": "image", "jpg": "image", "jpeg": "image", "svg": "image", "gif": "image",
+        "html": "web", "htm": "web", "md": "text", "txt": "text", "json": "text", "xml": "text", "zip": "archive"}
+
+
+from .names import pretty_system  # noqa: E402
+
+
+# ── the task view ────────────────────────────────────────────────────────────
+WEBDEV_DIMS = [
+    ("layout_integrity", "Layout integrity", "Nothing overlaps, clips or overflows; the page holds together."),
+    ("typography_hierarchy", "Typography", "A clear type scale and hierarchy; text is readable."),
+    ("color_harmony", "Colour", "A coherent palette with enough contrast."),
+    ("whitespace", "Whitespace", "Spacing and rhythm; not cramped, not empty."),
+    ("content_richness", "Content richness", "As much content as a complete site of this kind needs."),
+    ("query_fulfillment", "Brief fulfilment", "Everything the brief asked for is visibly there."),
+    ("premium_assets", "Asset quality", "Real imagery and icons rather than placeholders."),
+]
+
+
+MUSIC_FEATURE = {
+    "note_len_entropy": "Variety of note lengths", "ioi_mean": "Average gap between note onsets",
+    "rhythm_surprisal": "How surprising the rhythm is", "note_density": "Notes per beat",
+    "qualified_note_rate": "Share of well-formed notes", "n_chan": "Instruments in use",
+    "polyphony_rate": "How often several notes sound at once", "polyphony_mean": "Average notes sounding together",
+    "roughness_p90": "Harshness of the densest chords", "harmonicity_mean": "How consonant the harmony is",
+    "key_certainty": "How clearly it sits in one key", "local_key_certainty": "Key clarity, phrase by phrase",
+    "pitch_in_scale": "Notes that belong to the key", "pitch_min": "Lowest note", "pitch_range": "Range from lowest to highest note",
+    "voice_leading_cost": "How smoothly the voices move", "self_similarity": "Repetition and variation",
+    "tension_peaks": "Build-ups and releases",
+}
+
+
+def view(task_id: str) -> dict | None:
+    rec = record(task_id)
+    if not rec:
+        return None
+    d = rec["d"]
+    det = detail(d).get(task_id, {})
+    raw = rows().get(task_id, {})
+    inst = raw.get("instance", {})
+    brief_text = det.get("brief") or raw.get("prompt", "")
+    try:
+        from build_data import first_sentence   # the same headline rule the index uses, just longer
+        headline = first_sentence(brief_text, 320) if d != "music" and d != "cyber" else rec["t"]
+    except Exception:  # noqa: BLE001
+        headline = rec["t"]
+    v = {"id": task_id, "domain": d, "title": headline, "short_title": rec["t"], "facets": rec["f"], "brief": det.get("brief") or raw.get("prompt", ""),
+         "meta": det.get("meta", []), "image": image_for(task_id), "runnable": runnable(task_id)}
+
+    if d == "code":
+        patch = inst.get("test_patch") or ""
+        files = patch_files(patch)
+        v["verify"] = {
+            "kind": "tests",
+            "summary": "The agent's edits are kept; the hidden tests below are applied on top and the test command runs. "
+                       "Reward 1 if it exits 0, else 0.",
+            "steps": ["Reset every file the hidden tests touch to its original version",
+                      "Apply the hidden test patch (git apply)", f"Run `{inst.get('test_command', '')}`",
+                      "Reward = 1 if the command exits 0, otherwise 0"],
+            "test_command": inst.get("test_command"), "timeout_s": inst.get("verifier_timeout_sec"),
+            "files": files, "script": patch_file_text(patch, "mimo_test_command.sh"),
+            "patch": patch if len(patch) < 400_000 else None,
+            "formula": "reward = 1 if the test command exits 0, otherwise 0",
+            "not_scored": "The hidden tests can't be applied, or the files they touch can't be reset: a testbed "
+                          "problem, not the model's.",
+        }
+        v["environment"] = {"cwd": inst.get("cwd"), "image": image_for(task_id)}
+
+    elif d == "cyber":
+        try:
+            exp = cyber_expected(inst.get("description") or raw.get("prompt", ""))
+        except ValueError:
+            exp = {}
+        num = re.sub(r"\D", "", task_id)
+        v["verify"] = {
+            "kind": "crash",
+            "summary": "The agent writes an input file (a proof of concept) and submits it. A root-owned server runs the "
+                       "real fuzz target on it as a separate user. Reward 1 only if it crashes in the expected function.",
+            "expected": exp,
+            "steps": ["Agent explores the source in /home/agent/src and writes a PoC file",
+                      "Agent runs `bash submit.sh <poc>` (as many times as it likes; the last submission is graded)",
+                      "The server runs /home/agent/binary on the PoC under the sanitizer, as user `verify`",
+                      f"Reward = 1 if it crashes and the first application frame is `{exp.get('function', '?')}`"],
+            "formula": "reward = 1 if the last PoC crashes in the expected function, otherwise 0",
+        }
+        v["links"] = [{"label": "OSS-Fuzz issue", "url": f"https://issues.oss-fuzz.com/issues/{num}"}] if num else []
+        v["environment"] = {"cwd": "/home/agent", "image": image_for(task_id)}
+
+    elif d == "webdev":
+        v["verify"] = {
+            "kind": "visual",
+            "summary": "The agent builds a static site into dist/. It is rendered full-page in Chromium and a vision model "
+                       "scores it: the mean of visual quality, brief fulfilment and asset quality.",
+            "dims": [{"key": k, "label": l, "desc": s, "group": "visual" if k in
+                      ("layout_integrity", "typography_hierarchy", "color_harmony", "whitespace", "content_richness") else k}
+                     for k, l, s in WEBDEV_DIMS],
+            "formula": "score = mean(visual, brief fulfilment, asset quality); visual = mean of the first five",
+            "note": "This is Xiaomi's evaluation-mode grader. Training used a group-relative ranking, which has no meaning for a single rollout.",
+            "needs_judge": "vision",
+            "judge": judges.webdev(raw.get("prompt", "")),
+            "not_scored": "The page can't be rendered (not a bad page), or the judge can't be reached. A missing "
+                          "dist/index.html scores 0.",
+        }
+        v["environment"] = {"cwd": inst.get("cwd"), "image": image_for(task_id), "deliver": f"{inst.get('cwd', '')}/dist"}
+
+    elif d == "music":
+        from .vendor.music_scorer.score import SPEC, W
+        ref = json.loads((Path(__file__).parent / "vendor" / "music_scorer" / "baselines" / "ref_full4k.json").read_text())
+        e = raw.get("extra", {})
+        v["verify"] = {
+            "kind": "music",
+            "summary": "The model writes one piece in ABC notation. It is rendered to MIDI (abc2midi) and 18 features are "
+                       "compared with the range human music occupies. No model judges it.",
+            "spec": {"bpm": e.get("bpm"), "meter": e.get("meter"), "bars": e.get("length"), "voices": e.get("nvoice_want"),
+                     "style": rec["f"].get("style"), "language": e.get("lang")},
+            "features": [{"name": f, "label": MUSIC_FEATURE.get(f, f), "rule": rule, "group": grp,
+                          "band": [ref[f].get("p10"), ref[f].get("p90")] if f in ref else None} for f, rule, grp in SPEC],
+            # score.score(): each feature 0-1 by its curve, averaged per group, groups weighted by W
+            "weights": {g: round(w / sum(W.values()), 4) for g, w in W.items()},
+            "formula": "score = 100 × (0.85 × weighted mean of the six groups + 0.15 × histogram similarity); "
+                       "reward = score / 100",
+            "curves": {
+                "band": "Full credit between the 10th and 90th percentile of human pieces, falling linearly outside "
+                        "(to 0 at twice the gap to the 5th or 95th percentile).",
+                "high": "Full credit from the 75th percentile up, falling linearly to 0 at the 5th.",
+                "low": "Full credit up to the 25th percentile, falling linearly to 0 at the 95th.",
+            },
+            "histograms": "How close the piece's pitch-class, interval and note-length histograms are to human music's "
+                          "(1 minus the mean Jensen-Shannon divergence ÷ 0.5, floored at 0).",
+            "not_scored": "Never: a piece that can't be read or measured scores 0.",
+        }
+        v["environment"] = {"sandbox": False}
+
+    elif d == "general" and inst.get("dataset_type") == "terminal_bench":
+        tf = json.loads(inst.get("tests_files") or "{}")
+        dec = {k: base64.b64decode(b).decode("utf-8", "replace") for k, b in tf.items()}
+        v["verify"] = {
+            "kind": "terminal",
+            "summary": "After the agent finishes, the hidden tests are copied to /tests and `sh /tests/test.sh` runs: an "
+                       "anti-tamper check, then pytest. Reward 1 if every test passes.",
+            "files": [{"path": k, "size": len(tf[k]) * 3 // 4} for k in tf],
+            "script": dec.get("test.sh"), "tests": dec.get("test_outputs.py"),
+            "formula": "reward = the value test.sh writes to /logs/verifier/reward.txt: 1 if every test passes, otherwise 0",
+            "not_scored": "The tests crash before grading (reward.txt holds -1) or write no reward.",
+        }
+        v["environment"] = {"cwd": inst.get("cwd"), "image": image_for(task_id), "cpus": inst.get("cpus"),
+                            "memory_mb": inst.get("memory_mb"), "internet": inst.get("allow_internet"),
+                            "tags": inst.get("tags"), "timeout_s": inst.get("agent_timeout_sec")}
+
+    elif d == "general":
+        v.update(general_view(task_id))
+    v["prompt"] = agent_prompt(task_id, d, v["brief"])
+    return v
+
+
+def agent_prompt(task_id: str, domain: str, brief: str) -> dict | None:
+    """The agent's first message, from the same code the runner sends it with."""
+    from .runner import domains
+
+    try:
+        p = domains.agent_prompt(task_id, domain)
+    except Exception:  # noqa: BLE001 - a task the runner can't prepare still has a page
+        return None
+    # the page shows the brief above; the prompt folds the task part away only when it is that same text
+    p["task_is_brief"] = all(t.strip() == (brief or "").strip() for k, t in p["parts"] if k == "task")
+    return p
+
+
+def general_view(task_id: str) -> dict:
+    root = env_dir(task_id)
+    man = json.loads((root / "manifest.json").read_text())
+    systems = []
+    for i, s in enumerate(man.get("mcp_servers", [])):
+        name = s["name"]
+        py = root / "tools" / f"{name}.py"
+        db = root / "system" / name / "state.db"
+        systems.append({"name": name, "label": pretty_system(name),
+                        "tools": parse_tools(py.read_text()) if py.exists() else [],
+                        "tables": db_summary(db) if db.exists() else []})
+    ws = root / "workspace"
+    files = sorted(({"path": str(f.relative_to(ws)), "size": f.stat().st_size,
+                     "kind": KIND.get(f.suffix.lower().lstrip("."), "other")}
+                    for f in ws.rglob("*") if f.is_file()), key=lambda x: (x["kind"], x["path"]))
+    meta = json.loads((root / "verifier_meta.json").read_text())
+    # never pass_anchor, gold_answer or check_code: the answers, and the code that holds them
+    checks = [{"id": it.get("id"), "tier": it.get("tier"), "method": it.get("method"), "weight": it.get("weight"),
+               "question": it.get("question", ""),   # not `description`: on code checks it states the expected end state
+               "files": (it.get("files") or []) if it.get("method") == "llm" else []} for it in meta.get("items", [])]
+    judged = next((c for c in checks if c["method"] == "llm"), None)
+    vpy = root / "verify.py"
+    return {
+        "systems": systems, "files": files,
+        "verify": {
+            "kind": "rubric",
+            "summary": "When the agent finishes, its final answer and the systems' databases are checked. Rule checks run "
+                       "code against the data; LLM checks ask a judge model one yes/no question each. Reward = weighted "
+                       "share of checks passed.",
+            "checks": checks, "needs_judge": "text" if judged else None,
+            "formula": "reward = Σ weight × score ÷ Σ weight, over every check (a check without a weight counts 1)",
+            "rules": [
+                "A model-judged check is its own judge call: one question, its expected answer, and the text extracted "
+                "from the files it names (up to 20,000 characters per file, with any cut marked).",
+                "The judge answers 0 or 1. There is no partial credit, and evidence that is missing or cut off where the "
+                "answer should be scores 0.",
+                "A code check runs against the systems' databases and the workspace after the agent finishes, and "
+                "scores from 0 to 1.",
+                "A check counts as passed at a score of 1. Tiers say how much a check matters to the task's author; "
+                "only the weights enter the formula.",
+            ],
+            "shape": {"input": meta.get("input"), "act": meta.get("act")},
+            "judge": judges.general(vpy.read_text(), judged, (judged or {}).get("files") or []) if judged and vpy.exists() else None,
+            "grader": "Each task ships its grader in verify.py (the same file in all 925 tasks). It first looks for Xiaomi's "
+                      "internal grader (synthesis.office_gen), which is not part of the release, and otherwise runs the "
+                      "self-contained one described here.",
+            "not_scored": "The judge can't be reached, or one of the task's systems stops responding.",
+        },
+        "environment": {"cwd": man.get("cwd"), "image": image_for(task_id), "ports": man.get("wait_ports")},
+    }
+
+
+def workspace_path(task_id: str, rel: str) -> Path:
+    root = (env_dir(task_id) / "workspace").resolve()
+    p = (root / rel).resolve()
+    if root not in p.parents and p != root:
+        raise PermissionError(rel)
+    return p
+
+
+def system_db(task_id: str, system: str) -> Path:
+    root = env_dir(task_id)
+    if not re.fullmatch(r"[A-Za-z0-9_]+", system):
+        raise PermissionError(system)
+    return root / "system" / system / "state.db"
+
+
+# ── what can run where ───────────────────────────────────────────────────────
+def image_for(task_id: str) -> str | None:
+    raw = rows().get(task_id, {})
+    d, inst = raw.get("domain"), raw.get("instance", {})
+    img = inst.get("docker_image") or ""
+    if d == "music" or not img:
+        return None
+    if d == "cyber":                                    # arvo-rl:v1-arvo-35858 -> arvo-v1-35858
+        tag = "arvo-v1-" + img.rsplit("arvo-", 1)[-1]
+    elif d == "webdev":
+        tag = "webdev-rl-opensource"
+    else:                                               # format-code-task-001457:latest, general-agent-env-3:oss
+        tag = img.split(":", 1)[0]
+    return f"{config.IMAGE_REPO}:{tag}"
+
+
+def runnable(task_id: str) -> bool:
+    raw = rows().get(task_id)
+    return bool(raw) and (raw["domain"] == "music" or bool(image_for(task_id)))
