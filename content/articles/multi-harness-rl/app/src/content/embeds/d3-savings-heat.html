@@ -14,20 +14,25 @@
   .savings-heat .logo { width:18px; height:18px; border-radius:5px; background:#fcfcfd; display:inline-grid; place-items:center; }
   .savings-heat .logo img { width:13px; height:13px; object-fit:contain; }
   .savings-heat .sh-s { font-size:11px; color:var(--muted-color); text-align:right; padding-right:6px; align-self:center; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .savings-heat .sh-s.last { color:var(--text-color); font-weight:700; }
+  .savings-heat .sh-sh { font-size:10.5px; color:var(--muted-color); text-align:right; padding-right:6px; align-self:end; padding-bottom:4px; }
+  .savings-heat .sh-c.last { font-weight:700; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-color) 35%, transparent); }
   .savings-heat .sh-c { height:26px; border-radius:3px; display:grid; place-items:center; font-size:11.5px; font-variant-numeric:tabular-nums;
     cursor:default; transition: background-color .45s ease, color .45s ease, opacity .5s ease, transform .5s ease; }
   .savings-heat .sh-c.empty { background: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--border-color) 60%, transparent) 4px 5px); }
   .savings-heat .sh-c.on { outline:2px solid var(--text-color); outline-offset:-1px; }
   .savings-heat .sh-c.pre { opacity:0; transform:scale(.85); }
-  .savings-heat .sh-lg { display:flex; align-items:center; gap:10px; margin-top:12px; font-size:11.5px; color:var(--muted-color); flex-wrap:wrap; }
-  .savings-heat .sh-ramp { width:180px; height:10px; border-radius:3px; }
+  .savings-heat .sh-lg { display:flex; align-items:center; gap:10px; margin-top:14px; font-size:11.5px; color:var(--muted-color); flex-wrap:wrap; }
+  .savings-heat .sh-scale { display:flex; flex-direction:column; gap:3px; }
+  .savings-heat .sh-ramp { width:220px; height:10px; border-radius:3px; }
+  .savings-heat .sh-ticks { display:flex; justify-content:space-between; width:220px; font-size:10.5px; font-variant-numeric:tabular-nums; }
   .savings-heat .sh-cap { margin-top:8px; min-height:38px; font-size:12.5px; line-height:1.5; color:var(--text-color); }
   .savings-heat .sh-cap span { color:var(--muted-color); }
   @media (max-width: 640px) {
     .savings-heat .sh-wrap { grid-template-columns: 1fr; gap:14px; }
     .savings-heat .sh-c { height:22px; font-size:11px; }
     .savings-heat .sh-lg { flex-wrap:nowrap; gap:8px; font-size:11px; }
-    .savings-heat .sh-ramp { width:auto; flex:1; min-width:60px; }
+    .savings-heat .sh-ramp, .savings-heat .sh-ticks { width:180px; }
   }
 </style>
 <script>
@@ -57,7 +62,7 @@
       const HL = { 'opencode':'OpenCode', 'claude-code':'Claude Code', 'codex':'Codex', 'mini-swe-agent':'Mini-SWE-Agent' };
       const METRICS = [
         { label:'Tool calls', i:1, noun:'tool calls' },
-        { label:'Generated tokens', i:3, noun:'generated tokens' },
+        { label:'Output tokens', i:3, noun:'output tokens' },
         { label:'Input tokens', i:4, noun:'input tokens' },
       ];
       const RUNS = [['opencode', 'Trained in OpenCode only'], ['multi', 'Trained across four harnesses']];
@@ -81,17 +86,18 @@
           + `<div class="sh-wrap">` + RUNS.map(([k, t]) => {
               const by = Object.fromEntries(D.runs[k].map(x => [x.step, x]));
               return `<div><div class="sh-t">${esc(t)}</div><div class="sh-g" role="table" aria-label="${esc(t)}">`
-                + `<div></div>` + H.map(h => `<div class="sh-h" role="columnheader"><span class="logo"><img src="/logos/${LOGO[h]}" alt="" loading="lazy"></span>${esc(HL[h])}</div>`).join('')
+                + `<div class="sh-sh">step</div>` + H.map(h => `<div class="sh-h" role="columnheader"><span class="logo"><img src="/logos/${LOGO[h]}" alt="" loading="lazy"></span>${esc(HL[h])}</div>`).join('')
                 + steps.map((s, ri) => {
                     const row = by[s];
-                    return `<div class="sh-s" role="rowheader">${s}${row && row.partial ? '*' : ''}</div>`
+                    const last = s === steps[steps.length - 1];
+                    return `<div class="sh-s${last ? ' last' : ''}" role="rowheader">${s.toLocaleString('en-US')}${row && row.partial ? '*' : ''}</div>`
                       + H.map((h, hi) => row
-                          ? `<div class="sh-c${revealed ? '' : ' pre'}" role="cell" tabindex="0" data-k="${k}" data-s="${s}" data-h="${hi}" style="transition-delay:${revealed ? 0 : ri*55}ms"></div>`
+                          ? `<div class="sh-c${last ? ' last' : ''}${revealed ? '' : ' pre'}" role="cell" tabindex="0" data-k="${k}" data-s="${s}" data-h="${hi}" style="transition-delay:${revealed ? 0 : ri*55}ms"></div>`
                           : `<div class="sh-c empty" role="cell" aria-label="not evaluated"></div>`).join('');
                   }).join('')
                 + `</div></div>`;
             }).join('') + `</div>`
-          + `<div class="sh-lg"><span>more than the base model</span><span class="sh-ramp"></span><span>fewer</span></div>`
+          + `<div class="sh-lg"><span>fewer than the base model</span><span class="sh-scale"><span class="sh-ramp"></span><span class="sh-ticks"><span>−50%</span><span>0</span><span>+50%</span></span></span><span>more</span></div>`
           + `<div class="sh-cap" aria-live="polite"></div>`;
 
         const cells = [...r.querySelectorAll('.sh-c[data-k]')];
@@ -100,11 +106,13 @@
           const row = D.runs[el.dataset.k].find(x => x.step === +el.dataset.s);
           return { row, c: row.cells[+el.dataset.h], h: H[+el.dataset.h] };
         };
-        const fmt = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(0);
+        // The data stores savings (positive = fewer than the base model). Show the change instead,
+        // so 26% fewer reads as −26%.
+        const fmt = (v) => Math.abs(v) < 0.5 ? '0%' : (v > 0 ? '−' : '+') + Math.abs(v).toFixed(0) + '%';
 
         const paint = () => {
           const m = METRICS[sel], dark = isDark();
-          r.querySelector('.sh-ramp').style.background = `linear-gradient(90deg, ${DIV[0]}, color-mix(in oklab, ${DIV[0]} 0%, var(--surface-bg, #fff)), ${DIV[1]})`;
+          r.querySelector('.sh-ramp').style.background = `linear-gradient(90deg, ${DIV[1]}, var(--surface-bg, #fff), ${DIV[0]})`;
           cells.forEach(el => {
             const { c } = cellData(el), v = c[m.i];
             const t = Math.min(1, Math.abs(v) / MAX), end = v >= 0 ? DIV[1] : DIV[0];
@@ -112,7 +120,7 @@
             // Light cells take the page's text colour; strong cells in dark mode switch to dark text.
             el.style.color = dark && t > .7 ? '#0b0d10' : 'var(--text-color)';
             el.textContent = fmt(v);
-            el.setAttribute('aria-label', `${HL[cellData(el).h]}, step ${el.dataset.s}: ${fmt(v)}% ${m.noun}`);
+            el.setAttribute('aria-label', `${HL[cellData(el).h]}, step ${el.dataset.s}: ${fmt(v)} ${m.noun} against the base model`);
           });
           r.querySelectorAll('.sh-chip').forEach((b, i) => b.setAttribute('aria-pressed', String(i === sel)));
           caption();
@@ -120,8 +128,8 @@
         const caption = () => {
           const m = METRICS[sel];
           if (!pinned) {
-            cap.innerHTML = `<span>Each cell compares a checkpoint with the base model on the test tasks both solved under that harness. `
-              + `Blue means fewer ${m.noun}, orange means more. * marks an evaluation that was still missing a few cells.</span>`;
+            cap.innerHTML = `<span>Each cell is the change in ${m.noun} against the base model, on the test tasks both solved under that harness. `
+              + `−26% means 26% fewer. Blue is fewer, orange is more. * marks an evaluation that was still missing a few cells.</span>`;
             return;
           }
           const { row, c, h } = cellData(pinned), v = c[m.i];
