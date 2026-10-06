@@ -19,7 +19,7 @@ tags:
   - logistics
   - digital-twin
 thumbnail: >-
-  https://huggingface.co/spaces/FineEnvs/simulation-rl-environments/resolve/main/app/public/og/og-image.jpg
+  https://huggingface.co/spaces/FineEnvs/simulation-rl-environments/resolve/main/app/public/og/og-image.png
 ---
 
 # Simulation RL Environments

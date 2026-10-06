@@ -10,6 +10,7 @@ interface Props {
   canonical?: string; // Public URL of the article, used for canonical and og:url
   twitter?: string; // Author handle, e.g. "@name"
   authorUrl?: string;
+  imageAlt?: string; // Describes the share image; defaults to the title
 }
 
 const {
@@ -23,7 +24,9 @@ const {
   canonical,
   twitter,
   authorUrl,
+  imageAlt,
 } = Astro.props as Props;
+const alt = imageAlt || title;
 
 // The page is served from a *.hf.space iframe, so the shareable URL is set explicitly when known.
 const url = canonical || (Astro.url?.toString?.() ?? "");
@@ -74,10 +77,11 @@ const jsonLd = {
 <meta property="og:locale" content="en_US" />
 {baseUrl && <meta property="og:site_name" content={title} />}
 {ogImage && <meta property="og:image" content={ogImage} />}
-{ogImage && <meta property="og:image:alt" content={title} />}
+{ogImage && <meta property="og:image:alt" content={alt} />}
 {ogImage && <meta property="og:image:width" content="1200" />}
 {ogImage && <meta property="og:image:height" content="630" />}
 {ogImage && ogImage.endsWith(".png") && <meta property="og:image:type" content="image/png" />}
+{ogImage && /\.jpe?g$/.test(ogImage) && <meta property="og:image:type" content="image/jpeg" />}
 {published && <meta property="article:published_time" content={published} />}
 {modified && <meta property="article:modified_time" content={modified} />}
 {authors.map((a) => <meta property="article:author" content={a} />)}
@@ -92,6 +96,6 @@ const jsonLd = {
 <meta name="twitter:title" content={title} />
 {description && <meta name="twitter:description" content={description} />}
 {ogImage && <meta name="twitter:image" content={ogImage} />}
-{ogImage && <meta name="twitter:image:alt" content={title} />}
+{ogImage && <meta name="twitter:image:alt" content={alt} />}
 
 <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
