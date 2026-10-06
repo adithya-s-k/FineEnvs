@@ -29,8 +29,8 @@ uv venv -p 3.12 && uv pip install -e '.[agents,dev]'
 
 | path | what |
 |---|---|
-| `/web` | OpenEnv's web UI: the **Dock planner** tab (play an episode by hand) and OpenEnv's playground |
-| `/viewer/` | the viewer: tasks, the 3D quay with a berth chart, model rollouts, live episodes |
+| `/web` | OpenEnv's web UI: **Try Environment** (`reset(split=)`, `reset(index=)`, then play the episode in the editor and 3D view) and OpenEnv's MCP playground |
+| `/viewer/` | the editor and 3D view embedded in `/web`, and live episodes. Model rollouts are in the eval Space, [FineEnvs/PortSimEnv-Eval](https://huggingface.co/spaces/FineEnvs/PortSimEnv-Eval) |
 | `/reset`, `/step`, `/ws`, `/mcp` | OpenEnv |
 | `/berth_planning/...` | OpenEnv Task API (`splits`, `num_tasks`, `task`, `task_range`) |
 | `/api/...` | read-only JSON for the viewer (`berth_openenv/api.py`) |
@@ -43,14 +43,16 @@ uv venv -p 3.12 && uv pip install -e '.[agents,dev]'
 | `check_plan(plan)` | violations per ship, departure/delay/moved/cost per ship, the plan's cost; 10 per episode |
 | `submit_plan(plan)` | ends the episode; reward from `BerthPlanRubric` |
 
-`plan` is `[{"ship": id, "berth_hour": h, "section": s}, ...]` (a JSON string of it is accepted too).
+`plan` is `[{"ship": id, "berth_hour": h, "section": s, "cranes": c}, ...]`, one entry per ship (`cranes` is optional
+and defaults to the ship's planned cranes; a JSON string of the list is accepted too).
 `reset(task_id=...)`, `reset(split=..., index=...)` or `reset(seed=...)`.
 
 ## Reward (OpenEnv rubrics)
 
-`BerthPlanRubric` returns 0.0 for every action except `submit_plan`; its children `ships_clean` (fraction of ships
-with no violation) and `cost_quality` (0 at the naive plan, 1 at the optimum) are reported in the final observation's
-`metadata.rubric`. Bands: infeasible 0-0.2, feasible but worse than naive 0.2-0.6, naive to optimum 0.6-1.0.
+The episode is graded once, on `submit_plan`, by `BerthPlanRubric` (every other action scores 0.0). A plan that breaks
+any rule scores 0.2 × the share of ships placed cleanly. A valid plan scores 0.2 + 0.8 × exp(−gap / 0.5), with
+gap = (cost − optimum) / (optimum − unavoidable + 100), so the proven CP-SAT optimum scores 1.0. No submission scores 0.
+The children `ships_clean` and `cost_quality` are reported in the final observation's `metadata.rubric`.
 
 ## Smoke test
 

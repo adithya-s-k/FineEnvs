@@ -2,24 +2,49 @@
 
 <h1>PortSimEnv v1</h1>
 
-<h3>Plan who docks where and when at a Port of Barcelona container quay, on real 2024 data</h3>
-
-<p>A multi-turn OpenEnv environment: one to three real weeks at a quay, the terminal's real crane fleet and the port's own rules, stacked disruptions, one graded submit against the proven CP-SAT optimum. 1,050 train and 50 eval tasks, with a playable 3D dock planner on a digital twin of the port and an explorer for rollouts.</p>
+<h3>Re-plan a week of container-ship dockings at the Port of Barcelona, on the port's real 2024 records</h3>
 
 </div>
 
----
+PortSimEnv is an OpenEnv environment for berth planning. The agent gets one quay at the Port of Barcelona, the ships
+that really called there in a 2024 week, and a week that has just gone wrong: late ships, closed quay sections, crane
+breakdowns, gales, emergencies. It decides when, where and with how many cranes every ship docks, and is graded once,
+deterministically, against a plan CP-SAT proved optimal. There are 1,050 training and 50 eval tasks.
 
-## What this is
+## Try it
+
+| | |
+|---|---|
+| Play an episode in the browser (OpenEnv Space) | [FineEnvs/PortSimEnv](https://huggingface.co/spaces/FineEnvs/PortSimEnv) |
+| Watch the six eval models in 3D | [FineEnvs/PortSimEnv-Eval](https://huggingface.co/spaces/FineEnvs/PortSimEnv-Eval) |
+| Tasks, source calls and eval rollouts | [datasets/FineEnvs/PortSimEnv](https://huggingface.co/datasets/FineEnvs/PortSimEnv) |
+| The write-up | [Simulation RL Environments, part 1](https://huggingface.co/spaces/FineEnvs/simulation-rl-environments) |
+| Ideas and questions | [GitHub discussion #36](https://github.com/adithya-s-k/FineEnvs/discussions/36) |
+
+Connect an agent to the hosted environment:
+
+```python
+from openenv.core.env_server.mcp_types import CallToolAction
+from openenv.core.mcp_client import MCPToolClient
+
+env = MCPToolClient("https://fineenvs-portsimenv.hf.space").sync()
+obs = env.reset(task_id="dock-24B-w07x1-busy-0")       # or reset(split="train", index=0)
+rules = obs.observation.metadata["instructions"]         # the system prompt
+situation = env.step(CallToolAction(tool_name="get_situation", arguments={}))
+plan = [{"ship": 0, "berth_hour": 0, "section": 9, "cranes": 3}]   # one entry per ship in the situation
+print(env.step(CallToolAction(tool_name="check_plan", arguments={"plan": plan})).observation)
+```
+
+## Why the plans are real
 
 A container terminal's quay is a row of numbered sections. Every ship needs a run of consecutive sections for its
-time alongside, and the dock planner (the industry says *berth planner*) decides where and when each one docks and
-how many quay cranes work it. The Port of Barcelona publishes every 2024 call with the sections the port actually
-assigned, so the plans here are real: 1,784 container calls at quay 36A (Terminal Catalunya, BEST, sections 2-30) and
-quay 24B (APM Terminals, sections 2-22).
+time alongside, and the berth planner decides where and when each one docks and how many quay cranes work it. The
+Port of Barcelona publishes every 2024 call with the sections the port actually assigned, so the plans here are real:
+1,784 container calls at quay 36A (Terminal Catalunya, BEST, sections 2-30) and quay 24B (APM Terminals, sections
+2-22).
 
 The recorded plan is almost conflict-free (ETA is effectively docking time), so an undisturbed week has nothing to
-optimise. Each task takes real weeks and applies what dock planners deal with, then asks for a new plan.
+optimise. Each task takes real weeks, adds what berth planners deal with, and asks for a new plan.
 
 ## Packs
 
@@ -58,11 +83,12 @@ pack was built with 100 eval tasks over 20 held-out weeks; to keep evals afforda
 whole week groups (20, 25-27, 30, 40, 45-47, 50) and their 50 tasks to train, so the separation still holds. Eval tiers:
 9 standard / 15 busy / 13 storm / 13 extreme, 27 at quay 36A and 23 at 24B; train: 266 / 260 / 262 / 262.
 
-**A task is kept only if** CP-SAT gets within 1 % of its bound (every eval task is proven optimal), neither the naive
-re-plan (reward ≤ 0.6) nor a greedy heuristic (≤ 0.85) comes close, and it has at least 12 ships. Eval: 100 of 150 candidates kept (50 now in eval, 50 moved to train).
-Train: 1,000 of 1,573 kept (223 too easy, 337 not solved within 1 %), 12-90 ships, 529 at quay 36A and 471 at 24B,
-52 / 86 / 36 / 52 distinct real windows per tier. Every one of the 1,100 references is proven optimal. The train pack
-ships gzipped (1.1 MB).
+**A task is kept only if** CP-SAT gets within 1 % of its bound, neither the naive re-plan (reward ≤ 0.6) nor a greedy
+heuristic (≤ 0.85) comes close, and it has at least 12 ships. Eval: 100 of 150 candidates kept, 50 of them later moved
+to train. Train: 1,000 of 1,573 candidates kept (223 too easy, 337 not solved within 1 %), plus those 50, for 1,050
+tasks with 12-90 ships, 555 at quay 36A and 495 at 24B. Every one of the 1,100 references is proven optimal. In
+practice the naive re-plan never scores above 0.44 and the greedy heuristic never above 0.82. The train pack ships
+gzipped (1.1 MB).
 
 ```bash
 cd envs/berth_planning/core && uv venv -p 3.12 && uv pip install -e '.[dev]'
@@ -102,7 +128,7 @@ Any feasible plan beats any infeasible one, and only the optimum scores 1.0. Abo
 optimum is unavoidable delay, which is why the gap is not measured against the optimum itself; measured that way a
 plan three times the optimum scored 0.93 on a big task.
 
-**How it is kept honest** (`core/tests/`, 288 tests):
+**How it is kept honest** (`core/tests/`, 331 tests):
 - an independent checker (an hour-by-section occupancy grid written separately) agrees with the grader on feasibility,
   cost and which ships break rules, over 240 perturbed plans per sampled task;
 - hostile plans (duplicates, unknown ships, booleans, NaN, huge or negative numbers, zero cranes, 50× repeated
@@ -111,15 +137,12 @@ plan three times the optimum scored 0.93 on a big task.
 - lazy policies stay low on every task: the published plan is infeasible, the naive re-plan scores ≤ 0.6, a greedy
   heuristic ≤ 0.85, and docking ships one after another sits at the 0.2 floor.
 
-berth-v1 keeps its original banded reward (anchored on the naive re-plan), so its board stays comparable.
 
 ## Results
 
-### dock-v1 eval (50 tasks)
-
-All 50 eval tasks, six models, 12 turns, 32k tokens per turn, reward v3 (`results/rollouts/dock-eval50/`; open models
-through the Hugging Face router on the fastest provider found for each, Qwen3.8-27B falling back from Cerebras to
-OVHcloud when Cerebras returned 5xx).
+All 50 eval tasks, six models, one rollout each, 12 turns and 32k output tokens per turn, reward v3
+(`results/rollouts/dock-eval50/`). Open models ran through the Hugging Face router on the fastest provider for each;
+Qwen3.8-27B fell back from Cerebras to OVHcloud when Cerebras returned 5xx.
 
 | Model | n | Mean reward (95% CI) | standard | busy | storm | extreme | Feasible | Optimal | Ended without submit |
 |---|---:|---|---:|---:|---:|---:|---:|---:|---:|
@@ -130,45 +153,16 @@ OVHcloud when Cerebras returned 5xx).
 | hf:zai-org/GLM-5.3:together | 50 | **0.313** (0.198-0.440) | 0.624 | 0.342 | 0.224 | 0.154 | 32% | 20% | 33 |
 | hf:Qwen/Qwen3.8-27B:cerebras\|ovhcloud | 50 | **0.211** (0.115-0.318) | 0.397 | 0.274 | 0.219 | 0.003 | 26% | 6% | 34 |
 
-Every model falls from standard to extreme weeks, and even the best matches the proven optimum on only half the
-tasks, so the set is far from saturated. The open models lose most of their score by never submitting a plan: they
-spend the 32k-token turns reasoning (2-4 M output tokens over the 50 tasks, against 0.4 M for GPT-6.1 Sol) and end
-without calling `submit_plan`, or submit plans that break the crane pool, movement limit or wind rules. Cost per task
-was about $0.16 for GPT-6.1 Sol (41k input / 8k output tokens, median 2.3 min) and $0.44 for Sonnet 5.5 (75k / 29k,
-median 3 min). An earlier 10-task check on the 100-task eval set is in `results/rollouts/dock-eval-probe/`.
+Every model scores lower on extreme weeks than on standard ones, and even the best matches the proven optimum on only
+26 of 50 tasks, so there is plenty of headroom. The open models lose most of their score by never submitting a plan.
+They spend their 32k-token turns reasoning (3.1-4.2 M output tokens over the 50 tasks, against 0.41 M for GPT-6.1
+Sol) and end without calling `submit_plan`, or submit plans that break the crane pool, movement limit or wind rules.
+GPT-6.1 Sol used 41k input and 8k output tokens per task on average, with a median of 2 min 15 s per task.
 
-### berth-v1
+The first pack, berth-v1 (`tasks/berth-v1`, one week, no cranes), and a 10-task prototype of the harder rules
+(`tasks/berth-frontier-v1`) are kept for reference; their runs are not included here.
 
-Five models on all 100 tasks (`results/rollouts/board/`), 12 turns, 32k tokens per turn, reward as defined above.
-36 Qwen3.8-27B episodes that ended on provider connection errors are being re-run; its row will move slightly.
-
-| Model | n | Mean reward (95% CI) | easy | medium | hard | expert | Feasible | Beat naive | Optimal | Median turns |
-|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| openai:gpt-6-astra@low | 100 | **0.975** (0.959-0.988) | 0.947 | 0.985 | 0.991 | 0.976 | 100% | 98% | 62% | 3 |
-| anthropic:claude-sonnet-5-5 | 100 | **0.965** (0.951-0.978) | 0.942 | 0.977 | 0.971 | 0.969 | 100% | 100% | 51% | 2 |
-| hf:zai-org/GLM-5.3 | 100 | **0.642** (0.557-0.725) | 0.755 | 0.741 | 0.749 | 0.322 | 70% | 63% | 33% | 3 |
-| hf:Qwen/Qwen3.8-27B:deepinfra | 100 | **0.488** (0.403-0.575) | 0.604 | 0.554 | 0.500 | 0.295 | 52% | 45% | 20% | 4 |
-| hf:openai/gpt-oss-120b | 100 | **0.452** (0.383-0.527) | 0.555 | 0.517 | 0.498 | 0.238 | 65% | 30% | 12% | 6 |
-
-Frontier models nearly saturate this set; the spread is between frontier and open models, which is the useful range
-for RL on open models. On tasks with 27+ ships the frontier models hit the exact optimum only 9-18 % of the time,
-but the reward band anchored on the naive plan hides that.
-
-**Harder tier (prototype, `tasks/berth-frontier-v1`, 10 tasks):** two-week horizons (20-56 ships) with quay cranes at
-the terminals' real 2024 counts (BEST 13, quay 24B 9), workload in container moves at 28 moves per crane-hour, the
-record's hourly movement limit, a gale under the port's 2023 wind rules, a crane outage and diverted traffic; reward
-v2 (gap to the optimum).
-
-| Model | n | Mean reward (95% CI) | easy | medium | hard | expert | Feasible | Beat naive | Optimal | Median turns |
-|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| openai:gpt-6-astra@low | 10 | **0.982** (0.959-0.997) | - | - | - | - | 100% | 100% | 60% | 3 |
-| anthropic:claude-sonnet-5-5 | 10 | **0.885** (0.764-0.966) | - | - | - | - | 100% | 100% | 30% | 3 |
-
-Even so, GPT-6 Astra finds the proven optimum on 6 of 10. Realistic constraints make the planning richer but not
-frontier-hard while all information is given up front; the next step is a live simulation where information arrives
-over time (see DESIGN-live.md once written).
-
-## Run it
+## Run it locally
 
 ```bash
 cd envs/berth_planning/openenv
@@ -176,16 +170,30 @@ uv venv -p 3.12 && uv pip install -e '.[agents,dev]'
 .venv/bin/uvicorn berth_openenv.server:app --port 8011
 ```
 
-The server serves dock-v1 by default (splits `eval` 50 and `train` 1,050); set `BERTH_TASKS_DIR` to a
-colon-separated list of pack directories to serve others (for example `tasks/berth-v1`).
+The server serves dock-v1 by default (`eval` 50 and `train` 1,050). Set `BERTH_TASKS_DIR` to a colon-separated list
+of pack directories to serve others, for example `tasks/berth-v1`.
 
-- `http://127.0.0.1:8011/web` — OpenEnv's web UI. The **Dock planner** tab is where a person plays an episode: pick a
-  task through the Task API, start an OpenEnv session over `/ws`, edit the plan on the dock chart (drag ships in time
-  and along the quay, set cranes, 3D quay alongside, with crane and movement strips and wind windows), and call the
-  same MCP tools the agent has — `get_situation`, `check_plan`, `submit_plan` — with the reward coming from the env's
-  rubric. No model rollouts or reference plans on it. OpenEnv's own Playground tab sits next to it.
-- `http://127.0.0.1:8011/viewer/` — the **Explorer**, full page: every task in 3D with the published, naive and
-  optimal plans, the model board, every rollout step by step, and live episodes.
+- `http://127.0.0.1:8011/web` is OpenEnv's web UI. **Try Environment** has `reset(split=)` and `reset(index=)`, then
+  the editor: drag ships in time and along the quay, set cranes, watch the 3D quay follow, and call the same MCP tools
+  the agent has (`get_situation`, `check_plan`, `submit_plan`), graded by the env's rubric. OpenEnv's MCP playground
+  is the other tab.
+- `http://127.0.0.1:8011/viewer/` is the full viewer, including the explorer of tasks and rollouts that the eval Space
+  serves (point `BERTH_RUNS_DIR` at `results/rollouts`).
+- `/reset`, `/step`, `/ws`, `/mcp` and the Task API under `/berth_planning/` are OpenEnv's.
+
+Run the eval yourself (this is how `dock-eval50` was produced):
+
+```bash
+cd 07-simulation-environments/portsim-v1
+envs/berth_planning/openenv/.venv/bin/python eval/run_eval.py --run my-run --max-tokens 32000 \
+    --models anthropic:claude-sonnet-5-5 hf:Qwen/Qwen3.8-27B:cerebras --split eval --limit 10
+envs/berth_planning/core/.venv/bin/python eval/rescore.py my-run --tasks envs/berth_planning/tasks/dock-v1-eval   # after a reward change
+```
+
+Publish everything (bucket, dataset, environment Space, eval Space, collection, article) with
+`envs/berth_planning/tools/publish_all.sh`; it takes a step number to resume.
+
+## The 3D view
 
 **The 3D scene is a digital twin of the port** (`web/twin/`, built by `tools/twin/build_twin.py` from open data):
 the real coastline, quays and breakwaters, land cover, 46,913 building footprints with tagged or estimated heights, 582 tanks, Montjuïc
@@ -197,58 +205,19 @@ yellow STS cranes and the three light-blue 2025 "Triple-E" cranes, the CLH tank 
 ships at the Moll Adossat opposite. Ships wear their line's livery (MSC, Maersk, CMA CGM, ONE, Hapag-Lloyd, ...),
 come in through the south entrance, wait in separated offshore anchorage slots, move laterally alongside with tugs, and turn in the entrance basin after backing clear of the quay. Sources and
 licences are in `web/twin/SOURCES.md` (© OpenStreetMap contributors, ODbL).
-**Traffic and visual replay.** Both the OpenEnv planner and evaluation explorer use the same deterministic
-kinematic traffic controller. It checks oriented hull and tug envelopes against complete shoreline edges,
-moored cruise ships, waiting vessels and other moving convoys. Clearance samples adapt to speed and turning
-rate so no envelope corner travels more than two metres between checks. Cruise-ship positions and tug offsets
-are shared by the renderer and controller. The approach admits one manoeuvre at a time and respects wind
-windows and maintenance pockets. APM traffic stays on the container-terminal side of the cruise basin. BEST's route
-passes north of the inner breakwater before turning into the basin. Anchorage exit aisles keep departing vessels
-clear of ships waiting offshore. Acceleration, deceleration, speed-dependent wakes, restrained water motion and
-tug-assisted lateral movement make transitions legible; this is a kinematic visualisation, not a hydrodynamic solver.
 
-The chart, plan costs, RL observations and reward still describe the **submitted schedule**. If physical traffic
-needs more clearance than the hourly plan allows, the 3D replay waits and reports a visual traffic delay; the scrubber
-extends through the final departure. Impossible spatial assignments, early arrivals and wind-blocked docking
-instructions stay at anchor with a reason, while their original violations remain in the chart. Ships already
-alongside may finish clearing a berth in the first hour of a closure; its workboat waits until the entire convoy
-has cleared. An obstructed departure holds safely alongside with a reason. Tug offsets remain on the same side
-through turns, and interpolated headings avoid abrupt yaw changes along rounded routes.
-Cranes work real cargo-bay positions, avoid the accommodation block, respect the requested count and park spare
-booms raised.
+The 3D replay is a visualisation of the submitted schedule and never changes the cost or the reward.
 
-Container handling uses an explicit, deterministic transfer sequence. Each visible discharge removes a specific
-topmost deck container only when the spreader locks onto it. Its colour, markings and dimensions follow it through
-vertical hoisting, a clearance-height trolley crossing, lowering and release on the quay. A carrier waits for the
-STS spreader to clear, collects that same box and sets it down in a reserved yard slot. Containers remain there
-after delivery; pausing freezes handling, and seeking reconstructs both deck and yard inventory. Four hoist ropes,
-open spreader frames, lock/unlock dwell, acceleration, speed limits and carrier-route reservations replace the
-independent colour-changing crane and yard loops. BEST uses shuttle carriers and block-end transfer slots; APM
-uses taller straddle carriers and reserved slots in the mapped yard rows.
+- **Traffic.** A deterministic kinematic controller moves ships and tugs through the harbour. It checks hull and tug
+  envelopes against the shoreline, moored cruise ships and other traffic, respects wind windows and closures, and
+  holds a ship at anchor or alongside, with a reason, when the plan leaves no safe path. It is not a hydrodynamic
+  solver.
+- **Cargo.** Cranes work real bay positions. Each visible discharge moves one specific container from the deck to a
+  carrier and on to a reserved yard slot. This is representative handling, not a container manifest.
+- **Controls.** Camera presets (Overview, Harbour, Quayside, Overhead), Mediterranean or Golden-hour light, playback
+  from real time to 16 h/s, Cargo (follow one transfer), Focus (follow a ship) and Cinema (full window).
 
-This is **representative deck handling**, not a container manifest or a rigid-body physics solver. The tasks only
-provide handling hours/crane workload, so the replay allocates a finite sample of actual modelled containers to
-available yard spaces. It does not invent loading manifests or change the task's work, costs or reward.
-**Cargo** frames the next transfer, plays it at **10× real time**, and pauses after delivery and the carrier's return.
-Use **Real time** to inspect twistlocks and hoisting, or change the speed to resume ordinary continuous playback.
-
-Use **Overview**, **Harbour**, **Quayside** or **Overhead** to inspect the port. **3 min/s** and **15 min/s** make manoeuvres easier
-to follow. **Harbour** frames the wider port, Montjuïc and surrounding city. Select a ship and use **Focus** to inspect its current position, including its anchorage slot.
-
-**Rendering.** Switch between **Mediterranean** daylight and **Golden hour**; these are presentation presets,
-independent of the simulation's UTC clock. Sky, sun, environment lighting, shadows and water reflections change
-together. **Cinema** expands the scene; press Escape or **Exit cinema** to return. The scene uses absorbing teal
-water with wind-driven ripples, corrugated container normals, smooth plated hulls with waterline wear, reflective
-bridge glazing, textured paving, and detailed tank farms, warehouse facades and pine canopies. Small architectural
-fixtures and foliage are procedural details on the mapped footprints. Textures are generated locally with fixed
-seeds; no external model or texture downloads are required. Desktop rendering uses contact shadows, antialiasing
-and planar reflections; compact/touch devices retain the lighter rendering path.
-The surrounding city includes the local street network and a georeferenced surface atlas, so neighbourhoods
-remain visible beyond the detailed building range. Roads follow the rendered terrain triangles; parking areas
-and boulevard trees are placed around mapped buildings and carriageways. The source and rebuild instructions
-for the scenery supplement are in `web/twin/SOURCES.md`.
-
-Viewer regression checks (Node 22+; no npm install needed):
+Viewer regression checks (Node 22+, no npm install):
 
 ```bash
 cd envs/berth_planning/openenv
@@ -262,17 +231,6 @@ Targeted collision regressions cover thin piers, shoreline holes, between-frame 
 blocked departures and unplanned anchorage obstacles; busy APM and BEST plans also receive independent three-second audits.
 Cargo checks cover ownership conservation, continuous handoffs, top-down stack access, preserved orientation,
 hoist/trolley/carrier speed limits, wind deferral, unique storage, route separation, pausing and deterministic seeking.
-
-- `/reset`, `/step`, `/ws`, `/mcp`, and the Task API under `/berth_planning/` are OpenEnv's.
-
-Rollouts:
-
-```bash
-cd 07-simulation-environments/portsim-v1
-envs/berth_planning/openenv/.venv/bin/python eval/run_eval.py --run my-run \
-    --models anthropic:claude-sonnet-5-5 hf:Qwen/Qwen3.8-27B:deepinfra --split eval --limit 10
-envs/berth_planning/core/.venv/bin/python eval/rescore.py my-run --tasks envs/berth_planning/tasks/dock-v1-eval   # after a reward change
-```
 
 ## Layout
 

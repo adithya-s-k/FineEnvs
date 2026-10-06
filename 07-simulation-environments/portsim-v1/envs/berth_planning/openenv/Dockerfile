@@ -1,5 +1,5 @@
 # Build context: envs/berth_planning (core/, openenv/ and tasks/ side by side) plus the data CSV is not needed at
-# runtime - tasks are prebuilt in tasks/berth-v1.
+# runtime - tasks are prebuilt in tasks/dock-v1-eval and tasks/dock-v1-train.
 #   docker build -f openenv/Dockerfile -t berth-planning .
 FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 HOME=/home/user PORT=8000 ENABLE_WEB_INTERFACE=true \
