@@ -93,10 +93,10 @@
       function grade(x, y, w, h) {
         const my = y + h * 0.44;
         let s = `<path class="ok" d="M${f(x + 10)},${f(my)}L${f(x + 17)},${f(my + 7)}L${f(x + 30)},${f(my - 9)}"/>`;
-        s += `<text class="score" x="${f(x + 38)}" y="${f(my + 6)}">0.94</text>`;
+        s += `<text class="score" x="${f(x + 38)}" y="${f(my + 6)}">1.00</text>`;
         const ty = y + h * 0.82, tw = w - 20;
         s += `<line class="ln" x1="${f(x + 10)}" x2="${f(x + 10 + tw)}" y1="${f(ty)}" y2="${f(ty)}" stroke-width="3"/>`;
-        s += `<rect class="bar" x="${f(x + 10)}" y="${f(ty - 1.5)}" width="${f(tw * 0.94)}" height="3"/>`;
+        s += `<rect class="bar" x="${f(x + 10)}" y="${f(ty - 1.5)}" width="${f(tw)}" height="3"/>`;
         return s;
       }
       function rl(x, y, w, h) {

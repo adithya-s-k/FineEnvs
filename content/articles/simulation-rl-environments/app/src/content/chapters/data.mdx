@@ -5,13 +5,13 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
 <HtmlEmbed src="d3-portsim-pipeline.html" frameless />
 
 Each task keeps a real week at one quay and the ships that really called, adds disruptions modelled on real events,
-and gets an answer key from CP-SAT. Tasks a simple heuristic nearly solves are dropped: **1,050 train and 50 eval
-tasks** remain, and no week appears in both.
+and gets an answer key from CP-SAT. I drop the tasks a simple heuristic nearly solves, which leaves **1,050 training
+and 50 eval tasks**. No week appears in both.
 
-**What is measured and what is simulated.** The source records contain the berth plan the port executed,
-including ships, dimensions, times and quay sections. They do not contain crane assignments, container manifests
-or anchorage waiting times. Workloads, disruptions and physical handling are simulated; the film is a replay of
-an agent’s plan, not historical footage of a particular port incident.
+**What is real and what is simulated.** The records give us the berth plan the port actually ran, with the ships,
+their sizes, times and quay sections. They don't include crane assignments, container manifests or time spent waiting
+at anchor. Workloads, disruptions and the physical handling are simulated, and the film replays an agent's plan on that
+simulation.
 
 ### From seed data to tasks
 
@@ -45,26 +45,17 @@ an agent’s plan, not historical footage of a particular port incident.
 | Terrain | [Terrain Tiles on AWS](https://registry.opendata.aws/terrain-tiles/) | open |
 | Anchorage and routes (checked) | [Copernicus Sentinel-2](https://dataspace.copernicus.eu/) | open |
 
-### Everything is open
+### Links
 
 | | |
 |---|---|
-| Environment: OpenEnv Space with the editor, 3D viewer and eval explorer | [FineEnvs/PortSimEnv](https://huggingface.co/spaces/FineEnvs/PortSimEnv) |
+| Environment: the OpenEnv Space, with the editor and 3D view and an MCP playground | [FineEnvs/PortSimEnv](https://huggingface.co/spaces/FineEnvs/PortSimEnv) |
+| Eval: all 300 rollouts, replayed in 3D | [FineEnvs/PortSimEnv-Eval](https://huggingface.co/spaces/FineEnvs/PortSimEnv-Eval) |
 | Dataset: tasks (train, eval), the source calls, the eval rollouts | [datasets/FineEnvs/PortSimEnv](https://huggingface.co/datasets/FineEnvs/PortSimEnv) |
 | Bucket: 3D twin data and raw eval rollouts | [buckets/FineEnvs/PortSimEnv](https://huggingface.co/buckets/FineEnvs/PortSimEnv) |
 | Collection | [Simulation RL Envs](https://huggingface.co/collections/FineEnvs/simulation-rl-envs-6ac4eca150bd4b91790e2540) |
-| Code | [github.com/adithya-s-k/FineEnvs](https://github.com/adithya-s-k/FineEnvs) |
+| Code | [github.com/adithya-s-k/FineEnvs: 07-simulation-environments/portsim-v1](https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/portsim-v1) |
 | Discussion | [GitHub discussion #36](https://github.com/adithya-s-k/FineEnvs/discussions/36) |
 
-The film follows one recorded evaluation on quay 24B: **17 ships sharing 9 cranes**. In that task, two cranes are
-unavailable during hours 49–83, dredging closes sections 14–22 during hours 104–126, and quay-rail repairs close
-sections 9–14 during hours 164–207. These are **simulated operational issues**, defined in the task and enforced by
-the checker. The agent must find a schedule that works around them.
-
-The AI badge and animated cursor in the film illustrate the recorded tool calls: draft a plan, call `check_plan`,
-edit the rejected assignments, check again, then call `submit_plan`. The evaluated agent sends structured plans
-through tools; the cursor makes those changes visible rather than recording a mouse-controlled agent. The full
-time–space chart shows every ship, with block width representing time at berth and height representing quay space.
-
-Contains data from the Port de Barcelona open data portal. The extracted data and derived task pack retain the
-source’s **CC BY-SA 4.0** licence.
+Contains data from the Port de Barcelona open data portal. The extracted data and the task pack built from it keep
+the source's **CC BY-SA 4.0** licence.

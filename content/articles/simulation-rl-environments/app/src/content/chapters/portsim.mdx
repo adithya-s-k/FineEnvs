@@ -1,39 +1,37 @@
 import HtmlEmbed from "../../components/HtmlEmbed.astro";
 
-## PortSimEnv
+## PortSimEnv v1
 
-**Built on real Port of Barcelona data.** PortSimEnv (v1) starts from **1,784 container-ship calls recorded in
-2024** at BEST and APM: real ships, dimensions, berth times and assigned quay sections. The agent replans an
-actual port week under simulated operational disruptions.
-
-A deterministic RL environment for **berth planning** at the Port of Barcelona. The agent gets one quay, the ships
-that really called there in a 2024 week, and a week that has just gone wrong. It re-plans: for every ship, when it
-docks, where along the quay, and with how many cranes.
+PortSimEnv is a deterministic RL environment for **berth planning** at the Port of Barcelona. It is built from the
+**1,784 container-ship calls** the port recorded in 2024 at its two container terminals, with the real ships, their
+sizes, berthing times and quay sections. The agent gets one quay, the ships that really called there in a 2024 week,
+and a week that has just gone wrong. It re-plans the week, deciding for every ship when it docks, where along the quay
+and with how many cranes.
 
 <HtmlEmbed
   src="portsim-video.html"
   wide
   frameless
   config={{ src: "https://huggingface.co/buckets/FineEnvs/PortSimEnv/resolve/video/portsimenv-v1-demo.mp4", poster: "/img/portsim-video-poster.webp", autoplay: true, muted: true, loop: true }}
-  desc="One minute of PortSimEnv v1: an eval rollout replayed on the 3D twin of the Port of Barcelona."
+  desc="A recorded eval run, replayed on the 3D twin: GLM-5.3 on week 6 at APM Terminals (17 ships, 9 cranes, two cranes down and two quay closures). It checks three drafts and submits a plan that matches the proven optimum, reward 1.0. The cursor only shows its tool calls. The agent itself sends structured plans."
 />
 
 <HtmlEmbed src="d3-portsim-task.html" wide frameless />
 
-
-Every plan plays out on a 3D twin of the real port, built from open data: the agent's berthing hours, quay sections
-and crane counts become ships, tugs and cranes moving through the week.
+Every plan plays out on a 3D twin of the real port, built from open data. The agent's berthing hours, quay sections
+and crane counts turn into ships, tugs and cranes moving through the week.
 
 <HtmlEmbed src="portsim-gallery.html" wide frameless />
 
-What goes wrong is what goes wrong in real ports: Red Sea diversions sending ships in late and in bunches; gales that
-stop ships of 300 m or more above 25 knots and every ship above 30; a crane down for two days; an emergency or a ship
-diverted from the other terminal that needs a berth now.
+The disruptions come from what happens in real ports. Red Sea diversions send ships in late and in bunches, gales
+stop ships of 300 m or more above 25 knots and every ship above 30, a crane goes down for two days, or an emergency
+needs a berth now.
 
 ### Try it
 
-This is the environment itself, live on its [OpenEnv Space](https://huggingface.co/spaces/FineEnvs/PortSimEnv), with
-the same three tools the agent gets.
+This is the environment itself, running live on its [OpenEnv Space](https://huggingface.co/spaces/FineEnvs/PortSimEnv),
+with the same three tools the agent gets. On the Space you can also pick any of the 1,100 tasks and try the tools in
+OpenEnv's MCP playground.
 
 <HtmlEmbed
   src="portsim-space.html"
@@ -41,5 +39,5 @@ the same three tools the agent gets.
   frameless
   config={{ mode: "play", taskId: "dock-24B-w07x1-busy-0" }}
   title="Play an episode: week 7 at APM Terminals, 17 ships"
-  desc="Drag ships on the dock chart or type their hour, section and cranes; the 3D quay follows the plan. Check plan reports rule breaks and cost (10 per episode); Submit plan ends the episode with one grade."
+  desc="Drag ships on the dock chart or type their hour, section and cranes, and the 3D quay follows. Check plan reports rule breaks and cost (10 checks per episode); Submit plan ends the episode with a single grade."
 />

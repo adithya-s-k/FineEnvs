@@ -2,17 +2,17 @@ import HtmlEmbed from "../../components/HtmlEmbed.astro";
 import Note from "../../components/Note.astro";
 
 <Note variant="warning" title="Work in progress">
-An experimental, ongoing effort, shared early. Environments, numbers and conclusions will change.
+This is an early, experimental series. The environments, numbers and conclusions will change as we go.
 </Note>
 
 ## Simulation RL environments
 
-**The general question: how do we build realistic simulation environments, digital twins of real work, that agents
-can learn from?** This series is a general-purpose attempt at an answer, one real job at a time.
-
 Most RL environments for language models are puzzles, code, maths or web tasks. A lot of valuable work looks
-different: keeping a schedule under real rules while things keep going wrong. **From seed data we can build realistic
-environments, but how close to the real world can we make them?** Each part of this series takes one real job,
-rebuilds it from its records, and grades the agent against an answer that can be proven best.
+different. Someone keeps a schedule running under real rules while things keep going wrong. I want agents that can do
+that work, which raises a general question. How do we build simulation environments, digital twins of real work, that
+are realistic enough to learn from?
+
+Each part of this series takes one real job, rebuilds it from the records it leaves behind, and grades the agent
+against an answer that can be proven best.
 
 <HtmlEmbed src="d3-simrl-loop.html" frameless />

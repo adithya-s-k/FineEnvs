@@ -49,7 +49,9 @@
       let cfg = {};
       try { cfg = JSON.parse(root.closest('[data-config]')?.dataset.config || '{}'); } catch (e) {}
       const mode = cfg.mode === 'play' ? 'play' : 'replay';
-      const base = (cfg.base || (local ? 'http://localhost:8011' : 'https://fineenvs-portsimenv.hf.space')).replace(/\/$/, '');
+      // Play runs a live episode on the environment Space; rollouts replay on the eval Space.
+      const base = (cfg.base || (local ? 'http://localhost:8011'
+        : mode === 'play' ? 'https://fineenvs-portsimenv.hf.space' : 'https://fineenvs-portsimenv-eval.hf.space')).replace(/\/$/, '');
       const viewer = (hash) => `${base}/viewer/?embed=1#${hash}`;
       let ti = cfg.task ?? 3;
       let mk = cfg.model || 'anthropic:claude-sonnet-5-5';
@@ -62,7 +64,7 @@
           <div class="ps-wait">Loading the live ${mode === 'play' ? 'environment' : '3D replay'} from the Space…</div>
           <button type="button" class="ps-go" hidden>Load</button>
         </div>
-        <div class="ps-foot"><span class="ps-why"></span><a class="ps-open" target="_blank" rel="noopener">Open in the Space ↗</a></div>`;
+        <div class="ps-foot"><span class="ps-why"></span><a class="ps-open" target="_blank" rel="noopener">${mode === 'play' ? 'Open the environment Space ↗' : 'Open in the eval Space ↗'}</a></div>`;
       const frame = root.querySelector('.ps-frame');
       const open = root.querySelector('.ps-open');
       const why = root.querySelector('.ps-why');
@@ -72,7 +74,7 @@
         const t = data.tasks[ti];
         return viewer(`/run/${RUN}/${encodeURIComponent(mk)}/${encodeURIComponent(t.id)}`);
       };
-      const full = () => target().replace('?embed=1', '');
+      const full = () => (mode === 'play' ? 'https://huggingface.co/spaces/FineEnvs/PortSimEnv' : target().replace('?embed=1', ''));
 
       // The live view loads by itself once the figure is near the screen (the poster shows until it paints).
       function load() {
