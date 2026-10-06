@@ -71,7 +71,7 @@ hf jobs uv run -d --flavor a100-large -s HF_TOKEN --timeout 14h -e NAYANA_INDIC_
   --base google/gemma-4-E4B-it --watch AdithyaSK/fineenvs-ocr-runs/6e8dd1825baa127d58ba828fc67c6eb0b52b2599 --follow-job 6abff37afbc85ba682372c8b --output-dir /outputs/6e8dd1825baa127d58ba828fc67c6eb0b52b2599/evals --trackio-space AdithyaSK/fineenvs-ocr-trackio --run-name ocr-kn-v2-eval
 ```
 
-These commands ran when this folder was still called `05-multilingual-ocr`, and `--revision` pins that layout. To
+These commands ran when this folder was still called `05-multilingual-ocr`, and `--revision` pins that layout; the tag `kannada-ocr-run` keeps that commit. To
 run again from `06-multilingual/ocr/`, use [`train/README.md`](../../train/README.md) with a current commit. Swap the `AdithyaSK/...` output bucket
 and Trackio Space for your own. `curve.json` here and
 [FineEnvs/multilingual-multimodal-rl-runs](https://huggingface.co/datasets/FineEnvs/multilingual-multimodal-rl-runs)

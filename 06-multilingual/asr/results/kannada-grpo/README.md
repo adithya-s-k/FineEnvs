@@ -71,7 +71,7 @@ hf jobs uv run -d --flavor l40sx1 -s HF_TOKEN --timeout 16h \
   --base google/gemma-4-E4B-it --watch AdithyaSK/fineenvs-asr-runs/ac6393008d78527aeb1f17a61c3f89471382fc5f --follow-job 6abff1acfbc85ba682372b98 --eval-split eval_1_test --max-new-tokens 448 --reward-unit cer --output-dir /outputs/ac6393008d78527aeb1f17a61c3f89471382fc5f/evals --trackio-space AdithyaSK/fineenvs-asr-trackio --run-name asr-kn-full-v3-eval
 ```
 
-These commands ran when this folder was still called `06-multilingual-asr`, and `--revision` pins that layout. To
+These commands ran when this folder was still called `06-multilingual-asr`, and `--revision` pins that layout; the tag `kannada-asr-run` keeps that commit. To
 run again from `06-multilingual/asr/`, use [`train/README.md`](../../train/README.md) with a current commit. Swap the `AdithyaSK/...` output bucket
 and Trackio Space for your own. `curve.json` here and
 [FineEnvs/multilingual-multimodal-rl-runs](https://huggingface.co/datasets/FineEnvs/multilingual-multimodal-rl-runs)
