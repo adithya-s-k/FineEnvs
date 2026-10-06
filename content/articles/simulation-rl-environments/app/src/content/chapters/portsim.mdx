@@ -29,15 +29,15 @@ needs a berth now.
 
 ### Try it
 
-This is the environment itself, running live on its [OpenEnv Space](https://huggingface.co/spaces/FineEnvs/PortSimEnv),
-with the same three tools the agent gets. On the Space you can also pick any of the 1,100 tasks and try the tools in
+This is the environment's [OpenEnv Space](https://huggingface.co/spaces/FineEnvs/PortSimEnv), embedded live. Pick a
+split and a task index, load the episode and plan it with the same three tools the agent gets. The Playground tab is
 OpenEnv's MCP playground.
 
 <HtmlEmbed
   src="portsim-space.html"
   wide
   frameless
-  config={{ mode: "play", taskId: "dock-24B-w07x1-busy-0" }}
-  title="Play an episode: week 7 at APM Terminals, 17 ships"
-  desc="Drag ships on the dock chart or type their hour, section and cranes, and the 3D quay follows. Check plan reports rule breaks and cost (10 checks per episode); Submit plan ends the episode with a single grade."
+  config={{ mode: "play", taskId: "dock-24B-w07x1-busy-0", taskIndex: 2 }}
+  title="The PortSimEnv environment, live"
+  desc="It opens on week 7 at APM Terminals (17 ships). Drag ships on the dock chart or type their hour, section and cranes, and the 3D quay follows. Check plan reports rule breaks and cost, 10 times per episode. Submit plan ends the episode with a single grade."
 />

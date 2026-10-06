@@ -21,7 +21,8 @@
   .portsim-space .ps-why b { color: var(--text-color); font-weight: 600; }
   .portsim-space .ps-why code { font-size: 12px; }
   .portsim-space .ps-foot a { color: var(--muted-color); white-space: nowrap; }
-  @media (max-width: 760px) { .portsim-space .ps-frame { height: 620px; } }
+  .portsim-space.ps-play .ps-frame { height: 980px; background: #0b0f19; }
+  @media (max-width: 760px) { .portsim-space .ps-frame, .portsim-space.ps-play .ps-frame { height: 760px; } }
 </style>
 <script>
   (() => {
@@ -49,6 +50,7 @@
       let cfg = {};
       try { cfg = JSON.parse(root.closest('[data-config]')?.dataset.config || '{}'); } catch (e) {}
       const mode = cfg.mode === 'play' ? 'play' : 'replay';
+      root.classList.toggle('ps-play', mode === 'play');
       // Play runs a live episode on the environment Space; rollouts replay on the eval Space.
       const base = (cfg.base || (local ? 'http://localhost:8011'
         : mode === 'play' ? 'https://fineenvs-portsimenv.hf.space' : 'https://fineenvs-portsimenv-eval.hf.space')).replace(/\/$/, '');
@@ -70,7 +72,8 @@
       const why = root.querySelector('.ps-why');
 
       const target = () => {
-        if (mode === 'play') return viewer(`/play?split=eval&task=${encodeURIComponent(cfg.taskId || 'dock-24B-w07x1-busy-0')}&start=1`);
+        // Play embeds the environment's own OpenEnv page (/web): reset(split=, index=), the editor, and the MCP playground.
+        if (mode === 'play') return `${base}/web/`;
         const t = data.tasks[ti];
         return viewer(`/run/${RUN}/${encodeURIComponent(mk)}/${encodeURIComponent(t.id)}`);
       };
@@ -92,7 +95,7 @@
 
       function explain() {
         if (mode === 'play') {
-          why.innerHTML = 'Drag ships on the chart or type their hour and section, test with <b>Check plan</b>, then <b>Submit plan</b>: one grade per episode.';
+          why.innerHTML = 'Pick a split and a task index, <b>load episode</b>, then plan: drag ships on the chart or type their hour, section and cranes, test with <b>Check plan</b> and finish with <b>Submit plan</b>.';
           return;
         }
         const t = data.tasks[ti];
