@@ -34,7 +34,7 @@ LINKS = {
     "Article": "https://huggingface.co/spaces/FineEnvs/simulation-rl-environments",
     "Dataset (tasks, source calls, eval rollouts)": "https://huggingface.co/datasets/FineEnvs/PortSimEnv",
     "Bucket (3D twin data, eval rollouts)": "https://huggingface.co/buckets/FineEnvs/PortSimEnv",
-    "Code": "https://github.com/adithya-s-k/FineEnvs",
+    "Code": "https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/portsim-v1",
     "Discussion": "https://github.com/adithya-s-k/FineEnvs/discussions/36",
 }
 

@@ -17,7 +17,7 @@ const LINKS = [
   ["Article", "https://huggingface.co/spaces/FineEnvs/simulation-rl-environments", "Simulation RL Environments, part 1"],
   ["Dataset", "https://huggingface.co/datasets/FineEnvs/PortSimEnv", "tasks, the source port calls, eval rollouts"],
   ["Bucket", "https://huggingface.co/buckets/FineEnvs/PortSimEnv", "3D twin data, raw eval rollouts"],
-  ["Code", "https://github.com/adithya-s-k/FineEnvs", "environment, grader, viewer"],
+  ["Code", "https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/portsim-v1", "07-simulation-environments/portsim-v1 on GitHub"],
   ["Discussion", "https://github.com/adithya-s-k/FineEnvs/discussions/36", "ideas for v2, v3, post-training, data"],
 ];
 const ENV_SPACE = "https://huggingface.co/spaces/FineEnvs/PortSimEnv";

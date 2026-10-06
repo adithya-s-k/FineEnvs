@@ -29,8 +29,9 @@ at the Port of Barcelona.
 
 A research article built with [research-article-template](https://huggingface.co/spaces/tfrere/research-article-template).
 
-Source lives in [FineEnvs](https://github.com/adithya-s-k/FineEnvs) under
-`content/articles/simulation-rl-environments/`.
+Source lives in [FineEnvs](https://github.com/adithya-s-k/FineEnvs/tree/main/content/articles/simulation-rl-environments) under
+`content/articles/simulation-rl-environments/`. The environment's code is in
+[07-simulation-environments/portsim-v1](https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/portsim-v1).
 
 ## Quick start
 

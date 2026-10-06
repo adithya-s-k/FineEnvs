@@ -145,7 +145,7 @@ against the plan a CP-SAT solver proved optimal.
 | Environment (OpenEnv Space, 3D viewer, eval explorer) | [FineEnvs/PortSimEnv](https://huggingface.co/spaces/FineEnvs/PortSimEnv) |
 | Article | [Simulation RL Environments](https://huggingface.co/spaces/FineEnvs/simulation-rl-environments) |
 | Bucket (3D twin data, raw eval rollouts) | [FineEnvs/PortSimEnv](https://huggingface.co/buckets/FineEnvs/PortSimEnv) |
-| Code | [adithya-s-k/FineEnvs](https://github.com/adithya-s-k/FineEnvs) |
+| Code | [adithya-s-k/FineEnvs: 07-simulation-environments/portsim-v1](https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/portsim-v1) |
 | Ideas for v2, v3, post-training, data | [GitHub Discussions](https://github.com/adithya-s-k/FineEnvs/discussions/36) |
 
 ## Configs
