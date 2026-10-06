@@ -1,0 +1,113 @@
+{
+ "tasks": 50,
+ "board": [
+  {
+   "model": "GPT-6.1 Sol",
+   "key": "openai:gpt-6.1-sol",
+   "n": 50,
+   "mean": 0.888,
+   "tiers": {
+    "busy": 0.8998,
+    "standard": 0.9985,
+    "extreme": 0.8216,
+    "storm": 0.8642
+   },
+   "submitted": 50,
+   "feasible": 50,
+   "optimal": 26,
+   "tokens_out": 409966,
+   "tokens_in": 2061602,
+   "median_s": 135
+  },
+  {
+   "model": "Claude Sonnet 5.5",
+   "key": "anthropic:claude-sonnet-5-5",
+   "n": 50,
+   "mean": 0.7817,
+   "tiers": {
+    "busy": 0.7975,
+    "standard": 0.9207,
+    "extreme": 0.7736,
+    "storm": 0.6752
+   },
+   "submitted": 49,
+   "feasible": 49,
+   "optimal": 10,
+   "tokens_out": 1434030,
+   "tokens_in": 3739139,
+   "median_s": 181
+  },
+  {
+   "model": "GLM-5.3-Flash",
+   "key": "hf:zai-org/GLM-5.3-Flash:baseten",
+   "n": 50,
+   "mean": 0.4702,
+   "tiers": {
+    "busy": 0.5004,
+    "standard": 0.767,
+    "extreme": 0.2402,
+    "storm": 0.46
+   },
+   "submitted": 36,
+   "feasible": 25,
+   "optimal": 9,
+   "tokens_out": 3094951,
+   "tokens_in": 1571656,
+   "median_s": 271
+  },
+  {
+   "model": "Qwen3.8-2.4T",
+   "key": "hf:Qwen/Qwen3.8-2.4T-A95B:together",
+   "n": 50,
+   "mean": 0.3802,
+   "tiers": {
+    "busy": 0.4488,
+    "standard": 0.58,
+    "extreme": 0.2147,
+    "storm": 0.3283
+   },
+   "submitted": 34,
+   "feasible": 23,
+   "optimal": 5,
+   "tokens_out": 4195736,
+   "tokens_in": 3955300,
+   "median_s": 563
+  },
+  {
+   "model": "GLM-5.3",
+   "key": "hf:zai-org/GLM-5.3:together",
+   "n": 50,
+   "mean": 0.3132,
+   "tiers": {
+    "busy": 0.3425,
+    "standard": 0.6238,
+    "extreme": 0.1538,
+    "storm": 0.2238
+   },
+   "submitted": 17,
+   "feasible": 16,
+   "optimal": 10,
+   "tokens_out": 3199046,
+   "tokens_in": 1077089,
+   "median_s": 386
+  },
+  {
+   "model": "Qwen3.8-27B",
+   "key": "hf:Qwen/Qwen3.8-27B:cerebras|ovhcloud",
+   "n": 50,
+   "mean": 0.2112,
+   "tiers": {
+    "busy": 0.2737,
+    "standard": 0.3965,
+    "extreme": 0.0027,
+    "storm": 0.2194
+   },
+   "submitted": 16,
+   "feasible": 13,
+   "optimal": 3,
+   "tokens_out": 3795798,
+   "tokens_in": 1809277,
+   "median_s": 97
+  }
+ ]
+}

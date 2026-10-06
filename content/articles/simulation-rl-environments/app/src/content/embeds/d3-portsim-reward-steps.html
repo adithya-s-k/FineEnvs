@@ -1,0 +1,110 @@
+<div class="d3-portsim-reward-steps"></div>
+<style>
+  .d3-portsim-reward-steps { font-size: 13px; color: var(--text-color); container-type: inline-size; }
+  .d3-portsim-reward-steps .rs-flow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 0 12px; align-items: start; }
+  .d3-portsim-reward-steps .rs-step { min-width: 0; text-align: center; }
+  .d3-portsim-reward-steps .rs-step svg { display: block; width: 120px; height: 52px; overflow: visible; margin: 0 auto 8px; }
+  .d3-portsim-reward-steps .rs-t { font-size: 13px; font-weight: 600; line-height: 1.35; }
+  .d3-portsim-reward-steps .rs-t .n { color: var(--muted-color); font-weight: 400; margin-right: 6px; font-variant-numeric: tabular-nums; }
+  .d3-portsim-reward-steps .rs-f { font-size: 12px; line-height: 1.4; color: var(--muted-color); margin-top: 2px; }
+  .d3-portsim-reward-steps sup { font-size: 9px; line-height: 0; }
+  .d3-portsim-reward-steps .rs-ar { display: flex; flex-direction: column; align-items: center; padding-top: 14px; color: var(--muted-color); font-size: 10px; line-height: 1.2; }
+  .d3-portsim-reward-steps .rs-ar::after { content: "→"; font-size: 16px; }
+  .d3-portsim-reward-steps .rs-ex { margin-top: 14px; padding-top: 7px; text-align: center; border-top: 1px solid var(--border-color); font-size: 12px; line-height: 1.5; color: var(--muted-color); font-variant-numeric: tabular-nums; }
+  .d3-portsim-reward-steps .rs-ex b { color: var(--text-color); font-weight: 600; }
+  .d3-portsim-reward-steps .rs-ex .rw { color: var(--primary-color); font-weight: 600; }
+  .d3-portsim-reward-steps .ship { fill: color-mix(in srgb, var(--info-color) 24%, transparent); stroke: var(--info-color); stroke-width: 1; }
+  .d3-portsim-reward-steps .ship.bad { stroke: var(--danger-color); stroke-width: 1.8; }
+  .d3-portsim-reward-steps .late { fill: color-mix(in srgb, var(--danger-color) 55%, transparent); }
+  .d3-portsim-reward-steps .due { stroke: var(--text-color); stroke-width: 1.4; }
+  .d3-portsim-reward-steps .ax { stroke: var(--axis-color); stroke-width: 1; opacity: .6; fill: none; }
+  .d3-portsim-reward-steps .floor { stroke: var(--danger-color); stroke-dasharray: 3 2; stroke-width: 1; }
+  .d3-portsim-reward-steps .curve { fill: none; stroke: var(--primary-color); stroke-width: 2; }
+  .d3-portsim-reward-steps .lab { font-size: 9px; fill: var(--muted-color); }
+  @container (max-width: 600px) {
+    .d3-portsim-reward-steps .rs-flow { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+    .d3-portsim-reward-steps .rs-ar { display: none; }
+    .d3-portsim-reward-steps .rs-ex { text-align: left; }
+    .d3-portsim-reward-steps .rs-step { text-align: left; display: grid; grid-template-columns: 104px minmax(0, 1fr); column-gap: 12px; align-items: center; }
+    .d3-portsim-reward-steps .rs-step svg { width: 104px; height: 45px; margin: 0; grid-row: span 2; }
+  }
+</style>
+<script>
+  (() => {
+    const fetchJson = async (f) => {
+      for (const u of ['/data/' + f, 'assets/data/' + f, '../assets/data/' + f]) {
+        try { const r = await fetch(u, { cache: 'no-cache' }); if (r.ok) return await r.json(); } catch (e) {}
+      }
+      throw new Error(f + ' not found');
+    };
+
+    const TASK = 'dock-24B-w35x2-storm-1';
+    const MODEL = 'anthropic:claude-sonnet-5-5';
+    const K = 100;
+
+    const scriptEl = document.currentScript;
+    let root = scriptEl ? scriptEl.previousElementSibling : null;
+    if (!(root && root.classList && root.classList.contains('d3-portsim-reward-steps'))) {
+      root = [...document.querySelectorAll('.d3-portsim-reward-steps')].filter((e) => e.dataset.mounted !== 'true').pop();
+    }
+    if (!root || root.dataset.mounted === 'true') return;
+    root.dataset.mounted = 'true';
+
+    // y of a reward value in the curve glyph (52 px tall)
+    const ry = (r) => 44 - r * 38;
+    const curve = Array.from({ length: 41 }, (_, i) => {
+      const gap = (i / 40) * 2.2;
+      return `${i ? 'L' : 'M'}${(8 + (i / 40) * 106).toFixed(1)},${ry(0.2 + 0.8 * Math.exp(-gap / 0.5)).toFixed(1)}`;
+    }).join('');
+
+    root.innerHTML = `
+      <div class="rs-flow">
+        <div class="rs-step">
+          <svg viewBox="0 0 120 52" aria-hidden="true">
+            <rect class="ship bad" x="6" y="7" width="58" height="20" rx="2"></rect>
+            <rect class="ship bad" x="40" y="21" width="62" height="20" rx="2"></rect>
+          </svg>
+          <div class="rs-t"><span class="n">1</span>Check the rules</div>
+          <div class="rs-f">any rule broken → reward ≤ 0.2</div>
+        </div>
+        <div class="rs-ar">valid</div>
+        <div class="rs-step">
+          <svg viewBox="0 0 120 52" aria-hidden="true">
+            <rect class="ship" x="6" y="18" width="92" height="20" rx="2"></rect>
+            <rect class="late" x="66" y="18" width="32" height="20"></rect>
+            <line class="due" x1="66" x2="66" y1="13" y2="43"></line>
+            <text class="lab" x="66" y="9" text-anchor="middle">due</text>
+          </svg>
+          <div class="rs-t"><span class="n">2</span>Cost the plan</div>
+          <div class="rs-f">hours late × size × priority, + penalties</div>
+        </div>
+        <div class="rs-ar"></div>
+        <div class="rs-step">
+          <svg viewBox="0 0 120 52" aria-hidden="true">
+            <path class="ax" d="M8,2 V44 H116"></path>
+            <line class="floor" x1="8" x2="116" y1="${ry(0.2)}" y2="${ry(0.2)}"></line>
+            <path class="curve" d="${curve}"></path>
+            <text class="lab" x="116" y="52" text-anchor="end">gap</text>
+            <text class="lab" x="3" y="${ry(1) + 3}" text-anchor="end">1</text>
+            <text class="lab" x="3" y="${ry(0.2) + 3}" text-anchor="end">0.2</text>
+          </svg>
+          <div class="rs-t"><span class="n">3</span>Compare with the proven optimum</div>
+          <div class="rs-f">reward = 0.2 + 0.8·e<sup>−gap/0.5</sup></div>
+        </div>
+      </div>
+      <div class="rs-ex"></div>`;
+
+    const ex = root.querySelector('.rs-ex');
+    const line = (who, cost, opt, floor, reward) => {
+      const gap = Math.max(0, cost - opt) / (Math.max(0, opt - floor) + K);
+      ex.innerHTML = `<div><b>Example</b> · ${who} on the storm week: no rule broken · cost ${cost} · optimum ${opt} · unavoidable ${floor}</div>` +
+        `<div>gap = (${cost} − ${opt}) / (${opt} − ${floor} + ${K}) = ${gap.toFixed(3)} → reward = 0.2 + 0.8·e<sup>−${gap.toFixed(3)}/0.5</sup> = <span class="rw">${reward.toFixed(2)}</span></div>`;
+    };
+    line('Claude Sonnet 5.5', 381, 312, 244, 0.5518);
+    fetchJson('portsim-rollouts.json').then((d) => {
+      const t = d.tasks.find((q) => q.id === TASK);
+      const p = t && t.plans.find((q) => q.key === MODEL);
+      if (p && p.feasible) line(p.label, p.cost, t.optimal_cost, t.floor, p.reward);
+    }).catch(() => {});
+  })();
+</script>

@@ -1,0 +1,23 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## How the reward works
+
+**Deterministic**: the same plan gets the same score every time. No LLM judge, no sampling; one grade per episode,
+on `submit_plan`.
+
+<HtmlEmbed src="d3-portsim-reward-steps.html" frameless />
+
+<HtmlEmbed
+  src="d3-portsim-reward.html"
+  title="Reward against cost, with each model's plan"
+  desc="1.0 at the proven optimum, falling towards 0.2 as the plan gets costlier; plans that break a rule sit in the shaded band. Measuring the gap against the avoidable cost means a week full of unavoidable delay is not punished."
+/>
+
+It is hard to game: an independent checker re-verifies every plan, and the naive re-plan and a greedy heuristic stay
+below 0.6 and 0.85 because tasks they nearly solve are dropped when the dataset is built.
+
+**The example in the film.** The recorded GLM-5.3 run checks three candidates, receiving 9, 5 and then 0 reported
+violation entries. Its final edits reduce Nagoya Express from eight cranes to its six-crane limit and move
+CMA CGM Montreal from hour 131 to 133. The accepted 17-ship plan incurs **72 in weighted delay cost**, plus
+**three berth changes at 5 each**, for a total cost of **87**. CP-SAT’s proven optimum is also 87: the gap is zero,
+so `0.2 + 0.8 × exp(0) = 1.00`. That is the recorded submission reward. The animation does not affect the score.

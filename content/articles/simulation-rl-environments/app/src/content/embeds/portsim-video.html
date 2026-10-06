@@ -1,0 +1,33 @@
+<div class="portsim-video"></div>
+<style>
+  .portsim-video video { display: block; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border-color); background: #111; }
+  .portsim-video .pv-cap { margin-top: 6px; font-size: 12.5px; color: var(--muted-color); }
+</style>
+<script>
+  (() => {
+    // A video hosted on the FineEnvs/PortSimEnv bucket: config {src, poster, caption}.
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('portsim-video'))) {
+        root = [...document.querySelectorAll('.portsim-video')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+      let cfg = {};
+      try { cfg = JSON.parse(root.closest('[data-config]')?.dataset.config || '{}'); } catch (e) {}
+      if (!cfg.src) return;
+      const v = document.createElement('video');
+      Object.assign(v, { src: cfg.src, controls: true, playsInline: true, preload: 'metadata', muted: !!cfg.muted, loop: !!cfg.loop });
+      if (cfg.poster) v.poster = cfg.poster;
+      root.appendChild(v);
+      if (cfg.autoplay) {
+        v.muted = true;
+        new IntersectionObserver((es) => es.forEach((e) => (e.isIntersecting ? v.play().catch(() => {}) : v.pause())), { threshold: 0.3 }).observe(v);
+      }
+      if (cfg.caption) root.insertAdjacentHTML('beforeend', `<div class="pv-cap"></div>`), (root.querySelector('.pv-cap').textContent = cfg.caption);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+    else boot();
+  })();
+</script>

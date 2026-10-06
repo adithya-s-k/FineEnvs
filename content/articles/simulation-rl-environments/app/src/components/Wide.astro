@@ -1,0 +1,9 @@
+---
+const { class: className, ...props } = Astro.props;
+const wrapperClass = ["wide", className].filter(Boolean).join(" ");
+---
+<div class={wrapperClass} {...props}>
+  <slot />
+</div>
+
+

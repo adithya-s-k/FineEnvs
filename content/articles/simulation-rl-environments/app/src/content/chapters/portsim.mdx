@@ -1,0 +1,45 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## PortSimEnv
+
+**Built on real Port of Barcelona data.** PortSimEnv (v1) starts from **1,784 container-ship calls recorded in
+2024** at BEST and APM: real ships, dimensions, berth times and assigned quay sections. The agent replans an
+actual port week under simulated operational disruptions.
+
+A deterministic RL environment for **berth planning** at the Port of Barcelona. The agent gets one quay, the ships
+that really called there in a 2024 week, and a week that has just gone wrong. It re-plans: for every ship, when it
+docks, where along the quay, and with how many cranes.
+
+<HtmlEmbed
+  src="portsim-video.html"
+  wide
+  frameless
+  config={{ src: "https://huggingface.co/buckets/FineEnvs/PortSimEnv/resolve/video/portsimenv-v1-demo.mp4", poster: "/img/portsim-video-poster.webp", autoplay: true, muted: true, loop: true }}
+  desc="One minute of PortSimEnv v1: an eval rollout replayed on the 3D twin of the Port of Barcelona."
+/>
+
+<HtmlEmbed src="d3-portsim-task.html" wide frameless />
+
+
+Every plan plays out on a 3D twin of the real port, built from open data: the agent's berthing hours, quay sections
+and crane counts become ships, tugs and cranes moving through the week.
+
+<HtmlEmbed src="portsim-gallery.html" wide frameless />
+
+What goes wrong is what goes wrong in real ports: Red Sea diversions sending ships in late and in bunches; gales that
+stop ships of 300 m or more above 25 knots and every ship above 30; a crane down for two days; an emergency or a ship
+diverted from the other terminal that needs a berth now.
+
+### Try it
+
+This is the environment itself, live on its [OpenEnv Space](https://huggingface.co/spaces/FineEnvs/PortSimEnv), with
+the same three tools the agent gets.
+
+<HtmlEmbed
+  src="portsim-space.html"
+  wide
+  frameless
+  config={{ mode: "play", taskId: "dock-24B-w07x1-busy-0" }}
+  title="Play an episode: week 7 at APM Terminals, 17 ships"
+  desc="Drag ships on the dock chart or type their hour, section and cranes; the 3D quay follows the plan. Check plan reports rule breaks and cost (10 per episode); Submit plan ends the episode with one grade."
+/>

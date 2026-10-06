@@ -1,0 +1,148 @@
+<div class="portsim-space"></div>
+<style>
+  .portsim-space { font-size: 13px; color: var(--text-color); }
+  .portsim-space .ps-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+  .portsim-space .ps-lab { font-size: 12px; color: var(--muted-color); min-width: 40px; }
+  .portsim-space .ps-chip { appearance: none; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.15; padding: 5px 9px;
+    border-radius: 6px; border: 1px solid var(--border-color); background: transparent; color: var(--muted-color); }
+  .portsim-space .ps-chip b { font-weight: 600; color: var(--text-color); }
+  .portsim-space .ps-chip[aria-pressed="true"] { color: var(--text-color); border-color: var(--text-color); }
+  .portsim-space .ps-chip:focus-visible, .portsim-space .ps-go:focus-visible { outline: 2px solid var(--text-color); outline-offset: 2px; }
+  .portsim-space .ps-frame { position: relative; width: 100%; height: 760px; border-radius: 8px; overflow: hidden;
+    border: 1px solid var(--border-color); background: #111; }
+  .portsim-space .ps-wait { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #aaa; }
+  .portsim-space .ps-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: transparent; }
+  .portsim-space .ps-go { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); appearance: none; cursor: pointer;
+    font: inherit; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,.7);
+    background: rgba(17,17,17,.82); color: #fff; }
+  .portsim-space .ps-go:hover { background: rgba(17,17,17,.95); }
+  .portsim-space .ps-foot { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: space-between; margin-top: 8px;
+    font-size: 12.5px; color: var(--muted-color); line-height: 1.5; }
+  .portsim-space .ps-why b { color: var(--text-color); font-weight: 600; }
+  .portsim-space .ps-why code { font-size: 12px; }
+  .portsim-space .ps-foot a { color: var(--muted-color); white-space: nowrap; }
+  @media (max-width: 760px) { .portsim-space .ps-frame { height: 620px; } }
+</style>
+<script>
+  (() => {
+    // The live environment (OpenEnv Space, FineEnvs/PortSimEnv). Local article previews use a local server.
+    const local = ['localhost', '127.0.0.1'].includes(location.hostname);
+    const RUN = 'dock-eval50';
+    const TIER = { standard: 'Standard', busy: 'Busy', storm: 'Storm', extreme: 'Extreme' };
+    const END = { no_tool_call: 'a reply ran out of output tokens while reasoning', max_turns: 'it used all 12 turns', wall_clock: 'it ran out of time' };
+    const fetchJson = async (f) => {
+      for (const u of ['/data/' + f, 'assets/data/' + f, '../assets/data/' + f]) {
+        try { const r = await fetch(u, { cache: 'no-cache' }); if (r.ok) return await r.json(); } catch (e) {}
+      }
+      throw new Error(f + ' not found');
+    };
+    const fmt = (v, d = 2) => (v == null ? '–' : Number(v).toFixed(d));
+
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('portsim-space'))) {
+        root = [...document.querySelectorAll('.portsim-space')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+      let cfg = {};
+      try { cfg = JSON.parse(root.closest('[data-config]')?.dataset.config || '{}'); } catch (e) {}
+      const mode = cfg.mode === 'play' ? 'play' : 'replay';
+      const base = (cfg.base || (local ? 'http://localhost:8011' : 'https://fineenvs-portsimenv.hf.space')).replace(/\/$/, '');
+      const viewer = (hash) => `${base}/viewer/?embed=1#${hash}`;
+      let ti = cfg.task ?? 3;
+      let mk = cfg.model || 'anthropic:claude-sonnet-5-5';
+      let data = null;
+      let live = false;
+
+      root.innerHTML = `
+        ${mode === 'replay' ? '<div class="ps-row ps-tasks"><span class="ps-lab">Week</span></div><div class="ps-row ps-models"><span class="ps-lab">Model</span></div>' : ''}
+        <div class="ps-frame">
+          <div class="ps-wait">Loading the live ${mode === 'play' ? 'environment' : '3D replay'} from the Space…</div>
+          <button type="button" class="ps-go" hidden>Load</button>
+        </div>
+        <div class="ps-foot"><span class="ps-why"></span><a class="ps-open" target="_blank" rel="noopener">Open in the Space ↗</a></div>`;
+      const frame = root.querySelector('.ps-frame');
+      const open = root.querySelector('.ps-open');
+      const why = root.querySelector('.ps-why');
+
+      const target = () => {
+        if (mode === 'play') return viewer(`/play?split=eval&task=${encodeURIComponent(cfg.taskId || 'dock-24B-w07x1-busy-0')}&start=1`);
+        const t = data.tasks[ti];
+        return viewer(`/run/${RUN}/${encodeURIComponent(mk)}/${encodeURIComponent(t.id)}`);
+      };
+      const full = () => target().replace('?embed=1', '');
+
+      // The live view loads by itself once the figure is near the screen (the poster shows until it paints).
+      function load() {
+        if (live || (mode === 'replay' && !data)) return;
+        live = true;
+        const go = frame.querySelector('.ps-go');
+        if (go) go.remove();
+        frame.insertAdjacentHTML('beforeend', `<iframe src="${target()}" title="PortSimEnv ${mode === 'play' ? 'editor' : 'rollout replay'}" allow="fullscreen" referrerpolicy="no-referrer"></iframe>`);
+      }
+      root.querySelector('.ps-go').addEventListener('click', load);
+      let near = false;
+      new IntersectionObserver((es, io) => {
+        if (es.some((e) => e.isIntersecting)) { near = true; io.disconnect(); load(); }
+      }, { rootMargin: '1200px 0px' }).observe(frame);
+
+      function explain() {
+        if (mode === 'play') {
+          why.innerHTML = 'Drag ships on the chart or type their hour and section, test with <b>Check plan</b>, then <b>Submit plan</b>: one grade per episode.';
+          return;
+        }
+        const t = data.tasks[ti];
+        const p = t.plans.find((x) => x.key === mk);
+        if (!p) { why.textContent = ''; return; }
+        const k = 100;
+        if (!p.submitted) why.innerHTML = `<b>${p.label}: no plan, reward 0.</b> It never called submit_plan: ${END[p.end_reason] || p.end_reason}.`;
+        else if (!p.feasible) why.innerHTML = `<b>${p.label}: ${p.violations} rule break${p.violations === 1 ? '' : 's'}, reward ${fmt(p.reward)}</b> = 0.2 × ${fmt(p.clean)} of ships placed cleanly.`;
+        else {
+          const gap = Math.max(0, p.cost - t.optimal_cost) / (Math.max(0, t.optimal_cost - t.floor) + k);
+          why.innerHTML = p.cost <= t.optimal_cost
+            ? `<b>${p.label}: valid and optimal, reward 1.00.</b> Cost ${p.cost} equals the proven optimum.`
+            : `<b>${p.label}: valid, reward ${fmt(p.reward)}.</b> Cost ${p.cost} vs optimum ${t.optimal_cost} (unavoidable ${t.floor}) → gap ${fmt(gap, 3)} → <code>0.2 + 0.8·e<sup>−gap/0.5</sup></code>.`;
+        }
+      }
+
+      function chips() {
+        if (mode !== 'replay') return;
+        const tRow = root.querySelector('.ps-tasks');
+        const mRow = root.querySelector('.ps-models');
+        tRow.querySelectorAll('button').forEach((b) => b.remove());
+        mRow.querySelectorAll('button').forEach((b) => b.remove());
+        data.tasks.forEach((t, i) => {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'ps-chip';
+          b.textContent = `${TIER[t.tier]} · ${t.quay === '36A' ? 'BEST' : 'APM'} · ${t.ships.length} ships`;
+          b.setAttribute('aria-pressed', String(i === ti));
+          b.onclick = () => { ti = i; update(); };
+          tRow.appendChild(b);
+        });
+        data.tasks[ti].plans.filter((p) => p.kind === 'model').forEach((p) => {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'ps-chip';
+          b.innerHTML = `${p.label} <b>${p.submitted ? fmt(p.reward) : 'no plan'}</b>`;
+          b.setAttribute('aria-pressed', String(p.key === mk));
+          b.onclick = () => { mk = p.key; update(); };
+          mRow.appendChild(b);
+        });
+      }
+
+      function update() {
+        chips();
+        explain();
+        open.href = full();
+        if (live) { const f = frame.querySelector('iframe'); if (f) f.src = target(); }
+      }
+
+      if (mode === 'play') { open.href = full(); explain(); return; }
+      fetchJson('portsim-rollouts.json').then((d) => { data = d; update(); if (near) load(); })
+        .catch((e) => { why.textContent = e.message; });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+    else boot();
+  })();
+</script>

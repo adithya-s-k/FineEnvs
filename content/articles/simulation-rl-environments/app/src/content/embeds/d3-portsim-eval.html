@@ -1,0 +1,74 @@
+<div class="d3-portsim-eval"></div>
+<style>
+  .d3-portsim-eval { font-size: 13px; color: var(--text-color); }
+  .d3-portsim-eval .ev-grid { display: grid; grid-template-columns: max-content 1fr max-content; gap: 9px 12px; align-items: center; }
+  .d3-portsim-eval .ev-name { white-space: nowrap; }
+  .d3-portsim-eval .ev-bar { display: flex; height: 18px; border-radius: 3px; overflow: hidden; background: color-mix(in srgb, var(--muted-color) 8%, transparent); }
+  .d3-portsim-eval .ev-bar span { display: block; height: 100%; }
+  .d3-portsim-eval .ev-bar span + span { box-shadow: inset 1px 0 0 var(--page-bg); }
+  .d3-portsim-eval .ev-mean { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+  .d3-portsim-eval .ev-mean small { font-weight: 400; color: var(--muted-color); }
+  .d3-portsim-eval .ev-head { font-size: 12px; color: var(--muted-color); }
+  .d3-portsim-eval .ev-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 12px; font-size: 12px; color: var(--muted-color); }
+  .d3-portsim-eval .ev-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .d3-portsim-eval .ev-axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted-color); font-variant-numeric: tabular-nums; }
+  .d3-portsim-eval .ev-tip { position: fixed; pointer-events: none; z-index: 20; background: var(--page-bg); color: var(--text-color);
+    border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 8px; font-size: 12px; opacity: 0; transition: opacity .1s; }
+</style>
+<script>
+  (() => {
+    const fetchJson = async (f) => {
+      for (const u of ['/data/' + f, 'assets/data/' + f, '../assets/data/' + f]) {
+        try { const r = await fetch(u, { cache: 'no-cache' }); if (r.ok) return await r.json(); } catch (e) {}
+      }
+      throw new Error(f + ' not found');
+    };
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('d3-portsim-eval'))) {
+        root = [...document.querySelectorAll('.d3-portsim-eval')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+      const KINDS = [
+        { key: 'optimal', label: 'optimal plan (1.0)', color: 'var(--primary-color)' },
+        { key: 'valid', label: 'valid, not optimal (0.2–1)', color: 'color-mix(in srgb, var(--primary-color) 42%, transparent)' },
+        { key: 'broken', label: 'broke a rule (≤ 0.2)', color: 'color-mix(in srgb, var(--danger-color) 55%, transparent)' },
+        { key: 'none', label: 'no plan submitted (0)', color: 'color-mix(in srgb, var(--muted-color) 28%, transparent)' },
+      ];
+      fetchJson('portsim-results.json').then((d) => {
+        const rows = d.board.slice().sort((a, b) => b.mean - a.mean);
+        const tip = document.createElement('div');
+        tip.className = 'ev-tip';
+        document.body.appendChild(tip);
+        const parts = (r) => ({ optimal: r.optimal, valid: r.feasible - r.optimal, broken: r.submitted - r.feasible, none: r.n - r.submitted });
+        root.innerHTML = `
+          <div class="ev-grid">
+            <span></span><span class="ev-head">the 50 eval weeks, by outcome</span><span class="ev-head">mean reward</span>
+            ${rows.map((r) => {
+              const p = parts(r);
+              return `<span class="ev-name">${r.model}</span>
+                <span class="ev-bar" role="img" aria-label="${r.model}: ${KINDS.map((k) => `${p[k.key]} ${k.label}`).join(', ')}">
+                  ${KINDS.filter((k) => p[k.key] > 0).map((k) => `<span data-tip="${r.model}: ${p[k.key]} of ${r.n} weeks, ${k.label}" style="width:${(100 * p[k.key]) / r.n}%;background:${k.color}"></span>`).join('')}
+                </span>
+                <span class="ev-mean">${r.mean.toFixed(2)}</span>`;
+            }).join('')}
+            <span></span><span class="ev-axis"><span>0</span><span>25</span><span>50 weeks</span></span><span></span>
+          </div>
+          <div class="ev-legend">${KINDS.map((k) => `<span><i style="background:${k.color}"></i>${k.label}</span>`).join('')}</div>`;
+        root.addEventListener('mousemove', (e) => {
+          const s = e.target.closest('[data-tip]');
+          if (!s) { tip.style.opacity = 0; return; }
+          tip.textContent = s.dataset.tip;
+          tip.style.left = Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8) + 'px';
+          tip.style.top = e.clientY + 14 + 'px';
+          tip.style.opacity = 1;
+        });
+        root.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
+      }).catch((e) => { root.innerHTML = `<pre style="color:var(--danger-color)">${e.message}</pre>`; });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+    else boot();
+  })();
+</script>

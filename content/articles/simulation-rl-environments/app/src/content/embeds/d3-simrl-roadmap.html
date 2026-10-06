@@ -1,0 +1,49 @@
+<div class="d3-simrl-roadmap"></div>
+<style>
+  .d3-simrl-roadmap { color: var(--text-color); font-size: 13px; }
+  .d3-simrl-roadmap ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); column-gap: 18px; }
+  .d3-simrl-roadmap li { position: relative; margin: 0; padding: 30px 0 0; min-width: 0; }
+  /* track: each node draws the segment to the next column; dashed = not built yet */
+  .d3-simrl-roadmap li::before { content: ''; position: absolute; left: 12px; right: -18px; top: 15px; border-top: 1px dashed color-mix(in srgb, var(--muted-color) 45%, transparent); }
+  .d3-simrl-roadmap li:last-child::before { right: 0; }
+  .d3-simrl-roadmap .mk { position: absolute; left: 0; top: 10px; width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--muted-color); background: var(--surface-bg, var(--page-bg)); box-sizing: content-box; }
+  .d3-simrl-roadmap li.now .mk { background: var(--primary-color); border-color: var(--primary-color); }
+  .d3-simrl-roadmap .now-lab { position: absolute; left: 18px; top: 0; font-size: 11.5px; line-height: 1; color: var(--primary-color); font-weight: 600; }
+  .d3-simrl-roadmap .h { font-weight: 600; line-height: 1.3; }
+  .d3-simrl-roadmap li:not(.now) .h { color: var(--text-color); }
+  .d3-simrl-roadmap .d { margin-top: 3px; font-size: 12px; line-height: 1.4; color: var(--muted-color); }
+  @media (max-width: 640px) {
+    .d3-simrl-roadmap ol { grid-template-columns: 1fr; row-gap: 14px; }
+    .d3-simrl-roadmap li { padding: 0 0 0 24px; }
+    .d3-simrl-roadmap li::before { left: 5px; right: auto; top: 14px; bottom: -14px; border-top: none; border-left: 1px dashed color-mix(in srgb, var(--muted-color) 45%, transparent); }
+    .d3-simrl-roadmap li:last-child::before { display: none; }
+    .d3-simrl-roadmap .mk { top: 4px; }
+    .d3-simrl-roadmap .now-lab { position: static; display: inline; margin-left: 6px; }
+  }
+</style>
+<script>
+  (() => {
+    const scriptEl = document.currentScript;
+    const boot = () => {
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('d3-simrl-roadmap'))) {
+        root = [...document.querySelectorAll('.d3-simrl-roadmap')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+      const NODES = [
+        { h: 'v1 · PortSimEnv', d: 'one quay · one plan · graded once', now: true },
+        { h: 'v2 · Live simulation', d: 'delays reported live, tower–ship talk, urgent re‑plans' },
+        { h: 'v3 · More of the port', d: 'tugs, pilots, yard, gates, rail; more ports' },
+        { h: 'Post-training', d: 'RL on the 1,050 training tasks' },
+        { h: 'More data', d: 'AIS tracks, weather history, terminal logs' },
+      ];
+      root.innerHTML = `<ol aria-label="Roadmap">${NODES.map((n) => `<li${n.now ? ' class="now" aria-current="step"' : ''}>
+        <span class="mk" aria-hidden="true"></span>
+        <div class="h">${n.h}${n.now ? '<span class="now-lab">now</span>' : ''}</div>
+        <div class="d">${n.d}</div>
+      </li>`).join('')}</ol>`;
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
+  })();
+</script>

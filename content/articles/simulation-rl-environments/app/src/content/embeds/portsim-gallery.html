@@ -1,0 +1,22 @@
+<div class="portsim-gallery">
+  <figure>
+    <img src="/img/portsim-sim-harbour.webp" loading="lazy" alt="The whole simulated port: APM Terminals' quay and yard in the middle, cruise terminals, the tank farm, Montjuïc and the city of Barcelona behind.">
+    <figcaption><b>The harbour</b>: the twin covers the port, Montjuïc and the city, from OpenStreetMap and public terrain.</figcaption>
+  </figure>
+  <figure>
+    <img src="/img/portsim-sim-apm.webp" loading="lazy" alt="APM Terminals Barcelona: a magenta ONE container ship berthing with two tugs under the quay cranes, the straddle-carrier yard behind, a cruise ship at the next quay.">
+    <figcaption><b>APM Terminals, storm week 35</b>: GPT-6.1 Sol's plan, which matches the proven optimum. Tugs bring a ship in.</figcaption>
+  </figure>
+  <figure>
+    <img src="/img/portsim-sim-best.webp" loading="lazy" alt="BEST terminal: red-and-white quay cranes working three ships along the quay, the automated stacking yard with blue gantry cranes behind.">
+    <figcaption><b>BEST, busy week 6</b>: 25 ships; three worked at once under GPT-6.1 Sol's optimal plan.</figcaption>
+  </figure>
+</div>
+<style>
+  .portsim-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .portsim-gallery figure { margin: 0; min-width: 0; }
+  .portsim-gallery img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-color); }
+  .portsim-gallery figcaption { margin-top: 5px; font-size: 12px; line-height: 1.4; color: var(--muted-color); }
+  .portsim-gallery figcaption b { color: var(--text-color); font-weight: 600; }
+  @media (max-width: 760px) { .portsim-gallery { grid-template-columns: minmax(0, 1fr); } }
+</style>
