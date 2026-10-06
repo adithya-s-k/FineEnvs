@@ -1,0 +1,38 @@
+name: multilingual
+title: "Multilingual"
+tagline: "Document OCR over a million pages in 22 languages and speech recognition over 102, each behind one OpenEnv server, and Gemma 4 trained to read and hear Kannada."
+order: 6
+status: trained   # both environments deployed; a Kannada GRPO run per modality, scored at every checkpoint
+
+hub:
+  org: FineEnvs
+  spaces:
+    - FineEnvs/nayana-ocr-env
+    - FineEnvs/fleurs-asr-env
+  models:
+    - FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo
+    - FineEnvs/gemma-4-E4B-it-kannada-asr-grpo
+  datasets:
+    - Cognitive-Lab/NayanaOCR_Corpus_2025
+    - sarvamai/indic-ocr-bench
+    - google/fleurs
+    - FineEnvs/multilingual-multimodal-rl-runs
+  trackio:
+    - FineEnvs/multilingual-multimodal-trackio
+  buckets:
+    - FineEnvs/NayanaOCR_Corpus_2025_bucket
+    - FineEnvs/indic-ocr-bench-bucket
+    - FineEnvs/fleurs-bucket
+  collection: FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4
+
+envs:
+  - name: nayana_ocr
+    summary: "Section and full-page OCR, layout detection, MCQ and judged descriptive VQA over 22 languages, plus Sarvam Indic OCR Bench. Lives in ocr/."
+    backend: http
+    frameworks:
+      openenv: {transport: http-websocket, space: FineEnvs/nayana-ocr-env, verified: true}
+  - name: multilingual_asr
+    summary: "Transcription, verbatim transcription and language ID over 102 FLEURS languages, scored per word or per character. Lives in asr/."
+    backend: http
+    frameworks:
+      openenv: {transport: http-websocket, space: FineEnvs/fleurs-asr-env, verified: true}

@@ -56,8 +56,7 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **03** | **[GeoGuesser](./03-geoguesser/)** | Drop a VLM at a random street corner on Earth and score it on kilometres of error. | 1 | 1 | 1 | ✅ stable |
 | **04** | **[SmolDataEnvs](./04-smoldataenvs/)** | Data-analysis tasks, verified SFT traces and a single-turn GRPO tutorial on HF Jobs. | 1 | 1 | 0 | 🚧 wip |
 | **05** | **[SmolDataEnvs: multi-harness RL](./05-multi-harness-rl/)** | Train on SmolDataEnvs with SETA, native OpenCode or Harbor, using HF Jobs or Slurm. | 3 | 1 | 0 | 🚧 wip |
-| **06** | **[Multilingual OCR](./06-multilingual-ocr/)** | A million Nayana pages in 22 languages behind one OpenEnv server, plus Sarvam Indic OCR Bench, and a Kannada OCR model trained against it. | 1 | 1 | 1 | ✅ trained |
-| **07** | **[Multilingual ASR](./07-multilingual-asr/)** | All 102 FLEURS languages behind one OpenEnv server, and a Gemma 4 that learned to hear Kannada: held-out CER −45%. | 1 | 1 | 1 | ✅ trained |
+| **06** | **[Multilingual](./06-multilingual/)** | Document OCR over a million pages in 22 languages and speech recognition over 102, each behind one OpenEnv server, and Gemma 4 trained to read and hear Kannada. | 2 | 1 | 2 | ✅ trained |
 <!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
@@ -150,22 +149,17 @@ Apps for exploring and evaluating RL environments, in [`tooling/`](./tooling/):
 
 ---
 
-### [06 · Multilingual OCR](./06-multilingual-ocr/) &nbsp;<sub>a million pages, 22 languages, one server</sub>
+### [06 · Multilingual](./06-multilingual/) &nbsp;<sub>reading and hearing many languages, two servers</sub>
 
-**A corpus as an environment.** A million scanned pages in 22 languages, served in place from a
-bucket as 11 million tasks: transcribe a region or a page, mark the layout, or answer a question
-about it. Sarvam Indic OCR Bench sits beside it as evaluation splits, scored by its own metric.
+**Two corpora as environments.** [`ocr/`](./06-multilingual/ocr/) serves a million scanned pages in
+22 languages from a bucket as 11 million tasks, with Sarvam Indic OCR Bench beside them as evaluation
+splits. [`asr/`](./06-multilingual/asr/) serves all of FLEURS, 102 languages of read speech. Both play
+in the browser.
 
-Gemma 4 E4B trained on 4,000 Kannada crops makes 16% fewer character errors on the benchmark's
-Kannada slice, mostly by learning to stay in the script. One A100, 10.5 hours. Part of the
-### [07 · Multilingual ASR](./07-multilingual-asr/) &nbsp;<sub>102 languages of speech, one server</sub>
-
-**Speech, and a trainer that has to hear it.** All of FLEURS, 102 languages of read speech, behind
-one OpenEnv server you can play in the browser.
-
-Gemma 4 E4B trained on every Kannada clip makes 45% fewer character errors on clips it never saw.
-That only happened once the trainer actually fed it the audio: TRL drops audio from the forward pass
-its loss comes from, and the project shows the fix and the numbers. One A100, 4.7 hours. Part of the
+Gemma 4 E4B was trained on Kannada in each. Reading, it makes 16% fewer character errors on the
+benchmark's Kannada slice, mostly by learning to stay in the script. Hearing, it makes 45% fewer on
+clips it never saw, but only once the trainer actually fed it the audio: TRL drops audio from the
+forward pass its loss comes from, and the project shows the fix and the numbers. Part of the
 [Multilingual Multimodal Envs](https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4) collection.
 
 ## Articles &amp; talks
