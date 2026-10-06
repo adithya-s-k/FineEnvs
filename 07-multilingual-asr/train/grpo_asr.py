@@ -1,0 +1,559 @@
+"""Single-GPU GRPO against the multilingual ASR OpenEnv server."""
+
+import argparse
+import json
+import math
+import os
+import time
+from collections import defaultdict
+from contextlib import ExitStack
+from dataclasses import asdict, dataclass
+from pathlib import Path
+
+from multilingual_asr.client import connect
+from multilingual_asr.data.schema import FAMILIES
+from multilingual_asr.models import AsrAction
+from multilingual_asr.runtime import local_server
+from multilingual_asr.server.rewards import POLICIES, REWARD_UNITS
+from multilingual_asr.training import (
+    AssetCache,
+    TrainingEnvironment,
+    audio_grpo_trainer,
+    env_reward,
+    mark_checkpoint_ready,
+    pad_audio_features,
+    sampled_rows,
+    task_rows,
+)
+
+INTEGER_OPTIONS = (
+    "train_per_group",
+    "eval_per_group",
+    "eval_limit",
+    "save_steps",
+    "save_total_limit",
+    "max_steps",
+    "num_generations",
+    "gradient_accumulation_steps",
+    "max_completion_length",
+    "seed",
+)
+
+
+@dataclass
+class Config:
+    corpus: str = ""
+    env_url: str = ""
+    eval_split: str = ""
+    eval_limit: int = 0
+    save_steps: int = 25
+    save_total_limit: int = 0
+    model: str = "google/gemma-4-E2B-it"
+    model_revision: str = ""
+    languages: tuple[str, ...] = ("en_us", "hi_in")
+    families: tuple[str, ...] = ("transcription",)
+    lora_target_modules: tuple[str, ...] = ()
+    train_per_group: int = 8
+    eval_per_group: int = 2
+    max_steps: int = 20
+    num_generations: int = 4
+    # TRL fills a batch with one prompt's generations, so without accumulation every
+    # optimizer step sees exactly one task. Eight hundred such steps moved 31 of 150
+    # held-out predictions and half of those went backwards: the gradient was noise.
+    gradient_accumulation_steps: int = 1
+    max_completion_length: int = 256
+    # Longest FLEURS kn_in validation clip is 28.7s; 30 truncates nothing there. The
+    # features are padded to this span with the padding masked, never the waveform.
+    audio_seconds: float = 30.0
+    learning_rate: float = 1e-5
+    # Linear decay from the first step reproduces the runs before a schedule was
+    # configurable; a higher rate wants a warmup and a cosine tail.
+    lr_scheduler_type: str = "linear"
+    warmup_ratio: float = 0.0
+    beta: float = 0.0
+    reward_unit: str = "script"
+    seed: int = 42
+    output_dir: str = "artifacts/local-run"
+    run_name: str = "asr-grpo"
+    trackio_space: str = ""
+    resume: str = ""
+    smoke: bool = False
+
+    @property
+    def rollouts_in_flight(self):
+        """Sessions TRL holds open at once: one per completion in an optimizer step."""
+        return self.num_generations * self.gradient_accumulation_steps
+
+    def validate(self):
+        if not math.isfinite(self.learning_rate) or self.learning_rate <= 0:
+            raise ValueError("Use a finite positive learning rate")
+        if bool(self.corpus) == bool(self.env_url):
+            raise ValueError("Provide exactly one of --corpus or --env-url")
+        if self.num_generations < 2:
+            raise ValueError("GRPO needs at least two generations per group")
+        if self.gradient_accumulation_steps < 1:
+            raise ValueError("Use at least one accumulation step")
+        if min(self.max_steps, self.train_per_group, self.eval_per_group) < 1:
+            raise ValueError("Use positive limits")
+        if set(self.families) - set(FAMILIES):
+            raise ValueError(f"Unknown task family in {self.families}")
+        if self.reward_unit not in REWARD_UNITS:
+            raise ValueError(f"Unknown reward unit {self.reward_unit!r}")
+        if not 0 <= self.warmup_ratio < 1 or self.beta < 0:
+            raise ValueError("Use a warmup ratio in [0, 1) and a non-negative beta")
+
+    @property
+    def warmup_steps(self):
+        return round(self.warmup_ratio * self.max_steps)
+
+
+SKIPPED_TOWERS = ("audio_tower", "vision_tower")
+
+
+def lora_target_modules(model_id, revision, wanted=("q_proj", "v_proj")):
+    """Resolve LoRA targets to full, unambiguous module names.
+
+    PEFT adapts genuine leaves and matches a short target against every module whose name
+    ends with it. Gemma 4 wraps some projections in Gemma4ClippableLinear, so a suffix can
+    match both a wrapper and a leaf and injection fails outright. Full names name exactly
+    one leaf each.
+
+    Only the language model is adapted. An earlier version targeted the audio tower too --
+    "the part this task must adapt" -- and a 250-step run proved that wrong in the worst
+    way: all 24 audio-tower lora_B tensors were still exactly zero at the end, alongside
+    32 dead vision ones. A zero B contributes nothing, so 46% of the adapter was inert
+    while PEFT reported 244 tensors adapted and reward climbed.
+
+    The cause is upstream and still present on TRL main: GRPO's loss forward takes
+    pixel_values and friends but has no input_features parameter, and its multimodal
+    branch is gated on `images is not None`. The audio tower runs during generation, which
+    is under no_grad, and never appears in the backward graph. Targeting it cannot work
+    until TRL carries audio into training; adapting the language model alone is honest
+    about what this run changes.
+    """
+    import torch
+    from transformers import AutoConfig, AutoModel
+
+    try:
+        settings = AutoConfig.from_pretrained(model_id, revision=revision or None)
+        with torch.device("meta"):
+            model = AutoModel.from_config(settings)
+    except Exception as error:  # Unknown architecture: keep the plain names.
+        print(
+            f"LoRA introspection unavailable ({error}); using {list(wanted)}",
+            flush=True,
+        )
+        return list(wanted)
+    adaptable = (torch.nn.Linear, torch.nn.Embedding, torch.nn.Conv1d, torch.nn.Conv2d)
+    targets = [
+        name
+        for name, module in model.named_modules()
+        if isinstance(module, adaptable)
+        and any(part in wanted for part in name.split("."))
+        # A tower's adapter cannot receive gradient, so targeting one only spends
+        # parameters and hides the fact that nothing there is learning.
+        and not any(tower in name for tower in SKIPPED_TOWERS)
+    ]
+    return sorted(targets) or list(wanted)
+
+
+def generate(model, processor, observation, cache, max_tokens):
+    import torch
+
+    audio = cache.audio(observation)
+    inputs = processor.apply_chat_template(
+        [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "audio", "audio": audio},
+                    {"type": "text", "text": observation.prompt},
+                ],
+            }
+        ],
+        add_generation_prompt=True,
+        tokenize=True,
+        return_dict=True,
+        return_tensors="pt",
+    ).to(model.device)
+    with torch.no_grad():
+        output = model.generate(**inputs, max_new_tokens=max_tokens, do_sample=False)
+    return processor.batch_decode(
+        output[:, inputs["input_ids"].shape[1] :], skip_special_tokens=True
+    )[0]
+
+
+def evaluate(trainer, rows, url, cache, max_tokens):
+    model, processor = trainer.model, trainer.processing_class
+    was_training = model.training
+    checkpointing = model.is_gradient_checkpointing
+    was_cache = model.config.use_cache
+    samples, groups = [], defaultdict(list)
+    started = time.monotonic()
+    # Without this the phase is silent, and a slow evaluation is indistinguishable from
+    # a hung one — which cost a real run an hour of guessing.
+    print(f"evaluating {len(rows)} tasks", flush=True)
+    try:
+        model.eval()
+        if checkpointing:
+            model.gradient_checkpointing_disable()
+        model.config.use_cache = True
+        with connect(url) as client:
+            for index, row in enumerate(rows, 1):
+                if index == 1 or index % 10 == 0:
+                    rate = index / max(time.monotonic() - started, 1e-9)
+                    print(f"  eval {index}/{len(rows)} ({rate:.2f} task/s)", flush=True)
+                observation = client.reset(task_id=row["task_id"]).observation
+                prediction = generate(model, processor, observation, cache, max_tokens)
+                result = client.step(AsrAction(transcript=prediction))
+                sample = {
+                    **row,
+                    "prediction": prediction,
+                    "reward": float(result.reward),
+                    **result.observation.metrics,
+                }
+                samples.append(sample)
+                groups[f"{row['language']}/{row['family']}"].append(sample)
+    finally:
+        model.config.use_cache = was_cache
+        if checkpointing:
+            model.gradient_checkpointing_enable()
+        model.train(was_training)
+    metrics = {}
+    for key, values in groups.items():
+        metrics[key] = {
+            "samples": len(values),
+            "reward": sum(v["reward"] for v in values) / len(values),
+        }
+        for metric in ("wer", "cer", "exact_match"):
+            observed = [v[metric] for v in values if metric in v]
+            if observed:
+                metrics[key][metric] = sum(observed) / len(observed)
+    return {
+        "macro_reward": sum(v["reward"] for v in metrics.values()) / len(metrics),
+        "by_language_task": metrics,
+        "samples": samples,
+    }
+
+
+def run(config):
+    import torch
+    from datasets import Dataset
+    from huggingface_hub import model_info
+    from peft import LoraConfig
+    from transformers import AutoProcessor, TrainerCallback
+    from trl import GRPOConfig
+
+    config.validate()
+    if not torch.cuda.is_available():
+        raise RuntimeError(
+            "GRPO training requires CUDA; asr-smoke checks the env on CPU"
+        )
+    if int(os.environ.get("WORLD_SIZE", "1")) != 1:
+        raise ValueError("This recipe supports one GPU. Do not launch with torchrun")
+    output = Path(config.output_dir).resolve()
+    output.mkdir(parents=True, exist_ok=True)
+
+    with ExitStack() as stack:
+        url = config.env_url or stack.enter_context(
+            # TRL opens a session per rollout, and accumulation multiplies the
+            # rollouts in flight: generations * accumulation, not generations.
+            local_server(
+                config.corpus, config.rollouts_in_flight + 4, config.reward_unit
+            )
+        )
+        with connect(url) as client:
+            manifest = client.manifest()
+        # A remote server grades by its own policy; training against a different one
+        # than the run claims would make every number in it mislabelled.
+        policy = (manifest.get("grading") or {}).get("policy")
+        if policy != POLICIES[config.reward_unit]:
+            raise ValueError(
+                f"Server grades by {policy!r}, not {POLICIES[config.reward_unit]!r}"
+            )
+        languages, families = list(config.languages), list(config.families)
+
+        # Only immutable identifiers reach the sampler. A "prompt" column would be read
+        # by TRL as a conversation, and the environment already owns the prompt.
+        def selection(split, per_group):
+            rows = sampled_rows(url, split, languages, families, config.seed, per_group)
+            return [
+                {key: row[key] for key in ("task_id", "language", "family")}
+                for row in rows
+            ]
+
+        train_rows = selection("train", config.train_per_group)
+        if config.eval_split:
+            # A frozen set is served as its own split, so it is used whole unless the
+            # caller limits it explicitly and a score stays comparable to its evalset_id.
+            served = manifest.get("eval_splits") or {}
+            if config.eval_split not in served:
+                raise ValueError(
+                    f"{config.eval_split!r} is not a frozen evaluation split; this "
+                    f"deployment serves {sorted(served) or 'none'}"
+                )
+            chosen = task_rows(url, config.eval_split)
+            if config.eval_limit:
+                chosen = chosen[:: max(1, len(chosen) // config.eval_limit)][
+                    : config.eval_limit
+                ]
+            eval_rows = [
+                {key: row[key] for key in ("task_id", "language", "family")}
+                for row in chosen
+            ]
+            evalset_id = served[config.eval_split]["evalset_id"]
+        else:
+            eval_rows = selection("test", config.eval_per_group)
+            evalset_id = None
+        revision = model_info(
+            config.model, revision=config.model_revision or "main"
+        ).sha
+        targets = list(config.lora_target_modules) or lora_target_modules(
+            config.model, revision
+        )
+        print(f"LoRA targets: {len(targets)} modules, e.g. {targets[:2]}", flush=True)
+
+        metadata = {
+            # Where a run resumed from and where it reported to say nothing about what
+            # was trained, and would make two identical runs look different.
+            "config": {
+                k: v
+                for k, v in asdict(config).items()
+                if k not in {"resume", "trackio_space", "run_name"}
+            },
+            "model_revision": revision,
+            "lora_target_modules": targets,
+            "manifest": manifest,
+            "evalset_id": evalset_id,
+            "eval_limit": config.eval_limit or None,
+            "train_tasks": train_rows,
+            "eval_tasks": eval_rows,
+        }
+        (output / "run-metadata.json").write_text(
+            json.dumps(metadata, ensure_ascii=False, indent=2) + "\n"
+        )
+
+        processor = pad_audio_features(
+            AutoProcessor.from_pretrained(config.model, revision=revision),
+            config.audio_seconds,
+        )
+        cache = AssetCache(url)
+
+        # TRL calls the factory once per parallel environment and owns the pool, so
+        # this returns a single session rather than a list of them.
+        def factory():
+            environment = TrainingEnvironment(url, cache, manifest["snapshot_id"])
+            stack.callback(environment._close)
+            return environment
+
+        class CheckpointReady(TrainerCallback):
+            """Name each checkpoint's adapter by hash once it is saved.
+
+            A watcher evaluates checkpoints while the run is still going, reading them
+            from the bucket this run writes to. A file can be listed there before all of
+            it has arrived. The hashes let the watcher tell a complete adapter from a
+            partial one instead of scoring whatever bytes it finds.
+            """
+
+            def on_save(self, args, state, control, **kwargs):
+                mark_checkpoint_ready(
+                    output / f"checkpoint-{state.global_step}", state.global_step
+                )
+
+        trainer = audio_grpo_trainer()(
+            model=config.model,
+            processing_class=processor,
+            train_dataset=Dataset.from_list(train_rows),
+            environment_factory=factory,
+            reward_funcs=env_reward,
+            peft_config=LoraConfig(
+                task_type="CAUSAL_LM",
+                r=16,
+                lora_alpha=32,
+                lora_dropout=0.05,
+                target_modules=targets,
+            ),
+            args=GRPOConfig(
+                output_dir=str(output),
+                model_init_kwargs={
+                    "revision": revision,
+                    "dtype": "bfloat16",
+                    "attn_implementation": "sdpa",
+                },
+                num_generations=config.num_generations,
+                per_device_train_batch_size=config.num_generations,
+                # Distinct prompts per optimizer step, each scored over
+                # num_generations completions.
+                gradient_accumulation_steps=config.gradient_accumulation_steps,
+                max_completion_length=config.max_completion_length,
+                max_steps=config.max_steps,
+                learning_rate=config.learning_rate,
+                lr_scheduler_type=config.lr_scheduler_type,
+                warmup_steps=config.warmup_steps,
+                beta=config.beta,
+                temperature=0.9,
+                seed=config.seed,
+                bf16=True,
+                # A run of any length has to survive losing its machine, and has to be
+                # watchable while it is going. A smoke keeps neither: it is two minutes
+                # long and writing checkpoints would only slow it down.
+                report_to="trackio" if config.trackio_space else "none",
+                trackio_space_id=config.trackio_space or None,
+                logging_steps=1,
+                save_strategy="no" if config.smoke else "steps",
+                save_steps=min(config.save_steps, config.max_steps),
+                # Keeping only the last few discards the curve. A run whose point is
+                # to show how reward moves has to keep the checkpoints it moved through.
+                save_total_limit=config.save_total_limit or None,
+                run_name=config.run_name,
+            ),
+            callbacks=[] if config.smoke else [CheckpointReady()],
+        )
+
+        baseline = evaluate(
+            trainer, eval_rows, url, cache, config.max_completion_length
+        )
+        (output / "baseline.json").write_text(
+            json.dumps(baseline, ensure_ascii=False, indent=2) + "\n"
+        )
+
+        before = {
+            name: p.detach().cpu().clone()
+            for name, p in trainer.model.named_parameters()
+            if p.requires_grad
+        }
+        result = trainer.train(resume_from_checkpoint=config.resume or None)
+        changed = any(
+            not torch.equal(before[name], p.detach().cpu())
+            for name, p in trainer.model.named_parameters()
+            if p.requires_grad
+        )
+        zero_std = [
+            entry["frac_reward_zero_std"]
+            for entry in trainer.state.log_history
+            if "frac_reward_zero_std" in entry
+        ]
+        degenerate = bool(zero_std) and all(value == 1 for value in zero_std)
+        problems = []
+        if trainer.state.global_step != config.max_steps:
+            problems.append(
+                f"ran {trainer.state.global_step} steps, expected {config.max_steps}"
+            )
+        if not math.isfinite(result.training_loss):
+            problems.append(f"training loss is {result.training_loss}")
+        if not changed and not degenerate:
+            problems.append("no adapter weight changed")
+        if not changed and degenerate:
+            problems.append(
+                "every reward group had identical rewards, so the advantage was zero "
+                "and no gradient could flow. Raise --num-generations, or select tasks "
+                "the model does not already solve exactly"
+            )
+        if problems:
+            raise RuntimeError("Training check failed: " + "; ".join(problems))
+
+        trained = evaluate(trainer, eval_rows, url, cache, config.max_completion_length)
+        trainer.save_model(str(output / "adapter"))
+        summary = {
+            "status": "passed",
+            "smoke": config.smoke,
+            "steps": trainer.state.global_step,
+            "training_loss": result.training_loss,
+            "adapter_updated": changed,
+            "reward_groups_without_variance": degenerate,
+            "lora_target_count": len(targets),
+            "grading_policy": POLICIES[config.reward_unit],
+            # How much the clip raises its own transcripts' log-prob in the loss forward.
+            "audio_check": trainer.audio_check,
+            "evalset_id": evalset_id,
+            "baseline": baseline,
+            "trained": trained,
+            "snapshot_id": manifest["snapshot_id"],
+        }
+        (output / "summary.json").write_text(
+            json.dumps(summary, ensure_ascii=False, indent=2) + "\n"
+        )
+        print(json.dumps(summary, ensure_ascii=False, indent=2))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--corpus", default="", help="Corpus manifest JSON, or a prepared snapshot"
+    )
+    parser.add_argument("--env-url", default="")
+    parser.add_argument(
+        "--eval-split",
+        default="",
+        help="Frozen evaluation split served by the environment, e.g. eval_21_test; "
+        "used whole unless --eval-limit is given",
+    )
+    parser.add_argument("--model", default=Config.model)
+    parser.add_argument("--model-revision", default="")
+    parser.add_argument("--languages", nargs="+", default=list(Config.languages))
+    parser.add_argument(
+        "--families", nargs="+", choices=FAMILIES, default=list(Config.families)
+    )
+    parser.add_argument("--lora-target-modules", nargs="+", default=[])
+    for name in INTEGER_OPTIONS:
+        parser.add_argument("--" + name.replace("_", "-"), type=int, default=None)
+    parser.add_argument(
+        "--audio-seconds",
+        type=float,
+        default=Config.audio_seconds,
+        help="pad every clip to this span so a batch shares one feature shape; "
+        "0 disables padding and only works when a batch holds one task",
+    )
+    parser.add_argument("--learning-rate", type=float, default=Config.learning_rate)
+    parser.add_argument(
+        "--lr-scheduler-type", default=Config.lr_scheduler_type, help="e.g. cosine"
+    )
+    parser.add_argument(
+        "--warmup-ratio",
+        type=float,
+        default=Config.warmup_ratio,
+        help="Share of max steps spent warming the learning rate up from zero",
+    )
+    parser.add_argument(
+        "--beta", type=float, default=Config.beta, help="KL penalty to the base model"
+    )
+    parser.add_argument(
+        "--reward-unit",
+        choices=REWARD_UNITS,
+        default=Config.reward_unit,
+        help="script: words where words are spaced, characters otherwise (the "
+        "deployed policy); cer: characters for every language",
+    )
+    parser.add_argument(
+        "--output-dir", default=os.environ.get("OUTPUT_DIR", Config.output_dir)
+    )
+    parser.add_argument("--run-name", default=Config.run_name)
+    parser.add_argument(
+        "--trackio-space",
+        default="",
+        help="Trackio Space to stream metrics to; without it the run reports nowhere",
+    )
+    parser.add_argument(
+        "--resume", default="", help="Checkpoint directory to continue from"
+    )
+    parser.add_argument("--smoke", action="store_true")
+    args = vars(parser.parse_args())
+    # An explicit flag wins; --smoke only fills what the caller left unset.
+    smoke_defaults = {
+        "max_steps": 2,
+        "num_generations": 4,
+        "eval_per_group": 1,
+        "train_per_group": 4,
+    }
+    for name in INTEGER_OPTIONS:
+        if args[name] is None:
+            args[name] = (
+                smoke_defaults[name]
+                if args["smoke"] and name in smoke_defaults
+                else getattr(Config, name)
+            )
+    run(Config(**args))
+
+
+if __name__ == "__main__":
+    main()
