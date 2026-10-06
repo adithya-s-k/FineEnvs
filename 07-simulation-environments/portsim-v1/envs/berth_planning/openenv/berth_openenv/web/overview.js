@@ -1,5 +1,6 @@
-// Overview (#/): what the environment is, how to use it, and the eval, on one page. The Space opens here.
-import { getRun } from "./api.js";
+// Overview (#/): what the environment is, how to use it, and the eval, on one page. Both Spaces open here: the
+// environment's server (env mode) and the eval Space (explorer mode: the eval first, playing links out).
+import { getRun, getRuns } from "./api.js";
 import { escapeHtml, fmtNum } from "./model.js";
 
 const RUN = "dock-eval50";
@@ -19,9 +20,20 @@ const LINKS = [
   ["Code", "https://github.com/adithya-s-k/FineEnvs", "environment, grader, viewer"],
   ["Discussion", "https://github.com/adithya-s-k/FineEnvs/discussions/36", "ideas for v2, v3, post-training, data"],
 ];
+const ENV_SPACE = "https://huggingface.co/spaces/FineEnvs/PortSimEnv";
+const ENV_URL = "https://fineenvs-portsimenv.hf.space";
+const EVAL_VIEWER = "https://fineenvs-portsimenv-eval.hf.space/viewer/"; // the eval Space, for servers without rollouts
 const TIERS = ["standard", "busy", "storm", "extreme"];
+const TIER_TIPS = {  // core/berth_core/dock.py TIERS
+  standard: "1 week · 1 closure · 1–2 late ships",
+  busy: "1–2 weeks · 1–2 closures · 2–3 late ships · a crane outage · priority cargo",
+  storm: "2 weeks · a gale · an emergency · 2–4 late ships · a crane outage",
+  extreme: "2–3 weeks · 2–3 closures · gales · a diverted quay · bunched and late ships · emergencies",
+};
 const enc = encodeURIComponent;
 const runHref = (model, task) => `#/run/${RUN}/${enc(model)}/${enc(task)}`;
+export const nameOf = (model) => NAMES[model] || model;
+const cap = (s) => s[0].toUpperCase() + s.slice(1);
 
 function board(episodes) {
   const by = new Map();
@@ -32,7 +44,8 @@ function board(episodes) {
   const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
   return [...by.entries()].map(([model, eps]) => ({
     model,
-    name: NAMES[model] || model,
+    name: nameOf(model),
+    eps,
     n: eps.length,
     mean: mean(eps.map((e) => e.reward || 0)),
     tiers: Object.fromEntries(TIERS.map((t) => [t, mean(eps.filter((e) => e.difficulty === t).map((e) => e.reward || 0))])),
@@ -42,15 +55,50 @@ function board(episodes) {
   })).sort((a, b) => b.mean - a.mean);
 }
 
-export async function overviewPage({ app, setCrumbs, isCurrent }) {
+function resultHtml(e) {
+  if (!e.submitted) return `<span class="muted" title="${escapeHtml(e.end_reason || "")}">not submitted</span>`;
+  if (!e.feasible) return '<i class="dot bad"></i>rule broken';
+  return (e.reward || 0) >= 0.999 ? '<i class="dot ok"></i>optimal' : '<i class="dot ok"></i>valid';
+}
+
+// One model's rollouts: every eval week, each row opening the 3D replay.
+const EP_COLS = [
+  { k: "task_id", label: "Task", get: (r) => r.task_id, html: (r) => `<a href="${runHref(r.model, r.task_id)}">${escapeHtml(r.task_id)}</a>` },
+  { k: "quay", label: "Quay", get: (r) => r.quay, opt: true },
+  { k: "difficulty", label: "Tier", get: (r) => r.difficulty, sort: (r) => TIERS.indexOf(r.difficulty), opt: true },
+  { k: "ships", label: "Ships", get: (r) => r.ships, num: true, opt: true },
+  { k: "result", label: "Result", get: (r) => r.end_reason, html: resultHtml, sort: (r) => (r.submitted ? 1 : 0) + (r.feasible ? 1 : 0) + ((r.reward || 0) >= 0.999 ? 1 : 0) },
+  { k: "cost", label: "Cost", get: (r) => (r.feasible ? r.cost : "–"), sort: (r) => (r.feasible ? r.cost : null), num: true, title: "Cost of the submitted plan (valid plans only)" },
+  { k: "optimal_cost", label: "Optimum", get: (r) => r.optimal_cost, num: true, opt: true, title: "Proven optimal cost (CP-SAT)" },
+  { k: "naive_cost", label: "Naive", get: (r) => r.naive_cost, num: true, opt: true, title: "Cost of the naive re-plan: keep sections, push conflicting ships to the next free hour" },
+  { k: "checks", label: "Checks", get: (r) => r.checks, num: true, opt: true, title: "check_plan calls (10 allowed)" },
+  { k: "reward", label: "Reward", get: (r) => fmtNum(r.reward, 3), sort: (r) => r.reward, num: true },
+];
+
+export async function overviewPage({ app, setCrumbs, isCurrent, params, config = {}, sortableTable }) {
   setCrumbs([]);
-  const url = location.origin;
+  const explorer = !!config.explorer;
+  const playUrl = config.playUrl || ENV_SPACE;
+  const envUrl = explorer ? config.envUrl || ENV_URL : location.origin;
   const showcase = runHref(SHOWCASE.model, SHOWCASE.task);
-  app.innerHTML = `
-  <div class="page ov-page">
-    <div class="ov-grid">
-      <div class="ov-main">
-        <section class="ov-intro">
+  const shot = `<a class="ov-shot" href="${showcase}" title="GPT-6.1 Sol's plan for storm week 35 at APM Terminals, in 3D">
+          <img src="img/overview.webp" alt="The 3D twin of APM Terminals Barcelona: a container ship berthing with tugs under the quay cranes, the container yard and the tank farm behind." loading="eager">
+        </a>`;
+  const intro = explorer
+    ? `<section class="ov-intro">
+          <h1>PortSimEnv v1 eval: re-planning a broken week at the Port of Barcelona</h1>
+          <p class="muted">50 held-out tasks on real 2024 container calls at two quays, one to three weeks each, every one with
+          something gone wrong: closures, late and bunched ships, crane outages, gales, diverted traffic, emergencies. One
+          rollout per model and task, one graded submit, scored against the plan a CP-SAT solver proved optimal. Every
+          rollout replays here in 3D with its dock chart, grade and transcript. To play a task yourself or connect an
+          agent, use the environment.</p>
+          <div class="ov-acts">
+            <a class="btn primary" href="${showcase}">Watch a rollout in 3D</a>
+            <a class="btn" href="#/tasks">All tasks and rollouts</a>
+            <a class="btn" href="${escapeHtml(playUrl)}" target="_blank" rel="noopener">Play an episode ↗</a>
+          </div>
+        </section>`
+    : `<section class="ov-intro">
           <h1>Re-plan a week of container-ship dockings at the Port of Barcelona</h1>
           <p class="muted">Real 2024 port calls, the terminal's real cranes and the port's rules, and a week that has just gone wrong.
           The agent decides when, where and with how many cranes every ship docks. One graded submit per episode, scored
@@ -61,34 +109,50 @@ export async function overviewPage({ app, setCrumbs, isCurrent }) {
             <a class="btn" href="#/tasks">Tasks and rollouts</a>
           </div>
         </section>
-        <a class="ov-shot" href="${showcase}" title="GPT-6.1 Sol's plan for storm week 35 at APM Terminals, in 3D">
-          <img src="img/overview.webp" alt="The 3D twin of APM Terminals Barcelona: a container ship berthing with tugs under the quay cranes, the container yard and the tank farm behind." loading="eager">
-        </a>
-        <section>
-          <div class="sec-head"><h2>Eval</h2><span class="muted small">${RUN} · 50 held-out weeks · one rollout per model · 12 turns, 32k output tokens per turn</span></div>
+        ${shot}`;
+  const evalSec = `<section>
+          <div class="sec-head"><h2>Eval</h2><span class="muted small">${RUN} · 50 held-out tasks · one rollout per model and task · 12 turns, 32k output tokens per turn</span></div>
           <table class="tbl click" id="ov-board">
-            <thead><tr><th>Model</th><th class="num">Mean</th>${TIERS.map((t) => `<th class="num opt">${t[0].toUpperCase() + t.slice(1)}</th>`).join("")}<th class="num" title="Episodes that ended with submit_plan">Submitted</th><th class="num" title="Plans that break no rule">Valid</th><th class="num" title="Plans that match the proven optimum (reward 1.0)">Optimal</th></tr></thead>
+            <thead><tr><th>Model</th><th class="num">Mean</th>${TIERS.map((t) => `<th class="num opt" title="${escapeHtml(TIER_TIPS[t])}">${cap(t)}</th>`).join("")}<th class="num" title="Episodes that ended with submit_plan">Submitted</th><th class="num" title="Plans that break no rule">Valid</th><th class="num" title="Plans that match the proven optimum (reward 1.0)">Optimal</th></tr></thead>
             <tbody>${Array.from({ length: 6 }, () => `<tr class="skel">${"<td><i></i></td>".repeat(9)}</tr>`).join("")}</tbody>
           </table>
-          <p class="muted small ov-note">Click a model to watch its rollout of storm week 35 in 3D. Every rollout is under <a href="#/tasks">Tasks</a>.</p>
+          <p class="muted small ov-note" id="ov-board-note">Mean reward per model and tier. Click a model to list its rollouts; each one replays in 3D.</p>
         </section>
-        <section>
-          <div class="sec-head"><h2>Connect an agent</h2><span class="muted small">OpenEnv · MCP tools over a WebSocket session</span></div>
+        <section class="ov-eps" hidden>
+          <div class="sec-head"><h2 id="ov-eps-h">Rollouts</h2><span class="muted small" id="ov-eps-note"></span></div>
+          <table class="tbl click" id="ov-eps"><thead></thead><tbody></tbody></table>
+        </section>`;
+  const code = `<section>
+          <div class="sec-head"><h2>${explorer ? "Evaluate your own model" : "Connect an agent"}</h2><span class="muted small">OpenEnv · MCP tools over a WebSocket session${explorer ? ` · <a href="${escapeHtml(playUrl)}" target="_blank" rel="noopener">the environment Space</a>` : ""}</span></div>
           <pre class="ov-code"><code>from openenv.core.env_server.mcp_types import CallToolAction
 from openenv.core.mcp_client import MCPToolClient
 
-env = MCPToolClient("${escapeHtml(url)}").sync()
-obs = env.reset(task_id="dock-24B-w07x1-busy-0")   # or reset(split="train", index=0)
+env = MCPToolClient("${escapeHtml(envUrl)}").sync()
+obs = env.reset(task_id="dock-24B-w07x1-busy-0")   # or reset(split="${explorer ? "eval" : "train"}", index=0)
 rules = obs.observation.metadata["instructions"]     # the system prompt
 
 step = env.step(CallToolAction(tool_name="get_situation", arguments={}))
-plan = [{"ship": 0, "berth_hour": 0, "section": 9, "cranes": 3}, ...]
+plan = [{"ship": 0, "berth_hour": 0, "section": 9, "cranes": 3}]   # one entry per ship
 step = env.step(CallToolAction(tool_name="check_plan", arguments={"plan": plan}))
 step = env.step(CallToolAction(tool_name="submit_plan", arguments={"plan": plan}))
 print(step.reward)   # 0..1, graded once</code></pre>
-        </section>
+        </section>`;
+  const links = explorer
+    ? `<dt><a class="ext" href="${escapeHtml(playUrl)}" target="_blank" rel="noopener">Environment ↗</a></dt><dd class="muted">PortSimEnv: play an episode, connect an agent</dd>
+            ${LINKS.map(([k, href, what]) => `<dt><a class="ext" href="${href}" target="_blank" rel="noopener">${k} ↗</a></dt><dd class="muted">${what}</dd>`).join("")}`
+    : `${LINKS.map(([k, href, what]) => `<dt><a class="ext" href="${href}" target="_blank" rel="noopener">${k} ↗</a></dt><dd class="muted">${what}</dd>`).join("")}
+            <dt><a class="ext" href="/web" target="_blank" rel="noopener">OpenEnv UI ↗</a></dt><dd class="muted">the standard OpenEnv web interface and playground</dd>
+            <dt><a class="ext" href="/docs" target="_blank" rel="noopener">API ↗</a></dt><dd class="muted">reset, step, state, schema, MCP, Task API</dd>`;
+  app.innerHTML = `
+  <div class="page ov-page${explorer ? " ov-explorer" : ""}">
+    <div class="ov-grid">
+      <div class="ov-main">
+        ${intro}
+        ${evalSec}
+        ${code}
       </div>
       <aside class="ov-side">
+        ${explorer ? shot : ""}
         <section>
           <h2>Environment</h2>
           <dl class="kv" id="ov-env">
@@ -119,37 +183,76 @@ print(step.reward)   # 0..1, graded once</code></pre>
         <section>
           <h2>Links</h2>
           <dl class="kv">
-            ${LINKS.map(([k, href, what]) => `<dt><a class="ext" href="${href}" target="_blank" rel="noopener">${k} ↗</a></dt><dd class="muted">${what}</dd>`).join("")}
-            <dt><a class="ext" href="/web" target="_blank" rel="noopener">OpenEnv UI ↗</a></dt><dd class="muted">the standard OpenEnv web interface and playground</dd>
-            <dt><a class="ext" href="/docs" target="_blank" rel="noopener">API ↗</a></dt><dd class="muted">reset, step, state, schema, MCP, Task API</dd>
+            ${links}
           </dl>
         </section>
       </aside>
     </div>
   </div>`;
 
-  fetch("/healthz").then((r) => (r.ok ? r.json() : null)).then((h) => {
+  fetch(new URL("/healthz", location.origin).toString()).then((r) => (r.ok ? r.json() : null)).then((h) => {
     if (!isCurrent() || !h || !h.tasks) return;
     const el = app.querySelector("#ov-tasks");
     if (el) el.textContent = Object.entries(h.tasks).map(([s, n]) => `${s} ${n.toLocaleString()}`).join(" · ");
   }).catch(() => {});
 
   const tbody = app.querySelector("#ov-board tbody");
+  const noRollouts = () => {
+    tbody.innerHTML = `<tr><td colspan="9" class="muted">No eval rollouts on this server.${explorer ? "" : ` They are in the <a href="${EVAL_VIEWER}" target="_blank" rel="noopener">eval Space ↗</a>.`}</td></tr>`;
+    app.querySelector("#ov-board-note").hidden = true;
+    if (explorer) return;
+    for (const a of app.querySelectorAll('a[href^="#/run/"]')) { // the showcase rollout: watch it in the eval Space
+      a.href = EVAL_VIEWER + a.getAttribute("href");
+      a.target = "_blank";
+      a.rel = "noopener";
+    }
+  };
   let rows;
   try {
+    if (!(await getRuns()).some((r) => r.run === RUN)) throw new Error("no run");
     rows = board((await getRun(RUN)).episodes || []);
-  } catch (err) {
-    if (!isCurrent()) return;
-    tbody.innerHTML = `<tr><td colspan="9" class="muted">No eval rollouts on this server. <span class="small">${escapeHtml(err.message || String(err))}</span></td></tr>`;
+  } catch {
+    if (isCurrent()) noRollouts();
     return;
   }
   if (!isCurrent()) return;
-  tbody.innerHTML = rows.map((r) => `<tr data-row="${escapeHtml(r.model)}">
+  if (!rows.length) return noRollouts();
+  tbody.innerHTML = rows.map((r) => `<tr data-row="${escapeHtml(r.model)}" title="List ${escapeHtml(r.name)}'s rollouts">
       <td>${escapeHtml(r.name)}</td><td class="num"><b>${fmtNum(r.mean, 3)}</b></td>
       ${TIERS.map((t) => `<td class="num opt">${r.tiers[t] == null ? "–" : fmtNum(r.tiers[t], 2)}</td>`).join("")}
       <td class="num">${r.submitted}/${r.n}</td><td class="num">${r.valid}/${r.n}</td><td class="num">${r.optimal}/${r.n}</td></tr>`).join("");
+
+  const perTier = new Map();
+  for (const e of rows[0].eps) perTier.set(e.difficulty, (perTier.get(e.difficulty) || 0) + 1);
+  app.querySelector("#ov-board-note").textContent = `Mean reward per model and tier (${TIERS.filter((t) => perTier.has(t)).map((t) => `${t} ${perTier.get(t)}`).join(", ")} tasks). Click a model to list its rollouts; each one replays in 3D.`;
+
+  // The selected model's rollouts, under the board (#/?model=<id> keeps the choice in shared links).
+  const epsSec = app.querySelector(".ov-eps");
+  let epsTable = null;
+  function select(model, scroll) {
+    const r = rows.find((x) => x.model === model) || rows[0];
+    for (const tr of tbody.querySelectorAll("tr[data-row]")) tr.classList.toggle("sel", tr.dataset.row === r.model);
+    epsSec.hidden = false;
+    app.querySelector("#ov-eps-h").textContent = `Rollouts · ${r.name}`;
+    app.querySelector("#ov-eps-note").textContent = `${r.model} · ${r.n} tasks · click one to replay it in 3D`;
+    if (!sortableTable) {
+      app.querySelector("#ov-eps tbody").innerHTML = r.eps.map((e) => `<tr><td><a href="${runHref(e.model, e.task_id)}">${escapeHtml(e.task_id)}</a></td><td class="num">${fmtNum(e.reward, 3)}</td></tr>`).join("");
+    } else if (!epsTable) {
+      epsTable = sortableTable(app.querySelector("#ov-eps"), EP_COLS, r.eps, {
+        initial: { key: "task_id", dir: 1 },
+        rowAttrs: (e) => `data-row="${escapeHtml(e.task_id)}" data-model="${escapeHtml(e.model)}"`,
+        onRow: (taskId) => (location.hash = runHref(cur, taskId)),
+      });
+    } else epsTable.setRows(r.eps);
+    cur = r.model;
+    if (scroll && epsSec.getBoundingClientRect().top > window.innerHeight - 120) epsSec.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+  let cur = null;
+  select(params && params.get("model"), false);
   tbody.addEventListener("click", (e) => {
     const tr = e.target.closest("tr[data-row]");
-    if (tr) location.hash = runHref(tr.dataset.row, SHOWCASE.task);
+    if (!tr) return;
+    select(tr.dataset.row, true);
+    history.replaceState(null, "", `${location.pathname}${location.search}#/?model=${enc(cur)}`);
   });
 }

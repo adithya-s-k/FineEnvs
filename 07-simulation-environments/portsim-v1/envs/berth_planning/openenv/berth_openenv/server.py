@@ -1,7 +1,7 @@
 """The server: OpenEnv's app plus the 3D viewer on the same port.
 
 OpenEnv provides `/reset`, `/step`, `/state`, `/schema`, `/ws`, `/mcp`, `/health`, the Task API under
-`/berth_planning/...` and the Gradio UI at `/web`: a "Dock planner" tab where a person plays an episode through the
+`/berth_planning/...` and the Gradio UI at `/web`: a "Try Environment" tab where a person plays an episode through the
 Task API and a `/ws` session (`/viewer/#/play`), next to OpenEnv's own Playground tab. We add the viewer
 (`/viewer/`: Play, and the Explorer of tasks, model rollouts and live episodes) and its read-only JSON under `/api/`.
 
@@ -46,10 +46,10 @@ def create_server():
         env_name=ENV_NAME,
         max_concurrent_envs=int(os.environ.get("MAX_CONCURRENT_ENVS", "64")),
         gradio_builder=gradio_builder,
-        custom_tab_name="PortSimEnv v1",
+        custom_tab_name="Try Environment",
         custom_tab_primary=True,
         show_default_tab=True,
-        title_override="PortSimEnv v1 · OpenEnv",
+        title_override="PortSimEnv v1 Environment",
         state_cls=BerthState,
     )
     mount_viewer(app, pack)

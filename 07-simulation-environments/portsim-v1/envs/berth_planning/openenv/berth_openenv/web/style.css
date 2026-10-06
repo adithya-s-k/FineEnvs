@@ -637,3 +637,13 @@ a.ext { font-size: 12px; white-space: nowrap; }
 @media (max-width: 1000px) {
   .ov-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* explorer mode (the eval Space): the eval leads the overview; pages that need an env session link out */
+.ov-explorer .ov-side .ov-shot img { aspect-ratio: 1200 / 640; }
+.ov-eps .sec-head { margin-top: 4px; }
+.elsewhere { padding: 24px 16px; max-width: 640px; }
+.elsewhere p { margin: 0 0 12px; }
+.elsewhere .btn { display: inline-flex; align-items: center; text-decoration: none; margin-right: 6px; }
+#ov-eps td { white-space: nowrap; }
+.board-sec { overflow-x: auto; }
+@media (max-width: 700px) { html.explorer .crumbs { display: none; } }

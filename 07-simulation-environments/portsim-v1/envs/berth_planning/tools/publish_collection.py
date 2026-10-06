@@ -15,7 +15,8 @@ DATA_MDX = ROOT / "content/articles/simulation-rl-environments/app/src/content/c
 PLACEHOLDER = "https://huggingface.co/collections/FineEnvs)"
 ITEMS = [
     ("FineEnvs/simulation-rl-environments", "space", "The article: Simulation RL Environments, part 1"),
-    ("FineEnvs/PortSimEnv", "space", "PortSimEnv v1: the OpenEnv environment, editor, 3D viewer and eval explorer"),
+    ("FineEnvs/PortSimEnv", "space", "PortSimEnv v1: the OpenEnv environment, with the editor and 3D view"),
+    ("FineEnvs/PortSimEnv-Eval", "space", "PortSimEnv v1 eval: the eval table and every model rollout in 3D"),
     ("FineEnvs/PortSimEnv", "dataset", "PortSimEnv v1: tasks, the source port calls, eval rollouts"),
 ]
 

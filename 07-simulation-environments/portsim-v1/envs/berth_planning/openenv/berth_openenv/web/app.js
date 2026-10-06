@@ -1,14 +1,38 @@
 // Router + pages: #/ (overview), #/tasks, #/task/<id>, #/run/<run>/<model>/<task_id>, #/live/<id>, #/play.
+// /api/config sets the mode: "env" (the environment's server: Play and live episodes here) or "explorer" (the eval
+// Space: read-only, no env session; playing links out to the environment Space).
 import { getAllEpisodes, getEpisode, getLiveEpisode, getLiveEpisodes, getReference, getTask, getTasks } from "./api.js";
 import { BerthChart } from "./chart.js";
 import { DIFF_RANK, ago, callKinds, clockAt, divertWindows, escapeHtml, evaluatePlan, fmtNum, fmtPct, hasCranes, horizonOf, movesOf, publishedPlan, sectionsLabel, badgesHtml } from "./model.js";
 import { createStage, stageMarkup } from "./stage.js";
 import { checkSummary, renderTranscript } from "./transcript.js";
 import { playPage } from "./play.js";
-import { overviewPage } from "./overview.js";
+import { nameOf, overviewPage } from "./overview.js";
 
 const EMBED = new URLSearchParams(location.search).get("embed") === "1";
 document.documentElement.classList.toggle("embed", EMBED);
+
+const CONFIG = await fetch(new URL("/api/config", location.origin).toString(), { headers: { Accept: "application/json" } })
+  .then((r) => (r.ok ? r.json() : {}))
+  .catch(() => ({}));
+const EXPLORER = CONFIG.mode === "explorer";
+const PLAY_URL = CONFIG.play_url || "https://huggingface.co/spaces/FineEnvs/PortSimEnv";
+if (EXPLORER) {
+  document.documentElement.classList.add("explorer");
+  document.title = "PortSimEnv v1 eval · Port of Barcelona";
+  const brand = document.querySelector("header.top .brand");
+  if (brand) brand.textContent = "PortSimEnv v1 eval";
+  const play = document.querySelector('.topnav [data-nav="play"]');
+  if (play) {
+    play.href = PLAY_URL;
+    play.target = "_blank";
+    play.rel = "noopener";
+    play.title = "Play an episode in the environment Space";
+    play.textContent = "Play ↗";
+    play.removeAttribute("data-nav");
+    play.parentElement.appendChild(play); // after Explorer: the only link that leaves this Space
+  }
+}
 
 const app = document.getElementById("app");
 const crumbs = document.getElementById("crumbs");
@@ -132,7 +156,7 @@ async function tasksPage(seq) {
       </section>
     </div>
   </div>`;
-  startLiveList(seq);
+  if (!EXPLORER) startLiveList(seq); // live episodes exist only on the environment's server
   let tasks;
   let eps;
   try {
@@ -176,6 +200,7 @@ async function tasksPage(seq) {
   diffSel.insertAdjacentHTML("beforeend", diffs.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join(""));
   if (splits.length < 2) splitSel.hidden = true;
   if (diffs.length < 2) diffSel.hidden = true;
+  if (EXPLORER && splits.includes("eval")) splitSel.value = "eval"; // the eval Space: the eval split first
   const q = app.querySelector("#t-q");
   const count = app.querySelector("#t-count");
   const table = sortableTable(app.querySelector("#t-table"), cols, rows, {
@@ -214,7 +239,7 @@ async function tasksPage(seq) {
     return { run: g.run, model: g.model, n, reward: rw.length ? rw.reduce((a, e) => a + e.reward, 0) / rw.length : null, feasible: mean((e) => e.feasible), submitted: mean((e) => e.submitted) };
   });
   const bcols = [
-    { k: "model", label: "Model", get: (r) => r.model, html: (r) => `${escapeHtml(r.model)}${multiRun ? `<div class="muted small">${escapeHtml(r.run)}</div>` : ""}` },
+    { k: "model", label: "Model", get: (r) => r.model, html: (r) => `<span title="${escapeHtml(r.model)}">${escapeHtml(nameOf(r.model))}</span>${multiRun ? `<div class="muted small">${escapeHtml(r.run)}</div>` : ""}` },
     { k: "n", label: "Episodes", get: (r) => r.n, num: true, opt: true },
     { k: "reward", label: "Reward", get: (r) => fmtNum(r.reward, 3), sort: (r) => r.reward, num: true, title: "Mean reward" },
     { k: "feasible", label: "Feasible", get: (r) => fmtPct(r.feasible), sort: (r) => r.feasible, num: true, title: "Share of episodes whose final plan had no conflicts" },
@@ -414,12 +439,12 @@ async function taskPage(seq, id, params) {
     options.push({ key: "naive", label: "Naive re-plan", plan: ref.naive_plan });
     options.push({ key: "optimal", label: "Optimal", plan: ref.optimal_plan });
   }
-  for (const e of episodes) options.push({ key: `ep:${e.run}:${e.model}`, label: `${e.model}${new Set(episodes.map((x) => x.run)).size > 1 ? ` · ${e.run}` : ""}`, episode: e, plan: null });
+  for (const e of episodes) options.push({ key: `ep:${e.run}:${e.model}`, label: `${nameOf(e.model)}${new Set(episodes.map((x) => x.run)).size > 1 ? ` · ${e.run}` : ""}`, episode: e, plan: null });
 
   if (episodes.length) {
     app.querySelector("#eps-sec").hidden = false;
     app.querySelector("#eps").innerHTML = `<table class="tbl"><thead><tr><th>Model</th><th class="num">Reward</th><th class="num">Cost</th><th>Final plan</th></tr></thead><tbody>${episodes
-      .map((e) => `<tr><td><a href="${runHref(e.run, e.model, e.task_id)}">${escapeHtml(e.model)}</a><div class="muted small">${escapeHtml(e.run)}</div></td><td class="num">${fmtNum(e.reward, 2)}</td><td class="num">${fmtNum(e.cost)}</td><td>${e.submitted ? (e.feasible ? '<i class="dot ok"></i>feasible' : '<i class="dot bad"></i>infeasible') : '<span class="muted">not submitted</span>'}</td></tr>`)
+      .map((e) => `<tr><td><a href="${runHref(e.run, e.model, e.task_id)}" title="${escapeHtml(e.model)}">${escapeHtml(nameOf(e.model))}</a><div class="muted small">${escapeHtml(e.run)}</div></td><td class="num">${fmtNum(e.reward, 2)}</td><td class="num">${fmtNum(e.cost)}</td><td>${e.submitted ? (e.feasible ? '<i class="dot ok"></i>feasible' : '<i class="dot bad"></i>infeasible') : '<span class="muted">not submitted</span>'}</td></tr>`)
       .join("")}</tbody></table>`;
   }
 
@@ -498,10 +523,10 @@ async function taskPage(seq, id, params) {
 /* ------------------------------------------------------------------ */
 
 async function rolloutPage(seq, run, model, taskId) {
-  setCrumbs([{ label: "Tasks", href: "#/tasks" }, { label: taskId, href: taskHref(taskId) }, { label: model }]);
+  setCrumbs([{ label: "Tasks", href: "#/tasks" }, { label: taskId, href: taskHref(taskId) }, { label: nameOf(model) }]);
   app.innerHTML = `
   <div class="page ro-page">
-    <div class="page-head"><h1>${escapeHtml(model)}</h1><span class="meta muted">${escapeHtml(run)} · <a href="${taskHref(taskId)}">${escapeHtml(taskId)}</a></span></div>
+    <div class="page-head"><h1 title="${escapeHtml(model)}">${escapeHtml(nameOf(model))}</h1><span class="meta muted">${escapeHtml(run)} · <a href="${taskHref(taskId)}">${escapeHtml(taskId)}</a></span></div>
     <div class="ro-grid">
       <div class="ro-right">
         ${stageMarkup({ chartTitle: "Dock chart of the selected step" })}
@@ -800,6 +825,21 @@ async function livePage(seq, id) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Explorer mode: pages that need the environment's server             */
+/* ------------------------------------------------------------------ */
+
+function elsewherePage(what) {
+  document.documentElement.classList.add("on-play"); // no section of this Space is current
+  setCrumbs([{ label: what === "play" ? "Play" : "Live" }]);
+  const why = what === "play" ? "Playing an episode needs a live environment session" : "Live episodes run on the environment's server";
+  app.innerHTML = `
+  <div class="page elsewhere">
+    <p>${why}; this Space only replays the eval.</p>
+    <p><a class="btn primary" href="${escapeHtml(PLAY_URL)}" target="_blank" rel="noopener">Open PortSimEnv ↗</a> <a class="btn" href="#/">Back to the eval</a></p>
+  </div>`;
+}
+
+/* ------------------------------------------------------------------ */
 /* Router                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -828,6 +868,7 @@ function route() {
   window.scrollTo(0, 0);
   document.documentElement.classList.remove("on-play", "on-overview");
   if (parts[0] === "task" && parts[1]) return taskPage(seq, dec(parts.slice(1).join("/")), params);
+  if (EXPLORER && (parts[0] === "play" || parts[0] === "live")) return elsewherePage(parts[0]);
   if (parts[0] === "live" && parts[1]) return livePage(seq, dec(parts.slice(1).join("/")));
   if (parts[0] === "play") {
     setCrumbs([]);
@@ -836,7 +877,7 @@ function route() {
   }
   if (!parts.length) {
     document.documentElement.classList.add("on-overview");
-    return overviewPage({ app, setCrumbs, isCurrent: () => seq === routeSeq });
+    return overviewPage({ app, setCrumbs, isCurrent: () => seq === routeSeq, params, config: { explorer: EXPLORER, playUrl: PLAY_URL, envUrl: CONFIG.env_url }, sortableTable });
   }
   if (parts[0] === "run" && parts.length >= 4) {
     const run = dec(parts[1]);

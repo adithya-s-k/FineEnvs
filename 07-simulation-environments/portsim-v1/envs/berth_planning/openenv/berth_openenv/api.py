@@ -1,13 +1,17 @@
-"""The 3D viewer (`/viewer/`) and the read-only JSON it uses (`/api/...`), on the env server's port.
+"""The 3D viewer (`/viewer/`) and the read-only JSON it uses (`/api/...`), on the env server's port, or alone in the
+eval explorer (`explorer.py`).
 
+    /api/config                       the viewer's mode: "env" (play here) or "explorer" (no sessions; play links out)
     /api/tasks                        task summaries
     /api/tasks/{id}                   a public task (what the agent sees, structured)
     /api/tasks/{id}/reference         naive and optimal plans - for people; no tool exposes these to the agent
     /api/runs                         rollout runs found under BERTH_RUNS_DIR
     /api/runs/{run}                   one run's episode index
     /api/runs/{run}/episode           one rollout (?model=&task_id=)
-    /api/episodes                     live episodes on this server (newest first)
+    /api/episodes                     live episodes on this server (newest first; env mode only)
     /api/episodes/{episode_id}        one live episode: its task id, every plan checked so far, the grade
+
+    BERTH_VIEWER_MODE=explorer        no live episodes, no Play page: playing links to BERTH_PLAY_URL (the env Space)
 """
 
 from __future__ import annotations
@@ -23,12 +27,9 @@ from fastapi.staticfiles import StaticFiles
 
 from berth_core import TaskPack
 
-try:
-    from .environment import STORE
-except ImportError:
-    from environment import STORE
-
 WEB = Path(__file__).resolve().parent / "web"
+PLAY_URL = "https://huggingface.co/spaces/FineEnvs/PortSimEnv"  # the environment Space: Try Environment, the editor
+ENV_URL = "https://fineenvs-portsimenv.hf.space"  # its server, for an agent's OpenEnv client
 DEFAULT_RUNS = Path(__file__).resolve().parents[4] / "results" / "rollouts"
 _SAFE = re.compile(r"^[A-Za-z0-9._@:+-]+$")
 
@@ -46,7 +47,21 @@ def _summary(t) -> dict:
             "difficulty": t.difficulty, "ships": len(t.ships), "disruptions": [e["type"] for e in t.disruptions]}
 
 
-def mount_viewer(app: FastAPI, pack: TaskPack) -> None:
+def viewer_config(mode: str | None = None) -> dict:
+    mode = (mode or os.environ.get("BERTH_VIEWER_MODE") or "env").strip().lower()
+    return {"mode": "explorer" if mode == "explorer" else "env",
+            "play_url": os.environ.get("BERTH_PLAY_URL") or PLAY_URL,
+            "env_url": os.environ.get("BERTH_ENV_URL") or ENV_URL}
+
+
+def mount_viewer(app: FastAPI, pack: TaskPack, mode: str | None = None) -> None:
+    """mode: "env" (default; live episodes, Play) or "explorer" (read-only); None reads BERTH_VIEWER_MODE."""
+    config = viewer_config(mode)
+
+    @app.get("/api/config", tags=["Viewer"])
+    def viewer_mode():
+        return config
+
     @app.get("/api/tasks", tags=["Viewer"])
     def tasks():
         return [_summary(t) for t in pack.tasks]
@@ -98,6 +113,22 @@ def mount_viewer(app: FastAPI, pack: TaskPack) -> None:
             raise HTTPException(404, "unknown episode")
         return json.loads(path.read_text())
 
+    if config["mode"] == "env":  # live episodes need the env's sessions (and its OpenEnv imports)
+        _mount_live(app)
+
+    @app.get("/viewer", include_in_schema=False)
+    def viewer_slash():
+        return RedirectResponse("/viewer/")
+
+    app.mount("/viewer", StaticFiles(directory=str(WEB), html=True), name="viewer")
+
+
+def _mount_live(app: FastAPI) -> None:
+    try:
+        from .environment import STORE
+    except ImportError:
+        from environment import STORE
+
     @app.get("/api/episodes", tags=["Viewer"])
     def live_episodes():
         return [{k: v for k, v in ep.summary().items() if k != "steps"} | {"checks": len(ep.steps)}
@@ -109,9 +140,3 @@ def mount_viewer(app: FastAPI, pack: TaskPack) -> None:
         if ep is None:
             raise HTTPException(404, "unknown or expired episode")
         return ep.summary()
-
-    @app.get("/viewer", include_in_schema=False)
-    def viewer_slash():
-        return RedirectResponse("/viewer/")
-
-    app.mount("/viewer", StaticFiles(directory=str(WEB), html=True), name="viewer")

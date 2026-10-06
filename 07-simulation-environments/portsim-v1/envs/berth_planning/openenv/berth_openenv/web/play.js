@@ -6,7 +6,8 @@ import { DIFF_RANK, badgesHtml, callKinds, clockAt, cranePoolAt, divertWindows, 
 import { createStage, sceneMarkup } from "./stage.js";
 import { checkSummary, planTable } from "./transcript.js";
 
-const EXPLORER = "/viewer/";
+// Model rollouts and the eval live in their own Space; a local server keeps its own explorer.
+const EXPLORER = /\.hf\.space$/.test(location.hostname) ? "https://fineenvs-portsimenv-eval.hf.space/viewer/" : "/viewer/";
 
 /* ---------------- Task API ---------------- */
 
@@ -341,7 +342,7 @@ export async function playPage({ app, params, isCurrent, setTeardown, sceneMod }
         <button type="button" class="btn sm" id="pa-tools-b" aria-expanded="false" aria-controls="pa-tools" title="What list_tools returned: descriptions, parameters, and the exact arguments that will be sent" hidden>Tools</button>
         <button type="button" class="btn sm" data-act="pick">Change task</button>
         <span class="muted small" id="conn"></span>
-        <a class="ext" href="${EXPLORER}#/tasks" target="_blank" rel="noopener" title="Tasks, model rollouts and live episodes, in a new tab">Explorer ↗</a>
+        <a class="ext" href="${EXPLORER}#/tasks" target="_blank" rel="noopener" title="Tasks and model rollouts, in a new tab">Eval explorer ↗</a>
       </div>
       <div class="pa-pop" id="pa-tools" hidden></div>
     </header>
@@ -1036,7 +1037,7 @@ export async function playPage({ app, params, isCurrent, setTeardown, sceneMod }
         ${extras.length ? `<dt>No published slot</dt><dd>${extras.map((s) => `${s.id} ${escapeHtml(s.name)} <span class="muted">${kinds.get(s.id).kind === "divert" ? `from ${escapeHtml(kinds.get(s.id).from)}` : "extra call"}</span>`).join("<br>")}</dd>` : ""}
         ${hasCranes(t) ? cranesKv(t, fmt) : ""}
         <dt>Limits</dt><dd>${m.max_checks != null ? `${m.max_checks} checks` : "–"} · ${m.max_tool_calls != null ? `${m.max_tool_calls} tool calls` : "–"}</dd>
-        <dt>Episode</dt><dd>${escapeHtml(m.episode_id || "–")} · <a class="ext" href="${EXPLORER}#/live/${encodeURIComponent(m.episode_id || "")}" target="_blank" rel="noopener">in Explorer ↗</a></dd>
+        <dt>Episode</dt><dd>${escapeHtml(m.episode_id || "–")} · <a class="ext" href="/viewer/#/live/${encodeURIComponent(m.episode_id || "")}" target="_blank" rel="noopener">in Explorer ↗</a></dd>
       </dl>
       ${m.instructions ? `<details class="plan-d"><summary>Instructions</summary><div class="md">${mdToHtml(m.instructions)}</div></details>` : ""}
       ${m.situation ? `<details class="plan-d"><summary>The situation as the agent reads it</summary><div class="md">${mdToHtml(m.situation)}</div></details>` : ""}`;
@@ -1272,7 +1273,7 @@ export async function playPage({ app, params, isCurrent, setTeardown, sceneMod }
     const sec = $("#grade");
     sec.hidden = false;
     const g = st.grade;
-    const actions = `<div class="grade-act"><button type="button" class="btn sm primary" data-act="new">New episode</button><button type="button" class="btn sm" data-act="again">Same task again</button><a class="ext" href="${EXPLORER}#/live/${encodeURIComponent((st.meta || {}).episode_id || "")}" target="_blank" rel="noopener">Explorer ↗</a></div>`;
+    const actions = `<div class="grade-act"><button type="button" class="btn sm primary" data-act="new">New episode</button><button type="button" class="btn sm" data-act="again">Same task again</button><a class="ext" href="/viewer/#/live/${encodeURIComponent((st.meta || {}).episode_id || "")}" target="_blank" rel="noopener">Explorer ↗</a></div>`;
     if (!g) {
       sec.innerHTML = `<div class="sec-head"><h2>Episode ended</h2></div><p class="small">No plan was graded${st.endReason ? ` (${escapeHtml(st.endReason.replace(/_/g, " "))})` : ""}. Reward 0.</p>${actions}`;
       return;
