@@ -1,0 +1,302 @@
+{
+ "naive_cost": 3883,
+ "greedy_cost": 1203,
+ "naive_plan": [
+  {
+   "ship": 0,
+   "berth_hour": 29,
+   "section": 6,
+   "cranes": 3
+  },
+  {
+   "ship": 1,
+   "berth_hour": 37,
+   "section": 14,
+   "cranes": 3
+  },
+  {
+   "ship": 2,
+   "berth_hour": 60,
+   "section": 7,
+   "cranes": 2
+  },
+  {
+   "ship": 3,
+   "berth_hour": 87,
+   "section": 7,
+   "cranes": 2
+  },
+  {
+   "ship": 4,
+   "berth_hour": 107,
+   "section": 7,
+   "cranes": 3
+  },
+  {
+   "ship": 5,
+   "berth_hour": 120,
+   "section": 6,
+   "cranes": 4
+  },
+  {
+   "ship": 6,
+   "berth_hour": 151,
+   "section": 8,
+   "cranes": 2
+  },
+  {
+   "ship": 7,
+   "berth_hour": 171,
+   "section": 7,
+   "cranes": 3
+  },
+  {
+   "ship": 8,
+   "berth_hour": 184,
+   "section": 2,
+   "cranes": 2
+  },
+  {
+   "ship": 9,
+   "berth_hour": 199,
+   "section": 14,
+   "cranes": 2
+  },
+  {
+   "ship": 10,
+   "berth_hour": 212,
+   "section": 4,
+   "cranes": 1
+  },
+  {
+   "ship": 11,
+   "berth_hour": 220,
+   "section": 8,
+   "cranes": 3
+  },
+  {
+   "ship": 12,
+   "berth_hour": 221,
+   "section": 16,
+   "cranes": 1
+  },
+  {
+   "ship": 13,
+   "berth_hour": 223,
+   "section": 3,
+   "cranes": 2
+  },
+  {
+   "ship": 14,
+   "berth_hour": 298,
+   "section": 13,
+   "cranes": 3
+  },
+  {
+   "ship": 15,
+   "berth_hour": 269,
+   "section": 6,
+   "cranes": 3
+  },
+  {
+   "ship": 16,
+   "berth_hour": 300,
+   "section": 5,
+   "cranes": 3
+  },
+  {
+   "ship": 17,
+   "berth_hour": 328,
+   "section": 8,
+   "cranes": 2
+  },
+  {
+   "ship": 18,
+   "berth_hour": 311,
+   "section": 13,
+   "cranes": 2
+  },
+  {
+   "ship": 19,
+   "berth_hour": 347,
+   "section": 7,
+   "cranes": 4
+  },
+  {
+   "ship": 20,
+   "berth_hour": 328,
+   "section": 3,
+   "cranes": 2
+  },
+  {
+   "ship": 21,
+   "berth_hour": 346,
+   "section": 3,
+   "cranes": 1
+  },
+  {
+   "ship": 22,
+   "berth_hour": 358,
+   "section": 15,
+   "cranes": 4
+  },
+  {
+   "ship": 23,
+   "berth_hour": 184,
+   "section": 14,
+   "cranes": 1
+  }
+ ],
+ "optimal_cost": 838,
+ "optimal_plan": [
+  {
+   "ship": 0,
+   "berth_hour": 29,
+   "section": 6,
+   "cranes": 5
+  },
+  {
+   "ship": 1,
+   "berth_hour": 37,
+   "section": 14,
+   "cranes": 3
+  },
+  {
+   "ship": 2,
+   "berth_hour": 60,
+   "section": 7,
+   "cranes": 2
+  },
+  {
+   "ship": 3,
+   "berth_hour": 95,
+   "section": 7,
+   "cranes": 4
+  },
+  {
+   "ship": 4,
+   "berth_hour": 107,
+   "section": 7,
+   "cranes": 3
+  },
+  {
+   "ship": 5,
+   "berth_hour": 110,
+   "section": 13,
+   "cranes": 5
+  },
+  {
+   "ship": 6,
+   "berth_hour": 137,
+   "section": 8,
+   "cranes": 3
+  },
+  {
+   "ship": 7,
+   "berth_hour": 151,
+   "section": 2,
+   "cranes": 5
+  },
+  {
+   "ship": 8,
+   "berth_hour": 184,
+   "section": 8,
+   "cranes": 2
+  },
+  {
+   "ship": 9,
+   "berth_hour": 186,
+   "section": 13,
+   "cranes": 2
+  },
+  {
+   "ship": 10,
+   "berth_hour": 212,
+   "section": 4,
+   "cranes": 2
+  },
+  {
+   "ship": 11,
+   "berth_hour": 212,
+   "section": 8,
+   "cranes": 3
+  },
+  {
+   "ship": 12,
+   "berth_hour": 225,
+   "section": 16,
+   "cranes": 2
+  },
+  {
+   "ship": 13,
+   "berth_hour": 231,
+   "section": 4,
+   "cranes": 4
+  },
+  {
+   "ship": 14,
+   "berth_hour": 298,
+   "section": 13,
+   "cranes": 5
+  },
+  {
+   "ship": 15,
+   "berth_hour": 269,
+   "section": 6,
+   "cranes": 5
+  },
+  {
+   "ship": 16,
+   "berth_hour": 306,
+   "section": 13,
+   "cranes": 6
+  },
+  {
+   "ship": 17,
+   "berth_hour": 304,
+   "section": 8,
+   "cranes": 3
+  },
+  {
+   "ship": 18,
+   "berth_hour": 295,
+   "section": 3,
+   "cranes": 3
+  },
+  {
+   "ship": 19,
+   "berth_hour": 320,
+   "section": 7,
+   "cranes": 6
+  },
+  {
+   "ship": 20,
+   "berth_hour": 328,
+   "section": 2,
+   "cranes": 3
+  },
+  {
+   "ship": 21,
+   "berth_hour": 325,
+   "section": 2,
+   "cranes": 3
+  },
+  {
+   "ship": 22,
+   "berth_hour": 345,
+   "section": 2,
+   "cranes": 7
+  },
+  {
+   "ship": 23,
+   "berth_hour": 187,
+   "section": 2,
+   "cranes": 1
+  }
+ ],
+ "proven_optimal": true,
+ "lower_bound": 838,
+ "published_conflicts": 10,
+ "solver": "ortools-cpsat",
+ "record_trims": 1
+}

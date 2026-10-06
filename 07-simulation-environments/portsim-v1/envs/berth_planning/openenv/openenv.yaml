@@ -1,0 +1,42 @@
+spec_version: 1
+name: berth_planning
+type: space
+runtime: fastapi
+app: berth_openenv.server:app
+port: 8000
+description: Dock planning at the Port of Barcelona on real 2024 container calls - re-plan one to three weeks at a quay with real crane fleets, movement limits, gales under the port's wind rules, crane outages, closures, late and bunched ships, diverted traffic, emergencies and priority cargo; graded once on submit against the CP-SAT optimum. 1,050 train and 50 eval tasks (dock-v1), plus the first 100-task pack (berth-v1).
+version: "0.1.0"
+variables:
+  BERTH_TASKS_DIR: ""        # colon-separated pack directories; defaults to tasks/dock-v1-eval:tasks/dock-v1-train
+  BERTH_RUNS_DIR: ""         # rollout runs shown in the viewer
+  BERTH_MAX_CHECKS: "10"
+  BERTH_MAX_TOOL_CALLS: "24"
+  MAX_CONCURRENT_ENVS: "64"
+validation:
+  reward:
+    range: [0.0, 1.0]
+    # oracle/solve.py submits the CP-SAT optimum and scores exactly 1.0; no plan scores 0, any rule broken <= 0.2
+    oracle_tolerance: 0.001
+    floor_margin: 0.5
+  resources:
+    # pure Python: the grader re-checks a plan in milliseconds, CP-SAT never runs on the server
+    cpu: 2.0
+    memory_mb: 4096
+    disk_mb: 2048
+    episode_timeout_s: 3600.0
+  network:
+    mode: no-network
+  capabilities:
+    verifier:
+      kind: reward_channel
+    oracle:
+      form: script
+      location: oracle/solve.py
+    rubric_tree: true
+    task_api: true
+    declared_tools: [get_situation, check_plan, submit_plan]
+    declared_task_count:
+      eval: 50
+      train: 1050
+  types:
+    tags: [simulation, logistics, scheduling, operations-research, mcp, real-world-data]

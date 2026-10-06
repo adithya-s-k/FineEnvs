@@ -1,0 +1,242 @@
+{
+ "naive_cost": 347,
+ "naive_plan": [
+  {
+   "ship": 0,
+   "berth_hour": 8,
+   "section": 21
+  },
+  {
+   "ship": 1,
+   "berth_hour": 10,
+   "section": 13
+  },
+  {
+   "ship": 2,
+   "berth_hour": 27,
+   "section": 24
+  },
+  {
+   "ship": 3,
+   "berth_hour": 29,
+   "section": 19
+  },
+  {
+   "ship": 4,
+   "berth_hour": 38,
+   "section": 24
+  },
+  {
+   "ship": 5,
+   "berth_hour": 48,
+   "section": 19
+  },
+  {
+   "ship": 6,
+   "berth_hour": 84,
+   "section": 18
+  },
+  {
+   "ship": 7,
+   "berth_hour": 85,
+   "section": 23
+  },
+  {
+   "ship": 8,
+   "berth_hour": 87,
+   "section": 2
+  },
+  {
+   "ship": 9,
+   "berth_hour": 96,
+   "section": 19
+  },
+  {
+   "ship": 10,
+   "berth_hour": 119,
+   "section": 4
+  },
+  {
+   "ship": 11,
+   "berth_hour": 120,
+   "section": 13
+  },
+  {
+   "ship": 12,
+   "berth_hour": 124,
+   "section": 23
+  },
+  {
+   "ship": 13,
+   "berth_hour": 124,
+   "section": 26
+  },
+  {
+   "ship": 14,
+   "berth_hour": 127,
+   "section": 3
+  },
+  {
+   "ship": 15,
+   "berth_hour": 146,
+   "section": 26
+  },
+  {
+   "ship": 16,
+   "berth_hour": 147,
+   "section": 12
+  },
+  {
+   "ship": 17,
+   "berth_hour": 148,
+   "section": 3
+  },
+  {
+   "ship": 18,
+   "berth_hour": 150,
+   "section": 21
+  },
+  {
+   "ship": 19,
+   "berth_hour": 163,
+   "section": 26
+  },
+  {
+   "ship": 20,
+   "berth_hour": 164,
+   "section": 13
+  },
+  {
+   "ship": 21,
+   "berth_hour": 164,
+   "section": 21
+  },
+  {
+   "ship": 22,
+   "berth_hour": 120,
+   "section": 8
+  }
+ ],
+ "optimal_cost": 231,
+ "optimal_plan": [
+  {
+   "ship": 0,
+   "berth_hour": 8,
+   "section": 19
+  },
+  {
+   "ship": 1,
+   "berth_hour": 10,
+   "section": 13
+  },
+  {
+   "ship": 2,
+   "berth_hour": 24,
+   "section": 24
+  },
+  {
+   "ship": 3,
+   "berth_hour": 29,
+   "section": 19
+  },
+  {
+   "ship": 4,
+   "berth_hour": 36,
+   "section": 24
+  },
+  {
+   "ship": 5,
+   "berth_hour": 48,
+   "section": 19
+  },
+  {
+   "ship": 6,
+   "berth_hour": 84,
+   "section": 18
+  },
+  {
+   "ship": 7,
+   "berth_hour": 85,
+   "section": 24
+  },
+  {
+   "ship": 8,
+   "berth_hour": 87,
+   "section": 2
+  },
+  {
+   "ship": 9,
+   "berth_hour": 96,
+   "section": 20
+  },
+  {
+   "ship": 10,
+   "berth_hour": 99,
+   "section": 16
+  },
+  {
+   "ship": 11,
+   "berth_hour": 119,
+   "section": 2
+  },
+  {
+   "ship": 12,
+   "berth_hour": 121,
+   "section": 11
+  },
+  {
+   "ship": 13,
+   "berth_hour": 121,
+   "section": 7
+  },
+  {
+   "ship": 14,
+   "berth_hour": 127,
+   "section": 24
+  },
+  {
+   "ship": 15,
+   "berth_hour": 146,
+   "section": 26
+  },
+  {
+   "ship": 16,
+   "berth_hour": 147,
+   "section": 12
+  },
+  {
+   "ship": 17,
+   "berth_hour": 148,
+   "section": 3
+  },
+  {
+   "ship": 18,
+   "berth_hour": 150,
+   "section": 21
+  },
+  {
+   "ship": 19,
+   "berth_hour": 163,
+   "section": 26
+  },
+  {
+   "ship": 20,
+   "berth_hour": 164,
+   "section": 13
+  },
+  {
+   "ship": 21,
+   "berth_hour": 164,
+   "section": 21
+  },
+  {
+   "ship": 22,
+   "berth_hour": 121,
+   "section": 14
+  }
+ ],
+ "proven_optimal": true,
+ "published_conflicts": 6,
+ "record_trims": 0,
+ "solver": "ortools-cpsat"
+}

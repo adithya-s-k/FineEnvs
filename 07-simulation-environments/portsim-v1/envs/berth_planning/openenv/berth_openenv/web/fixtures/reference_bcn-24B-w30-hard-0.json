@@ -1,0 +1,182 @@
+{
+ "naive_cost": 296,
+ "naive_plan": [
+  {
+   "ship": 0,
+   "berth_hour": 7,
+   "section": 13
+  },
+  {
+   "ship": 1,
+   "berth_hour": 20,
+   "section": 8
+  },
+  {
+   "ship": 2,
+   "berth_hour": 17,
+   "section": 4
+  },
+  {
+   "ship": 3,
+   "berth_hour": 28,
+   "section": 14
+  },
+  {
+   "ship": 4,
+   "berth_hour": 34,
+   "section": 9
+  },
+  {
+   "ship": 5,
+   "berth_hour": 43,
+   "section": 7
+  },
+  {
+   "ship": 6,
+   "berth_hour": 83,
+   "section": 13
+  },
+  {
+   "ship": 7,
+   "berth_hour": 76,
+   "section": 6
+  },
+  {
+   "ship": 8,
+   "berth_hour": 95,
+   "section": 8
+  },
+  {
+   "ship": 9,
+   "berth_hour": 106,
+   "section": 8
+  },
+  {
+   "ship": 10,
+   "berth_hour": 108,
+   "section": 4
+  },
+  {
+   "ship": 11,
+   "berth_hour": 125,
+   "section": 5
+  },
+  {
+   "ship": 12,
+   "berth_hour": 131,
+   "section": 13
+  },
+  {
+   "ship": 13,
+   "berth_hour": 149,
+   "section": 9
+  },
+  {
+   "ship": 14,
+   "berth_hour": 156,
+   "section": 5
+  },
+  {
+   "ship": 15,
+   "berth_hour": 172,
+   "section": 8
+  },
+  {
+   "ship": 16,
+   "berth_hour": 37,
+   "section": 2
+  }
+ ],
+ "optimal_cost": 193,
+ "optimal_plan": [
+  {
+   "ship": 0,
+   "berth_hour": 7,
+   "section": 13
+  },
+  {
+   "ship": 1,
+   "berth_hour": 20,
+   "section": 8
+  },
+  {
+   "ship": 2,
+   "berth_hour": 17,
+   "section": 4
+  },
+  {
+   "ship": 3,
+   "berth_hour": 28,
+   "section": 14
+  },
+  {
+   "ship": 4,
+   "berth_hour": 34,
+   "section": 9
+  },
+  {
+   "ship": 5,
+   "berth_hour": 38,
+   "section": 4
+  },
+  {
+   "ship": 6,
+   "berth_hour": 83,
+   "section": 15
+  },
+  {
+   "ship": 7,
+   "berth_hour": 76,
+   "section": 6
+  },
+  {
+   "ship": 8,
+   "berth_hour": 95,
+   "section": 8
+  },
+  {
+   "ship": 9,
+   "berth_hour": 106,
+   "section": 8
+  },
+  {
+   "ship": 10,
+   "berth_hour": 108,
+   "section": 3
+  },
+  {
+   "ship": 11,
+   "berth_hour": 121,
+   "section": 7
+  },
+  {
+   "ship": 12,
+   "berth_hour": 131,
+   "section": 15
+  },
+  {
+   "ship": 13,
+   "berth_hour": 149,
+   "section": 9
+  },
+  {
+   "ship": 14,
+   "berth_hour": 156,
+   "section": 2
+  },
+  {
+   "ship": 15,
+   "berth_hour": 164,
+   "section": 8
+  },
+  {
+   "ship": 16,
+   "berth_hour": 43,
+   "section": 9
+  }
+ ],
+ "proven_optimal": true,
+ "published_conflicts": 3,
+ "record_trims": 0,
+ "solver": "ortools-cpsat"
+}

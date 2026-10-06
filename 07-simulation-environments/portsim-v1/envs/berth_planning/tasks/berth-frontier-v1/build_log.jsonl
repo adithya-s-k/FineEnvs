@@ -1,0 +1,20 @@
+{"ships": 61, "pool": 13, "moves_cap": 3, "naive": 7068, "optimal": 648, "bound": 172, "status": "FEASIBLE", "trims": 0, "broken": 5, "reason": "solver FEASIBLE, gap 648-172", "quay": "36A", "week": 6, "seed": 0}
+{"ships": 32, "pool": 9, "moves_cap": 3, "naive": 1505, "optimal": 270, "bound": 270, "status": "OPTIMAL", "trims": 0, "broken": 6, "quay": "24B", "week": 6, "seed": 0}
+{"ships": 56, "pool": 13, "moves_cap": 3, "naive": 2631, "optimal": 112, "bound": 112, "status": "OPTIMAL", "trims": 1, "broken": 12, "quay": "36A", "week": 12, "seed": 0}
+{"ships": 20, "pool": 9, "moves_cap": 2, "naive": 594, "optimal": 220, "bound": 220, "status": "OPTIMAL", "trims": 0, "broken": 11, "quay": "24B", "week": 12, "seed": 0}
+{"ships": 47, "pool": 13, "moves_cap": 3, "naive": 5515, "optimal": 321, "bound": 321, "status": "OPTIMAL", "trims": 0, "broken": 11, "quay": "36A", "week": 18, "seed": 0}
+{"ships": 25, "pool": 9, "moves_cap": 2, "naive": 909, "optimal": 146, "bound": 146, "status": "OPTIMAL", "trims": 0, "broken": 5, "quay": "24B", "week": 18, "seed": 0}
+{"ships": 56, "pool": 13, "moves_cap": 3, "naive": 9105, "optimal": 93, "bound": 93, "status": "OPTIMAL", "trims": 0, "broken": 9, "quay": "36A", "week": 22, "seed": 0}
+{"ships": 26, "pool": 9, "moves_cap": 2, "naive": 195, "optimal": 75, "bound": 75, "status": "OPTIMAL", "trims": 1, "broken": 3, "quay": "24B", "week": 22, "seed": 0}
+{"ships": 51, "pool": 13, "moves_cap": 3, "naive": 6042, "optimal": 81, "bound": 81, "status": "OPTIMAL", "trims": 0, "broken": 11, "quay": "36A", "week": 26, "seed": 0}
+{"ships": 25, "pool": 9, "moves_cap": 2, "naive": 586, "optimal": 25, "bound": 25, "status": "OPTIMAL", "trims": 0, "broken": 3, "quay": "24B", "week": 26, "seed": 0}
+{"ships": 45, "pool": 13, "moves_cap": 3, "naive": 2719, "optimal": 338, "bound": 338, "status": "OPTIMAL", "trims": 0, "broken": 8, "quay": "36A", "week": 30, "seed": 0}
+{"ships": 30, "pool": 9, "moves_cap": 2, "naive": 1109, "optimal": 394, "bound": 394, "status": "OPTIMAL", "trims": 0, "broken": 9, "quay": "24B", "week": 30, "seed": 0}
+{"ships": 45, "pool": 13, "moves_cap": 3, "naive": 1168, "optimal": 403, "bound": 403, "status": "OPTIMAL", "trims": 0, "broken": 8, "quay": "36A", "week": 34, "seed": 0}
+{"ships": 27, "pool": 9, "moves_cap": 2, "naive": 1141, "optimal": 339, "bound": 339, "status": "OPTIMAL", "trims": 0, "broken": 6, "quay": "24B", "week": 34, "seed": 0}
+{"ships": 39, "pool": 13, "moves_cap": 3, "naive": 805, "optimal": 5, "bound": 5, "status": "OPTIMAL", "trims": 0, "broken": 3, "quay": "36A", "week": 38, "seed": 0}
+{"ships": 29, "pool": 9, "moves_cap": 2, "naive": 486, "optimal": 53, "bound": 53, "status": "OPTIMAL", "trims": 0, "broken": 4, "quay": "24B", "week": 38, "seed": 0}
+{"ships": 38, "pool": 13, "moves_cap": 3, "naive": 484, "optimal": 53, "bound": 53, "status": "OPTIMAL", "trims": 0, "broken": 4, "quay": "36A", "week": 42, "seed": 0}
+{"ships": 30, "pool": 9, "moves_cap": 3, "naive": 453, "optimal": 142, "bound": 142, "status": "OPTIMAL", "trims": 1, "broken": 9, "quay": "24B", "week": 42, "seed": 0}
+{"ships": 44, "pool": 13, "moves_cap": 3, "naive": 2223, "optimal": 109, "bound": 109, "status": "OPTIMAL", "trims": 0, "broken": 14, "quay": "36A", "week": 46, "seed": 0}
+{"ships": 29, "pool": 9, "moves_cap": 2, "naive": 739, "optimal": 232, "bound": 232, "status": "OPTIMAL", "trims": 0, "broken": 6, "quay": "24B", "week": 46, "seed": 0}

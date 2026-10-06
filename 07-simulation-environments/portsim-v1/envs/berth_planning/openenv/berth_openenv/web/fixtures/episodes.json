@@ -1,0 +1,32 @@
+[
+ {
+  "episode_id": "ep-live-7f3a",
+  "task_id": "bcn-36A-w44-expert-0",
+  "started": 1791213257.489,
+  "done": false,
+  "end_reason": null,
+  "grade": null,
+  "checks": 3
+ },
+ {
+  "episode_id": "ep-live-19c0",
+  "task_id": "bcn-36A-w44-hard-0",
+  "started": 1791211552.489,
+  "done": true,
+  "end_reason": "submitted",
+  "grade": {
+   "reward": 1,
+   "feasible": true,
+   "clean_fraction": 1,
+   "quality": 1,
+   "cost": 231,
+   "delay_cost": 191,
+   "moves": 8,
+   "naive_cost": 347,
+   "optimal_cost": 231,
+   "violations": [],
+   "parse_problems": []
+  },
+  "checks": 3
+ }
+]

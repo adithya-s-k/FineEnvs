@@ -1,0 +1,960 @@
+{
+ "run": "fixture-run",
+ "model": "example/model",
+ "provider": "fixture",
+ "task_id": "bcn-36A-w44-hard-0",
+ "episode_id": "ep-fixture",
+ "started": "2026-10-05T12:00:00Z",
+ "seconds": 42.0,
+ "messages": [
+  {
+   "role": "system",
+   "content": "(instructions + situation)"
+  },
+  {
+   "role": "user",
+   "content": "Make the new berth plan."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "reasoning": "The closure hits PANDA 001's sections; let me first check the published plan.",
+   "tool_calls": [
+    {
+     "id": "c1",
+     "name": "check_plan",
+     "arguments": "{\"plan\": [{\"ship\": 0, \"berth_hour\": 4, \"section\": 21}, {\"ship\": 1, \"berth_hour\": 10, \"section\": 13}, {\"ship\": 2, \"berth_hour\": 24, \"section\": 24}, {\"ship\": 3, \"berth_hour\": 29, \"section\": 19}, {\"ship\": 4, \"berth_hour\": 36, \"section\": 24}, {\"ship\": 5, \"berth_hour\": 48, \"section\": 19}, {\"ship\": 6, \"berth_hour\": 84, \"section\": 18}, {\"ship\": 7, \"berth_hour\": 85, \"section\": 23}, {\"ship\": 8, \"berth_hour\": 87, \"section\": 6}, {\"ship\": 9, \"berth_hour\": 96, \"section\": 19}, {\"ship\": 10, \"berth_hour\": 99, \"section\": 13}, {\"ship\": 11, \"berth_hour\": 109, \"section\": 13}, {\"ship\": 12, \"berth_hour\": 112, \"section\": 23}, {\"ship\": 13, \"berth_hour\": 121, \"section\": 7}, {\"ship\": 14, \"berth_hour\": 127, \"section\": 3}, {\"ship\": 15, \"berth_hour\": 146, \"section\": 26}, {\"ship\": 16, \"berth_hour\": 147, \"section\": 12}, {\"ship\": 17, \"berth_hour\": 148, \"section\": 3}, {\"ship\": 18, \"berth_hour\": 150, \"section\": 21}, {\"ship\": 19, \"berth_hour\": 163, \"section\": 26}, {\"ship\": 20, \"berth_hour\": 164, \"section\": 13}, {\"ship\": 21, \"berth_hour\": 164, \"section\": 21}, {\"ship\": 22, \"berth_hour\": 111, \"section\": 2}]}"
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "c1",
+   "name": "check_plan",
+   "content": "{\"feasible\": false, \"violations\": [{\"ship\": 0, \"problem\": \"berths at hour 4 but cannot arrive before hour 8\"}, {\"ship\": 7, \"problem\": \"overlaps ship 12 (WEC JAN STEEN) in sections 23-25 during hours 112-122\"}, {\"ship\": 8, \"problem\": \"overlaps closed sections 8-15 during hours 85-120\"}, {\"ship\": 10, \"problem\": \"overlaps closed sections 8-15 during hours 85-120\"}, {\"ship\": 11, \"problem\": \"overlaps closed sections 8-15 during hours 85-120\"}, {\"ship\": 12, \"problem\": \"berths at hour 112 but cannot arrive before hour 121\"}, {\"ship\": 12, \"problem\": \"overlaps ship 7 (MSC MAXINE) in sections 23-25 during hours 112-122\"}], \"cost\": null, \"delay_cost\": null, \"moves\": null, \"ships\": [{\"ship\": 0, \"departure\": 23, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 1, \"departure\": 70, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 2, \"departure\": 35, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 3, \"departure\": 42, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 4, \"departure\": 68, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 5, \"departure\": 58, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 6, \"departure\": 95, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 7, \"departure\": 124, \"delay_h\": 14, \"moved\": false, \"cost\": 98}, {\"ship\": 8, \"departure\": 119, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 9, \"departure\": 140, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 10, \"departure\": 107, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 11, \"departure\": 133, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 12, \"departure\": 122, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 13, \"departure\": 138, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 14, \"departure\": 140, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 15, \"departure\": 161, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 16, \"departure\": 162, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 17, \"departure\": 214, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 18, \"departure\": 161, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 19, \"departure\": 172, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 20, \"departure\": 183, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 21, \"departure\": 176, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 22, \"departure\": 121, \"delay_h\": 0, \"moved\": false, \"cost\": 0}]}"
+  },
+  {
+   "role": "assistant",
+   "content": "Moving the conflicting ships to the next free slot.",
+   "tool_calls": [
+    {
+     "id": "c2",
+     "name": "check_plan",
+     "arguments": "{\"plan\": [{\"ship\": 0, \"berth_hour\": 8, \"section\": 21}, {\"ship\": 1, \"berth_hour\": 10, \"section\": 13}, {\"ship\": 2, \"berth_hour\": 27, \"section\": 24}, {\"ship\": 3, \"berth_hour\": 29, \"section\": 19}, {\"ship\": 4, \"berth_hour\": 38, \"section\": 24}, {\"ship\": 5, \"berth_hour\": 48, \"section\": 19}, {\"ship\": 6, \"berth_hour\": 84, \"section\": 18}, {\"ship\": 7, \"berth_hour\": 85, \"section\": 23}, {\"ship\": 8, \"berth_hour\": 87, \"section\": 2}, {\"ship\": 9, \"berth_hour\": 96, \"section\": 19}, {\"ship\": 10, \"berth_hour\": 119, \"section\": 4}, {\"ship\": 11, \"berth_hour\": 120, \"section\": 13}, {\"ship\": 12, \"berth_hour\": 124, \"section\": 23}, {\"ship\": 13, \"berth_hour\": 124, \"section\": 26}, {\"ship\": 14, \"berth_hour\": 127, \"section\": 3}, {\"ship\": 15, \"berth_hour\": 146, \"section\": 26}, {\"ship\": 16, \"berth_hour\": 147, \"section\": 12}, {\"ship\": 17, \"berth_hour\": 148, \"section\": 3}, {\"ship\": 18, \"berth_hour\": 150, \"section\": 21}, {\"ship\": 19, \"berth_hour\": 163, \"section\": 26}, {\"ship\": 20, \"berth_hour\": 164, \"section\": 13}, {\"ship\": 21, \"berth_hour\": 164, \"section\": 21}, {\"ship\": 22, \"berth_hour\": 120, \"section\": 8}]}"
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "c2",
+   "name": "check_plan",
+   "content": "{\"feasible\": true, \"violations\": [], \"cost\": 347, \"delay_cost\": 332, \"moves\": 3, \"ships\": [{\"ship\": 0, \"departure\": 27, \"delay_h\": 4, \"moved\": false, \"cost\": 16}, {\"ship\": 1, \"departure\": 70, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 2, \"departure\": 38, \"delay_h\": 3, \"moved\": false, \"cost\": 21}, {\"ship\": 3, \"departure\": 42, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 4, \"departure\": 70, \"delay_h\": 2, \"moved\": false, \"cost\": 14}, {\"ship\": 5, \"departure\": 58, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 6, \"departure\": 95, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 7, \"departure\": 124, \"delay_h\": 14, \"moved\": false, \"cost\": 98}, {\"ship\": 8, \"departure\": 119, \"delay_h\": 0, \"moved\": true, \"cost\": 5}, {\"ship\": 9, \"departure\": 140, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 10, \"departure\": 127, \"delay_h\": 20, \"moved\": true, \"cost\": 85}, {\"ship\": 11, \"departure\": 144, \"delay_h\": 11, \"moved\": false, \"cost\": 55}, {\"ship\": 12, \"departure\": 134, \"delay_h\": 12, \"moved\": false, \"cost\": 36}, {\"ship\": 13, \"departure\": 141, \"delay_h\": 3, \"moved\": true, \"cost\": 17}, {\"ship\": 14, \"departure\": 140, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 15, \"departure\": 161, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 16, \"departure\": 162, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 17, \"departure\": 214, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 18, \"departure\": 161, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 19, \"departure\": 172, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 20, \"departure\": 183, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 21, \"departure\": 176, \"delay_h\": 0, \"moved\": false, \"cost\": 0}, {\"ship\": 22, \"departure\": 130, \"delay_h\": 0, \"moved\": false, \"cost\": 0}]}"
+  },
+  {
+   "role": "assistant",
+   "content": "Better: let PANDA 001 wait for the closure to end so the MSC ships keep their berths.",
+   "tool_calls": [
+    {
+     "id": "c3",
+     "name": "submit_plan",
+     "arguments": "{\"plan\": [{\"ship\": 0, \"berth_hour\": 8, \"section\": 19}, {\"ship\": 1, \"berth_hour\": 10, \"section\": 13}, {\"ship\": 2, \"berth_hour\": 24, \"section\": 24}, {\"ship\": 3, \"berth_hour\": 29, \"section\": 19}, {\"ship\": 4, \"berth_hour\": 36, \"section\": 24}, {\"ship\": 5, \"berth_hour\": 48, \"section\": 19}, {\"ship\": 6, \"berth_hour\": 84, \"section\": 18}, {\"ship\": 7, \"berth_hour\": 85, \"section\": 24}, {\"ship\": 8, \"berth_hour\": 87, \"section\": 2}, {\"ship\": 9, \"berth_hour\": 96, \"section\": 20}, {\"ship\": 10, \"berth_hour\": 99, \"section\": 16}, {\"ship\": 11, \"berth_hour\": 119, \"section\": 2}, {\"ship\": 12, \"berth_hour\": 121, \"section\": 11}, {\"ship\": 13, \"berth_hour\": 121, \"section\": 7}, {\"ship\": 14, \"berth_hour\": 127, \"section\": 24}, {\"ship\": 15, \"berth_hour\": 146, \"section\": 26}, {\"ship\": 16, \"berth_hour\": 147, \"section\": 12}, {\"ship\": 17, \"berth_hour\": 148, \"section\": 3}, {\"ship\": 18, \"berth_hour\": 150, \"section\": 21}, {\"ship\": 19, \"berth_hour\": 163, \"section\": 26}, {\"ship\": 20, \"berth_hour\": 164, \"section\": 13}, {\"ship\": 21, \"berth_hour\": 164, \"section\": 21}, {\"ship\": 22, \"berth_hour\": 121, \"section\": 14}]}"
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "c3",
+   "name": "submit_plan",
+   "content": "{\"submitted\": true, \"reward\": 1.0, \"grade\": {\"reward\": 1.0, \"feasible\": true, \"clean_fraction\": 1.0, \"quality\": 1.0, \"cost\": 231, \"delay_cost\": 191, \"moves\": 8, \"naive_cost\": 347, \"optimal_cost\": 231, \"violations\": [], \"parse_problems\": []}}"
+  }
+ ],
+ "steps": [
+  {
+   "turn": 1,
+   "tool": "check_plan",
+   "plan": [
+    {
+     "ship": 0,
+     "berth_hour": 4,
+     "section": 21
+    },
+    {
+     "ship": 1,
+     "berth_hour": 10,
+     "section": 13
+    },
+    {
+     "ship": 2,
+     "berth_hour": 24,
+     "section": 24
+    },
+    {
+     "ship": 3,
+     "berth_hour": 29,
+     "section": 19
+    },
+    {
+     "ship": 4,
+     "berth_hour": 36,
+     "section": 24
+    },
+    {
+     "ship": 5,
+     "berth_hour": 48,
+     "section": 19
+    },
+    {
+     "ship": 6,
+     "berth_hour": 84,
+     "section": 18
+    },
+    {
+     "ship": 7,
+     "berth_hour": 85,
+     "section": 23
+    },
+    {
+     "ship": 8,
+     "berth_hour": 87,
+     "section": 6
+    },
+    {
+     "ship": 9,
+     "berth_hour": 96,
+     "section": 19
+    },
+    {
+     "ship": 10,
+     "berth_hour": 99,
+     "section": 13
+    },
+    {
+     "ship": 11,
+     "berth_hour": 109,
+     "section": 13
+    },
+    {
+     "ship": 12,
+     "berth_hour": 112,
+     "section": 23
+    },
+    {
+     "ship": 13,
+     "berth_hour": 121,
+     "section": 7
+    },
+    {
+     "ship": 14,
+     "berth_hour": 127,
+     "section": 3
+    },
+    {
+     "ship": 15,
+     "berth_hour": 146,
+     "section": 26
+    },
+    {
+     "ship": 16,
+     "berth_hour": 147,
+     "section": 12
+    },
+    {
+     "ship": 17,
+     "berth_hour": 148,
+     "section": 3
+    },
+    {
+     "ship": 18,
+     "berth_hour": 150,
+     "section": 21
+    },
+    {
+     "ship": 19,
+     "berth_hour": 163,
+     "section": 26
+    },
+    {
+     "ship": 20,
+     "berth_hour": 164,
+     "section": 13
+    },
+    {
+     "ship": 21,
+     "berth_hour": 164,
+     "section": 21
+    },
+    {
+     "ship": 22,
+     "berth_hour": 111,
+     "section": 2
+    }
+   ],
+   "result": {
+    "feasible": false,
+    "violations": [
+     {
+      "ship": 0,
+      "problem": "berths at hour 4 but cannot arrive before hour 8"
+     },
+     {
+      "ship": 7,
+      "problem": "overlaps ship 12 (WEC JAN STEEN) in sections 23-25 during hours 112-122"
+     },
+     {
+      "ship": 8,
+      "problem": "overlaps closed sections 8-15 during hours 85-120"
+     },
+     {
+      "ship": 10,
+      "problem": "overlaps closed sections 8-15 during hours 85-120"
+     },
+     {
+      "ship": 11,
+      "problem": "overlaps closed sections 8-15 during hours 85-120"
+     },
+     {
+      "ship": 12,
+      "problem": "berths at hour 112 but cannot arrive before hour 121"
+     },
+     {
+      "ship": 12,
+      "problem": "overlaps ship 7 (MSC MAXINE) in sections 23-25 during hours 112-122"
+     }
+    ],
+    "cost": null,
+    "delay_cost": null,
+    "moves": null,
+    "ships": [
+     {
+      "ship": 0,
+      "departure": 23,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 1,
+      "departure": 70,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 2,
+      "departure": 35,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 3,
+      "departure": 42,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 4,
+      "departure": 68,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 5,
+      "departure": 58,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 6,
+      "departure": 95,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 7,
+      "departure": 124,
+      "delay_h": 14,
+      "moved": false,
+      "cost": 98
+     },
+     {
+      "ship": 8,
+      "departure": 119,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 9,
+      "departure": 140,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 10,
+      "departure": 107,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 11,
+      "departure": 133,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 12,
+      "departure": 122,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 13,
+      "departure": 138,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 14,
+      "departure": 140,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 15,
+      "departure": 161,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 16,
+      "departure": 162,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 17,
+      "departure": 214,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 18,
+      "departure": 161,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 19,
+      "departure": 172,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 20,
+      "departure": 183,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 21,
+      "departure": 176,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 22,
+      "departure": 121,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     }
+    ]
+   }
+  },
+  {
+   "turn": 2,
+   "tool": "check_plan",
+   "plan": [
+    {
+     "ship": 0,
+     "berth_hour": 8,
+     "section": 21
+    },
+    {
+     "ship": 1,
+     "berth_hour": 10,
+     "section": 13
+    },
+    {
+     "ship": 2,
+     "berth_hour": 27,
+     "section": 24
+    },
+    {
+     "ship": 3,
+     "berth_hour": 29,
+     "section": 19
+    },
+    {
+     "ship": 4,
+     "berth_hour": 38,
+     "section": 24
+    },
+    {
+     "ship": 5,
+     "berth_hour": 48,
+     "section": 19
+    },
+    {
+     "ship": 6,
+     "berth_hour": 84,
+     "section": 18
+    },
+    {
+     "ship": 7,
+     "berth_hour": 85,
+     "section": 23
+    },
+    {
+     "ship": 8,
+     "berth_hour": 87,
+     "section": 2
+    },
+    {
+     "ship": 9,
+     "berth_hour": 96,
+     "section": 19
+    },
+    {
+     "ship": 10,
+     "berth_hour": 119,
+     "section": 4
+    },
+    {
+     "ship": 11,
+     "berth_hour": 120,
+     "section": 13
+    },
+    {
+     "ship": 12,
+     "berth_hour": 124,
+     "section": 23
+    },
+    {
+     "ship": 13,
+     "berth_hour": 124,
+     "section": 26
+    },
+    {
+     "ship": 14,
+     "berth_hour": 127,
+     "section": 3
+    },
+    {
+     "ship": 15,
+     "berth_hour": 146,
+     "section": 26
+    },
+    {
+     "ship": 16,
+     "berth_hour": 147,
+     "section": 12
+    },
+    {
+     "ship": 17,
+     "berth_hour": 148,
+     "section": 3
+    },
+    {
+     "ship": 18,
+     "berth_hour": 150,
+     "section": 21
+    },
+    {
+     "ship": 19,
+     "berth_hour": 163,
+     "section": 26
+    },
+    {
+     "ship": 20,
+     "berth_hour": 164,
+     "section": 13
+    },
+    {
+     "ship": 21,
+     "berth_hour": 164,
+     "section": 21
+    },
+    {
+     "ship": 22,
+     "berth_hour": 120,
+     "section": 8
+    }
+   ],
+   "result": {
+    "feasible": true,
+    "violations": [],
+    "cost": 347,
+    "delay_cost": 332,
+    "moves": 3,
+    "ships": [
+     {
+      "ship": 0,
+      "departure": 27,
+      "delay_h": 4,
+      "moved": false,
+      "cost": 16
+     },
+     {
+      "ship": 1,
+      "departure": 70,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 2,
+      "departure": 38,
+      "delay_h": 3,
+      "moved": false,
+      "cost": 21
+     },
+     {
+      "ship": 3,
+      "departure": 42,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 4,
+      "departure": 70,
+      "delay_h": 2,
+      "moved": false,
+      "cost": 14
+     },
+     {
+      "ship": 5,
+      "departure": 58,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 6,
+      "departure": 95,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 7,
+      "departure": 124,
+      "delay_h": 14,
+      "moved": false,
+      "cost": 98
+     },
+     {
+      "ship": 8,
+      "departure": 119,
+      "delay_h": 0,
+      "moved": true,
+      "cost": 5
+     },
+     {
+      "ship": 9,
+      "departure": 140,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 10,
+      "departure": 127,
+      "delay_h": 20,
+      "moved": true,
+      "cost": 85
+     },
+     {
+      "ship": 11,
+      "departure": 144,
+      "delay_h": 11,
+      "moved": false,
+      "cost": 55
+     },
+     {
+      "ship": 12,
+      "departure": 134,
+      "delay_h": 12,
+      "moved": false,
+      "cost": 36
+     },
+     {
+      "ship": 13,
+      "departure": 141,
+      "delay_h": 3,
+      "moved": true,
+      "cost": 17
+     },
+     {
+      "ship": 14,
+      "departure": 140,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 15,
+      "departure": 161,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 16,
+      "departure": 162,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 17,
+      "departure": 214,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 18,
+      "departure": 161,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 19,
+      "departure": 172,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 20,
+      "departure": 183,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 21,
+      "departure": 176,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 22,
+      "departure": 130,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     }
+    ]
+   }
+  },
+  {
+   "turn": 3,
+   "tool": "submit_plan",
+   "plan": [
+    {
+     "ship": 0,
+     "berth_hour": 8,
+     "section": 19
+    },
+    {
+     "ship": 1,
+     "berth_hour": 10,
+     "section": 13
+    },
+    {
+     "ship": 2,
+     "berth_hour": 24,
+     "section": 24
+    },
+    {
+     "ship": 3,
+     "berth_hour": 29,
+     "section": 19
+    },
+    {
+     "ship": 4,
+     "berth_hour": 36,
+     "section": 24
+    },
+    {
+     "ship": 5,
+     "berth_hour": 48,
+     "section": 19
+    },
+    {
+     "ship": 6,
+     "berth_hour": 84,
+     "section": 18
+    },
+    {
+     "ship": 7,
+     "berth_hour": 85,
+     "section": 24
+    },
+    {
+     "ship": 8,
+     "berth_hour": 87,
+     "section": 2
+    },
+    {
+     "ship": 9,
+     "berth_hour": 96,
+     "section": 20
+    },
+    {
+     "ship": 10,
+     "berth_hour": 99,
+     "section": 16
+    },
+    {
+     "ship": 11,
+     "berth_hour": 119,
+     "section": 2
+    },
+    {
+     "ship": 12,
+     "berth_hour": 121,
+     "section": 11
+    },
+    {
+     "ship": 13,
+     "berth_hour": 121,
+     "section": 7
+    },
+    {
+     "ship": 14,
+     "berth_hour": 127,
+     "section": 24
+    },
+    {
+     "ship": 15,
+     "berth_hour": 146,
+     "section": 26
+    },
+    {
+     "ship": 16,
+     "berth_hour": 147,
+     "section": 12
+    },
+    {
+     "ship": 17,
+     "berth_hour": 148,
+     "section": 3
+    },
+    {
+     "ship": 18,
+     "berth_hour": 150,
+     "section": 21
+    },
+    {
+     "ship": 19,
+     "berth_hour": 163,
+     "section": 26
+    },
+    {
+     "ship": 20,
+     "berth_hour": 164,
+     "section": 13
+    },
+    {
+     "ship": 21,
+     "berth_hour": 164,
+     "section": 21
+    },
+    {
+     "ship": 22,
+     "berth_hour": 121,
+     "section": 14
+    }
+   ],
+   "result": {
+    "grade": {
+     "reward": 1.0,
+     "feasible": true,
+     "clean_fraction": 1.0,
+     "quality": 1.0,
+     "cost": 231,
+     "delay_cost": 191,
+     "moves": 8,
+     "naive_cost": 347,
+     "optimal_cost": 231,
+     "violations": [],
+     "parse_problems": []
+    }
+   }
+  }
+ ],
+ "final": {
+  "submitted": true,
+  "plan": [
+   {
+    "ship": 0,
+    "berth_hour": 8,
+    "section": 19
+   },
+   {
+    "ship": 1,
+    "berth_hour": 10,
+    "section": 13
+   },
+   {
+    "ship": 2,
+    "berth_hour": 24,
+    "section": 24
+   },
+   {
+    "ship": 3,
+    "berth_hour": 29,
+    "section": 19
+   },
+   {
+    "ship": 4,
+    "berth_hour": 36,
+    "section": 24
+   },
+   {
+    "ship": 5,
+    "berth_hour": 48,
+    "section": 19
+   },
+   {
+    "ship": 6,
+    "berth_hour": 84,
+    "section": 18
+   },
+   {
+    "ship": 7,
+    "berth_hour": 85,
+    "section": 24
+   },
+   {
+    "ship": 8,
+    "berth_hour": 87,
+    "section": 2
+   },
+   {
+    "ship": 9,
+    "berth_hour": 96,
+    "section": 20
+   },
+   {
+    "ship": 10,
+    "berth_hour": 99,
+    "section": 16
+   },
+   {
+    "ship": 11,
+    "berth_hour": 119,
+    "section": 2
+   },
+   {
+    "ship": 12,
+    "berth_hour": 121,
+    "section": 11
+   },
+   {
+    "ship": 13,
+    "berth_hour": 121,
+    "section": 7
+   },
+   {
+    "ship": 14,
+    "berth_hour": 127,
+    "section": 24
+   },
+   {
+    "ship": 15,
+    "berth_hour": 146,
+    "section": 26
+   },
+   {
+    "ship": 16,
+    "berth_hour": 147,
+    "section": 12
+   },
+   {
+    "ship": 17,
+    "berth_hour": 148,
+    "section": 3
+   },
+   {
+    "ship": 18,
+    "berth_hour": 150,
+    "section": 21
+   },
+   {
+    "ship": 19,
+    "berth_hour": 163,
+    "section": 26
+   },
+   {
+    "ship": 20,
+    "berth_hour": 164,
+    "section": 13
+   },
+   {
+    "ship": 21,
+    "berth_hour": 164,
+    "section": 21
+   },
+   {
+    "ship": 22,
+    "berth_hour": 121,
+    "section": 14
+   }
+  ],
+  "grade": {
+   "reward": 1.0,
+   "feasible": true,
+   "clean_fraction": 1.0,
+   "quality": 1.0,
+   "cost": 231,
+   "delay_cost": 191,
+   "moves": 8,
+   "naive_cost": 347,
+   "optimal_cost": 231,
+   "violations": [],
+   "parse_problems": []
+  }
+ },
+ "reward": 1.0,
+ "usage": {
+  "input_tokens": 12000,
+  "output_tokens": 3000,
+  "cost_usd": 0.01
+ },
+ "end_reason": "submitted"
+}

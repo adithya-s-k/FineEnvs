@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PortSimEnv v1 · Port of Barcelona</title>
+  <meta name="description" content="Re-planning a week of container-ship dockings at one quay of the Port of Barcelona after a disruption.">
+  <link rel="stylesheet" href="./style.css?v=cargo-4">
+  <script type="importmap">
+  {
+    "imports": {
+      "./stage.js": "./stage.js?v=cargo-4",
+      "./scene.js": "./scene.js?v=traffic-3",
+      "./scene-world.js": "./scene-world.js?v=traffic-3",
+      "./navigation.js": "./navigation.js?v=traffic-3",
+      "./scene-ships.js": "./scene-ships.js?v=cargo-4",
+      "./scene-cranes.js": "./scene-cranes.js?v=portal-1",
+      "./scene-cargo.js": "./scene-cargo.js?v=cargo-4",
+      "./cargo-handling.js": "./cargo-handling.js?v=cargo-4",
+      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+      "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+      "n8ao": "https://cdn.jsdelivr.net/npm/n8ao@2.0.1/dist/N8AO.js",
+      "postprocessing": "./pp-shim.js"
+    }
+  }
+  </script>
+  <script>
+    if (new URLSearchParams(location.search).get("embed") === "1") document.documentElement.classList.add("embed");
+  </script>
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="#/">PortSimEnv v1</a>
+    <span class="muted sub">Port of Barcelona</span>
+    <nav class="topnav" aria-label="Sections"><a href="#/" data-nav="overview">Overview</a><a href="#/play" data-nav="play">Play</a><a href="#/tasks" data-nav="explorer">Explorer</a></nav>
+    <nav id="crumbs" class="crumbs" aria-label="Breadcrumb"></nav>
+  </header>
+  <main id="app"></main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

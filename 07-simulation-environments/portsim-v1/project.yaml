@@ -1,0 +1,21 @@
+# Project manifest. `tools/build_index.py` renders the root README table from it.
+name: berth-planning
+title: "Dock Planning"
+tagline: "Plan who docks where and when at a Port of Barcelona container quay - real 2024 calls, real crane fleets and port rules, stacked disruptions - scored against the proven CP-SAT optimum. 1,050 train / 50 eval tasks."
+order: 11
+status: wip
+
+hub:
+  org: FineEnvs
+  spaces: []
+  datasets: []
+
+envs:
+  - name: berth_planning
+    summary: "Multi-turn dock planning on real 2024 Port of Barcelona calls (dock-v1: 1,050 train / 50 eval): situation, budgeted plan checks, one graded submit."
+    backend: python-offline
+    tools: 3   # get_situation check_plan submit_plan
+    frameworks:
+      openenv:
+        transport: http-mcp
+        verified: true

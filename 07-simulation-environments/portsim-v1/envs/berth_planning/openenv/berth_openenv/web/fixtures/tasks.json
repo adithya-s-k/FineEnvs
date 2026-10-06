@@ -1,0 +1,71 @@
+[
+ {
+  "task_id": "bcn-36A-w44-hard-0",
+  "split": "train",
+  "quay": "36A",
+  "terminal": "Terminal Catalunya (BEST)",
+  "week": 44,
+  "difficulty": "hard",
+  "ships": 23,
+  "disruptions": [
+   "closure",
+   "late",
+   "late",
+   "overrun",
+   "extra"
+  ]
+ },
+ {
+  "task_id": "bcn-24B-w30-hard-0",
+  "split": "train",
+  "quay": "24B",
+  "terminal": "APM Terminals Barcelona",
+  "week": 30,
+  "difficulty": "hard",
+  "ships": 17,
+  "disruptions": [
+   "closure",
+   "late",
+   "late",
+   "extra"
+  ]
+ },
+ {
+  "task_id": "bcn-36A-w44-expert-0",
+  "split": "test",
+  "quay": "36A",
+  "terminal": "Terminal Catalunya (BEST)",
+  "week": 44,
+  "difficulty": "expert",
+  "ships": 25,
+  "disruptions": [
+   "closure",
+   "late",
+   "late",
+   "overrun",
+   "extra",
+   "divert"
+  ]
+ },
+ {
+  "task_id": "dock-24B-w15x2-storm-3",
+  "split": "eval",
+  "quay": "24B",
+  "terminal": "APM Terminals Barcelona",
+  "week": 15,
+  "difficulty": "storm",
+  "ships": 24,
+  "disruptions": [
+   "gale",
+   "extra",
+   "closure",
+   "closure",
+   "late",
+   "late",
+   "bunching",
+   "crane_outage",
+   "emergency",
+   "priority"
+  ]
+ }
+]

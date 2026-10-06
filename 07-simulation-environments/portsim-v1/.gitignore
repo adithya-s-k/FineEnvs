@@ -1,0 +1,7 @@
+# Per-episode rollout transcripts (tens of MB, and they contain solved plans) stay out of git; each run's
+# index.json and board.md are committed. Logs too.
+results/rollouts/*/*/
+results/rollouts/*.log
+
+# rendered videos (published to the bucket, not to git)
+results/video/

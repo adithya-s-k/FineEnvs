@@ -1,0 +1,661 @@
+{
+ "episode_id": "ep-live-7f3a",
+ "task_id": "bcn-36A-w44-expert-0",
+ "started": 1791213257.489,
+ "done": false,
+ "end_reason": null,
+ "grade": null,
+ "steps": [
+  {
+   "turn": 2,
+   "tool": "check_plan",
+   "plan": [
+    {
+     "ship": 0,
+     "berth_hour": 8,
+     "section": 21
+    },
+    {
+     "ship": 1,
+     "berth_hour": 10,
+     "section": 13
+    },
+    {
+     "ship": 2,
+     "berth_hour": 27,
+     "section": 24
+    },
+    {
+     "ship": 3,
+     "berth_hour": 29,
+     "section": 19
+    },
+    {
+     "ship": 4,
+     "berth_hour": 38,
+     "section": 24
+    },
+    {
+     "ship": 5,
+     "berth_hour": 48,
+     "section": 19
+    },
+    {
+     "ship": 6,
+     "berth_hour": 84,
+     "section": 18
+    },
+    {
+     "ship": 7,
+     "berth_hour": 85,
+     "section": 23
+    },
+    {
+     "ship": 8,
+     "berth_hour": 87,
+     "section": 2
+    },
+    {
+     "ship": 9,
+     "berth_hour": 96,
+     "section": 19
+    },
+    {
+     "ship": 10,
+     "berth_hour": 119,
+     "section": 4
+    },
+    {
+     "ship": 11,
+     "berth_hour": 120,
+     "section": 13
+    },
+    {
+     "ship": 12,
+     "berth_hour": 124,
+     "section": 23
+    },
+    {
+     "ship": 13,
+     "berth_hour": 124,
+     "section": 26
+    },
+    {
+     "ship": 14,
+     "berth_hour": 127,
+     "section": 3
+    },
+    {
+     "ship": 15,
+     "berth_hour": 146,
+     "section": 26
+    },
+    {
+     "ship": 16,
+     "berth_hour": 147,
+     "section": 12
+    },
+    {
+     "ship": 17,
+     "berth_hour": 148,
+     "section": 3
+    },
+    {
+     "ship": 18,
+     "berth_hour": 150,
+     "section": 21
+    },
+    {
+     "ship": 19,
+     "berth_hour": 163,
+     "section": 26
+    },
+    {
+     "ship": 20,
+     "berth_hour": 164,
+     "section": 13
+    },
+    {
+     "ship": 21,
+     "berth_hour": 164,
+     "section": 21
+    },
+    {
+     "ship": 22,
+     "berth_hour": 120,
+     "section": 8
+    },
+    {
+     "ship": 23,
+     "berth_hour": 62,
+     "section": 2
+    },
+    {
+     "ship": 24,
+     "berth_hour": 70,
+     "section": 21
+    }
+   ],
+   "result": {
+    "feasible": false,
+    "violations": [
+     {
+      "ship": 23,
+      "problem": "overlaps MSC FEBE (alongside, sections 4-11) during hours 62-76"
+     },
+     {
+      "ship": 6,
+      "problem": "AS CONSTANTINA and CAPE ORIENT overlap in sections 21-22 during hours 84-88"
+     },
+     {
+      "ship": 7,
+      "problem": "MSC MAXINE and CAPE ORIENT overlap in sections 23-26 during hours 85-88"
+     }
+    ],
+    "cost": 347,
+    "delay_cost": 332,
+    "moves": 3,
+    "ships": [
+     {
+      "ship": 0,
+      "departure": 27,
+      "delay_h": 4,
+      "moved": false,
+      "cost": 16
+     },
+     {
+      "ship": 1,
+      "departure": 70,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 2,
+      "departure": 38,
+      "delay_h": 3,
+      "moved": false,
+      "cost": 21
+     },
+     {
+      "ship": 3,
+      "departure": 42,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 4,
+      "departure": 70,
+      "delay_h": 2,
+      "moved": false,
+      "cost": 14
+     },
+     {
+      "ship": 5,
+      "departure": 58,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 6,
+      "departure": 95,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 7,
+      "departure": 124,
+      "delay_h": 14,
+      "moved": false,
+      "cost": 98
+     },
+     {
+      "ship": 8,
+      "departure": 119,
+      "delay_h": 0,
+      "moved": true,
+      "cost": 5
+     },
+     {
+      "ship": 9,
+      "departure": 140,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 10,
+      "departure": 127,
+      "delay_h": 20,
+      "moved": true,
+      "cost": 85
+     },
+     {
+      "ship": 11,
+      "departure": 144,
+      "delay_h": 11,
+      "moved": false,
+      "cost": 55
+     },
+     {
+      "ship": 12,
+      "departure": 134,
+      "delay_h": 12,
+      "moved": false,
+      "cost": 36
+     },
+     {
+      "ship": 13,
+      "departure": 141,
+      "delay_h": 3,
+      "moved": true,
+      "cost": 17
+     },
+     {
+      "ship": 14,
+      "departure": 140,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 15,
+      "departure": 161,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 16,
+      "departure": 162,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 17,
+      "departure": 214,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 18,
+      "departure": 161,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 19,
+      "departure": 172,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 20,
+      "departure": 183,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 21,
+      "departure": 176,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 22,
+      "departure": 130,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 23,
+      "departure": 76,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 24,
+      "departure": 88,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     }
+    ]
+   }
+  },
+  {
+   "turn": 3,
+   "tool": "check_plan",
+   "plan": null,
+   "result": {
+    "error": "plan must be a list of {ship, berth_hour, section}"
+   }
+  },
+  {
+   "turn": 4,
+   "tool": "check_plan",
+   "plan": [
+    {
+     "ship": 0,
+     "berth_hour": 8,
+     "section": 19
+    },
+    {
+     "ship": 1,
+     "berth_hour": 10,
+     "section": 13
+    },
+    {
+     "ship": 2,
+     "berth_hour": 24,
+     "section": 24
+    },
+    {
+     "ship": 3,
+     "berth_hour": 29,
+     "section": 19
+    },
+    {
+     "ship": 4,
+     "berth_hour": 36,
+     "section": 24
+    },
+    {
+     "ship": 5,
+     "berth_hour": 48,
+     "section": 19
+    },
+    {
+     "ship": 6,
+     "berth_hour": 84,
+     "section": 18
+    },
+    {
+     "ship": 7,
+     "berth_hour": 85,
+     "section": 24
+    },
+    {
+     "ship": 8,
+     "berth_hour": 87,
+     "section": 2
+    },
+    {
+     "ship": 9,
+     "berth_hour": 96,
+     "section": 20
+    },
+    {
+     "ship": 10,
+     "berth_hour": 99,
+     "section": 16
+    },
+    {
+     "ship": 11,
+     "berth_hour": 119,
+     "section": 2
+    },
+    {
+     "ship": 12,
+     "berth_hour": 121,
+     "section": 11
+    },
+    {
+     "ship": 13,
+     "berth_hour": 121,
+     "section": 7
+    },
+    {
+     "ship": 14,
+     "berth_hour": 127,
+     "section": 24
+    },
+    {
+     "ship": 15,
+     "berth_hour": 146,
+     "section": 26
+    },
+    {
+     "ship": 16,
+     "berth_hour": 147,
+     "section": 12
+    },
+    {
+     "ship": 17,
+     "berth_hour": 148,
+     "section": 3
+    },
+    {
+     "ship": 18,
+     "berth_hour": 150,
+     "section": 21
+    },
+    {
+     "ship": 19,
+     "berth_hour": 163,
+     "section": 26
+    },
+    {
+     "ship": 20,
+     "berth_hour": 164,
+     "section": 13
+    },
+    {
+     "ship": 21,
+     "berth_hour": 164,
+     "section": 21
+    },
+    {
+     "ship": 22,
+     "berth_hour": 121,
+     "section": 14
+    },
+    {
+     "ship": 23,
+     "berth_hour": 62,
+     "section": 19
+    },
+    {
+     "ship": 24,
+     "berth_hour": 172,
+     "section": 25
+    }
+   ],
+   "result": {
+    "feasible": true,
+    "violations": [],
+    "cost": 819,
+    "delay_cost": 779,
+    "moves": 8,
+    "ships": [
+     {
+      "ship": 0,
+      "departure": 27,
+      "delay_h": 4,
+      "moved": true,
+      "cost": 21
+     },
+     {
+      "ship": 1,
+      "departure": 70,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 2,
+      "departure": 35,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 3,
+      "departure": 42,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 4,
+      "departure": 68,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 5,
+      "departure": 58,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 6,
+      "departure": 95,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 7,
+      "departure": 124,
+      "delay_h": 14,
+      "moved": true,
+      "cost": 103
+     },
+     {
+      "ship": 8,
+      "departure": 119,
+      "delay_h": 0,
+      "moved": true,
+      "cost": 5
+     },
+     {
+      "ship": 9,
+      "departure": 140,
+      "delay_h": 0,
+      "moved": true,
+      "cost": 5
+     },
+     {
+      "ship": 10,
+      "departure": 107,
+      "delay_h": 0,
+      "moved": true,
+      "cost": 5
+     },
+     {
+      "ship": 11,
+      "departure": 143,
+      "delay_h": 10,
+      "moved": true,
+      "cost": 55
+     },
+     {
+      "ship": 12,
+      "departure": 131,
+      "delay_h": 9,
+      "moved": true,
+      "cost": 32
+     },
+     {
+      "ship": 13,
+      "departure": 138,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 14,
+      "departure": 140,
+      "delay_h": 0,
+      "moved": true,
+      "cost": 5
+     },
+     {
+      "ship": 15,
+      "departure": 161,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 16,
+      "departure": 162,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 17,
+      "departure": 214,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 18,
+      "departure": 161,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 19,
+      "departure": 172,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 20,
+      "departure": 183,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 21,
+      "departure": 176,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 22,
+      "departure": 131,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 23,
+      "departure": 76,
+      "delay_h": 0,
+      "moved": false,
+      "cost": 0
+     },
+     {
+      "ship": 24,
+      "departure": 190,
+      "delay_h": 98,
+      "moved": false,
+      "cost": 588
+     }
+    ]
+   }
+  }
+ ]
+}
