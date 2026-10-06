@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "berth-core"
+version = "0.1.0"
+description = "Berth planning tasks from real Port of Barcelona container calls: checker, reference plans, reward"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+solve = ["ortools>=9.10"]   # only to build tasks and their reference plans
+dev = ["pytest>=8", "ortools>=9.10"]
+
+[tool.setuptools.packages.find]
+include = ["berth_core*"]

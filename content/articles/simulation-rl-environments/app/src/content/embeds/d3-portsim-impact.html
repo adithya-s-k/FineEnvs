@@ -1,0 +1,61 @@
+<div class="d3-portsim-impact"></div>
+<style>
+  .d3-portsim-impact { color: var(--text-color); font-size: 13px; }
+  .d3-portsim-impact .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 28px; row-gap: 22px; }
+  .d3-portsim-impact .fact { border-top: 1px solid var(--border-color); padding-top: 10px; display: flex; flex-direction: column; min-width: 0; }
+  .d3-portsim-impact .top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; min-height: 32px; }
+  .d3-portsim-impact .fig { font-size: 25px; line-height: 1.1; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; white-space: nowrap; }
+  .d3-portsim-impact .fig .u { font-size: 14px; font-weight: 500; color: var(--muted-color); letter-spacing: 0; }
+  .d3-portsim-impact .line { margin-top: 6px; font-size: 13px; line-height: 1.4; color: var(--text-color); }
+  .d3-portsim-impact .src { margin-top: auto; padding-top: 8px; font-size: 11.5px; line-height: 1.3; }
+  .d3-portsim-impact .src a, .d3-portsim-impact .src a:hover { color: var(--muted-color); background: none; text-decoration: none; border-bottom: 1px solid var(--border-color); }
+  .d3-portsim-impact .src a:hover { color: var(--text-color); border-bottom-color: var(--muted-color); }
+  .d3-portsim-impact .src a:focus-visible { outline: 2px solid var(--text-color); outline-offset: 2px; }
+  .d3-portsim-impact .viz { flex: none; width: 92px; display: grid; gap: 3px; padding-bottom: 3px; }
+  .d3-portsim-impact .vr { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px; font-size: 10.5px; color: var(--muted-color); font-variant-numeric: tabular-nums; line-height: 1; }
+  .d3-portsim-impact .tr { position: relative; height: 4px; background: color-mix(in srgb, var(--muted-color) 16%, transparent); }
+  .d3-portsim-impact .fl { position: absolute; left: 0; top: 0; bottom: 0; background: var(--muted-color); }
+  .d3-portsim-impact .fl.now { background: var(--text-color); }
+  @media (max-width: 760px) { .d3-portsim-impact .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) {
+    .d3-portsim-impact .grid { grid-template-columns: 1fr; row-gap: 16px; }
+    .d3-portsim-impact .fig { font-size: 23px; }
+  }
+</style>
+<script>
+  (() => {
+    const scriptEl = document.currentScript;
+    const boot = () => {
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('d3-portsim-impact'))) {
+        root = [...document.querySelectorAll('.d3-portsim-impact')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+      const bars = (rows) => `<div class="viz" aria-hidden="true">${rows.map(([v, max, lab, cls]) =>
+        `<div class="vr"><div class="tr"><div class="fl${cls ? ' ' + cls : ''}" style="width:${(100 * v / max).toFixed(1)}%"></div></div><span>${lab}</span></div>`).join('')}</div>`;
+      const FACTS = [
+        { fig: '<span class="u">up to</span> 9%', line: 'of a ship\'s time is spent waiting at anchorage',
+          src: 'IMO', href: 'https://www.imo.org/en/mediacentre/pages/whatsnew-1502.aspx' },
+        { fig: '4.3M <span class="u">TEU</span>', line: 'of container capacity stuck at anchorages, a record (Aug 2026); 2.5M in June 2024',
+          src: 'Maritime Executive / Linerlytica', href: 'https://maritime-executive.com/article/port-congestion-sets-new-record-at-4-3m-teu-in-stranded-volume',
+          viz: bars([[2.5, 4.3, 'Jun 24'], [4.3, 4.3, 'Aug 26', 'now']]) },
+        { fig: '$49–72k <span class="u">a day</span>', line: 'to charter a 4,250–8,500 TEU ship (Oct 2026), before fuel at ~$930/t',
+          src: 'Harper Petersen HARPEX', href: 'https://www.harperpetersen.com/harpex/' },
+        { fig: '3.5 <span class="u">days</span>', line: 'average wait for a berth in Barcelona, May 2024',
+          src: 'Xeneta', href: 'https://www.xeneta.com/blog/weekly-container-rate-update-l-week-19-24-l-congestion-at-mediterranean-ports-is-unintended-consequence-of-red-sea-diversions' },
+        { fig: '49.9%', line: 'of container ships on time (Aug 2026); late ones 6.8 days late',
+          src: 'Sea-Intelligence', href: 'https://www.sea-intelligence.com/press-room/410-global-schedule-reliability-continues-to-plummet-in-august',
+          viz: bars([[49.9, 100, 'on time', 'now']]) },
+        { fig: '11% <span class="u">CO₂e</span>', line: 'of shipping\'s emissions happen at berth or at anchor; arriving just in time cuts a voyage\'s fuel by 14%',
+          src: 'ICCT / IMO', href: 'https://theicct.org/wp-content/uploads/2025/04/ID-332-%E2%80%93-Global-shipping_report_final.pdf' },
+      ];
+      root.innerHTML = `<div class="grid">${FACTS.map((d) => `<div class="fact">
+        <div class="top"><div class="fig">${d.fig}</div>${d.viz || ''}</div>
+        <div class="line">${d.line}</div>
+        <div class="src"><a href="${d.href}" target="_blank" rel="noopener noreferrer">${d.src}</a></div>
+      </div>`).join('')}</div>`;
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
+  })();
+</script>

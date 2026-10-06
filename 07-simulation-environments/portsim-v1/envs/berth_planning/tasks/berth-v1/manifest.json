@@ -1,0 +1,27 @@
+{
+  "name": "berth-v1",
+  "tasks": 100,
+  "splits": {
+    "test": {
+      "hard": 5,
+      "easy": 5,
+      "expert": 5,
+      "medium": 5
+    },
+    "train": {
+      "expert": 20,
+      "medium": 20,
+      "easy": 20,
+      "hard": 20
+    }
+  },
+  "sha256": "7e83fdde2424adfa672c18579d412319d360b1f98abecbdbe8c239c53c11ac41",
+  "source": "Port of Barcelona open data, 2024 container calls at quays 36A and 24B (CC BY-SA 4.0)",
+  "filter": {
+    "min_ratio": 1.15,
+    "min_gap": 15,
+    "test_weeks": "ISO week % 5 == 0"
+  },
+  "candidates": 400,
+  "kept_before_selection": 223
+}

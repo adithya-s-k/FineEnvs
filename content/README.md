@@ -9,6 +9,7 @@ Each item ships to the Hub as a Space; the source of truth is here.
 |---|---|---|
 | **The ultimate guide to RL environments** | [`articles/rl-environments-guide/`](./articles/rl-environments-guide/) | [▶️ Space](https://huggingface.co/spaces/AdithyaSK/rl-environments-guide) |
 | **The ultimate guide to multi-harness RL** | [`articles/multi-harness-rl/`](./articles/multi-harness-rl/) | [▶️ Space](https://huggingface.co/spaces/FineEnvs/multi-harness-rl) |
+| **Simulation RL Environments** (work in progress; part 1: PortSimEnv v1) | [`articles/simulation-rl-environments/`](./articles/simulation-rl-environments/) | [FineEnvs/simulation-rl-environments](https://huggingface.co/spaces/FineEnvs/simulation-rl-environments) |
 
 Built with [research-article-template](https://huggingface.co/spaces/tfrere/research-article-template)
 (Astro), served as a Docker Space.

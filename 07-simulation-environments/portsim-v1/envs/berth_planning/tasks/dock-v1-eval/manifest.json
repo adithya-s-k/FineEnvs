@@ -1,0 +1,31 @@
+{
+  "name": "dock-v1-eval",
+  "split": "eval",
+  "tasks": 50,
+  "tiers": {
+    "busy": 15,
+    "extreme": 13,
+    "standard": 9,
+    "storm": 13
+  },
+  "sha256": "9edea99e2b2730b9107574a8f6a437d910391493f776f123645af0c4ecfad882",
+  "candidates": 150,
+  "weeks": [
+    5,
+    6,
+    7,
+    10,
+    15,
+    16,
+    17,
+    35,
+    36,
+    37
+  ],
+  "source": "Port of Barcelona open data, 2024 container calls at quays 36A and 24B (CC BY-SA 4.0)",
+  "quays": {
+    "24B": 23,
+    "36A": 27
+  },
+  "note": "50 of the 100 built eval tasks: whole held-out week groups 5-7, 10, 15-17, 35-37; the other 50 (weeks 20, 25-27, 30, 40, 45-47, 50) moved to train"
+}

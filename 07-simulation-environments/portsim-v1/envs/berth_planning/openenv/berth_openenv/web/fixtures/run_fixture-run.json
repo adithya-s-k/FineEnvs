@@ -1,0 +1,18 @@
+{
+ "run": "fixture-run",
+ "episodes": [
+  {
+   "model": "example/model",
+   "task_id": "bcn-36A-w44-hard-0",
+   "reward": 1.0,
+   "feasible": true,
+   "submitted": true,
+   "cost": 231,
+   "optimal_cost": 231,
+   "naive_cost": 347,
+   "turns": 3,
+   "checks": 2,
+   "seconds": 42.0
+  }
+ ]
+}

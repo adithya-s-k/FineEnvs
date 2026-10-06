@@ -1,0 +1,33 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## The eval
+
+Six models each ran the 50 held-out weeks once, with the same three tools, 12 turns and 32k output tokens per turn.
+
+<HtmlEmbed
+  src="d3-portsim-eval.html"
+  title="The eval at a glance"
+  desc="Each bar is one model's 50 eval weeks by outcome; the number is its mean reward. Hover for counts."
+/>
+
+- GPT-6.1 Sol leads at 0.89 and submits a valid plan every week, but it matches the optimum on only 26 of 50, so
+  there is plenty of headroom.
+- Every model scores lower on storm and extreme weeks, which stack gales, closures and emergencies.
+- The open models lose most of their score before grading. They spend their output budget reasoning and never call
+  `submit_plan`. On the 13 to 25 weeks where they do submit a valid plan, they average 0.75 to 0.97, so getting them
+  to submit is the first thing to train.
+
+### Watch a rollout
+
+All 300 eval rollouts replay on the 3D quay in the eval Space,
+[FineEnvs/PortSimEnv-Eval](https://huggingface.co/spaces/FineEnvs/PortSimEnv-Eval), with the plan at each tool call,
+the dock chart, the grade and the full transcript.
+
+<HtmlEmbed
+  src="portsim-space.html"
+  wide
+  frameless
+  config={{ mode: "replay" }}
+  title="Rollouts on the 3D quay: five eval weeks, six models"
+  desc="Pick a week and a model. The line under the replay explains the reward."
+/>

@@ -1,0 +1,126 @@
+<button id="theme-toggle" aria-label="Toggle color theme">
+  <span class="icon-wrapper">
+    <svg
+      class="icon icon--sun"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="4"></line>
+      <line x1="12" y1="20" x2="12" y2="23"></line>
+      <line x1="1" y1="12" x2="4" y2="12"></line>
+      <line x1="20" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"></line>
+      <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"></line>
+      <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"></line>
+      <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"></line>
+    </svg>
+    <svg
+      class="icon icon--moon"
+      style="opacity:0"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+    </svg>
+  </span>
+  <script>
+    const btn = document.getElementById("theme-toggle");
+    const sunIcon = btn?.querySelector(".icon--sun");
+    const moonIcon = btn?.querySelector(".icon--moon");
+    const wrapper = btn?.querySelector(".icon-wrapper");
+    const media =
+      window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+    const prefersDark = media && media.matches;
+    const saved = localStorage.getItem("theme");
+
+    function apply(mode) {
+      document.documentElement.dataset.theme = mode;
+      if (sunIcon && moonIcon) {
+        sunIcon.style.opacity = mode === "dark" ? "0" : "1";
+        moonIcon.style.opacity = mode === "dark" ? "1" : "0";
+      }
+    }
+
+    apply(saved || (prefersDark ? "dark" : "light"));
+    requestAnimationFrame(() => wrapper?.classList.add("animated"));
+
+    if (!saved && media) {
+      const syncWithSystem = (e) => apply(e.matches ? "dark" : "light");
+      if (media.addEventListener)
+        media.addEventListener("change", syncWithSystem);
+      else if (media.addListener) media.addListener(syncWithSystem);
+    }
+
+    if (btn) {
+      btn.addEventListener("click", () => {
+        const next =
+          document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+        localStorage.setItem("theme", next);
+
+        if (wrapper) {
+          const cls = next === "dark" ? "spin-cw" : "spin-ccw";
+          wrapper.classList.remove("spin-cw", "spin-ccw");
+          void wrapper.offsetWidth;
+          wrapper.classList.add(cls);
+          wrapper.addEventListener(
+            "animationend",
+            () => wrapper.classList.remove(cls),
+            { once: true },
+          );
+        }
+
+        apply(next);
+      });
+    }
+  </script>
+</button>
+
+<style>
+  .icon-wrapper {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+  }
+
+  .icon-wrapper .icon {
+    grid-area: 1 / 1;
+    filter: none !important;
+  }
+  .icon-wrapper.animated .icon {
+    transition: opacity 0.35s ease;
+  }
+
+  .icon-wrapper.spin-cw {
+    animation: spin-cw 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .icon-wrapper.spin-ccw {
+    animation: spin-ccw 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes spin-cw {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  @keyframes spin-ccw {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(-360deg); }
+  }
+</style>

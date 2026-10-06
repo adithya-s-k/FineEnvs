@@ -1,0 +1,210 @@
+---
+import {
+  type HeroProps,
+  type Author,
+  normalizeAuthors,
+  getLinkIcon,
+} from "./heroUtils";
+
+const {
+  title,
+  description,
+  authors = [],
+  affiliations = [],
+  affiliation,
+  published,
+  links = [],
+} = Astro.props as HeroProps;
+
+const normalizedAuthors: Author[] = normalizeAuthors(authors as any);
+
+const authorAffiliationIndexSet = new Set<number>();
+for (const author of normalizedAuthors) {
+  const indices = Array.isArray(author.affiliationIndices)
+    ? author.affiliationIndices
+    : [];
+  for (const idx of indices) {
+    if (typeof idx === "number") authorAffiliationIndexSet.add(idx);
+  }
+}
+const shouldShowAffiliationSupers = authorAffiliationIndexSet.size > 1;
+
+// Resolve affiliations: prefer array, fallback to legacy string
+const resolvedAffiliations =
+  Array.isArray(affiliations) && affiliations.length > 0
+    ? affiliations
+    : affiliation
+      ? [{ id: 1, name: affiliation }]
+      : [];
+---
+
+<section class="hero-paper">
+  <h1 class="hero-paper__title" set:html={title} />
+  {description && <p class="hero-paper__desc">{description}</p>}
+</section>
+
+<script is:inline>
+  (() => {
+    const el = document.querySelector(".hero-paper__title");
+    if (!el) return;
+    const len = (el.textContent || "").length;
+    if (len > 100) el.dataset.titleSize = "sm";
+    else if (len > 60) el.dataset.titleSize = "md";
+  })();
+</script>
+
+<header class="hero-paper-meta" aria-label="Article meta information">
+  <div class="hero-paper-meta__inner">
+    {normalizedAuthors.length > 0 && (
+      <span class="hero-paper-meta__segment">
+        {normalizedAuthors.map((a, i) => (
+          <>
+            {a.url ? <a href={a.url}>{a.name}</a> : <span>{a.name}</span>}
+            {shouldShowAffiliationSupers &&
+              Array.isArray(a.affiliationIndices) &&
+              a.affiliationIndices.length > 0 && (
+                <sup>{a.affiliationIndices.join(",")}</sup>
+              )}
+            {i < normalizedAuthors.length - 1 && <span set:html=",&nbsp;" />}
+          </>
+        ))}
+      </span>
+    )}
+    {resolvedAffiliations.length > 0 && (
+      <span class="hero-paper-meta__segment hero-paper-meta__segment--muted">
+        {resolvedAffiliations.map((af, i) => (
+          <>
+            {af.url ? (
+              <a href={af.url} target="_blank" rel="noopener noreferrer">{af.name}</a>
+            ) : (
+              <span>{af.name}</span>
+            )}
+            {i < resolvedAffiliations.length - 1 && <span set:html=",&nbsp;" />}
+          </>
+        ))}
+      </span>
+    )}
+    {published && (
+      <span class="hero-paper-meta__segment hero-paper-meta__segment--muted">
+        {published}
+      </span>
+    )}
+  </div>
+
+  {links && links.length > 0 && (
+    <nav class="hero-paper-links" aria-label="External links">
+      {links.map((link) => {
+        const iconSvg = getLinkIcon(link.label, link.icon);
+        return (
+          <a href={link.url} class="hero-paper-link" target="_blank" rel="noopener noreferrer">
+            {iconSvg && <span class="hero-paper-link__icon" set:html={iconSvg} />}
+            {link.label}
+          </a>
+        );
+      })}
+    </nav>
+  )}
+</header>
+
+<style>
+  /* Hero section */
+  .hero-paper {
+    width: 100%;
+    padding: 80px 16px 0;
+    text-align: center;
+  }
+  .hero-paper__title {
+    font-size: clamp(34px, 5vw, 54px);
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    max-width: 860px;
+    margin: 0 auto 20px;
+    text-wrap: balance;
+  }
+  .hero-paper__title[data-title-size="md"] {
+    font-size: clamp(28px, 4vw, 44px);
+  }
+  .hero-paper__title[data-title-size="sm"] {
+    font-size: clamp(24px, 3.2vw, 38px);
+  }
+  .hero-paper__desc {
+    max-width: 680px;
+    margin: 0 auto;
+    font-size: 1.15em;
+    line-height: 1.6;
+    color: var(--muted-color);
+  }
+
+  /* Meta section - inline centered */
+  .hero-paper-meta {
+    padding: 24px 0 0;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+  .hero-paper-meta__inner {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 var(--content-padding-x);
+  }
+  .hero-paper-meta__segment {
+    display: inline;
+  }
+  .hero-paper-meta__segment + .hero-paper-meta__segment::before {
+    content: " · ";
+    color: var(--muted-color);
+    font-weight: 400;
+  }
+  .hero-paper-meta__segment--muted {
+    color: var(--muted-color);
+  }
+  .hero-paper-meta__segment a {
+    color: var(--primary-color);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 0.06em;
+    text-decoration-color: var(--link-underline);
+    transition: text-decoration-color 0.15s ease-in-out;
+  }
+  .hero-paper-meta__segment a:hover {
+    color: var(--primary-color-hover);
+    text-decoration-color: var(--link-underline-hover);
+  }
+
+  /* External links */
+  .hero-paper-links {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 0 var(--content-padding-x);
+  }
+  .hero-paper-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    font-size: 0.85em;
+    font-weight: 500;
+    color: var(--text-color);
+    background: var(--surface-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    text-decoration: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .hero-paper-link:hover {
+    border-color: var(--primary-color);
+    background: var(--hover-bg, var(--surface-bg));
+  }
+  .hero-paper-link__icon {
+    display: inline-flex;
+    align-items: center;
+    line-height: 0;
+  }
+  .hero-paper-link__icon :global(svg) {
+    width: 14px;
+    height: 14px;
+  }
+</style>

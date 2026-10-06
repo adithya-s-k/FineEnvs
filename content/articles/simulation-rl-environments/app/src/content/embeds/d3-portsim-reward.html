@@ -1,0 +1,131 @@
+<div class="d3-portsim-reward"></div>
+<style>
+  .d3-portsim-reward { position: relative; font-size: 13px; color: var(--text-color); }
+  .d3-portsim-reward .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+  .d3-portsim-reward .lab { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-color); }
+  .d3-portsim-reward button { appearance: none; cursor: pointer; font: inherit; font-size: 12px; padding: 5px 9px; border-radius: 6px; border: 1px solid var(--border-color); background: transparent; color: var(--muted-color); }
+  .d3-portsim-reward button[aria-pressed="true"] { color: var(--text-color); border-color: var(--text-color); }
+  .d3-portsim-reward button:focus-visible { outline: 2px solid var(--text-color); outline-offset: 2px; }
+  .d3-portsim-reward svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .d3-portsim-reward .axis text { fill: var(--tick-color); font-size: 11px; }
+  .d3-portsim-reward .axis path, .d3-portsim-reward .axis line { stroke: var(--axis-color); opacity: .5; }
+  .d3-portsim-reward .grid line { stroke: var(--grid-color); }
+  .d3-portsim-reward .curve { fill: none; stroke: var(--primary-color); stroke-width: 2.2; }
+  .d3-portsim-reward .infz { fill: color-mix(in srgb, var(--danger-color) 10%, transparent); }
+  .d3-portsim-reward .mark line { stroke: var(--muted-color); stroke-dasharray: 3 3; }
+  .d3-portsim-reward .mark text, .d3-portsim-reward .note-lab { font-size: 11px; fill: var(--muted-color); }
+  .d3-portsim-reward .dot circle { stroke: var(--page-bg); stroke-width: 1.5; }
+  .d3-portsim-reward .dot text { font-size: 11px; fill: var(--text-color); }
+  .d3-portsim-reward .note { margin-top: 6px; font-size: 12px; color: var(--muted-color); line-height: 1.45; }
+</style>
+<script>
+  (() => {
+    const ensureD3 = (cb) => {
+      if (window.d3 && typeof window.d3.select === 'function') return cb();
+      let s = document.getElementById('d3-cdn-script');
+      if (!s) { s = document.createElement('script'); s.id = 'd3-cdn-script'; s.src = 'https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js'; document.head.appendChild(s); }
+      const onReady = () => { if (window.d3 && typeof window.d3.select === 'function') cb(); };
+      s.addEventListener('load', onReady, { once: true });
+      if (window.d3) onReady();
+    };
+    const fetchJson = async (f) => {
+      for (const u of ['/data/' + f, 'assets/data/' + f, '../assets/data/' + f]) {
+        try { const r = await fetch(u, { cache: 'no-cache' }); if (r.ok) return await r.json(); } catch (e) {}
+      }
+      throw new Error(f + ' not found');
+    };
+    const TIER = { standard: 'Standard', busy: 'Busy', storm: 'Storm', extreme: 'Extreme' };
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('d3-portsim-reward'))) {
+        root = [...document.querySelectorAll('.d3-portsim-reward')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+      root.innerHTML = `<div class="row"><span class="lab">Task</span></div><svg role="img" aria-label="Reward as a function of plan cost"></svg><div class="note"></div>`;
+      const svg = d3.select(root.querySelector('svg'));
+      let data;
+      let ti = 3;
+      const k = 100;
+      const rewardAt = (cost, t) => 0.2 + 0.8 * Math.exp(-(Math.max(0, cost - t.optimal_cost) / (Math.max(0, t.optimal_cost - t.floor) + k)) / 0.5);
+
+      function chips() {
+        const row = root.querySelector('.row');
+        row.querySelectorAll('button').forEach((b) => b.remove());
+        data.tasks.forEach((t, i) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.textContent = `${TIER[t.tier]} · ${t.quay === '36A' ? 'BEST' : 'APM'} · ${t.ships.length} ships`;
+          b.setAttribute('aria-pressed', String(i === ti));
+          b.onclick = () => { ti = i; chips(); draw(); };
+          row.appendChild(b);
+        });
+      }
+
+      function draw() {
+        const t = data.tasks[ti];
+        const W = root.clientWidth || 680;
+        const Hh = 260;
+        const m = { t: 18, r: 18, b: 38, l: 40 };
+        const iw = W - m.l - m.r;
+        const ih = Hh - m.t - m.b;
+        svg.attr('viewBox', `0 0 ${W} ${Hh}`);
+        svg.selectAll('*').remove();
+        const g = svg.append('g').attr('transform', `translate(${m.l},${m.t})`);
+        // zoom on where the plans are: a few "avoidable spans" past the optimum; the naive plan is marked at the edge if beyond
+        const span = Math.max(0, t.optimal_cost - t.floor) + k;
+        const validModel = t.plans.filter((p) => p.kind === 'model' && p.feasible).map((p) => p.cost);
+        const xmax = Math.max(t.optimal_cost + 2.6 * span, ...validModel.map((c) => c + 0.25 * span));
+        const x = d3.scaleLinear().domain([t.floor, xmax]).range([0, iw]);
+        const y = d3.scaleLinear().domain([0, 1.05]).range([ih, 0]);
+        g.append('g').attr('class', 'grid').selectAll('line').data([0.2, 0.4, 0.6, 0.8, 1]).join('line')
+          .attr('x1', 0).attr('x2', iw).attr('y1', (d) => y(d)).attr('y2', (d) => y(d));
+        g.append('rect').attr('class', 'infz').attr('x', 0).attr('width', iw).attr('y', y(0.2)).attr('height', ih - y(0.2));
+        g.append('text').attr('class', 'note-lab').attr('x', iw - 4).attr('y', y(0.1)).attr('text-anchor', 'end').text('any rule broken: 0 – 0.2');
+        g.append('g').attr('class', 'axis').attr('transform', `translate(0,${ih})`).call(d3.axisBottom(x).ticks(6).tickSizeOuter(0));
+        g.append('g').attr('class', 'axis').call(d3.axisLeft(y).tickValues([0, 0.2, 0.4, 0.6, 0.8, 1]).tickSizeOuter(0));
+        g.append('text').attr('class', 'note-lab').attr('x', iw / 2).attr('y', ih + 32).attr('text-anchor', 'middle').text('cost of a valid plan (lateness hours × ship size × priority + penalties)');
+        const pts = d3.range(0, 121).map((i) => { const c = t.optimal_cost + ((xmax - t.optimal_cost) * i) / 120; return [c, rewardAt(c, t)]; });
+        g.append('path').attr('class', 'curve').attr('d', d3.line().x((d) => x(d[0])).y((d) => y(d[1]))(pts));
+        const marks = [[t.floor, 'unavoidable', ih - 6], [t.optimal_cost, 'optimum', ih - 20]];
+        if (t.naive_cost <= xmax) marks.push([t.naive_cost, 'naive re-plan', 24]);
+        for (const [c, lab, ly] of marks) {
+          const mk = g.append('g').attr('class', 'mark');
+          mk.append('line').attr('x1', x(c)).attr('x2', x(c)).attr('y1', 0).attr('y2', ih);
+          mk.append('text').attr('x', x(c) + 3).attr('y', ly).text(lab);
+        }
+        if (t.naive_cost > xmax) {
+          g.append('text').attr('class', 'note-lab').attr('x', iw).attr('y', y(rewardAt(t.naive_cost, t)) - 6).attr('text-anchor', 'end')
+            .text(`naive re-plan: cost ${t.naive_cost}, reward ${rewardAt(t.naive_cost, t).toFixed(2)} →`);
+        }
+        const cols = (window.ColorPalettes && window.ColorPalettes.getColors('categorical', 6)) || d3.schemeTableau10;
+        const models = t.plans.filter((p) => p.kind === 'model');
+        const valid = models.map((p, i) => ({ p, c: cols[i % cols.length] })).filter((d) => d.p.feasible);
+        const placed = [];
+        valid.sort((a, b) => a.p.cost - b.p.cost).forEach(({ p, c }) => {
+          const px = x(p.cost);
+          const py = y(p.reward);
+          const dg = g.append('g').attr('class', 'dot');
+          dg.append('circle').attr('cx', px).attr('cy', py).attr('r', 5).attr('fill', c);
+          let ly = py - 9;
+          while (placed.some((q) => Math.abs(q[0] - px) < 90 && Math.abs(q[1] - ly) < 12)) ly -= 12;
+          placed.push([px, ly]);
+          dg.append('text').attr('x', Math.min(px + 8, iw - 130)).attr('y', ly).text(`${p.label} ${p.reward.toFixed(2)}`);
+        });
+        const out = models.filter((p) => !p.feasible).map((p) => `${p.label} (${p.submitted ? 'rule broken: ' + p.reward.toFixed(2) : 'no plan: 0'})`);
+        root.querySelector('.note').textContent = out.length ? `Not on the curve: ${out.join(', ')}.` : 'Every model submitted a valid plan on this task.';
+      }
+
+      fetchJson('portsim-rollouts.json').then((d) => {
+        data = d;
+        chips();
+        draw();
+        let last = root.clientWidth;
+        new ResizeObserver(() => { if (Math.abs(root.clientWidth - last) > 4) { last = root.clientWidth; draw(); } }).observe(root);
+      }).catch((e) => { root.innerHTML = `<pre style="color:var(--danger-color)">${e.message}</pre>`; });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => ensureD3(boot), { once: true });
+    else ensureD3(boot);
+  })();
+</script>

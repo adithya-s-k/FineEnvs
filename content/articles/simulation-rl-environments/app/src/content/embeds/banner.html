@@ -1,0 +1,533 @@
+<div class="sim-banner" role="img" aria-label="A slowly turning dot-matrix globe marks real-world operations, each wired to a small deterministic simulation sandbox running beside it. Berth planning at the Port of Barcelona (PortSimEnv v1) is live; power-grid dispatch in Texas, last-mile delivery in São Paulo, rail dispatch in Tokyo, airport gate operations at Singapore Changi and hospital bed flow in Sydney are upcoming."><canvas aria-hidden="true"></canvas></div>
+<style>
+  .sim-banner { position: relative; width: 100%; height: 100%; min-height: 220px; aspect-ratio: 1400 / 520; color: var(--text-color); }
+  .sim-banner canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+</style>
+<script>
+  (() => {
+    const scriptEl = document.currentScript;
+    const ensureD3 = (cb) => {
+      if (window.d3 && typeof window.d3.select === 'function') return cb();
+      let s = document.getElementById('d3-cdn-script');
+      if (!s) { s = document.createElement('script'); s.id = 'd3-cdn-script'; s.src = 'https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js'; document.head.appendChild(s); }
+      const onReady = () => { if (window.d3 && typeof window.d3.select === 'function') cb(); };
+      s.addEventListener('load', onReady, { once: true });
+      if (window.d3) onReady();
+    };
+    const ensureTopo = (cb) => {
+      if (window.topojson && window.topojson.feature) return cb();
+      let s = document.getElementById('topojson-cdn-script');
+      if (!s) { s = document.createElement('script'); s.id = 'topojson-cdn-script'; s.src = 'https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js'; document.head.appendChild(s); }
+      const onReady = () => { if (window.topojson && window.topojson.feature) cb(); };
+      s.addEventListener('load', onReady, { once: true });
+      if (window.topojson) onReady();
+    };
+
+    // Land as a dot matrix: rasterise land-110m once (equirectangular), then keep the lattice points that fall on land.
+    const loadLand = () => {
+      if (window.__simBannerLand) return window.__simBannerLand;
+      window.__simBannerLand = new Promise((resolve, reject) => {
+        ensureD3(() => ensureTopo(async () => {
+          try {
+            const r = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json');
+            const topo = await r.json();
+            const land = topojson.feature(topo, topo.objects.land);
+            const RW = 1080, RH = 540;
+            const cv = document.createElement('canvas'); cv.width = RW; cv.height = RH;
+            const c = cv.getContext('2d', { willReadFrequently: true });
+            const proj = d3.geoEquirectangular().scale(RW / (2 * Math.PI)).translate([RW / 2, RH / 2]);
+            c.fillStyle = '#000'; c.beginPath(); d3.geoPath(proj, c)(land); c.fill();
+            const px = c.getImageData(0, 0, RW, RH).data;
+            const lon = [], sl = [], cl = [];
+            const step = 1.75;
+            for (let lat = -82; lat <= 82; lat += step) {
+              const n = Math.max(1, Math.round(360 * Math.cos(lat * Math.PI / 180) / step));
+              for (let j = 0; j < n; j++) {
+                const lo = -180 + (j + 0.5) * 360 / n;
+                const x = Math.min(RW - 1, Math.floor((lo + 180) / 360 * RW));
+                const y = Math.min(RH - 1, Math.floor((90 - lat) / 180 * RH));
+                if (px[(y * RW + x) * 4 + 3] > 100) {
+                  const la = lat * Math.PI / 180;
+                  lon.push(lo * Math.PI / 180); sl.push(Math.sin(la)); cl.push(Math.cos(la));
+                }
+              }
+            }
+            resolve({ lon: Float32Array.from(lon), sl: Float32Array.from(sl), cl: Float32Array.from(cl) });
+          } catch (e) { reject(e); }
+        }));
+      });
+      return window.__simBannerLand;
+    };
+
+    const boot = () => {
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('sim-banner'))) {
+        root = [...document.querySelectorAll('.sim-banner')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+      const canvas = root.querySelector('canvas');
+      const ctx = canvas.getContext('2d');
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const D2R = Math.PI / 180;
+      const fract = (x) => x - Math.floor(x);
+      const hash = (n) => fract(Math.sin(n * 127.1 + 311.7) * 43758.5453);
+      const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+      const ease = (x) => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
+      const seg = (p, a, b) => clamp((p - a) / (b - a), 0, 1);
+
+      // ---------- theme ----------
+      const probe = document.createElement('canvas'); probe.width = probe.height = 1;
+      const pc = probe.getContext('2d', { willReadFrequently: true });
+      const toRGB = (css, fb) => {
+        pc.clearRect(0, 0, 1, 1); pc.fillStyle = fb; pc.fillStyle = css || fb; pc.fillRect(0, 0, 1, 1);
+        const d = pc.getImageData(0, 0, 1, 1).data; return [d[0], d[1], d[2], d[3] / 255 || 1];
+      };
+      let C = {};
+      let font = 'system-ui, sans-serif';
+      const readTheme = () => {
+        const cs = getComputedStyle(root);
+        const ink = toRGB(cs.getPropertyValue('--text-color').trim(), '#222');
+        const mute = toRGB(cs.getPropertyValue('--muted-color').trim(), '#666');
+        const acc = toRGB(cs.getPropertyValue('--primary-color').trim(), '#e0905c');
+        const mk = (c) => (a) => `rgba(${c[0]},${c[1]},${c[2]},${(a * c[3]).toFixed(3)})`;
+        C = { ink: mk(ink), mute: mk(mute), acc: mk(acc) };
+        font = cs.fontFamily || font;
+      };
+      readTheme();
+
+      // ---------- sites ----------
+      const SITES = [
+        { title: 'Berth planning', short: 'Berths', place: 'Port of Barcelona', town: 'Barcelona', lat: 41.35, lon: 2.17, live: true, side: 0, sim: simPort },
+        { title: 'Power-grid dispatch', short: 'Grid', place: 'ERCOT, Texas', town: 'Texas', lat: 31.0, lon: -97.5, side: 0, sim: simGrid },
+        { title: 'Last-mile delivery', short: 'Delivery', place: 'São Paulo', town: 'São Paulo', lat: -23.55, lon: -46.63, side: 0, sim: simDelivery },
+        { title: 'Rail dispatch', short: 'Rail', place: 'Tokyo', town: 'Tokyo', lat: 35.68, lon: 139.77, side: 1, sim: simRail },
+        { title: 'Airport gate ops', short: 'Gates', place: 'Singapore Changi', town: 'Changi', lat: 1.36, lon: 103.99, side: 1, sim: simGates },
+        { title: 'Hospital bed flow', short: 'Beds', place: 'Sydney', town: 'Sydney', lat: -33.87, lon: 151.21, side: 1, sim: simBeds },
+      ];
+
+      // ---------- layout ----------
+      let W = 0, H = 0, dpr = 1, L = null;
+      const layout = () => {
+        const narrow = W / H < 1.35;
+        const out = { narrow, boxes: [] };
+        if (!narrow) {
+          const pad = 12;
+          const R = Math.min(H * 0.44, W * 0.2);
+          const cx = W / 2, cy = H / 2;
+          const lead = Math.max(44, Math.min(80, W * 0.055));
+          const colW = Math.min(232, cx - R - lead - pad);
+          const slot = (H - 2 * pad) / 3;
+          const labelH = 30, gap = Math.min(16, slot * 0.12);
+          const bh = Math.max(30, slot - labelH - gap);
+          out.R = R; out.cx = cx; out.cy = cy; out.fs = W < 900 ? 11 : 12;
+          SITES.forEach((s, i) => {
+            const row = i % 3;
+            const x = s.side === 0 ? cx - R - lead - colW : cx + R + lead;
+            const y = pad + row * slot + labelH;
+            out.boxes.push({ x, y, w: colW, h: bh, ax: s.side === 0 ? x + colW : x, ay: y + bh / 2, dir: 'h', labelY: y - 6 });
+          });
+        } else {
+          const pad = 4, gx = Math.max(8, W * 0.03);
+          const tw = (W - 2 * pad - 2 * gx) / 3;
+          const bh = Math.min(tw * 0.62, H * 0.15);
+          const labelH = 28, gy = 14;
+          const R = Math.max(60, Math.min(W * 0.34, (H - 2 * (labelH + bh) - 2 * pad - 2 * gy) / 2));
+          const cx = W / 2, cy = H / 2;
+          out.R = R; out.cx = cx; out.cy = cy; out.fs = 10.5;
+          SITES.forEach((s, i) => {
+            const col = i % 3;
+            const x = pad + col * (tw + gx);
+            if (s.side === 0) {
+              const y = pad + labelH;
+              out.boxes.push({ x, y, w: tw, h: bh, ax: x + tw / 2, ay: y + bh, dir: 'v', labelY: y - 5 });
+            } else {
+              const y = H - pad - labelH - bh;
+              out.boxes.push({ x, y, w: tw, h: bh, ax: x + tw / 2, ay: y, dir: 'v', labelY: y + bh + 13, below: true });
+            }
+          });
+        }
+        return out;
+      };
+      const resize = () => {
+        const r = root.getBoundingClientRect();
+        if (r.width < 10 || r.height < 10) return;
+        dpr = Math.min(2, window.devicePixelRatio || 1);
+        W = r.width; H = r.height;
+        canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+        L = layout();
+        if (!running) frame(simT);
+      };
+
+      // ---------- land ----------
+      let land = null;
+      loadLand().then((d) => { land = d; if (!running) frame(simT); }).catch(() => {});
+
+      // ---------- text ----------
+      const fitText = (variants, maxW) => {
+        for (const v of variants) if (ctx.measureText(v).width <= maxW) return v;
+        return variants[variants.length - 1];
+      };
+      const drawLabel = (s, b) => {
+        const fs = L.fs;
+        ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+        const status = s.live ? 'live' : 'upcoming';
+        const subs = s.live
+          ? [`${s.place} · PortSimEnv v1 · `, `${s.town} · PortSimEnv v1 · `, 'PortSimEnv v1 · ', '']
+          : [`${s.place} · `, `${s.town} · `, ''];
+        let y1, y2;
+        if (b.below) { y1 = b.labelY; y2 = b.labelY + fs + 1; } else { y1 = b.labelY - fs - 2; y2 = b.labelY; }
+        ctx.font = `600 ${fs}px ${font}`;
+        ctx.fillStyle = C.ink(1);
+        ctx.fillText(fitText([s.title, s.short], b.w), b.x, y1);
+        ctx.font = `400 ${fs - 1}px ${font}`;
+        const tw = ctx.measureText(status).width;
+        const pre = fitText(subs.map((p) => p), b.w - tw);
+        ctx.fillStyle = C.mute(0.85);
+        ctx.fillText(pre, b.x, y2);
+        const px = b.x + ctx.measureText(pre).width;
+        ctx.fillStyle = s.live ? C.acc(1) : C.mute(0.85);
+        ctx.fillText(status, px, y2);
+      };
+
+      // ---------- globe ----------
+      const lat0 = 22 * D2R;
+      const sLat0 = Math.sin(lat0), cLat0 = Math.cos(lat0);
+      const project = (lonR, sl, cl, lon0, R, cx, cy) => {
+        const dl = lonR - lon0, cd = Math.cos(dl);
+        return [cx + R * cl * Math.sin(dl), cy - R * (cLat0 * sl - sLat0 * cl * cd), sLat0 * sl + cLat0 * cl * cd];
+      };
+      const drawGlobe = (lon0) => {
+        const { R, cx, cy } = L;
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = C.ink(0.13);
+        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+        // faint graticule: equator + a few meridians, so the sphere reads even before land arrives
+        ctx.strokeStyle = C.ink(0.05);
+        for (let m = 0; m < 12; m++) {
+          const lo = m * 30 * D2R; ctx.beginPath(); let pen = false;
+          for (let la = -90; la <= 90; la += 6) {
+            const [x, y, z] = project(lo, Math.sin(la * D2R), Math.cos(la * D2R), lon0, R, cx, cy);
+            if (z > 0) { pen ? ctx.lineTo(x, y) : ctx.moveTo(x, y); pen = true; } else pen = false;
+          }
+          ctx.stroke();
+        }
+        for (const latd of [-60, -30, 0, 30, 60]) {
+          const sl = Math.sin(latd * D2R), cl = Math.cos(latd * D2R); ctx.beginPath(); let pen = false;
+          for (let lo = -180; lo <= 180; lo += 5) {
+            const [x, y, z] = project(lo * D2R, sl, cl, lon0, R, cx, cy);
+            if (z > 0) { pen ? ctx.lineTo(x, y) : ctx.moveTo(x, y); pen = true; } else pen = false;
+          }
+          ctx.stroke();
+        }
+        if (!land) return;
+        const r = Math.max(0.65, R * 0.0062);
+        const N = land.lon.length, B = 5;
+        const paths = Array.from({ length: B }, () => new Path2D());
+        for (let i = 0; i < N; i++) {
+          const dl = land.lon[i] - lon0, cd = Math.cos(dl);
+          const sl = land.sl[i], cl = land.cl[i];
+          const z = sLat0 * sl + cLat0 * cl * cd;
+          if (z <= 0.02) continue;
+          const x = cx + R * cl * Math.sin(dl), y = cy - R * (cLat0 * sl - sLat0 * cl * cd);
+          const k = Math.min(B - 1, Math.floor(Math.pow(z, 0.8) * B));
+          paths[k].moveTo(x + r, y); paths[k].arc(x, y, r, 0, Math.PI * 2);
+        }
+        for (let k = 0; k < B; k++) { ctx.fillStyle = C.ink(0.1 + 0.42 * (k + 0.5) / B); ctx.fill(paths[k]); }
+      };
+
+      // ---------- sandboxes (each draws in its own box, origin top-left) ----------
+      function shipPath(x, y, len, hh) {
+        const b = Math.min(hh * 0.7, len * 0.25);
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + len - b, y); ctx.lineTo(x + len, y + hh / 2);
+        ctx.lineTo(x + len - b, y + hh); ctx.lineTo(x, y + hh); ctx.closePath();
+      }
+      function simPort(w, h, t, A) {
+        const qy = h * 0.3;
+        // yard stacks behind the quay
+        const cols = Math.max(6, Math.floor(w / 13));
+        for (let i = 0; i < cols; i++) {
+          for (let r = 0; r < 2; r++) {
+            const fill = 0.5 + 0.5 * Math.sin(t * 0.35 + i * 1.7 + r * 2.3);
+            ctx.fillStyle = C.mute(0.08 + 0.2 * fill);
+            ctx.fillRect(4 + i * (w - 8) / cols, qy * (0.18 + r * 0.38), (w - 8) / cols - 2.5, qy * 0.26);
+          }
+        }
+        ctx.strokeStyle = C.ink(0.6); ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(0, qy); ctx.lineTo(w, qy); ctx.stroke();
+        ctx.lineWidth = 1; ctx.strokeStyle = C.ink(0.3);
+        for (let k = 1; k < 10; k++) { const x = k * w / 10; ctx.beginPath(); ctx.moveTo(x, qy); ctx.lineTo(x, qy + 3); ctx.stroke(); }
+        const P = 13, hh = Math.max(5, h * 0.14);
+        const slots = [[0.03, 0.29], [0.36, 0.31], [0.71, 0.26]];
+        for (let i = 0; i < 3; i++) {
+          const ph = fract(t / P + i / 3 + 0.08);
+          const len = w * slots[i][1];
+          const bx = w * slots[i][0], by = qy + 4;
+          const ax = w * (0.08 + 0.3 * i), ay = h * 0.78 - (i % 2) * hh * 0.4;
+          // the plan: berth slot is reserved (dashed) before the ship gets there
+          if (ph > 0.06 && ph < 0.36) {
+            ctx.setLineDash([3, 3]); ctx.strokeStyle = A(0.7); shipPath(bx, by, len, hh); ctx.stroke(); ctx.setLineDash([]);
+          }
+          let x, y, a = 1;
+          if (ph < 0.2) { x = ax; y = ay; a = ease(ph / 0.05); }
+          else if (ph < 0.36) { const e = ease(seg(ph, 0.2, 0.36)); x = ax + (bx - ax) * e; y = ay + (by - ay) * e; }
+          else if (ph < 0.8) { x = bx; y = by; }
+          else { const e = ease(seg(ph, 0.8, 0.97)); x = bx + e * w * 0.5; y = by + e * h * 0.6; a = 1 - seg(ph, 0.9, 0.97); }
+          if (a <= 0) continue;
+          ctx.globalAlpha *= a;
+          shipPath(x, y, len, hh); ctx.fillStyle = A(0.14); ctx.fill(); ctx.strokeStyle = A(0.95); ctx.lineWidth = 1.1; ctx.stroke();
+          const cw = Math.max(3, hh * 0.55), n = Math.max(2, Math.floor((len - hh) / (cw + 1.5)));
+          let left = n;
+          if (ph >= 0.36 && ph < 0.8) left = Math.round(n * (1 - seg(ph, 0.4, 0.76)));
+          if (ph >= 0.8) left = Math.round(n * 0.5);
+          for (let k = 0; k < left; k++) { ctx.fillStyle = A(0.65); ctx.fillRect(x + 2 + k * (cw + 1.5), y + hh * 0.22, cw, hh * 0.56); }
+          ctx.globalAlpha /= a;
+          if (ph >= 0.36 && ph < 0.8) {
+            const cxr = bx + len * (0.15 + 0.55 * (0.5 + 0.5 * Math.sin(t * 1.4 + i * 2)));
+            ctx.strokeStyle = C.ink(0.7); ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(cxr, qy - hh * 0.9); ctx.lineTo(cxr, by + hh + 2); ctx.moveTo(cxr - 3, qy - hh * 0.9); ctx.lineTo(cxr + 3, qy - hh * 0.9); ctx.stroke();
+          }
+        }
+      }
+      function simGrid(w, h, t, A) {
+        const N = [[0.1, 0.22, 'g'], [0.1, 0.78, 'g'], [0.46, 0.14, 'g'], [0.34, 0.52, 'b'], [0.64, 0.46, 'b'], [0.9, 0.2, 'l'], [0.92, 0.6, 'l'], [0.72, 0.86, 'l'], [0.42, 0.88, 'l']];
+        const E = [[0, 3], [1, 3], [2, 4], [3, 4], [4, 5], [4, 6], [4, 7], [3, 8], [8, 7]];
+        const P = N.map(([x, y]) => [x * w, y * h]);
+        ctx.lineWidth = 1;
+        E.forEach(([a, b], e) => {
+          ctx.strokeStyle = C.ink(0.28); ctx.beginPath(); ctx.moveTo(P[a][0], P[a][1]); ctx.lineTo(P[b][0], P[b][1]); ctx.stroke();
+          const flow = 0.18 + 0.12 * Math.sin(t * 0.6 + e * 1.3);
+          for (let j = 0; j < 3; j++) {
+            const f = fract(t * flow + j / 3 + hash(e));
+            ctx.fillStyle = A(0.85);
+            ctx.beginPath(); ctx.arc(P[a][0] + (P[b][0] - P[a][0]) * f, P[a][1] + (P[b][1] - P[a][1]) * f, 1.3, 0, Math.PI * 2); ctx.fill();
+          }
+        });
+        const s = Math.max(7, Math.min(w, h) * 0.17);
+        N.forEach(([, , k], i) => {
+          const [x, y] = P[i];
+          if (k === 'g') {
+            const out = 0.35 + 0.55 * (0.5 + 0.5 * Math.sin(t * 0.45 + i * 2.1));
+            ctx.fillStyle = C.ink(0.06); ctx.fillRect(x - s / 2, y - s / 2, s, s);
+            ctx.fillStyle = A(0.55); ctx.fillRect(x - s / 2, y + s / 2 - s * out, s, s * out);
+            ctx.strokeStyle = C.ink(0.75); ctx.strokeRect(x - s / 2 + 0.5, y - s / 2 + 0.5, s - 1, s - 1);
+          } else if (k === 'b') {
+            ctx.fillStyle = C.ink(0.8); ctx.fillRect(x - 2, y - 2, 4, 4);
+          } else {
+            const d = 0.6 + 0.4 * Math.sin(t * 0.8 + i);
+            ctx.strokeStyle = C.ink(0.75); ctx.beginPath(); ctx.arc(x, y, s * 0.36, 0, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = C.ink(0.15 + 0.35 * d); ctx.beginPath(); ctx.arc(x, y, s * 0.36 * d, 0, Math.PI * 2); ctx.fill();
+          }
+        });
+      }
+      const routeCache = {};
+      function simDelivery(w, h, t, A) {
+        const nx = 8, ny = 5, mx = w * 0.05, my = h * 0.1;
+        const gxp = (i) => mx + i * (w - 2 * mx) / (nx - 1), gyp = (j) => my + j * (h - 2 * my) / (ny - 1);
+        ctx.strokeStyle = C.ink(0.12); ctx.lineWidth = 1;
+        for (let i = 0; i < nx; i++) { ctx.beginPath(); ctx.moveTo(gxp(i), my * 0.4); ctx.lineTo(gxp(i), h - my * 0.4); ctx.stroke(); }
+        for (let j = 0; j < ny; j++) { ctx.beginPath(); ctx.moveTo(mx * 0.4, gyp(j)); ctx.lineTo(w - mx * 0.4, gyp(j)); ctx.stroke(); }
+        const P = 14, cyc = Math.floor(t / P), ph = (t % P) / P;
+        let rt = routeCache[cyc];
+        if (!rt) {
+          const depot = [0, ny - 1], stops = [], used = new Set(['0,' + (ny - 1)]);
+          let k = 0;
+          while (stops.length < 6 && k < 200) { const s = [Math.floor(hash(cyc * 31 + k) * nx), Math.floor(hash(cyc * 17 + k * 7 + 3) * ny)]; k++; if (!used.has(s + '')) { used.add(s + ''); stops.push(s); } }
+          const order = [], left = stops.slice(); let cur = depot;
+          while (left.length) { let bi = 0, bd = 1e9; left.forEach((s, i) => { const d = Math.abs(s[0] - cur[0]) + Math.abs(s[1] - cur[1]); if (d < bd) { bd = d; bi = i; } }); cur = left.splice(bi, 1)[0]; order.push(cur); }
+          const pts = [depot]; order.forEach((s) => { const p = pts[pts.length - 1]; pts.push([s[0], p[1]]); pts.push(s); }); const p = pts[pts.length - 1]; pts.push([depot[0], p[1]]); pts.push(depot);
+          let len = 0; const cum = [0]; for (let i = 1; i < pts.length; i++) { len += Math.abs(pts[i][0] - pts[i - 1][0]) + Math.abs(pts[i][1] - pts[i - 1][1]); cum.push(len); }
+          rt = routeCache[cyc] = { depot, order, pts, cum, len };
+          delete routeCache[cyc - 2];
+        }
+        const s = rt.len * ease(seg(ph, 0.04, 0.92));
+        const toXY = (p) => [gxp(p[0]), gyp(p[1])];
+        let vx = 0, vy = 0;
+        ctx.setLineDash([2, 3]); ctx.strokeStyle = C.ink(0.35); ctx.beginPath();
+        rt.pts.forEach((p, i) => { const [x, y] = toXY(p); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); ctx.setLineDash([]);
+        ctx.strokeStyle = A(0.9); ctx.lineWidth = 1.5; ctx.beginPath();
+        for (let i = 0; i < rt.pts.length; i++) {
+          const [x, y] = toXY(rt.pts[i]);
+          if (rt.cum[i] <= s) { i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); vx = x; vy = y; }
+          else { const [px, py] = toXY(rt.pts[i - 1]); const f = (s - rt.cum[i - 1]) / (rt.cum[i] - rt.cum[i - 1]); vx = px + (x - px) * f; vy = py + (y - py) * f; ctx.lineTo(vx, vy); break; }
+        }
+        ctx.stroke(); ctx.lineWidth = 1;
+        rt.order.forEach((p) => {
+          const [x, y] = toXY(p); const ix = rt.pts.findIndex((q) => q === p); const done = rt.cum[ix] <= s;
+          ctx.beginPath(); ctx.arc(x, y, 2.6, 0, Math.PI * 2);
+          if (done) { ctx.fillStyle = C.ink(0.85); ctx.fill(); } else { ctx.strokeStyle = C.ink(0.7); ctx.stroke(); }
+        });
+        const [dx, dy] = toXY(rt.depot); ctx.strokeStyle = C.ink(0.8); ctx.strokeRect(dx - 3.5, dy - 3.5, 7, 7);
+        ctx.fillStyle = A(1); ctx.beginPath(); ctx.arc(vx, vy, 3, 0, Math.PI * 2); ctx.fill();
+      }
+      function simRail(w, h, t, A) {
+        const ns = 5, ys = (i) => h * (0.12 + i * 0.19);
+        const nowX = w * 0.7, pxs = w / 15;
+        ctx.lineWidth = 1;
+        for (let i = 0; i < ns; i++) { ctx.strokeStyle = C.ink(0.14); ctx.beginPath(); ctx.moveTo(0, ys(i)); ctx.lineTo(w, ys(i)); ctx.stroke(); }
+        const t0 = t - nowX / pxs, t1 = t + (w - nowX) / pxs;
+        const k0 = Math.floor(t0 / 2.1) - 6, k1 = Math.ceil(t1 / 2.1) + 1;
+        const X = (tt) => nowX + (tt - t) * pxs;
+        for (let k = k0; k <= k1; k++) {
+          const down = ((k % 2) + 2) % 2 === 0;
+          let tt = k * 2.1; const pts = [];
+          for (let s = 0; s < ns; s++) {
+            const st = down ? s : ns - 1 - s;
+            pts.push([tt, ys(st)]); tt += 0.35; pts.push([tt, ys(st)]);
+            tt += 1.3 + 0.5 * hash(k * 13 + s);
+          }
+          if (pts[pts.length - 1][0] < t0 || pts[0][0] > t1) continue;
+          const path = () => { ctx.beginPath(); pts.forEach(([a, y], i) => (i ? ctx.lineTo(X(a), y) : ctx.moveTo(X(a), y))); };
+          ctx.save(); ctx.beginPath(); ctx.rect(nowX, -2, w, h + 4); ctx.clip();
+          ctx.setLineDash([2, 3]); ctx.strokeStyle = C.ink(0.4); path(); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+          ctx.save(); ctx.beginPath(); ctx.rect(-2, -2, nowX + 2, h + 4); ctx.clip();
+          ctx.strokeStyle = down ? A(0.9) : C.ink(0.7); ctx.lineWidth = 1.3; path(); ctx.stroke(); ctx.restore();
+          if (t >= pts[0][0] && t <= pts[pts.length - 1][0]) {
+            let y = pts[0][1];
+            for (let i = 1; i < pts.length; i++) if (t <= pts[i][0]) { const f = (t - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0] || 1); y = pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f; break; }
+            ctx.fillStyle = down ? A(1) : C.ink(0.9); ctx.beginPath(); ctx.arc(nowX, y, 2.6, 0, Math.PI * 2); ctx.fill();
+          }
+        }
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = C.ink(0.45); ctx.beginPath(); ctx.moveTo(nowX, 0); ctx.lineTo(nowX, h); ctx.stroke();
+      }
+      function plane(x, y, ang, s, col) {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.strokeStyle = col; ctx.lineWidth = 1.3;
+        ctx.beginPath(); ctx.moveTo(-s * 0.5, 0); ctx.lineTo(s * 0.5, 0);
+        ctx.moveTo(s * 0.05, -s * 0.45); ctx.lineTo(s * 0.12, 0); ctx.lineTo(s * 0.05, s * 0.45);
+        ctx.moveTo(-s * 0.42, -s * 0.18); ctx.lineTo(-s * 0.38, 0); ctx.lineTo(-s * 0.42, s * 0.18);
+        ctx.stroke(); ctx.restore();
+      }
+      function simGates(w, h, t, A) {
+        const py0 = h * 0.45, py1 = h * 0.55, n = 5;
+        ctx.fillStyle = C.ink(0.08); ctx.fillRect(w * 0.06, py0, w * 0.88, py1 - py0);
+        ctx.strokeStyle = C.ink(0.6); ctx.lineWidth = 1; ctx.strokeRect(w * 0.06 + 0.5, py0 + 0.5, w * 0.88 - 1, py1 - py0 - 1);
+        const s = Math.max(9, Math.min(h * 0.24, w * 0.11));
+        for (let side = 0; side < 2; side++) {
+          const ty = side ? h * 0.95 : h * 0.05, gy = side ? py1 + s * 0.62 : py0 - s * 0.62;
+          ctx.setLineDash([2, 4]); ctx.strokeStyle = C.ink(0.18); ctx.beginPath(); ctx.moveTo(0, ty); ctx.lineTo(w, ty); ctx.stroke(); ctx.setLineDash([]);
+          for (let g = 0; g < n; g++) {
+            const gx = w * 0.16 + g * (w * 0.68) / (n - 1);
+            ctx.strokeStyle = C.ink(0.45); ctx.beginPath(); ctx.moveTo(gx, side ? py1 : py0); ctx.lineTo(gx, side ? py1 + 3 : py0 - 3); ctx.stroke();
+            const id = side * n + g, P = 9 + (id % 3) * 1.9, ph = fract(t / P + hash(id));
+            if (ph > 0.9) continue;
+            const nose = side ? -Math.PI / 2 : Math.PI / 2;
+            let x, y, ang;
+            if (ph < 0.14) { x = w + s - (w + s - gx) * ease(ph / 0.14); y = ty; ang = Math.PI; }
+            else if (ph < 0.24) { x = gx; y = ty + (gy - ty) * ease(seg(ph, 0.14, 0.24)); ang = nose; }
+            else if (ph < 0.68) { x = gx; y = gy; ang = nose; }
+            else if (ph < 0.76) { x = gx; y = gy + (ty - gy) * ease(seg(ph, 0.68, 0.76)); ang = nose; }
+            else { x = gx - (gx + s) * ease(seg(ph, 0.76, 0.9)); y = ty; ang = Math.PI; }
+            plane(x, y, ang, s, id === 2 ? A(1) : C.ink(0.8));
+          }
+        }
+      }
+      function simBeds(w, h, t, A) {
+        const qx = w * 0.08, cols = 6, rows = 2;
+        const bx0 = w * 0.24, bw = (w * 0.74) / cols, bh = h * 0.32;
+        const nq = 2 + Math.floor(3.99 * (0.5 + 0.5 * Math.sin(t * 0.37)));
+        for (let q = 0; q < 5; q++) {
+          ctx.beginPath(); ctx.arc(qx, h * (0.18 + q * 0.16), 2.4, 0, Math.PI * 2);
+          if (q < nq) { ctx.fillStyle = C.ink(0.75); ctx.fill(); } else { ctx.strokeStyle = C.ink(0.25); ctx.stroke(); }
+        }
+        ctx.strokeStyle = C.ink(0.2); ctx.beginPath(); ctx.moveTo(w * 0.17, h * 0.08); ctx.lineTo(w * 0.17, h * 0.92); ctx.stroke();
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+          const id = r * cols + c, P = 7 + hash(id) * 6, f = fract(t / P + hash(id + 50));
+          const x = bx0 + c * bw + 2, y = h * (0.12 + r * 0.46), ww = bw - 5;
+          const occ = f < 0.7 ? ease(f / 0.05) * (1 - ease(seg(f, 0.65, 0.7))) : 0;
+          ctx.fillStyle = (id === 4 ? A : C.ink)(0.5 * occ); ctx.fillRect(x, y, ww, bh);
+          ctx.strokeStyle = C.ink(0.55); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, ww - 1, bh - 1);
+          ctx.fillStyle = C.ink(0.35); ctx.fillRect(x + 2, y + 2, ww - 4, Math.max(1.5, bh * 0.12));
+          if (f < 0.05) {
+            const e = ease(f / 0.05);
+            ctx.fillStyle = C.ink(0.85); ctx.beginPath(); ctx.arc(qx + (x + ww / 2 - qx) * e, h * 0.18 + (y + bh / 2 - h * 0.18) * e, 2.4, 0, Math.PI * 2); ctx.fill();
+          }
+        }
+      }
+
+      const corners = (b, col) => {
+        const k = Math.min(8, b.w * 0.08), x0 = b.x - 0.5, y0 = b.y - 0.5, x1 = b.x + b.w + 0.5, y1 = b.y + b.h + 0.5;
+        ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.beginPath();
+        ctx.moveTo(x0, y0 + k); ctx.lineTo(x0, y0); ctx.lineTo(x0 + k, y0);
+        ctx.moveTo(x1 - k, y0); ctx.lineTo(x1, y0); ctx.lineTo(x1, y0 + k);
+        ctx.moveTo(x1, y1 - k); ctx.lineTo(x1, y1); ctx.lineTo(x1 - k, y1);
+        ctx.moveTo(x0 + k, y1); ctx.lineTo(x0, y1); ctx.lineTo(x0, y1 - k);
+        ctx.stroke();
+      };
+
+      // ---------- frame ----------
+      const bez = (p0, p1, p2, p3, f) => {
+        const u = 1 - f;
+        return [u * u * u * p0[0] + 3 * u * u * f * p1[0] + 3 * u * f * f * p2[0] + f * f * f * p3[0], u * u * u * p0[1] + 3 * u * u * f * p1[1] + 3 * u * f * f * p2[1] + f * f * f * p3[1]];
+      };
+      function frame(t) {
+        if (!L) return;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        const lon0 = (reduce ? 25 : 35 - t * 4.5) * D2R;
+        drawGlobe(lon0);
+        const { R, cx, cy } = L;
+        SITES.forEach((s, i) => {
+          const b = L.boxes[i];
+          const A = s.live ? C.acc : C.ink;
+          const [x, y, z] = project(s.lon * D2R, Math.sin(s.lat * D2R), Math.cos(s.lat * D2R), lon0, R, cx, cy);
+          const vis = clamp(z / 0.22, 0, 1);
+          // leader: real place -> its sandbox, with seed data travelling along it
+          if (vis > 0) {
+            const p0 = [x, y], p3 = [b.ax, b.ay];
+            const p1 = b.dir === 'h' ? [x + (b.ax - x) * 0.5, y] : [x, y + (b.ay - y) * 0.5];
+            const p2 = b.dir === 'h' ? [x + (b.ax - x) * 0.5, b.ay] : [b.ax, y + (b.ay - y) * 0.5];
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = s.live ? C.acc(0.75 * vis) : C.ink(0.22 * vis);
+            ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.bezierCurveTo(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]); ctx.stroke();
+            for (let j = 0; j < 3; j++) {
+              const f = fract(t * 0.22 + j / 3 + i * 0.13);
+              const q = bez(p0, p1, p2, p3, f);
+              ctx.fillStyle = s.live ? C.acc(vis * 0.9) : C.ink(0.5 * vis);
+              ctx.beginPath(); ctx.arc(q[0], q[1], 1.5, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.fillStyle = s.live ? C.acc(vis) : C.ink(0.85 * vis);
+            ctx.beginPath(); ctx.arc(x, y, s.live ? 3.2 : 2.4, 0, Math.PI * 2); ctx.fill();
+            if (s.live && !reduce) {
+              const f = fract(t / 2.4);
+              ctx.strokeStyle = C.acc(vis * (1 - f)); ctx.beginPath(); ctx.arc(x, y, 3.5 + f * 11, 0, Math.PI * 2); ctx.stroke();
+            }
+          }
+          const dim = s.live ? 1 : 0.42 + 0.58 * vis;
+          ctx.save();
+          ctx.globalAlpha = dim;
+          corners(b, s.live ? C.acc(0.9) : C.ink(0.35));
+          ctx.beginPath(); ctx.rect(b.x, b.y, b.w, b.h); ctx.clip();
+          ctx.translate(b.x, b.y);
+          s.sim(b.w, b.h, t + i * 1.7, A);
+          ctx.restore();
+          ctx.save(); ctx.globalAlpha = s.live ? 1 : 0.55 + 0.45 * vis; drawLabel(s, b); ctx.restore();
+        });
+      }
+
+      // ---------- loop ----------
+      let simT = reduce ? 6 : 0, running = false, onScreen = true, raf = 0, last = 0;
+      const tick = (now) => {
+        raf = 0;
+        if (!running) return;
+        const dt = last ? (now - last) / 1000 : 0;
+        if (dt >= 1 / 62 || !last) { simT += Math.min(dt, 0.05); last = now; frame(simT); }
+        raf = requestAnimationFrame(tick);
+      };
+      const update = () => {
+        const want = !reduce && onScreen && !document.hidden;
+        if (want && !running) { running = true; last = 0; if (!raf) raf = requestAnimationFrame(tick); }
+        else if (!want && running) { running = false; if (raf) cancelAnimationFrame(raf); raf = 0; }
+      };
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver((es) => { onScreen = es.some((e) => e.isIntersecting); update(); }, { rootMargin: '40px' }).observe(root);
+      }
+      document.addEventListener('visibilitychange', update);
+      if ('ResizeObserver' in window) new ResizeObserver(resize).observe(root); else window.addEventListener('resize', resize);
+      new MutationObserver(() => { readTheme(); if (!running) frame(simT); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+      resize();
+      update();
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
+  })();
+</script>

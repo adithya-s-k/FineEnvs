@@ -1,0 +1,254 @@
+<div class="d3-portsim-task"></div>
+<style>
+  .d3-portsim-task { position: relative; font-size: 13px; color: var(--text-color); container-type: inline-size; }
+  .d3-portsim-task .pt-main { display: flex; flex-direction: column; gap: 6px; }
+  .d3-portsim-task .pt-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 31%); gap: 0 18px; align-items: end; }
+  .d3-portsim-task .pt-still { margin: 0; min-width: 0; }
+  .d3-portsim-task .pt-still img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-color); }
+  .d3-portsim-task .pt-still figcaption { margin-top: 4px; font-size: 11px; line-height: 1.35; color: var(--muted-color); }
+  .d3-portsim-task .mark line { stroke: var(--text-color); stroke-width: 1; stroke-dasharray: 2 2; opacity: .7; }
+  .d3-portsim-task .mark text { font-size: 10px; fill: var(--text-color); }
+  .d3-portsim-task .pt-panel { min-width: 0; }
+  .d3-portsim-task .pt-head { font-size: 12px; line-height: 1.4; margin: 0 0 2px; }
+  .d3-portsim-task .pt-head b { font-weight: 600; }
+  .d3-portsim-task .pt-head .st { color: var(--muted-color); font-variant-numeric: tabular-nums; }
+  .d3-portsim-task .pt-head .bad { color: var(--danger-color); }
+  .d3-portsim-task .pt-head .pri { color: var(--primary-color); font-weight: 600; }
+  .d3-portsim-task .pt-loop { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px;
+    margin: 6px 0 10px; padding: 9px 0; border-top: 1px dashed var(--border-color); border-bottom: 1px dashed var(--border-color);
+    font-size: 11.5px; line-height: 1.3; color: var(--muted-color); }
+  .d3-portsim-task .pt-loop .who { color: var(--text-color); font-weight: 600; margin-right: 4px; }
+  .d3-portsim-task .pt-loop .res { color: var(--muted-color); }
+  .d3-portsim-task .pt-loop .res.bad { color: var(--danger-color); }
+  .d3-portsim-task .pt-loop code { font-family: var(--font-mono); font-size: 11px; color: var(--text-color); background: none; padding: 0; white-space: nowrap; }
+  .d3-portsim-task .pt-loop .ar { color: var(--muted-color); }
+  .d3-portsim-task .pt-loop .ar::before { content: "→"; }
+  .d3-portsim-task .pt-loop .rw { color: var(--primary-color); font-weight: 600; }
+  .d3-portsim-task svg { display: block; overflow: visible; }
+  .d3-portsim-task .axis text { fill: var(--tick-color); font-size: 10px; }
+  .d3-portsim-task .axis path, .d3-portsim-task .axis line { stroke: var(--axis-color); opacity: .45; }
+  .d3-portsim-task .grid line { stroke: var(--grid-color); }
+  .d3-portsim-task .ship rect { fill: color-mix(in srgb, var(--info-color) 24%, transparent); stroke: var(--info-color); stroke-width: 1; }
+  .d3-portsim-task .ship.bad rect { stroke: var(--danger-color); stroke-width: 1.8; }
+  .d3-portsim-task .ship:hover rect { stroke-width: 2.4; }
+  .d3-portsim-task .blk-closed { stroke: var(--muted-color); stroke-dasharray: 3 2; stroke-width: 1; }
+  .d3-portsim-task .blk-along { fill: color-mix(in srgb, var(--muted-color) 25%, transparent); stroke: var(--muted-color); stroke-width: 1; }
+  .d3-portsim-task .gale { fill: color-mix(in srgb, var(--info-color) 14%, transparent); }
+  .d3-portsim-task .gale-core { fill: color-mix(in srgb, var(--info-color) 26%, transparent); }
+  .d3-portsim-task .outage { fill: color-mix(in srgb, var(--danger-color) 35%, transparent); }
+  .d3-portsim-task .band-lab { font-size: 10px; fill: var(--muted-color); }
+  .d3-portsim-task .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; font-size: 11px; color: var(--muted-color); }
+  .d3-portsim-task .legend .it { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .d3-portsim-task .legend .sw { width: 14px; height: 10px; border-radius: 2px; box-sizing: border-box; }
+  .d3-portsim-task .pt-caps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 18px; margin-top: 12px; font-size: 12px; line-height: 1.4; color: var(--muted-color); }
+  .d3-portsim-task .pt-caps div { border-top: 1px solid var(--border-color); padding-top: 6px; }
+  .d3-portsim-task .pt-caps b { color: var(--text-color); font-weight: 600; margin-right: 4px; }
+  .d3-portsim-task .d3-tooltip { position: absolute; pointer-events: none; z-index: 5; background: var(--page-bg); color: var(--text-color);
+    border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 8px; font-size: 12px; line-height: 1.45;
+    box-shadow: 0 2px 10px rgba(0,0,0,.12); max-width: 260px; opacity: 0; transition: opacity .1s; }
+  .d3-portsim-task .d3-tooltip .bad { color: var(--danger-color); }
+  .d3-portsim-task .d3-tooltip .mu { color: var(--muted-color); }
+  @container (max-width: 600px) {
+    .d3-portsim-task .pt-row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+    .d3-portsim-task .pt-loop { justify-content: flex-start; }
+    .d3-portsim-task .pt-caps { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+<script>
+  (() => {
+    const ensureD3 = (cb) => {
+      if (window.d3 && typeof window.d3.select === 'function') return cb();
+      let s = document.getElementById('d3-cdn-script');
+      if (!s) { s = document.createElement('script'); s.id = 'd3-cdn-script'; s.src = 'https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js'; document.head.appendChild(s); }
+      const onReady = () => { if (window.d3 && typeof window.d3.select === 'function') cb(); };
+      s.addEventListener('load', onReady, { once: true });
+      if (window.d3) onReady();
+    };
+    const fetchJson = async (f) => {
+      for (const u of ['/data/' + f, 'assets/data/' + f, '../assets/data/' + f]) {
+        try { const r = await fetch(u, { cache: 'no-cache' }); if (r.ok) return await r.json(); } catch (e) {}
+      }
+      throw new Error(f + ' not found');
+    };
+
+    const TASK = 'dock-24B-w35x2-storm-1';
+    const AFTER = 'openai:gpt-6.1-sol';  // its plan matches the proven optimum
+    const STILL_H = 75;  // the hour of the two 3D stills (rendered in the environment's viewer)
+
+    const bootstrap = () => {
+      const scriptEl = document.currentScript;
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('d3-portsim-task'))) {
+        root = [...document.querySelectorAll('.d3-portsim-task')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+      const uid = 'pt' + Math.random().toString(36).slice(2, 8);
+
+      root.innerHTML = `
+        <div class="pt-main">
+          <div class="pt-row">
+            <div class="pt-panel" data-k="published"><div class="pt-head"></div><svg role="img"></svg></div>
+            <figure class="pt-still"><img src="/img/portsim-sim-before.webp" alt="The 3D quay under the port's original plan at the same hour: the cranes stand idle at an empty stretch of quay." loading="lazy"><figcaption>In 3D at <span class="at"></span>, under the port's plan: this stretch of quay stands empty.</figcaption></figure>
+          </div>
+          <div class="pt-loop" aria-label="The agent's tool calls"></div>
+          <div class="pt-row">
+            <div class="pt-panel" data-k="openai:gpt-6.1-sol"><div class="pt-head"></div><svg role="img"></svg></div>
+            <figure class="pt-still"><img src="/img/portsim-sim-after.webp" alt="The 3D quay under the agent's re-plan: CYPRESS alongside, worked by ship-to-shore cranes." loading="lazy"><figcaption>The same moment under the re-plan: CYPRESS alongside with six cranes, MARTHA A beside it.</figcaption></figure>
+          </div>
+        </div>
+        <div class="legend"></div>
+        <div class="pt-caps">
+          <div><b>In</b>12–90 real ships, the quay, its cranes, closures, the weather</div>
+          <div><b>Out</b>when, where and with how many cranes each ship docks</div>
+          <div><b>Score</b>rules first, then delay against the proven optimum</div>
+        </div>
+        <div class="d3-tooltip"></div>`;
+      const tip = root.querySelector('.d3-tooltip');
+      document.addEventListener('pointerdown', (ev) => { if (!(ev.target.closest && ev.target.closest('.d3-portsim-task .ship'))) tip.style.opacity = 0; });
+
+      const legend = root.querySelector('.legend');
+      [
+        ['background:color-mix(in srgb, var(--info-color) 24%, transparent);border:1px solid var(--info-color)', 'ship alongside'],
+        ['border:2px solid var(--danger-color)', 'breaks a rule'],
+        ['border:1px dashed var(--muted-color);background:repeating-linear-gradient(45deg, var(--muted-color) 0 1px, transparent 1px 4px)', 'closed quay'],
+        ['background:color-mix(in srgb, var(--info-color) 26%, transparent)', 'gale'],
+        ['background:color-mix(in srgb, var(--danger-color) 35%, transparent);height:5px', 'cranes out'],
+      ].forEach(([st, lab]) => {
+        const it = document.createElement('span');
+        it.className = 'it';
+        it.innerHTML = `<span class="sw" style="${st}"></span><span>${lab}</span>`;
+        legend.appendChild(it);
+      });
+
+      let t = null;
+      const when = (h) => {
+        const d = new Date(Date.parse(t.week_start) + h * 3600e3);
+        return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', timeZone: 'UTC' }) + ', ' + String(d.getUTCHours()).padStart(2, '0') + ':00';
+      };
+
+      function heads() {
+        const pub = t.plans.find((p) => p.key === 'published');
+        const opt = t.plans.find((p) => p.key === AFTER);
+        const [h1, h2] = root.querySelectorAll('.pt-head');
+        h1.innerHTML = `<div><b>Before</b>: the port's plan, after the week went wrong</div>` +
+          `<div class="st"><span class="bad">${pub.violations} rule breaks</span> · reward ${pub.reward.toFixed(2)}</div>`;
+        h2.innerHTML = `<div><b>After</b>: ${opt.label}'s re-plan</div>` +
+          `<div class="st">no rule breaks · <span class="pri">reward ${opt.reward.toFixed(2)}</span> · cost ${opt.cost}, equal to the proven optimum</div>`;
+        root.querySelectorAll('.pt-still .at').forEach((el) => { el.textContent = when(STILL_H); });
+        const loop = root.querySelector('.pt-loop');
+        const res = (st) => (st.feasible ? `valid, cost ${st.cost}` : `<span class="res bad">${st.violations} rule break${st.violations === 1 ? '' : 's'}</span>`);
+        loop.innerHTML = `<span class="who">${opt.label}'s episode</span><code>get_situation</code>` +
+          (opt.steps || []).map((st) => `<span class="ar"></span><code>${st.tool}</code>${st.tool === 'submit_plan' ? '' : ` <span class="res">${res(st)}</span>`}`).join('') +
+          `<span class="ar"></span><span class="rw">reward ${opt.reward.toFixed(2)}</span>`;
+      }
+
+      function drawPanel(panel, H) {
+        const plan = t.plans.find((p) => p.key === panel.dataset.k);
+        const byId = new Map(t.ships.map((s) => [s.id, s]));
+        const svg = d3.select(panel.querySelector('svg'));
+        svg.attr('aria-label', panel.dataset.k === 'published' ? "Dock chart of the port's original plan" : "Dock chart of the agent's re-plan");
+        const W = panel.clientWidth || 360;
+        const nSec = t.last - t.first + 1;
+        const m = { t: 14, r: 4, b: 18, l: 26 };
+        const rowH = W < 330 ? 6.5 : W > 600 ? 8.5 : 7.5;
+        const iw = W - m.l - m.r;
+        const ih = Math.round(nSec * rowH);
+        svg.attr('width', W).attr('height', ih + m.t + m.b).attr('viewBox', `0 0 ${W} ${ih + m.t + m.b}`);
+        svg.selectAll('*').remove();
+        const hid = uid + panel.dataset.k;
+        const hatch = svg.append('defs').append('pattern').attr('id', hid).attr('width', 5).attr('height', 5)
+          .attr('patternUnits', 'userSpaceOnUse').attr('patternTransform', 'rotate(45)');
+        hatch.append('line').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 5).attr('stroke', 'var(--muted-color)').attr('stroke-width', 1.2).attr('opacity', 0.55);
+        const g = svg.append('g').attr('transform', `translate(${m.l},${m.t})`);
+        const x = d3.scaleLinear().domain([0, H]).range([0, iw]);
+        const y = d3.scaleLinear().domain([t.first, t.last + 1]).range([0, ih]);
+
+        const pxDay = (iw * 24) / H;
+        const step = [24, 48, 72, 96, 120].find((s) => (pxDay * s) / 24 >= 50) || 168;
+        const t0 = Date.parse(t.week_start);
+        const dayFmt = (h) => new Date(t0 + h * 3600e3).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+        g.append('g').attr('class', 'grid').selectAll('line').data(d3.range(24, H, 24)).join('line')
+          .attr('x1', (d) => x(d)).attr('x2', (d) => x(d)).attr('y1', 0).attr('y2', ih);
+
+        for (const w of t.winds) {
+          g.append('rect').attr('class', w.min_length > 0 ? 'gale' : 'gale-core')
+            .attr('x', x(w.start)).attr('width', Math.max(1, x(w.end) - x(w.start))).attr('y', 0).attr('height', ih);
+        }
+        if (t.winds.length) {
+          const w0 = t.winds.reduce((a, b) => (a.start < b.start ? a : b));
+          g.append('text').attr('class', 'band-lab').attr('x', x(w0.start)).attr('y', -4).text('gale');
+        }
+        for (const o of t.outages) {
+          g.append('rect').attr('class', 'outage').attr('x', x(o.start)).attr('width', Math.max(1, x(o.end) - x(o.start))).attr('y', -9).attr('height', 4);
+          g.append('text').attr('class', 'band-lab').attr('x', x(o.end) + 3).attr('y', -4).text(`${o.cranes} cranes out`);
+        }
+        for (const b of t.blocks) {
+          const r = g.append('rect').attr('x', x(Math.max(0, b.start))).attr('width', Math.max(1, x(b.end) - x(Math.max(0, b.start))))
+            .attr('y', y(b.first)).attr('height', y(b.last + 1) - y(b.first));
+          if (b.kind === 'closed') r.attr('class', 'blk-closed').attr('fill', `url(#${hid})`);
+          else r.attr('class', 'blk-along');
+        }
+
+        const mk = g.append('g').attr('class', 'mark');
+        mk.append('line').attr('x1', x(STILL_H)).attr('x2', x(STILL_H)).attr('y1', -2).attr('y2', ih);
+        mk.append('text').attr('x', x(STILL_H) + 3).attr('y', ih - 3).text('3D view');
+
+        const rows = plan.ships.filter((r) => r.berth != null && r.section != null);
+        const ships = g.append('g').selectAll('g.ship').data(rows).join('g')
+          .attr('class', (r) => 'ship' + (r.problems.length ? ' bad' : ''));
+        ships.append('rect')
+          .attr('x', (r) => x(r.berth))
+          .attr('y', (r) => y(r.section) + 0.5)
+          .attr('width', (r) => Math.max(2, x(r.dep != null ? r.dep : r.berth + 1) - x(r.berth)))
+          .attr('height', (r) => Math.max(3, y(r.section + byId.get(r.id).sections) - y(r.section) - 1))
+          .attr('rx', 1.5);
+        // draw rule-breakers on top so their outline is never hidden
+        ships.filter((r) => r.problems.length).raise();
+
+        g.append('g').attr('class', 'axis').attr('transform', `translate(0,${ih})`)
+          .call(d3.axisBottom(x).tickValues(d3.range(0, H - step / 3, step)).tickFormat(dayFmt).tickSize(3).tickSizeOuter(0));
+        g.append('g').attr('class', 'axis')
+          .call(d3.axisLeft(y).tickValues([5, 10, 15, 20].filter((v) => v >= t.first && v <= t.last).map((v) => v + 0.5)).tickFormat((d) => `§${d - 0.5}`).tickSize(3).tickSizeOuter(0));
+
+        const show = (ev, r) => {
+          const s = byId.get(r.id);
+          const lines = [
+            `<b>${s.name}</b> <span class="mu">· ${Math.round(s.length_m)} m</span>`,
+            `docks ${when(r.berth)} at §${r.section}–${r.section + s.sections - 1}`,
+            `leaves ${when(r.dep)}${r.cranes != null ? ` <span class="mu">· ${r.cranes} cranes</span>` : ''}`,
+          ];
+          if (r.problems.length) lines.push(...r.problems.slice(0, 2).map((p) => `<span class="bad">${p}</span>`));
+          else if (r.delay > 0) lines.push(`<span class="mu">${r.delay} h after its due time</span>`);
+          tip.innerHTML = lines.join('<br>');
+          const rect = root.getBoundingClientRect();
+          let lx = ev.clientX - rect.left + 12;
+          if (lx + 260 > rect.width) lx = Math.max(0, ev.clientX - rect.left - 272);
+          tip.style.left = lx + 'px';
+          tip.style.top = ev.clientY - rect.top + 14 + 'px';
+          tip.style.opacity = 1;
+        };
+        ships.on('pointermove', show).on('pointerdown', show).on('pointerleave', (ev) => { if (ev.pointerType !== 'touch') tip.style.opacity = 0; });
+      }
+
+      function draw() {
+        const deps = t.plans.filter((p) => p.key === 'published' || p.key === AFTER).flatMap((p) => p.ships.map((r) => r.dep || 0));
+        const H = Math.ceil((Math.max(...deps, ...t.ships.map((s) => s.due)) + 4) / 24) * 24;
+        root.querySelectorAll('.pt-panel').forEach((p) => drawPanel(p, H));
+      }
+
+      fetchJson('portsim-rollouts.json').then((d) => {
+        t = d.tasks.find((q) => q.id === TASK) || d.tasks[0];
+        heads();
+        draw();
+        let last = root.clientWidth;
+        new ResizeObserver(() => { if (Math.abs(root.clientWidth - last) > 2) { last = root.clientWidth; draw(); } }).observe(root);
+      }).catch((e) => {
+        root.innerHTML = `<pre style="color:var(--danger-color)">${e.message}</pre>`;
+      });
+    };
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => ensureD3(bootstrap), { once: true });
+    else ensureD3(bootstrap);
+  })();
+</script>

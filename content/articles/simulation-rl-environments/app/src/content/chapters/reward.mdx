@@ -1,0 +1,22 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## How the reward works
+
+The reward is deterministic, so the same plan always gets the same score. It is computed from the plan alone, without
+an LLM judge or sampling, once per episode when the agent calls `submit_plan`.
+
+<HtmlEmbed src="d3-portsim-reward-steps.html" frameless />
+
+<HtmlEmbed
+  src="d3-portsim-reward.html"
+  title="Reward against cost, with each model's plan"
+  desc="1.0 at the proven optimum, falling towards 0.2 as the plan gets costlier; plans that break a rule sit in the shaded band. Measuring the gap against the avoidable cost means a week full of unavoidable delay is not punished."
+/>
+
+An independent checker re-verifies every plan. Across the 1,100 tasks the naive re-plan never scores above 0.44 and a
+greedy heuristic never above 0.82, because tasks they nearly solve were dropped when the dataset was built.
+
+In the film's run, GLM-5.3 checks three drafts that come back with 9, 5 and then 0 rule breaks. Its last edits bring
+NAGOYA EXPRESS down from eight cranes to its six-crane limit and move CMA CGM MONTREAL from hour 131 to 133. The plan
+it submits costs **87**: 72 in weighted delay plus three berth changes at 5 each. That equals the proven optimum, so
+the gap is zero and the reward is `0.2 + 0.8 × e⁰ = 1.00`.

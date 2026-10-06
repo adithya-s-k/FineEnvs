@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://fineenvs-simulation-rl-environments.hf.space/sitemap.xml
+LLMs-Txt: /llms.txt

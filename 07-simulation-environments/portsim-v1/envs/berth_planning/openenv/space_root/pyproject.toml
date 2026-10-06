@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "portsimenv"
+version = "0.1.0"
+description = "PortSimEnv v1: berth planning at the Port of Barcelona on real 2024 calls, as an OpenEnv environment"
+requires-python = ">=3.11"
+dependencies = ["openenv==0.7.0", "berth-core", "berth-openenv"]
+
+[tool.uv.sources]
+berth-core = { path = "core" }
+berth-openenv = { path = "openenv" }
+
+[tool.setuptools]
+packages = []

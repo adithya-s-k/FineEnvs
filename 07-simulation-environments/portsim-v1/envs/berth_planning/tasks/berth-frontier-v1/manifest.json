@@ -1,0 +1,8 @@
+{
+  "name": "berth-frontier-v1",
+  "tasks": 10,
+  "sha256": "f49146a9a8d53bd6548110df708953c31d89ded7983bad906bd412499d688e05",
+  "candidates": 20,
+  "kept_before_selection": 19,
+  "source": "Port of Barcelona open data, 2024 container calls at quays 36A and 24B (CC BY-SA 4.0)"
+}

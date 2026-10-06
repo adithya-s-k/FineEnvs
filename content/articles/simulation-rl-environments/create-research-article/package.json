@@ -1,0 +1,35 @@
+{
+  "name": "create-research-article",
+  "version": "0.4.0",
+  "description": "Scaffold a new research paper or article from the research-article-template",
+  "license": "CC-BY-4.0",
+  "type": "module",
+  "bin": {
+    "create-research-article": "cli.js"
+  },
+  "files": [
+    "cli.js"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "create",
+    "scaffold",
+    "research",
+    "paper",
+    "article",
+    "template",
+    "astro",
+    "mdx",
+    "scientific-writing"
+  ],
+  "author": {
+    "name": "Thibaud Frere",
+    "url": "https://huggingface.co/tfrere"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://huggingface.co/spaces/tfrere/research-article-template"
+  }
+}

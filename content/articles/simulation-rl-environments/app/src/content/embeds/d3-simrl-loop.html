@@ -1,0 +1,226 @@
+<div class="d3-simrl-loop" role="img" aria-label="Real records become a deterministic simulation; an agent acts in it through three tools (get_situation, check_plan, submit_plan); its plan is graded deterministically against a proven optimum; reinforcement learning feeds that reward back to update the agent."></div>
+<style>
+  .d3-simrl-loop { position: relative; width: 100%; color: var(--text-color); }
+  .d3-simrl-loop svg { display: block; width: 100%; overflow: visible; font-family: inherit; }
+  .d3-simrl-loop .ln { fill: none; stroke: var(--border-color); stroke-width: 1; }
+  .d3-simrl-loop .ink { fill: none; stroke: var(--text-color); stroke-width: 1; }
+  .d3-simrl-loop .mu { fill: none; stroke: var(--muted-color); stroke-width: 1; }
+  .d3-simrl-loop .cell { fill: var(--muted-color); opacity: .38; }
+  .d3-simrl-loop .hd { fill: var(--text-color); opacity: .7; }
+  .d3-simrl-loop .yard { fill: var(--muted-color); opacity: .22; }
+  .d3-simrl-loop .hull { fill: color-mix(in srgb, var(--muted-color) 14%, transparent); stroke: var(--text-color); stroke-width: 1; stroke-linejoin: round; }
+  .d3-simrl-loop .hull.wait { fill: none; stroke: var(--muted-color); stroke-dasharray: 2.5 2; }
+  .d3-simrl-loop .box { fill: var(--muted-color); opacity: .55; }
+  .d3-simrl-loop .flow { fill: none; stroke: var(--muted-color); stroke-width: 1; opacity: .8; }
+  .d3-simrl-loop .head { fill: none; stroke: var(--muted-color); stroke-width: 1; stroke-linecap: round; stroke-linejoin: round; opacity: .8; }
+  .d3-simrl-loop .ok { fill: none; stroke: var(--primary-color); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .d3-simrl-loop .bar { fill: var(--text-color); opacity: .55; }
+  .d3-simrl-loop .curve { fill: none; stroke: var(--text-color); stroke-width: 1.2; stroke-linejoin: round; opacity: .85; }
+  .d3-simrl-loop .dot { fill: var(--primary-color); }
+  .d3-simrl-loop text.t { fill: var(--text-color); font-size: 13px; font-weight: 600; }
+  .d3-simrl-loop text.s { fill: var(--muted-color); font-size: 11.5px; }
+  .d3-simrl-loop text.code { fill: var(--muted-color); font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 10px; }
+  .d3-simrl-loop text.code.last { fill: var(--text-color); }
+  .d3-simrl-loop text.score { fill: var(--text-color); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+</style>
+<script>
+  (() => {
+    const scriptEl = document.currentScript;
+    const boot = () => {
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('d3-simrl-loop'))) {
+        root = [...document.querySelectorAll('.d3-simrl-loop')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const NS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('aria-hidden', 'true');
+      root.appendChild(svg);
+
+      const STEPS = [
+        { t: 'Real records', s: '2024 port calls', g: records },
+        { t: 'Simulation', s: 'one quay, one week', g: sim },
+        { t: 'Agent', s: 'acts through tools', g: agent },
+        { t: 'Deterministic grade', s: 'against the optimum', g: grade },
+        { t: 'RL', s: 'reward updates the agent', g: rl },
+      ];
+      const f = (v) => +v.toFixed(1);
+
+      // ---------- glyphs (origin top-left of a w×h box) ----------
+      function records(x, y, w, h) {
+        const rh = h / 5, cols = [0, 0.38, 0.72];
+        const widths = [[0.26, 0.24, 0.2], [0.3, 0.18, 0.24], [0.22, 0.26, 0.16], [0.32, 0.2, 0.22], [0.24, 0.24, 0.26]];
+        let s = `<line class="ink" x1="${f(x)}" x2="${f(x + w)}" y1="${f(y + 0.5)}" y2="${f(y + 0.5)}" opacity=".5"/>`;
+        for (let r = 0; r < 5; r++) {
+          const yy = y + r * rh;
+          cols.forEach((c, k) => {
+            s += `<rect class="${r === 0 ? 'hd' : 'cell'}" x="${f(x + 2 + c * w)}" y="${f(yy + rh / 2 - 1.5)}" width="${f(widths[r][k] * w)}" height="3" rx="1"/>`;
+          });
+          s += `<line class="${r === 0 ? 'ink' : 'ln'}" x1="${f(x)}" x2="${f(x + w)}" y1="${f(yy + rh) - 0.5}" y2="${f(yy + rh) - 0.5}"${r === 0 ? ' opacity=".5"' : ''}/>`;
+        }
+        return s;
+      }
+      const hull = (x, y, len, hh, cls) => {
+        const b = Math.min(hh * 0.8, len * 0.22);
+        return `<path class="hull${cls ? ' ' + cls : ''}" d="M${f(x)},${f(y)}H${f(x + len - b)}L${f(x + len)},${f(y + hh / 2)}L${f(x + len - b)},${f(y + hh)}H${f(x)}Z"/>`;
+      };
+      function sim(x, y, w, h) {
+        const k = 6;
+        let s = `<path class="mu" opacity=".7" d="M${x - 0.5},${y + k}V${y - 0.5}H${x + k} M${x + w - k},${y - 0.5}H${x + w + 0.5}V${y + k} M${x + w + 0.5},${y + h - k}V${y + h + 0.5}H${x + w - k} M${x + k},${y + h + 0.5}H${x - 0.5}V${y + h - k}"/>`;
+        const ix = x + 6, iw = w - 12;
+        const n = 6, bw = iw / n;
+        for (let i = 0; i < n; i++) s += `<rect class="yard" x="${f(ix + i * bw)}" y="${f(y + h * 0.12)}" width="${f(bw - 2)}" height="${f(h * 0.17)}"/>`;
+        const qy = y + h * 0.4;
+        s += `<line class="ink" x1="${f(x + 3)}" x2="${f(x + w - 3)}" y1="${f(qy)}" y2="${f(qy)}" stroke-width="1.3"/>`;
+        const hh = Math.max(6, h * 0.17);
+        const ships = [[ix, iw * 0.44], [ix + iw * 0.5, iw * 0.46]];
+        ships.forEach(([sx, len], j) => {
+          s += hull(sx, qy + 2, len, hh);
+          const cw = 3.2, m = Math.floor((len - hh) / (cw + 1.4));
+          for (let c = 0; c < m; c++) if ((c + j) % 4 !== 3) s += `<rect class="box" x="${f(sx + 2.5 + c * (cw + 1.4))}" y="${f(qy + 2 + hh * 0.28)}" width="${cw}" height="${f(hh * 0.44)}"/>`;
+        });
+        s += hull(ix + iw * 0.56, y + h * 0.76, iw * 0.34, hh * 0.85, 'wait');
+        return s;
+      }
+      function agent(x, y, w, h) {
+        const lines = ['get_situation', 'check_plan', 'submit_plan'];
+        let s = `<line class="mu" x1="${f(x + 0.5)}" x2="${f(x + 0.5)}" y1="${f(y + 4)}" y2="${f(y + h - 4)}" opacity=".6"/>`;
+        lines.forEach((l, i) => { s += `<text class="code${i === 2 ? ' last' : ''}" x="${f(x + 8)}" y="${f(y + h / 2 + (i - 1) * 15 + 3.5)}">${l}()</text>`; });
+        return s;
+      }
+      function grade(x, y, w, h) {
+        const my = y + h * 0.44;
+        let s = `<path class="ok" d="M${f(x + 10)},${f(my)}L${f(x + 17)},${f(my + 7)}L${f(x + 30)},${f(my - 9)}"/>`;
+        s += `<text class="score" x="${f(x + 38)}" y="${f(my + 6)}">1.00</text>`;
+        const ty = y + h * 0.82, tw = w - 20;
+        s += `<line class="ln" x1="${f(x + 10)}" x2="${f(x + 10 + tw)}" y1="${f(ty)}" y2="${f(ty)}" stroke-width="3"/>`;
+        s += `<rect class="bar" x="${f(x + 10)}" y="${f(ty - 1.5)}" width="${f(tw)}" height="3"/>`;
+        return s;
+      }
+      function rl(x, y, w, h) {
+        const ax = x + 8, ay = y + h - 6, aw = w - 16, ah = h - 12;
+        let s = `<path class="mu" opacity=".6" d="M${f(ax)},${f(ay - ah)}V${f(ay)}H${f(ax + aw)}"/>`;
+        const N = 22, pts = [];
+        for (let i = 0; i <= N; i++) {
+          const u = i / N;
+          const v = 0.12 + 0.78 * (1 - Math.exp(-3.2 * u)) + 0.07 * Math.sin(i * 2.3) * (1 - u * 0.6);
+          pts.push(`${f(ax + 3 + u * (aw - 6))},${f(ay - 3 - Math.min(0.98, Math.max(0, v)) * (ah - 6))}`);
+        }
+        s += `<polyline class="curve" points="${pts.join(' ')}"/>`;
+        return s;
+      }
+
+      // ---------- layout ----------
+      let segs = [];
+      const arrowH = (x, y) => `<path class="head" d="M${f(x - 4)},${f(y - 3.5)}L${f(x)},${f(y)}L${f(x - 4)},${f(y + 3.5)}"/>`;
+      const arrowV = (x, y, dir) => `<path class="head" d="M${f(x - 3.5)},${f(y - 4 * dir)}L${f(x)},${f(y)}L${f(x + 3.5)},${f(y - 4 * dir)}"/>`;
+      const arrowR = (x, y) => arrowH(x, y);
+      function draw() {
+        const W = Math.max(260, root.clientWidth || 800);
+        const vertical = W < 640;
+        let s = '', H;
+        const boxes = [];
+        segs = [];
+        if (!vertical) {
+          const cw = W / 5, GW = Math.min(112, cw - 40), GH = 64, gy = 24;
+          STEPS.forEach((st, i) => {
+            const cx = cw * (i + 0.5);
+            boxes.push({ x: cx - GW / 2, y: gy, w: GW, h: GH, cx });
+          });
+          boxes.forEach((b, i) => {
+            s += STEPS[i].g(b.x, b.y, b.w, b.h);
+            s += `<text class="t" x="${f(b.cx)}" y="${gy + GH + 26}" text-anchor="middle">${STEPS[i].t}</text>`;
+            s += `<text class="s" x="${f(b.cx)}" y="${gy + GH + 42}" text-anchor="middle">${STEPS[i].s}</text>`;
+            if (i < 4) {
+              const x0 = b.x + b.w + 8, x1 = boxes[i + 1].x - 8, yy = gy + GH / 2;
+              const d = `M${f(x0)},${yy}H${f(x1)}`;
+              s += `<path class="flow" d="${d}"/>` + arrowR(x1, yy);
+              segs.push(d);
+            }
+          });
+          const a = boxes[2], r = boxes[4], ly = 7, rr = 6;
+          const d = `M${f(r.cx)},${gy - 6}V${ly + rr}Q${f(r.cx)},${ly} ${f(r.cx - rr)},${ly}H${f(a.cx + rr)}Q${f(a.cx)},${ly} ${f(a.cx)},${ly + rr}V${gy - 6}`;
+          s += `<path class="flow" d="${d}"/>` + arrowV(a.cx, gy - 6, 1);
+          segs.push(d);
+          H = gy + GH + 52;
+        } else {
+          const GW = 92, GH = 54, gap = 24, gx = 18, top = 4;
+          STEPS.forEach((st, i) => boxes.push({ x: gx, y: top + i * (GH + gap), w: GW, h: GH, cx: gx + GW / 2 }));
+          boxes.forEach((b, i) => {
+            s += STEPS[i].g(b.x, b.y, b.w, b.h);
+            const tx = b.x + b.w + 22, my = b.y + b.h / 2;
+            s += `<text class="t" x="${tx}" y="${f(my - 3)}">${STEPS[i].t}</text>`;
+            s += `<text class="s" x="${tx}" y="${f(my + 13)}">${STEPS[i].s}</text>`;
+            if (i < 4) {
+              const y0 = b.y + b.h + 6, y1 = boxes[i + 1].y - 6;
+              const d = `M${b.cx},${f(y0)}V${f(y1)}`;
+              s += `<path class="flow" d="${d}"/>` + arrowV(b.cx, y1, 1);
+              segs.push(d);
+            }
+          });
+          const a = boxes[2], r = boxes[4], lx = 5, rr = 5;
+          const ay = a.y + a.h / 2, ry = r.y + r.h / 2;
+          const d = `M${gx - 5},${f(ry)}H${lx + rr}Q${lx},${f(ry)} ${lx},${f(ry - rr)}V${f(ay + rr)}Q${lx},${f(ay)} ${lx + rr},${f(ay)}H${gx - 5}`;
+          s += `<path class="flow" d="${d}"/>` + arrowR(gx - 5, ay);
+          segs.push(d);
+          H = top + 5 * GH + 4 * gap + 4;
+        }
+        s += '<g class="paths" fill="none" stroke="none">' + segs.map((d) => `<path d="${d}"/>`).join('') + '</g>';
+        s += '<circle class="dot" r="2.6" cx="-20" cy="-20" opacity="0"/>';
+        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        svg.setAttribute('height', H);
+        svg.innerHTML = s;
+        paths = [...svg.querySelectorAll('.paths path')];
+        lens = paths.map((p) => { try { return p.getTotalLength(); } catch (e) { return 0; } });
+        dot = svg.querySelector('.dot');
+      }
+
+      // ---------- travelling dot: records → sim → agent → grade → RL, then agent ↔ RL loops ----------
+      let paths = [], lens = [], dot = null;
+      const ORDER = [0, 1, 2, 3, 4, 2, 3, 4, 2, 3, 4];
+      const SPEED = 60, PAUSE = 0.45;
+      let t = 0, running = false, onScreen = true, raf = 0, last = 0;
+      function place() {
+        if (!dot || !paths.length) return;
+        let rem = t;
+        for (const k of ORDER) {
+          const dur = (lens[k] || 1) / SPEED;
+          if (rem < dur) {
+            const p = paths[k].getPointAtLength(lens[k] * (rem / dur));
+            const fade = Math.min(1, rem / 0.2, (dur - rem) / 0.2);
+            dot.setAttribute('cx', p.x.toFixed(1)); dot.setAttribute('cy', p.y.toFixed(1));
+            dot.setAttribute('opacity', Math.max(0, fade).toFixed(2));
+            return;
+          }
+          rem -= dur;
+          if (rem < PAUSE) { dot.setAttribute('opacity', '0'); return; }
+          rem -= PAUSE;
+        }
+        t = 0; dot.setAttribute('opacity', '0');
+      }
+      const tick = (now) => {
+        raf = 0;
+        if (!running) return;
+        const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
+        last = now; t += dt; place();
+        raf = requestAnimationFrame(tick);
+      };
+      const update = () => {
+        const want = !reduce && onScreen && !document.hidden;
+        if (want && !running) { running = true; last = 0; if (!raf) raf = requestAnimationFrame(tick); }
+        else if (!want && running) { running = false; if (raf) cancelAnimationFrame(raf); raf = 0; }
+      };
+
+      draw();
+      let lastW = root.clientWidth;
+      if ('ResizeObserver' in window) new ResizeObserver(() => { const w = root.clientWidth; if (Math.abs(w - lastW) > 2) { lastW = w; draw(); place(); } }).observe(root);
+      else window.addEventListener('resize', () => { draw(); place(); });
+      if ('IntersectionObserver' in window) new IntersectionObserver((es) => { onScreen = es.some((e) => e.isIntersecting); update(); }).observe(root);
+      document.addEventListener('visibilitychange', update);
+      update();
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
+  })();
+</script>

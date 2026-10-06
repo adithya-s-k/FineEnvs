@@ -1,0 +1,10 @@
+[
+ {
+  "run": "fixture-run",
+  "models": [
+   "example/model"
+  ],
+  "episodes": 1,
+  "mean_reward": 1.0
+ }
+]

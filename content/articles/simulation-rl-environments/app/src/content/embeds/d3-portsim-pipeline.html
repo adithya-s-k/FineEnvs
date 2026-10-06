@@ -1,0 +1,34 @@
+<div class="d3-portsim-pipeline"></div>
+<style>
+  .d3-portsim-pipeline { font-size: 13px; color: var(--text-color); }
+  .d3-portsim-pipeline .flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; align-items: stretch; }
+  .d3-portsim-pipeline .st { position: relative; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 10px 9px; margin: 0 9px; background: var(--page-bg); }
+  .d3-portsim-pipeline .st:not(:last-child)::after { content: ''; position: absolute; right: -14px; top: 50%; width: 10px; height: 10px; border-top: 1.5px solid var(--muted-color); border-right: 1.5px solid var(--muted-color); transform: translateY(-50%) rotate(45deg); }
+  .d3-portsim-pipeline .n { font-size: 11px; color: var(--muted-color); letter-spacing: .05em; text-transform: uppercase; }
+  .d3-portsim-pipeline .h { font-weight: 600; margin: 3px 0 4px; line-height: 1.25; }
+  .d3-portsim-pipeline .d { font-size: 12px; color: var(--muted-color); line-height: 1.4; }
+  .d3-portsim-pipeline .d b { color: var(--text-color); font-weight: 600; font-variant-numeric: tabular-nums; }
+  @media (max-width: 760px) {
+    .d3-portsim-pipeline .flow { grid-template-columns: 1fr; gap: 14px; }
+    .d3-portsim-pipeline .st:not(:last-child)::after { right: auto; left: 50%; top: auto; bottom: -11px; transform: translateX(-50%) rotate(135deg); }
+  }
+</style>
+<script>
+  (() => {
+    const scriptEl = document.currentScript;
+    let root = scriptEl ? scriptEl.previousElementSibling : null;
+    if (!(root && root.classList && root.classList.contains('d3-portsim-pipeline'))) {
+      root = [...document.querySelectorAll('.d3-portsim-pipeline')].filter((e) => e.dataset.mounted !== 'true').pop();
+    }
+    if (!root || root.dataset.mounted === 'true') return;
+    root.dataset.mounted = 'true';
+    const steps = [
+      ['Real record', 'Port of Barcelona open data', 'Every container-ship call of <b>2024</b> at the BEST and APM quays: <b>1,784</b> calls with ship, size, berth times, quay sections, previous and next port.'],
+      ['A real week', 'One quay, one to three weeks', 'The ships that really called that week, the terminal\'s crane fleet, and the port\'s own rules: wind limits, movement limits.'],
+      ['Something goes wrong', 'Disruptions from real patterns', 'Late ships, closed quay sections, crane breakdowns, gales, diverted traffic, emergencies, priority cargo, stacked by difficulty tier.'],
+      ['The answer key', 'CP-SAT finds the optimum', 'An exact solver proves the best schedule. Tasks a simple heuristic already solves are dropped, so every kept task is hard.'],
+      ['RL environment', 'OpenEnv, three tools', '<code>get_situation</code>, <code>check_plan</code>, one graded <code>submit_plan</code>. <b>1,050</b> train and <b>50</b> held-out eval tasks.'],
+    ];
+    root.innerHTML = `<div class="flow">${steps.map((s, i) => `<div class="st"><div class="n">${i + 1} · ${s[0]}</div><div class="h">${s[1]}</div><div class="d">${s[2]}</div></div>`).join('')}</div>`;
+  })();
+</script>
