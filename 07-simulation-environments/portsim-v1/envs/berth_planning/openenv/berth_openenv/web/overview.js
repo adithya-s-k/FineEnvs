@@ -55,6 +55,22 @@ function board(episodes) {
   })).sort((a, b) => b.mean - a.mean);
 }
 
+// Outcome of one rollout, for the bars and the grid.
+const OUTCOMES = [
+  { k: "optimal", label: "optimal plan (1.0)" },
+  { k: "valid", label: "valid, not optimal" },
+  { k: "broken", label: "broke a rule (≤ 0.2)" },
+  { k: "none", label: "no plan submitted (0)" },
+];
+const outcomeOf = (e) => (!e.submitted ? "none" : !e.feasible ? "broken" : (e.reward || 0) >= 0.999 ? "optimal" : "valid");
+
+function outcomeBar(r) {
+  const n = r.n || 1;
+  const c = { optimal: r.optimal, valid: r.valid - r.optimal, broken: r.submitted - r.valid, none: r.n - r.submitted };
+  return `<span class="ov-obar" title="${OUTCOMES.map((o) => `${c[o.k]} ${o.label}`).join(" · ")}">${OUTCOMES.filter((o) => c[o.k] > 0)
+    .map((o) => `<i class="oc-${o.k}" style="width:${((100 * c[o.k]) / n).toFixed(2)}%"></i>`).join("")}</span>`;
+}
+
 function resultHtml(e) {
   if (!e.submitted) return `<span class="muted" title="${escapeHtml(e.end_reason || "")}">not submitted</span>`;
   if (!e.feasible) return '<i class="dot bad"></i>rule broken';
@@ -113,10 +129,15 @@ export async function overviewPage({ app, setCrumbs, isCurrent, params, config =
   const evalSec = `<section>
           <div class="sec-head"><h2>Eval</h2><span class="muted small">${RUN} · 50 held-out tasks · one rollout per model and task · 12 turns, 32k output tokens per turn</span></div>
           <table class="tbl click" id="ov-board">
-            <thead><tr><th>Model</th><th class="num">Mean</th>${TIERS.map((t) => `<th class="num opt" title="${escapeHtml(TIER_TIPS[t])}">${cap(t)}</th>`).join("")}<th class="num" title="Episodes that ended with submit_plan">Submitted</th><th class="num" title="Plans that break no rule">Valid</th><th class="num" title="Plans that match the proven optimum (reward 1.0)">Optimal</th></tr></thead>
-            <tbody>${Array.from({ length: 6 }, () => `<tr class="skel">${"<td><i></i></td>".repeat(9)}</tr>`).join("")}</tbody>
+            <thead><tr><th>Model</th><th class="ov-oth" title="The 50 eval weeks by outcome">Outcomes</th><th class="num">Mean</th>${TIERS.map((t) => `<th class="num opt" title="${escapeHtml(TIER_TIPS[t])}">${cap(t)}</th>`).join("")}<th class="num" title="Episodes that ended with submit_plan">Submitted</th><th class="num" title="Plans that break no rule">Valid</th><th class="num" title="Plans that match the proven optimum (reward 1.0)">Optimal</th></tr></thead>
+            <tbody>${Array.from({ length: 6 }, () => `<tr class="skel">${"<td><i></i></td>".repeat(10)}</tr>`).join("")}</tbody>
           </table>
+          <div class="ov-legend">${OUTCOMES.map((o) => `<span><i class="oc-${o.k}"></i>${o.label}</span>`).join("")}</div>
           <p class="muted small ov-note" id="ov-board-note">Mean reward per model and tier. Click a model to list its rollouts; each one replays in 3D.</p>
+        </section>
+        <section class="ov-grid-sec" hidden>
+          <div class="sec-head"><h2>Every rollout</h2><span class="muted small">one square per model and eval week, coloured by outcome (fainter = lower reward) · click a square to replay it in 3D</span></div>
+          <div class="ov-mx" id="ov-mx"></div>
         </section>
         <section class="ov-eps" hidden>
           <div class="sec-head"><h2 id="ov-eps-h">Rollouts</h2><span class="muted small" id="ov-eps-note"></span></div>
@@ -198,7 +219,7 @@ print(step.reward)   # 0..1, graded once</code></pre>
 
   const tbody = app.querySelector("#ov-board tbody");
   const noRollouts = () => {
-    tbody.innerHTML = `<tr><td colspan="9" class="muted">No eval rollouts on this server.${explorer ? "" : ` They are in the <a href="${EVAL_VIEWER}" target="_blank" rel="noopener">eval Space ↗</a>.`}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="muted">No eval rollouts on this server.${explorer ? "" : ` They are in the <a href="${EVAL_VIEWER}" target="_blank" rel="noopener">eval Space ↗</a>.`}</td></tr>`;
     app.querySelector("#ov-board-note").hidden = true;
     if (explorer) return;
     for (const a of app.querySelectorAll('a[href^="#/run/"]')) { // the showcase rollout: watch it in the eval Space
@@ -218,13 +239,31 @@ print(step.reward)   # 0..1, graded once</code></pre>
   if (!isCurrent()) return;
   if (!rows.length) return noRollouts();
   tbody.innerHTML = rows.map((r) => `<tr data-row="${escapeHtml(r.model)}" title="List ${escapeHtml(r.name)}'s rollouts">
-      <td>${escapeHtml(r.name)}</td><td class="num"><b>${fmtNum(r.mean, 3)}</b></td>
+      <td>${escapeHtml(r.name)}</td><td class="ov-otd">${outcomeBar(r)}</td><td class="num"><b>${fmtNum(r.mean, 3)}</b></td>
       ${TIERS.map((t) => `<td class="num opt">${r.tiers[t] == null ? "–" : fmtNum(r.tiers[t], 2)}</td>`).join("")}
       <td class="num">${r.submitted}/${r.n}</td><td class="num">${r.valid}/${r.n}</td><td class="num">${r.optimal}/${r.n}</td></tr>`).join("");
 
   const perTier = new Map();
   for (const e of rows[0].eps) perTier.set(e.difficulty, (perTier.get(e.difficulty) || 0) + 1);
   app.querySelector("#ov-board-note").textContent = `Mean reward per model and tier (${TIERS.filter((t) => perTier.has(t)).map((t) => `${t} ${perTier.get(t)}`).join(", ")} tasks). Click a model to list its rollouts; each one replays in 3D.`;
+
+  // Every rollout at a glance: models down, eval weeks across (grouped by tier), each square a link to its 3D replay.
+  {
+    const tasks = [...new Map(rows.flatMap((r) => r.eps).map((e) => [e.task_id, e])).values()]
+      .sort((a, b) => TIERS.indexOf(a.difficulty) - TIERS.indexOf(b.difficulty) || a.task_id.localeCompare(b.task_id));
+    const byKey = new Map(rows.flatMap((r) => r.eps.map((e) => [`${r.model}|${e.task_id}`, e])));
+    const groups = TIERS.map((t) => ({ t, tasks: tasks.filter((e) => e.difficulty === t) })).filter((g) => g.tasks.length);
+    const cell = (r, task) => {
+      const e = byKey.get(`${r.model}|${task.task_id}`);
+      if (!e) return '<span class="mx-c mx-missing"></span>';
+      const oc = outcomeOf(e);
+      const op = oc === "valid" ? (0.35 + 0.65 * Math.max(0, ((e.reward || 0) - 0.2) / 0.8)).toFixed(2) : "1";
+      return `<a class="mx-c oc-${oc}" style="opacity:${op}" href="${runHref(r.model, task.task_id)}" title="${escapeHtml(r.name)} · ${escapeHtml(task.task_id)} · ${task.ships} ships · ${oc === "none" ? "no plan" : `reward ${fmtNum(e.reward, 2)}`}"></a>`;
+    };
+    app.querySelector("#ov-mx").innerHTML = `<div class="mx-row mx-head"><span class="mx-name"></span>${groups.map((g) => `<span class="mx-g" style="--n:${g.tasks.length}" title="${escapeHtml(TIER_TIPS[g.t])}">${cap(g.t)} · ${g.tasks.length}</span>`).join("")}</div>` +
+      rows.map((r) => `<div class="mx-row"><span class="mx-name">${escapeHtml(r.name)}</span>${groups.map((g) => `<span class="mx-g" style="--n:${g.tasks.length}">${g.tasks.map((t) => cell(r, t)).join("")}</span>`).join("")}<span class="mx-mean">${fmtNum(r.mean, 2)}</span></div>`).join("");
+    app.querySelector(".ov-grid-sec").hidden = false;
+  }
 
   // The selected model's rollouts, under the board (#/?model=<id> keeps the choice in shared links).
   const epsSec = app.querySelector(".ov-eps");
