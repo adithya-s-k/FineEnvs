@@ -1,0 +1,8 @@
+spec_version: 1
+name: nayana_ocr
+type: space
+runtime: fastapi
+app: nayana_ocr.server.app:create_server
+port: 8000
+description: Multilingual full-page OCR, section OCR, layout detection, and multiple-choice/descriptive VQA from the complete indexed Nayana corpus.
+version: "0.4.0"

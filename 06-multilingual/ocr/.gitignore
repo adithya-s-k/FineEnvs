@@ -1,0 +1,24 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+data/snapshots/
+envs/nayana_ocr/snapshot/
+.ipynb_checkpoints/
+
+# Generated run outputs, checkpoints, and local credentials. Committed verification
+# summaries live in results/, matching 01-latex-ocr.
+artifacts/
+.env
+.env.*
+
+# Full-corpus indexes and bounded runtime caches live in the bucket / local disk.
+data/corpus-index*/
+data/corpus-cache*/
+data/corpus-source.json
+data/source-manifest.json
+
+# The frozen evaluation set (data/eval-*.json) IS tracked. Exported packs carry
+# rendered CC BY-NC images and stay out of source control.
+data/eval-pack*/

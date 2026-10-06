@@ -56,6 +56,7 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **03** | **[GeoGuesser](./03-geoguesser/)** | Drop a VLM at a random street corner on Earth and score it on kilometres of error. | 1 | 1 | 1 | ✅ stable |
 | **04** | **[SmolDataEnvs](./04-smoldataenvs/)** | Data-analysis tasks, verified SFT traces and a single-turn GRPO tutorial on HF Jobs. | 1 | 1 | 0 | 🚧 wip |
 | **05** | **[SmolDataEnvs: multi-harness RL](./05-multi-harness-rl/)** | Train on SmolDataEnvs with SETA, native OpenCode or Harbor, using HF Jobs or Slurm. | 3 | 1 | 0 | 🚧 wip |
+| **06** | **[Multilingual](./06-multilingual/)** | Document OCR over a million pages in 22 languages and speech recognition over 102, each behind one OpenEnv server, and Gemma 4 trained to read and hear Kannada. | 2 | 1 | 2 | ✅ trained |
 <!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
@@ -147,6 +148,19 @@ Apps for exploring and evaluating RL environments, in [`tooling/`](./tooling/):
   rollouts on MiMo's own harness, and `mimo_harbor`, their conversion to Harbor datasets.
 
 ---
+
+### [06 · Multilingual](./06-multilingual/) &nbsp;<sub>reading and hearing many languages, two servers</sub>
+
+**Two corpora as environments.** [`ocr/`](./06-multilingual/ocr/) serves a million scanned pages in
+22 languages from a bucket as 11 million tasks, with Sarvam Indic OCR Bench beside them as evaluation
+splits. [`asr/`](./06-multilingual/asr/) serves all of FLEURS, 102 languages of read speech. Both play
+in the browser.
+
+Gemma 4 E4B was trained on Kannada in each. Reading, it makes 16% fewer character errors on the
+benchmark's Kannada slice, mostly by learning to stay in the script. Hearing, it makes 45% fewer on
+clips it never saw, but only once the trainer actually fed it the audio: TRL drops audio from the
+forward pass its loss comes from, and the project shows the fix and the numbers. Part of the
+[Multilingual Multimodal Envs](https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4) collection.
 
 ## Articles &amp; talks
 
