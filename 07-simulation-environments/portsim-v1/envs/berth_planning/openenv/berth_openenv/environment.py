@@ -24,7 +24,7 @@ from typing import Annotated, Any
 from fastmcp import FastMCP
 from openenv.core.env_server.mcp_environment import MCPEnvironment
 from openenv.core.env_server.mcp_types import CallToolAction
-from openenv.core.env_server.types import Action, Observation, State
+from openenv.core.env_server.types import Action, EnvironmentMetadata, Observation, State
 from pydantic import BaseModel, Field
 
 from berth_core import PROMPT_VERSION, Task, TaskPack, evaluate, load_pack, parse_plan, plan_to_list, rules, situation
@@ -120,6 +120,18 @@ class BerthPlanningEnvironment(MCPEnvironment):
     """Re-plan a real week of container berthings at a Barcelona quay after a disruption."""
 
     SUPPORTS_CONCURRENT_SESSIONS = True
+
+    def get_metadata(self) -> EnvironmentMetadata:
+        """What OpenEnv's /metadata reports (the web UI shows it too)."""
+        return EnvironmentMetadata(
+            name="PortSimEnv v1",
+            description="Re-plan a broken week of container-ship dockings at a Port of Barcelona quay, built from the "
+                        "port's real 2024 calls. Tools: get_situation, check_plan (10 per episode), submit_plan "
+                        "(graded once, deterministically, against the CP-SAT optimum).",
+            version="1.0.0",
+            author="FineEnvs",
+            documentation_url="https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/portsim-v1",
+        )
 
     def __init__(self, pack: TaskPack | None = None):
         self.pack = pack or load_pack()

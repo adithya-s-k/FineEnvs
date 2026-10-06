@@ -21,8 +21,8 @@ DEFAULT_SPLIT = "eval"
 DEFAULT_TASK = "dock-24B-w07x1-busy-0"
 
 
-def _iframe(task_id: str, split: str) -> str:
-    src = f"/viewer/?embed=1#/play?split={quote(split)}&task={quote(task_id)}&start=1"
+def _iframe(task_id: str, split: str, index: int) -> str:
+    src = f"/viewer/?embed=1#/play?split={quote(split)}&index={index}&task={quote(task_id)}&start=1"
     return (
         # OpenEnv's page caps the container width; the editor wants the full window.
         "<style>.gradio-container .main.fillable{max-width:none!important;padding-left:12px!important;"
@@ -44,7 +44,7 @@ def build_ui(pack: TaskPack) -> gr.Blocks:
     def _frame(index, split):
         split = split if split in ids else split0
         i = min(max(int(index or 0), 0), len(ids[split]) - 1)
-        return _iframe(ids[split][i], split)
+        return _iframe(ids[split][i], split, i)
 
     with gr.Blocks(title="PortSimEnv v1") as ui:
         with gr.Row():

@@ -1297,7 +1297,22 @@ export async function playPage({ app, params, isCurrent, setTeardown, sceneMod }
 
   onConnStatus(session.status);
   bindShell();
-  // #/play?task=<id>&start=1 starts that task's episode straight away (used by embeds)
+  // #/play?split=<s>&index=<i>&start=1 starts that task's episode straight away, without the picker (OpenEnv's /web
+  // tab and embeds use it); the one task comes from the Task API, so a 1,050-task split is never listed first.
+  const autoIndex = params.get("index");
+  if (params.get("start") === "1" && st.split && autoIndex !== null && autoIndex !== "") {
+    $("#pa-main").innerHTML = '<div class="pa-empty muted">Starting an episode…</div>';
+    taskApi("task", { split: st.split, index: Number(autoIndex) })
+      .then((d) => {
+        const t = d.task || d;
+        if (!isCurrent() || st.phase === "episode") return;
+        st.selected = t.task_id;
+        return start({ task_id: t.task_id }, t);
+      })
+      .catch(() => isCurrent() && openPicker());
+    return;
+  }
+  // #/play?task=<id>&start=1 (older links): pick it from the split list, then start
   openPicker().then(() => {
     if (params.get("start") !== "1" || !isCurrent() || st.phase === "episode") return;
     const t = pickerTasks.find((x) => x.task_id === st.selected);
