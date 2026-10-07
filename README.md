@@ -282,6 +282,26 @@ Turning real-world work into RL environments. Part 1 builds PortSimEnv from the 
 
 </td>
 </tr>
+<tr>
+<td width="33%" valign="top">
+
+<a href="https://huggingface.co/spaces/FineEnvs/multi-harness-rl-slides"><img src="./assets/content/multi-harness-rl-talk.png" alt="Training a coding agent through a harness you did not write"></a>
+
+#### [Training a Coding Agent Through a Harness You Did Not Write](https://huggingface.co/spaces/FineEnvs/multi-harness-rl-slides)
+
+![Talk](https://img.shields.io/badge/-talk-10B981) ![Live](https://img.shields.io/badge/-live%20space-FFD21E) ![Kernel Panic](https://img.shields.io/badge/-Kernel%20Panic%20Madrid-7C3AED)
+
+The multi-harness RL talk: one small model trained with GRPO inside four unmodified coding agents
+(OpenCode, Claude Code, Codex, Mini-SWE-Agent), and what changes when you do. PDF and PPTX in the Space.
+
+<sub>📂 [source in the Space](https://huggingface.co/spaces/FineEnvs/multi-harness-rl-slides/tree/main/source) · project [`05-multi-harness-rl/`](./05-multi-harness-rl/)</sub>
+
+</td>
+<td width="33%" valign="top">
+</td>
+<td width="33%" valign="top">
+</td>
+</tr>
 </table>
 
 ---

@@ -29,6 +29,7 @@ Prose lives in `app/src/content/` — `article.mdx`, `chapters/`, `embeds/`, `bi
 | **RL Environments 101** | [`slides/rl-environments-101/`](./slides/rl-environments-101/) | [▶️ Space](https://huggingface.co/spaces/AdithyaSK/rl-environments-101-slides) |
 | **Scaling RL for LLMs** (AMD AI Dev Day) | [`slides/scaling-rl-amd/`](./slides/scaling-rl-amd/) | [▶️ Space](https://huggingface.co/spaces/AdithyaSK/scaling-rl-for-llms-amd-ai-dev-day) |
 | **Multi-Harness Training** (OpenEnv × Harbor) | [`slides/multi-harness-training/`](./slides/multi-harness-training/) | [▶️ Space](https://huggingface.co/spaces/AdithyaSK/multi-harness-training-slides) |
+| **Training a coding agent through a harness you did not write** (Kernel Panic Madrid) | [source in the Space](https://huggingface.co/spaces/FineEnvs/multi-harness-rl-slides/tree/main/source) | [▶️ Space](https://huggingface.co/spaces/FineEnvs/multi-harness-rl-slides) |
 
 React components on a fixed 1280×720 canvas that scales to any projector, dark/light themes,
 arrow-key navigation. All three bind port 5173, so run one at a time.
@@ -59,6 +60,7 @@ tens of megabytes each and belong on the Hub.
 | The multi-harness RL guide | [05 · SmolDataEnvs: multi-harness RL](../05-multi-harness-rl/) |
 | Simulation RL Environments | [07 · Simulation environments](../07-simulation-environments/portsim-v1/) |
 | Multi-Harness Training deck | cross-cutting |
+| Multi-harness RL talk deck | [05 · SmolDataEnvs: multi-harness RL](../05-multi-harness-rl/) |
 
 ## Deploying
 
