@@ -5,6 +5,7 @@
 # SmolDataEnvs: multi-harness RL
 
 [![Read the article](https://img.shields.io/badge/Read_the_article-Multi--harness_RL-91c5ff?style=for-the-badge&labelColor=142439)](https://huggingface.co/spaces/FineEnvs/multi-harness-rl)
+[![Talk slides](https://img.shields.io/badge/Talk_slides-Kernel_Panic_Madrid-c4a1ff?style=for-the-badge&labelColor=142439)](https://huggingface.co/spaces/FineEnvs/multi-harness-rl-slides)
 [![Collection](https://img.shields.io/badge/Collection-Models_%26_environments-FFD21E?style=for-the-badge&labelColor=142439)](https://huggingface.co/collections/FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212)
 [![Try the playground](https://img.shields.io/badge/Try_it-SETA_playground-82d8b6?style=for-the-badge&labelColor=142439)](https://huggingface.co/spaces/FineEnvs/smoldataenv-multi-harness-whitebox)
 
