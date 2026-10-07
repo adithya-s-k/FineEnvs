@@ -1,0 +1,23 @@
+# Project manifest. `tools/build_index.py` renders the root README table from it.
+name: retroenv
+title: "RetroEnv"
+tagline: "Plan retrosyntheses back to purchasable molecules, scored against patent routes by a deterministic verifier."
+order: 9
+status: wip
+
+hub:
+  org: FineEnvs
+  spaces: []
+  datasets:
+    - AdithyaSK/RetroEnv-RL    # v3 benchmark (RL tasks and answer key), v2 and its model board
+    - AdithyaSK/RetroEnv-SFT   # SFT trajectories for the v3 train split
+
+envs:
+  - name: retro_route
+    summary: "Multi-turn retrosynthesis: stock and precedent search, disconnection checks, route-tree submission, dense verifier reward."
+    backend: rdkit-offline
+    tools: 9
+    frameworks:
+      openenv:
+        transport: http-mcp
+        verified: true

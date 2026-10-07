@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "retroenv-openenv"
+version = "0.2.0"
+description = "OpenEnv MCP server, client, agent loop and browser playground for RetroEnv"
+requires-python = ">=3.11"
+dependencies = [
+    "retroenv-core",
+    "openenv==0.4.2",
+    "fastmcp>=3,<4",
+    "gradio>=5",
+    "uvicorn[standard]>=0.30",
+    "huggingface-hub>=0.25",
+    "openai>=1.55",
+    "json-repair>=0.30",
+]
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=1.0"]
+
+[tool.uv.sources]
+retroenv-core = { path = "../core", editable = true }
+
+[tool.setuptools.packages.find]
+include = ["retroenv_openenv*"]

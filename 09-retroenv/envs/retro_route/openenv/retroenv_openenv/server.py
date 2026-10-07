@@ -1,0 +1,33 @@
+"""FastAPI app: MCP tools over /ws and /mcp, the Task API, and the playground at /web."""
+
+import os
+
+from openenv.core.env_server.http_server import create_app
+from openenv.core.env_server.mcp_types import CallToolAction, CallToolObservation
+from rdkit import RDLogger
+
+from .config import ENV_NAME
+from .environment import RetroRouteEnvironment
+
+# Agents send unparsable SMILES all the time; the verifier reports them, so
+# RDKit's per-molecule stderr messages are only noise in the server log.
+RDLogger.DisableLog("rdApp.*")
+os.environ.setdefault("ENABLE_WEB_INTERFACE", "true")
+
+
+def _build_ui(*args, **kwargs):
+    from .ui import build_ui
+
+    return build_ui(*args, **kwargs)
+
+
+app = create_app(
+    RetroRouteEnvironment,
+    CallToolAction,
+    CallToolObservation,
+    env_name=ENV_NAME,
+    max_concurrent_envs=int(os.getenv("MAX_CONCURRENT_ENVS", "64")),
+    gradio_builder=_build_ui,
+    show_default_tab=False,
+    title_override="RetroEnv",
+)

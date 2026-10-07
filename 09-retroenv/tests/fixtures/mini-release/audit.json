@@ -1,0 +1,92 @@
+{
+ "leakage": {
+  "failures": [],
+  "held_out_keys": 274,
+  "held_out_molecules": 79,
+  "held_out_parents": 18,
+  "train_tasks": 8,
+  "train_visible_reactions": 323
+ },
+ "passed": true,
+ "probes": {
+  "failures": [],
+  "mean_reward": {
+   "duplicated_route": 0.48,
+   "empty": 0.0,
+   "false_stock_claim": 0.2,
+   "first_step_only": 0.625,
+   "oracle_one_route": 1.0
+  },
+  "tasks": 4
+ },
+ "schema": {
+  "failures": [],
+  "splits": {
+   "dev": {
+    "tasks": 8,
+    "variants": {
+     "diversity": 1,
+     "forbidden_class": 1,
+     "max_depth": 1,
+     "restricted_stock": 1,
+     "standard": 4
+    }
+   },
+   "test_hard": {
+    "tasks": 7,
+    "variants": {
+     "forbidden_class": 1,
+     "max_depth": 1,
+     "restricted_stock": 1,
+     "standard": 4
+    }
+   },
+   "test_id": {
+    "tasks": 8,
+    "variants": {
+     "diversity": 1,
+     "forbidden_class": 1,
+     "max_depth": 1,
+     "restricted_stock": 1,
+     "standard": 4
+    }
+   },
+   "train": {
+    "tasks": 8,
+    "variants": {
+     "diversity": 1,
+     "forbidden_class": 1,
+     "max_depth": 1,
+     "restricted_stock": 1,
+     "standard": 4
+    }
+   }
+  }
+ },
+ "solvability": {
+  "checked": 31,
+  "failure_count": 0,
+  "failures": [],
+  "mean_oracle_reward": {
+   "dev/diversity": 1.0,
+   "dev/forbidden_class": 1.0,
+   "dev/max_depth": 1.0,
+   "dev/restricted_stock": 1.0,
+   "dev/standard": 1.0,
+   "test_hard/forbidden_class": 1.0,
+   "test_hard/max_depth": 1.0,
+   "test_hard/restricted_stock": 1.0,
+   "test_hard/standard": 1.0,
+   "test_id/diversity": 1.0,
+   "test_id/forbidden_class": 1.0,
+   "test_id/max_depth": 1.0,
+   "test_id/restricted_stock": 1.0,
+   "test_id/standard": 1.0,
+   "train/diversity": 1.0,
+   "train/forbidden_class": 1.0,
+   "train/max_depth": 1.0,
+   "train/restricted_stock": 1.0,
+   "train/standard": 1.0
+  }
+ }
+}

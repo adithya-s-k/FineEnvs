@@ -1,0 +1,14 @@
+spec_version: 1
+name: retro_route
+type: space
+runtime: fastapi
+app: retroenv_openenv.server:app
+port: 8000
+
+variables:
+  RETROENV_BENCHMARK_DIR: ""          # a local benchmark directory, or
+  RETROENV_TASKS_REPO: ""             # a private HF dataset (org/name or org/name@revision)
+  RETROENV_DEFAULT_SPLIT: train
+  RETROENV_MAX_TOOL_CALLS: "32"
+  RETROENV_TOOLSET: full              # full | unaided (no reference-backed tools)
+  MAX_CONCURRENT_ENVS: "64"

@@ -1,0 +1,31 @@
+{
+  "_comment": "USD per million tokens, used when the provider does not report cost. Claude prices live in retroenv_openenv/agent_anthropic.py. HF router prices are the pinned provider's listing on 2026-10-02 (router.huggingface.co/v1/models); OpenAI prices match the v1 board snapshot.",
+  "gpt-5.6-sol": {
+    "input": 2.0,
+    "output": 10.0
+  },
+  "gpt-5.6-luna": {
+    "input": 0.2,
+    "output": 1.2
+  },
+  "gpt-5.5": {
+    "input": 5.0,
+    "output": 30.0
+  },
+  "deepseek-ai/DeepSeek-V4.1-Flash:novita": {
+    "input": 0.3,
+    "output": 1.2
+  },
+  "deepseek-ai/DeepSeek-V4-Pro-0813:novita": {
+    "input": 1.32,
+    "output": 3.96
+  },
+  "Qwen/Qwen3.8-27B:novita": {
+    "input": 0.42,
+    "output": 3.0
+  },
+  "Qwen/Qwen3.8-27B:cerebras": {
+    "input": 0.99,
+    "output": 1.49
+  }
+}

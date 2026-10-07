@@ -1,0 +1,149 @@
+{
+ "schema_version": "retroenv-release-1",
+ "task_schema": "retro-task-v2",
+ "stock": {
+  "definition": "every leaf of every archive route",
+  "id": "paroutes-archive-leaves",
+  "molecules": 102915
+ },
+ "library": {
+  "classifier": "retroenv-classes-1",
+  "constrainable_classes": [
+   "amide coupling",
+   "Suzuki coupling",
+   "Sonogashira coupling",
+   "Buchwald-Hartwig/Ullmann/Chan-Lam coupling",
+   "SNAr",
+   "reductive amination",
+   "nitro reduction",
+   "Boc protection",
+   "Boc deprotection",
+   "ester hydrolysis",
+   "sulfonamide formation",
+   "urea/carbamate formation",
+   "esterification"
+  ],
+  "min_template_count": 5,
+  "reactions": 343665,
+  "reagent_whitelist": 509,
+  "template_extractor": "rdchiral 1.1 extract_from_reaction (radius 1, special groups)",
+  "templates": 28619,
+  "train_visible_reactions": 177822
+ },
+ "leakage": {
+  "generic_scaffolds": [
+   "C(#Cc1ccccc1)c1ccccc1",
+   "C1CCCCC1",
+   "C1CCNC1",
+   "C1CCNCC1",
+   "O=C(Nc1ccccc1)c1ccccc1",
+   "O=C(c1ccccc1)c1ccccc1",
+   "O=C1COc2ccccc2N1",
+   "O=S(=O)(Nc1ccccc1)c1ccccc1",
+   "c1ccc(-c2ccccc2)cc1",
+   "c1ccc(-c2ccccn2)cc1",
+   "c1ccc(-c2cccnc2)cc1",
+   "c1ccc(-c2ccncc2)cc1",
+   "c1ccc(-c2ccncn2)cc1",
+   "c1ccc(-n2cccn2)cc1",
+   "c1ccc(B2OCCO2)cc1",
+   "c1ccc(C2CC2)cc1",
+   "c1ccc(C2CCCCC2)cc1",
+   "c1ccc(C2CCNCC2)cc1",
+   "c1ccc(CNc2ccccc2)cc1",
+   "c1ccc(COc2ccccc2)cc1",
+   "c1ccc(Cc2ccccc2)cc1",
+   "c1ccc(Cn2ccc3ccccc32)cc1",
+   "c1ccc(N2CCCCC2)cc1",
+   "c1ccc(N2CCNCC2)cc1",
+   "c1ccc(Nc2ccccc2)cc1",
+   "c1ccc(Nc2ccnc3ccccc23)cc1",
+   "c1ccc(Oc2ccccc2)cc1",
+   "c1ccc(Oc2ccccn2)cc1",
+   "c1ccc(Sc2ccccc2)cc1",
+   "c1ccc2[nH]c(Nc3nc4ccccc4s3)nc2c1",
+   "c1ccc2[nH]ccc2c1",
+   "c1ccc2[nH]cnc2c1",
+   "c1ccc2[nH]ncc2c1",
+   "c1ccc2c(c1)CCC2",
+   "c1ccc2c(c1)CCCC2",
+   "c1ccc2c(c1)CCN2",
+   "c1ccc2c(c1)OCCO2",
+   "c1ccc2c(c1)ncc1nc[nH]c12",
+   "c1ccc2ccccc2c1",
+   "c1ccc2cnccc2c1",
+   "c1ccc2ncccc2c1",
+   "c1ccc2occc2c1",
+   "c1ccc2sccc2c1",
+   "c1ccccc1",
+   "c1ccncc1",
+   "c1ccsc1",
+   "c1cn[nH]c1",
+   "c1cncnc1",
+   "c1cscn1"
+  ],
+  "keys": [
+   "patent",
+   "molecule (target and route intermediates)",
+   "reaction",
+   "scaffold group",
+   "near-duplicate"
+  ],
+  "near_duplicate_threshold": 0.9
+ },
+ "design": {
+  "cost_cap": 268.0,
+  "depth_quotas": {
+   "dev": {
+    "2": 0.4,
+    "3": 0.3,
+    "4": 0.17,
+    "5": 0.08,
+    "6": 0.03,
+    "7": 0.01,
+    "8": 0.01
+   },
+   "test_hard": {
+    "4": 0.4,
+    "5": 0.3,
+    "6": 0.18,
+    "7": 0.08,
+    "8": 0.04
+   },
+   "test_id": {
+    "2": 0.4,
+    "3": 0.3,
+    "4": 0.17,
+    "5": 0.08,
+    "6": 0.03,
+    "7": 0.01,
+    "8": 0.01
+   }
+  },
+  "depth_slack": 2,
+  "held_out_size": 1000,
+  "split_use": {
+   "dev": "checkpoint selection, reward calibration",
+   "test_hard": "longer, novel, convergent or rare chemistry",
+   "test_id": "unseen targets, training distribution",
+   "train": "RL rollouts and SFT bootstrap"
+  },
+  "target_filters": {
+   "heavy_atoms": [
+    10,
+    60
+   ],
+   "min_depth": [
+    2,
+    8
+   ],
+   "no_metal": true
+  },
+  "test_hard_rule": {
+   "max_nn_similarity": 0.6,
+   "min_depth": 4,
+   "rare_template": 10
+  },
+  "variant_share_cap": 0.15
+ }
+}
