@@ -300,8 +300,11 @@ function main() {
     console.log('🎉 Simple conversion completed!');
 }
 
+// Imports expose the converter without running this CLI or handling its flags.
+const isDirectInvocation = import.meta.url === `file://${process.argv[1]}`;
+
 // Show help if requested
-if (process.argv.includes('--help') || process.argv.includes('-h')) {
+if (isDirectInvocation && (process.argv.includes('--help') || process.argv.includes('-h'))) {
     console.log(`
 🚀 Simple LaTeX to Markdown Converter
 
@@ -327,4 +330,4 @@ Examples:
     process.exit(0);
 }
 
-main();
+if (isDirectInvocation) main();
