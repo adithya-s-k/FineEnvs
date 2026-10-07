@@ -181,7 +181,7 @@ Hub as a Space.
 
 <table>
 <tr>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
 
 <a href="https://huggingface.co/spaces/FineEnvs/geoguesser-article"><img src="./assets/content/geoguesser.png" alt="How to turn a game into an RL environment: the technical intuition"></a>
 
@@ -195,7 +195,7 @@ with OpenEnv, and training a 4B against it with TRL until it outscored `gpt-5.4-
 <sub>📂 [`content/articles/geoguesser/`](./content/articles/geoguesser/) · project [`03-geoguesser/`](./03-geoguesser/)</sub>
 
 </td>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
 
 <a href="https://huggingface.co/spaces/AdithyaSK/rl-environments-guide"><img src="./assets/content/guide.png" alt="The ultimate guide to RL environments: building and scaling them in the LLM era"></a>
 
@@ -209,7 +209,7 @@ wired, and how they scale to thousands of concurrent sessions.
 <sub>📂 [`content/articles/rl-environments-guide/`](./content/articles/rl-environments-guide/)</sub>
 
 </td>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
 
 <a href="https://huggingface.co/spaces/AdithyaSK/rl-environments-101-slides"><img src="./assets/content/rl-environments-101.png" alt="RL Environments 101 — from what is an env to training your own"></a>
 
@@ -223,7 +223,7 @@ training with TRL. The original 30-minute talk.
 <sub>📂 [`content/slides/rl-environments-101/`](./content/slides/rl-environments-101/)</sub>
 
 </td>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
 
 <a href="https://huggingface.co/spaces/AdithyaSK/scaling-rl-for-llms-amd-ai-dev-day"><img src="./assets/content/scaling-rl.png" alt="Scaling RL for LLMs — RL environments and RL training, AMD AI Dev Day"></a>
 
@@ -239,7 +239,7 @@ own. The 20-minute cut, for AMD AI Dev Day.
 </td>
 </tr>
 <tr>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
 
 <a href="https://huggingface.co/spaces/AdithyaSK/multi-harness-training-slides"><img src="./assets/content/multi-harness-training.png" alt="Multi-Harness Training — OpenEnv and Harbor"></a>
 
@@ -253,7 +253,7 @@ in-process agent loops vs. an HTTP boundary, and what it takes to capture traina
 <sub>📂 [`content/slides/multi-harness-training/`](./content/slides/multi-harness-training/)</sub>
 
 </td>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
 
 <a href="https://huggingface.co/spaces/FineEnvs/multi-harness-rl"><img src="./05-multi-harness-rl/assets/banner.svg" alt="The ultimate guide to multi-harness RL"></a>
 
@@ -267,7 +267,7 @@ tools, native OpenCode and Harbor, and evaluated in each.
 <sub>📂 [`content/articles/multi-harness-rl/`](./content/articles/multi-harness-rl/) · project [`05-multi-harness-rl/`](./05-multi-harness-rl/)</sub>
 
 </td>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
 
 <a href="https://huggingface.co/spaces/FineEnvs/simulation-rl-environments"><img src="./07-simulation-environments/portsim-v1/assets/banner.jpg" alt="Simulation RL Environments, part 1: PortSimEnv v1"></a>
 
@@ -281,9 +281,7 @@ Turning real-world work into RL environments. Part 1 builds PortSimEnv from the 
 <sub>📂 [`content/articles/simulation-rl-environments/`](./content/articles/simulation-rl-environments/) · project [`07-simulation-environments/`](./07-simulation-environments/portsim-v1/)</sub>
 
 </td>
-</tr>
-<tr>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
 
 <a href="https://huggingface.co/spaces/FineEnvs/multi-harness-rl-slides"><img src="./assets/content/multi-harness-rl-talk.png" alt="Training a coding agent through a harness you did not write"></a>
 
@@ -296,10 +294,6 @@ The multi-harness RL talk: one small model trained with GRPO inside four unmodif
 
 <sub>📂 [source in the Space](https://huggingface.co/spaces/FineEnvs/multi-harness-rl-slides/tree/main/source) · project [`05-multi-harness-rl/`](./05-multi-harness-rl/)</sub>
 
-</td>
-<td width="33%" valign="top">
-</td>
-<td width="33%" valign="top">
 </td>
 </tr>
 </table>
