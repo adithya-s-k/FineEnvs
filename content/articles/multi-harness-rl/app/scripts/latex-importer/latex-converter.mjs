@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, realpathSync } from 'fs';
 import { join, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import { cleanBibliography } from './bib-cleaner.mjs';
@@ -301,7 +301,12 @@ function main() {
 }
 
 // Imports expose the converter without running this CLI or handling its flags.
-const isDirectInvocation = import.meta.url === `file://${process.argv[1]}`;
+let isDirectInvocation = false;
+try {
+    isDirectInvocation = Boolean(process.argv[1]) && realpathSync(process.argv[1]) === __filename;
+} catch {
+    // Imported modules may have no entry path or a caller-owned nonexistent path.
+}
 
 // Show help if requested
 if (isDirectInvocation && (process.argv.includes('--help') || process.argv.includes('-h'))) {
