@@ -35,7 +35,7 @@ the *space*, not one blessed stack.
 ## Repository shape
 
 ```
-HuggingEnvs/
+FineEnvs/
 ├── NN-<project>/       a self-contained project
 │   ├── README.md       the project page
 │   ├── project.yaml    manifest — drives the generated README tables
@@ -65,14 +65,21 @@ NN-<name>/
 ```
 
 Pick the next free number. Register the Hub repos you own in `project.yaml`, then run
-`python3 tools/build_index.py` so the root README picks it up.
+`python3 tools/build_index.py` so the root README picks it up. A project that ships in parts can keep
+one manifest per part, one level down (`NN-<name>/<part>/project.yaml`). CI fails if a numbered
+folder has no manifest at all.
+
+The table is generated, the rest of the root README is not. In the same PR, add a short section for
+the project under **Projects** (what it trains, the headline result, links to the Space, article and
+collection), a line in **Repository layout**, and a card under **Articles & talks** if it ships an
+article.
 
 ## Adding an environment
 
 The paved path is the agent skills — they do the scaffolding and the rollout smoke test:
 
 ```bash
-npx skills add adithya-s-k/HuggingEnvs
+npx skills add adithya-s-k/FineEnvs
 # then, in your agent: "make me an env where the agent plays connect-four"
 ```
 
@@ -108,7 +115,7 @@ well, neither can a reward function — and no amount of training will surface t
 Sources live in `content/`, never as a nested git clone. Deployment goes over the Hub HTTP endpoint:
 
 ```bash
-python3 tools/deploy.py content/slides/<deck> HuggingEnvs/<space>
+python3 tools/deploy.py content/slides/<deck> FineEnvs/<space>
 ```
 
 Each item's `space.md` is its Space card — the frontmatter there decides how it deploys.
@@ -117,7 +124,7 @@ Each item's `space.md` is its Space card — the frontmatter there decides how i
 
 Build output (`node_modules/`, `dist/`, `.astro/`), slide exports (`export/` — PPTX and PDF go to the
 Hub), virtualenvs, and anything over a few MB. Large artifacts belong on
-[HuggingEnvs](https://huggingface.co/HuggingEnvs), linked from the project README.
+[FineEnvs](https://huggingface.co/FineEnvs), linked from the project README.
 
 ## License
 

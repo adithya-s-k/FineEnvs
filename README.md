@@ -56,6 +56,7 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **03** | **[GeoGuesser](./03-geoguesser/)** | Drop a VLM at a random street corner on Earth and score it on kilometres of error. | 1 | 1 | 1 | ✅ stable |
 | **04** | **[SmolDataEnvs](./04-smoldataenvs/)** | Data-analysis tasks, verified SFT traces and a single-turn GRPO tutorial on HF Jobs. | 1 | 1 | 0 | 🚧 wip |
 | **05** | **[SmolDataEnvs: multi-harness RL](./05-multi-harness-rl/)** | Train on SmolDataEnvs with SETA, native OpenCode or Harbor, using HF Jobs or Slurm. | 3 | 1 | 0 | 🚧 wip |
+| **07** | **[PortSimEnv](./07-simulation-environments/portsim-v1/)** | Re-plan a broken week of container-ship dockings at the Port of Barcelona, graded against a proven optimum. | 1 | 1 | 1 | 🚧 wip |
 <!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
@@ -131,6 +132,31 @@ straight into a trainer. A notebook takes you from one task to a trained small m
 Browse the tasks in the
 [Harbor Visualiser](https://huggingface.co/spaces/HuggingFaceH4/harbor-visualiser?dataset=FineEnvs/SmolDataEnvs-harbor-train),
 or the whole [SmolDataEnvs collection](https://huggingface.co/collections/FineEnvs/smoldataenvs).
+
+### [05 · SmolDataEnvs: multi-harness RL](./05-multi-harness-rl/) &nbsp;<sub>one model, three ways to run the tool loop</sub>
+
+**Same tasks, different harness.** Project 04 ships the tasks. This one trains on them while changing
+who runs the agent loop: TRL calling Python tools directly, native OpenCode in a sandbox, or Harbor
+rotating OpenCode, Claude Code, Codex and Mini-SWE-Agent.
+
+Three readable TRL scripts train LFM2.5-2.6B or Qwen3.5-2B on HF Jobs or Slurm, with a fixed pass@1
+evaluation in every harness. [The article](https://huggingface.co/spaces/FineEnvs/multi-harness-rl)
+walks through the experiments, and the
+[collection](https://huggingface.co/collections/FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212)
+holds the Spaces, datasets and trained models.
+
+### [07 · Simulation environments](./07-simulation-environments/portsim-v1/) &nbsp;<sub>part 1: PortSimEnv v1</sub>
+
+**Real-world work as an environment.** The agent re-plans a broken week of container-ship dockings at
+the Port of Barcelona, built from the port's real 2024 records: late ships, closed quay sections, crane
+breakdowns, gales. It has three tools, and its plan is graded once, deterministically, against the
+optimum CP-SAT proves.
+
+Six models were evaluated on the 50 eval tasks. GPT-6.1 Sol leads at 0.888, and the open models lose
+most of their score by never submitting a plan. Play an episode in the
+[Space](https://huggingface.co/spaces/FineEnvs/PortSimEnv), watch every eval rollout
+[in 3D](https://huggingface.co/spaces/FineEnvs/PortSimEnv-Eval), and read
+[the article](https://huggingface.co/spaces/FineEnvs/simulation-rl-environments).
 
 > **More coming.** Each new project is another end-to-end recipe: an environment, a training run, and
 > the artifacts on the Hub. [Proposals and contributions welcome →](./CONTRIBUTING.md)
@@ -228,8 +254,32 @@ in-process agent loops vs. an HTTP boundary, and what it takes to capture traina
 
 </td>
 <td width="33%" valign="top">
+
+<a href="https://huggingface.co/spaces/FineEnvs/multi-harness-rl"><img src="./05-multi-harness-rl/assets/banner.svg" alt="The ultimate guide to multi-harness RL"></a>
+
+#### [The Ultimate Guide to Multi-Harness RL](https://huggingface.co/spaces/FineEnvs/multi-harness-rl)
+
+![Article](https://img.shields.io/badge/-article-4F46E5) ![Live](https://img.shields.io/badge/-live%20space-FFD21E)
+
+Train open models with RL inside real agent harnesses: one set of data tasks, trained through TRL's own
+tools, native OpenCode and Harbor, and evaluated in each.
+
+<sub>📂 [`content/articles/multi-harness-rl/`](./content/articles/multi-harness-rl/) · project [`05-multi-harness-rl/`](./05-multi-harness-rl/)</sub>
+
 </td>
 <td width="33%" valign="top">
+
+<a href="https://huggingface.co/spaces/FineEnvs/simulation-rl-environments"><img src="./07-simulation-environments/portsim-v1/assets/banner.jpg" alt="Simulation RL Environments, part 1: PortSimEnv v1"></a>
+
+#### [Simulation RL Environments](https://huggingface.co/spaces/FineEnvs/simulation-rl-environments)
+
+![Article](https://img.shields.io/badge/-article-4F46E5) ![Live](https://img.shields.io/badge/-live%20space-FFD21E)
+
+Turning real-world work into RL environments. Part 1 builds PortSimEnv from the Port of Barcelona's
+2024 records and grades every plan against a proven optimum.
+
+<sub>📂 [`content/articles/simulation-rl-environments/`](./content/articles/simulation-rl-environments/) · project [`07-simulation-environments/`](./07-simulation-environments/portsim-v1/)</sub>
+
 </td>
 </tr>
 </table>
@@ -288,6 +338,11 @@ npx skills add adithya-s-k/FineEnvs
 FineEnvs/
 ├── 00-environments-101/     3 environments × 6 frameworks
 ├── 01-latex-ocr/            train a VLM against a served reward
+├── 02-watercolour/          train against an aesthetic reward
+├── 03-geoguesser/           a multi-turn game as an environment
+├── 04-smoldataenvs/         5.5K+ verified data-analysis tasks
+├── 05-multi-harness-rl/     the same tasks trained through TRL, OpenCode and Harbor
+├── 07-simulation-environments/  real-world simulations, part 1: PortSimEnv
 ├── content/
 │   ├── articles/            long-form sources (Astro → Docker Space)
 │   └── slides/              talk decks (Vite → static Space)

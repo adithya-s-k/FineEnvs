@@ -1,14 +1,19 @@
 # Project manifest. `tools/build_index.py` renders the root README table from it.
 name: berth-planning
-title: "Dock Planning"
-tagline: "Plan who docks where and when at a Port of Barcelona container quay - real 2024 calls, real crane fleets and port rules, stacked disruptions - scored against the proven CP-SAT optimum. 1,050 train / 50 eval tasks."
-order: 11
+title: "PortSimEnv"
+tagline: "Re-plan a broken week of container-ship dockings at the Port of Barcelona, graded against a proven optimum."
+order: 7
 status: wip
 
 hub:
   org: FineEnvs
-  spaces: []
-  datasets: []
+  collection: FineEnvs/simulation-rl-envs-6ac4eca150bd4b91790e2540
+  spaces:
+    - FineEnvs/PortSimEnv
+    - FineEnvs/PortSimEnv-Eval
+    - FineEnvs/simulation-rl-environments
+  datasets:
+    - FineEnvs/PortSimEnv
 
 envs:
   - name: berth_planning
@@ -18,4 +23,5 @@ envs:
     frameworks:
       openenv:
         transport: http-mcp
+        space: FineEnvs/PortSimEnv
         verified: true
