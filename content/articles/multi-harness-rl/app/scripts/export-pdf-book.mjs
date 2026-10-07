@@ -268,8 +268,8 @@ async function main() {
       console.log('📄 Loading page…');
       await page.goto(baseUrl, { waitUntil: 'load', timeout: 60_000 });
 
-      try { await page.waitForFunction(() => !!window.d3, { timeout: 8_000 }); } catch {}
-      try { await page.waitForFunction(() => !!window.Plotly, { timeout: 5_000 }); } catch {}
+      try { await page.waitForFunction(() => !!window.d3, undefined, { timeout: 8_000 }); } catch {}
+      try { await page.waitForFunction(() => !!window.Plotly, undefined, { timeout: 5_000 }); } catch {}
 
       // Derive filename from page if not provided
       if (!outFileBase) {
@@ -478,7 +478,7 @@ async function main() {
       const paginationResult = await page.waitForFunction(() => {
         const pages = document.querySelectorAll('.pagedjs_page');
         return pages && pages.length > 0;
-      }, { timeout: 120_000 }).then(async () => {
+      }, undefined, { timeout: 120_000 }).then(async () => {
         const count = await page.evaluate(() =>
           document.querySelectorAll('.pagedjs_page').length
         );
@@ -514,7 +514,7 @@ async function main() {
 
         // Paged.js may have destroyed the DOM – reload for a clean state
         await page.goto(baseUrl, { waitUntil: 'load', timeout: 60_000 });
-        try { await page.waitForFunction(() => !!window.d3, { timeout: 8_000 }); } catch {}
+        try { await page.waitForFunction(() => !!window.d3, undefined, { timeout: 8_000 }); } catch {}
         if (wait === 'full') {
           await waitForImages(page);
           await waitForD3(page);
