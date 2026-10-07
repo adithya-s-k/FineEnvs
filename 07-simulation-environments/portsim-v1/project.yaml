@@ -7,7 +7,7 @@ status: wip
 
 hub:
   org: FineEnvs
-  collection: FineEnvs/simulation-rl-envs-6ac4eca150bd4b91790e2540
+  collection: FineEnvs/simulation-rl-envs
   spaces:
     - FineEnvs/PortSimEnv
     - FineEnvs/PortSimEnv-Eval
