@@ -3,6 +3,8 @@ import { spawn } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import { resolve, dirname, basename, extname } from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
 
 async function run(command, args = [], options = {}) {
   return new Promise((resolvePromise, reject) => {
@@ -56,7 +58,7 @@ async function readMdxFile(filePath) {
 
 function extractFrontmatter(content) {
   const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n/);
-  if (!frontmatterMatch) return { frontmatter: {}, content };
+  if (!frontmatterMatch) return { frontmatter: {}, content, metadata: '' };
 
   const frontmatterText = frontmatterMatch[1];
   const contentWithoutFrontmatter = content.replace(frontmatterMatch[0], '');
@@ -112,7 +114,7 @@ function extractFrontmatter(content) {
     frontmatter[currentKey] = currentValue.trim();
   }
 
-  return { frontmatter, content: contentWithoutFrontmatter };
+  return { frontmatter, content: contentWithoutFrontmatter, metadata: frontmatterText };
 }
 
 function cleanMdxToMarkdown(content) {
@@ -274,7 +276,7 @@ async function main() {
 
   console.log('> Reading article content...');
   const articleContent = await readMdxFile(articleFile);
-  const { frontmatter, content } = extractFrontmatter(articleContent);
+  const { frontmatter, content, metadata } = extractFrontmatter(articleContent);
 
   console.log('> Processing chapters...');
   const processedContent = await processChapterImports(content, contentDir);
@@ -297,6 +299,9 @@ async function main() {
   cleanMarkdown = cleanMarkdown.replace(/^---\n([\s\S]*?)\n---$/gm, '');
 
   await fs.writeFile(tempMdFile, cleanMarkdown);
+  const metadataDir = await fs.mkdtemp(resolve(tmpdir(), 'article-latex-metadata-'));
+  const metadataFile = resolve(metadataDir, 'metadata.yaml');
+  await fs.writeFile(metadataFile, metadata);
 
 
   console.log('> Converting to LaTeX with Pandoc...');
@@ -312,6 +317,8 @@ async function main() {
     '--from=markdown-yaml_metadata_block', // Explicitly exclude YAML metadata parsing
     '--to=latex',
     '--standalone',
+    '--metadata-file', metadataFile,
+    '--lua-filter', resolve(dirname(fileURLToPath(import.meta.url)), 'latex-metadata.lua'),
     '--toc',
     '--number-sections',
     '--highlight-style=tango',
@@ -343,8 +350,9 @@ async function main() {
 
   } catch (error) {
     console.error('❌ Pandoc conversion failed:', error.message);
-    process.exit(1);
+    process.exitCode = 1;
   } finally {
+    await fs.rm(metadataDir, { recursive: true, force: true });
     // Clean up temporary file
     try {
       await fs.unlink(tempMdFile);
