@@ -49,7 +49,7 @@ latex-importer/
 ### 🎨 **Automatic Styling**  
 - **Highlights**: `\highlight{text}` → `<span class="highlight">text</span>`
 - **Auto cleanup**: Removal of numbering `(1)`, `(2)`, etc.
-- **Astro components**: Images → `Figure` with automatic imports
+- **Astro components**: Images → `Image` with automatic imports
 
 ### 🔧 **Robust Pipeline**
 - **LaTeX preprocessor**: Reference cleanup before Pandoc
@@ -83,7 +83,7 @@ title: "Your Article Title"
 description: "Generated from LaTeX"
 ---
 
-import Figure from '../components/Figure.astro';
+import Image from '../components/Image.astro';
 import figure1 from '../assets/image/figure1.png';
 
 ## Section with invisible anchor
@@ -96,7 +96,7 @@ Reference to an interactive [equation](#equation-name).
 Equation with KaTeX ID:
 $$\htmlId{equation-name}{E = mc^2}$$
 
-<Figure src={figure1} alt="Description" />
+<Image src={figure1} alt="Description" />
 ```
 
 ## ⚙️ Required Astro Configuration
@@ -141,7 +141,7 @@ export default defineConfig({
    - Code snippet injection
 
 4. **MDX Conversion** (`mdx-converter.mjs`)
-   - Images transformation → `Figure`
+   - Images transformation → `Image`
    - HTML span escaping correction
    - Automatic imports generation
    - MDX frontmatter
