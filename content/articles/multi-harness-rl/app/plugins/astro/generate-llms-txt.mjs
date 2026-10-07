@@ -69,7 +69,38 @@ function parseAuthors(raw) {
 }
 
 function mdxToMarkdown(content) {
-  let out = content;
+  // Fenced examples are already Markdown. Hide them while stripping MDX/HTML so
+  // commands such as `vllm serve <model>` retain their literal arguments.
+  let prefix = "LLMS_CODE_BLOCK_";
+  while (content.includes(prefix)) prefix += "_";
+  const blocks = [];
+  let fence = null;
+  let block = "";
+  let out = "";
+  for (const line of content.split(/(?<=\n)/)) {
+    if (fence) {
+      block += line;
+      const close = line.match(/^ {0,3}(`+|~+)[ \t]*(?:\r?\n)?$/);
+      if (close && close[1][0] === fence[0] && close[1].length >= fence.length) {
+        out += `${prefix}${blocks.length}END\n`;
+        blocks.push(block);
+        block = "";
+        fence = null;
+      }
+    } else {
+      const open = line.match(/^ {0,3}(`{3,}|~{3,})/);
+      if (open) {
+        fence = open[1];
+        block = line;
+      } else {
+        out += line;
+      }
+    }
+  }
+  if (fence) {
+    out += `${prefix}${blocks.length}END`;
+    blocks.push(block);
+  }
   out = out.replace(/^import .+?;?\s*$/gm, "");
   out = out.replace(/<[A-Z][a-zA-Z0-9]*\s*\/>/g, "");
   out = out.replace(
@@ -117,6 +148,9 @@ function mdxToMarkdown(content) {
   // Collapse multiple spaces and blank lines
   out = out.replace(/ {2,}/g, " ");
   out = out.replace(/\n{3,}/g, "\n\n");
+  for (const [index, source] of blocks.entries()) {
+    out = out.replace(`${prefix}${index}END`, () => source);
+  }
   return out.trim();
 }
 
