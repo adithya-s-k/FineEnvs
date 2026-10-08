@@ -1,5 +1,5 @@
 ---
-title: HF RL Explorer
+title: RL Environments on Hugging Face
 emoji: 🤗
 colorFrom: yellow
 colorTo: gray
@@ -7,7 +7,8 @@ sdk: docker
 app_port: 7860
 pinned: false
 license: apache-2.0
-short_description: Browse every RL environment on the Hub and run agents on it
+short_description: Explore RL environments, browse tasks and run agent rollouts
+thumbnail: https://huggingface.co/spaces/FineEnvs/RL-Explorer/resolve/main/web/social/rl-explorer.png
 hf_oauth: true
 hf_oauth_expiration_minutes: 1440
 hf_oauth_scopes:
@@ -29,10 +30,17 @@ tags:
   - mcp
 ---
 
-# HF RL Explorer
+# RL environments on the Hugging Face Hub
 
-Every reinforcement-learning environment on the Hugging Face Hub, in one place: what each task asks, how it is
-graded, what it runs in, and an agent run on it, graded, that you can watch step by step.
+**HF RL Explorer** helps you discover reinforcement learning environments on the Hugging Face Hub.
+Explore public datasets and checked environment Spaces across OpenEnv, Harbor, MiMo, NeMo Gym and Verifiers.
+Inspect individual tasks, tools and reward functions, then run supported agent rollouts and compare results.
+
+[Open the RL environment explorer](https://fineenvs-rl-explorer.hf.space/) ·
+[Explore FineEnvs environments](https://fineenvs-rl-explorer.hf.space/?owner=FineEnvs) ·
+[Public task sitemap](https://fineenvs-rl-explorer.hf.space/sitemap.xml)
+
+![HF RL Explorer — RL environments on the Hugging Face Hub](web/social/rl-explorer.png)
 
 - **Harbor datasets**: every task folder indexed (instruction, tests, image, grader, multi-step tasks, resources);
   run one with OpenCode, Terminus 2, mini-SWE-agent or Pi on an HF Sandbox, graded by the task's own tests.
