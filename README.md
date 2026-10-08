@@ -31,12 +31,6 @@ thousands of concurrent sessions. Real code you can run, not diagrams of code so
 Every environment here works. Every rollout has been executed. Every training curve came from a job you
 can launch yourself, in one command, without a GPU of your own.
 
-<div align="center">
-
-**4** environments&nbsp; · &nbsp;**6** frameworks&nbsp; · &nbsp;**19** implementations&nbsp; · &nbsp;**10** deployed Spaces&nbsp; · &nbsp;**5** agent skills
-
-</div>
-
 **Where things live:** source, recipes and notebooks in this repo · environments, datasets, models and
 demos on **[🤗 huggingface.co/FineEnvs](https://huggingface.co/FineEnvs)**.
 
