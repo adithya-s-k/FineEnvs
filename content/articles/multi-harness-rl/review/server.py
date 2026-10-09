@@ -29,7 +29,7 @@ import secrets
 import threading
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -65,7 +65,7 @@ class Store:
 
     def __init__(self, root: Path) -> None:
         self.root = root / "threads"
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.threads: dict[str, dict[str, Any]] = {}
         self.error = ""
 
@@ -101,26 +101,39 @@ class Store:
             self.threads = threads
 
     def save(self, thread: dict[str, Any]) -> None:
-        if not self.ready():
-            raise HTTPException(503, self.error)
-        # Write to a temporary file and rename, so a crash never leaves half a thread on disk.
-        path = self.root / f"{thread['id']}.json"
-        body = json.dumps(thread, ensure_ascii=False, indent=1)
-        tmp = path.with_suffix(".json.tmp")
-        try:
-            tmp.write_text(body)
-            os.replace(tmp, path)
-        except OSError:
-            # A mounted bucket may not support rename; write the file in place instead.
-            tmp.unlink(missing_ok=True)
-            path.write_text(body)
         with self.lock:
+            if not self.ready():
+                raise HTTPException(503, self.error)
+            # Serialize writers as well as the in-memory update: the temporary
+            # filename and readiness probe are shared by concurrent requests.
+            path = self.root / f"{thread['id']}.json"
+            body = json.dumps(thread, ensure_ascii=False, indent=1)
+            tmp = path.with_suffix(".json.tmp")
+            try:
+                tmp.write_text(body)
+                os.replace(tmp, path)
+            except OSError:
+                # A mounted bucket may not support rename; write the file in place instead.
+                tmp.unlink(missing_ok=True)
+                path.write_text(body)
             self.threads[thread["id"]] = thread
 
     def delete(self, tid: str) -> None:
-        (self.root / f"{tid}.json").unlink(missing_ok=True)
         with self.lock:
+            (self.root / f"{tid}.json").unlink(missing_ok=True)
             self.threads.pop(tid, None)
+
+    def update(self, tid: str, change: Callable[[dict[str, Any]], None],
+               delete_empty: bool = False) -> dict[str, Any]:
+        """Read, change and persist a thread as one transaction within this server."""
+        with self.lock:
+            thread = self.get(tid)
+            change(thread)
+            if delete_empty and not thread["messages"]:
+                self.delete(tid)
+                return {"deleted": tid}
+            self.save(thread)
+            return thread
 
     def all(self) -> list[dict[str, Any]]:
         with self.lock:
@@ -273,10 +286,11 @@ async def reply(tid: str, request: Request) -> dict[str, Any]:
     user = _require_reviewer(request)
     _guard_write(request, user)
     payload = await request.json()
-    thread = store.get(tid)
-    thread["messages"].append({"id": secrets.token_hex(4), "author": user, "body": _clean(payload.get("body"), MAX_BODY), "created_at": _now()})
-    await run_in_threadpool(store.save, thread)
-    return thread
+
+    def change(thread: dict[str, Any]) -> None:
+        thread["messages"].append({"id": secrets.token_hex(4), "author": user, "body": _clean(payload.get("body"), MAX_BODY), "created_at": _now()})
+
+    return await run_in_threadpool(store.update, tid, change)
 
 
 @app.patch("/api/review/threads/{tid}")
@@ -284,24 +298,25 @@ async def update_thread(tid: str, request: Request) -> dict[str, Any]:
     user = _require_reviewer(request)
     _guard_write(request, user)
     payload = await request.json()
-    thread = store.get(tid)
-    if payload.get("status") in ("open", "resolved"):
-        thread["status"] = payload["status"]
-        thread["resolved_by"] = user["username"] if payload["status"] == "resolved" else None
-        if payload["status"] == "open":
-            thread.pop("decision", None)
-        thread["updated_at"] = _now()
-    if payload.get("decision") in ("accepted", "rejected"):
-        if thread.get("kind") != "suggestion":
-            raise HTTPException(400, "Only suggestions are accepted or rejected.")
-        if user["username"].lower() != OWNER.lower():
-            raise HTTPException(403, "Only the article's owner can accept or reject suggestions.")
-        thread["decision"] = payload["decision"]
-        thread["status"] = "resolved"
-        thread["resolved_by"] = user["username"]
-        thread["updated_at"] = _now()
-    await run_in_threadpool(store.save, thread)
-    return thread
+
+    def change(thread: dict[str, Any]) -> None:
+        if payload.get("status") in ("open", "resolved"):
+            thread["status"] = payload["status"]
+            thread["resolved_by"] = user["username"] if payload["status"] == "resolved" else None
+            if payload["status"] == "open":
+                thread.pop("decision", None)
+            thread["updated_at"] = _now()
+        if payload.get("decision") in ("accepted", "rejected"):
+            if thread.get("kind") != "suggestion":
+                raise HTTPException(400, "Only suggestions are accepted or rejected.")
+            if user["username"].lower() != OWNER.lower():
+                raise HTTPException(403, "Only the article's owner can accept or reject suggestions.")
+            thread["decision"] = payload["decision"]
+            thread["status"] = "resolved"
+            thread["resolved_by"] = user["username"]
+            thread["updated_at"] = _now()
+
+    return await run_in_threadpool(store.update, tid, change)
 
 
 REACTIONS = {"👍", "❤️", "😄", "🎉", "👀", "➕", "🔥"}
@@ -316,16 +331,17 @@ async def edit_message(tid: str, mid: str, request: Request) -> dict[str, Any]:
     user = _require_reviewer(request)
     _guard_write(request, user)
     payload = await request.json()
-    thread = store.get(tid)
-    msg = next((m for m in thread["messages"] if m["id"] == mid), None)
-    if msg is None:
-        raise HTTPException(404, "Message not found.")
-    if msg["author"]["username"] != user["username"]:
-        raise HTTPException(403, "You can only edit your own comments.")
-    msg["body"] = _clean(payload.get("body"), MAX_BODY)
-    msg["edited_at"] = _now()
-    await run_in_threadpool(store.save, thread)
-    return thread
+
+    def change(thread: dict[str, Any]) -> None:
+        msg = next((m for m in thread["messages"] if m["id"] == mid), None)
+        if msg is None:
+            raise HTTPException(404, "Message not found.")
+        if msg["author"]["username"] != user["username"]:
+            raise HTTPException(403, "You can only edit your own comments.")
+        msg["body"] = _clean(payload.get("body"), MAX_BODY)
+        msg["edited_at"] = _now()
+
+    return await run_in_threadpool(store.update, tid, change)
 
 
 @app.post("/api/review/threads/{tid}/messages/{mid}/reactions")
@@ -336,37 +352,36 @@ async def react(tid: str, mid: str, request: Request) -> dict[str, Any]:
     emoji = str((await request.json()).get("emoji") or "")
     if emoji not in REACTIONS:
         raise HTTPException(400, "Unknown reaction.")
-    thread = store.get(tid)
-    msg = next((m for m in thread["messages"] if m["id"] == mid), None)
-    if msg is None:
-        raise HTTPException(404, "Message not found.")
-    who = msg.setdefault("reactions", {}).setdefault(emoji, [])
-    if user["username"] in who:
-        who.remove(user["username"])
-    else:
-        who.append(user["username"])
-    if not who:
-        msg["reactions"].pop(emoji)
-    await run_in_threadpool(store.save, thread)
-    return thread
+
+    def change(thread: dict[str, Any]) -> None:
+        msg = next((m for m in thread["messages"] if m["id"] == mid), None)
+        if msg is None:
+            raise HTTPException(404, "Message not found.")
+        who = msg.setdefault("reactions", {}).setdefault(emoji, [])
+        if user["username"] in who:
+            who.remove(user["username"])
+        else:
+            who.append(user["username"])
+        if not who:
+            msg["reactions"].pop(emoji)
+
+    return await run_in_threadpool(store.update, tid, change)
 
 
 @app.delete("/api/review/threads/{tid}/messages/{mid}")
 async def delete_message(tid: str, mid: str, request: Request) -> dict[str, Any]:
     user = _require_reviewer(request)
     _guard_write(request, user)
-    thread = store.get(tid)
-    msg = next((m for m in thread["messages"] if m["id"] == mid), None)
-    if msg is None:
-        raise HTTPException(404, "Message not found.")
-    if not _own_or_owner(msg, user):
-        raise HTTPException(403, "You can only delete your own comments.")
-    thread["messages"] = [m for m in thread["messages"] if m["id"] != mid]
-    if not thread["messages"]:
-        await run_in_threadpool(store.delete, tid)
-        return {"deleted": tid}
-    await run_in_threadpool(store.save, thread)
-    return thread
+
+    def change(thread: dict[str, Any]) -> None:
+        msg = next((m for m in thread["messages"] if m["id"] == mid), None)
+        if msg is None:
+            raise HTTPException(404, "Message not found.")
+        if not _own_or_owner(msg, user):
+            raise HTTPException(403, "You can only delete your own comments.")
+        thread["messages"] = [m for m in thread["messages"] if m["id"] != mid]
+
+    return await run_in_threadpool(store.update, tid, change, True)
 
 
 # ---------------------------------------------------------------- owner: export and import
