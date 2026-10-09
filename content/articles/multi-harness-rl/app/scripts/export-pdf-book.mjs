@@ -243,7 +243,7 @@ async function main() {
 
   // -- Start preview server --------------------------------------------------
   console.log('🚀 Starting preview server…');
-  const preview = spawn('npm', ['run', 'preview'], { cwd, stdio: 'inherit', detached: true });
+  const preview = spawn('npm', ['exec', '--', 'astro', 'preview', '--port', String(port), '--host'], { cwd, stdio: 'inherit', detached: true });
   const previewExit = new Promise(r => preview.on('close', (code, signal) => r({ code, signal })));
 
   try {
