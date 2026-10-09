@@ -2,7 +2,7 @@
 
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { copyFileSync } from 'fs';
+import { copyFileSync, mkdirSync } from 'fs';
 import { convertLatexToMarkdown } from './latex-converter.mjs';
 import { convertToMdx } from './mdx-converter.mjs';
 import { cleanBibliography } from './bib-cleaner.mjs';
@@ -92,6 +92,7 @@ function main() {
             console.log('📚 Bibliography cleaning mode');
             const bibInput = config.input.replace('.tex', '.bib');
             const bibOutput = join(config.output, 'main.bib');
+            mkdirSync(config.output, { recursive: true });
 
             cleanBibliography(bibInput, bibOutput);
             console.log('🎉 Bibliography cleaning completed!');
