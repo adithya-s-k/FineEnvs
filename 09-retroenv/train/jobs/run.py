@@ -221,7 +221,8 @@ def main():
             command += ["--task-ids", args.task_ids] if args.task_ids else []
             command += ["--attempts", str(args.attempts)] if args.attempts > 1 else []
             command += ["--temperature", str(args.temperature)] if args.temperature is not None else []
-            command += ["--thinking", "default"] if args.thinking else []
+            # Thinking turns get twice the board's 16k tokens, so a long one is measured, not cut off.
+            command += ["--thinking", "default", "--max-tokens", "32768"] if args.thinking else []
             run(command, "eval")
     finally:
         for process in reversed(children):

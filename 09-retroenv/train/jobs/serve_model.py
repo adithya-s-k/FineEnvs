@@ -31,13 +31,15 @@ def main():
         from transformers import AutoTokenizer
 
         # The stock template thinks unless told not to; the reasoning parser returns the
-        # thinking as its own field, which the evaluator records but never sends back.
+        # thinking as its own field, which the evaluator records but never sends back. Sampling
+        # follows the model's generation_config.json (top_k 20, top_p 0.95): long reasoning
+        # sampled without truncation drifts. A turn may think at length, so sequences get room.
         tokenizer = AutoTokenizer.from_pretrained(args.model, revision=MODEL_REVISIONS[args.model])
         template.write_text(tokenizer.chat_template)
-        chat_kwargs = '{"enable_thinking":true}'
+        chat_kwargs, generation, max_len = '{"enable_thinking":true}', "auto", "131072"
     else:
         template.write_text(tokenizer_for(args.model).chat_template)
-        chat_kwargs = '{"enable_thinking":false,"preserve_thinking":true}'
+        chat_kwargs, generation, max_len = '{"enable_thinking":false,"preserve_thinking":true}', "vllm", "65536"
     # The vllm executable of this environment; the job never activates it, so it is not on PATH.
     command = [
         str(Path(sys.executable).parent / "vllm"), "serve", args.checkpoint or args.model,
@@ -47,14 +49,14 @@ def main():
         "--tensor-parallel-size", "1",
         "--data-parallel-size", str(args.data_parallel_size),
         "--dtype", "bfloat16",
-        "--max-model-len", "65536",
+        "--max-model-len", max_len,
         "--gpu-memory-utilization", "0.85",
         # Evaluation parses tool calls server-side, as the board's providers do.
         "--enable-auto-tool-choice",
         "--tool-call-parser", "qwen3_xml",
         "--chat-template", str(template),
         "--default-chat-template-kwargs", chat_kwargs,
-        "--generation-config", "vllm",
+        "--generation-config", generation,
         # Qwen3.5-architecture checkpoints are multimodal; this agent sends text only.
         "--limit-mm-per-prompt", '{"image":0,"video":0}',
         "--gdn-prefill-backend", "triton",
