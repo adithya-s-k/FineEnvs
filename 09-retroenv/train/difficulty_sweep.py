@@ -127,6 +127,10 @@ def report(args):
     by_task = defaultdict(list)
     for e in episodes:
         by_task[e["task_id"]].append(e)
+    # A task still running has fewer attempts, and pass@k needs all k: report finished tasks only.
+    pending = sum(len(runs_of_task) < identity["attempts"] for runs_of_task in by_task.values())
+    by_task = {t: r for t, r in by_task.items() if len(r) >= identity["attempts"]}
+    episodes = [e for e in episodes if e["task_id"] in by_task]
     labels = []
     for task_id, runs_of_task in sorted(by_task.items()):
         n, task = len(runs_of_task), sample.get(task_id, {})
@@ -220,7 +224,8 @@ def report(args):
     text = "\n\n".join(
         [
             f"# {NAME}: {identity['label']}",
-            f"{len(labels)} tasks, {len(episodes)} graded episodes; {identity['attempts']} attempts per task at "
+            f"{len(labels)} finished tasks{f' ({pending} still running, left out)' if pending else ''}, "
+            f"{len(episodes)} graded episodes; {identity['attempts']} attempts per task at "
             f"temperature {sampling.get('temperature')}, thinking {sampling.get('thinking')}, "
             f"{identity['max_turns']} turns, repair {'on' if identity['repair'] else 'off'}. "
             f"Labels count solves {view}. Learnable: solved in some attempts but not all.",
