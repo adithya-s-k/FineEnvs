@@ -18,11 +18,26 @@ def main():
     parser.add_argument("--eval", action="store_true", help="Serve for evaluation: no weight updates")
     parser.add_argument("--data-parallel-size", type=int, default=1, help="Replicas, one per visible GPU")
     parser.add_argument("--trainer", choices=["sync", "async"], default="sync", help="Which trainer syncs weights")
+    parser.add_argument(
+        "--thinking", action="store_true", help="Evaluation only: the model's own template, thinking on"
+    )
     args = parser.parse_args()
+    if args.thinking and not args.eval:
+        parser.error("--thinking is for evaluation; training runs in non-thinking mode")
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     template = output / "chat_template.jinja"
-    template.write_text(tokenizer_for(args.model).chat_template)
+    if args.thinking:
+        from transformers import AutoTokenizer
+
+        # The stock template thinks unless told not to; the reasoning parser returns the
+        # thinking as its own field, which the evaluator records but never sends back.
+        tokenizer = AutoTokenizer.from_pretrained(args.model, revision=MODEL_REVISIONS[args.model])
+        template.write_text(tokenizer.chat_template)
+        chat_kwargs = '{"enable_thinking":true}'
+    else:
+        template.write_text(tokenizer_for(args.model).chat_template)
+        chat_kwargs = '{"enable_thinking":false,"preserve_thinking":true}'
     # The vllm executable of this environment; the job never activates it, so it is not on PATH.
     command = [
         str(Path(sys.executable).parent / "vllm"), "serve", args.checkpoint or args.model,
@@ -38,12 +53,14 @@ def main():
         "--enable-auto-tool-choice",
         "--tool-call-parser", "qwen3_xml",
         "--chat-template", str(template),
-        "--default-chat-template-kwargs", '{"enable_thinking":false,"preserve_thinking":true}',
+        "--default-chat-template-kwargs", chat_kwargs,
         "--generation-config", "vllm",
         # Qwen3.5-architecture checkpoints are multimodal; this agent sends text only.
         "--limit-mm-per-prompt", '{"image":0,"video":0}',
         "--gdn-prefill-backend", "triton",
     ]  # fmt: skip
+    if args.thinking:
+        command += ["--reasoning-parser", "qwen3"]
     if args.checkpoint:
         command += ["--safetensors-load-strategy", "eager"]  # read sequentially, not memory-mapped
     else:

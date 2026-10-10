@@ -74,6 +74,7 @@ def main(argv=None):
     parser.add_argument("--task-ids", help="For eval: a task-id file in this project, e.g. train/sweeps/<name>-0.txt")
     parser.add_argument("--attempts", type=int, default=1, help="For eval: episodes per task")
     parser.add_argument("--temperature", type=float, help="For eval: sampling temperature (default: the board's 0)")
+    parser.add_argument("--thinking", action="store_true", help="For eval: thinking on (the board runs it off)")
     parser.add_argument("--concurrency", type=int, default=16)
     parser.add_argument("--label")
     parser.add_argument("--vllm-gpus", type=int, help="For train/smoke: GPUs serving vLLM (default: half)")
@@ -129,6 +130,7 @@ def main(argv=None):
             command += ["--task-ids", args.task_ids]  # the job runs from its copy of the project
         command += ["--attempts", str(args.attempts)] if args.attempts > 1 else []
         command += ["--temperature", str(args.temperature)] if args.temperature is not None else []
+        command += ["--thinking"] if args.thinking else []
     if args.action in ("smoke", "eval") and args.tasks:
         command += ["--tasks", str(args.tasks)]
     if args.action in ("smoke", "train"):

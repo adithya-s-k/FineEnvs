@@ -41,6 +41,7 @@ def main():
     parser.add_argument("--task-ids", help="For eval: a file of task ids in --set's split, one per line")
     parser.add_argument("--attempts", type=int, default=1, help="For eval: episodes per task")
     parser.add_argument("--temperature", type=float, help="For eval: sampling temperature (default: the board's 0)")
+    parser.add_argument("--thinking", action="store_true", help="For eval: thinking on (the board runs it off)")
     parser.add_argument("--concurrency", type=int, default=16, help="For eval: episodes at once")
     parser.add_argument("--label", help="For eval: the name on the board")
     parser.add_argument("--vllm-gpus", type=int, help="For train: GPUs serving vLLM (default: half)")
@@ -164,6 +165,7 @@ def main():
         command += ["--port", str(engine_port), "--data-parallel-size", str(len(vllm_devices))]
         if args.action == "eval":
             command += ["--eval"] + (["--checkpoint", str(weights)] if weights else [])
+            command += ["--thinking"] if args.thinking else []
         else:
             command += ["--trainer", args.mode]
         spawn(command, "vllm", {"CUDA_VISIBLE_DEVICES": ",".join(vllm_devices)})
@@ -219,6 +221,7 @@ def main():
             command += ["--task-ids", args.task_ids] if args.task_ids else []
             command += ["--attempts", str(args.attempts)] if args.attempts > 1 else []
             command += ["--temperature", str(args.temperature)] if args.temperature is not None else []
+            command += ["--thinking", "default"] if args.thinking else []
             run(command, "eval")
     finally:
         for process in reversed(children):

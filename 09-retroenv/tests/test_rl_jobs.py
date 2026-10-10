@@ -162,6 +162,9 @@ def test_a_difficulty_sweep_samples_several_attempts_of_project_task_ids(monkeyp
     assert ids in {path.relative_to(ROOT).as_posix() for path in _launcher().source_files()}
     plain = _plan(monkeypatch, capsys, "eval", "--name", "e", "--bucket", "o/b")["command"]
     assert "--attempts" not in plain and "--temperature" not in plain  # the board's protocol stays the default
+    assert "--thinking" not in plain
+    thinking = _plan(monkeypatch, capsys, "eval", "--name", "t", "--bucket", "o/b", "--thinking")["command"]
+    assert thinking[-1] == "--thinking"
     with pytest.raises(SystemExit):  # the job only sees project files
         _plan(monkeypatch, capsys, "eval", "--name", "e", "--bucket", "o/b", "--task-ids", str(tmp_path / "x.txt"))
 
