@@ -1,0 +1,14 @@
+[
+  {
+    "schedule": "dock-24B-w07x1-busy-0",
+    "weather": "e00"
+  },
+  {
+    "schedule": "dock-24B-w07x1-busy-0",
+    "weather": "e01"
+  },
+  {
+    "schedule": "dock-36A-w37x1-standard-0",
+    "weather": "e00"
+  }
+]

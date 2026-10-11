@@ -1,0 +1,102 @@
+{
+  "name": "dock-v1-marine",
+  "split": "eval",
+  "tasks": 18,
+  "tiers": {
+    "busy": 9,
+    "standard": 9
+  },
+  "sha256": "90ec3aa8726b755c36ae98170b83a57a4db16ab5746e5b5b4e1ea44da4918187",
+  "weeks": [
+    5,
+    6,
+    7,
+    10,
+    15,
+    16,
+    17,
+    35,
+    37
+  ],
+  "source": "PortSimEnv's dock-v1-eval one-week weeks, with the port's other 2024 traffic from RAW; both from the Port de Barcelona open data portal (CC BY-SA 4.0)",
+  "quays": {
+    "24B": 6,
+    "36A": 12
+  },
+  "raw": {
+    "repository": "https://github.com/alberto-santini/berth-allocation-problems",
+    "file": "generator/raw/Barcelona_2024.csv",
+    "commit": "8e726a47625da99eec72f911b16a0b76a78a8d88",
+    "sha256": "123012c078e66a5978d55bcedd4203ef85c4282ceefc0e3d6b01ebdc94207d94",
+    "licence": "CC BY-SA 4.0"
+  },
+  "marine": {
+    "pilot": {
+      "value": "every berthing and departure of a ship of 45 m or more",
+      "basis": "Port of Barcelona, maritime operations FAQ, item 15 (https://contentv5.portdebarcelona.cat/cntmng/gd/d/workspace/SpacesStore/0f925a59-a5c8-4c7f-9b44-28c80f50f88a/FAQ_ATRACS_es.pdf): ships over 45 m and 500 GT take a pilot. RAW has no gross tonnage, so applying the length alone is an assumption."
+    },
+    "service": {
+      "value": "1 hour, in the hour the ship berths or leaves",
+      "basis": "The pilotage service specification, BOE-A-2020-15568 (https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-15568), annex III, sizes the service on a mean of one hour per job. Counting it in the berthing and leaving hours, with the tugs for the same hour, is an assumption."
+    },
+    "pilots": {
+      "value": 7,
+      "basis": "Assumption, calibrated: the smallest pool the port's 2024 traffic exceeds in under 1% of hours (see calibration). Published: at least 18 pilots and never fewer than 3 on duty (BOE-A-2020-15568, prescription 16, https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-15568)."
+    },
+    "tugs": {
+      "value": 8,
+      "basis": "The port has \"8 or more\" tugs (InfoPuertos, https://infopuertos.com/la-fuerza-que-mueve-los-puertos-espanoles/); each towage provider must have at least 5 (BOE-A-2015-10895, prescription 14, https://www.boe.es/diario_boe/txt.php?id=BOE-A-2015-10895). That all 8 are on duty at once is an assumption."
+    },
+    "tugs_by_length": {
+      "value": {
+        "under 120 m": 0,
+        "under 200 m": 1,
+        "under 300 m": 2,
+        "300 m or more": 3,
+        "ferries, cruise ships and yachts": 0
+      },
+      "basis": "Assumption: the port publishes no table; towage is on request and the master decides with the pilot (BOE-A-2015-10895, prescription 3, https://www.boe.es/diario_boe/txt.php?id=BOE-A-2015-10895). The nearest public matrix is Houston Pilots' (https://www.houston-pilots.com/media/bmxni4u0/tug-matrix-july-2022.pdf)."
+    },
+    "wind": {
+      "value": "one more tug per movement inside an announced window of wind above 25 kn, except Ro-Ro ships and ferries under 200 m and yachts",
+      "basis": "The port's traffic ordinance, BOE-A-2023-6719 (https://www.boe.es/diario_boe/txt.php?id=BOE-A-2023-6719), 4.1.2.2: at least one tug for merchant ships above 25 kn, and for Ro/Ro and Ro/Pax ships under 200 m from 30 kn. PortSimEnv applies the 25 kn windows only, so Ro-Ro ships and ferries under 200 m take no wind tug in the 30 kn hours either, hours in which none of our ships may move. That, the extra tug for ships that already take tugs, ferries as Ro/Pax, RAW's car carriers as merchant ships other than Ro/Ro, and yachts as non-merchant ships are assumptions."
+    },
+    "gales": {
+      "value": "the gales' no-movement windows hold our ships only; the other traffic keeps its 2024 hours",
+      "basis": "BOE-A-2023-6719, 4.1.2.1 (https://www.boe.es/diario_boe/txt.php?id=BOE-A-2023-6719): the 25 and 30 kn thresholds start a review with the pilots, which PortSimEnv simplifies to no-movement windows. The gales are PortSimEnv's, not 2024's weather, so leaving the other traffic where it sailed is an assumption."
+    },
+    "other_traffic": {
+      "value": "every 2024 call in RAW of a ship of 45 m or more that doesn't stop at the task's quay: a movement each time it berths, and one when it leaves a berth for the anchorage (90A) or the sea, so a shift between berths counts once; plus the departures of the ships alongside at hour 0, at their RAW length",
+      "basis": "RAW. Its ETA and ETD are berthing and leaving times for container calls (PortSimEnv's data/barcelona/SOURCE.md); for other ship types that, and 90A as the anchorage rather than a berth, are assumptions. RAW lists a stop served by two terminal operators once per operator; it counts once. Every call that stops at the task's quay is left out over all 264 hours, with its stops at other berths, since the quay holds only the week's own ships; leaving out the quay's other calls, 10 to 39 movements a week, most of them the next week's after hour 168, is an assumption."
+    },
+    "hours": {
+      "value": 264,
+      "basis": "The other traffic is counted from hour 0 to hour 264 (11 days), past every ship's planned departure; after it every pilot and tug is free."
+    },
+    "tug_outage": {
+      "value": {
+        "tugs": 2,
+        "hours": 24,
+        "notice_hours": 24
+      },
+      "basis": "A tug may leave service for repairs or a call-away (BOE-A-2015-10895, prescription 2, https://www.boe.es/diario_boe/txt.php?id=BOE-A-2015-10895), and a provider may be one tug short for up to 240 hours a year (annex 1). Its size, length and timing are assumptions."
+    },
+    "pilot_shortage": {
+      "value": {
+        "pilots": 2,
+        "hours": 12,
+        "notice_hours": 24
+      },
+      "basis": "Assumption."
+    }
+  },
+  "calibration": {
+    "hours": 8784,
+    "movements": 17963,
+    "over_pool_percent": {
+      "pilots": 0.25,
+      "tugs": 0.01
+    }
+  },
+  "note": "dock-v1-eval's one-week weeks with the port's pilots and tugs: rules.marine holds the pools and the other traffic's movements as [hour, type, length_m]; a tug outage and a pilot shortage follow the week's disruptions and notices, and each gale notice says that wind takes one more tug; the reference is the hindsight optimum under those rules, proven optimal by CP-SAT. The task ids are dock-v1-eval's, so never load the two packs together."
+}
