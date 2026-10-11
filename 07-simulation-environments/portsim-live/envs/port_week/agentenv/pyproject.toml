@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "port-week-agentenv"
+version = "0.1.0"
+description = "AgentEnv environments for a week at a Port of Barcelona quay played live in watches: portsim-live, portsim-marine and portsim-wind, their task steps and a rollout"
+requires-python = ">=3.11.4"
+# fastmcp, mcp and pydantic are pinned exactly: the recorded tool outputs embed their error text.
+dependencies = [
+    "port-week-core",
+    "berth-core",
+    "agentenv-framework==0.9.1308",
+    "agentenv-framework-protocol==0.1.323",
+    "fastmcp==3.4.8",
+    "mcp==1.30.0",
+    "pydantic==2.13.5",
+    "httpx>=0.28",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<10",
+    "anyio>=4.5",
+    "uvicorn>=0.30",
+    "starlette>=0.40",
+    "berth-core[solve]",
+]
+
+[tool.uv.sources]
+port-week-core = { path = "../core", editable = true }
+berth-core = { path = "../../../../portsim-v1/envs/berth_planning/core", editable = true }
+
+[tool.setuptools.packages.find]
+include = ["port_week_agentenv*"]
+
+[tool.pytest.ini_options]
+markers = ["network: downloads data from the internet"]
+addopts = "-m 'not network'"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "I"]

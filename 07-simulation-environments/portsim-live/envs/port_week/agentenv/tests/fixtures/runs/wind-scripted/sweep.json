@@ -1,0 +1,14 @@
+{
+  "name": "wind-scripted",
+  "models": [
+    "scripted/blind",
+    "scripted/rolling"
+  ],
+  "tasks": [
+    "dock-24B-w07x1-busy-0-e00"
+  ],
+  "k": 1,
+  "episode_cap_usd": 5.0,
+  "live": true,
+  "wind": true
+}

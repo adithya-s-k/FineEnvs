@@ -1,0 +1,24 @@
+{
+  "name": "live-gpt",
+  "models": [
+    "openai/gpt-6.1-sol"
+  ],
+  "tasks": [
+    "dock-24B-w06x1-busy-0",
+    "dock-24B-w16x1-busy-0",
+    "dock-24B-w35x1-busy-0",
+    "dock-36A-w05x1-busy-0",
+    "dock-36A-w06x1-busy-0",
+    "dock-36A-w17x1-busy-0",
+    "dock-36A-w37x1-busy-0",
+    "dock-24B-w06x1-standard-0",
+    "dock-24B-w37x1-standard-0",
+    "dock-36A-w06x1-standard-0",
+    "dock-36A-w10x1-standard-0",
+    "dock-36A-w15x1-standard-0",
+    "dock-36A-w37x1-standard-0"
+  ],
+  "k": 1,
+  "episode_cap_usd": 1.5,
+  "live": true
+}

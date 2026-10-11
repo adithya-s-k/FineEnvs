@@ -1,0 +1,258 @@
+[
+  {
+    "id": "deploy",
+    "type": "deploy_env",
+    "env_id": "portsim-marine"
+  },
+  {
+    "id": "load-task",
+    "type": "apply_server_config",
+    "env_id": "portsim-marine",
+    "directives": [
+      {
+        "service": "portsim-marine",
+        "uri": "urn:portsim:live-load/v1",
+        "args": {
+          "task_id": "dock-24B-w07x1-busy-0"
+        }
+      }
+    ]
+  },
+  {
+    "id": "hide-port-notice",
+    "type": "modify_env_tool_access",
+    "env_id": "portsim-marine",
+    "action": "disable",
+    "role": "default",
+    "tools": [
+      "port_notice"
+    ]
+  },
+  {
+    "id": "watches",
+    "type": "register_env_triggers",
+    "env_id": "portsim-marine",
+    "watch_roles": [
+      "default"
+    ],
+    "triggers": [
+      {
+        "id": "watch-1",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 1
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "extra-1",
+              "name": "MAERSK NUBA",
+              "text": "Unscheduled call: ship 16 MAERSK NUBA (211 m, 5 sections) arrives at hour 58, has 672 moves and asks to sail by hour 74. It has no planned slot, so placing it anywhere costs no move penalty."
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "tug_outage-8",
+              "name": "Tug company",
+              "text": "2 of the port's 8 tugs are out of service from hour 54 to hour 78: 6 tugs in that window."
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "pilot_shortage-9",
+              "name": "Pilot station",
+              "text": "2 of the port's 7 pilots on duty are unavailable from hour 54 to hour 66: 5 pilots in that window."
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-2",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 2
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "emergency-7",
+              "name": "Harbour master",
+              "text": "Emergency: ship 5 ZIM CHINA reports reefer power failures; its cargo is at risk unless it docks by hour 64. Each hour it docks later costs 60 on top of any delay."
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-3",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 3
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "late-3",
+              "name": "CARLOTA B",
+              "text": "Ship 7 CARLOTA B was delayed leaving Alicante: it now arrives at hour 93 (planned slot hour 78). Its planned departure stays hour 121."
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-4",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 4
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "late-4",
+              "name": "MAERSK NARMADA",
+              "text": "Ship 10 MAERSK NARMADA was delayed leaving Valencia: it now arrives at hour 129 (planned slot hour 112). Its planned departure stays hour 128."
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "crane_outage-6",
+              "name": "Terminal ops",
+              "text": "2 of the terminal's 9 quay cranes are out of service from hour 108 to hour 155 (gantry repair): 7 cranes in that window."
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-5",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 5
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "gale-0",
+              "name": "Harbour master",
+              "text": "Gale warning. From hour 115 to hour 144 the wind is above 25 kn: under the port's traffic rules ships of 300 m or more may not berth or leave. From hour 117 to hour 126 it is above 30 kn: no ship may berth or leave. Cranes keep working; a ship that finishes inside a window waits alongside until the window ends. Ships that berth or leave from hour 115 to hour 144 take one more tug."
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-6",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 6
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "bunching-5",
+              "name": "Ship agents",
+              "text": "Ships 12, 13, 14 were held up by the Red Sea diversions and now arrive together between hours 156 and 168 (each ship's arrival hour is in the table). Their planned departures stay as published."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "clock",
+    "type": "sync_env_clock",
+    "env_id": "portsim-marine",
+    "virtual_time": "2024-02-12T00:00:00Z",
+    "virtual_seconds_per_real_second": 0,
+    "tolerate_missing_sync_time": false
+  },
+  {
+    "id": "end-week",
+    "type": "apply_server_config",
+    "env_id": "portsim-marine",
+    "directives": [
+      {
+        "service": "portsim-marine",
+        "uri": "urn:portsim:end-week/v1",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "id": "grade",
+    "type": "env_outcome_verifier",
+    "env_id": "portsim-marine",
+    "file_artifact_id": "portsim-live-verifier",
+    "verifier_id": "portsim",
+    "score_aggregator": "weighted_average"
+  }
+]
