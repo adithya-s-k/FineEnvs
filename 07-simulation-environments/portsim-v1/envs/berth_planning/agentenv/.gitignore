@@ -1,0 +1,4 @@
+# rollout.py stages its bundle and writes its results here.
+runs/
+# agent-env reads the nearest .agentenv/config.toml; keep a local one out of git.
+.agentenv/
