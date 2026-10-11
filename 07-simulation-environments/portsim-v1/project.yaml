@@ -25,3 +25,6 @@ envs:
         transport: http-mcp
         space: FineEnvs/PortSimEnv
         verified: true
+      agentenv:
+        transport: http-mcp
+        verified: true
