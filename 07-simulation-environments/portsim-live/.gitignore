@@ -1,0 +1,4 @@
+# The wind weeks are built on your machine from Meteocat readings (tools/build_wind.py), which this repository doesn't
+# redistribute; data/meteocat/pins.json pins them by sha256 instead (see data/meteocat/SOURCE.md).
+envs/port_week/tasks/dock-v1-wind/
+envs/port_week/tasks/wind/
