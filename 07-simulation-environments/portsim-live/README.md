@@ -47,13 +47,44 @@ There are three envs, each adding to the one before:
 | `advance()` | ends the watch; after the last one the rest of the week runs and is graded |
 
 `check_plan` and `confirm_berths` share 3 calls a watch. A valid week scores `0.2 + 0.8·e^(−gap/0.5)`, so the optimum
-(on the wind weeks, the anchor) scores 1.0; a week that breaks a rule scores below 0.2. News that lands on a frozen
-window is excused, not charged.
+(on the wind weeks, the anchor) scores 1.0; a week that breaks a rule scores below 0.2. [Grading](#grading) says what
+is excused and how each env's weeks were picked.
 
 These envs run on AgentEnv only: they need its gateway's virtual clock, which the env moves at each `advance`, and its
 triggers, one per watch, which deliver the news through a tool hidden from the agent. There is no OpenEnv port.
 [DESIGN.md](DESIGN.md) explains the watches, the clock and triggers, the rules and the grade. The agentenv-portsim
 plugin and its Hub dataset call live, marine and wind v2, v3 and v4.
+
+## Grading
+
+A week is graded once, deterministically and with no judge: the windows the agent confirmed are run against the week
+as it really happened, on the wind weeks in the wind that blew, and scored with berth_core's reward v3. A feasible week
+scores `0.2 + 0.8·e^(−g/0.5)`, with `g = max(0, cost − reference) / (max(0, reference − floor) + 100)` and the floor
+the cost no plan can avoid, so the reference scores 1.0. A week that breaks a rule scores 0.2 times its share of clean
+ships, below 0.2, and a ship left without a window breaks a rule. The reference is the hindsight optimum CP-SAT proves
+on the week as it happened (live and marine), or on the wind weeks the anchor: the lower of the hindsight optimum and
+the best cost of the forecast-following re-planner over its 4 solver configurations.
+
+**What is excused.** A window's last chance to change is the last watch before it froze. Cost or a rule break that
+news brings to a window after its last chance is not charged; a ship the agent moves into trouble after the news is.
+
+- **v2 live and v3 marine** weigh each notice as it arrives: what it adds to the frozen windows, on their own, is
+  excused.
+- **v4 wind** judges each ship once, at its last chance, on the whole plan: cost or a rule break that later news
+  brings, or wind the forecast didn't show at that ship's last chance, is waived for that ship. Wind the forecast
+  showed then and that blew is charged, as an ignored warning, and a false alarm withdrawn after the freeze leaves no
+  waiver.
+
+**How the weeks were picked.**
+
+| env | weeks | kept when |
+|---|---|---|
+| v2 `portsim-live` | 15 of the 18 one-week standard and busy eval weeks of dock-v1-eval | the rolling re-planner, re-planning on the week as known at every watch, reaches the hindsight optimum in at least 3 of its 4 solver configurations |
+| v3 `portsim-marine` | the same 15, with the port's pilots and tugs | all 15 qualify as the live weeks do, on the marine hindsight optimum |
+| v4 `portsim-wind` | 15 marine weeks moved into real Barcelona weather weeks, dealt from the 240 pairs of the 15 marine weeks and 16 weather weeks | (a) the forecast-following re-planner costs no more than the hindsight optimum in at least 3 of its 4 configurations, so the anchor is reachable on what the agent could know; (b) the re-planner blind to the wind, or on a bust week (forecasts of wind that didn't blow) the one that holds every forecast window, scores at most 0.9 in at least 3 of 4; (c) the week has at most 10 watches; (d) no ship alongside at hour 0 is due to leave inside a window above 30 kn |
+
+[DESIGN.md](DESIGN.md) has the excuses, the anchor, the references and the deal in full. Each env's eval card in
+[results/](results/) (`eval-v2.json` to `eval-v4.json`) states the same, with the baselines and where the runs are.
 
 ## Results
 
@@ -144,7 +175,8 @@ cache. Until it has run, `--env wind` stops and points to `tools/build_wind.py`,
 │   ├── tasks/live/, marine/ the rolling and naive references (references.jsonl)
 │   ├── tasks/dock-v1-wind/, wind/  the wind weeks and references, built by tools/build_wind.py (git-ignored)
 │   └── tools/               the data tools: build_wind.py, wind_weather.py and the three *_references.py
-└── results/board.md         twelve models on the live, marine and wind weeks
+└── results/                 board.md, twelve models on the live, marine and wind weeks; eval-v2.json to
+                             eval-v4.json, each env's eval card
 ```
 
 The live weeks are portsim-v1's `dock-v1-eval` tasks, read through `berth_core`, and the agent is portsim-v1's
