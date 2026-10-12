@@ -10,9 +10,11 @@ on:
 permissions:
   contents: read
 # portsim-live builds on portsim-v1's berth_core and dock-v1 weeks, so a change to either part can break the other; test
-# both. No job builds the wind weeks: that needs the Meteocat portal and about 25 minutes. Run it by hand from
+# both. No job builds the wind or lines weeks: that needs the Meteocat portal and about 50 minutes, so the tests on
+# them skip here and run on the synthetic weeks instead. Run the builds by hand from
 # 07-simulation-environments/portsim-live/envs/port_week:
 #   uv run -p 3.12 --with ortools==9.15.6755 --with-editable core python tools/build_wind.py
+#   uv run -p 3.12 --with ortools==9.15.6755 --with-editable core python tools/build_lines.py
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -26,7 +28,7 @@ jobs:
         run: uv run --frozen --project 07-simulation-environments/portsim-v1/envs/berth_planning/agentenv --extra dev pytest 07-simulation-environments/portsim-v1/envs/berth_planning/core/tests -q
       - name: PortSimEnv v1 on AgentEnv (no Docker, network or model keys)
         run: uv run --frozen --project 07-simulation-environments/portsim-v1/envs/berth_planning/agentenv --extra dev pytest 07-simulation-environments/portsim-v1/envs/berth_planning/agentenv/tests -q
-      - name: port_week_core, the live week model (real-wind cases skip until the wind weeks are built)
+      - name: port_week_core, the live week model (real-wind and lines cases skip until those weeks are built)
         run: uv run --frozen --project 07-simulation-environments/portsim-live/envs/port_week/agentenv --extra dev pytest 07-simulation-environments/portsim-live/envs/port_week/core/tests -q
       - name: PortSimEnv live on AgentEnv (no Docker, network or model keys)
         run: uv run --frozen --project 07-simulation-environments/portsim-live/envs/port_week/agentenv --extra dev pytest 07-simulation-environments/portsim-live/envs/port_week/agentenv/tests -q
@@ -64,16 +66,19 @@ jobs:
         if: always()
         run: docker rm -f portsim-v1
       # With PORTSIM_LIVE_IMAGE the tests start one container per week (an env plays one week per deploy): the cards,
-      # live, marine and wind (on fixture weeks) and the six recorded weeks replayed against the image.
-      - name: Live, marine and wind envs, cards and recorded weeks against containers of the live image
+      # live, marine, wind and lines (the last two on fixture weeks) and the six recorded weeks replayed against the image.
+      - name: Live, marine, wind and lines envs, cards and recorded weeks against containers of the live image
         env:
           PORTSIM_LIVE_IMAGE: portsim-live-agentenv
         run: uv run --frozen --project portsim-live/envs/port_week/agentenv --extra dev pytest -q portsim-live/envs/port_week/agentenv/tests
-      # The smoke runs play without an agent, so build the portsim-llm image a real rollout deploys and import it.
-      - name: Build the portsim-llm agent image and import the agent
+      # The smoke runs play without an agent, so build the agent images a real rollout deploys and import them:
+      # portsim-llm, the planner, and portsim-line, the ships' agent of the lines weeks.
+      - name: Build the portsim-llm and portsim-line agent images and import the agents
         run: |
           docker build -t portsim-llm portsim-v1/envs/berth_planning/agentenv/agent
           docker run --rm portsim-llm python -c "import sys; sys.path.insert(0, '/app'); import agent"
+          docker build -t portsim-line portsim-v1/envs/berth_planning/agentenv/line_agent
+          docker run --rm portsim-line python -c "import sys; sys.path.insert(0, '/app'); import agent"
       - name: v1 smoke through AgentEnv (scores 1.0, 0.176471 and 0)
         working-directory: 07-simulation-environments/portsim-v1/envs/berth_planning/agentenv
         run: uv run --frozen python rollout.py --smoke
