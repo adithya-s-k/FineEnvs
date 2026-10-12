@@ -37,6 +37,12 @@ real = pytest.mark.skipif(not BUILT and os.environ.get("PORTSIM_REQUIRE_WIND") !
                           reason="wind weeks not built: run tools/build_wind.py")
 
 
+def require_wind() -> None:
+    """Skips the calling module, at its import, when the wind weeks aren't built."""
+    if not BUILT and os.environ.get("PORTSIM_REQUIRE_WIND") != "1":
+        pytest.skip("wind weeks not built: run tools/build_wind.py", allow_module_level=True)
+
+
 def lines(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text().splitlines()]
 

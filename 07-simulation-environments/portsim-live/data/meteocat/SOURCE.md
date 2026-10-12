@@ -1,11 +1,16 @@
 # Meteocat XEMA station Y7, Port de Barcelona – Bocana Sud, 2023-01 to 2026-01
 
 `pins.json`: pins, not data. It holds each of the 37 months of Y7 readings by row count and sha256 as fetched on
-2026-10-08, the sha256 of the committed ECMWF points, and the sha256 (whole file and per line) of the wind tasks,
-references and weather agentenv-portsim v0.4.5 built. Those files are generated on your machine by
-`envs/port_week/tools/build_wind.py` and git-ignored: `envs/port_week/tasks/dock-v1-wind/tasks.jsonl`,
-`envs/port_week/tasks/wind/references.jsonl` and `envs/port_week/tasks/wind/weather.jsonl`, with the pack's
-`manifest.json` and a `NOTICE` in each directory, which record the dates and aren't pinned.
+2026-10-08, the sha256 of the committed ECMWF points, the sha256 (whole file and per line) of the wind tasks,
+references and weather agentenv-portsim v0.4.5 built, and those of the lines tasks, manifest and references it built
+at 83eca5c. Those files are generated on your machine by `envs/port_week/tools/build_wind.py` and
+`envs/port_week/tools/build_lines.py` and git-ignored: `envs/port_week/tasks/dock-v1-wind/tasks.jsonl`,
+`envs/port_week/tasks/wind/references.jsonl` and `envs/port_week/tasks/wind/weather.jsonl`, with the wind pack's
+`manifest.json` and a `NOTICE` in each directory, which record the dates and aren't pinned; and
+`envs/port_week/tasks/dock-v1-lines/{tasks.jsonl,manifest.json}` and `envs/port_week/tasks/lines/references.jsonl`,
+with a `NOTICE` in each directory. The lines references are pinned without each week's solve time, which the build
+doesn't write, and, for the check, without the summaries of the one solver configuration CP-SAT doesn't reproduce
+from run to run (8 workers, no tie-break).
 
 - **Source:** Meteocat XEMA station Y7, Port de Barcelona – Bocana Sud, Generalitat de Catalunya open data portal,
   dataset `nzvn-apee` ("Dades meteorològiques de la XEMA", https://analisi.transparenciacatalunya.cat/d/nzvn-apee),

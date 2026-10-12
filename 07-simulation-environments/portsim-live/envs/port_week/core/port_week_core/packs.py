@@ -1,7 +1,8 @@
 """Where the weeks live. The live weeks are berth_core's dock-v1 eval and train packs (BERTH_TASKS_DIR, else its own
-tasks/); the marine and wind packs and the references sit under PORT_WEEK_TASKS_DIR, else port_week/tasks/, so a
-PORT_WEEK_TASKS_DIR holds the committed dock-v1-marine/, live/ and marine/ as well as the built wind weeks. They are
-never on BERTH_TASKS_DIR: the marine pack shares dock-v1-eval's task ids."""
+tasks/); the marine, wind and lines packs and the references sit under PORT_WEEK_TASKS_DIR, else port_week/tasks/, so a
+PORT_WEEK_TASKS_DIR holds the committed dock-v1-marine/, live/ and marine/ as well as the built wind and lines weeks.
+They are never on BERTH_TASKS_DIR: the marine pack shares dock-v1-eval's task ids, and the lines pack the wind
+pack's."""
 
 import json
 import os
@@ -12,6 +13,7 @@ from berth_core import TaskPack, load_pack
 TASKS_ROOT = Path(__file__).resolve().parents[2] / "tasks"
 MARINE_PACK = "dock-v1-marine"
 WIND_PACK = "dock-v1-wind"
+LINES_PACK = "dock-v1-lines"
 
 
 def tasks_root() -> Path:

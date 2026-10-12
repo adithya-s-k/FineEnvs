@@ -1,5 +1,5 @@
 {
- "about": "Pins of the wind build (tools/build_wind.py), not data: each Y7 month of Meteocat readings by row count and sha256 as fetched on 2026-10-08, the committed ECMWF points, and the files agentenv-portsim v0.4.5 built and its published wind runs were played on, with the sha256 of each line by task or week id.",
+ "about": "Pins of the wind and lines builds (tools/build_wind.py, tools/build_lines.py), not data: each Y7 month of Meteocat readings by row count and sha256 as fetched on 2026-10-08, the committed ECMWF points, the files agentenv-portsim v0.4.5 built and its published wind runs were played on, and the files it built at 83eca5c that its lines runs were played on, with the sha256 of each line by task or week id.",
  "y7": {
   "dataset": "nzvn-apee",
   "station": "Y7",
@@ -263,6 +263,67 @@
     "e14": "691a781fdc0f3bad7038572bd6d007a41a23a3c1dfd09469c2bde99638d08795",
     "e15": "249d76cf9313256e2e3c01011ef4541aa8999de36dabf7aed897c99350c02e66"
    }
+  },
+  "dock-v1-lines/tasks.jsonl": {
+   "sha256": "d3fe06b74a8dff25b0611171d380a06b47b2bc367ba0f06e0360e33a3e09b654",
+   "lines": {
+    "dock-24B-w06x1-busy-0-e15": "5eea6a9201e38d4580ee36d6645a00f9e92971c7e533544beb9a003266270bab",
+    "dock-24B-w07x1-busy-0-e04": "c9c795770d021276ab1ed5834fa41b4d84558d36d087d49b40fc8b9075e10b60",
+    "dock-24B-w07x1-busy-0-e08": "b3994d2dc6e7bd0a5031b8f9c6e8d6382ce53f4863b55e4a6744508ae61a9127",
+    "dock-24B-w07x1-busy-0-e09": "81dc34efc0274c5b217aca279983bc2f12450bfb0acc75e61f4417200cb5322e",
+    "dock-24B-w16x1-busy-0-e12": "f26c759b2d12bfb116817bac11e844cdb8c37e72434b56ff24acba543af14f6f",
+    "dock-24B-w35x1-busy-0-e00": "b4ee98d094f642f821d29d503e535e853e0f4c366a04f06244faf8a5e510d9ef",
+    "dock-36A-w05x1-busy-0-e09": "b4bdcb4534fd2a28d3fe0b8c37534823331804569bd731f625fe788c7fa2ba79",
+    "dock-36A-w05x1-busy-0-e14": "3fc8f40c7a28e571afaab87e2124564583485a14259c99a274cc555c7f8c5736",
+    "dock-36A-w06x1-busy-0-e07": "aef931c8a6a1fd0dcefa71baadebe343c84afe9d54e3d18b4b833170cd8beace",
+    "dock-36A-w06x1-busy-0-e12": "952179aa662b2f43c920a92d439582d26db72042a06308c6b1f9573d40faa4b6",
+    "dock-36A-w17x1-busy-0-e12": "54b600c09dfc03e4cdcc997c6375f9afe83806e647e81ebb62774b540215d373",
+    "dock-36A-w37x1-busy-0-e12": "62898acdc7b266393793a8fb2187fdff0d16fb43264207d080556456a984c86f",
+    "dock-24B-w37x1-standard-0-e01": "3be5f207b7b6e76f7f222aefe1b6d26be526fa70a70024c005800eff58039da3",
+    "dock-36A-w06x1-standard-0-e07": "13dbe8431a83db0dbfb54dde59b66908e4434f50fbf02d88efb614261ec94fb1",
+    "dock-36A-w35x1-standard-0-e03": "4bc8cce52e1978e060ef5b8e589752bb88aac580d16c0e48cf9e2c5d271a8ad5"
+   }
+  },
+  "dock-v1-lines/manifest.json": {
+   "sha256": "5a7f595ffd8de76db33ea74c853160d9c85ca3b2025c47068772142d652a4359"
+  },
+  "lines/references.jsonl": {
+   "sha256": "1bc4e74a23b4b7d78ee55f57d25cea6f3d7997015324d7ebfde776584afd32a6",
+   "lines": {
+    "dock-24B-w06x1-busy-0-e15": "3c4a240f22eb391a4ec136f4174d2886f8db154771b9c171874a862a892f89b8",
+    "dock-24B-w07x1-busy-0-e04": "3518e7086345f61589010c1dbaf01f6a9629d257c4bd9c7450ebcc7a35d15e09",
+    "dock-24B-w07x1-busy-0-e08": "4bcf143699923f3a27c75962bbf71c851d62dd3d6271b23a822952f2398b813a",
+    "dock-24B-w07x1-busy-0-e09": "4eaf008a8efda7851d9e0cbf85c9737602003b46bcc1e60f682a923462b39ab5",
+    "dock-24B-w16x1-busy-0-e12": "122232317e41e833faf8c659b4cf588f0586ed44de2c05e75b9487c6b0e54f38",
+    "dock-24B-w35x1-busy-0-e00": "bf3a27a239bb10d4a00d1fcae4e69f2633a97c67adf628b5d7d6bebe3f5e0fc8",
+    "dock-36A-w05x1-busy-0-e09": "644aea8e332089b05741791056228b97fe24ede2bf94102ffdbd9669557e99d3",
+    "dock-36A-w05x1-busy-0-e14": "baff513517e748e215f50d7247af7fa4b91cef4f970f34013f824074a23cd0fd",
+    "dock-36A-w06x1-busy-0-e07": "5caffdb5ab1bc1a8a1262b396facc6158750ef596e0c9bc8455b4d1dd109d855",
+    "dock-36A-w06x1-busy-0-e12": "9887e8253b522e43a18f2bfb9e92387c96c8032f93f09b5e1d2ad810afb2f586",
+    "dock-36A-w17x1-busy-0-e12": "c1a80227c8e71d890a395816da77e26758e41d6c3268ed30486acc37eec2ff59",
+    "dock-36A-w37x1-busy-0-e12": "8666fb20d14cb00e73a5d56a35d01661d24fd2000449803019b6461c988cff3d",
+    "dock-24B-w37x1-standard-0-e01": "c7536cdd9268de75b6dc99d1c8902e5c9fc81706bb12d0c3bf438cbc8883f365",
+    "dock-36A-w06x1-standard-0-e07": "a0ef7943eda5b3232b9f773e85b790878c66932d02ff53e009666c7b606aa0b9",
+    "dock-36A-w35x1-standard-0-e03": "54b117d880781ee3b32af89835aeacc766e915a9d2ec8dd9c5c6434a04710573"
+   },
+   "note": "the plugin's rows without their seconds, each week's solve time, which the build leaves out; reproducible_lines leave out the summaries of the 8-worker follower and silent follower without the tie-break too, which CP-SAT doesn't reproduce from run to run",
+   "reproducible_lines": {
+    "dock-24B-w06x1-busy-0-e15": "ff874134025b2758ea4cb78039219a764eaef9b7af8defca06b759eb94ed0d2b",
+    "dock-24B-w07x1-busy-0-e04": "2c5122ec4c901d36b32f8f4c30f99fc2bdbcfab90862403d2e482ec1e9a0609f",
+    "dock-24B-w07x1-busy-0-e08": "0d6634ea2439249b9090a6493c24f4b2fdcdd35f0268054e39ffe1b4aa94b2bb",
+    "dock-24B-w07x1-busy-0-e09": "0c9b08efbb209d51d142ba471375cd529d64e7435bfe2f16ca995f575709df2a",
+    "dock-24B-w16x1-busy-0-e12": "9d471277ec45234060c89961d28e749bf4221672ff3ccdf96197d672adc71a4b",
+    "dock-24B-w35x1-busy-0-e00": "3e53dd60a3c3c36b417d7d46921ef7431a780458b4e5e9e3706357e6a88eb95f",
+    "dock-36A-w05x1-busy-0-e09": "53bdb628652c7cfbf8c3ce1eacedc277f1477e71b307193769406874f6222f29",
+    "dock-36A-w05x1-busy-0-e14": "4f36a6ced5bce043f3b42b173240493dd1e9c972a0087bd4e0977e87f5a8de16",
+    "dock-36A-w06x1-busy-0-e07": "ee4263b94312169f834b7d793f1f8fdbf833a634b4e77d75a42c6eb8f50345a2",
+    "dock-36A-w06x1-busy-0-e12": "1b8b2809b1bae7d5ad4cc80663001546baa80ab7a5c6787c5a23e66069ce5362",
+    "dock-36A-w17x1-busy-0-e12": "d223e32ce2eae9368ca279ecbc9b647f21e7ddcf17e1665358707edfdf37ef91",
+    "dock-36A-w37x1-busy-0-e12": "d82d07f85d02b0597ca8972f74dfa60ade4259fa4adda2ada2f266ed47c18225",
+    "dock-24B-w37x1-standard-0-e01": "2716e0ea825bf11f5b9c9b8760e5937c992d1f558bebedd5523a2fe0dd435ee9",
+    "dock-36A-w06x1-standard-0-e07": "f8c5e822376e0d4848abb241ff6052d26fba0613dbe878bd7c0cbee300e011f1",
+    "dock-36A-w35x1-standard-0-e03": "447ea73480a2773a062d5ffdfaf7c25829df7270506e52a34b27bb1cd1f3596a"
+   }
   }
  },
  "provenance": {
@@ -273,6 +334,8 @@
   },
   "dock-v1-marine": "90ec3aa8726b755c36ae98170b83a57a4db16ab5746e5b5b4e1ea44da4918187",
   "ortools": "9.15.6755",
-  "python": "3.12"
+  "python": "3.12",
+  "agentenv-portsim lines": "83eca5c",
+  "dock-v1-wind": "4362816b3657373063afab2f06c97cf76f941cb4e5b2b593b0a754e4ba9da0c9"
  }
 }

@@ -1,0 +1,51 @@
+{
+  "name": "dock-v1-lines",
+  "split": "eval",
+  "tasks": 3,
+  "tiers": {
+    "busy": 2,
+    "standard": 1
+  },
+  "sha256": "f2bba8f1e3f0fceb4cd9d606b88d9a16a48a3a18c25be13372bb7504e94eed42",
+  "weeks": [
+    7,
+    37
+  ],
+  "quays": {
+    "24B": 2,
+    "36A": 1
+  },
+  "source": "dock-v1-wind's tasks with rules.lines added, each arrival off its schedule by its agent's long-range error, and the arrival news as the agents' ETAs",
+  "wind": {
+    "pack": "dock-v1-wind",
+    "sha256": "ad76783a94759128ba6a86ef6f1a334a423de8c54099c84204ee028966587f8e"
+  },
+  "lines": {
+    "grounding": {
+      "agents": {
+        "value": "the shipping agent the port's 2024 record names for the call (CONSIGNATARI)",
+        "basis": "Port de Barcelona open data, CC BY-SA 4.0, the 2024 calls of every ship type, pinned by sha256 as for dock-v1-marine; an unscheduled call takes its ship's nearest 2024 call."
+      },
+      "reports": {
+        "value": "ETAs 48 and 24 hours out and an arrival call 1 hour out, delivered at the next watch",
+        "basis": "Directive 2002/59/EC art. 4 and Orden FOM/1194/2011 art. 9 require a notice at least 24 h before arrival; the IMO Just In Time Arrival Guide (2020) puts berth planning at about 48 h; the 2025 berthing ordinance (BOE-A-2025-5157) defines arrival by the call 1 h before buoy S. The 48 h report and the delivery at the next watch are assumptions."
+      },
+      "eta_error": {
+        "value": "mean absolute error 20% of the hours left, as from 72 hours out at most, 80% of ships later than their ETA; the published schedule is the estimate from 72 hours out",
+        "basis": "Assumption, inside the published range: Busan New Port 2022-23 (agent ETAs 24-48 h out, MAE 5 h 15 min), Antwerp 2019 (10-15 h), MSC's Barcelona-Valencia loop 2017-18 (80% later than the leg's ETA, 60% of those within 10 h)."
+      },
+      "speeds": {
+        "value": "cruise 17 kn, slowest 10 kn, slowing only after leaving the previous port",
+        "basis": "Assumption: two-stroke engines run continuously down to 10% load (Wärtsilä); cruising speeds of 12-20 kn on MSC's Barcelona-Valencia loop; the IMO JIT container study's economical speed is 10 kn. Distances from NGA Pub. 151 (https://maritimesafetyinnovationlab.org/wp-content/uploads/2015/01/pub151-distances-btw-ports.pdf)."
+      },
+      "queue": {
+        "value": "first come, first served, a ship slowed on request keeping its turn; the wind's hold is the only exception",
+        "basis": "Barcelona's container terminals berthed first come, first served in 2024 (El Mercantil, 2024-11-05; Transporte XXI, 2024-09-09), and the 2025 ordinance made it the general rule (BOE-A-2025-5157, art. 3). Keeping the turn of a slowed ship is the virtual-arrival arrangement; the ordinance's other exceptions (technical incompatibility, occupancy thresholds, BEST's local-cargo priority) are left out."
+      },
+      "anchor": {
+        "value": "an hour at anchor costs the ship's sections, as an hour late does",
+        "basis": "The main-engine fuel a ship saves by slowing instead of waiting is worth 1.3-1.8 hours of its charter (Third IMO GHG Study 2014 table 14, VLSFO $626/t in 2024, Alphaliner charter rates June 2024), and an hour late costs more than charter alone, so 1 is the round value inside the evidence."
+      }
+    }
+  }
+}

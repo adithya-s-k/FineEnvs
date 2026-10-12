@@ -1,6 +1,8 @@
 """tools/build_wind.py and tools/wind_weather.py: the pins, the fetch and its resume, the month states, the weather
 derivation on invented readings and forecasts, the output check; and, once built, the wind weeks byte for byte the ones
-the published wind runs were played on (agentenv-portsim v0.4.5). No network, no solve, no readings."""
+the published wind runs were played on (agentenv-portsim v0.4.5). tools/build_lines.py's pins and output check, and
+once built the lines weeks the published lines runs were played on (agentenv-portsim 83eca5c). No network, no solve,
+no readings."""
 
 import gzip
 import hashlib
@@ -15,11 +17,13 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from lines_fixtures import BUILT as LINES_BUILT
 from wind_fixtures import REAL_BUSTS, REAL_TASKS, REAL_WEEKS, real
 
 from port_week_core import packs
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
+import build_lines  # noqa: E402
 import build_wind  # noqa: E402
 import wind_weather  # noqa: E402
 
@@ -57,7 +61,7 @@ def test_the_pins_cover_every_month_and_the_published_outputs():
     for rel in PUBLISHED:
         assert list(p["outputs"][rel]["lines"]) == REAL_TASKS
     assert list(p["outputs"]["wind/weather.jsonl"]["lines"]) == [f"e{i:02d}" for i in range(len(REAL_WEEKS))]
-    assert set(build_wind.OUTPUTS.values()) == set(p["outputs"])
+    assert set(build_wind.OUTPUTS.values()) | set(build_lines.OUTPUTS.values()) == set(p["outputs"])
 
 
 def test_the_ecmwf_points_are_the_pinned_ones_and_cover_the_plan():
@@ -316,3 +320,31 @@ def test_verify_fails_when_nothing_is_built(tmp_path, monkeypatch, capsys):
 def test_the_built_file_matches_its_pin(rel):
     path = packs.tasks_root() / rel
     assert hashlib.sha256(path.read_bytes()).hexdigest() == pins()["outputs"][rel]["sha256"]
+
+
+def test_the_lines_pins_are_the_published_lines_weeks():
+    p = pins()["outputs"]
+    published = "d3fe06b74a8dff25b0611171d380a06b47b2bc367ba0f06e0360e33a3e09b654"
+    assert p["dock-v1-lines/tasks.jsonl"]["sha256"] == published
+    for rel in ("dock-v1-lines/tasks.jsonl", "lines/references.jsonl"):
+        assert list(p[rel]["lines"]) == REAL_TASKS
+    assert list(p["lines/references.jsonl"]["reproducible_lines"]) == REAL_TASKS
+
+
+def test_only_the_untied_8_worker_summaries_are_left_out_of_the_reproducible_record():
+    row = {"task_id": "t", "configs": [{"workers": w, "tiebreak": tb, "cost": 1} for w, tb in
+                                       [(1, True), (1, False), (8, True), (8, False)]],
+           "silent": {"reward": 0.2, "configs": [{"workers": 8, "tiebreak": False, "reward": 0.2}]}}
+    def digest(r):
+        return build_lines.reproducible_digests((json.dumps(r) + "\n").encode())["t"]
+    other = json.loads(json.dumps(row))
+    other["configs"][3]["cost"] = other["silent"]["configs"][0]["reward"] = 2
+    assert digest(other) == digest(row)
+    other["configs"][2]["cost"] = 2
+    assert digest(other) != digest(row)
+
+
+@pytest.mark.skipif(not LINES_BUILT, reason="lines weeks not built: run tools/build_lines.py")
+def test_the_built_lines_weeks_match_their_pins():
+    diffs, _ = build_lines.compare(packs.tasks_root(), pins()["outputs"])
+    assert diffs == {"tasks": [], "manifest": [], "references": []}
