@@ -23,7 +23,7 @@ FORWARDED = {"model", "system_prompt", "effort", "max_turns", "timeout_seconds",
 LAST_TURN = "This is your last turn: call submit_plan now with your best plan."
 SUMMARY_KEYS = {"agent", "model", "route", "end_reason", "submitted", "reward", "turns", "tool_calls", "checks",
                 "input_tokens", "output_tokens", "cached_tokens", "cache_write_tokens", "cost_usd", "max_cost_usd",
-                "seconds", "error"}
+                "priced_cost_usd", "failed_requests", "seconds", "error"}
 
 
 def call(name: str, arguments: dict | str, i: int = 0) -> dict:
@@ -243,7 +243,9 @@ async def test_a_reply_that_fails_mid_stream_is_sent_again(play):
     assert (summary(result)["end_reason"], len(fake.requests)) == ("submitted", 2)
     assert fake.requests[0][2]["messages"] == fake.requests[1][2]["messages"]
     assert record["errors"] == ["APIError: payload is not completed (turn 1 sent again)"]
-    assert summary(result)["cost_usd"] > 32000 * 5 * portsim_llm.PRICES[GLM][1] / 1e6
+    s = summary(result)
+    assert s["cost_usd"] > 32000 * 5 * portsim_llm.PRICES[GLM][1] / 1e6
+    assert s["failed_requests"] == 1 and 0 <= s["priced_cost_usd"] < 0.001 < s["cost_usd"]
 
 
 async def test_a_reply_that_keeps_failing_mid_stream_is_a_provider_error(play):
@@ -260,6 +262,7 @@ async def test_a_failing_provider_is_a_provider_error_after_the_sdk_retries(play
     assert s["error"].startswith("InternalServerError: ")
     assert result.native_trajectory.payload["errors"] == [s["error"]]
     assert 32000 * (5 if model == GLM else 1) * portsim_llm.PRICES[model][1] / 1e6 < s["cost_usd"] <= 5
+    assert (s["failed_requests"], s["priced_cost_usd"]) == (1, 0)
 
 
 @pytest.mark.parametrize("bill_to", [None, "ScaleAI"])
@@ -312,7 +315,7 @@ async def test_the_result_carries_the_text_summary_usage_and_rollout(play):
                               "checks", "input_tokens", "output_tokens", "max_cost_usd", "error"]} == {
         "agent": "portsim-llm", "model": SONNET, "route": "messages", "end_reason": "submitted", "submitted": True,
         "reward": 1.0, "turns": 2, "tool_calls": 2, "checks": 1, "input_tokens": 3000, "output_tokens": 1000,
-        "max_cost_usd": 5.0, "error": None}
+        "max_cost_usd": None, "error": None}
     assert (result.usage.tool_call_count, result.usage.input_tokens, result.usage.output_tokens,
             result.usage.total_tokens) == (2, 3000, 1000, 4000)
     assert result.native_trajectory.format == "portsim-rollout"
@@ -338,3 +341,10 @@ def test_an_error_is_scrubbed_of_the_key_before_it_is_cut_to_800_characters():
     episode = portsim_llm.Episode(portsim_llm.PortSimConfig(), {"LITELLM_API_KEY": KEY})
     episode.fail("provider_error", error=RuntimeError("x" * 795 + KEY))
     assert episode.error == "RuntimeError: " + "x" * 795 + "<LITE"
+
+
+def test_the_message_schema_lets_a_strict_provider_leave_either_half_out():
+    request = portsim_llm.message_schema(["globalliner"])["properties"]["requests"]["items"]
+    assert set(request["required"]) == set(request["properties"]) and request["additionalProperties"] is False
+    assert request["properties"]["ask"]["enum"] == ["eta", None]
+    assert request["properties"]["request_arrival"]["type"] == ["integer", "null"]

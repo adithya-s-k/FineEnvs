@@ -68,7 +68,14 @@ published 0.872 on the same tasks and Claude Sonnet 5.5 0.778 against 0.839, one
 
 `portsim-llm` is `../openenv`'s harness loop as an A2A agent, calling the model through agent-env's model endpoint:
 Anthropic models on the Messages API, OpenAI models on the Responses API, the rest on chat completions. It plays only
-the models in its `PRICES` and stops before a request that could take the episode past `PORTSIM_MAX_COST_USD`.
+the models in its `PRICES`, and when `PORTSIM_MAX_COST_USD` is set it stops before a request that could take the
+episode past it; its summary also gives the cost without the failed requests (`priced_cost_usd`), which may not have
+been billed, and how many failed. Peered with other agents (`urn:agentenv:peer-agents/v1`), it gives the model a
+`message_agent` tool that sends one of them structured requests.
+
+`line_agent/` is `portsim-line`, the ships' agent of PortSimEnv live's lines weeks
+([../../../../portsim-live](../../../../portsim-live/)): one per firm, answering the planner's messages from the env
+through `ship_status` and `agree_arrival`, with no model.
 
 Contributed from the agentenv-portsim plugin (https://github.com/earakely-scale/agentenv-portsim-plugin) by Edgar
 Arakelyan (Scale AI), built on AgentEnv (https://github.com/scaleapi/agentenv-framework).

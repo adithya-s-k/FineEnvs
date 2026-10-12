@@ -1,9 +1,10 @@
 """PortSimEnv's harness loop (../../openenv/berth_openenv/agent.py) as an A2A agent: one episode on the
 env's MCP tools through agent-env's model endpoint, on the API upstream calls for the model's provider. Cost is usage
-times PRICES, or the most a request could cost when its usage is lost (it failed, or the harness cut its stream); an
-episode stops before a request that could take it past PORTSIM_MAX_COST_USD. An env that lists advance is a live week
-in watches: the episode ends on advance's done, with no tool-call cap, and Anthropic requests carry one rolling cache
-breakpoint."""
+times PRICES, or the most a request could cost when its usage is lost (it failed, or the harness cut its stream); when
+PORTSIM_MAX_COST_USD is set, an episode stops before a request that could take it past that. The summary also gives the
+cost without the failed requests, which may not have been billed, and how many failed. An env that lists advance
+is a live week in watches: the episode ends on advance's done, with no tool-call cap, and Anthropic requests carry one
+rolling cache breakpoint."""
 
 import json
 import logging
@@ -19,14 +20,17 @@ import httpx2
 import openai
 from agentenv_protocol.a2a_agent import (
     MCP_CONFIG_V1,
+    PEER_AGENTS_V1,
     TRAJECTORY_V1,
     AgentConfig,
     AgentEnvAgent,
     AgentIdentity,
+    PeerAgentsSetRequest,
     TaskRequest,
     TaskResult,
     Usage,
     a2a_agent,
+    extension,
 )
 from mcp import ClientSession, McpError
 from mcp.client.streamable_http import streamable_http_client
@@ -102,19 +106,71 @@ class Tool:
     input_schema: dict | None
 
 
-class EnvSession:
-    """One MCP session on the env server: one episode."""
+MESSAGE_TOOL = "message_agent"
+MESSAGE_DESCRIPTION = ("Message a ship's agent, the firm that deals with the port for its line: ask for its ships' "
+                       "ETAs or request arrival hours, several of its ships in one message. Each request gets the "
+                       "agent's reply.")
 
-    def __init__(self, session: ClientSession):
-        self.session = session
+
+def message_schema(agents: list[str]) -> dict:
+    """Every field required and the optional ones nullable, so a provider that enforces strict schemas (OpenAI's
+    Responses API) still lets a request leave out the ETA query, and an ETA query the hour."""
+    request = {"type": "object", "additionalProperties": False, "required": ["ship", "ask", "request_arrival"],
+               "properties": {
+                   "ship": {"type": "integer", "description": "ship id from the table"},
+                   "ask": {"type": ["string", "null"], "enum": ["eta", None],
+                           "description": '"eta" to ask for the ship\'s ETA; null when requesting an arrival'},
+                   "request_arrival": {"type": ["integer", "null"],
+                                       "description": "the hour you request the ship arrive at; null when asking "
+                                                      "for its ETA"}}}
+    return {"type": "object", "additionalProperties": False, "required": ["agent", "requests"], "properties": {
+        "agent": {"type": "string", "enum": agents, "description": "the ship's agent, by its id"},
+        "requests": {"type": "array", "minItems": 1, "items": request,
+                     "description": '[{"ship": 7, "ask": "eta", "request_arrival": null}, '
+                                    '{"ship": 9, "ask": null, "request_arrival": 130}, ...]'}}}
+
+
+class EnvSession:
+    """One MCP session on the env server: one episode; with peers, the ships' agents the planner can message."""
+
+    def __init__(self, session: ClientSession, peers: dict[str, dict] | None = None,
+                 http: httpx.AsyncClient | None = None):
+        self.session, self.peers, self.http = session, peers or {}, http
 
     async def tools(self) -> list[Tool]:
-        return [Tool(t.name, t.description, t.inputSchema) for t in (await self.session.list_tools()).tools]
+        tools = [Tool(t.name, t.description, t.inputSchema) for t in (await self.session.list_tools()).tools]
+        return tools + ([Tool(MESSAGE_TOOL, MESSAGE_DESCRIPTION, message_schema(sorted(self.peers)))]
+                        if self.peers else [])
 
     async def call(self, name: str, arguments: dict) -> str:
+        if name == MESSAGE_TOOL and self.peers:
+            return await self.message(arguments)
         result = await self.session.call_tool(name, arguments)
         text = "\n".join(c.text for c in result.content if c.type == "text")
         return json.dumps({"error": text}) if result.isError else text
+
+    async def message(self, arguments: dict) -> str:
+        """One A2A message/send to the agent, blocking until it answers; its replies, or the error."""
+        agent, requests = arguments.get("agent"), arguments.get("requests")
+        if agent not in self.peers:
+            return json.dumps({"error": f"no agent {agent!r}: message one of {', '.join(sorted(self.peers))}"})
+        if not isinstance(requests, list) or not requests:
+            return json.dumps({"error": "requests must be a non-empty list"})
+        body = {"jsonrpc": "2.0", "id": str(uuid.uuid4()), "method": "message/send", "params": {"message": {
+            "messageId": str(uuid.uuid4()), "role": "user", "metadata": {"from": "portsim-llm"},
+            "parts": [{"kind": "data", "data": {"requests": requests}}]}}}
+        try:
+            response = await self.http.post(self.peers[agent]["url"].rstrip("/") + "/a2a", json=body, timeout=120)
+            response.raise_for_status()
+            reply = response.json()
+        except (httpx.HTTPError, json.JSONDecodeError) as e:
+            return json.dumps({"error": f"the agent {agent} didn't answer: {type(e).__name__}"})
+        if "error" in reply:
+            return json.dumps({"error": f"the agent {agent} failed: {reply['error'].get('message', reply['error'])}"})
+        parts = reply["result"]["status"]["message"]["parts"]
+        data = next((p["data"] for p in parts if p.get("kind") == "data" and "replies" in p.get("data", {})), {})
+        text = " ".join(p["text"] for p in parts if p.get("kind") == "text")
+        return json.dumps({"agent": agent, "replies": data.get("replies", []), "text": text}, ensure_ascii=False)
 
 
 # ================================================================ model adapters
@@ -422,7 +478,8 @@ class Episode:
     def __init__(self, config: PortSimConfig, environ: dict[str, str]):
         self.config, self.model = config, config.model
         self.base, self.key = environ.get("LITELLM_BASE_URL", ""), environ.get("LITELLM_API_KEY", "")
-        self.max_cost = float(environ.get("PORTSIM_MAX_COST_USD", "5"))
+        cap = environ.get("PORTSIM_MAX_COST_USD")
+        self.max_cost = None if cap is None else float(cap)
         self.bill_to = environ.get("HF_BILL_TO")
         self.started = time.time()
         self.record: dict[str, Any] = {"model": self.model, "messages": [], "steps": [],
@@ -432,7 +489,8 @@ class Episode:
         self.reward: float | None = None
         self.live = False
         self.tool_calls = self.checks = self.cached = self.written = 0
-        self.spent = 0.0
+        self.spent = self.unbilled = 0.0
+        self.failed_requests = 0
         self.failure: tuple[str, str] | None = None
         self.error: str | None = None
 
@@ -446,7 +504,7 @@ class Episode:
         self.failure = (code, message or self.error)
         self.record["end_reason"] = code
 
-    async def run(self, server: dict, opening: str) -> None:
+    async def run(self, server: dict, opening: str, peers: dict[str, dict] | None = None) -> None:
         if not self.base or not self.key:
             return self.fail("model_endpoint", "no model endpoint: agent-env passes LITELLM_BASE_URL and "
                                                "LITELLM_API_KEY ([model] in .agentenv/config.toml)")
@@ -454,10 +512,11 @@ class Episode:
             return self.fail("unpriced_model", f"no price for {self.model}; priced: {', '.join(PRICES)}")
         try:
             async with httpx.AsyncClient(headers=server.get("headers"), timeout=300) as http, \
+                    httpx.AsyncClient(timeout=120) as peer_http, \
                     streamable_http_client(server["url"], http_client=http) as (read, write, _), \
                     ClientSession(read, write) as session:
                 await session.initialize()
-                await self.play(EnvSession(session), opening)
+                await self.play(EnvSession(session, peers, peer_http), opening)
         except* (McpError, httpx.HTTPError) as group:
             error = group
             while isinstance(error, BaseExceptionGroup):
@@ -491,7 +550,7 @@ class Episode:
                 record["messages"].append({"role": "user", "content": mode.last_turn})
             request = agent.request()
             most = bound(agent, request, price)
-            if self.spent + most > self.max_cost:
+            if self.max_cost is not None and self.spent + most > self.max_cost:
                 return self.fail("cost_cap", f"the next request could cost ${most:.4f}, past the ${self.max_cost:g} "
                                              f"cap with ${self.spent:.4f} spent")
             for resend in range(STREAM_RETRIES + 1):
@@ -502,7 +561,10 @@ class Episode:
                     if getattr(e, "status_code", None) in REFUSED:
                         return self.fail("provider_refused", error=e)
                     self.spent += most
-                    if resend == STREAM_RETRIES or not mid_stream(e) or self.spent + most > self.max_cost:
+                    self.unbilled += most
+                    self.failed_requests += 1
+                    if resend == STREAM_RETRIES or not mid_stream(e) or (
+                            self.max_cost is not None and self.spent + most > self.max_cost):
                         return self.fail("provider_error", error=e)
                     self.record["errors"].append(f"{self.describe(e)} (turn {turn + 1} sent again)")
                     log.warning("turn %d: the reply failed mid-stream, sending it again", turn + 1)
@@ -579,6 +641,7 @@ class Episode:
                    "checks": self.checks, "input_tokens": usage["input_tokens"],
                    "output_tokens": usage["output_tokens"], "cached_tokens": self.cached,
                    "cache_write_tokens": self.written, "cost_usd": round(self.spent, 6), "max_cost_usd": self.max_cost,
+                   "priced_cost_usd": round(self.spent - self.unbilled, 6), "failed_requests": self.failed_requests,
                    "seconds": record["seconds"], "error": self.error}
         text = (f"{record['end_reason']}: reward {json.dumps(self.reward)}, {record['turns']} turns, "
                 f"{self.tool_calls} tool calls, ${self.spent:.4f} ({self.model})")
@@ -598,18 +661,31 @@ class Episode:
         name="portsim-llm",
         description="PortSimEnv's harness loop: a model re-plans a disrupted week of berthing at a Port of Barcelona "
                     "quay through the env's tools, with upstream's prompts and limits, on agent-env's model endpoint.",
-        version="0.1.0",
+        version="0.2.0",
     ),
     config=PortSimConfig,
-    extensions=(MCP_CONFIG_V1, TRAJECTORY_V1),
+    extensions=(MCP_CONFIG_V1, TRAJECTORY_V1, PEER_AGENTS_V1),
 )
 class PortSimLLM(AgentEnvAgent):
+    def __init__(self):
+        super().__init__()
+        self.peers: dict[str, dict] = {}
+
     async def run(self, request: TaskRequest[PortSimConfig]) -> TaskResult:
         [part] = request.parts
         [server] = request.mcp_servers.values()
         episode = Episode(request.config, dict(os.environ))
-        await episode.run(server, part.text)
+        await episode.run(server, part.text, self.peers)
         return episode.result()
+
+    @extension(PEER_AGENTS_V1.set)
+    async def set_peers(self, request: PeerAgentsSetRequest) -> dict:
+        self.peers = {p.name: p.model_dump() for p in request.peers}
+        return {"status": "updated", "peers": sorted(self.peers)}
+
+    @extension(PEER_AGENTS_V1.list)
+    async def list_peers(self) -> dict:
+        return {"peers": list(self.peers.values())}
 
 
 if __name__ == "__main__":
