@@ -4,6 +4,8 @@ title: "PortSimEnv live"
 tagline: "Run a Port of Barcelona quay through a week as it unfolds, with live news, pilots and tugs, and real wind."
 order: 7.1        # just after portsim-v1 (7), whose berth_core and dock-v1 weeks this part builds on
 status: wip
+authors:
+  - {name: Edgar Arakelyan, github: earakely-scale, affiliation: Scale AI}
 
 hub:
   org: earakely-scale

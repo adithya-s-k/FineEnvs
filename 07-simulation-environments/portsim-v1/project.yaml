@@ -28,3 +28,5 @@ envs:
       agentenv:
         transport: http-mcp
         verified: true
+        authors:
+          - {name: Edgar Arakelyan, github: earakely-scale, affiliation: Scale AI}
