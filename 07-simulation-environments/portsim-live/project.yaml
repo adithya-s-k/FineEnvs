@@ -9,7 +9,7 @@ authors:
 
 hub:
   org: earakely-scale
-  collection: earakely-scale/portsimenv-on-agentenv
+  collection: FineEnvs/simulation-rl-envs
   spaces:
     - earakely-scale/PortSimEnv-AgentEnv
   datasets:
