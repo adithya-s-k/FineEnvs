@@ -9,7 +9,7 @@ The steps:
   accepted) with the agents, as tools/lines_references.py pack writes them, into --cache/lines/stage/; the port's 2024
   calls are downloaded once into ~/.cache/portsim-live/raw/ and checked against their pin.
 - screen: the hindsight optimum, the follower under its 4 solver configurations, the silent follower and the naive
-  policy on each staged week (ortools==9.15.6755; about 25 minutes on 14 processes, set by the slowest week), each row
+  policy on each staged week (ortools==9.15.6755; about 27 minutes on 14 processes, set by the slowest week), each row
   cached in --cache/lines/screen/ by the digest of its week and of the solving code.
 - references: tasks/dock-v1-lines/{tasks.jsonl, manifest.json}, each week with its anchor, and
   tasks/lines/references.jsonl, replaying the follower's stored plans and requests.

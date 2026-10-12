@@ -1,4 +1,4 @@
-# PortSimEnv live: design notes
+# PortSimEnv v2–v5: design notes
 
 The details behind the [README](README.md): how a week is played in watches, how AgentEnv's virtual clock and triggers
 deliver it, the rules each env adds, how a week is graded and which weeks are played. The quay, the dock-v1 weeks, the
@@ -9,6 +9,7 @@ checker and reward v3 are PortSimEnv v1's, unchanged; [its design notes](../port
 | `portsim-live` | 15 one-week dock-v1-eval weeks | v1's week, played as it unfolds: news arrives watch by watch and windows freeze | the hindsight optimum |
 | `portsim-marine` | the same 15, from `tasks/dock-v1-marine` | pilots and tugs, shared hour by hour with the port's other 2024 traffic, and cuts to both | the marine hindsight optimum |
 | `portsim-wind` | 15, each a marine week moved into a real weather week; built locally | the wind that blew instead of the simulated gale, and an ECMWF forecast at every watch | the anchor |
+| `portsim-lines` | the 15 wind weeks; built locally | each ship's agent as its own A2A agent: ETAs that firm up, requested arrival times, late ships the port berths, a first-come queue and the cost of waiting at anchor | the lines anchor |
 
 ## A week in watches
 
@@ -48,8 +49,9 @@ comes before its own delay or call. Each bulletin is a **watch**: watch 0 at hou
 
 ## On AgentEnv: the clock and the triggers
 
-The three envs need two things only AgentEnv's gateway provides, a virtual clock and triggers, so they run on AgentEnv
-alone; there is no OpenEnv port of them. Each week is one task of these steps (`port_week_agentenv/tasks.py`):
+The envs need two things only AgentEnv's gateway provides, a virtual clock and triggers, so they run on AgentEnv
+alone; there is no OpenEnv port of them. Each week is one task of these steps (`port_week_agentenv/tasks.py`; the lines
+weeks add the ships' agents, [below](#a-lines-week-on-agentenv)):
 
 ```
 deploy_env              portsim-live, portsim-marine or portsim-wind, behind the gateway
@@ -92,8 +94,8 @@ decimals, and the same windows always get the same reward.
 
 **Excuses.** News can land on a window that is already frozen. At each notice the env checks the frozen windows on
 their own, before and after the news; a rule break or a cost that only the news added is not charged, and
-`check_plan` lists it as excused. A ship the agent moves into trouble after the news is charged. The wind port judges
-excuses per ship instead ([below](#excuses-on-the-wind-weeks)).
+`check_plan` lists it as excused. A ship the agent moves into trouble after the news is charged. The wind and lines
+ports judge excuses per ship instead ([below](#excuses-on-the-wind-weeks)).
 
 ## Which weeks are played
 
@@ -244,3 +246,145 @@ and weather, and the manifest and NOTICE record the dates. The weather file is c
 validation changes only its unvalidated shares; the pack's tasks and the references must match their pins. Outputs
 that differ stay in place, but `rollout.py` won't play them until `--accept-drift` records the drift in the pack's
 manifest; their scores are then not comparable with the published runs.
+
+## lines: the shipping lines answer back
+
+A lines week is a wind week with the same freeze, wind, pilots and tugs, and with the shipping lines in it
+(`core/port_week_core/lines.py`). Each ship has its agent, the firm that deals with the port for its line, and each
+firm with a ship in the week is deployed as its own A2A agent, `portsim-line`, peered with the planner. The published
+schedule is the line's estimate from 72 hours out, so it doesn't give the arrivals away; the agents report ETAs that
+firm up as the ships near, answer the planner's questions and agree arrival times; and the week is graded on when the
+ships really arrived.
+
+### The rules and their sources
+
+Each number comes from a public source or is labelled an assumption; the pack's manifest
+(`tasks/dock-v1-lines/manifest.json`, under `lines.grounding`) carries the sources in brief.
+
+| rule | value | grounded in |
+|---|---|---|
+| agents | the shipping agent the port's 2024 record names for the call (CONSIGNATARI); a week has 7 to 9, for its 14 to 28 ships | the port's 2024 calls of every ship type ([data/barcelona/SOURCE.md](data/barcelona/SOURCE.md)), pinned by sha256 as for the marine pack; an unscheduled call takes its ship's nearest 2024 call |
+| schedule | the line's estimate from 72 hours out: each ship arrives at its scheduled hour plus round(20% × its bias × 72) hours, mostly later, a delayed or bunched ship with its delay on top; the scheduled hour is never later than the ship could still make by slowing from hour 0. An unscheduled call keeps the wind week's arrival, which its notice announces | **assumption**: the ETA error below, from 72 hours out |
+| reports | ETAs 48 and 24 hours out, and an arrival call 1 hour out; a report made between watches arrives with the next one, and the latest made before hour 0 opens the week | the EU and Spain require a notice at least 24 hours before arrival ([Directive 2002/59/EC](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX%3A32002L0059) art. 4; [Orden FOM/1194/2011](https://www.boe.es/buscar/act.php?id=BOE-A-2011-8339) art. 9); the [IMO Just In Time Arrival Guide](https://wwwcdn.imo.org/localresources/en/OurWork/PartnershipsProjects/Documents/GIA-just-in-time-lores.pdf) puts berth planning at about 48 hours; the 2025 berthing ordinance ([BOE-A-2025-5157](https://www.boe.es/diario_boe/txt.php?id=BOE-A-2025-5157)) defines arrival by the call made 1 hour before buoy S. The 48-hour report and delivery at the next watch are **assumptions** |
+| ETA error | 20% of the hours left, counted to 72 at most, times the ship's bias: positive (the ship later than its ETA) in 80% of ships, its size half-normal with mean 1, capped at 4, drawn once per ship. The mean absolute error is about 10 hours at 48 hours out and 5 at 24; no ETA is later than the slowest the ship can arrive, and the call is exact | **assumption**, inside the published range: Busan New Port 2022–23 (agent ETAs 24–48 hours out, mean error 5 h 15 min, [JMSE](https://doi.org/10.3390/jmse11061234)), Antwerp 2019 (10–15 hours, [Veenstra and Harmelink](https://pure.eur.nl/ws/files/58012351/Veenstra_Harmelink2021_Article_OnTheQualityOfShipArrivalPredi.pdf)), MSC's Barcelona–Valencia loop 2017–18 (80% later than the leg's ETA, 60% of those within 10 hours, [STM](https://stm-stmvalidation.s3.eu-west-1.amazonaws.com/uploads/20200225092917/STM_ID_5.3.4_STM-VALIDATION-USE-CASES-ANALYISIS-1.pdf)) |
+| commitment | an agent commits to an arrival hour once its ship has sailed from its previous port or its own estimate is within 48 hours; before that it refuses and gives its ETA | the IMO Just In Time Arrival Guide's berth-planning horizon, about 48 hours |
+| requests | once it can commit, an agent agrees an hour the ship can make at cruising speed, or by slowing once it has sailed, and the ship arrives at that hour; otherwise it offers the earliest or the latest hour the ship can make, and an offered hour can be agreed at once | the requested time of arrival of the IMO Just In Time Arrival Guide: the port requests an arrival time and the ship adjusts its speed to make it, or answers with what it can make |
+| speeds | cruise 17 kn, slowest 10 kn: a ship h hours out can arrive up to 0.7 h hours later, and only once it has left its previous port | **assumption**: two-stroke engines run continuously down to 10% load (Wärtsilä); cruising speeds of 12–20 kn on MSC's loop; the IMO JIT container study's economical speed is 10 kn |
+| previous port | its distance from Barcelona, so a ship from Valencia (165 nm, more than a quarter of the ships in these weeks) can absorb at most about 7 hours | [NGA Pub. 151](https://maritimesafetyinnovationlab.org/wp-content/uploads/2015/01/pub151-distances-btw-ports.pdf), Distances Between Ports (2001; no copyright claimed); a port it doesn't list takes its nearest listed neighbour |
+| news | until the port's news about a delayed or bunched ship, its agent works from the plan as it stood; at the news an earlier agreement stands if the ship can still make that hour, and lapses otherwise | **assumption** |
+| late ships | the port berths a ship that gets in after its window starts at the first hour a free stretch of quay fits it, breaking no rule and moving nobody else; a ship that gets in early waits at anchor for its window | **assumption** |
+| queue | first come, first served for the ships whose arrival was agreed, a slowed ship keeping its turn; the exceptions are an earlier ship the wind holds, or one for whose stay the closures leave no stretch of quay long enough | Barcelona's container terminals berthed first come, first served in 2024 ([El Mercantil](https://elmercantil.com/2024/11/05/barcelona-ultima-su-ordenanza-de-prioridad-de-escalas-para-pertrecharse-contra-la-congestion/), [Transporte XXI](https://www.transportexxi.com/preferencia-para-atracar-en-barcelona/)), and the 2025 ordinance made it the general rule (art. 3), exempting a ship the quay can't take. Keeping a slowed ship's turn is the virtual-arrival arrangement. Holding the queue only for agreed ships is an **assumption**: the planner can't foresee an unagreed ship arriving off its ETA. The ordinance's other exceptions (occupancy thresholds, BEST's local-cargo priority) are left out |
+| anchor | an hour at anchor costs the ship's sections, as an hour late does | the main-engine fuel a ship saves by slowing instead of waiting is worth 1.3–1.8 hours of its charter (Third IMO GHG Study table 14; VLSFO $626/t, Ship & Bunker's 2024 average; Alphaliner charter rates, June 2024), and an hour late costs more than charter alone, so 1 is the round value inside the evidence |
+
+The pack is the wind pack with each ship's agent, its previous port's distance and its ETA bias; each arrival moved off
+its schedule by its agent's error from 72 hours out, a delayed or bunched ship's whole story with it; and the wind
+week's delay, bunching and unscheduled-call notices rewritten to give the agents' ETAs at the watch they arrive. The
+watches are the wind week's, unchanged: the agents' routine reports add none.
+
+### A lines week on AgentEnv
+
+The task is the wind week's, with the agents added (`port_week_agentenv/tasks.py`, `lines_steps`):
+
+```
+deploy_env              portsim-lines, behind the gateway
+apply_server_config     live-load: the week as known at hour 0
+modify_env_tool_access  role default: hide port_notice, ship_status and agree_arrival
+modify_env_tool_access  role line: every tool off, then ship_status and agree_arrival on
+register_env_triggers   one trigger per watch; each delivers the watch's notices, the agents' reports among them
+deploy_agent            portsim-llm, the planner
+deploy_agent × firms    portsim-line, one per firm with a ship in the week, named by the firm's id, role line
+peer_agents             the planner peered with every firm, so its model gets message_agent
+sync_env_clock          the week's start, stopped
+prompt_agent            portsim-llm: the rules, the watch-0 briefing, 72 turns
+apply_server_config     end-week: the rest of the week, the grade and the audit
+env_outcome_verifier    portsim-live-verifier
+```
+
+The planner keeps the wind env's tools, with `message_agent` added and these changes:
+
+- `get_situation` ends with a section on arrivals and the ships' agents: their rules, which agent handles which ship,
+  and each ship's arrival as known now (agreed, called in, its latest ETA or the published schedule). A window row adds
+  `port_berth_hour` and `port_section` when the port would berth its ship elsewhere, on the ship's latest ETA until it
+  is in; `check_plan` rows add each ship's hours at anchor (`anchor_h`).
+- `confirm_berths` also returns the confirmed plan's problems and cost, as `check_plan` does, in the same planning
+  call. The other envs' `confirm_berths` is unchanged.
+- `advance` returns only the watch, the hour and the freeze line: which ships berthed or left is news the bulletin
+  brings.
+- `message_agent(agent, requests)` comes from the peering: up to 20 requests a message, each
+  `{"ship": 7, "ask": "eta", "request_arrival": null}` for the latest ETA or
+  `{"ship": 9, "ask": null, "request_arrival": 130}` for an arrival hour. The gateway's `get_time` stays visible.
+
+How the agents and the port answer:
+
+- **The agents.** A firm agent has no model. It answers each request from the env, through the gateway's `/step`
+  route under its role: `ship_status` for an ETA, `agree_arrival` for an hour. The same requests therefore always get
+  the same answers, and a week replays the same way. The agents' calls don't count as the planner's.
+- **Reports.** The agents' routine reports reach the planner the way all news does, through the watch triggers: a
+  report made between watches arrives with the next bulletin, and an agreed ship's reports restate its agreement. An
+  agent's later ETAs for a ship never fall below the earliest hour it has offered for it. The audit holds the reports
+  to no lead, since they report rather than announce.
+- **News.** The wind week's notices of a delayed ship and of ships bunched by the Red Sea diversions keep their
+  watches, and give the agents' ETAs. At the news, an earlier agreement stands if the ship, on its true track at the
+  paces its agreements have set since the first, can still make that hour; otherwise it lapses, the ship cruises in
+  from where it is, and the notice gives its agent's estimate of that arrival. Without an agreement, the notice's ETA
+  is what the agent last said moved later by the delay.
+- **The port's dispatch.** A ship that gets in after its window starts is berthed at the first hour from its arrival
+  when a free stretch of quay fits it, nearest its planned sections first, with the same cranes, around every other
+  ship's window without breaking a rule, and never ahead of an earlier ship whose arrival was agreed and which still
+  waits; nobody else moves. Late ships are placed hour by hour, in queue order; after 168 hours without a slot, a
+  window just starts when its ship gets in, or once the wind lets it move.
+- The firm agents call `/step` rather than opening an MCP session: AgentEnv's gateway runs its MCP lifespan per
+  session, so a second client's short session would replace, then close, the env sessions and trigger driver the
+  planner relies on.
+
+### The lines grade and the references
+
+The grade is the wind env's, on the windows as the port runs them: a late ship where the port berths it, and each hour
+a ship waits at anchor charged its sections. The cost is lateness, plus hours at anchor, plus move penalties; a ship
+that starts berthing while an earlier agreed ship waits breaks the queue rule, and any rule break makes the week
+infeasible, under 0.2. The excuse is the wind env's, per ship: cost or a rule break that news, or wind the forecast
+didn't show, brings to a window after its last chance to change is not charged. An ETA that proves wrong is not news:
+the excuse weighs every window against the ships' real arrivals, so what a ship arriving off its ETA brings is
+charged. The score is reward v3's against each week's **anchor**, the lower of hindsight's cost and the follower's
+best.
+
+`tasks/lines/references.jsonl` (built) plays every lines week four ways, through the same week model and grader as the
+env:
+
+- **Hindsight:** CP-SAT knowing every arrival. It asks each ship at the first watch its agent could commit, and not
+  before its news, and protects in the queue only the ships it slows, as the port protects only agreed ones. It is
+  the anchor in 13 of the 15 weeks.
+- **Follower:** re-plans at every watch with CP-SAT on the arrivals as known, the queue and the cost of waiting, and
+  requests arrival times through the same agents: for each ship whose window would freeze before the next watch, each
+  ship it plans to slow, and each ship due within 12 hours of the next watch. It takes each counter-offer, and a
+  refusal is a fact it keeps. Its best cost over its four solver configurations is 0.78 to 2.25 times hindsight's,
+  below it in 2 weeks, where it is the anchor, and it scores 0.548 in its first configuration (0.200 to 1.0 by week).
+- **Silent:** the follower that never asks: 0.242. It keeps every week feasible, since the port berths a ship that
+  misses its window and only agreed ships hold the queue, but its ships wait 2,386 hours at anchor over the 15 weeks,
+  against the follower's 550.
+- **Naive:** the live port's policy: 0.184, feasible in 7 of the 15 weeks.
+
+The references keep the queue stricter than the grade, with no wind or closure exception, so hindsight isn't proven
+optimal: a planner that uses an exception can beat the anchor, and scores 1.0. A week qualifies when (a) at least 3 of
+the follower's configurations finish feasible, (b) the silent follower scores at most 0.9 in at least 3 of 4, so asking
+the agents matters, and (c) it has at most 10 watches. All 15 wind weeks qualify, each with all 4 of the follower's
+configurations feasible and the silent follower at most 0.9 in all 4. A lines week gets 72 turns, 7 for each of 10
+watches and 2 more, so the turns don't give the watch count away.
+
+### Building the lines weeks
+
+The lines weeks derive from the wind weeks, so nothing of them is committed either. `tools/build_lines.py` builds
+them after `tools/build_wind.py` and writes `tasks/dock-v1-lines/` and `tasks/lines/` on your machine, each with a
+`NOTICE`, in four steps:
+
+| step | what it does |
+|---|---|
+| `pack` | the built wind weeks, which must match their pins or have their drift accepted, with the agents from the port's pinned 2024 calls, staged in `~/.cache/portsim-live/lines/stage/` |
+| `screen` | the hindsight, follower, silent and naive plays of the 15 weeks, cached by a digest of each week, the solver version and the solving code (27 minutes on 14 processes here, set by the slowest week) |
+| `references` | the pack with each week's anchor, and the references, replaying the follower's stored plans and requests |
+| `verify` | compares the pack's tasks, its manifest and the references with their pins in `data/meteocat/pins.json` and lists any task that differs |
+
+`tools/lines_references.py` holds the players and the pack, as the plugin's script does, and runs its steps on their
+own. The references leave out each week's solve time, which the plugin's file also records, so two builds write the
+same bytes. Outputs that differ stay in place, but `rollout.py` won't play them until `--accept-drift` records the
+drift in the pack's manifest.

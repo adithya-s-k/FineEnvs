@@ -7,7 +7,7 @@
 <h3>Run a quay at the Port of Barcelona through a week as it unfolds</h3>
 
 <p>PortSimEnv's weeks played watch by watch on AgentEnv's virtual clock: the news arrives late, pilots and tugs run
-short, and the wind is the wind that blew.</p>
+short, the wind is the wind that blew, and the shipping lines answer back.</p>
 
 <a href="https://huggingface.co/spaces/earakely-scale/PortSimEnv-AgentEnv"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Space-Replays%20in%203D-FFD21E?style=for-the-badge&labelColor=1a1a1a" alt="Replays in 3D" height="32"></a>
 <a href="https://huggingface.co/datasets/earakely-scale/PortSimEnv-AgentEnv"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Tasks%20%26%20runs-4F46E5?style=for-the-badge&labelColor=1a1a1a" alt="Dataset" height="32"></a>
@@ -31,13 +31,14 @@ At each watch the agent confirms berth windows; a window about to start is froze
 jumps to the next bulletin and the ships berth and sail on what it confirmed. The week is graded once,
 deterministically, on the confirmed windows against the week as it really happened.
 
-There are three envs, each adding to the one before:
+There are four envs, each adding to the one before:
 
 | env | the week | graded against |
 |---|---|---|
-| `portsim-live` | 15 one-week eval weeks of dock-v1, news watch by watch | the hindsight optimum CP-SAT proves |
-| `portsim-marine` | the same weeks, and every berthing and departure takes a pilot and tugs from pools shared with the port's other 2024 traffic | the marine hindsight optimum |
-| `portsim-wind` | 15 marine weeks moved into real Barcelona weather weeks of 2023-2025; an ECMWF forecast at every watch, graded on the wind that blew | the anchor: the lower of the hindsight optimum and a forecast-following re-planner's cost |
+| v2 `portsim-live` | 15 one-week eval weeks of dock-v1, news watch by watch | the hindsight optimum CP-SAT proves |
+| v3 `portsim-marine` | the same weeks, and every berthing and departure takes a pilot and tugs from pools shared with the port's other 2024 traffic | the marine hindsight optimum |
+| v4 `portsim-wind` | 15 marine weeks moved into real Barcelona weather weeks of 2023-2025; an ECMWF forecast at every watch, graded on the wind that blew | the anchor: the lower of the hindsight optimum and a forecast-following re-planner's cost |
+| v5 `portsim-lines` | the 15 wind weeks with each ship's agent, the firm that deals with the port for its line, deployed as its own A2A agent: ETAs that firm up, requested arrival times, late ships the port berths itself, a first-come queue and the cost of waiting at anchor | the anchor: the lower of the hindsight optimum, knowing every arrival, and a re-planner that asks the agents |
 
 | tool | what it does |
 |---|---|
@@ -45,15 +46,17 @@ There are three envs, each adding to the one before:
 | `check_plan(plan)` | rule breaks and cost of windows merged over the confirmed ones; confirms nothing |
 | `confirm_berths(plan)` | sets or changes windows; each refusal carries the harbour master's reason |
 | `advance()` | ends the watch; after the last one the rest of the week runs and is graded |
+| `message_agent(agent, requests)` | lines only: asks a ship's agent for its ships' ETAs or requests arrival hours |
 
 `check_plan` and `confirm_berths` share 3 calls a watch. A valid week scores `0.2 + 0.8·e^(−gap/0.5)`, so the optimum
-(on the wind weeks, the anchor) scores 1.0; a week that breaks a rule scores below 0.2. [Grading](#grading) says what
+(on the wind and lines weeks, the anchor) scores 1.0; a week that breaks a rule scores below 0.2. [Grading](#grading) says what
 is excused and how each env's weeks were picked.
 
 These envs run on AgentEnv only: they need its gateway's virtual clock, which the env moves at each `advance`, and its
-triggers, one per watch, which deliver the news through a tool hidden from the agent. There is no OpenEnv port.
-[DESIGN.md](DESIGN.md) explains the watches, the clock and triggers, the rules and the grade. The agentenv-portsim
-plugin and its Hub dataset call live, marine and wind v2, v3 and v4.
+triggers, one per watch, which deliver the news through a tool hidden from the agent; the lines env also needs its
+peered agents and per-role tool access. There is no OpenEnv port. [DESIGN.md](DESIGN.md) explains the watches, the
+clock and triggers, the rules and the grade. The agentenv-portsim plugin and its Hub dataset number the envs the same
+way: live v2, marine v3, wind v4, lines v5.
 
 ## Grading
 
@@ -62,8 +65,9 @@ as it really happened, on the wind weeks in the wind that blew, and scored with 
 scores `0.2 + 0.8·e^(−g/0.5)`, with `g = max(0, cost − reference) / (max(0, reference − floor) + 100)` and the floor
 the cost no plan can avoid, so the reference scores 1.0. A week that breaks a rule scores 0.2 times its share of clean
 ships, below 0.2, and a ship left without a window breaks a rule. The reference is the hindsight optimum CP-SAT proves
-on the week as it happened (live and marine), or on the wind weeks the anchor: the lower of the hindsight optimum and
-the best cost of the forecast-following re-planner over its 4 solver configurations.
+on the week as it happened (live and marine), or the anchor: on the wind weeks the lower of the hindsight optimum and
+the best cost of the forecast-following re-planner over its 4 solver configurations, on the lines weeks the lower of
+the hindsight optimum, which knows every arrival, and the best cost of the follower, which asks the ships' agents.
 
 **What is excused.** A window's last chance to change is the last watch before it froze. Cost or a rule break that
 news brings to a window after its last chance is not charged; a ship the agent moves into trouble after the news is.
@@ -74,6 +78,10 @@ news brings to a window after its last chance is not charged; a ship the agent m
   brings, or wind the forecast didn't show at that ship's last chance, is waived for that ship. Wind the forecast
   showed then and that blew is charged, as an ignored warning, and a false alarm withdrawn after the freeze leaves no
   waiver.
+- **v5 lines** excuses as v4 does, per ship, news and wind no forecast showed at that ship's last chance. An ETA that
+  proves wrong is not news: the excuse weighs every window against the ships' real arrivals, so the lateness and the
+  hours at anchor of a ship that arrives off what its agent said are charged. A ship whose arrival was agreed arrives
+  at that hour.
 
 **How the weeks were picked.**
 
@@ -82,13 +90,45 @@ news brings to a window after its last chance is not charged; a ship the agent m
 | v2 `portsim-live` | 15 of the 18 one-week standard and busy eval weeks of dock-v1-eval | the rolling re-planner, re-planning on the week as known at every watch, reaches the hindsight optimum in at least 3 of its 4 solver configurations |
 | v3 `portsim-marine` | the same 15, with the port's pilots and tugs | all 15 qualify as the live weeks do, on the marine hindsight optimum |
 | v4 `portsim-wind` | 15 marine weeks moved into real Barcelona weather weeks, dealt from the 240 pairs of the 15 marine weeks and 16 weather weeks | (a) the forecast-following re-planner costs no more than the hindsight optimum in at least 3 of its 4 configurations, so the anchor is reachable on what the agent could know; (b) the re-planner blind to the wind, or on a bust week (forecasts of wind that didn't blow) the one that holds every forecast window, scores at most 0.9 in at least 3 of 4; (c) the week has at most 10 watches; (d) no ship alongside at hour 0 is due to leave inside a window above 30 kn |
+| v5 `portsim-lines` | the 15 wind weeks, all of which qualify | (a) at least 3 of the follower's 4 configurations finish feasible; (b) the silent follower, which never asks the agents, scores at most 0.9 in at least 3 of 4, so asking matters; (c) the week has at most 10 watches |
 
-[DESIGN.md](DESIGN.md) has the excuses, the anchor, the references and the deal in full. Each env's eval card in
+[DESIGN.md](DESIGN.md) has the excuses, the anchors, the references and the deal in full. Each env's eval card in
 [results/](results/) (`eval-v2.json` to `eval-v4.json`) states the same, with the baselines and where the runs are.
+
+## The lines port
+
+v5 plays the 15 wind weeks with the same freeze, wind, pilots and tugs; what changes is who the planner deals with.
+Each ship has its agent, the firm the port's 2024 record names for the call, and each firm with a ship in the week is
+deployed as its own A2A agent, `portsim-line`, peered with the planner, which gets a `message_agent` tool.
+
+- **The schedule is an estimate.** It is the line's estimate from 72 hours out: each ship really arrives at its
+  scheduled hour plus its agent's long-range error, mostly later.
+- **ETAs firm up.** Each agent reports its ship's ETA 48 and 24 hours out and calls in an hour before it arrives. The
+  ETAs are optimistic, by less as the ship nears, and the call is exact.
+- **The planner can ask.** An agent commits to an hour once its ship has sailed from its previous port or its own
+  estimate is within 48 hours. It then agrees an hour the ship can make at cruising speed (17 kn) or by slowing (to
+  10 kn) once it has sailed, and the ship arrives at that hour; otherwise it offers the earliest or the latest it can
+  make. Before that it gives its ETA.
+- **News can undo an agreement.** Until the port's news about a delayed or bunched ship, its agent works from the
+  plan as it stood; at the news an earlier agreement stands only if the ship can still make that hour.
+- **The port berths late ships.** A ship that gets in after its window starts is berthed by the port at the first hour
+  a free stretch of quay fits it, and nobody else moves; one that gets in early waits at anchor for its window.
+- **First come, first served, for agreed ships.** No ship may start berthing while an earlier ship whose arrival was
+  agreed waits at anchor, unless the wind holds that ship or the closures leave it no stretch of quay. A ship's turn is
+  its arrival at cruising speed, so a ship slowed on request keeps it.
+- **Waiting costs.** Each hour at anchor costs the ship's sections, as an hour late does.
+
+The ships' agents have no model: each answers from the env, through two tools only their role sees (`ship_status`,
+`agree_arrival`), so the same requests always get the same answers. `confirm_berths` on the lines env also returns
+the confirmed plan's problems and cost, as `check_plan` does. A lines week gets 72 turns. Against each week's anchor,
+the follower scores 0.548 in its first configuration, the silent follower 0.242 and the naive policy 0.184.
+[DESIGN.md](DESIGN.md#lines-the-shipping-lines-answer-back) has the rules and their sources, the steps and the
+references.
 
 ## Results
 
-Twelve models on the 15 weeks of each env, one run each, 540 runs:
+The table covers the live, marine and wind envs; the lines env's results come with its eval card. Twelve models on
+the 15 weeks of each env, one run each, 540 runs:
 
 | Model | live | marine | wind | All 45 weeks | Feasible weeks |
 |---|---:|---:|---:|---:|---:|
@@ -144,19 +184,22 @@ The week model (`port_week_core`) has its own tests, run through the same projec
 uv run --frozen --extra dev pytest ../core/tests -q             # real-wind cases skip until the wind build has run
 ```
 
-**The wind weeks are built on your machine.** They derive from the readings of Meteocat's station Y7, which this
-repository doesn't redistribute, so it holds only the ECMWF forecast values, the weeks' identifiers and sha256 pins. One
-command fetches the readings, builds the weeks and checks them against the pins:
+**The wind and lines weeks are built on your machine.** They derive from the readings of Meteocat's station Y7,
+which this repository doesn't redistribute, so it holds only the ECMWF forecast values, the weeks' identifiers and
+sha256 pins. One command fetches the readings, builds the wind weeks and checks them against the pins; a second builds
+the lines weeks from them:
 
 ```bash
 cd envs/port_week
 uv run -p 3.12 --with ortools==9.15.6755 --with-editable core python tools/build_wind.py
+uv run -p 3.12 --with ortools==9.15.6755 --with-editable core python tools/build_lines.py
 cd agentenv && uv run python rollout.py --env wind
+uv run python rollout.py --env lines --model anthropic/claude-sonnet-5-5
 ```
 
-The full build took 24 minutes here: 15 to fetch the readings and 9 to solve on 14 processes. A rerun reuses its
-cache. Until it has run, `--env wind` stops and points to `tools/build_wind.py`, and so does the server for
-`portsim-wind`.
+The wind build took 24 minutes here: 15 to fetch the readings and 9 to solve on 14 processes; the lines build 27 more,
+set by its slowest week. A rerun reuses its cache. Until they have run, `--env wind` and `--env lines` stop and
+point to their build, and so does the server for `portsim-wind` and `portsim-lines`.
 
 ## Layout
 
@@ -167,20 +210,24 @@ cache. Until it has run, `--env wind` stops and points to `tools/build_wind.py`,
 ├── data/
 │   ├── barcelona/           the port's 2024 calls of every ship type, for the marine pack (pinned, not committed)
 │   ├── ecmwf/               ECMWF HRES 10 m wind at the port, 2023-2026 (points.jsonl.gz, CC BY 4.0)
-│   └── meteocat/            pins of the Y7 readings and of the built wind weeks; no readings
+│   └── meteocat/            pins of the Y7 readings and of the built wind and lines weeks; no readings
 ├── envs/port_week/
-│   ├── core/                port_week_core: the week in watches, the live, marine and wind worlds, packs, prompts
-│   ├── agentenv/            port_week_agentenv: the three envs' server, task steps, verifier, rollout.py, Dockerfile
+│   ├── core/                port_week_core: the week in watches, the live, marine, wind and lines worlds, packs,
+│   │                        prompts
+│   ├── agentenv/            port_week_agentenv: the four envs' server, task steps, verifier, rollout.py, Dockerfile
 │   ├── tasks/dock-v1-marine/  the 18 marine weeks (tasks.jsonl, manifest.json)
 │   ├── tasks/live/, marine/ the rolling and naive references (references.jsonl)
 │   ├── tasks/dock-v1-wind/, wind/  the wind weeks and references, built by tools/build_wind.py (git-ignored)
-│   └── tools/               the data tools: build_wind.py, wind_weather.py and the three *_references.py
+│   ├── tasks/dock-v1-lines/, lines/  the lines weeks and references, built by tools/build_lines.py (git-ignored)
+│   └── tools/               the data tools: build_wind.py, build_lines.py, wind_weather.py and the four
+│                            *_references.py
 └── results/                 board.md, twelve models on the live, marine and wind weeks; eval-v2.json to
                              eval-v4.json, each env's eval card
 ```
 
-The live weeks are portsim-v1's `dock-v1-eval` tasks, read through `berth_core`, and the agent is portsim-v1's
-`portsim-llm` ([../portsim-v1/envs/berth_planning/agentenv/agent](../portsim-v1/envs/berth_planning/agentenv/agent/)).
+The live weeks are portsim-v1's `dock-v1-eval` tasks, read through `berth_core`, and the agents are portsim-v1's:
+`portsim-llm`, the planner ([agent](../portsim-v1/envs/berth_planning/agentenv/agent/)), and `portsim-line`, the
+ships' agent of the lines weeks ([line_agent](../portsim-v1/envs/berth_planning/agentenv/line_agent/)).
 
 ## Data and licence
 
@@ -188,9 +235,11 @@ Port of Barcelona open data, CC BY-SA 4.0 ("Contains data from the Port de Barce
 pack and the live and marine references are derived databases under the same licence
 ([data/barcelona/SOURCE.md](data/barcelona/SOURCE.md)). The forecasts contain modified ECMWF open data, CC BY 4.0, with
 ECMWF's full statement in [data/ecmwf/SOURCE.md](data/ecmwf/SOURCE.md). Nothing derived from Meteocat's readings is
-committed: the wind weeks are built on your machine under the portal's terms, which this repository doesn't relicense
-([data/meteocat/SOURCE.md](data/meteocat/SOURCE.md)). Check those terms before you share the built weeks, the results
-and transcripts of wind runs (they repeat the observed windows), or an image or dataset made with them. The plugin's
+committed: the wind weeks, and the lines weeks built from them, are built on your machine under the portal's terms,
+which this repository doesn't relicense ([data/meteocat/SOURCE.md](data/meteocat/SOURCE.md)). Check those terms before
+you share the built weeks, the results and transcripts of wind or lines runs (they repeat the observed windows), or an
+image or dataset made with them. The lines weeks' ships' agents come from the port's 2024 calls too, and the previous
+ports' distances from NGA Pub. 151, Distances Between Ports (no copyright claimed). The plugin's
 Hub dataset is published by the plugin under the terms on its card and isn't part of this repository. Code is
 Apache-2.0 like the rest of the repository.
 

@@ -51,7 +51,7 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **04** | **[SmolDataEnvs](./04-smoldataenvs/)** | Data-analysis tasks, verified SFT traces and a single-turn GRPO tutorial on HF Jobs. | 1 | 1 | 0 | 🚧 wip |
 | **05** | **[SmolDataEnvs: multi-harness RL](./05-multi-harness-rl/)** | Train on SmolDataEnvs with SETA, native OpenCode or Harbor, using HF Jobs or Slurm. | 3 | 1 | 0 | 🚧 wip |
 | **07** | **[PortSimEnv](./07-simulation-environments/portsim-v1/)** | Re-plan a broken week of container-ship dockings at the Port of Barcelona, graded against a proven optimum. | 1 | 2 | 1 | 🚧 wip |
-| **07** | **[PortSimEnv v2–v5: live, marine, wind and lines](./07-simulation-environments/portsim-live/)** | Run a Port of Barcelona quay through a week as it unfolds, with live news, pilots and tugs, and real wind. | 1 | 1 | 0 | 🚧 wip |
+| **07** | **[PortSimEnv v2–v5: live, marine, wind and lines](./07-simulation-environments/portsim-live/)** | Run a Port of Barcelona quay through a week as it unfolds, with live news, pilots and tugs, real wind and shipping lines that answer back. | 1 | 1 | 0 | 🚧 wip |
 <!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
@@ -157,10 +157,11 @@ on [AgentEnv](./07-simulation-environments/portsim-v1/envs/berth_planning/agente
 **[PortSimEnv live](./07-simulation-environments/portsim-live/)** plays the same weeks as they unfold,
 on [AgentEnv](https://github.com/scaleapi/agentenv-framework)'s virtual clock: the news arrives watch
 by watch through gateway triggers, windows about to start freeze, and the week is graded on what the
-agent confirmed. Three envs add to each other: live, then pilots and tugs shared with the port's other
-2024 traffic, then real wind with the ECMWF forecasts as they were issued. Twelve models played all 45
-weeks; GPT-6 Astra and Claude Opus 5.5 lead at 0.945 and 0.944, and Qwen3.8-27B never finds a valid
-plan. Every run replays in the [Space](https://huggingface.co/spaces/earakely-scale/PortSimEnv-AgentEnv),
+agent confirmed. Four envs, v2 to v5, add to each other: live, then pilots and tugs shared with the
+port's other 2024 traffic, then real wind with the ECMWF forecasts as they were issued, then the
+shipping lines, each ship's agent an A2A agent the planner can ask for ETAs and arrival times. Twelve
+models played all 45 weeks of the first three; GPT-6 Astra and Claude Opus 5.5 lead at 0.945 and 0.944,
+and Qwen3.8-27B never finds a valid plan. Every run replays in the [Space](https://huggingface.co/spaces/earakely-scale/PortSimEnv-AgentEnv),
 and the [collection](https://huggingface.co/collections/earakely-scale/portsimenv-on-agentenv) gathers it with
 the dataset.
 
