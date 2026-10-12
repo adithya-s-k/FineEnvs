@@ -33,7 +33,7 @@ import berth_core
 import ortools
 from berth_core import Plan, Task, plan_from_list, plan_to_list
 from berth_core.check import unavoidable_cost
-from berth_core.generate import _hour
+from berth_core.generate import hour
 from berth_core.solve import naive_replan
 from ortools.sat.python import cp_model
 from port_week_core import marine, packs, schedule, world
@@ -157,9 +157,9 @@ def moves(stops: list[dict], start: datetime) -> list[list]:
     out = []
     for i, r in enumerate(stops):
         if r["MOLLCODI"] != ANCHORAGE:
-            out.append([_hour(start, utc(r["ETAUTC"])), r["VAIXELLTIPUS"], length(r)])
+            out.append([hour(start, utc(r["ETAUTC"])), r["VAIXELLTIPUS"], length(r)])
             if i + 1 == len(stops) or stops[i + 1]["MOLLCODI"] == ANCHORAGE:
-                out.append([_hour(start, utc(r["ETDUTC"])), r["VAIXELLTIPUS"], length(r)])
+                out.append([hour(start, utc(r["ETDUTC"])), r["VAIXELLTIPUS"], length(r)])
     return out
 
 

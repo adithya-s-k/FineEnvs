@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from berth_core import Task
-from berth_core.prompts import DAYS
+from berth_core.prompts import when
 
 FREEZE_HOURS = 6
 BULLETIN_HOURS = 6
@@ -83,13 +83,8 @@ def schedule(task: Task) -> list[Watch]:
             for k, b in enumerate(bulletins)]
 
 
-def _when(h: int) -> str:
-    """berth_core.prompts._when, copied so the clock label doesn't import a private name."""
-    return f"{DAYS[(h // 24) % 7]} {h % 24:02d}:00" if 0 <= h < 24 * 7 else f"+{h // 24}d {h % 24:02d}:00"
-
-
 def label(hour: int) -> str:
-    return _when(hour)
+    return when(hour)
 
 
 def virtual_time(task: Task, hour: int) -> str:

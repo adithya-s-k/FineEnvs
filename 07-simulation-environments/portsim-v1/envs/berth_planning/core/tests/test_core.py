@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from berth_core import TaskPack, evaluate, grade, parse_plan, plan_from_list, score
+from berth_core import TaskPack, evaluate, generate, grade, parse_plan, plan_from_list, prompts, score, solve
 from berth_core.pack import LEGACY_PACK, TASKS_ROOT
 from berth_core.data import load_calls
 from berth_core.generate import build_task
@@ -91,3 +91,7 @@ def test_build_is_deterministic():
     b, _ = build_task(calls, "24B", 30, 0, "hard", "train", time_limit=30)
     assert a.to_dict(public=True) == b.to_dict(public=True)
     assert a.reference["optimal_cost"] == b.reference["optimal_cost"]
+
+
+def test_ledger_hour_and_when_keep_their_underscored_names():
+    assert (solve._Ledger, generate._hour, prompts._when) == (solve.Ledger, generate.hour, prompts.when)

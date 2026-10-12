@@ -1,7 +1,5 @@
 import pytest
-from berth_core.prompts import _when
 
-from port_week_core import marine
 from port_week_core.schedule import BULLETIN_HOURS, FREEZE_HOURS, MAX_TURNS, label, schedule, virtual_time
 
 WATCHES = {
@@ -77,10 +75,3 @@ def test_turns_labels_and_virtual_time(example):
     assert MAX_TURNS == 47
     assert (label(0), label(30), label(120)) == ("Mon 00:00", "Tue 06:00", "Sat 00:00")
     assert (virtual_time(example, 0), virtual_time(example, 30)) == ("2024-02-12T00:00:00Z", "2024-02-13T06:00:00Z")
-
-
-def test_label_is_berth_cores_clock_on_every_one_week_tasks_hours(one_week):
-    tasks = one_week + marine.pack().tasks
-    hours = set(range(-48, 24 * 14)) | {h for t in tasks for w in schedule(t) for n in w.notices
-                                         for h in (w.hour, n.hour, n.event_hour)}
-    assert [label(h) for h in sorted(hours)] == [_when(h) for h in sorted(hours)]

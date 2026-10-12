@@ -10,8 +10,11 @@ PROMPT_VERSION = 1
 DAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
 
-def _when(h: int) -> str:
+def when(h: int) -> str:
     return f"{DAYS[(h // 24) % 7]} {h % 24:02d}:00" if 0 <= h < 24 * 7 else f"+{h // 24}d {h % 24:02d}:00"
+
+
+_when = when  # the name before it was public, kept for code that imports it
 
 
 def situation(task: Task) -> str:

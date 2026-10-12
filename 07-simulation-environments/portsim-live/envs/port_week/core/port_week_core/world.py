@@ -8,7 +8,7 @@ from berth_core import Plan, PlanError, Task, evaluate, parse_plan, plan_to_list
 from berth_core.check import PlanResult, ShipResult, unavoidable_cost
 from berth_core.model import MOVE_PENALTY
 from berth_core.reward import score_v3
-from berth_core.solve import _Ledger, naive_replan
+from berth_core.solve import Ledger, naive_replan
 
 from .schedule import FREEZE_HOURS, HARBOUR_MASTER, PLANNING_CALLS, label, schedule
 
@@ -343,7 +343,7 @@ def naive(week: Week) -> Plan:
     if week.watch == 0:
         return naive_replan(view)
     fixed = week.fixed
-    led = _Ledger(view)
+    led = Ledger(view)
     for sid, entry in fixed.items():
         led.add(view.ships[sid], *entry)
     plan = dict(fixed)
