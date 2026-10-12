@@ -2,7 +2,7 @@
 
 <a href="https://huggingface.co/spaces/earakely-scale/PortSimEnv-AgentEnv"><img src="./assets/banner.jpg" alt="PortSimEnv live: GPT-6.1 Sol's week at the Port of Barcelona on AgentEnv, graded at its last watch on PortSimEnv's 3D quay" width="100%"></a>
 
-<h1>PortSimEnv live</h1>
+<h1>PortSimEnv v2–v5: live, marine, wind and lines</h1>
 
 <h3>Run a quay at the Port of Barcelona through a week as it unfolds</h3>
 

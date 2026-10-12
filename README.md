@@ -51,7 +51,7 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **04** | **[SmolDataEnvs](./04-smoldataenvs/)** | Data-analysis tasks, verified SFT traces and a single-turn GRPO tutorial on HF Jobs. | 1 | 1 | 0 | 🚧 wip |
 | **05** | **[SmolDataEnvs: multi-harness RL](./05-multi-harness-rl/)** | Train on SmolDataEnvs with SETA, native OpenCode or Harbor, using HF Jobs or Slurm. | 3 | 1 | 0 | 🚧 wip |
 | **07** | **[PortSimEnv](./07-simulation-environments/portsim-v1/)** | Re-plan a broken week of container-ship dockings at the Port of Barcelona, graded against a proven optimum. | 1 | 2 | 1 | 🚧 wip |
-| **07** | **[PortSimEnv live](./07-simulation-environments/portsim-live/)** | Run a Port of Barcelona quay through a week as it unfolds, with live news, pilots and tugs, and real wind. | 1 | 1 | 0 | 🚧 wip |
+| **07** | **[PortSimEnv v2–v5: live, marine, wind and lines](./07-simulation-environments/portsim-live/)** | Run a Port of Barcelona quay through a week as it unfolds, with live news, pilots and tugs, and real wind. | 1 | 1 | 0 | 🚧 wip |
 <!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
