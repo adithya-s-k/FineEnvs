@@ -1,0 +1,26 @@
+.venv
+.venv/
+build/
+*.egg-info/
+__pycache__/
+.pytest_cache/
+
+# Raw datasets live under data/ and are ignored via data/.gitignore
+# (multi-GB downloads + nested git clones). Metadata is kept there.
+
+# Large data/model binaries anywhere in this env
+*.7z
+*.zip
+*.gz
+*.parquet
+*.ckpt
+!tests/fixtures/**/*.gz
+
+# Model evaluation runs: transcripts include solved routes, so only summaries are committed.
+runs/
+
+# The reward study's distilled cache of those runs; rebuild with `ablate build`. report.json is kept.
+research/reward/evidence/
+
+# The serving snapshot prepare.py fetches for a local server (about 230 MB unpacked).
+envs/retro_route/openenv/prepared/

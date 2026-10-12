@@ -1,0 +1,26 @@
+# Project manifest. `tools/build_index.py` renders the root README table from it.
+name: retroenv
+title: "RetroEnv"
+tagline: "Plan retrosyntheses back to purchasable molecules, scored step by step against a frozen reaction library."
+order: 9
+status: wip
+
+hub:
+  org: FineEnvs
+  spaces:
+    - FineEnvs/retroenv              # OpenEnv server and playground, serving the bucket snapshot
+  datasets:
+    - LiteFold/RetroEnv              # the release: tasks, known routes, stock, reaction library, eval runs
+  buckets:
+    - FineEnvs/retroenv-bucket       # serving copy: the pinned release, its index and final_eval
+
+envs:
+  - name: retro_route
+    summary: "Multi-turn retrosynthesis: stock and precedent search, disconnection checks, route-tree submission, dense verifier reward."
+    backend: rdkit-offline
+    tools: 9
+    frameworks:
+      openenv:
+        transport: http-mcp
+        verified: true
+        space: FineEnvs/retroenv

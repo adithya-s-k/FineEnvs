@@ -1,0 +1,115 @@
+{
+  "status": "ready",
+  "storage": "bucket-sqlite",
+  "index_version": 1,
+  "snapshot_id": "350672d1218e1bdb4dfce497a41490d0482fe7118ad41102a0d373724bca7ae9",
+  "bucket_id": "FineEnvs/retroenv-bucket",
+  "source": {
+    "repo": "LiteFold/RetroEnv",
+    "revision": "7ca4c3ad54ce6223435fd6b77c79018641c8606b",
+    "license": "CC-BY-4.0",
+    "checksums_sha256": "d496eb913602e6c23ed3821e183a496e52b8948916198f440337e909a6308a22"
+  },
+  "rdkit_version": "2026.03.6",
+  "files": [
+    {
+      "path": "checksums.json",
+      "local": "checksums.json",
+      "size": 1405,
+      "sha256": "d496eb913602e6c23ed3821e183a496e52b8948916198f440337e909a6308a22"
+    },
+    {
+      "path": "library/reactions.jsonl.gz",
+      "local": "library/reactions.jsonl.gz",
+      "size": 20082440,
+      "sha256": "28c02ab233027892b4161d98b7f3e00c11fee5b104ebe0c3ce88273f1959b956"
+    },
+    {
+      "path": "library/reagents.json",
+      "local": "library/reagents.json",
+      "size": 10504,
+      "sha256": "c9cf7cb30bda7dad0e69718b375b4ab07a5f1ed6e95fc7b7034130525ca2bfbc"
+    },
+    {
+      "path": "library/templates-visible.json",
+      "local": "library/templates-visible.json",
+      "size": 3642156,
+      "sha256": "3c64d9caa44bed8fe02575da65d7dbf35c2046954528969f29a7def40d6f6c81"
+    },
+    {
+      "path": "library/templates.json",
+      "local": "library/templates.json",
+      "size": 5133935,
+      "sha256": "34abc0aeca88d7f6049fc1d9286b9886c4b286d124a94eb654e9093760a77182"
+    },
+    {
+      "path": "manifest.json",
+      "local": "manifest.json",
+      "size": 8127,
+      "sha256": "762bdd85448092c306367142053c63d7f7f0667767df7deb28ffec16b5e36633"
+    },
+    {
+      "path": "stocks/paroutes-archive-leaves.smi",
+      "local": "stocks/paroutes-archive-leaves.smi",
+      "size": 3469648,
+      "sha256": "fef3c876efa32c2584b171bfd95d3f8d40ec7195d379b2b782d667423d84b1c7"
+    },
+    {
+      "path": "openenv/indexes/350672d1218e1bdb4dfce497a41490d0482fe7118ad41102a0d373724bca7ae9/serving.sqlite.gz",
+      "local": "serving/serving.sqlite",
+      "size": 82295324,
+      "sha256": "62369299aedef8b471e5821744a45bc4342369ecb574b1196b6b41efce55b532",
+      "unpacked": {
+        "size": 196542464,
+        "sha256": "45d37b32c4260a477aed76fe67923395b8e21eea2517c4606fba945c09be1634"
+      }
+    }
+  ],
+  "evalsets": {
+    "final_eval": {
+      "path": "openenv/evalsets/final_eval.json",
+      "local": "evalsets/final_eval.json",
+      "size": 16167,
+      "sha256": "4ce62c2416f40e95addd4cc7b7a557ecb9e94a2625cf1d55a43fc141b53e7d65",
+      "evalset_id": "6b5112f1fcf6ee374b0ba5a199c7406dc4e0555d7a7c75ce2e2235c310ebf92a",
+      "tasks": 50
+    }
+  },
+  "splits": {
+    "dev": {
+      "tasks": 1079,
+      "tiers": {
+        "easy": 425,
+        "hard": 94,
+        "medium": 560
+      }
+    },
+    "test_hard": {
+      "tasks": 1119,
+      "tiers": {
+        "hard": 754,
+        "medium": 365
+      }
+    },
+    "test_id": {
+      "tasks": 1083,
+      "tiers": {
+        "easy": 440,
+        "hard": 83,
+        "medium": 560
+      }
+    },
+    "train": {
+      "tasks": 75224,
+      "tiers": {
+        "easy": 47196,
+        "hard": 1662,
+        "medium": 26366
+      }
+    }
+  },
+  "stocks": {
+    "paroutes-archive-leaves": 102915
+  },
+  "precedents": 177822
+}

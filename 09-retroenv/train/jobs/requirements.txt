@@ -1,0 +1,22 @@
+# The trainer and vLLM (.venv-train). TRL and Transformers come from pinned main commits in
+# install.sh; the RetroEnv server and evaluator use the project's own locked environment.
+vllm==0.25.1
+peft
+# Qwen3.5-architecture models run three of every four layers as Gated DeltaNet. Without FLA's
+# Triton kernels Transformers falls back to a PyTorch loop: about 40 s per 6k-token training
+# sequence on a 27B model, which made a 100-step run take some 40 hours.
+flash-linear-attention
+datasets
+accelerate
+bitsandbytes
+kernels
+# Trackio needs huggingface-hub<2; unpinned, uv takes hub 2 and falls back to a broken trackio 0.2.
+trackio>=0.40
+huggingface-hub>=1.31,<2
+# The RetroEnv client: installed with --no-deps next to these.
+openenv==0.4.2
+json-repair>=0.30
+httpx
+# Compatible with OpenEnv's websockets and vLLM's Numba, as in 05-multi-harness-rl.
+websockets>=15,<16
+numpy>=2.2,<2.4

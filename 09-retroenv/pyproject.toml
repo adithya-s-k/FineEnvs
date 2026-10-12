@@ -1,0 +1,43 @@
+[project]
+name = "retroenv-workspace"
+version = "0.2.0"
+description = "RetroEnv: dataset pipeline, OpenEnv server, evaluation and tests"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "retroenv-core",
+    "retroenv-openenv",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "httpx>=0.27"]
+eval = ["openai>=1.55", "anthropic>=1.0"]
+ord = ["retroenv-core[ord]"]
+sources = ["retroenv-core[sources]"]
+
+[tool.uv]
+# The project root holds scripts (dataset/, eval/, train/), not a package.
+package = false
+
+[tool.uv.sources]
+retroenv-core = { path = "envs/retro_route/core", editable = true }
+retroenv-openenv = { path = "envs/retro_route/openenv", editable = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "envs/retro_route/openenv/tests"]
+pythonpath = ["."]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["benchmark", "data", "runs", "sample", ".local"]
+
+[tool.ruff.lint]
+# Errors and unused code (ruff's pre-0.16 defaults, pinned so newer releases don't widen them)
+# plus import order.
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# Pytest fixtures are imported from openenv_helpers and then taken as parameters.
+"envs/retro_route/openenv/tests/*" = ["F811"]

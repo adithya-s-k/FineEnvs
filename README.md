@@ -41,7 +41,7 @@ demos on **[🤗 huggingface.co/FineEnvs](https://huggingface.co/FineEnvs)**.
 Each numbered folder is a **self-contained, end-to-end project** — its own environments, notebooks,
 results and README, plus the Hub repos it owns. They read in order but stand alone.
 
-<!-- BEGIN:projects -->
+
 | # | Project | What you get | Envs | Frameworks | Deployed | Status |
 |---|---|---|:--:|:--:|:--:|---|
 | **00** | **[RL Environments 101](./00-environments-101/)** | Three environments, six frameworks, side by side. | 3 | 6 | 8 | ✅ stable |
@@ -50,8 +50,8 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **03** | **[GeoGuesser](./03-geoguesser/)** | Drop a VLM at a random street corner on Earth and score it on kilometres of error. | 1 | 1 | 1 | ✅ stable |
 | **04** | **[SmolDataEnvs](./04-smoldataenvs/)** | Data-analysis tasks, verified SFT traces and a single-turn GRPO tutorial on HF Jobs. | 1 | 1 | 0 | 🚧 wip |
 | **05** | **[SmolDataEnvs: multi-harness RL](./05-multi-harness-rl/)** | Train on SmolDataEnvs with SETA, native OpenCode or Harbor, using HF Jobs or Slurm. | 3 | 1 | 0 | 🚧 wip |
+| **09** | **[RetroEnv](./09-retroenv/)** | Plan retrosyntheses back to purchasable molecules, scored step by step against a frozen reaction library. | 1 | 1 | 1 | 🚧 wip |
 | **07** | **[PortSimEnv](./07-simulation-environments/portsim-v1/)** | Re-plan a broken week of container-ship dockings at the Port of Barcelona, graded against a proven optimum. | 1 | 1 | 1 | 🚧 wip |
-<!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
 editing that manifest, not this table.</sub>

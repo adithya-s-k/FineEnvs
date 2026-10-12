@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RetroEnv Explorer</title>
+    <script>
+      try {
+        const saved = localStorage.getItem("theme");
+        document.documentElement.dataset.theme =
+          saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      } catch {}
+    </script>
+    <link rel="preconnect" href="https://rsms.me" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" />
+    <link rel="stylesheet" href="/static/app.css?v=7" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap top-inner">
+        <a class="brand" href="#/">RetroEnv <span>explorer</span></a>
+        <nav class="nav">
+          <a href="#/" data-nav="overview">Environment</a>
+          <a href="#/tasks" data-nav="tasks">RL tasks</a>
+          <a href="#/evals" data-nav="evals">Evals</a>
+        </nav>
+        <div class="top-right">
+          <label class="sel" for="benchmark"
+            >Release
+            <select id="benchmark"></select
+          ></label>
+          <button class="btn" id="theme" type="button"></button>
+        </div>
+      </div>
+    </header>
+    <main class="wrap page" id="view">
+      <div class="loading-row"><span class="spinner"></span>Loading</div>
+    </main>
+    <script src="/static/vendor/dagre.min.js"></script>
+    <script src="/static/vendor/panzoom.min.js"></script>
+    <script src="/static/route-graph.js?v=7"></script>
+    <script src="/static/evals.js?v=7"></script>
+    <script src="/static/app.js?v=7"></script>
+  </body>
+</html>
