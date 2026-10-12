@@ -1,0 +1,196 @@
+{
+  "env": "portsim-marine",
+  "version": "v3",
+  "authors": [
+    {
+      "name": "Edgar Arakelyan",
+      "github": "earakely-scale",
+      "affiliation": "Scale AI"
+    }
+  ],
+  "framework": "agentenv",
+  "tasks": {
+    "split": "eval",
+    "n": 15,
+    "source": "the Port of Barcelona's 2024 container calls at quays 24B (APM Terminals Barcelona) and 36A (Terminal Catalunya, BEST), as PortSimEnv's dock-v1-eval one-week standard and busy weeks, with the port's 2024 pilot and tug traffic",
+    "selection": "the 15 live weeks with the port's pilots and tugs, all qualifying as live weeks do: the weeks where the rolling re-planner, re-planning on the week as known at every watch, reaches the hindsight optimum in at least 3 of its 4 solver configurations"
+  },
+  "harness": {
+    "agent": "portsim-llm",
+    "tools": [
+      "get_situation",
+      "check_plan",
+      "confirm_berths",
+      "advance"
+    ],
+    "max_turns": 47
+  },
+  "grading": {
+    "reference": "the hindsight optimum: the plan CP-SAT proves optimal on the week as it really happened",
+    "reward": "a feasible week scores 0.2 + 0.8 exp(-g/0.5), g = max(0, cost - reference) / (max(0, reference - floor) + 100), the floor being the cost no plan can avoid; a week that breaks a rule scores 0.2 times its share of clean ships, below 0.2, and a ship left without a window breaks a rule; graded once, on the windows confirmed and the week as it really happened",
+    "excused": "cost or rule breaks that news brings to a window after its last chance to change (once it froze)",
+    "judge": false
+  },
+  "baselines": [
+    {
+      "name": "rolling re-planner",
+      "mean": 1.0
+    },
+    {
+      "name": "naive policy",
+      "mean": 0.1866
+    }
+  ],
+  "models": [
+    {
+      "model": "GPT-6 Astra",
+      "provider": "Azure OpenAI",
+      "runs": 15,
+      "mean": 0.9559,
+      "ci95": [
+        0.9102,
+        0.9931
+      ],
+      "feasible": 15,
+      "usd_per_episode": 0.5345
+    },
+    {
+      "model": "Claude Opus 5.5",
+      "provider": "Anthropic",
+      "runs": 15,
+      "mean": 0.9508,
+      "ci95": [
+        0.914,
+        0.9832
+      ],
+      "feasible": 15,
+      "usd_per_episode": 0.5641
+    },
+    {
+      "model": "Claude Sonnet 5.5",
+      "provider": "Anthropic",
+      "runs": 15,
+      "mean": 0.9323,
+      "ci95": [
+        0.892,
+        0.9673
+      ],
+      "feasible": 15,
+      "usd_per_episode": 0.4465
+    },
+    {
+      "model": "GPT-6.1 Sol",
+      "provider": "Azure OpenAI",
+      "runs": 15,
+      "mean": 0.905,
+      "ci95": [
+        0.7901,
+        0.9767
+      ],
+      "feasible": 14,
+      "usd_per_episode": 0.0841
+    },
+    {
+      "model": "Claude Haiku 5.5",
+      "provider": "Anthropic",
+      "runs": 15,
+      "mean": 0.6388,
+      "ci95": [
+        0.5071,
+        0.7645
+      ],
+      "feasible": 15,
+      "usd_per_episode": 0.0374
+    },
+    {
+      "model": "DeepSeek V4.1 Flash",
+      "provider": "Fireworks",
+      "runs": 15,
+      "mean": 0.598,
+      "ci95": [
+        0.3924,
+        0.7857
+      ],
+      "feasible": 9,
+      "usd_per_episode": 0.2394
+    },
+    {
+      "model": "GLM-5.3",
+      "provider": "Fireworks",
+      "runs": 15,
+      "mean": 0.5927,
+      "ci95": [
+        0.3682,
+        0.8038
+      ],
+      "feasible": 10,
+      "usd_per_episode": 0.4676
+    },
+    {
+      "model": "Qwen3.8-2.4T",
+      "provider": "Fireworks",
+      "runs": 15,
+      "mean": 0.5193,
+      "ci95": [
+        0.2965,
+        0.7462
+      ],
+      "feasible": 7,
+      "usd_per_episode": 0.8272
+    },
+    {
+      "model": "GLM-5.3-Flash",
+      "provider": "Fireworks",
+      "runs": 15,
+      "mean": 0.461,
+      "ci95": [
+        0.2985,
+        0.6524
+      ],
+      "feasible": 6,
+      "usd_per_episode": 0.0659
+    },
+    {
+      "model": "Kimi K3",
+      "provider": "Fireworks",
+      "runs": 15,
+      "mean": 0.4456,
+      "ci95": [
+        0.2561,
+        0.6362
+      ],
+      "feasible": 6,
+      "usd_per_episode": 1.2791
+    },
+    {
+      "model": "GPT-6 Luna",
+      "provider": "Azure OpenAI",
+      "runs": 15,
+      "mean": 0.287,
+      "ci95": [
+        0.1985,
+        0.4066
+      ],
+      "feasible": 11,
+      "usd_per_episode": 0.0237
+    },
+    {
+      "model": "Qwen3.8-27B",
+      "provider": "Groq",
+      "runs": 15,
+      "mean": 0.073,
+      "ci95": [
+        0.047,
+        0.0995
+      ],
+      "feasible": 0,
+      "usd_per_episode": 0.8111
+    }
+  ],
+  "links": {
+    "runs": "https://huggingface.co/datasets/earakely-scale/PortSimEnv-AgentEnv/viewer/v3_episodes",
+    "replay": "https://huggingface.co/spaces/earakely-scale/PortSimEnv-AgentEnv",
+    "code": "https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/portsim-live"
+  },
+  "date": "2026-10-12"
+}
