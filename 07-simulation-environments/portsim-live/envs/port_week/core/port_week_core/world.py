@@ -10,13 +10,14 @@ from berth_core.model import MOVE_PENALTY
 from berth_core.reward import score_v3
 from berth_core.solve import Ledger, naive_replan
 
-from .schedule import FREEZE_HOURS, HARBOUR_MASTER, PLANNING_CALLS, label, schedule
+from .schedule import FREEZE_HOURS, HARBOUR_MASTER, PLANNING_CALLS, Notice, label, schedule
 
 RULES = [("missing", r"^missing from the plan$"), ("no_move", r"inside the no-movement window"),
          ("cranes", r"^gets -?\d+ cranes"), ("arrival", r"cannot arrive before hour"),
          ("quay", r"but the quay has sections"), ("closed", r"^overlaps closed sections"),
          ("alongside", r"\(alongside\)"), ("ship", r"^overlaps ship (\d+) "), ("crane_pool", r"^cranes over the pool"),
-         ("moves", r"ships move \(limit"), ("pilots", r"^pilots short at hour"), ("tugs", r"^tugs short at hour")]
+         ("moves", r"ships move \(limit"), ("pilots", r"^pilots short at hour"), ("tugs", r"^tugs short at hour"),
+         ("queue", r"earlier in the queue")]
 NOTE = "This watch's bulletin arrives with your next tool result."
 
 
@@ -106,11 +107,16 @@ def grade_week(task: Task, plan: Plan, excused_problems: Iterable[tuple[int, str
 
 class Week:
     evaluate = staticmethod(evaluate)
+    timetable = staticmethod(schedule)
     notice_excuse = True
+    untimed: tuple[str, ...] = ()
+    """Notice kinds that report rather than announce, so the audit holds them to no lead."""
+    anchor_rows = False
+    """Whether check_plan's rows show the hours each ship waits at anchor, which the week charges."""
 
     def __init__(self, task: Task):
         self.task = task
-        self.watches = schedule(task)
+        self.watches = self.timetable(task)
         self.scheduled = {n.event_id: n for w in self.watches for n in w.notices}
         self.watch = 0
         self.revealed: list[str] = []
@@ -154,15 +160,18 @@ class Week:
         return PLANNING_CALLS - self.planning_calls[-1]
 
     def windows(self, view: Task) -> list[dict]:
+        """Each confirmed window, where the port berths its ship when that differs (a late ship), and its status."""
         fixed = self.fixed
-        departures = {r.ship: r.departure for r in self.evaluate(view, self.plan).ships}
+        run = {r.ship: r for r in self.evaluate(view, self.plan).ships}
         rows = []
         for sid, (h, sec, cranes) in sorted(self.plan.items()):
-            dep = departures[sid]
-            status = ("open" if sid not in fixed else "departed" if dep <= self.hour
-                      else "berthed" if h <= self.hour else "frozen")
-            rows.append({"ship": sid, "berth_hour": h, "section": sec, "cranes": cranes, "departure": dep,
-                         "status": status})
+            r = run[sid]
+            moved = {"port_berth_hour": r.berth_hour, "port_section": r.section} if (r.berth_hour, r.section) != (
+                h, sec) else {}
+            status = ("open" if sid not in fixed else "departed" if r.departure <= self.hour
+                      else "berthed" if r.berth_hour <= self.hour else "frozen")
+            rows.append({"ship": sid, "berth_hour": h, "section": sec, "cranes": cranes} | moved
+                        | {"departure": r.departure, "status": status})
         return rows
 
     def unconfirmed(self, view: Task) -> list[int]:
@@ -210,15 +219,22 @@ class Week:
             view, plan, _, _, refused, entry_problems = self._merge(raw)
         except PlanError as e:
             return {"error": str(e), "planning_calls_left": self.calls_left}
-        ships = charge(self.evaluate(view, plan), *self.excuses())
+        return self.assess(view, plan) | {"refused": refused, "entry_problems": entry_problems,
+                                          "planning_calls_left": self.calls_left}
+
+    def assess(self, view: Task, plan: Plan) -> dict:
+        """The plan on the week as known now: the ships with a problem or a cost, and the plan's cost."""
+        ships = charge(self.evaluate(view, plan), *self.draft_excuses(plan))
+        arrivals = {s.id: s.arrival for s in view.ships}
         rows = []
         for r, charged, forgiven, waived in ships:
             if r.berth_hour is None:
                 rows.append({"ship": r.ship, "problems": charged})
             elif r.problems or r.cost > 0:
                 rows.append({"ship": r.ship, "berth_hour": r.berth_hour, "section": r.section, "cranes": r.cranes,
-                             "departure": r.departure, "delay_h": r.delay_h, "moved": r.moved, "cost": r.cost,
-                             "problems": charged}
+                             "departure": r.departure, "delay_h": r.delay_h}
+                            | ({"anchor_h": max(0, r.berth_hour - arrivals[r.ship])} if self.anchor_rows else {})
+                            | {"moved": r.moved, "cost": r.cost, "problems": charged}
                             | ({"excused": forgiven, "excused_cost": waived} if forgiven or waived else {}))
         feasible = not any(charged for _, charged, _, _ in ships)
         excused_cost = sum(w for *_, w in ships)
@@ -226,8 +242,7 @@ class Week:
         cost = sum(r.cost for r, *_ in ships) - excused_cost
         return {"feasible": feasible, "cost": cost if feasible else None,
                 "delay_cost": cost - MOVE_PENALTY * moves if feasible else None, "moves": moves if feasible else None,
-                "excused_cost": excused_cost, "ships": rows, "refused": refused, "entry_problems": entry_problems,
-                "planning_calls_left": self.calls_left}
+                "excused_cost": excused_cost, "ships": rows}
 
     def confirm(self, raw) -> dict:
         if error := self._planning_call():
@@ -264,6 +279,7 @@ class Week:
         if event_id not in self.revealed:
             fixed, before = self.fixed, self.view
             self.revealed.append(event_id)
+            self.revealing(scheduled)
             if fixed and self.notice_excuse:
                 problems, cost = excuse(before, self.view, fixed, evaluate=self.evaluate)
                 self.excused_problems += [{"event_id": event_id, "ship": s, "rule": r, "problem": p}
@@ -272,6 +288,13 @@ class Week:
         if via != "load":
             self.messages.append({"hour": self.hour, "from": name, "text": text})
         return {"applied": event_id, "watch": self.watch}
+
+    def draft_excuses(self, plan: Plan) -> tuple[set[tuple[int, str]], dict[int, int]]:
+        """The excuses check_plan weighs a draft with: the confirmed plan's."""
+        return self.excuses()
+
+    def revealing(self, notice: Notice) -> None:
+        """What the news changes in the week beyond the view, before its excuses are weighed."""
 
     def excuses(self) -> tuple[set[tuple[int, str]], dict[int, int]]:
         cost: dict[int, int] = {}
@@ -311,7 +334,7 @@ class Week:
         problems += [f"{e['event_id']}: the message differs from the schedule" for e in self.log if not e["matches"]]
         for e in self.log:
             lead = self.scheduled[e["event_id"]].event_hour - e["hour"]
-            if e["hour"] > 0 and lead < FREEZE_HOURS:
+            if e["hour"] > 0 and lead < FREEZE_HOURS and e["kind"] not in self.untimed:
                 problems.append(f"{e['event_id']}: revealed {lead} h ahead at hour {e['hour']}")
         if self.done:
             for event_id in self.scheduled:

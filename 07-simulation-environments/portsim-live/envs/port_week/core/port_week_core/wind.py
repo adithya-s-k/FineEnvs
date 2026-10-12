@@ -10,7 +10,7 @@ from collections.abc import Iterable
 from dataclasses import replace
 from pathlib import Path
 
-from berth_core import Task, TaskPack
+from berth_core import Plan, Task, TaskPack
 from berth_core.prompts import DAYS
 
 from . import packs, world
@@ -222,30 +222,39 @@ class WindWeek(MarineWeek):
         out = super().situation()
         return out | {"situation": out["situation"] + "\n\n" + section(self.view)}
 
-    def excuses(self) -> tuple[set[tuple[int, str]], dict[int, int]]:
+    def target(self) -> Task:
+        """What the grade holds the plan to: the week as known, the truth once done."""
+        return self.task if self.done else self.view
+
+    def past(self, revealed: list[str], target: Task) -> Task:
+        return known(self.task, revealed)
+
+    def excuses(self, plan: Plan | None = None) -> tuple[set[tuple[int, str]], dict[int, int]]:
         """Each ship is excused the (ship, rule) problems and the cost that the target (the week as known, the truth
         once done) adds over the week as known at its last watch before it froze, the whole plan evaluated on both;
         a ship never frozen compares with the last watch reached. An hourly rule is charged only at an hour it broke
         then, so a warning that never blew doesn't stand for wind no forecast showed. A problem ships share, an
         overlap or a pool short at an hour, is judged for each as the ship decided last saw it: that decision put
         them together, on the latest news."""
-        now = {r.ship: r for r in self.evaluate(self.task if self.done else self.view, self.plan).ships}
+        plan = self.plan if plan is None else plan
+        target = self.target()
+        now = {r.ship: r for r in self.evaluate(target, plan).ships}
         first: dict[int, int] = {}
         for k, f in enumerate(self.frozen):
             for s in f["ships"]:
                 first.setdefault(s, k)
-        decided = {s: first[s] - 1 if s in first else self.watch for s in self.plan}
+        decided = {s: first[s] - 1 if s in first else self.watch for s in plan}
         seen: dict[int, set[tuple[str, int | None]]] = {}
         cost = {}
         for j in sorted(set(decided.values())):
-            view = known(self.task, [e["event_id"] for e in self.log if e["watch"] <= j])
-            before = {r.ship: r for r in self.evaluate(view, self.plan).ships}
-            for s in (s for s in self.plan if decided[s] == j):
+            view = self.past([e["event_id"] for e in self.log if e["watch"] <= j], target)
+            before = {r.ship: r for r in self.evaluate(view, plan).ships}
+            for s in (s for s in plan if decided[s] == j):
                 seen[s] = {_key(p) for p in before[s].problems}
                 if now[s].cost > before[s].cost:
                     cost[s] = now[s].cost - before[s].cost
         sharing: dict[tuple[str, int | None], list[int]] = defaultdict(list)
-        for s in self.plan:
+        for s in plan:
             for p in now[s].problems:
                 if _key(p)[0] in SHARED:
                     sharing[_key(p)].append(s)
@@ -258,7 +267,7 @@ class WindWeek(MarineWeek):
             return key in seen[max(sharing[key], key=decided.__getitem__) if rule in SHARED else s]
 
         problems = set()
-        for s in self.plan:
+        for s in plan:
             charged = {world.rule(p) for p in now[s].problems if was_seen(s, _key(p))}
             problems |= {(s, world.rule(p)) for p in now[s].problems if world.rule(p) not in charged}
         return problems, cost
