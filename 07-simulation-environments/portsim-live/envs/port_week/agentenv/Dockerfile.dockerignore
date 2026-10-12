@@ -1,6 +1,6 @@
 # The build context is 07-simulation-environments: only what the Dockerfile copies goes in, so rollouts, venvs, viewer
-# assets and runs/ stay out, and so do the wind weeks, which are mounted to serve portsim-wind (rollout.py stages its
-# own build context).
+# assets and runs/ stay out, and so do the wind and lines weeks, which are mounted to serve portsim-wind and
+# portsim-lines (rollout.py stages its own build context).
 *
 !portsim-v1/envs/berth_planning/core
 !portsim-v1/envs/berth_planning/tasks/dock-v1-eval
@@ -11,6 +11,8 @@
 !portsim-live/envs/port_week/tasks
 portsim-live/envs/port_week/tasks/wind
 portsim-live/envs/port_week/tasks/dock-v1-wind
+portsim-live/envs/port_week/tasks/lines
+portsim-live/envs/port_week/tasks/dock-v1-lines
 **/tests
 **/.venv
 **/*.egg-info

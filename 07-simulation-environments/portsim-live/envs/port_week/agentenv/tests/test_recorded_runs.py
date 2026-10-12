@@ -1,8 +1,13 @@
 """The recorded runs in fixtures/runs, copied from the agentenv-portsim plugin at v0.4.5 (tests/viewer), played back
 through the env over MCP (recorded.py): two live weeks played by Sonnet and GPT through agent-env, and the scripted
 marine and wind runs (the wind one on the synthetic wind weeks). In process, or one container per week with
-PORTSIM_LIVE_IMAGE set: an env plays one week."""
+PORTSIM_LIVE_IMAGE set: an env plays one week.
 
+PORTSIM_RUNS names more sweep folders, or folders of them, separated by the path separator: the plugin's published
+runs (its results/runs/<sweep>), which repeat the built wind and lines weeks and so aren't committed, replayed the
+same way in process, on the built packs."""
+
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -10,12 +15,12 @@ import httpx
 import pytest
 from berth_core import TaskPack
 from fastmcp import Client
-from port_week_core import marine, packs
+from port_week_core import lines, marine, packs, wind
 from recorded import episodes, replay
 from serving import IMAGE, served
 from wind_fixture import PACK_DIR, tasks_dir, use
 
-from port_week_agentenv.contract import LIVE_ENV, MARINE_ENV, WIND_ENV
+from port_week_agentenv.contract import LINES_ENV, LIVE_ENV, MARINE_ENV, WIND_ENV
 from port_week_agentenv.server import ENVS
 
 pytestmark = pytest.mark.anyio
@@ -30,6 +35,9 @@ REPLAYED = {("live-gpt", "openai/gpt-6.1-sol"): (9, 2, 4, 0),
             ("wind-scripted", "scripted/blind"): (26, 15, 0, 0),
             ("wind-scripted", "scripted/rolling"): (28, 15, 0, 0)}
 """Per week: outputs compared, notices delivered, calls skipped (get_time; after the week was done) and refusals."""
+PUBLISHED = [e for root in os.environ.get("PORTSIM_RUNS", "").split(os.pathsep) if root
+             for e in episodes(Path(root).expanduser())]
+BUILT_PACKS = {LIVE_ENV: packs.live_pack, MARINE_ENV: marine.pack, WIND_ENV: wind.pack, LINES_ENV: lines.pack}
 
 
 @asynccontextmanager
@@ -66,3 +74,14 @@ async def test_a_recorded_week_replays_byte_for_byte(episode, gateway, monkeypat
         counts = await replay(mcp, http, task, episode, f"{gateway.env_url}/clock/time")
     replayed = (counts.outputs, counts.notices, counts.skipped, counts.refusals)
     assert replayed == REPLAYED[episode.run, episode.row["model"]]
+
+
+@pytest.mark.skipif(not PUBLISHED, reason="PORTSIM_RUNS names no sweep of the plugin's to replay")
+@pytest.mark.parametrize("episode", PUBLISHED, ids=[f"{e.run}-{e.row['model']}-{e.row['task_id']}" for e in PUBLISHED])
+async def test_a_published_week_replays_byte_for_byte(episode, gateway):
+    task = BUILT_PACKS[episode.env]().get(episode.row["task_id"])
+    env = ENVS[episode.env]()
+    env.create_app()
+    async with Client(env.mcp) as mcp, httpx.AsyncClient(transport=httpx.ASGITransport(env.mcp.http_app()),
+                                                         base_url="http://portsim") as http:
+        await replay(mcp, http, task, episode, f"{gateway.env_url}/clock/time")

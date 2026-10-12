@@ -1,6 +1,7 @@
 """PortSim live: one week at one quay, played in watches on the gateway's virtual clock; PortSim marine: the same
 week with the port's pilots and tugs; PortSim wind: the marine week in a real weather week, with the forecast at every
-watch.
+watch; PortSim lines: the wind week with the ships' agents, who report ETAs, answer the planner and agree arrival times
+through two tools only their role sees.
 
 urn:portsim:live-load/v1 starts a week; each advance re-arms the clock at the next bulletin, and the gateway's
 triggers deliver the parties' notices through the hidden port_notice tool. data/get never reports reference plans."""
@@ -15,14 +16,26 @@ from agentenv_protocol import AgentEnvEnvironment, DataPart, environment_card, e
 from berth_core import TaskPack
 from fastmcp import FastMCP
 from fastmcp.server.middleware import Middleware
-from port_week_core import marine, packs, wind
+from port_week_core import lines, marine, packs, wind
+from port_week_core.lines import LinesWeek
 from port_week_core.marine import MarineWeek
 from port_week_core.schedule import virtual_time
 from port_week_core.wind import WindWeek
 from port_week_core.world import Week
 from pydantic import BaseModel, Field
 
-from .contract import CLOCK_URI, END_WEEK_URI, LIVE_ENV, LIVE_LOAD_URI, MARINE_ENV, NOTICE_TOOL, TOOLS, WIND_ENV
+from .contract import (
+    CLOCK_URI,
+    END_WEEK_URI,
+    LINE_TOOLS,
+    LINES_ENV,
+    LIVE_ENV,
+    LIVE_LOAD_URI,
+    MARINE_ENV,
+    NOTICE_TOOL,
+    TOOLS,
+    WIND_ENV,
+)
 
 EMPTY = {"task_id": None, "watches": None, "watch": None, "hour": None, "done": False, "end_reason": None,
          "calls_used": 0, "planning_calls": [], "plan": [], "notices": [], "frozen": [], "refusals": [],
@@ -172,22 +185,55 @@ class PortSimWindEnv(PortSimMarineEnv):
     task_pack = staticmethod(wind.pack)
 
 
+@environment_card(name=LINES_ENV)
+class PortSimLinesEnv(PortSimWindEnv):
+    ENV = LINES_ENV
+    WEEK = LinesWeek
+    task_pack = staticmethod(lines.pack)
+
+    @tool(description="Confirm berth windows with the ships: each entry sets or changes one ship's window; ships left "
+                      "out keep theirs. From watch 1 on, windows starting before the freeze line (6 hours from now) "
+                      "are frozen, and new ones must start at or after it. Returns the confirmed plan's problems and "
+                      "cost, as check_plan does. Uses one of this watch's 3 planning calls.")
+    def confirm_berths(self, plan: WindowsArg) -> str:
+        week = self._week(open_only=True)
+        return _reply(week, week.confirm(entries(plan)))
+
+    @tool(description="A ship's state as its agent knows it now: its ETA, or the arrival agreed and its turn in the "
+                      "queue, or when it arrived. Records what the agent tells the planner. For the ships' agents.")
+    def ship_status(self, agent: str, ship: int) -> str:
+        return dumps(self._lines().status(agent, ship))
+
+    @tool(description="Agree an arrival time for a ship when it can make it, at cruising speed or by slowing; the ship "
+                      "then arrives at that hour and keeps its turn. For the ships' agents.")
+    def agree_arrival(self, agent: str, ship: int, arrival: int) -> str:
+        return dumps(self._lines().request(agent, ship, arrival))
+
+    def _lines(self) -> LinesWeek:
+        week = self._week(open_only=True)
+        if not isinstance(week, LinesWeek):
+            raise ValueError("this env has no ships' agents")
+        return week
+
+
 class LiveEpisode(Middleware):
-    """Counts the agent's tools/calls, failed ones included; port_notice calls are the triggers', not the agent's."""
+    """Counts the planner's tools/calls, failed ones included; port_notice calls are the triggers', and ship_status and
+    agree_arrival the ships' agents'."""
 
     def __init__(self, env: PortSimLiveEnv):
         self.env = env
 
     async def on_call_tool(self, context, call_next):
-        if context.message.name != NOTICE_TOOL and self.env.week is not None:
+        if context.message.name not in (NOTICE_TOOL, *LINE_TOOLS) and self.env.week is not None:
             self.env.week.calls += 1
         return await call_next(context)
 
     async def on_list_tools(self, context, call_next):
-        return sorted(await call_next(context), key=lambda t: [*TOOLS, NOTICE_TOOL].index(t.name))
+        order = [*TOOLS, NOTICE_TOOL, *LINE_TOOLS]
+        return sorted(await call_next(context), key=lambda t: order.index(t.name))
 
 
-ENVS = {LIVE_ENV: PortSimLiveEnv, MARINE_ENV: PortSimMarineEnv, WIND_ENV: PortSimWindEnv}
+ENVS = {LIVE_ENV: PortSimLiveEnv, MARINE_ENV: PortSimMarineEnv, WIND_ENV: PortSimWindEnv, LINES_ENV: PortSimLinesEnv}
 
 
 def main() -> None:

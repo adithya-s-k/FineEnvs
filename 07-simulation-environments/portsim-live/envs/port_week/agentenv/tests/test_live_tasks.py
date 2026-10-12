@@ -1,6 +1,8 @@
-"""The task steps equal the agentenv-portsim plugin's at v0.4.5: every qualifying week as its `tasks generate --live`,
-`--marine` and `--wind` wrote it (fixtures/plugin_tasks.json, sha256 per file; the wind weeks once they are built), the
-synthetic wind weeks' steps, and the week and wiring-noplay tasks of its portsim-live and portsim-marine bundles."""
+"""The task steps equal the agentenv-portsim plugin's: every qualifying week as its `tasks generate --live`, `--marine`,
+`--wind` and `--lines` write it, with and without a cost cap (fixtures/plugin_tasks.json, sha256 per file, at v0.4.5
+and, for the lines weeks and the uncapped files, at 83eca5c; the wind and lines weeks once they are built, and the lines
+weeks as GPT-6 Astra's published lines sweep played them), the synthetic wind and lines weeks' steps, and the week and
+wiring-noplay tasks of its portsim-live and portsim-marine bundles."""
 
 import hashlib
 import json
@@ -9,11 +11,12 @@ from pathlib import Path
 
 import pytest
 from berth_core import TaskPack
-from port_week_core import marine, packs, wind
-from wind_fixture import PACK_DIR, STORM_TASK
+from lines_fixture import real_lines
+from port_week_core import lines, marine, packs, wind
+from wind_fixture import LINES_PACK_DIR, PACK_DIR, STORM_TASK
 
 from port_week_agentenv import tasks
-from port_week_agentenv.contract import LIVE_ENV, MARINE_ENV, WIND_ENV
+from port_week_agentenv.contract import LINES_ENV, LIVE_ENV, MARINE_ENV, WIND_ENV
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 GENERATED = json.loads((FIXTURES / "plugin_tasks.json").read_text())
@@ -55,6 +58,21 @@ def test_the_synthetic_wind_weeks_are_the_plugins():
     [variant] = GENERATED["wind-fixtures"].values()
     assert digests(WIND_ENV, pack.tasks, variant) == variant["sha256"]
     assert tasks.encode(tasks.steps(WIND_ENV, pack.get(STORM_TASK), 5.0)) == (FIXTURES / "wind-storm.json").read_bytes()
+
+
+@real_lines
+@pytest.mark.parametrize("variant", GENERATED["lines"].values(), ids=GENERATED["lines"].keys())
+def test_each_lines_week_is_the_plugins(variant):
+    assert digests(LINES_ENV, qualifying(lines.pack(), lines.task_ids()), variant) == variant["sha256"]
+
+
+def test_the_synthetic_lines_weeks_are_the_plugins():
+    pack = TaskPack(LINES_PACK_DIR)
+    [variant] = GENERATED["lines-fixtures"].values()
+    assert digests(LINES_ENV, pack.tasks, variant) == variant["sha256"]
+    steps = tasks.wiring_noplay(LINES_ENV, pack.get(STORM_TASK))
+    assert [s["id"] for s in steps] == ["deploy", "load-task", "hide-port-notice", "agents-only", "agents-tools",
+                                        "watches", "clock", "end-week", "grade"]
 
 
 @pytest.mark.parametrize(("env", "pack"), [(LIVE_ENV, packs.live_pack), (MARINE_ENV, marine.pack)])

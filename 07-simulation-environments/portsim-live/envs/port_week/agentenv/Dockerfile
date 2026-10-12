@@ -1,9 +1,10 @@
-# PortSimEnv live as AgentEnv environments: portsim-live (the default), portsim-marine and portsim-wind, picked by
-# ENVIRONMENT_NAME, on port 18765. Build context: 07-simulation-environments, for berth_core and the dock-v1 eval and
-# train packs from portsim-v1 (Dockerfile.dockerignore keeps the rest out).
+# PortSimEnv live as AgentEnv environments: portsim-live (the default), portsim-marine, portsim-wind and portsim-lines,
+# picked by ENVIRONMENT_NAME, on port 18765. Build context: 07-simulation-environments, for berth_core and the dock-v1
+# eval and train packs from portsim-v1 (Dockerfile.dockerignore keeps the rest out).
 #   docker build -f portsim-live/envs/port_week/agentenv/Dockerfile -t portsim-live-agentenv .
-# The image never holds the wind weeks: portsim-wind needs them built (tools/build_wind.py) and mounted read-only at
-# /app/port_week/tasks/dock-v1-wind.
+# The image never holds the wind or lines weeks: portsim-wind needs them built (tools/build_wind.py) and mounted
+# read-only at /app/port_week/tasks/dock-v1-wind, portsim-lines (tools/build_lines.py) at
+# /app/port_week/tasks/dock-v1-lines.
 FROM python:3.12-slim
 LABEL org.opencontainers.image.source="https://github.com/adithya-s-k/FineEnvs" \
       org.opencontainers.image.licenses="Apache-2.0 AND CC-BY-SA-4.0" \

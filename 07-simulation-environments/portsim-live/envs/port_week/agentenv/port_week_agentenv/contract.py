@@ -6,11 +6,15 @@ from port_week_core.schedule import Watch
 LIVE_ENV = "portsim-live"
 MARINE_ENV = "portsim-marine"
 WIND_ENV = "portsim-wind"
+LINES_ENV = "portsim-lines"
 LIVE_LOAD_URI = "urn:portsim:live-load/v1"
 END_WEEK_URI = "urn:portsim:end-week/v1"
 CLOCK_URI = "urn:agentenv:clock/v1"
 TOOLS = ("get_situation", "check_plan", "confirm_berths", "advance")
 NOTICE_TOOL = "port_notice"
+LINE_TOOLS = ("ship_status", "agree_arrival")
+LINE_AGENT = "portsim-line"
+LINE_ROLE = "line"
 BARRIER_SECONDS = 60
 
 

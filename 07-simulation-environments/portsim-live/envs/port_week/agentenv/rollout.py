@@ -1,15 +1,17 @@
-"""Run PortSimEnv live on AgentEnv: one model on a few weeks of portsim-live, portsim-marine or portsim-wind, each
-played in watches by the portsim-llm agent and graded by portsim-live-verifier, and print what happened.
+"""Run PortSimEnv live on AgentEnv: one model on a few weeks of portsim-live, portsim-marine, portsim-wind or
+portsim-lines, each played in watches by the portsim-llm agent (on portsim-lines with a portsim-line agent for each firm
+with a ship in the week) and graded by portsim-live-verifier, and print what happened.
 
     uv run python rollout.py --smoke                                       # no model or key: wiring-noplay scores 0
     uv run python rollout.py --smoke --env marine
     HF_TOKEN=hf_... uv run python rollout.py                               # GLM-5.3-Flash on the HF router, 1 week
     uv run python rollout.py --env marine --model anthropic/claude-sonnet-5-5 --tasks 3   # through LITELLM_* or [model]
     uv run python rollout.py --env wind --task-id dock-36A-w06x1-standard-0-e07           # after tools/build_wind.py
+    uv run python rollout.py --env lines --model openai/gpt-6-astra                       # after tools/build_lines.py
 
-It stages a bundle in runs/bundle (the env's Docker build context, the agent from portsim-v1, the verifier and one task
-file per week) and runs it in this process with agent-env, which builds the images and the gateway on first use, starts
-its own registry on 127.0.0.1:5000 and keeps its stores under ~/.local/state/agent-env. Each run writes
+It stages a bundle in runs/bundle (the env's Docker build context, the agents from portsim-v1, the verifier and one
+task file per week) and runs it in this process with agent-env, which builds the images and the gateway on first use,
+starts its own registry on 127.0.0.1:5000 and keeps its stores under ~/.local/state/agent-env. Each run writes
 runs/<UTC>/results.jsonl and runs/<UTC>/transcripts/<task>.json. Exit 0 when every run finished, 1 when one failed (or
 --smoke scored wrong), 2 when a check or the bundle failed before anything ran, 128 + the signal number when
 interrupted.
@@ -32,11 +34,11 @@ from agent_env.config import ConfigError, get_config
 from agent_env.store.routing import namespace_routing
 from agent_env.utils.docker_build import docker_unreachable
 from berth_core import Task, TaskPack
-from port_week_core import marine, packs, wind
+from port_week_core import lines, marine, packs, wind
 from port_week_core.schedule import schedule
 
 from port_week_agentenv import tasks
-from port_week_agentenv.contract import LIVE_ENV, MARINE_ENV, WIND_ENV
+from port_week_agentenv.contract import LINE_AGENT, LINES_ENV, LIVE_ENV, MARINE_ENV, WIND_ENV
 
 HERE = Path(__file__).resolve().parent
 SIMULATION = HERE.parents[3]
@@ -44,11 +46,13 @@ V1 = SIMULATION / "portsim-v1" / "envs" / "berth_planning"
 WEEK = HERE.parent
 PINS = WEEK.parents[1] / "data" / "meteocat" / "pins.json"
 AGENT = V1 / "agentenv" / "agent"
+LINE_AGENT_DIR = V1 / "agentenv" / "line_agent"
 RUNS = HERE / "runs"
 BUNDLE = RUNS / "bundle"
-ENVS = {"live": LIVE_ENV, "marine": MARINE_ENV, "wind": WIND_ENV}
+ENVS = {"live": LIVE_ENV, "marine": MARINE_ENV, "wind": WIND_ENV, "lines": LINES_ENV}
 WIRING_TASKS = {LIVE_ENV: "dock-24B-w07x1-busy-0", MARINE_ENV: "dock-24B-w07x1-busy-0",
-                WIND_ENV: "dock-24B-w06x1-busy-0-e15"}
+                WIND_ENV: "dock-24B-w06x1-busy-0-e15", LINES_ENV: "dock-24B-w06x1-busy-0-e15"}
+BUILT = {WIND_ENV: (packs.WIND_PACK, "build_wind.py"), LINES_ENV: (packs.LINES_PACK, "build_lines.py")}
 SMOKE = "wiring-noplay"
 HF_ROUTER = "https://router.huggingface.co/v1"
 DEFAULT_MODEL = "zai-org/GLM-5.3-Flash:baseten"
@@ -91,23 +95,29 @@ def endpoint() -> str | None:
         return None
 
 
-def drifted() -> bool:
-    """The built wind weeks differ from the ones the published runs played, and build_wind.py verify didn't accept
-    it."""
-    body = (wind.pack_dir() / "tasks.jsonl").read_bytes()
-    published = json.loads(PINS.read_text())["outputs"][f"{packs.WIND_PACK}/tasks.jsonl"]["sha256"]
-    manifest = json.loads((wind.pack_dir() / "manifest.json").read_text())
+def drifted(env: str) -> bool:
+    """The built wind or lines weeks differ from the ones the published runs played, and the build's verify didn't
+    accept it."""
+    pack = BUILT[env][0]
+    body = (packs.tasks_root() / pack / "tasks.jsonl").read_bytes()
+    published = json.loads(PINS.read_text())["outputs"][f"{pack}/tasks.jsonl"]["sha256"]
+    manifest = json.loads((packs.tasks_root() / pack / "manifest.json").read_text())
     return hashlib.sha256(body).hexdigest() != published and "drift" not in manifest
 
 
 def week_pack(env: str) -> TaskPack:
-    return wind.pack() if env == WIND_ENV else marine.pack() if env == MARINE_ENV else packs.live_pack()
+    return (lines.pack() if env == LINES_ENV else wind.pack() if env == WIND_ENV else marine.pack()
+            if env == MARINE_ENV else packs.live_pack())
 
 
 def references(env: str) -> dict[str, dict]:
-    refs = wind.references() if env == WIND_ENV else marine.references() if env == MARINE_ENV else (
-        packs.live_references())
+    refs = (lines.references() if env == LINES_ENV else wind.references() if env == WIND_ENV else marine.references()
+            if env == MARINE_ENV else packs.live_references())
     return {r["task_id"]: r for r in refs}
+
+
+def watches(env: str, task: Task) -> int:
+    return len(lines.timetable(task) if env == LINES_ENV else schedule(task))
 
 
 def qualifying(env: str) -> list[str]:
@@ -118,19 +128,23 @@ def qualifying(env: str) -> list[str]:
 
 def stage(env: str, task_files: dict[str, list[dict]], agent: bool) -> None:
     """runs/bundle: the env folder holds what agentenv/Dockerfile copies from 07-simulation-environments, so the same
-    Dockerfile builds it; the wind weeks only for portsim-wind, and never the weather or the references."""
+    Dockerfile builds it; the wind weeks only for portsim-wind and the lines weeks only for portsim-lines, and never
+    the weather or the references. portsim-lines adds the portsim-line agent."""
     shutil.rmtree(BUNDLE, ignore_errors=True)
     folder = BUNDLE / "envs" / env
     for source in (V1 / "core", V1 / "tasks" / "dock-v1-eval", V1 / "tasks" / "dock-v1-train", WEEK / "core",
                    HERE / "port_week_agentenv"):
         shutil.copytree(source, folder / source.relative_to(SIMULATION), ignore=SKIP)
     shutil.copy2(HERE / "pyproject.toml", folder / (HERE / "pyproject.toml").relative_to(SIMULATION))
+    built = [pack for e, (pack, _) in BUILT.items() if e != env]
     shutil.copytree(packs.tasks_root(), folder / (WEEK / "tasks").relative_to(SIMULATION),
-                    ignore=shutil.ignore_patterns("wind", *(() if env == WIND_ENV else (packs.WIND_PACK,))))
+                    ignore=shutil.ignore_patterns("wind", "lines", *built))
     shutil.copy2(HERE / "Dockerfile", folder / "Dockerfile")
     (folder / "env.toml").write_text(f'environment_name = "{env}"\nenv_provider_type = "gateway"\n')
     if agent:
         shutil.copytree(AGENT, BUNDLE / "agents" / "portsim-llm", ignore=SKIP)
+        if env == LINES_ENV:
+            shutil.copytree(LINE_AGENT_DIR, BUNDLE / "agents" / LINE_AGENT, ignore=SKIP)
     verifier = BUNDLE / "artifacts" / "portsim-live-verifier"
     verifier.mkdir(parents=True)
     shutil.copy2(HERE / "verifier" / "verify.py", verifier / "verify.py")
@@ -164,6 +178,8 @@ def row(name: str, env: str, task: Task, reference: dict | None, model: str | No
             "checks": sum(week["planning_calls"]) if week else None, "calls": week.get("calls_used"),
             "rolling_reward": reference and reference["rolling"]["reward"],
             "naive_reward": reference and reference["naive"]["reward"],
+            **({"anchor_hours": grade.get("anchor_hours"),
+                "messages": len(week["lines"]["exchanges"]) if week else None} if env == LINES_ENV else {}),
             **{key: summary.get(key) for key in ("turns", "tool_calls", "input_tokens", "output_tokens",
                                                  "cached_tokens", "cache_write_tokens", "cost_usd")},
             "failed_step": failed.get("step_id"), "error_code": (play and play.error_code) or failed.get("error_type"),
@@ -172,7 +188,7 @@ def row(name: str, env: str, task: Task, reference: dict | None, model: str | No
 
 def show(r: dict, task: Task, record: dict | None) -> None:
     print(f"\n=== {r['task']} ({task.task_id}, {task.difficulty}, {len(task.ships)} ships, "
-          f"{len(schedule(task))} watches on {r['env']}) ===")
+          f"{watches(r['env'], task)} watches on {r['env']}) ===")
     for m in (record or {}).get("messages", [])[2:]:
         if m["role"] == "assistant":
             calls = ", ".join(c["name"] for c in m.get("tool_calls") or [])
@@ -235,9 +251,9 @@ def main() -> int:
         print(f"{e}: PORT_WEEK_TASKS_DIR, when set, must also hold the committed dock-v1-marine/, live/ and marine/",
               file=sys.stderr)
         return 2
-    if env == WIND_ENV and drifted():
-        print("the built wind weeks differ from the published ones: python tools/build_wind.py verify lists them, and "
-              "--accept-drift lets them play", file=sys.stderr)
+    if env in BUILT and drifted(env):
+        print(f"the built {args.env} weeks differ from the published ones: python tools/{BUILT[env][1]} verify lists "
+              "them, and --accept-drift lets them play", file=sys.stderr)
         return 2
     model = None
     if not args.smoke:
