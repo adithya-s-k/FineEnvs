@@ -13,7 +13,7 @@
     "split": "eval",
     "n": 15,
     "source": "the Port of Barcelona's 2024 container calls at quays 24B (APM Terminals Barcelona) and 36A (Terminal Catalunya, BEST), as PortSimEnv's dock-v1-eval one-week standard and busy weeks, with the port's 2024 pilot and tug traffic; the wind that blew at Meteocat's XEMA station Y7 and the ECMWF open-data forecasts as issued, in real Barcelona weather weeks of 2023 to 2025",
-    "selection": "15 marine weeks moved into real weather weeks, dealt from the 240 pairs of the 15 marine weeks and 16 weather weeks where (a) the forecast-following re-planner costs no more than hindsight in at least 3 of its 4 configurations, (b) the re-planner blind to the wind scores at most 0.9 in at least 3 of 4, (c) the week has at most 10 watches and (d) no ship alongside at hour 0 is due to leave inside a window above 30 kn"
+    "selection": "15 marine weeks moved into real weather weeks, dealt from the 240 pairs of the 15 marine weeks and 16 weather weeks where (a) the forecast-following re-planner costs no more than hindsight in at least 3 of its 4 configurations, (b) the re-planner blind to the wind (in a week whose forecast warned of a gale that never came, the one holding every warned window) scores at most 0.9 in at least 3 of 4, (c) the week has at most 10 watches and (d) no ship alongside at hour 0 is due to leave inside a window above 30 kn"
   },
   "harness": {
     "agent": "portsim-llm",
