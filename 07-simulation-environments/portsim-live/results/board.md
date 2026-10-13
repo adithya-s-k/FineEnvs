@@ -1,4 +1,4 @@
-# The model board: twelve models on the live, marine and wind weeks
+# The model board: twelve models on the live, marine, wind and lines weeks
 
 Between 7 and 9 October 2026 twelve models played every live, marine and wind week once: 15 weeks each, 540 runs,
 through the agentenv-portsim plugin at
@@ -15,41 +15,49 @@ every attempt and go week by week, are
 [board](https://github.com/earakely-scale/agentenv-portsim-plugin/blob/v0.4.5/results/board.md) adds the rules broken,
 how often a model heeds its own checks, and the spend.
 
+On 12 and 13 October 2026 the same twelve played every lines week (v5) once, 180 runs, through the plugin at
+[v0.5.3](https://github.com/earakely-scale/agentenv-portsim-plugin/tree/v0.5.3), whose lines env, ships' agent and
+`message_agent` now live here too; the plugin's sweep report is
+[lines.md](https://github.com/earakely-scale/agentenv-portsim-plugin/blob/v0.5.3/results/lines.md).
+
 **Not comparable with PortSimEnv v1's eval** ([../../portsim-v1/](../../portsim-v1/)). The agent re-plans the week as
-it unfolds, with four tools, at most 3 planning calls a watch and 47 turns a week (52 on the wind weeks), where v1
-plans the whole week in one go with 12 turns, 10 checks and one `submit_plan`. Each env plays 15 one-week standard and
-busy eval weeks on which a rolling re-planner reaches the optimum, where v1's eval plays 50 weeks across four tiers.
+it unfolds, with four tools, at most 3 planning calls a watch and 47 turns a week (52 on the wind weeks, 72 with
+`message_agent` on the lines weeks), where v1 plans the whole week in one go with 12 turns, 10 checks and one
+`submit_plan`. Each env plays 15 one-week standard and busy eval weeks on which a rolling re-planner reaches the
+optimum, where v1's eval plays 50 weeks across four tiers.
 Rankings don't carry over: on v1 GLM-5.3-Flash scores above GLM-5.3, here below.
 
 ## Summary
 
-Mean reward on each env and over all 45 weeks (each week weighs the same), best first:
+Mean reward on each env and over all 60 weeks (each week weighs the same), best first:
 
-| Model | Provider | live | marine | wind | All 45 weeks | Feasible weeks |
-|---|---|---:|---:|---:|---:|---:|
-| GPT-6 Astra | Azure OpenAI | 0.984 | 0.956 | 0.896 | **0.945** | 44 of 45 |
-| Claude Opus 5.5 | Anthropic | 0.976 | 0.951 | 0.906 | **0.944** | 45 of 45 |
-| Claude Sonnet 5.5 | Anthropic | 0.904 | 0.932 | 0.888 | **0.908** | 45 of 45 |
-| GPT-6.1 Sol | Azure OpenAI | 0.957 | 0.905 | 0.745 | **0.869** | 41 of 45 |
-| Claude Haiku 5.5 | Anthropic | 0.694 | 0.639 | 0.583 | **0.639** | 44 of 45 |
-| Qwen3.8-2.4T | Fireworks | 0.686 | 0.519 | 0.662 | **0.622** | 28 of 45 |
-| DeepSeek V4.1 Flash | Fireworks | 0.754 | 0.598 | 0.480 | **0.611** | 28 of 45 |
-| GLM-5.3 | Fireworks | 0.748 | 0.593 | 0.468 | **0.603** | 28 of 45 |
-| GLM-5.3-Flash | Fireworks | 0.470 | 0.461 | 0.328 | **0.420** | 18 of 45 |
-| Kimi K3 | Fireworks | 0.465 | 0.446 | 0.249 | **0.386** | 18 of 45 |
-| GPT-6 Luna | Azure OpenAI | 0.335 | 0.287 | 0.320 | **0.314** | 36 of 45 |
-| Qwen3.8-27B | Groq | 0.055 | 0.073 | 0.090 | **0.073** | 0 of 45 |
+| Model | Provider | live | marine | wind | lines | All 60 weeks | Feasible weeks |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Claude Opus 5.5 | Anthropic | 0.976 | 0.951 | 0.906 | 0.593 | **0.857** | 59 of 60 |
+| GPT-6 Astra | Azure OpenAI | 0.984 | 0.956 | 0.896 | 0.568 | **0.851** | 58 of 60 |
+| GPT-6.1 Sol | Azure OpenAI | 0.957 | 0.905 | 0.745 | 0.536 | **0.786** | 55 of 60 |
+| Claude Sonnet 5.5 | Anthropic | 0.904 | 0.932 | 0.888 | 0.387 | **0.778** | 60 of 60 |
+| Claude Haiku 5.5 | Anthropic | 0.694 | 0.639 | 0.583 | 0.258 | **0.543** | 57 of 60 |
+| Qwen3.8-2.4T | Fireworks | 0.686 | 0.519 | 0.662 | 0.291 | **0.539** | 36 of 60 |
+| DeepSeek V4.1 Flash | Fireworks | 0.754 | 0.598 | 0.480 | 0.168 | **0.500** | 34 of 60 |
+| GLM-5.3 | Fireworks | 0.748 | 0.593 | 0.468 | 0.153 | **0.490** | 31 of 60 |
+| GLM-5.3-Flash | Fireworks | 0.470 | 0.461 | 0.328 | 0.261 | **0.380** | 24 of 60 |
+| Kimi K3 | Fireworks | 0.465 | 0.446 | 0.249 | 0.231 | **0.348** | 23 of 60 |
+| GPT-6 Luna | Azure OpenAI | 0.335 | 0.287 | 0.320 | 0.234 | **0.294** | 49 of 60 |
+| Qwen3.8-27B | Groq | 0.055 | 0.073 | 0.090 | 0.143 | **0.090** | 1 of 60 |
 
-- GPT-6 Astra and Claude Opus 5.5 share the top, their intervals overlapping on every env. Claude Sonnet 5.5 is level
-  with them on the marine and wind weeks and below them on the live ones. Opus and Sonnet broke no rule in any of their
-  45 weeks, Astra in one.
-- The three best open models, Qwen3.8-2.4T, DeepSeek V4.1 Flash and GLM-5.3, average 0.603 to 0.622, within noise of
-  Claude Haiku 5.5's 0.639. Haiku keeps 44 of its 45 weeks feasible; each of them keeps 28.
+- Claude Opus 5.5 and GPT-6 Astra share the top, their intervals overlapping on every env. Claude Sonnet 5.5 is level
+  with them on the marine and wind weeks and below them on the live and lines ones. Opus and Sonnet broke no rule in
+  any of their live, marine and wind weeks, Astra in one.
+- The three best open models on live, marine and wind, Qwen3.8-2.4T, DeepSeek V4.1 Flash and GLM-5.3, average 0.603
+  to 0.622 there, within noise of Claude Haiku 5.5's 0.639. Haiku keeps 44 of those 45 weeks feasible; each of them
+  keeps 28.
 - Eight of the twelve models score lower at each step from live to marine to wind; GPT-6.1 Sol falls the most, from
   0.957 to 0.745. The envs' weeks differ (the wind weeks reuse 11 of the marine weeks' schedules), so this is a pattern
-  across the sets, not a paired comparison.
-- GPT-6 Luna's plans are mostly valid (36 of 45 weeks) but cost several times the optimum, hence 0.314.
-- Qwen3.8-27B, the one model small enough to fine-tune cheaply, never found a valid plan: 0 of 45.
+  across the sets, not a paired comparison. The lines weeks are the wind weeks with the ships' agents, and 11 of the
+  12 models score lower on them.
+- GPT-6 Luna's plans are mostly valid (49 of 60 weeks) but cost several times the optimum, hence 0.294.
+- Qwen3.8-27B, the one model small enough to fine-tune cheaply, found a valid plan in 1 of 60 weeks.
 
 ## live
 
@@ -111,12 +119,42 @@ anchor rather than at the optimum.
 | Kimi K3 | Fireworks | 15 of 15 | **0.249** (0.159 to 0.374) | 0.457 | 0.197 | 15 | 5 | 0 | 23 | $1.34 |
 | Qwen3.8-27B | Groq | 15 of 15 | **0.090** (0.064 to 0.119) | 0.139 | 0.078 | 13 | 0 | 0 | 33 | $1.38 |
 
+## lines
+
+The anchor is the lower of hindsight's cost and the follower's best: hindsight on 13 weeks, the follower on 2. On the
+same weeks the follower, which re-plans at every watch and requests arrival times through the ships' agents, scores
+0.548 in its first solver configuration, the follower that never asks 0.242 and the naive policy 0.184.
+
+| Model | Provider | Weeks | Mean reward (95% CI) | Standard | Busy | Reached the end | Feasible | At the anchor | Median turns | Cost per episode |
+|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| Claude Opus 5.5 | Anthropic | 15 of 15 | **0.593** (0.453 to 0.725) | 0.606 | 0.590 | 15 | 14 | 1 | 33 | $2.42 |
+| GPT-6 Astra | Azure OpenAI | 15 of 15 | **0.568** (0.420 to 0.722) | 0.529 | 0.578 | 15 | 14 | 3 | 46 | $2.16 |
+| GPT-6.1 Sol | Azure OpenAI | 15 of 15 | **0.536** (0.392 to 0.693) | 0.469 | 0.552 | 15 | 14 | 3 | 39 | $0.32 |
+| Claude Sonnet 5.5 | Anthropic | 15 of 15 | **0.387** (0.269 to 0.517) | 0.354 | 0.395 | 15 | 15 | 0 | 27 | $1.55 |
+| Qwen3.8-2.4T | Fireworks | 15 of 15 | **0.291** (0.171 to 0.423) | 0.607 | 0.212 | 11 | 8 | 0 | 30 | $2.26 |
+| GLM-5.3-Flash | Fireworks | 15 of 15 | **0.261** (0.171 to 0.367) | 0.517 | 0.197 | 11 | 6 | 0 | 31 | $0.18 |
+| Claude Haiku 5.5 | Anthropic | 15 of 15 | **0.258** (0.203 to 0.322) | 0.375 | 0.228 | 15 | 13 | 0 | 22 | $0.10 |
+| GPT-6 Luna | Azure OpenAI | 15 of 15 | **0.234** (0.199 to 0.284) | 0.312 | 0.215 | 15 | 13 | 0 | 34 | $0.06 |
+| Kimi K3 | Fireworks | 15 of 15 | **0.231** (0.172 to 0.308) | 0.167 | 0.247 | 15 | 5 | 0 | 30 | $2.02 |
+| DeepSeek V4.1 Flash | Fireworks | 15 of 15 | **0.168** (0.089 to 0.269) | 0.373 | 0.116 | 6 | 6 | 0 | 16 | $0.30 |
+| GLM-5.3 | Fireworks | 15 of 15 | **0.153** (0.029 to 0.307) | 0.266 | 0.124 | 5 | 3 | 0 | 2 | $0.75 |
+| Qwen3.8-27B | Groq | 15 of 15 | **0.143** (0.118 to 0.164) | 0.151 | 0.141 | 15 | 1 | 0 | 39 | $1.63 |
+
+- Claude Opus 5.5, GPT-6 Astra and GPT-6.1 Sol lead within noise of each other: they agree an arrival for 86% to 90%
+  of a week's ships and keep 14 of 15 weeks feasible, and Opus and Astra score above the follower.
+- The port berths a ship that misses its window at the first free stretch of quay, so a model that rarely asks stays
+  feasible and pays in hours at anchor: Claude Sonnet 5.5 agrees 40% of a week's ships and keeps all 15 weeks
+  feasible; Claude Haiku 5.5 and GPT-6 Luna agree 12% and 18% and score about what the silent follower does.
+- Qwen3.8-2.4T, GLM-5.3-Flash and Kimi K3 agree about 43% and keep 5 to 8 weeks feasible. GLM-5.3 and DeepSeek V4.1
+  Flash end 10 and 9 of their weeks by reasoning past the 32,000-token reply limit twice in a row, which ends the
+  episode; the week is scored on the windows confirmed, none in all 10 of GLM-5.3's.
+
 ## How it was run
 
 - **Harness:** [`portsim-llm`](../../portsim-v1/envs/berth_planning/agentenv/agent/), with the same prompts, tools,
-  nudges and limits for every model: 47 turns a week (52 on the wind weeks), at most 3 planning calls a watch, 32,000
-  output tokens a reply (16,384 for Qwen3.8-27B, Groq's limit), the provider's default reasoning (effort `medium` on
-  the Responses API), one run per model and week, on local Docker.
+  nudges and limits for every model: 47 turns a week (52 on the wind weeks, 72 on the lines weeks), at most 3
+  planning calls a watch, 32,000 output tokens a reply (16,384 for Qwen3.8-27B, Groq's limit), the provider's default
+  reasoning (effort `medium` on the Responses API), one run per model and week, on local Docker.
 - **Routes:** all through a LiteLLM proxy. Claude on Anthropic's API; GPT on the Responses API, served by Azure OpenAI;
   Kimi K3, GLM-5.3, GLM-5.3-Flash, Qwen3.8-2.4T and DeepSeek V4.1 Flash on Fireworks; Qwen3.8-27B on Groq. Four of the
   open models are those of v1's eval, which ran them on other providers through the Hugging Face router.
@@ -124,6 +162,8 @@ anchor rather than at the optimum.
   $1.50 (GPT-6.1 Sol) to $12 (Kimi K3). Cost per episode is the model spend at the prices pinned in the agent.
 - **Failures:** an attempt that failed outside the episode (a deploy, a provider error, a lost agent) was played again
   from the start, up to three attempts in all; the plugin's board lists the few weeks played again in a later sweep.
+  On the lines weeks a turn that would start within 20 minutes of the episode's 2-hour limit isn't started and the
+  week is graded as played; no run reached it.
 
 ## Caveats
 

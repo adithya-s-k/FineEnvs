@@ -93,7 +93,7 @@ news brings to a window after its last chance is not charged; a ship the agent m
 | v5 `portsim-lines` | the 15 wind weeks, all of which qualify | (a) at least 3 of the follower's 4 configurations finish feasible; (b) the silent follower, which never asks the agents, scores at most 0.9 in at least 3 of 4, so asking matters; (c) the week has at most 10 watches |
 
 [DESIGN.md](DESIGN.md) has the excuses, the anchors, the references and the deal in full. Each env's eval card in
-[results/](results/) (`eval-v2.json` to `eval-v4.json`) states the same, with the baselines and where the runs are.
+[results/](results/) (`eval-v2.json` to `eval-v5.json`) states the same, with the baselines and where the runs are.
 
 ## The lines port
 
@@ -221,8 +221,8 @@ point to their build, and so does the server for `portsim-wind` and `portsim-lin
 │   ├── tasks/dock-v1-lines/, lines/  the lines weeks and references, built by tools/build_lines.py (git-ignored)
 │   └── tools/               the data tools: build_wind.py, build_lines.py, wind_weather.py and the four
 │                            *_references.py
-└── results/                 board.md, twelve models on the live, marine and wind weeks; eval-v2.json to
-                             eval-v4.json, each env's eval card
+└── results/                 board.md, twelve models on the live, marine, wind and lines weeks; eval-v2.json to
+                             eval-v5.json, each env's eval card
 ```
 
 The live weeks are portsim-v1's `dock-v1-eval` tasks, read through `berth_core`, and the agents are portsim-v1's:
