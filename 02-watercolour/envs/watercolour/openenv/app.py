@@ -14,15 +14,19 @@ from pathlib import Path
 # 2. The path entry is appended rather than inserted, and points at the folder
 #    holding `core/`, so an installed package always wins over a local directory.
 _ENV_ROOT = str(Path(__file__).resolve().parents[1])
-if _ENV_ROOT not in sys.path:
+if not __package__ and _ENV_ROOT not in sys.path:
     sys.path.append(_ENV_ROOT)
 
 
 
 from openenv.core.env_server import create_app  # noqa: E402
 
-from models import WatercolourAction, WatercolourObservation  # noqa: E402
-from watercolour_environment import WatercolourEnvironment  # noqa: E402
+if __package__:
+    from .models import WatercolourAction, WatercolourObservation
+    from .watercolour_environment import WatercolourEnvironment
+else:
+    from models import WatercolourAction, WatercolourObservation
+    from watercolour_environment import WatercolourEnvironment
 
 # The class is passed rather than an instance so each session gets its own
 # environment and its own sampled subject.

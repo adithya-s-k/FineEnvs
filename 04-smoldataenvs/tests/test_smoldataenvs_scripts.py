@@ -183,3 +183,18 @@ def test_python_fence_tags_are_matched_whatever_their_case_or_version(monkeypatc
     # the last block still wins, and a non-Python block is not taken for the program
     assert rollout.extract_code("```Python\nprint('draft')\n```\nthen\n```python3\nprint('final')\n```") == "print('final')"
     assert rollout.extract_code("```bash\nls\n```") != "ls"
+
+
+def test_unavailable_sandbox_is_none_for_every_trl_reward_function(monkeypatch):
+    train_grpo = load_script("train_grpo")
+    monkeypatch.setattr(
+        train_grpo, "_grade_batch",
+        lambda completions, **columns: [
+            {"reward": None, "ran": 0.0},
+            {"reward": 1.0, "ran": 1.0},
+            {"reward": 0.0, "ran": 1.0},
+        ],
+    )
+    completions = ["unavailable", "right", "wrong"]
+    assert train_grpo.reward_correct(completions) == [None, 1.0, 0.0]
+    assert train_grpo.reward_ran(completions) == [None, 1.0, 1.0]

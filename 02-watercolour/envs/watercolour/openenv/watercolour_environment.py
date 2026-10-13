@@ -26,7 +26,7 @@ from pathlib import Path
 # 2. The path entry is appended rather than inserted, and points at the folder
 #    holding `core/`, so an installed package always wins over a local directory.
 _ENV_ROOT = str(Path(__file__).resolve().parents[1])
-if _ENV_ROOT not in sys.path:
+if not __package__ and _ENV_ROOT not in sys.path:
     sys.path.append(_ENV_ROOT)
 
 
@@ -39,17 +39,21 @@ from typing import Any, Optional
 
 from openenv.core.env_server import Environment
 
-try:
-    from models import WatercolourAction, WatercolourObservation, WatercolourState
-    from core.domains import get_domain
-    from core.pairwise_judge import DEFAULT_JUDGE_MODEL, HFVisionClient, PairwiseJudge
-    from core.prompt import system_prompt
-    from core.quality import HPSv3Scorer, QualityScorer
-    from core.render import shared_renderer
+if __package__:
+    from .models import WatercolourAction, WatercolourObservation, WatercolourState
+    from ..core.domains import get_domain
+    from ..core.pairwise_judge import (
+        DEFAULT_JUDGE_MODEL,
+        HFVisionClient,
+        PairwiseJudge,
+    )
+    from ..core.prompt import system_prompt
+    from ..core.quality import HPSv3Scorer, QualityScorer
+    from ..core.render import shared_renderer
     from .rubric import build_rubric
-    from core.scoring import Evaluation, evaluate_submission
-    from core.tasks import make_task, sample_task, Task
-except ImportError:
+    from ..core.scoring import Evaluation, evaluate_submission
+    from ..core.tasks import make_task, sample_task, Task
+else:
     from models import WatercolourAction, WatercolourObservation, WatercolourState
     from core.domains import get_domain
     from core.pairwise_judge import (
