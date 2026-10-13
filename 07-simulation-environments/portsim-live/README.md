@@ -127,31 +127,34 @@ references.
 
 ## Results
 
-The table covers the live, marine and wind envs; the lines env's results come with its eval card. Twelve models on
-the 15 weeks of each env, one run each, 540 runs:
+Twelve models on the 15 weeks of each env, one run each, 720 runs:
 
-| Model | live | marine | wind | All 45 weeks | Feasible weeks |
-|---|---:|---:|---:|---:|---:|
-| GPT-6 Astra | 0.984 | 0.956 | 0.896 | **0.945** | 44 of 45 |
-| Claude Opus 5.5 | 0.976 | 0.951 | 0.906 | **0.944** | 45 of 45 |
-| Claude Sonnet 5.5 | 0.904 | 0.932 | 0.888 | **0.908** | 45 of 45 |
-| GPT-6.1 Sol | 0.957 | 0.905 | 0.745 | **0.869** | 41 of 45 |
-| Claude Haiku 5.5 | 0.694 | 0.639 | 0.583 | **0.639** | 44 of 45 |
-| Qwen3.8-2.4T | 0.686 | 0.519 | 0.662 | **0.622** | 28 of 45 |
-| DeepSeek V4.1 Flash | 0.754 | 0.598 | 0.480 | **0.611** | 28 of 45 |
-| GLM-5.3 | 0.748 | 0.593 | 0.468 | **0.603** | 28 of 45 |
-| GLM-5.3-Flash | 0.470 | 0.461 | 0.328 | **0.420** | 18 of 45 |
-| Kimi K3 | 0.465 | 0.446 | 0.249 | **0.386** | 18 of 45 |
-| GPT-6 Luna | 0.335 | 0.287 | 0.320 | **0.314** | 36 of 45 |
-| Qwen3.8-27B | 0.055 | 0.073 | 0.090 | **0.073** | 0 of 45 |
+| Model | live | marine | wind | lines | All 60 weeks | Feasible weeks |
+|---|---:|---:|---:|---:|---:|---:|
+| Claude Opus 5.5 | 0.976 | 0.951 | 0.906 | 0.593 | **0.857** | 59 of 60 |
+| GPT-6 Astra | 0.984 | 0.956 | 0.896 | 0.568 | **0.851** | 58 of 60 |
+| GPT-6.1 Sol | 0.957 | 0.905 | 0.745 | 0.536 | **0.786** | 55 of 60 |
+| Claude Sonnet 5.5 | 0.904 | 0.932 | 0.888 | 0.387 | **0.778** | 60 of 60 |
+| Claude Haiku 5.5 | 0.694 | 0.639 | 0.583 | 0.258 | **0.543** | 57 of 60 |
+| Qwen3.8-2.4T | 0.686 | 0.519 | 0.662 | 0.291 | **0.539** | 36 of 60 |
+| DeepSeek V4.1 Flash | 0.754 | 0.598 | 0.480 | 0.168 | **0.500** | 34 of 60 |
+| GLM-5.3 | 0.748 | 0.593 | 0.468 | 0.153 | **0.490** | 31 of 60 |
+| GLM-5.3-Flash | 0.470 | 0.461 | 0.328 | 0.261 | **0.380** | 24 of 60 |
+| Kimi K3 | 0.465 | 0.446 | 0.249 | 0.231 | **0.348** | 23 of 60 |
+| GPT-6 Luna | 0.335 | 0.287 | 0.320 | 0.234 | **0.294** | 49 of 60 |
+| Qwen3.8-27B | 0.055 | 0.073 | 0.090 | 0.143 | **0.090** | 1 of 60 |
 
-On the same weeks the rolling re-planner (on the wind weeks, the forecast-following one) scores 1.000 on every env,
-and the naive policy 0.202, 0.187 and 0.183. GPT-6 Astra and Claude Opus 5.5 share the top. The three best open models
-average within noise of Claude Haiku 5.5, but each breaks a rule in 17 of its 45 weeks, and Haiku in one. Qwen3.8-27B
-never finds a valid plan, the clearest headroom for training. These scores are not comparable with v1's eval: the
-agent re-plans as the week unfolds, with 47 turns a week (52 on the wind weeks), and plays 15 standard and busy weeks
-per env rather than 50 across four tiers. [results/board.md](results/board.md) has each env's table with intervals,
-and how the runs were made.
+On the live, marine and wind weeks the rolling re-planner (on the wind weeks, the forecast-following one) scores 1.000,
+and the naive policy 0.202, 0.187 and 0.183; on the lines weeks the follower, which asks the ships' agents, scores
+0.548, the silent follower 0.242 and the naive policy 0.184. Claude Opus 5.5 and GPT-6 Astra share the top. On the
+lines weeks they and GPT-6.1 Sol lead within noise of each other, agreeing an arrival for 86% to 90% of a week's ships,
+and Opus and Astra score above the follower; a model that rarely asks stays feasible but pays in hours at anchor. The
+three best open models on the live, marine and wind weeks average within noise of Claude Haiku 5.5, but each breaks a
+rule in 17 of those 45 weeks, and Haiku in one. Qwen3.8-27B finds a valid plan in 1 of 60 weeks, the clearest
+headroom for training. These scores are not comparable with v1's eval: the agent re-plans as the week unfolds, with
+47 turns a week (52 on the wind weeks, 72 with `message_agent` on the lines weeks), and plays 15 standard and busy
+weeks per env rather than 50 across four tiers. [results/board.md](results/board.md) has each env's table with
+intervals, and how the runs were made.
 
 ## Start here
 
