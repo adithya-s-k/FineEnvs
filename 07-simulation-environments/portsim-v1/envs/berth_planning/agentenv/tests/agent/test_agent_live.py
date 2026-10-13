@@ -139,14 +139,15 @@ def play(monkeypatch):
     """Runs portsim-llm on a fresh stub week against the fake, with the live task's turn limit: the result, the fake
     and the week."""
 
-    async def play(turns: list[dict], model: str, max_turns: int = MAX_TURNS):
+    async def play(turns: list[dict], model: str, max_turns: int = MAX_TURNS, timeout_seconds: int = 7200):
         week = StubWeek()
         with serve(week.app) as url, FakeLiteLLM(turns) as fake:
             monkeypatch.setenv("LITELLM_BASE_URL", fake.url)
             monkeypatch.setenv("LITELLM_API_KEY", KEY)
             result = await portsim_llm.PortSimLLM().run(TaskRequest(
                 task_id="t", context_id="c", parts=(TextPart(text="The week as known at hour 0.\n"),),
-                config=portsim_llm.PortSimConfig(model=model, system_prompt="The live rules.", max_turns=max_turns),
+                config=portsim_llm.PortSimConfig(model=model, system_prompt="The live rules.", max_turns=max_turns,
+                                                 timeout_seconds=timeout_seconds),
                 mcp_servers={"portsim-live": {"url": f"{url}/mcp"}}))
         return result, fake, week
 
@@ -203,6 +204,13 @@ async def test_the_last_turn_note_asks_for_windows(play, model):
         "then runs on your confirmed windows.")
     assert record["messages"][-3] == {"role": "user", "content": portsim_llm.LIVE.last_turn}
     assert (record["end_reason"], record["turns"], summary(result)["reward"]) == ("turn_limit", 2, None)
+
+
+async def test_a_week_whose_next_turn_would_start_near_the_time_limit_ends_there_and_is_graded_as_played(play):
+    result, fake, week = await play(WEEK, MODELS[0], timeout_seconds=portsim_llm.TIME_MARGIN)
+    record = result.native_trajectory.payload
+    assert (result.outcome, record["end_reason"], record["turns"], fake.requests, week.calls) == (
+        TaskOutcome.SUCCEEDED, "time_limit", 0, [], [])
 
 
 @pytest.mark.parametrize("model", MODELS)

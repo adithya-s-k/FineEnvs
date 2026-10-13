@@ -3,8 +3,9 @@ env's MCP tools through agent-env's model endpoint, on the API upstream calls fo
 times PRICES, or the most a request could cost when its usage is lost (it failed, or the harness cut its stream); when
 PORTSIM_MAX_COST_USD is set, an episode stops before a request that could take it past that. The summary also gives the
 cost without the failed requests, which may not have been billed, and how many failed. An env that lists advance
-is a live week in watches: the episode ends on advance's done, with no tool-call cap, and Anthropic requests carry one
-rolling cache breakpoint."""
+is a live week in watches: the episode ends on advance's done, with no tool-call cap, or once a turn would start within
+TIME_MARGIN of the time limit, the week then graded on the windows confirmed; Anthropic requests carry one rolling cache
+breakpoint."""
 
 import json
 import logging
@@ -40,6 +41,7 @@ log = logging.getLogger("portsim-llm")
 REQUEST_TIMEOUT = 900.0
 NOTES_CHARS = 8000
 MAX_TOOL_CALLS = 24
+TIME_MARGIN = 1200
 HARNESS_CAP = "length (harness cap)"
 PRICES = {  # USD per 1M tokens: input, output, cache read. LiteLLM public price map, 2026-10-06 and 2026-10-09.
     "anthropic/claude-opus-5-5": (4.00, 20.00, 0.40),
@@ -541,7 +543,11 @@ class Episode:
         max_turns = config.max_turns
         empty = 0
         for turn in range(max_turns):
-            if time.time() - self.started > config.timeout_seconds:
+            elapsed = time.time() - self.started
+            if self.live and elapsed > config.timeout_seconds - TIME_MARGIN:
+                record["end_reason"] = "time_limit"
+                break
+            if elapsed > config.timeout_seconds:
                 return self.fail("wall_clock",
                                  f"turn {turn + 1} would start after the {config.timeout_seconds} s limit")
             last = turn == max_turns - 1
