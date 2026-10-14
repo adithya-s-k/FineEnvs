@@ -53,11 +53,8 @@ def download(spec: str, files: list[str]) -> str:
 
 
 def local_paths(spec: str, files: list[str], fallback: str) -> list[str]:
-    """Where those files land: each of them (up to 40), else their folder's files by extension, else `fallback` (a
-    glob) when they aren't known."""
+    """Where those files land: each known file, else `fallback` (a glob) when they aren't known.
+    A folder glob can include another split or miss shards in other folders, so keep the exact list."""
     if not files:
         return [f"{local_dir(spec)}/{fallback}"]
-    if len(files) <= 40:
-        return [f"{local_dir(spec)}/{f}" for f in files]
-    d, ext = posixpath.dirname(files[0]), posixpath.splitext(files[0])[1]
-    return [f"{local_dir(spec)}/{d + '/' if d else ''}*{ext}"]
+    return [f"{local_dir(spec)}/{f}" for f in files]
