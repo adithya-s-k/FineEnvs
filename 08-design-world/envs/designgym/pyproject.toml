@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "designgym"
+version = "0.1.0"
+description = "DesignGym: recreate graphic designs in a real editor: tool calls, MCP, HTML, or computer use, one document model and one renderer"
+requires-python = ">=3.11,<3.14"
+license = "Apache-2.0"
+dependencies = [
+  "openenv==0.7.0",
+  "fastmcp>=3,<4",
+  "skia-python>=138,<200",
+  "numpy>=1.26,<3",
+  "scipy>=1.13,<2",
+  "Pillow>=11,<13",
+  "pydantic>=2.8,<3",
+  "huggingface-hub>=0.34,<2",
+  "gradio>=6,<7",
+  "uvicorn[standard]>=0.30",
+  "websockets>=12",
+  # The GUI surface and the cua-v1 dataset export are core features, not add-ons.
+  "playwright>=1.48,<2",
+  "datasets>=3,<6",
+  "pyarrow>=17",
+]
+
+[project.optional-dependencies]
+rollout = ["anthropic>=0.60", "openai>=1.60,<3", "python-dotenv>=1"]
+# real apps in Daytona sandboxes run by the env server (realapps/daytona.py, DESIGN_CANVAS_APPS=daytona)
+daytona = [
+    "daytona>=0.220,<1",
+    "fonttools>=4.50,<5",
+]
+dev = ["pytest>=8,<10", "ruff>=0.12,<1", "httpx>=0.27", "designgym[rollout]"]
+
+[project.scripts]
+# OpenEnv's entry point (uv run server / openenv serve); PORT, DESIGN_CANVAS_WORKERS and DESIGN_CANVAS_HOST configure it
+server = "designgym.server.app:main"
+designgym = "designgym.cli:main"
+designgym-smoke = "designgym.smoke:main"
+# the earlier command names, kept for scripts that use them
+design-canvas = "designgym.cli:main"
+design-canvas-smoke = "designgym.smoke:main"
+
+[tool.setuptools]
+packages = ["designgym", "designgym.core", "designgym.server", "designgym.realapps", "designgym.realapps.desktop",
+            "design_canvas"]
+# the folder is the package; `design_canvas` is an alias of it (compat/design_canvas)
+package-dir = {designgym = ".", design_canvas = "compat/design_canvas"}
+
+[tool.setuptools.package-data]
+designgym = ["openenv.yaml", "NOTICE.md", "web/*", "web/**/*", "realapps/desktop/Dockerfile"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI and Gradio read these call defaults as declarations, not shared state.
+extend-immutable-calls = ["fastapi.Body", "gradio.Progress"]
