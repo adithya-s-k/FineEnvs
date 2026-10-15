@@ -33,6 +33,13 @@ const wrapperClass = ["accordion", className].filter(Boolean).join(" ");
       wrapper.style.overflow = 'hidden';
       wrapper.style.height = acc.open ? 'auto' : '0px';
 
+      // Fragment navigation can open details without a summary click.
+      acc.addEventListener('toggle', () => {
+        if (!wrapper.style.transition) {
+          wrapper.style.height = acc.open ? 'auto' : '0px';
+        }
+      });
+
       const open = () => {
         wrapper.style.height = '0px';
         void wrapper.offsetHeight; // reflow
