@@ -301,7 +301,7 @@ async function main() {
 
   console.log('> Starting Astro preview…');
   // Start preview in its own process group so we can terminate all children reliably
-  const preview = spawn('npm', ['run', 'preview'], { cwd, stdio: 'inherit', detached: true });
+  const preview = spawn('npm', ['exec', '--', 'astro', 'preview', '--port', String(port), '--host'], { cwd, stdio: 'inherit', detached: true });
   const previewExit = new Promise((resolvePreview) => {
     preview.on('close', (code, signal) => resolvePreview({ code, signal }));
   });
