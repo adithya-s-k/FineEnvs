@@ -34,6 +34,10 @@ const wrapperClass = ["accordion", className].filter(Boolean).join(" ");
       wrapper.style.height = acc.open ? 'auto' : '0px';
 
       const open = () => {
+        if (duration === 0) {
+          wrapper.style.height = 'auto';
+          return;
+        }
         wrapper.style.height = '0px';
         void wrapper.offsetHeight; // reflow
         const target = content.scrollHeight;
@@ -48,6 +52,11 @@ const wrapperClass = ["accordion", className].filter(Boolean).join(" ");
       };
 
       const close = () => {
+        if (duration === 0) {
+          wrapper.style.height = '0px';
+          acc.removeAttribute('open');
+          return;
+        }
         const start = wrapper.offsetHeight || content.scrollHeight;
         wrapper.style.height = `${start}px`;
         void wrapper.offsetHeight; // reflow
