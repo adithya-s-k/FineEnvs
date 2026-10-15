@@ -374,13 +374,13 @@ async def delete_message(tid: str, mid: str, request: Request) -> dict[str, Any]
 _token_owner: dict[str, tuple[bool, float]] = {}
 
 
-def _require_owner(request: Request) -> None:
+def _require_owner(request: Request) -> dict[str, str] | None:
     """The Space owner, signed in on the page or presenting their Hugging Face token."""
     if not REVIEW_MODE:
         raise HTTPException(404)
     user = _user(request)
     if user and OWNER and user["username"].lower() == OWNER.lower():
-        return
+        return user
     auth = request.headers.get("authorization", "")
     if not auth.lower().startswith("bearer ") or not OWNER:
         raise HTTPException(401, "Owner only.")
@@ -406,7 +406,12 @@ def export_threads(request: Request) -> list[dict[str, Any]]:
 @app.post("/api/review/import")
 async def import_threads(request: Request) -> dict[str, Any]:
     """Add threads from an export or another source. Existing ids are kept unless replace is true."""
-    _require_owner(request)
+    user = _require_owner(request)
+    if user is not None:
+        # Session cookies are SameSite=None for the Space iframe. Require the
+        # same non-simple header as other writes before accepting a cookie import.
+        # Bearer-token imports remain available to owner scripts without cookies.
+        _guard_write(request, user)
     payload = await request.json()
     items = payload.get("threads") or []
     replace = bool(payload.get("replace"))
