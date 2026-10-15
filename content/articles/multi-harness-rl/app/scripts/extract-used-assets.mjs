@@ -180,15 +180,17 @@ function extractDataFiles(content) {
  * Main extraction function
  */
 async function extractAssets() {
-    console.log('🔍 Extracting used assets from MDX files...\n');
+    // Keep JSON stdout machine-readable while retaining progress diagnostics.
+    const report = isJson ? console.error : console.log;
+    report('🔍 Extracting used assets from MDX files...\n');
     
     // Find all MDX files
     const mdxFiles = await findMdxFiles(CONTENT_DIR);
     
     if (isVerbose) {
-        console.log(`Found ${mdxFiles.length} MDX files:\n`);
-        mdxFiles.forEach(f => console.log(`  - ${path.relative(CONTENT_DIR, f)}`));
-        console.log('');
+        report(`Found ${mdxFiles.length} MDX files:\n`);
+        mdxFiles.forEach(f => report(`  - ${path.relative(CONTENT_DIR, f)}`));
+        report('');
     }
     
     // Scan existing assets on disk
