@@ -1,0 +1,89 @@
+{
+  "env": "airops-day",
+  "version": "v1",
+  "authors": [
+    {
+      "name": "Edgar Arakelyan",
+      "github": "earakely-scale",
+      "affiliation": "Scale AI"
+    }
+  ],
+  "framework": "agentenv",
+  "tasks": {
+    "split": "eval",
+    "n": 5,
+    "unit": "days",
+    "source": "JetBlue's real storm days at its JFK and Boston hubs, pack b6-v1, drawn from a pool covering 13 months between December 2022 and July 2025: the flights, tails and delays from BTS on-time data, passengers from T-100, aircraft from Form 41 B-43 and the FAA registry, hourly slot caps from what all carriers actually moved, and the FAA Command Center's advisories, METARs, TAFs and forecast discussions as issued",
+    "selection": "5 of the pack's 20 eval days, one run each: a first look picked by hand (b6-bos-20240107-0600, b6-bos-20250216-1500, b6-jfk-20230714-1400, b6-jfk-20240804-0700, b6-jfk-20250709-1500; 3 JFK and 2 Boston, 3 summer and 2 winter), not a random sample, and the plugin didn't record how they were chosen, so the mean is not an estimate over the 20. The 20 eval days: among the 60 (day, hub) pairs of most disruption, the window of 3 to 6 whole hours where doing nothing costs most over the hindsight optimum, among windows where every hub movement has a typed tail, weather and air traffic control (BTS causes B and C) caused at least 80% of the cancellations in scope and 30 to 80 aircraft are in play; kept when doing nothing costs at least 10% over the optimum, the follower lands within 15% of it and the optimum is proven within 60 s, at most one per date and hub"
+  },
+  "harness": {
+    "agent": "airops-llm",
+    "tools": [
+      "get_situation",
+      "check_plan",
+      "confirm_changes",
+      "advance"
+    ],
+    "max_turns": 104
+  },
+  "grading": {
+    "reference": "the hindsight optimum: the time-line MIP (HiGHS, 1-minute arcs) on the day as it really happened, proven to 0.01%",
+    "reward": "0.2 + 0.8 exp(-g/0.5), g = max(0, cost - hindsight) / (hindsight - floor + 0.02 hindsight), the floor being the same MIP without aircraft routing; cost in passenger-minutes: arrival delay, 523 per cancelled passenger and the night's ferries; graded once, on the final plan flown on the day as it happened; a day is scored only if it finished and every watch's news arrived before the agent's next call; turns: 5 a watch plus 4 (64 to 104 on these days)",
+    "excused": "nothing: every cost is charged, including what news after a flight's last chance to change brings to it, and the env never strands a flight, so there are no rule breaks; the anchor knows every delay and cap in advance, so 1.0 is out of reach online: the follower (0.730 on these days) shows what re-planning online reaches",
+    "judge": false
+  },
+  "baselines": [
+    {
+      "name": "the follower: the time-line MIP re-solved at every watch on the day as known",
+      "mean": 0.7303
+    },
+    {
+      "name": "the blind follower: the same with no forecast of what isn't known yet",
+      "mean": 0.5945
+    },
+    {
+      "name": "naive: no plan, every flight as early as it can",
+      "mean": 0.2471
+    },
+    {
+      "name": "the airline: JetBlue's own cancellations and departure times as the plan",
+      "mean": 0.2055
+    },
+    {
+      "name": "the follower, on all 20 eval days",
+      "mean": 0.7289
+    },
+    {
+      "name": "the blind follower, on all 20 eval days",
+      "mean": 0.6264
+    },
+    {
+      "name": "naive, on all 20 eval days",
+      "mean": 0.297
+    },
+    {
+      "name": "the airline, on all 20 eval days",
+      "mean": 0.2101
+    }
+  ],
+  "models": [
+    {
+      "model": "GPT-6.1 Sol",
+      "provider": "Azure OpenAI",
+      "runs": 5,
+      "mean": 0.4191,
+      "ci95": [
+        0.3187,
+        0.5469
+      ],
+      "feasible": 5,
+      "usd_per_episode": 0.5984
+    }
+  ],
+  "links": {
+    "runs": "https://huggingface.co/datasets/earakely-scale/AirOpsEnv-AgentEnv/viewer/v1_episodes",
+    "replay": "https://huggingface.co/spaces/earakely-scale/AirOpsEnv-AgentEnv",
+    "code": "https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/airopsenv"
+  },
+  "date": "2026-10-14"
+}

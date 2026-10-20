@@ -64,6 +64,22 @@ failures: hold, short-turn or cancel so opposing trains cross safely.</p>
 <a href="https://github.com/bp-high/RLSimEnvs">Code</a>
 </td>
 </tr>
+<tr>
+<td width="33%" valign="top">
+<a href="airopsenv/"><img src="airopsenv/assets/banner.jpg" alt="AirOpsEnv v2: JetBlue's operations control center in 3D, the ops controller and the crew scheduler at their pods under the video wall of the network, on the Boston storm day of 13 July 2024" width="100%"></a>
+<h3><a href="airopsenv/">AirOpsEnv v1–v2</a></h3>
+<sub>by <a href="https://github.com/earakely-scale">Edgar Arakelyan</a> (Scale AI)</sub>
+<p>Run JetBlue through a real storm day at JFK or Boston, from public flight and FAA records: one hub's desk cancels
+and holds flights (v1), then the whole network's control center, where an ops controller and a crew scheduler talk
+(v2).</p>
+<sub>AgentEnv · 5 of 20 + 24 eval days · 1 model</sub><br>
+<a href="https://huggingface.co/spaces/earakely-scale/AirOpsEnv-AgentEnv">3D replays</a> ·
+<a href="https://huggingface.co/datasets/earakely-scale/AirOpsEnv-AgentEnv">Dataset</a> ·
+<a href="airopsenv/results/board.md">Board</a>
+</td>
+<td width="33%" valign="top"></td>
+<td width="33%" valign="top"></td>
+</tr>
 </table>
 
 <sub>The 3D scenes are built from © OpenStreetMap contributors (<a href="https://www.openstreetmap.org/copyright">ODbL</a>).
@@ -82,6 +98,8 @@ published schedule) played on the same tasks.
 | PortSimEnv v4, wind | 15 weeks | the cheaper of hindsight and a forecast-following re-planner | 0.18 | 12 | Claude Opus 5.5 0.906 | [eval-v4.json](portsim-live/results/eval-v4.json) |
 | PortSimEnv v5, lines | 15 weeks | the cheaper of hindsight and a re-planner that asks the ships | 0.18 | 12 | Claude Opus 5.5 0.593 | [eval-v5.json](portsim-live/results/eval-v5.json) |
 | RailSimEnv | 45 hard tasks | the CP-SAT optimum | | 4 | Qwen3.8-2.4T-A95B 0.556 | reported by the author |
+| AirOpsEnv v1, one desk | 5 of 20 days, picked by hand | the hindsight optimum | 0.25 | 1 | GPT-6.1 Sol 0.419 | [eval-v1.json](airopsenv/results/eval-v1.json) |
+| AirOpsEnv v2, two desks | 24 dates | the best plan of aircraft and crews found in hindsight, beside its proven bound | 0.31 | 1 | GPT-6.1 Sol, two desks 0.598 | [eval-v2.json](airopsenv/results/eval-v2.json) |
 
 The versions are not comparable with each other: each plays its own weeks with its own harness. Each card says how
 its tasks were picked and what its grade excuses.

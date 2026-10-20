@@ -1,0 +1,104 @@
+{
+  "env": "airops-occ",
+  "version": "v2",
+  "authors": [
+    {
+      "name": "Edgar Arakelyan",
+      "github": "earakely-scale",
+      "affiliation": "Scale AI"
+    }
+  ],
+  "framework": "agentenv",
+  "tasks": {
+    "split": "eval",
+    "n": 24,
+    "unit": "dates",
+    "source": "JetBlue's whole network from 04:00 Eastern on real storm dates at JFK and Boston from December 2022 to July 2026, pack b6-v2: the flights, tails and delays from BTS on-time data, aircraft from Form 41 B-43 and the FAA registry, the FAA Command Center's ground stops and ground delay programs as issued; pilots under FAR 117 and flight attendants under 14 CFR 121.467 on trips generated from the published schedule, with reserves at the middle of a sourced industry band",
+    "selection": "per storm hub 12 dates (8 summer, 4 winter), each from its own storm event, drawn with seed 0 from the storm dates (the FAA's programs at JFK or Boston controlled or held at least 5 JetBlue flights) that passed the crew model's filter, fixed before the run: JetBlue's real day crewed by the generated trips leaves at most 1% of its flown flights without a legal crew, and crews add at most 2% to its calm day (100 of 180 storm dates kept); the 44 training dates are every kept date of an event with no eval date"
+  },
+  "harness": {
+    "agent": "airops-desk",
+    "tools": [
+      "ops_flights",
+      "ops_program",
+      "ops_aircraft",
+      "ops_check",
+      "ops_confirm",
+      "ops_request",
+      "ops_reply",
+      "crew_flights",
+      "crew_crews",
+      "crew_reserves",
+      "crew_program",
+      "crew_options",
+      "crew_check",
+      "crew_confirm",
+      "crew_request",
+      "crew_reply",
+      "end_turn",
+      "wait_turn",
+      "resign"
+    ],
+    "max_turns": 306
+  },
+  "grading": {
+    "reference": "the best plan of aircraft and crews together a solver found knowing the whole day, replayed exactly with a legal crew on every flight; not a proven optimum. Its proven lower bound closes on no eval date (gap 2.4% to 13.9%, median 5.1%), most of it the bound's weakness rather than distance to the optimum",
+    "reward": "0.2 + 0.8 exp(-g/0.5), g = max(0, cost - best) / max(B0 - best, 0.1 best), B0 being standard crew-desk practice with the aircraft doing nothing; cost in passenger-minutes: arrival delay, cancelled passengers (more when decided under 2 hours ahead), the FAA's aircraft rates, the night's ferries, crew deadheads, hotels and crews out of place for tomorrow; reward_L is the same against the bound; a day is scored only if its audit passes (news on time, turns, causality, roles, a legal crew on every flight, the cost not under the bound, both desks present); turns: each desk of two gets 6 a watch plus 10 (up to 232), one agent at both desks 8 a watch plus 10 (up to 306); the tools are the two desks' 19, of which one agent sees 14",
+    "excused": "nothing: every cost of the day is charged; a day that comes in under the best plan, which is not a proven optimum, scores 1.0 and is flagged (2023-07-13, two desks), with reward_L, against the bound, beside it",
+    "judge": false
+  },
+  "baselines": [
+    {
+      "name": "B0: standard crew-desk practice, the aircraft doing nothing",
+      "mean": 0.3083
+    },
+    {
+      "name": "idle: the crew system alone, nobody at the desks",
+      "mean": 0.3053
+    },
+    {
+      "name": "scripted desks: the crew desk forwarding its system's words, ops accepting its cancellations",
+      "mean": 0.3082
+    },
+    {
+      "name": "one scripted desk running both",
+      "mean": 0.2954
+    },
+    {
+      "name": "the airline: JetBlue's own decisions, replayed with the generated crews",
+      "mean": 0.2093
+    }
+  ],
+  "models": [
+    {
+      "model": "GPT-6.1 Sol, two desks, talking",
+      "provider": "Azure OpenAI",
+      "runs": 24,
+      "mean": 0.5983,
+      "ci95": [
+        0.5448,
+        0.6582
+      ],
+      "feasible": 24,
+      "usd_per_episode": 2.0137
+    },
+    {
+      "model": "GPT-6.1 Sol, one agent at both desks",
+      "provider": "Azure OpenAI",
+      "runs": 24,
+      "mean": 0.5496,
+      "ci95": [
+        0.4971,
+        0.6089
+      ],
+      "feasible": 24,
+      "usd_per_episode": 1.0227
+    }
+  ],
+  "links": {
+    "runs": "https://huggingface.co/datasets/earakely-scale/AirOpsEnv-AgentEnv/viewer/v2_runs",
+    "replay": "https://huggingface.co/spaces/earakely-scale/AirOpsEnv-AgentEnv",
+    "code": "https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/airopsenv"
+  },
+  "date": "2026-10-20"
+}
