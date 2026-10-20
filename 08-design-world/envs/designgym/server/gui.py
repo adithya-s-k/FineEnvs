@@ -143,7 +143,9 @@ class GuiDriver:
         if cookies:
             await context.add_cookies(cookies)
         page = await context.new_page()
-        await page.goto(url, wait_until="load")
+        # a sandboxed real app loads over the network and may need more than Playwright's 30 s (the readiness wait
+        # below already allows 120 s); the built-in editors are local and keep the default
+        await page.goto(url, wait_until="load", timeout=120000 if ready else 30000)
         if ready:
             await page.wait_for_selector(ready, timeout=120000)
             await page.wait_for_timeout(2500)  # a real app keeps loading fonts and its renderer after first paint
