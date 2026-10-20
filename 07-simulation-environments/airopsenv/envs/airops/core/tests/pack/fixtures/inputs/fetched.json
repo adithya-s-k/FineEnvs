@@ -1,0 +1,14 @@
+{
+ "bts/ontime_2023_06.zip": {
+  "retrieved": "2026-10-13",
+  "url": "https://example.invalid/fixture"
+ },
+ "bts/t100d_2023_06.csv": {
+  "retrieved": "2026-10-13",
+  "url": "https://example.invalid/fixture"
+ },
+ "faa/ReleasableAircraft.zip": {
+  "retrieved": "2026-10-13",
+  "url": "https://example.invalid/fixture"
+ }
+}
