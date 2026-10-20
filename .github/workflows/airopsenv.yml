@@ -1,0 +1,81 @@
+name: AirOpsEnv on AgentEnv
+on:
+  pull_request:
+    paths: ['07-simulation-environments/airopsenv/**', '.github/workflows/airopsenv.yml']
+  push:
+    branches: [main]
+    paths: ['07-simulation-environments/airopsenv/**', '.github/workflows/airopsenv.yml']
+permissions:
+  contents: read
+# The tests run on committed fixtures: four v1 days and three v2 dates cut from the packs, the plugin's fixture days,
+# a slice of the raw inputs, a recorded run of each env and the task files the published runs played. So the test job
+# needs neither the network nor the packs, and nothing in it skips. The four replays that take minutes (marked slow:
+# three follower days and the recorded v2 day) run in the image job instead, which also fetches the packs from the
+# dataset at v0.3.3 (11 MB, checked against the committed manifests), builds the env and agent images, replays the
+# recorded v1 run and a v2 day against containers of them and plays the zero-spend days through AgentEnv.
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: 07-simulation-environments/airopsenv/envs/airops/agentenv
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: airops_core, v1's day and references, v2's world, crews and day, and the pack builders on their slice
+        run: uv run --frozen --extra dev pytest ../core/tests -q -rs
+      - name: The two envs on AgentEnv, their task steps, the agents and the recorded v1 run (no Docker, network or keys)
+        run: uv run --frozen --extra dev pytest tests -q -rs
+      - name: Lint
+        run: uv run --frozen --extra dev ruff check . ../core ../tools
+
+  image:
+    # The slow replays, then the env images as agent-env deploys them: the recorded v1 run and a v2 day against
+    # containers, then the zero-spend days through AgentEnv with no model (agent-env starts its own registry and gateway
+    # on the runner's Docker).
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    concurrency:
+      group: airopsenv-image-${{ github.ref }}
+      cancel-in-progress: true
+    defaults:
+      run:
+        working-directory: 07-simulation-environments/airopsenv/envs/airops
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Fetch the packs from the dataset at v0.3.3 and check them against the committed manifests
+        run: uv run -p 3.12 --with pyarrow python tools/fetch_packs.py
+      - name: The slow replays (three follower days and the recorded v2 day, no Docker or network)
+        run: uv run --frozen --project agentenv --extra dev pytest -q -rs -m slow agentenv/tests
+      - name: Build the v1 and v2 env images (context envs/airops)
+        run: |
+          docker build -f agentenv/Dockerfile -t airops-day-agentenv .
+          docker build -f agentenv/Dockerfile.occ -t airops-occ-agentenv .
+      - name: The recorded v1 run against a container of the v1 image, and a v2 day against the v2 image
+        env:
+          AIROPS_IMAGE: airops-day-agentenv
+          AIROPS_OCC_IMAGE: airops-occ-agentenv
+        run: >-
+          uv run --frozen --project agentenv --extra dev pytest -q -rs
+          agentenv/tests/env/test_recorded_runs.py agentenv/tests/occ/test_occ_server.py
+      - name: Build the airops-llm and airops-desk agent images and import the agents
+        run: |
+          docker build -t airops-llm agentenv/agents/airops-llm
+          docker run --rm airops-llm python -c "import sys; sys.path.insert(0, '/app'); import agent"
+          docker build -t airops-desk agentenv/agents/airops-desk
+          docker run --rm airops-desk python -c "import sys; sys.path.insert(0, '/app'); import agent"
+      - name: v1 smoke through AgentEnv (wiring-noplay costs the naive day, the audit passing)
+        working-directory: 07-simulation-environments/airopsenv/envs/airops/agentenv
+        run: uv run --frozen python rollout.py --smoke
+      - name: v2 smoke through AgentEnv (the crew system alone costs the idle reference)
+        working-directory: 07-simulation-environments/airopsenv/envs/airops/agentenv
+        run: uv run --frozen python rollout.py --env occ --smoke
+      - name: v2 scripted desks through AgentEnv (both modes cost the pack's scripted references, no spend)
+        working-directory: 07-simulation-environments/airopsenv/envs/airops/agentenv
+        run: uv run --frozen python rollout.py --env occ --script --task-id b6-20250111-0400
