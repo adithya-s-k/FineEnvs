@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "airops-agentenv"
+version = "0.3.3"
+description = "AgentEnv environments for JetBlue's storm days: airops-day, one hub desk's window (v1), and airops-occ, the whole network from the two desks of the control center (v2), their task steps and a rollout"
+requires-python = ">=3.11.4"
+# agentenv-framework, fastmcp, mcp and pydantic are pinned exactly: the versions the published runs were recorded with,
+# whose tool outputs embed their error text.
+dependencies = [
+    "airops-core",
+    "agentenv-framework==0.9.1323",
+    "agentenv-framework-protocol==0.1.338",
+    "fastmcp==3.4.8",
+    "mcp==1.30.0",
+    "pydantic==2.13.5",
+    "httpx>=0.28",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<10",
+    "anyio>=4.5",
+    "uvicorn>=0.30",
+    "starlette>=0.40",
+    "anthropic==1.11.0",
+    "openai==2.54.0",
+    "pyarrow>=17",
+    "ruff>=0.16,<0.17",
+]
+
+[tool.uv.sources]
+airops-core = { path = "../core", editable = true }
+
+[tool.setuptools.packages.find]
+include = ["airops_agentenv*"]
+
+[tool.pytest.ini_options]
+markers = ["slow: a replay that takes minutes; CI runs these in the image job (pytest -m slow)"]
+addopts = "-m 'not slow'"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "I"]

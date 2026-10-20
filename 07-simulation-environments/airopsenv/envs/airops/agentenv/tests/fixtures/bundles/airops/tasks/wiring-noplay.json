@@ -1,0 +1,723 @@
+[
+  {
+    "id": "deploy",
+    "type": "deploy_env",
+    "env_id": "airops-day"
+  },
+  {
+    "id": "load-task",
+    "type": "apply_server_config",
+    "env_id": "airops-day",
+    "directives": [
+      {
+        "service": "airops-day",
+        "uri": "urn:airops:live-load/v1",
+        "args": {
+          "task_id": "b6-bos-20230709-0500"
+        }
+      }
+    ]
+  },
+  {
+    "id": "hide-notice",
+    "type": "modify_env_tool_access",
+    "env_id": "airops-day",
+    "action": "disable",
+    "role": "default",
+    "tools": [
+      "airops_notice"
+    ]
+  },
+  {
+    "id": "watches",
+    "type": "register_env_triggers",
+    "env_id": "airops-day",
+    "watch_roles": [
+      "default"
+    ],
+    "triggers": [
+      {
+        "id": "watch-1",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 1
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "taf-bos-202307090809"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307090854"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-2",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 2
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307090954"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-3",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 3
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "afd-box-202307091041"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307091054"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-4",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 4
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "afd-box-202307091108"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "taf-bos-202307091120"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "adv-20230709-031"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "adv-20230709-034"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307091154"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-5",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 5
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307091213"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307091254"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-6",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 6
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307091354"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-7",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 7
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "taf-bos-202307091443"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307091454"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "afd-box-202307091457"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-8",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 8
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307091554"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-9",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 9
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "adv-20230709-113"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "adv-20230709-115"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307091654"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-10",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 10
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "adv-20230709-132"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "adv-20230709-136"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "taf-bos-202307091740"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307091754"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-11",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 11
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "taf-bos-202307091821"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "afd-box-202307091833"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307091854"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-12",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 12
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307091954"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-13",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 13
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "afd-box-202307092032"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "taf-bos-202307092039"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307092054"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-14",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 14
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307092154"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-15",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 15
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307092254"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-16",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 16
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "taf-bos-202307092320"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "adv-20230709-246"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307092354"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "afd-box-202307092355"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-17",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 17
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307100054"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-18",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 18
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307100154"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-19",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 19
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "afd-box-202307100217"
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307100254"
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-20",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 20
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "airops_notice",
+            "args": {
+              "news_id": "metar-bos-202307100354"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "clock",
+    "type": "sync_env_clock",
+    "env_id": "airops-day",
+    "virtual_time": "2023-07-09T08:00:00Z",
+    "virtual_seconds_per_real_second": 0,
+    "tolerate_missing_sync_time": false
+  },
+  {
+    "id": "end-day",
+    "type": "apply_server_config",
+    "env_id": "airops-day",
+    "directives": [
+      {
+        "service": "airops-day",
+        "uri": "urn:airops:end-day/v1",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "id": "grade",
+    "type": "env_outcome_verifier",
+    "env_id": "airops-day",
+    "file_artifact_id": "airops-verifier",
+    "verifier_id": "airops",
+    "score_aggregator": "weighted_average"
+  }
+]
