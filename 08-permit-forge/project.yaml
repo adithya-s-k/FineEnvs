@@ -1,0 +1,26 @@
+# Project manifest. `tools/build_index.py` renders the root README table from it.
+name: permit-forge
+title: "PermitForge"
+tagline: "Make a synthetic plant cheaper while it still meets every air-quality standard under five years of real weather."
+order: 8
+status: wip   # environment and evals released, training in progress (a small first GRPO run, a larger one lined up)
+authors:
+  - {name: Attoloop, github: attoloop, affiliation: Attoloop}
+
+hub:
+  org: Attoloop
+  spaces:
+    - Bhuminjay/PermitForge
+  datasets:
+    - Attoloop/PermitForge
+
+envs:
+  - name: permit
+    summary: "A synthetic plant with 2 to 6 stacks under five years of NOAA weather at one of 15 stations. The agent picks a control and a stack height per source with 30 air-quality evaluations, then submits once for a native BPIP/AERMOD grade. Reward is the feasible fraction of the draft design's cost saved."
+    backend: python-offline
+    tools: 4   # get_scenario check_design evaluate_design submit_design
+    frameworks:
+      openenv:
+        transport: http-mcp
+        space: Bhuminjay/PermitForge
+        verified: true

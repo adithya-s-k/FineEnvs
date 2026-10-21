@@ -1,0 +1,95 @@
+{
+  "env": "permitforge",
+  "version": "v2",
+  "authors": [
+    {
+      "name": "Attoloop",
+      "github": "attoloop",
+      "affiliation": "Attoloop"
+    }
+  ],
+  "framework": "openenv",
+  "tasks": {
+    "split": "eval",
+    "n": 10,
+    "source": "The same 10 held-out eval tasks as eval-v2.json (NOAA ISD + IGRA2 2020-2024 weather, synthetic facilities, EPA AERMOD 26135 / BPIPPRM 04274, ARM2 for NO2, discrete height menus).",
+    "selection": "The frozen eval cohort of eval-v2.json, three repeats per model and task, seeds fixed. No training task is in it; train and eval are separated by weather station."
+  },
+  "harness": {
+    "agent": "permitforge cloud eval harness (train/cloud/evaluation.py)",
+    "tools": [
+      "get_scenario",
+      "check_design",
+      "evaluate_design",
+      "submit_design"
+    ],
+    "max_turns": 40,
+    "evaluate_budget": 30,
+    "repeats": 3,
+    "notes": "Qwen/Qwen3.8-27B at revision 1d4bf0f2ff60, bf16, Transformers generation on one H200, thinking off, temperature 1.0, top_p 0.95, top_k 20, 32,768 output tokens per reply, 1800 s wall clock per episode. Tool results carry a turns-left line; one retry after an empty reply and a correction prompt after a malformed call. Not the frontier harness of eval-v2.json; the two cards are not compared."
+  },
+  "grading": {
+    "reference": "Same as eval-v2.json: reward is the feasible saved fraction of the draft design cost, verified with native BPIP/AERMOD; invalid, infeasible or no submission scores zero; 1.0 would require zero cost and is unreachable.",
+    "reward": "(cost(draft) - cost(submission)) / cost(draft). Equal task weight after averaging repeats; 95% station-clustered percentile bootstrap (5 stations, 2000 draws, seed 0).",
+    "excused": "nothing",
+    "judge": false
+  },
+  "baselines": [
+    {
+      "name": "draft",
+      "mean": 0.0
+    },
+    {
+      "name": "cheapest_first_greedy",
+      "mean": 0.3307718140622477
+    },
+    {
+      "name": "v1_coordinate_descent",
+      "mean": 0.3963799017479728
+    },
+    {
+      "name": "random_30 (mean over 8 seeds)",
+      "mean": 0.3133578914375035
+    },
+    {
+      "name": "best of 8 random 30-evaluation runs",
+      "mean": 0.45573913296514335
+    },
+    {
+      "name": "search (60 seconds; not proven optimal)",
+      "mean": 0.47566283360853967
+    }
+  ],
+  "models": [
+    {
+      "model": "Qwen3.8-27B",
+      "provider": "HF Jobs, one H200, Transformers generation",
+      "runs": 30,
+      "mean": 0.4394,
+      "ci95": [
+        0.3742,
+        0.495
+      ],
+      "feasible": 30,
+      "usd_per_episode": 1.0131
+    },
+    {
+      "model": "Qwen3.8-27B + GRPO LoRA",
+      "provider": "HF Jobs, one H200, Transformers generation",
+      "runs": 30,
+      "mean": 0.439,
+      "ci95": [
+        0.3845,
+        0.5005
+      ],
+      "feasible": 30,
+      "usd_per_episode": 1.0486
+    }
+  ],
+  "links": {
+    "runs": "https://huggingface.co/datasets/Attoloop/PermitForge/tree/main/training/runs/full-30",
+    "replay": "https://huggingface.co/datasets/Attoloop/PermitForge/tree/main/training/runs/full-30/eval",
+    "code": "https://github.com/attoloop/PermitForge/tree/main/train/cloud"
+  },
+  "date": "2026-10-19"
+}

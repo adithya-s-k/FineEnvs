@@ -53,6 +53,7 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **06** | **[Multilingual](./06-multilingual/)** | Document OCR over a million pages in 22 languages and speech recognition over 102, each behind one OpenEnv server, and Gemma 4 trained to read and hear Kannada. | 2 | 1 | 2 | ✅ trained |
 | **07** | **[PortSimEnv v1](./07-simulation-environments/portsim-v1/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub><br><sub>`agentenv` port by [Edgar Arakelyan](https://github.com/earakely-scale) (Scale AI)</sub> | Re-plan a broken week of container-ship dockings at the Port of Barcelona, graded against a proven optimum. | 1 | 2 | 1 | 🚧 wip |
 | **07** | **[PortSimEnv v2–v5: live, marine, wind and lines](./07-simulation-environments/portsim-live/)**<br><sub>by [Edgar Arakelyan](https://github.com/earakely-scale) (Scale AI)</sub> | Run a Port of Barcelona quay through a week as it unfolds, with live news, pilots and tugs, real wind and shipping lines that answer back. | 1 | 1 | 0 | 🚧 wip |
+| **08** | **[PermitForge](./08-permit-forge/)**<br><sub>by [Attoloop](https://github.com/attoloop) (Attoloop)</sub> | Make a synthetic plant cheaper while it still meets every air-quality standard under five years of real weather. | 1 | 1 | 1 | 🚧 wip |
 <!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
@@ -178,6 +179,17 @@ the same format.
 Everything is in the [Simulation RL Envs collection](https://huggingface.co/collections/FineEnvs/simulation-rl-envs-6ac4eca150bd4b91790e2540),
 and [the article](https://huggingface.co/spaces/FineEnvs/simulation-rl-environments) covers all of it.
 Built a simulation environment? [Add it to the catalog](./07-simulation-environments/#add-your-environment).
+
+### [08 · PermitForge](./08-permit-forge/) &nbsp;<sub>meet every air-quality standard at the lowest cost</sub>
+
+**An air permit as an environment.** By Attoloop, on OpenEnv. The agent chooses emissions controls and stack
+heights for a synthetic plant so it meets every air-quality standard under five years of real NOAA weather at the
+lowest cost, graded by EPA's AERMOD. GPT-6.1 Sol leads the four-model eval at 0.606 of the draft cost saved. A first
+small Qwen3.8-27B GRPO run did not change the score, and a larger run is next.
+
+Play it in the [Space](https://huggingface.co/spaces/Bhuminjay/PermitForge). Every rollout and the whole training
+run are in the [dataset](https://huggingface.co/datasets/Attoloop/PermitForge), and
+[the write-up](https://attoloop.com/research/permitforge/) walks through it.
 
 > **More coming.** Each new project is another end-to-end recipe: an environment, a training run, and
 > the artifacts on the Hub. [Proposals and contributions welcome →](./CONTRIBUTING.md)
@@ -379,6 +391,7 @@ FineEnvs/
 ├── 05-multi-harness-rl/     the same tasks trained through TRL, OpenCode and Harbor
 ├── 06-multilingual/         OCR over 22 languages and ASR over 102, two OpenEnv servers
 ├── 07-simulation-environments/  a catalog of simulation environments: PortSimEnv v1–v5 and more
+├── 08-permit-forge/         air-permit design graded by EPA's AERMOD, code in the author's repo
 ├── content/
 │   ├── articles/            long-form sources (Astro → Docker Space)
 │   └── slides/              talk decks (Vite → static Space)

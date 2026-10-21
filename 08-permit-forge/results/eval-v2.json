@@ -1,0 +1,120 @@
+{
+  "env": "permitforge",
+  "version": "v2",
+  "authors": [
+    {
+      "name": "Attoloop",
+      "github": "attoloop",
+      "affiliation": "Attoloop"
+    }
+  ],
+  "framework": "openenv",
+  "tasks": {
+    "split": "eval",
+    "n": 10,
+    "source": "NOAA ISD + IGRA2 2020-2024 weather; synthetic facilities; EPA AERMOD 26135 / BPIPPRM 04274. V2 uses ARM2 for every NO2 case and discrete height menus; v1 scenarios have been public since 2026-10-16. Flat terrain, one control ladder per source, one stack price per facility; five archetypes across 15 weather stations in the full task collection (five eval stations).",
+    "selection": "Station-stratified structural shortlist of 30 eligible tasks per split (6 per eval station, 3 per train station), ordered by descending source count, near-binding draft standards (total/limit >= 0.8), uncontrolled-at-GEP upper-bound exceedance, then task ID. Probe draft, cheapest_first_greedy, v1_coordinate_descent, 60-second search, and random_30 with seeds 0..7 using ARM2 fast fields. Failed policies contribute zero savings. Hardness = 1 - greedy_saved/best_saved (zero if best_saved is zero); best includes every probe. Variance proxy is population standard deviation of the eight random saved fractions. Rank hard candidates by the product of within-split midrank percentiles of hardness and variance (then hardness, variance, ID). Reserve two easiest candidates from distinct stations first; fill eight hard slots subject to 2 tasks per eval station / 1 per train station. No model outcomes or pilot membership enter selection."
+  },
+  "harness": {
+    "agent": "permitforge eval harness (eval/run_eval.py)",
+    "tools": [
+      "get_scenario",
+      "check_design",
+      "evaluate_design",
+      "submit_design"
+    ],
+    "max_turns": 40,
+    "evaluate_budget": 30,
+    "effort": "medium",
+    "repeats": 3,
+    "notes": "Claude: Anthropic Messages API with our tool loop, adaptive summarized thinking returned unchanged, several tool calls per response allowed, a one-line start message. GPT: Codex CLI (codex exec) on a ChatGPT subscription, base instructions replaced by our prompt, only the PermitForge MCP tools, the prompt repeated as the first user message, one tool call per response, text.verbosity=low. Provider-default temperature."
+  },
+  "grading": {
+    "reference": "Reward is the feasible saved fraction of the draft (all-maximum-control at GEP) design's annualized cost. Invalid, infeasible or no submission scores zero. No proven optimum and no model/search ceiling; 1.0 would require zero cost and is unreachable. Best observed feasible model design per task is reported beside the reward in final-eval.md; it never sets reward.",
+    "reward": "(cost(draft) - cost(submission)) / cost(draft), feasible submissions only, independently verified with native BPIP/AERMOD. Equal task weight after averaging repeats; 95% station-clustered percentile bootstrap (5 stations, 2000 draws, seed 0). Baselines below use fast-field selection probes, not native submission verification (verification_source: fast-field selection probe); random means average all eight seeds, including infeasible seeds as zero. Best of eight has eight times the random evaluation budget.",
+    "excused": "nothing",
+    "judge": false
+  },
+  "baselines": [
+    {
+      "name": "draft",
+      "mean": 0.0
+    },
+    {
+      "name": "cheapest_first_greedy",
+      "mean": 0.3307718140622477
+    },
+    {
+      "name": "v1_coordinate_descent",
+      "mean": 0.3963799017479728
+    },
+    {
+      "name": "random_30 (mean over 8 seeds)",
+      "mean": 0.3133578914375035
+    },
+    {
+      "name": "best of 8 random 30-evaluation runs",
+      "mean": 0.45573913296514335
+    },
+    {
+      "name": "search (60 seconds; not proven optimal)",
+      "mean": 0.47566283360853967
+    }
+  ],
+  "models": [
+    {
+      "model": "Claude Opus 5.5",
+      "provider": "Anthropic",
+      "runs": 30,
+      "mean": 0.5755,
+      "ci95": [
+        0.5005,
+        0.6602
+      ],
+      "feasible": 30,
+      "usd_per_episode": 1.7119
+    },
+    {
+      "model": "Claude Sonnet 5.5",
+      "provider": "Anthropic",
+      "runs": 30,
+      "mean": 0.5071,
+      "ci95": [
+        0.4239,
+        0.6
+      ],
+      "feasible": 30,
+      "usd_per_episode": 0.367
+    },
+    {
+      "model": "GPT-5.6 Sol",
+      "provider": "OpenAI (Codex CLI)",
+      "runs": 30,
+      "mean": 0.5858,
+      "ci95": [
+        0.5186,
+        0.6634
+      ],
+      "feasible": 30,
+      "usd_per_episode": null
+    },
+    {
+      "model": "GPT-6.1 Sol",
+      "provider": "OpenAI (Codex CLI)",
+      "runs": 30,
+      "mean": 0.6065,
+      "ci95": [
+        0.5423,
+        0.6768
+      ],
+      "feasible": 30,
+      "usd_per_episode": null
+    }
+  ],
+  "links": {
+    "runs": "https://huggingface.co/datasets/Attoloop/PermitForge/viewer/episodes",
+    "replay": "https://huggingface.co/datasets/Attoloop/PermitForge/tree/main/rollouts/final-medium3",
+    "code": "https://github.com/attoloop/PermitForge"
+  },
+  "date": "2026-10-17"
+}
