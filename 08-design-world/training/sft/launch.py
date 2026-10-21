@@ -8,7 +8,9 @@
 
 The job runs this folder's code (bundled with designgym/cua_format.py into the runs repo), pinned to the versions
 checked locally. Training data is read from the dataset repo over HTTP; `--bucket` additionally mounts an HF bucket
-mirror of it read-only at /data (see train.py `--data-source`). Checkpoints go to the public model repo
+mirror of it read-only at /data (see train.py `--data-source`). The private DesignWorld-SFT bucket is read trace by
+trace over HTTP: `-- --data-source bucket --bucket perpetual-research/designworld-sft --ids sft` (its README has the
+full command). Its mount answered EIO under parallel reads and stalled steps for 10-45 min in the 2026-10-21 smoke. Checkpoints go to the public model repo
 <namespace>/designgym-sft-<model>-<name> as checkpoint-<step>/. Jobs run under `--namespace` (default
 $HF_JOBS_NAMESPACE, else the token's user); bundles go to `--runs-repo` (default $DESIGNWORLD_SFT_RUNS_REPO, else
 <namespace>/designworld-sft-runs). HF_TOKEN comes from the environment or the nearest .env up the tree and is passed

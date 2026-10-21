@@ -166,7 +166,7 @@ def _entries(ids: str, rows: Rows, split: str) -> list[dict]:
         text = HfFileSystem().cat_file(f"buckets/{rows.bucket}/{name}").decode()
     out = [json.loads(line) for line in text.splitlines() if line.strip()]
     have = [e for e in out if e["shard"] in rows.sizes]
-    print(f"[data] {split}: {len(have)}/{len(out)} traces of {name} readable ({len(rows.sizes)} shards)", flush=True)
+    print(f"[data] {time.strftime('%H:%M:%S')} {split}: {len(have)}/{len(out)} traces of {name} readable ({len(rows.sizes)} shards)", flush=True)
     return have
 
 
@@ -282,8 +282,9 @@ class Windows(IterableDataset):
                     return
                 row, dt = ahead.popleft().result()
                 self.read_s, self.read_n = self.read_s + dt, self.read_n + 1
-                if self.read_n % 200 == 0:
-                    print(f"[data] rank/worker {shard}: {self.read_n} traces read, {self.read_s / self.read_n:.2f}s "
+                if self.read_n in (1, 10) or self.read_n % 200 == 0:
+                    print(f"[data] {time.strftime('%H:%M:%S')} rank/worker {shard}: {self.read_n} traces read, "
+                          f"{self.read_s / self.read_n:.2f}s "
                           f"per read (in {self.prefetch} threads)", flush=True)
                 yield row
 
@@ -486,7 +487,8 @@ def main() -> None:
     trainer.train_dataset, trainer.eval_dataset = train, (eval_items or None)
     if trainer.is_world_process_zero():
         trainable = sum(p.numel() for p in trainer.model.parameters() if p.requires_grad)
-        print(json.dumps({"trainable_params": trainable, "eval_windows": len(eval_items), "args": vars(a)}), flush=True)
+        print(json.dumps({"time": time.strftime("%H:%M:%S"), "trainable_params": trainable, "eval_windows": len(eval_items),
+                          "args": vars(a)}), flush=True)
     trainer.train()
     trainer.save_model(f"{a.output}/final")
     if a.hub_model_id:
