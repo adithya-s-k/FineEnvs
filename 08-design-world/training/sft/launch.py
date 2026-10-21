@@ -69,7 +69,7 @@ def sft(a) -> None:
     model_tag = a.model.split("/")[-1].lower()
     hub_id = a.hub_model_id or f"{a.namespace}/designgym-sft-{model_tag}-{a.name}"
     api.create_repo(a.runs_repo, repo_type="dataset", private=False, exist_ok=True)
-    api.create_repo(hub_id, private=False, exist_ok=True)
+    api.create_repo(hub_id, private=a.private, exist_ok=True)
     bundle = f"sft/{run}/code.tar.gz"
     api.upload_file(path_or_fileobj=_bundle(), path_in_repo=bundle, repo_id=a.runs_repo, repo_type="dataset",
                     commit_message=f"sft code {run}")
@@ -116,6 +116,7 @@ def main() -> None:
                    help="optional HF bucket mirror of the SFT data, mounted at /data; default $DESIGNWORLD_SFT_BUCKET")
     s.add_argument("--runs-repo", default=None, help="dataset for code bundles; default $DESIGNWORLD_SFT_RUNS_REPO")
     s.add_argument("--hub-model-id", default=None)
+    s.add_argument("--private", action="store_true", help="create the checkpoint repo private (private training data)")
     s.add_argument("--flavor", default="h200")
     s.add_argument("--timeout", default="2h")
     s.add_argument("--image", default="ghcr.io/astral-sh/uv:python3.12-bookworm")

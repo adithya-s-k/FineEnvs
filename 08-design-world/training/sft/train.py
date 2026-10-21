@@ -57,13 +57,133 @@ def _hub_files(repo: str, root: Path, configs) -> dict[str, list[Path]]:
     return {c: sorted(v) for c, v in files.items()}
 
 
+class _Ranged:
+    """A read-only file of `size` bytes of which only fetched ranges are held: pyarrow reads one row group (one
+    trace) through it, so a trace costs one ranged read of the shard instead of the whole file."""
+
+    def __init__(self, size: int, fetch):
+        self.size, self.fetch, self.pos, self.parts = size, fetch, 0, []
+
+    def load(self, start: int, end: int):
+        self.parts.append((start, self.fetch(start, end)))
+
+    def read(self, n: int = -1) -> bytes:
+        end = self.size if n is None or n < 0 else min(self.size, self.pos + n)
+        for start, data in self.parts:
+            if start <= self.pos and end <= start + len(data):
+                out = data[self.pos - start:end - start]
+                break
+        else:  # (not prefetched: footer probes and the like)
+            out = self.fetch(self.pos, end)
+        self.pos = end
+        return out
+
+    def seek(self, pos: int, whence: int = 0) -> int:
+        self.pos = pos if whence == 0 else (self.pos + pos if whence == 1 else self.size + pos)
+        return self.pos
+
+    def tell(self) -> int:
+        return self.pos
+
+    def seekable(self) -> bool:
+        return True
+
+    def readable(self) -> bool:
+        return True
+
+    def close(self):
+        pass
+
+    @property
+    def closed(self) -> bool:
+        return False
+
+
+class Rows:
+    """Single traces of the DesignWorld-SFT bucket by (shard, row): the shard's footer once, then one ranged read per
+    trace (each row group holds one trace), from the mount (`mount`, falling back to HTTP on errors) or over HTTP."""
+
+    def __init__(self, source: str, mount: Path, bucket: str | None):
+        self.source, self.mount, self.bucket, self.meta, self._fs = source, mount, bucket, {}, None
+        self.sizes = self._list()
+
+    def _list(self) -> dict[str, int]:
+        if self.source == "mount":
+            return {str(p.relative_to(self.mount)): p.stat().st_size for p in (self.mount / "data").glob("*/*.parquet")}
+        from huggingface_hub import HfApi
+
+        return {f.path: f.size for f in HfApi().list_bucket_tree(self.bucket, prefix="data", recursive=True)
+                if getattr(f, "path", "").endswith(".parquet")}
+
+    def _fetch(self, rel: str, start: int, end: int) -> bytes:
+        if self.source == "mount":
+            try:
+                with open(self.mount / rel, "rb", buffering=0) as f:
+                    f.seek(start)
+                    return f.read(end - start)
+            except OSError as e:
+                if not self.bucket:
+                    raise
+                print(f"[data] mount {rel}: {e} (reading over HTTP)", flush=True)
+        if self._fs is None:
+            from huggingface_hub import HfFileSystem
+
+            self._fs = HfFileSystem()
+        for attempt in range(6):
+            try:
+                return self._fs.cat_file(f"buckets/{self.bucket}/{rel}", start=start, end=end)
+            except Exception as e:  # noqa: BLE001 - transient network errors: back off and retry
+                print(f"[data] {rel} [{start}:{end}]: {e!r} (attempt {attempt + 1})", flush=True)
+                time.sleep(3 * (attempt + 1))
+        raise OSError(f"could not read {rel}")
+
+    def row(self, rel: str, i: int) -> dict:
+        f = _Ranged(self.sizes[rel], lambda s, e: self._fetch(rel, s, e))
+        if rel not in self.meta:
+            tail = min(f.size, 1 << 20)  # the footer is well under 1 MB (row group metadata only)
+            f.load(f.size - tail, f.size)
+            self.meta[rel] = pq.ParquetFile(f).metadata
+        md = self.meta[rel]
+        rg = md.row_group(i)
+        cols = [rg.column(k) for k in range(rg.num_columns)]
+        start = min(c.dictionary_page_offset or c.data_page_offset for c in cols)
+        end = max((c.dictionary_page_offset or c.data_page_offset) + c.total_compressed_size for c in cols)
+        f.parts = []
+        f.load(start, end)
+        return pq.ParquetFile(f, metadata=md).read_row_group(i).to_pylist()[0]
+
+
+def _entries(ids: str, rows: Rows, split: str) -> list[dict]:
+    """The split's traces from the bucket's training view `<ids>/{train,eval}.jsonl` (trace_id, config, shard, row):
+    a folder on the mount, else of the bucket. Traces whose shard is not (yet) in the bucket are left out, loudly."""
+    name = f"{ids.rstrip('/')}/{'eval' if split == 'eval' else 'train'}.jsonl"
+    path = rows.mount / name if not Path(name).is_absolute() else Path(name)
+    if path.exists():
+        text = path.read_text()
+    else:
+        from huggingface_hub import HfFileSystem
+
+        text = HfFileSystem().cat_file(f"buckets/{rows.bucket}/{name}").decode()
+    out = [json.loads(line) for line in text.splitlines() if line.strip()]
+    have = [e for e in out if e["shard"] in rows.sizes]
+    print(f"[data] {split}: {len(have)}/{len(out)} traces of {name} readable ({len(rows.sizes)} shards)", flush=True)
+    return have
+
+
 class Windows(IterableDataset):
     """Processed training windows, streamed: each (rank, worker) reads its own share of the parquet files."""
 
     def __init__(self, root: Path, weights: dict[str, float], processor, *, windows_per_row: int, max_tokens: int,
-                 split: str, seed: int, shard: bool = True, source: str = "hub"):
-        self.mirror, self.source = "FineEnvs/designworld-sft", source
-        if root.is_dir():
+                 split: str, seed: int, shard: bool = True, source: str = "hub", bucket: str | None = None,
+                 ids: str | None = None, mount: Path | None = None, prefetch: int = 6):
+        self.mirror, self.source, self.prefetch = "FineEnvs/designworld-sft", source, prefetch
+        self.rows, self.entries = None, {}
+        if ids:  # the bucket's training view: traces by (shard, row), one ranged read each
+            self.rows = Rows(source, mount or root, bucket)
+            for e in _entries(ids, self.rows, split):
+                self.entries.setdefault(e["config"], []).append(e)
+            self.files = {c: self.entries.get(c, []) for c in weights}
+        elif root.is_dir():
             self.files = {c: sorted((root / c).glob("*.parquet")) for c in weights}
         else:  # no mount: the same listing from the dataset repo (files are then read over HTTP)
             self.files = _hub_files(self.mirror, root, weights)
@@ -72,6 +192,7 @@ class Windows(IterableDataset):
         self.split, self.seed, self.shard = split, seed, shard
         self.collator = Collator(processor)
         self.skipped = 0
+        self.read_s, self.read_n = 0.0, 0
 
     def _shard(self):
         if not self.shard:
@@ -129,17 +250,56 @@ class Windows(IterableDataset):
                         f.cancel()
                     return
 
-    def __iter__(self):
-        shard, shards = self._shard()
-        rng = random.Random(self.seed * 1000 + shard)
+    def _traces(self, rng: random.Random, shard: int, shards: int):
+        """Traces of this shard's share of the training view, configs mixed by weight, each config reshuffled per
+        pass; `prefetch` reads run ahead in threads. Eval passes once over each config."""
+        mine = {c: v[shard::shards] or v for c, v in self.entries.items() if c in self.weights}
+        order = {c: [] for c in mine}
+        passes = dict.fromkeys(mine, 0)
+
+        def pick():
+            live = [c for c in mine if order[c] or not (self.split == "eval" and passes[c])]
+            if not live:
+                return None
+            c = rng.choices(live, [self.weights[k] for k in live])[0]
+            if not order[c]:
+                order[c], passes[c] = rng.sample(mine[c], len(mine[c])), passes[c] + 1
+            return order[c].pop()
+
+        def read(e):
+            t = time.time()
+            r = self.rows.row(e["shard"], e["row"])
+            return r, time.time() - t
+
+        from collections import deque
+
+        with ThreadPoolExecutor(self.prefetch) as pool:
+            ahead = deque()
+            while True:
+                while len(ahead) < 2 * self.prefetch and (e := pick()) is not None:
+                    ahead.append(pool.submit(read, e))
+                if not ahead:
+                    return
+                row, dt = ahead.popleft().result()
+                self.read_s, self.read_n = self.read_s + dt, self.read_n + 1
+                if self.read_n % 200 == 0:
+                    print(f"[data] rank/worker {shard}: {self.read_n} traces read, {self.read_s / self.read_n:.2f}s "
+                          f"per read (in {self.prefetch} threads)", flush=True)
+                yield row
+
+    def _stream(self, rng: random.Random, shard: int, shards: int):
         streams = {c: self._rows(c, rng, shard, shards) for c in self.weights}
         while streams:
             c = rng.choices(list(streams), [self.weights[k] for k in streams])[0]
             try:
-                row = next(streams[c])
+                yield next(streams[c])
             except StopIteration:
                 del streams[c]
-                continue
+
+    def __iter__(self):
+        shard, shards = self._shard()
+        rng = random.Random(self.seed * 1000 + shard)
+        for row in (self._traces if self.rows else self._stream)(rng, shard, shards):
             ws = sft_format.windows(row)
             if self.windows_per_row and len(ws) > self.windows_per_row:
                 ws = rng.sample(ws, self.windows_per_row)
@@ -244,7 +404,13 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="Qwen/Qwen3.6-35B-A3B")
     ap.add_argument("--data", default="/data", help="the bucket mount (file listing; data too with --data-source mount)")
-    ap.add_argument("--data-source", choices=("hub", "mount"), default="hub")
+    ap.add_argument("--data-source", choices=("hub", "mount", "bucket"), default="hub")
+    ap.add_argument("--bucket", default=None, help="the DesignWorld-SFT bucket id (--data-source bucket reads it over "
+                                                   "HTTP; with mount, the fallback on mount errors)")
+    ap.add_argument("--ids", default=None, help="the bucket's training view folder (sft: train.jsonl / eval.jsonl of "
+                                                "trace_id, config, shard, row), on the mount or in the bucket: traces "
+                                                "are then read one by one (one ranged read each) instead of whole files")
+    ap.add_argument("--prefetch", type=int, default=6, help="with --ids: trace reads in flight per dataloader worker")
     ap.add_argument("--mix", default="gui_studio=1,gui_template=1,gui_pixel=1,gui_deck=1,gui_present=1,gui_vector=1,tools=1,html=1")
     ap.add_argument("--windows-per-row", type=int, default=1, help="windows sampled per trajectory per pass (0: all)")
     ap.add_argument("--max-tokens", type=int, default=40000)
@@ -269,8 +435,8 @@ def main() -> None:
     root = root / "data" if (root / "data").exists() else root
     weights = {k: float(v) for k, v in (p.split("=") for p in a.mix.split(","))}
     processor = AutoProcessor.from_pretrained(a.model)
-    train = Windows(root, weights, processor, windows_per_row=a.windows_per_row, max_tokens=a.max_tokens, split="train", seed=0, source=a.data_source)
-    ev = Windows(root, weights, processor, windows_per_row=2, max_tokens=a.max_tokens, split="eval", seed=1, shard=False, source=a.data_source)
+    train = Windows(root, weights, processor, windows_per_row=a.windows_per_row, max_tokens=a.max_tokens, split="train", seed=0, source=a.data_source, bucket=a.bucket, ids=a.ids, mount=Path(a.data), prefetch=a.prefetch)
+    ev = Windows(root, weights, processor, windows_per_row=2, max_tokens=a.max_tokens, split="eval", seed=1, shard=False, source=a.data_source, bucket=a.bucket, ids=a.ids, mount=Path(a.data), prefetch=a.prefetch)
     eval_items = []
     for item in ev if a.eval_windows else ():
         eval_items.append(item)
