@@ -137,5 +137,18 @@ def load_factors(carrier: str, month: str, inputs: Path) -> dict[tuple[str, str]
     return out
 
 
+def route_loads(carrier: str, month: str, inputs: Path) -> dict[tuple[str, str], float]:
+    """Passengers per departure performed by (origin, dest) for scheduled passenger service (CLASS F) in the month."""
+    year, m = (int(v) for v in month.split("-"))
+    acc: dict[tuple[str, str], list[float]] = {}
+    for r in csv.DictReader(io.StringIO(t100_path(inputs, month).read_text(encoding="utf-8-sig"))):
+        if r["UNIQUE_CARRIER"] != carrier or r["CLASS"] != "F" or (int(r["YEAR"]), int(r["MONTH"])) != (year, m):
+            continue
+        a = acc.setdefault((r["ORIGIN"], r["DEST"]), [0.0, 0.0])
+        a[0] += float(r["PASSENGERS"])
+        a[1] += float(r["DEPARTURES_PERFORMED"])
+    return {k: v[0] / v[1] for k, v in acc.items() if v[1] > 0}
+
+
 def pax(seats: int, lf: dict, orig: str, dest: str) -> int:
     return int(seats * lf.get((orig, dest), lf[None]) + 0.5)

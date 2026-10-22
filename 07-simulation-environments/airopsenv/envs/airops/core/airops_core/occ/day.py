@@ -41,7 +41,8 @@ TURNS = {"joint": 6, "one": 8, "idle": 0}
 EXTRA_TURNS = 10
 EARLY = 720
 SHARED = ("wait_turn", "end_turn", "resign")
-MUTATING = ("ops_confirm", "ops_request", "ops_reply", "crew_confirm", "crew_request", "crew_reply", "end_turn")
+MUTATING = ("ops_confirm", "ops_request", "ops_reply", "crew_confirm", "crew_request", "crew_reply", "cust_request",
+            "end_turn")
 ORDER = {"joint": ("crew", "ops", "reply"), "one": ("one",), "idle": ()}
 
 
@@ -79,9 +80,13 @@ def reward(cost: float, best: float, naive: float) -> float:
 
 
 def costs(day: crewsim.CrewDay) -> dict[str, float]:
+    """The day's cost by part; under P (passengers on board) the cancel part is the refund exposure, and the nights
+    away (lodging) and the refunded fares (fare) are parts of their own."""
     c = day.run.cost
     return {"total": round(crewplan.worth(day, False), 1), "delay": c.delay, "cancel": c.cancel, "notice": c.notice,
-            "aircraft": c.gate + c.overrun - c.saved + c.ferry, **{k: round(v, 1) for k, v in day.cost.items()}}
+            "aircraft": c.gate + c.overrun - c.saved + c.ferry,
+            **({"lodging": c.lodging, "fare": c.fare} if c.passengers else {}),
+            **{k: round(v, 1) for k, v in day.cost.items()}}
 
 
 def timetable(task) -> dict[int, list[str]]:
@@ -96,9 +101,13 @@ def timetable(task) -> dict[int, list[str]]:
 
 
 class OccDay:
+    ROLES, PREFIXES, MODES, ORDER, ASKS, TURNS = ROLES, PREFIXES, MODES, ORDER, ASKS, TURNS
+    DESKS = (OPS, CREW, ONE)
+    REPLIES = {"reply": CREW}
+
     def __init__(self, world: World, mode: str = "joint"):
-        if mode not in MODES:
-            raise ValueError(f"mode must be one of {', '.join(MODES)}")
+        if mode not in self.MODES:
+            raise ValueError(f"mode must be one of {', '.join(self.MODES)}")
         self.w, self.task, self.mode = world, world.task, mode
         self.world = sim.truth(self.task)
         self.known: dict[int, sim.World] = {}
@@ -111,7 +120,7 @@ class OccDay:
         self.truth = run.truth(world, self.plan, self.world)
         self.projections: dict[tuple, run.Projection] = {}
         self.committed: set[int] = set()
-        self.queue: list[str] = list(MODES[mode])
+        self.queue: list[str] = list(self.MODES[mode])
         self.turn: dict | None = None
         self.turns: list[dict] = []
         self.opened_by: dict[int, str] = {0: "load"}
@@ -122,8 +131,8 @@ class OccDay:
         self.notices: list[dict] = []
         self.pending: list[str] = []
         self.absent: dict[str, dict] = {}
-        self.inbox: dict[str, list[dict]] = {d: [] for d in (OPS, CREW, ONE)}
-        self.seen: dict[str, set] = {d: set() for d in (OPS, CREW, ONE)}
+        self.inbox: dict[str, list[dict]] = {d: [] for d in self.DESKS}
+        self.seen: dict[str, set] = {d: set() for d in self.DESKS}
         self.shown: list[dict] = []
         self.flag_log: list[dict] = []
         self.estimates: list[dict] = []
@@ -141,7 +150,7 @@ class OccDay:
 
     @property
     def desks(self) -> tuple[str, ...]:
-        return MODES[self.mode]
+        return self.MODES[self.mode]
 
     @property
     def line(self) -> int | None:
@@ -150,7 +159,7 @@ class OccDay:
 
     @property
     def max_turns(self) -> int:
-        return TURNS[self.mode] * len(self.times) + EXTRA_TURNS
+        return self.TURNS[self.mode] * len(self.times) + EXTRA_TURNS
 
     def known_at(self, t: int) -> sim.World:
         if t not in self.known:
@@ -168,7 +177,7 @@ class OccDay:
         while True:
             while self.queue:
                 kind = self.queue.pop(0)
-                desk = CREW if kind == "reply" else kind
+                desk = self.REPLIES.get(kind, kind)
                 if desk not in self.absent and not self.unscorable():
                     self.turn = {"n": len(self.turns), "watch": self.k, "t": self.t, "desk": desk, "kind": kind,
                                  "granted": None, "ended": None, "calls": 0}
@@ -235,10 +244,10 @@ class OccDay:
     def call(self, role: str | None, tool: str, args: Mapping) -> dict:
         """A desk's tool call, logged with its result's digest: refused off its turn (wait_turn and resign aside), and
         to a desk that is off."""
-        desk = ROLES.get(role or "")
+        desk = self.ROLES.get(role or "")
         if desk is None or desk not in self.desks:
             raise Refused(f"no desk for role {role!r} in {self.mode} mode")
-        if tool not in SHARED and not tool.startswith(PREFIXES[desk]):
+        if tool not in SHARED and not tool.startswith(self.PREFIXES[desk]):
             raise Refused(f"{tool} is not a tool of the {desk} desk")
         if tool == "wait_turn":
             return self.wait_turn(desk)
@@ -288,14 +297,20 @@ class OccDay:
     def end_turn(self, desk: str, note: str | None = None, stand_down: bool = False) -> dict:
         turn = self.turn
         turn["ended"], turn["note"] = self.seq + 1, note
-        if desk == OPS and CREW not in self.absent and any(r["sender"] == OPS and r["turn"] == turn["n"]
-                                                           for r in self.requests):
-            self.queue.insert(0, "reply")
+        self.queue[:0] = self.replies_due(desk, turn)
         if stand_down:
             self.absent[desk] = {"reason": "stand_down", "watch": self.k, "t": self.t, "seq": self.seq + 1}
         opened = self._advance("end_turn")
         return {"ended": turn["kind"], "watch": turn["watch"], "opened": opened, "done": self.done,
                 "next": self.whose()}
+
+    def replies_due(self, desk: str, turn: dict) -> list[str]:
+        """The reply turns a turn just ended queues: the receiver's, in ORDER, of each desk ops asked or told
+        something in it."""
+        if desk != OPS:
+            return []
+        to = {r["receiver"] for r in self.requests if r["sender"] == OPS and r["turn"] == turn["n"]}
+        return [k for k, d in self.REPLIES.items() if d in to and d not in self.absent]
 
     def resign(self, desk: str, reason: str) -> dict:
         if desk not in self.absent:
@@ -327,9 +342,12 @@ class OccDay:
         self.flag_log.append({"watch": self.k, "t": self.t, "desk": desk, "flags": {
             i: {k: list(v) for k, v in f.items()} for i, f in flags.items() if any(v[0] != run.LEGAL
                                                                                   for v in f.values())}})
-        text = pages.page(self, desk, proj, flags)
+        text = self.compose(desk, proj, flags)
         self.shown.append({"watch": self.k, "t": self.t, "desk": desk, "chars": len(text), "text": text})
         return text
+
+    def compose(self, desk: str, proj: run.Projection, flags: dict) -> str:
+        return pages.page(self, desk, proj, flags)
 
     # ------------------------------------------------------------------ the desks' plans
 
@@ -686,8 +704,8 @@ class OccDay:
     def ask(self, desk: str, to: str, type, flight, time, text) -> dict:
         if self.mode == "one":
             raise Refused("one desk runs both jobs: there is no one to ask")
-        if type not in ASKS[desk]:
-            raise Refused(f"the {desk} desk asks {', '.join(ASKS[desk])}")
+        if type not in self.ASKS[desk]:
+            raise Refused(f"the {desk} desk asks {', '.join(self.ASKS[desk])}")
         if text is not None and len(str(text)) > TEXT_CHARS:
             raise Refused(f"a text is at most {TEXT_CHARS} characters")
         params: dict = {}
@@ -706,7 +724,8 @@ class OccDay:
         rid = f"R{len(self.requests) + 1}"
         if type != "TEXT":
             for r in self.requests:
-                if r["status"] == "open" and r["params"].get("flight") == params["flight"]:
+                if r["status"] == "open" and r["params"].get("flight") == params["flight"] and \
+                        self.supersedes(desk, r):
                     self.close(r, "superseded", f"superseded by {rid}")
         else:
             self.inbox[to].append({"request": rid, "status": f"text from {desk}" + (
@@ -716,6 +735,10 @@ class OccDay:
                               "status": "delivered" if type == "TEXT" else "open", "reply": None, "replied": None,
                               "reply_text": None, "actions": []})
         return {"request": rid, "to": to, "type": type}
+
+    def supersedes(self, desk: str, r: dict) -> bool:
+        """Whether a new request from `desk` replaces the open request `r` on its flight: any desk's."""
+        return True
 
     def close(self, r: dict, status: str, why: str) -> None:
         r.update(status=status, replied=self.t, reply_text=why)
@@ -819,9 +842,10 @@ class OccDay:
         present = [d for d in self.desks if d not in self.absent or self.absent[d]["reason"] in GRADED]
         self.grade = {"end_reason": "done" if len(present) == len(self.desks) else "absent", "cost": round(c, 1),
                       "flat": round(crewplan.worth(day, True), 1), "reward": round(reward(c, best, b0), 6),
-                      "reward_L": round(reward(c, bound, b0), 6), "best": best, "bound": bound,
+                      "reward_L": None if bound is None else round(reward(c, bound, b0), 6), "best": best,
+                      "bound": bound,
                       "gap_pct": refs["gap_pct"], "B0": b0, "over_best_pct": round(100 * (c / best - 1), 4),
-                      "over_bound_pct": round(100 * (c / bound - 1), 4),
+                      "over_bound_pct": None if bound is None else round(100 * (c / bound - 1), 4),
                       "avoidable_share": None if b0 <= best else round((b0 - c) / (b0 - best), 4),
                       "above_script": None if script is None or script <= best else round((script - c) /
                                                                                            (script - best), 4),
@@ -858,7 +882,7 @@ class OccDay:
                 p["A1"].append(f"{n}: watch {k}'s trigger never brought it")
         for k in sorted({t["watch"] for t in self.turns}):
             kinds = [t["kind"] for t in self.turns if t["watch"] == k]
-            order = [x for x in ORDER[self.mode] if x in kinds]
+            order = [x for x in self.ORDER[self.mode] if x in kinds]
             if kinds != order:
                 p["A2"].append(f"watch {k}: turns {kinds}")
         p["A2"] += [f"call {c['seq']} ({c['tool']}) outside its desk's turn" for c in self.calls
@@ -879,14 +903,14 @@ class OccDay:
                 p["A5"].append(f"flown without a legal crew: {list(day.uncrewed)[:10]}")
             named = crewday.named(day)
             replay = crewsim.execute(self.task, named, self.w.units, self.world, self.w.local, fill=False,
-                                     airports=self.w.airports)
+                                     airports=self.w.airports, pax=self.w.passengers)
             if abs(crewplan.worth(replay, False) - c) > 0.5:
                 p["A5"].append(f"the named replay costs {crewplan.worth(replay, False):.1f}, not {c:.1f}")
             deps = {i: x.dep for i, x in day.run.flights.items() if x.status == FLOWN}
             p["A5"] += crewsim.audit(self.task, self.w.units, named, deps, {i: day.run.flights[i].arr - d
                                                                             for i, d in deps.items()},
                                      self.w.local, self.w.airports)[:10]
-            if c < self.w.refs["bound"] - 0.5:
+            if self.w.refs["bound"] is not None and c < self.w.refs["bound"] - 0.5:
                 p["A6"].append(f"cost {c:.1f} is under the bound {self.w.refs['bound']}")
         p["A7"] += [f"{d}: {a['reason']}" for d, a in sorted(self.absent.items()) if a["reason"] not in GRADED]
         return {"ok": not any(p.values()), "problems": {k: v for k, v in p.items() if v},

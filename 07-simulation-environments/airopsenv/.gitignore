@@ -1,7 +1,8 @@
-# The days the envs play are fetched from the dataset at v0.3.3 (envs/airops/tools/fetch_packs.py) and checked against
+# The days the envs play are fetched from the dataset at v0.4.2 (envs/airops/tools/fetch_packs.py) and checked against
 # the committed manifests, which pin them.
 envs/airops/tasks/b6-v1/tasks.jsonl
 envs/airops/tasks/b6-v2/dates/
+envs/airops/tasks/b6-v3/dates/
 # The data tools' downloads and builds, and the dataset the replays read.
 envs/airops/cache/
 # The repository ignores every env/ and build/ directory; these two are source.

@@ -1,4 +1,5 @@
-"""A small storm day for the ops control center by hand, as a pack world, and a driver that plays it turn by turn."""
+"""A small storm day for the ops control center by hand, as a pack world (with passengers for airops-occ3), and a
+driver that plays it turn by turn."""
 
 import gzip
 import importlib.util
@@ -16,12 +17,13 @@ from airops_core.occ.day import OccDay
 from airops_core.occ.pack import World
 from airops_core.programs import crewplan, crews, crewsim, occ, sim
 from airops_core.programs.crews import Unit
+from airops_core.programs.pax import Group, Passengers
 
 ROOT = Path(__file__).resolve().parents[3]
 SPEC = importlib.util.spec_from_file_location("airops_desk", ROOT / "agentenv" / "agents" / "airops-desk" / "agent.py")
 desk_agent = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(desk_agent)
-ROLE = {"ops": "ops", "crew": "crew", "one": "both"}
+ROLE = {"ops": "ops", "crew": "crew", "customer": "customer", "one": "both"}
 
 
 def unit(uid: str, kind: str, station: str, report: int, trip: tuple = ()) -> Unit:
@@ -54,14 +56,28 @@ def storm() -> World:
     return World(task, units, task.airports, ((0, 1),), refs, {}, lambda s, m: m)
 
 
+def storm3() -> World:
+    """The storm day with passengers: locals on every flight, and 30 connecting from BOS-JFK f1 onto JFK-MCO f3 at JFK;
+    its references under P (B0 the standard crew desk on the empty plan, best and bound set below it)."""
+    w = storm()
+    passengers = Passengers((Group(0, (0,), 100), Group(1, (1,), 60), Group(2, (1, 3), 30), Group(3, (2,), 90),
+                             Group(4, (3,), 70)), fare=200.0)
+    b0 = crewsim.execute(w.task, {}, w.units, sim.truth(w.task), desk=True, pax=passengers)
+    worth = crewplan.worth(b0, False)
+    refs = {"best": round(worth * 0.9, 1), "bound": round(worth * 0.8, 1), "gap_pct": 11.1,
+            "B0": {"notice": round(worth, 1)}, "naive": round(worth * 1.1, 1)}
+    return World(w.task, w.units, w.airports, w.trips, refs, {}, w.local, passengers)
+
+
 def case(w: World) -> occ.Case:
     return occ.Case(w.task, w.units, w.local, w.airports, w.trips, sim.truth(w.task))
 
 
-def play(w: World, mode: str = "joint", policies: dict | None = None, triggers: bool = True) -> OccDay:
-    """The day played by `policies` (desk: function of the day, the desk and its page), every watch's advisories
-    delivered by the trigger, every desk resigning when it is over."""
-    d = OccDay(w, mode)
+def play(w: World, mode: str = "joint", policies: dict | None = None, triggers: bool = True,
+         make: type[OccDay] = OccDay) -> OccDay:
+    """The day played on `make` by `policies` (desk: function of the day, the desk and its page), every watch's
+    advisories delivered by the trigger, every desk resigning when it is over."""
+    d = make(w, mode)
     while not d.done:
         desk = d.turn["desk"]
         if triggers:
@@ -106,6 +122,19 @@ def write_pack(path: Path, w: World) -> Path:
     (path / "dates" / f"{w.task.date}.json.gz").write_bytes(gzip.compress(json.dumps(body).encode()))
     (path / "manifest.json").write_text(json.dumps({"tasks": {w.task.task_id: {"date": w.task.date, "split": "eval",
                                                                                  "best_from": "run"}}}))
+    return path
+
+
+def write_pack3(path: Path, w: World) -> Path:
+    """The world with passengers as a one-date b6-v3 pack folder: its references under P where b6-v3 keeps them."""
+    write_pack(path, w)
+    file = path / "dates" / f"{w.task.date}.json.gz"
+    body = json.loads(gzip.decompress(file.read_bytes()))
+    r = w.refs
+    body |= {"passengers": w.passengers.to_dict(), "best_plan_p": {str(k): v for k, v in w.best_plan.items()},
+             "refs_p": {"best": r["best"], "bound": r["bound"], "gap_pct": r["gap_pct"], "best_from": "B0",
+                        "candidates": {"B0": r["B0"]["notice"]}, "controls": {"naive": r["naive"]}}}
+    file.write_bytes(gzip.compress(json.dumps(body).encode()))
     return path
 
 

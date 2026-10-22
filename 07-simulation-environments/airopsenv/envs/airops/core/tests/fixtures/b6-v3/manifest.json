@@ -1,0 +1,38 @@
+{
+ "pack": "b6-v3",
+ "base": "b6-v2",
+ "base_manifest_sha256": "5576545931b62dd6bd9274a966016648a51f014b54aa452367983ad401bf13b8",
+ "assembled_at_commit": "f1aaed43eef2bda52bce6eb74e2da47574289414",
+ "framework": "0.9.1336",
+ "crew_params_sha256": "5dd4636fc072ff4a700c48759e9515e1e4096f807b9b924850bce0146d6fa908",
+ "pax_sha256": {
+  "b6-transfers.csv": "098d8c5cd497549e4950e1d32e53dda04e31c174a735a112cb34ce38a22c1051",
+  "b6-dwell.csv": "88ee571369eff4015f17b9c0165871a9500a7e0caf5ad4ecc1eaa97ecca83d2b",
+  "b6-fares.csv": "3655f81f71b3b347f8a0d9e0cec13a63981e15bb906ec95cdb44e6466f5a5b81"
+ },
+ "tasks": {
+  "b6-20250111-0400": {
+   "date": "2025-01-11",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20250115-0400": {
+   "date": "2025-01-15",
+   "split": "control",
+   "best_from": "run",
+   "best_from_p": "repair"
+  }
+ },
+ "skipped": {
+  "2023-06-02": "its joint search crashed in the crew run; outside the pool by rule"
+ },
+ "files": {
+  "dates/2025-01-11.json.gz": "44039837cd99b06ac651fc7f3546d91af0fc1fe5d6f4236a1d1bdcd03067cfbd",
+  "dates/2025-01-15.json.gz": "2c8906c7cacba2a6002365f4fdf94c6a64e66f5929d33ecd98338941afdc26dc"
+ },
+ "bound_run": {
+  "name": "bound",
+  "dates": 70
+ }
+}

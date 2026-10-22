@@ -197,22 +197,37 @@ def seat(d: str) -> float:
     return usd * CPI_2025 / _cpi(d) / USD_PER_PAX_MINUTE
 
 
+def value(usd: float, d: str) -> float:
+    """Dollars of d's month in passenger-minutes (CPI-U to 2025, the FAA's $1.07)."""
+    return usd * CPI_2025 / _cpi(d) / USD_PER_PAX_MINUTE
+
+
 @functools.cache
 def hotel(station: str, d: str) -> float:
     """A night's lodging and M&IE for one person at `station` on date d, in passenger-minutes."""
+    return sum(_per_diem(station, d)) * CPI_2025 / _cpi(d) / USD_PER_PAX_MINUTE
+
+
+@functools.cache
+def lodging(station: str, d: str) -> float:
+    """A night's lodging alone for one person at `station` on date d, in passenger-minutes."""
+    return _per_diem(station, d)[0] * CPI_2025 / _cpi(d) / USD_PER_PAX_MINUTE
+
+
+def _per_diem(station: str, d: str) -> tuple[float, float]:
+    """The GSA (CONUS), DoD (PR, USVI) or GSA standard lodging and M&IE in dollars at `station` on date d."""
     md = d[5:]
     fy = str(int(d[:4]) + (d[5:7] >= "10"))
     if station in GSA:
         rows = GSA[station]["fy"].get(fy) or GSA[station]["fy"][max(GSA[station]["fy"])]
-        usd = next(s["lodging"] + s["mie"] for s in rows["seasons"] if _season(s["from"], s["to"], md))
+        s = next(s for s in rows["seasons"] if _season(s["from"], s["to"], md))
     elif station in DOD:
         versions = [v for v in DOD[station]["versions"] if _bulletin(v["bulletin_effective"]) <= d]
         rows = (versions[-1] if versions else DOD[station]["versions"][0])["rows"]
-        usd = next(s["lodging"] + s["mie"] for s in rows if _season(s["season_from"], s["season_to"], md))
+        s = next(s for s in rows if _season(s["season_from"], s["season_to"], md))
     else:
         s = STANDARD.get(fy) or STANDARD[max(STANDARD)]
-        usd = s["lodging"] + s["mie"]
-    return usd * CPI_2025 / _cpi(d) / USD_PER_PAX_MINUTE
+    return s["lodging"], s["mie"]
 
 
 def _season(lo: str, hi: str, md: str) -> bool:

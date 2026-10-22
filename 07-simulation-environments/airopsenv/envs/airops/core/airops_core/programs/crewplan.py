@@ -48,6 +48,7 @@ from . import crewbound, crewday, crewreplay, crews, crewsim, mip, network, sim
 from .cost import flat_price
 from .crews import Unit
 from .model import Task
+from .pax import Passengers, Proxy
 
 FLY = 10
 INTEGRAL = 1e-6
@@ -55,17 +56,18 @@ INTEGRAL = 1e-6
 
 class Aircraft:
     """A task's aircraft MIP in a world, built once: its notice and flat costs, and solves under changed costs and
-    column bounds."""
+    column bounds; with `pax` (a pax.Proxy) passengers priced as the proxy prices them."""
 
-    def __init__(self, task: Task, world: sim.World):
+    def __init__(self, task: Task, world: sim.World, pax: Proxy | None = None):
         self.task, self.world = task, world
-        self.net = net = mip.Network(task, world)
+        self.net = net = mip.Network(task, world, pax=pax)
         self.notice = np.array(net.m.cost, dtype=float)
         self.flat = self.notice.copy()
         for f in task.flights:
-            self.flat[net.cancel[f.id]] = flat_price(f)
+            price = pax.price(f, task.start, flat=True) if pax else flat_price(f)
+            self.flat[net.cancel[f.id]] = price
             if f.id in net.lapsed:
-                self.flat[net.lapsed[f.id]] = flat_price(f)
+                self.flat[net.lapsed[f.id]] = price
         self.ub = np.array(net.m.ub, dtype=float)
         self.integer = np.array(net.m.integer)
         self.h = net.m._highs(600.0, 1)
@@ -312,10 +314,12 @@ def search(task: Task, world: sim.World, units: Sequence[Unit], local: crews.Loc
            starts: Sequence[tuple[str, mip.Solution]], deadline: float,
            keep: Mapping[int, Collection[int]] | None = None, flat: bool = False, crew_limit: float = 900.0,
            air_limit: float = 900.0, tries: int = 4, days: Sequence[tuple[str, Mapping]] = (),
-           log: Callable[[str], None] | None = None) -> Found:
+           log: Callable[[str], None] | None = None, pax: Passengers | None = None) -> Found:
     """The cheapest day found from the aircraft optima `starts` (label, solution) and the plans `days` (label, plan,
     crewed by the crew sim's default rule) by the time `deadline` (monotonic), the aircraft MIP kept to `keep` once
-    flights are held."""
+    flights are held; every day played with the passengers `pax` when given (`air` then priced by their proxy, whose
+    costs a replay need not match, so a found day claims its replay's cost and `Found.exact` asks only for a legal crew
+    on every flight flown)."""
     end = lambda u, s: crews.reposition(u, s, airports, task.date)  # noqa: E731
     ends = crews.Ends(units, airports, task.date)
     best: list[Found] = []
@@ -328,13 +332,13 @@ def search(task: Task, world: sim.World, units: Sequence[Unit], local: crews.Loc
 
     def keep_best(plan: dict, day: crewsim.CrewDay, claimed: float) -> None:
         if not best or worth(day, flat) < best[0].value - 1e-6:
-            best[:] = [Found(plan, day, claimed, flat, attempts)]
+            best[:] = [Found(plan, day, worth(day, flat) if pax else claimed, flat, attempts)]
 
     def default(plan: Mapping, label: str) -> crewsim.CrewDay:
         """The plan crewed by the crew sim's default rule, as a plan naming what it did; its day."""
-        filled = crewsim.execute(task, plan, units, world, local, airports=airports)
+        filled = crewsim.execute(task, plan, units, world, local, airports=airports, pax=pax)
         named = crewday.named(filled)
-        day = crewsim.execute(task, named, units, world, local, fill=False, airports=airports)
+        day = crewsim.execute(task, named, units, world, local, fill=False, airports=airports, pax=pax)
         attempts.append({"try": label, "claimed": round(worth(filled, flat), 1), "replayed": round(worth(day, flat), 1),
                          "sim_uncrewed": len(day.uncrewed)})
         keep_best(named, day, worth(filled, flat))
@@ -356,12 +360,12 @@ def search(task: Task, world: sim.World, units: Sequence[Unit], local: crews.Loc
         last.update(c.key for c in crewed.columns.values())
         plan = crewday.plan_of(p, crewed, sol.plan(task.start))
         claimed = sol.objective + crewed.crew_cost
-        day = crewsim.execute(task, plan, units, world, local, fill=False, airports=airports)
+        day = crewsim.execute(task, plan, units, world, local, fill=False, airports=airports, pax=pax)
         exact = worth(day, flat)
         if crewed.uncrewed:
-            filled = crewsim.execute(task, plan, units, world, local, airports=airports)
+            filled = crewsim.execute(task, plan, units, world, local, airports=airports, pax=pax)
             plan, claimed = crewday.named(filled), worth(filled, flat)
-            day = crewsim.execute(task, plan, units, world, local, fill=False, airports=airports)
+            day = crewsim.execute(task, plan, units, world, local, fill=False, airports=airports, pax=pax)
         attempts.append({"try": label, "aircraft": sol.objective, "aircraft_status": sol.status,
                          "aircraft_s": sol.wall_s, "crew": crewed.summary(), "crew_cost": round(crewed.crew_cost, 1),
                          "planned": round(sol.objective + crewed.crew_cost, 1), "exact": round(exact, 1),

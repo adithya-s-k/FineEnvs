@@ -54,6 +54,9 @@ leaves, so a decision changes nothing the pool did before it. A plan for the cre
 Dispatch runs the day as a state machine, so it can stop at a minute and go on in another world from there (`switch`:
 the day as known at a watch, what happened before kept).
 
+With passengers (programs.pax) the finished day's flights carry them after the fact: the pass reads the flights' minutes
+and the crew units riding them, and the day's cost prices the passengers' day; nothing they do changes a flight.
+
 A World is what a day runs on: the truth (the task's lb, truth blocks and programs as they ran), the day as known at
 a watch (what the desk could know then: lb and the truth block once the scheduled departure is within LOOK, else 0
 and the scheduled block, the programs as issued by then, proposed GDPs included, every stop to its as-issued end,
@@ -71,6 +74,7 @@ from dataclasses import dataclass, replace
 
 from ..core.known import LOOK
 from ..core.sim import AUTO_CANCELLED, CANCELLED, FLOWN, Ferry, _assign
+from . import pax as passengers
 from . import rbs, repairs
 from .cost import Cost, ferry_cost, priced
 from .model import Flight, Move, Segment, Task
@@ -189,6 +193,7 @@ class Execution:
     wasted: tuple[SlotKey, ...]
     moves: dict[int, int | None]
     cost: Cost
+    pax: passengers.Day | None = None
 
     @property
     def counts(self) -> dict[str, int]:
@@ -201,9 +206,11 @@ class Execution:
         return [self.flights[i].to_dict() for i in sorted(self.flights)]
 
 
-def execute(task: Task, plan: Plan, world: World | None = None, crew=None) -> Execution:
-    """The day under `plan` in `world` (the truth by default), with the crew pool `crew` when given."""
-    day = Dispatch(task, plan, truth(task) if world is None else world, crew)
+def execute(task: Task, plan: Plan, world: World | None = None, crew=None,
+            pax: passengers.Passengers | None = None) -> Execution:
+    """The day under `plan` in `world` (the truth by default), with the crew pool `crew` and the passengers `pax`
+    when given."""
+    day = Dispatch(task, plan, truth(task) if world is None else world, crew, pax)
     day.until()
     return day.execution()
 
@@ -212,8 +219,8 @@ class Dispatch:
     """`execute`'s day as it runs: `until` plays it to a minute, `switch` carries it on from there in another world
     (the day as known at a watch, what happened before kept), `execution` plays the rest and gives the day."""
 
-    def __init__(self, task: Task, plan: Plan, world: World, crew=None):
-        self.task, self.world, self.crew = task, world, crew
+    def __init__(self, task: Task, plan: Plan, world: World, crew=None, pax: passengers.Passengers | None = None):
+        self.task, self.world, self.crew, self.pax = task, world, crew, pax
         self.rules = Rules(task, world)
         self.want = want = {int(k): v for k, v in plan.items() if k not in EXTRA}
         start = task.start
@@ -412,11 +419,14 @@ class Dispatch:
         out = ferries(task, ends, self.family)
         wasted = tuple(sorted(k for k, i in self.bound.items() if runs[i].status != FLOWN or
                               (runs[i].program, runs[i].slot) != k))
+        day = None
+        if self.pax is not None:
+            day = passengers.fly(task, self.pax, runs, {} if self.crew is None else self.crew.seated())
         cost = priced(task, {i: r.dep for i, r in runs.items()}, {i: r.arr for i, r in runs.items()},
                       {i: r.decided for i, r in runs.items() if r.status != FLOWN},
-                      [(x.family, x.orig, x.dest) for x in out])
+                      [(x.family, x.orig, x.dest) for x in out], day)
         return Execution({i: runs[i] for i in sorted(runs)}, {p: tuple(v) for p, v in self.legs.items()},
-                         dict(sorted(ends.items())), out, wasted, self.moves, cost)
+                         dict(sorted(ends.items())), out, wasted, self.moves, cost, day)
 
 
 def hold(entry: Mapping, t: int) -> int:

@@ -68,6 +68,7 @@ from ..core.model import Airport
 from . import crews, sim
 from .crews import Unit
 from .model import Flight, Task
+from .pax import Passengers
 
 LEGAL, TIMES_OUT, NO_CREW = "legal", "times out", "no crew"
 CANCEL, HOLD = "CANCEL", "HOLD"
@@ -129,23 +130,24 @@ class CrewDay:
 
 def execute(task: Task, plan: Mapping, units: Sequence[Unit], world: sim.World | None = None,
             local: crews.Local | None = None, fill: bool = True, log: bool = True,
-            airports: Mapping[str, Airport] | None = None, desk: bool = False, drop: bool = True) -> CrewDay:
+            airports: Mapping[str, Airport] | None = None, desk: bool = False, drop: bool = True,
+            pax: Passengers | None = None) -> CrewDay:
     """The day under `plan` with `units` at the start (the truth by default); `local` reads a station's clock (the
     hub's by default), `airports` hold every station a unit may end at or be wanted at (the task's by default); with
     `desk` the standard crew desk crews the flights the plan leaves unnamed, else the trip rule, and without `drop` it
-    asks ops to cancel where it would cancel."""
-    return finish(*start(task, plan, units, world, local, fill, log, airports, desk, drop))
+    asks ops to cancel where it would cancel; `pax` are the day's passengers, behind the crews riding."""
+    return finish(*start(task, plan, units, world, local, fill, log, airports, desk, drop, pax))
 
 
 def start(task: Task, plan: Mapping, units: Sequence[Unit], world: sim.World | None = None,
           local: crews.Local | None = None, fill: bool = True, log: bool = True,
-          airports: Mapping[str, Airport] | None = None, desk: bool = False, drop: bool = True
-          ) -> tuple["Pool", sim.Dispatch]:
+          airports: Mapping[str, Airport] | None = None, desk: bool = False, drop: bool = True,
+          pax: Passengers | None = None) -> tuple["Pool", sim.Dispatch]:
     """`execute`'s day before it runs: its pool and its dispatch, to play to a minute (sim.Dispatch.until)."""
     world = sim.truth(task) if world is None else world
     pool = Pool(task, units, local or (lambda s, m: m), plan, fill, log, airports or task.airports, desk=desk,
                 drop=drop)
-    return pool, sim.Dispatch(task, plan, world, pool)
+    return pool, sim.Dispatch(task, plan, world, pool, pax)
 
 
 def finish(pool: "Pool", day: sim.Dispatch) -> CrewDay:
@@ -1198,6 +1200,10 @@ class Pool:
         if last < max(f.sched_dep, s.ready):
             return NO_CREW, None
         return TIMES_OUT, last
+
+    def seated(self) -> dict[int, int]:
+        """The crew people riding each flight."""
+        return {i: sum(self.state[u].unit.size for u in us) for i, us in self.riders.items() if us}
 
     def spent(self) -> dict[str, dict[str, float]]:
         """Each unit's crew cost: its deadheads off its trip, its nights away from base, its share of the end of the

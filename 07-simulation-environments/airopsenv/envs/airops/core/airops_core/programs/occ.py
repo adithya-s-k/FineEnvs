@@ -31,13 +31,31 @@ each watch checks (`past`) and records otherwise.
 
 The modes: `baseline` (the desk cancels, ops idle), `quiet-idle` (the desk asks, nobody answers), `talk-idle` (ops only
 answers), `quiet` (the script, no channel), `quiet-flags` (the script and the flag rule), `talk` (the script reading
-CANCEL and HOLD), `one` (the desk cancels at once, the script reading HOLD: one controller). `at_once` is the check that
-the channel can cancel as the desk does: idle ops accepting each CANCEL at the minute it was sent.
+CANCEL and HOLD), `one` (the desk cancels at once, the script reading HOLD: one controller), `talk-customer` (`talk` and
+a scripted customer desk). `at_once` is the check that the channel can cancel as the desk does: idle ops accepting each
+CANCEL at the minute it was sent.
+
+With passengers (`Case.pax`, programs.pax) every crew day and every projection carries them, so the days cost P and
+the ops script's cuts compare projections under P. The customer desk acts at each watch t on ops's projection (the day
+as known at t, nothing later):
+- PROTECT: it asks ops not to cancel a flight whose booked passengers would, for at least half of them, find no later
+  JetBlue itinerary to their final destination that day: none leaving after the flight's scheduled departure, direct
+  or through one connecting station as sold (pax.Timetable), every leg flying in the projection with a seat free as
+  booked (its recorded tail's seats less its booked passengers, as pax.Proxy reads them); ops then leaves those flights
+  out of its rule and its round-trip cuts (it still answers the crew desk's CANCEL);
+- HOLD: for each open outbound the projection has leaving in [t + FREEZE, t + FREEZE + STEP), the window ops commits at
+  its next watch, whose booked connecting passengers (the two-leg groups onto it) would miss it in the projection by
+  CUSTOMER_SLACK minutes or less, when they number CUSTOMER_PAX or more: a hold decided at t (`holds`, sim.hold) to
+  the latest of those inbounds' projected arrival plus the station's MCT, which is never more than CUSTOMER_SLACK
+  after its projected departure.
+It never cancels, names crews or holds anything else. Without passengers it does nothing, and `talk-customer` is
+`talk`.
 """
 
 import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from functools import cached_property
 
 from ..core.known import FREEZE, STEP
 from ..core.model import Airport
@@ -45,9 +63,11 @@ from ..core.sim import AUTO_CANCELLED, CANCELLED, FLOWN
 from . import crewday, crews, crewsim, pairings, references, repairs, sim
 from .crews import Unit
 from .crewsim import CANCEL, HOLD, NO_CREW, TIMES_OUT
-from .model import Task
+from .model import Flight, Task
+from .pax import Passengers, Timetable, mct, smallest
 
 RULE, CUT, REQUEST, FLAG = "rule", "cut", "request", "flag"
+CUSTOMER_SLACK, CUSTOMER_PAX = 15, 10
 
 
 @dataclass(frozen=True)
@@ -56,6 +76,7 @@ class Mode:
     script: bool
     flags: bool
     reads: tuple[str, ...]
+    customer: bool = False
 
 
 MODES = {
@@ -66,13 +87,14 @@ MODES = {
     "quiet-flags": Mode(False, True, True, ()),
     "talk": Mode(False, True, False, (CANCEL, HOLD)),
     "one": Mode(True, True, False, (HOLD,)),
+    "talk-customer": Mode(False, True, False, (CANCEL, HOLD), True),
 }
 
 
 @dataclass(frozen=True)
 class Case:
-    """A date's two-desk world: the task on the truth, its crew units at the start, the station clock, the airports
-    and the round trips on its planned rotations."""
+    """A date's two-desk world: the task on the truth, its crew units at the start, the station clock, the airports,
+    the round trips on its planned rotations and, with passengers, its passengers."""
 
     task: Task
     units: tuple[Unit, ...]
@@ -80,20 +102,52 @@ class Case:
     airports: Mapping[str, Airport]
     trips: tuple[tuple[int, int], ...]
     world: sim.World
+    pax: Passengers | None = field(default=None, compare=False)
     known: dict[int, sim.World] = field(default_factory=dict, compare=False)
 
     @classmethod
-    def of(cls, w: crewday.World, units: Sequence[Unit]) -> "Case":
-        return cls(w.task, tuple(units), w.local, w.airports, round_trips(w.legs, w.flight_of()), sim.truth(w.task))
+    def of(cls, w: crewday.World, units: Sequence[Unit], pax: Passengers | None = None) -> "Case":
+        return cls(w.task, tuple(units), w.local, w.airports, round_trips(w.legs, w.flight_of()), sim.truth(w.task),
+                   pax)
 
     def day(self, plan: Mapping, drop: bool) -> crewsim.CrewDay:
         return crewsim.execute(self.task, plan, self.units, self.world, self.local, airports=self.airports, desk=True,
-                               drop=drop)
+                               drop=drop, pax=self.pax)
 
     def project(self, view: Mapping[int, Mapping], t: int) -> sim.Execution:
         if t not in self.known:
             self.known[t] = sim.known(self.task, t)
-        return sim.execute(self.task, view, self.known[t])
+        return sim.execute(self.task, view, self.known[t], pax=self.pax)
+
+    @cached_property
+    def connections(self) -> dict[int, list[tuple[int, int]]]:
+        """Each outbound's booked inbound connections: (inbound, passengers)."""
+        out: dict[int, list[tuple[int, int]]] = {}
+        for g in self.pax.groups:
+            if len(g.legs) == 2:
+                out.setdefault(g.legs[1], []).append((g.legs[0], g.pax))
+        return out
+
+    @cached_property
+    def onboard(self) -> dict[int, dict[str, int]]:
+        """Each flight's booked passengers by final destination."""
+        out: dict[int, dict[str, int]] = {f.id: {} for f in self.task.flights}
+        for g in self.pax.groups:
+            d = self.task.flight(g.legs[-1]).dest
+            for k in g.legs:
+                out[k][d] = out[k].get(d, 0) + g.pax
+        return out
+
+    @cached_property
+    def free(self) -> dict[int, int]:
+        """Each flight's seats free as booked: its recorded tail's seats (the family's smallest where unknown) less its
+        booked passengers."""
+        least, tails, booked = smallest(self.task), {t.tail: t.seats for t in self.task.tails}, self.pax.booked()
+        return {f.id: tails.get(f.actual.tail, least[f.family]) - booked[f.id] for f in self.task.flights}
+
+    @cached_property
+    def timetable(self) -> Timetable:
+        return Timetable(self.task.flights)
 
 
 @dataclass
@@ -110,6 +164,8 @@ class Run:
     acausal: list[dict] = field(default_factory=list)
     days: int = 1
     seconds: float = 0.0
+    holds: dict[int, int] = field(default_factory=dict)
+    protected: set[int] = field(default_factory=set)
 
     def cancel(self, i: int, t: int, cause: str) -> None:
         self.plan[i] = {"cancel": True, "decided": t}
@@ -139,25 +195,35 @@ def watch(case: Case, mode: Mode, r: Run, t: int, committed: set[int], eta: dict
     task = case.task
     was = past(r.day, t)
     log: dict = {"t": t, RULE: [], CUT: [], REQUEST: [], FLAG: [], "eta": [], "passes": 0}
+    customer = mode.customer and case.pax is not None
+    if customer:
+        log |= {"hold": [], "protect": []}
     while True:
         log["passes"] += 1
-        n = len(r.plan)
+        n, held = len(r.plan), False
         answer(r, mode, t, eta, log)
         if mode.script:
             proj = case.project(view(task, r.plan, r.day, t, eta), t)
+            keep = Protect(case, proj, t) if customer else None
             for i in sorted(i for i, x in proj.flights.items() if x.status == AUTO_CANCELLED and i not in committed
                             and x.decided >= t + FREEZE and opened(r.day, r.plan, i, t)):
+                if keep is not None and keep(i):
+                    log["protect"].append(i)
+                    r.protected.add(i)
+                    continue
                 r.cancel(i, t, RULE)
                 log[RULE].append(i)
-            for x, y in cut(case, r, t, committed, eta):
+            for x, y in cut(case, r, t, committed, eta, keep, log):
                 r.cancel(x, t, CUT)
                 r.cancel(y, t, CUT)
                 log[CUT].append([x, y])
+            if customer:
+                held = hold(case, r, t, committed, eta, log)
         if mode.flags:
             for i in flagged(task, r.day, r.plan, t):
                 r.cancel(i, t, FLAG)
                 log[FLAG].append(i)
-        if len(r.plan) == n:
+        if len(r.plan) == n and not held:
             break
         said = {key(m) for m in r.day.messages}
         r.day = case.day(r.plan, mode.drop)
@@ -195,8 +261,9 @@ def answer(r: Run, mode: Mode, t: int, eta: dict[int, int], log: dict) -> None:
             r.replies[k] = {"reply": "accept", "replied": t, "actions": [{"eta": i, "at": eta[i]}]}
 
 
-def cut(case: Case, r: Run, t: int, committed: set[int], eta: Mapping[int, int]) -> list[tuple[int, int]]:
-    """The round trips to cut at t (step 4 of the module doc)."""
+def cut(case: Case, r: Run, t: int, committed: set[int], eta: Mapping[int, int], keep=None,
+        log: dict | None = None) -> list[tuple[int, int]]:
+    """The round trips to cut at t (step 4 of the module doc), none with a flight `keep` protects."""
     task = case.task
     base = view(task, r.plan, r.day, t, eta)
     proj = case.project(base, t)
@@ -210,8 +277,13 @@ def cut(case: Case, r: Run, t: int, committed: set[int], eta: Mapping[int, int])
         if f.status != FLOWN or f.dep <= task.flight(x).sched_dep:
             continue
         cost = case.project(base | cancels((x, y), t), t).cost.total
-        if cost < now:
-            tried.append((cost - now, x, y))
+        if cost >= now:
+            continue
+        if keep is not None and (kept := [i for i in (x, y) if keep(i)]):
+            log["protect"].extend(kept)
+            r.protected.update(kept)
+            continue
+        tried.append((cost - now, x, y))
     out = []
     for _, x, y in sorted(tried):
         nxt = base | cancels((x, y), t)
@@ -220,6 +292,55 @@ def cut(case: Case, r: Run, t: int, committed: set[int], eta: Mapping[int, int])
             out.append((x, y))
             base, now = nxt, cost
     return out
+
+
+class Protect:
+    """The customer desk's PROTECT at watch t on ops's projection `proj` (see the module doc), one flight at a time."""
+
+    def __init__(self, case: Case, proj: sim.Execution, t: int):
+        self.case, self.proj, self.t = case, proj, t
+        self.seen: dict[int, bool] = {}
+
+    def __call__(self, i: int) -> bool:
+        if i not in self.seen:
+            self.seen[i] = self.stuck(i)
+        return self.seen[i]
+
+    def stuck(self, i: int) -> bool:
+        case, runs = self.case, self.proj.flights
+        f, free = case.task.flight(i), case.free
+
+        def ok(g: Flight) -> bool:
+            return g.id != i and g.sched_dep > f.sched_dep and runs[g.id].status == FLOWN and free[g.id] > 0
+
+        def then(g: Flight) -> bool:
+            return g.id != i and runs[g.id].status == FLOWN and free[g.id] > 0
+
+        none = sum(n for d, n in case.onboard[i].items() if not case.timetable.itineraries(f.orig, d, ok, then))
+        return f.pax > 0 and 2 * none >= f.pax
+
+
+def hold(case: Case, r: Run, t: int, committed: set[int], eta: Mapping[int, int], log: dict) -> bool:
+    """The customer desk's HOLDs at watch t (see the module doc): whether it asked any."""
+    task = case.task
+    proj = case.project(view(task, r.plan, r.day, t, eta), t)
+    runs, asked = proj.flights, False
+    for j, inbound in sorted(case.connections.items()):
+        x = runs[j]
+        if j in committed or x.status != FLOWN or not t + FREEZE <= x.dep < t + FREEZE + STEP or \
+                not opened(r.day, r.plan, j, t) or any(d == t for d, _ in r.plan.get(j, {}).get("holds", ())):
+            continue
+        gap = mct(task.flight(j).orig)
+        late = [(runs[i].arr + gap, n) for i, n in inbound if runs[i].status == FLOWN
+                and 0 < runs[i].arr + gap - x.dep <= CUSTOMER_SLACK]
+        if sum(n for _, n in late) < CUSTOMER_PAX:
+            continue
+        minute = max(m for m, _ in late)
+        r.plan[j] = {"holds": [*r.plan.get(j, {}).get("holds", ()), [t, minute]]}
+        r.holds[j] = minute
+        log["hold"].append([j, minute, sum(n for _, n in late)])
+        asked = True
+    return asked
 
 
 def flagged(task: Task, day: crewsim.CrewDay, plan: Mapping[int, Mapping], t: int) -> list[int]:
@@ -239,6 +360,10 @@ def view(task: Task, plan: Mapping[int, Mapping], day: crewsim.CrewDay, t: int, 
     cancelled before t cancelled, each ETA a not-before."""
     out = references.so_far(task, plan, t, day.run)
     for i, x in day.run.flights.items():
+        if "holds" in out[i]:
+            held = sim.hold(out[i], t)
+            out[i] = {k: v for k, v in out[i].items() if k != "holds"} | {
+                "not_before": max(out[i].get("not_before") or 0, held)}
         if x.status == CANCELLED and x.decided < t and not out[i].get("cancel"):
             out[i] = {"cancel": True, "decided": x.decided}
         elif i in eta and "not_before" in out[i]:
@@ -335,9 +460,10 @@ def roles(r: Run, mode: Mode, task: Task) -> list[str]:
     """What breaks the roles: ops naming anything but a cancellation, or deciding off its watches; the crew desk
     cancelling without `drop`, or a cancellation of its own it didn't log as accepted at once."""
     at = set(watches(task))
-    out = [f"ops plan for {i}: {sorted(e)}" for i, e in sorted(r.plan.items()) if set(e) != {"cancel", "decided"}]
+    out = [f"ops plan for {i}: {sorted(e)}" for i, e in sorted(r.plan.items()) if set(e) != {"cancel", "decided"}
+           and not (mode.customer and set(e) == {"holds"} and all(d in at for d, _ in e["holds"]))]
     out += [f"ops cancelled {i} at {e['decided']}, not a watch" for i, e in sorted(r.plan.items())
-            if e.get("decided") not in at]
+            if e.get("cancel") and e.get("decided") not in at]
     own = sorted(i for i, x in r.day.run.flights.items() if x.status == CANCELLED and i not in r.plan)
     if not mode.drop:
         out += [f"crew desk dropped {i}" for i in sorted(r.day.dropped)]

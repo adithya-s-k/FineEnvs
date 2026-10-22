@@ -1,7 +1,8 @@
 """The day under the two desks' plan, as the env runs it: the truth (the task's day, the standard crew desk crewing what
 the crew desk leaves alone and, unable to cancel, asking it to), its history before a minute (what a decision then
 must not change), and the projection at a watch: the truth played to the watch and carried on from there in the day as
-known (sim.known), so the history is the truth's by construction, with the crew flags per kind it implies."""
+known (sim.known), so the history is the truth's by construction, with the crew flags per kind it implies. A world
+with passengers (b6-v3) plays them on every day, so its days cost P."""
 
 from dataclasses import dataclass
 
@@ -27,11 +28,13 @@ class Projection:
 
 
 def truth(w: World, plan: dict, world: sim.World) -> CrewDay:
-    return crewsim.execute(w.task, plan, w.units, world, w.local, airports=w.airports, desk=True, drop=False)
+    return crewsim.execute(w.task, plan, w.units, world, w.local, airports=w.airports, desk=True, drop=False,
+                           pax=w.passengers)
 
 
 def project(w: World, plan: dict, t: int, world: sim.World, known: sim.World) -> Projection:
-    pool, day = crewsim.start(w.task, plan, w.units, world, w.local, airports=w.airports, desk=True, drop=False)
+    pool, day = crewsim.start(w.task, plan, w.units, world, w.local, airports=w.airports, desk=True, drop=False,
+                              pax=w.passengers)
     day.until(t)
     units = {uid: standing(s, w.task.start) for uid, s in pool.state.items()}
     aircraft = {}

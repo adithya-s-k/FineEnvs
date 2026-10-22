@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "airops-core"
-version = "0.3.3"
-description = "JetBlue's storm days from public BTS, FAA and IEM records: v1's hub window and v2's whole network with crews, the FAA's programs, the references, the bounds and the grade"
+version = "0.4.2"
+description = "JetBlue's storm days from public BTS, DOT, FAA and IEM records: v1's hub window, v2's whole network with crews and v3's with its passengers, the FAA's programs, the references, the bounds and the grade"
 requires-python = ">=3.11.4"
-# v1's day (core/, day.py, schedule.py) needs only the standard library; v2, the references and the pack builders need
-# these. highspy is pinned exactly: the references and best plans were proven with it.
+# v1's day (core/, day.py, schedule.py) needs only the standard library; v2, v3, the references and the pack builders
+# need these. highspy is pinned exactly: the references and best plans were proven with it.
 dependencies = ["numpy>=2", "pandas>=2.2", "highspy==1.15.1", "airportsdata>=20260905"]
 
 [project.optional-dependencies]

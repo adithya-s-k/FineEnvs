@@ -1,13 +1,16 @@
 """The ops control center's task pack (tools/build_occ_pack.py): per date its whole-day task and its crew world frozen
 at the start (the units, every airport a unit may reach, the round trips of the planned rotations), with the references
-the grade reads. The env never rebuilds units, so a day starts alike on any machine."""
+the grade reads. The env never rebuilds units, so a day starts alike on any machine.
+
+b6-v3 (`Pack3`) adds each date's passengers and its references under cost P; its world carries the passengers and reads
+those references and the best plan under P in v2's places."""
 
 import functools
 import gzip
 import json
 import os
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -15,8 +18,10 @@ from zoneinfo import ZoneInfo
 from ..core.model import Airport
 from ..programs.crews import Unit
 from ..programs.model import Task
+from ..programs.pax import Passengers
 
 PACK = Path(__file__).resolve().parents[3] / "tasks" / "b6-v2"
+PACK3 = Path(__file__).resolve().parents[3] / "tasks" / "b6-v3"
 
 
 @dataclass(frozen=True)
@@ -28,6 +33,7 @@ class World:
     refs: dict
     best_plan: dict
     local: Callable[[str, int], int] = field(compare=False, repr=False)
+    passengers: Passengers | None = field(default=None, compare=False, repr=False)
 
     @classmethod
     def from_dict(cls, d: dict) -> "World":
@@ -37,6 +43,17 @@ class World:
         plan = {int(k) if k != "reports" else k: v for k, v in d["best_plan"].items()}
         return cls(task, units, airports, tuple(tuple(p) for p in d["trips"]), d["refs"], plan,
                    station_clock(task, airports))
+
+    @classmethod
+    def from_v3(cls, d: dict) -> "World":
+        """A b6-v3 date: its passengers, and its references under cost P where v2's were (best the stage-2 reference,
+        B0 the standard crew desk with aircraft doing nothing, the bound the capacity-aware one, None where the pack
+        has none)."""
+        w, p = cls.from_dict(d), d["refs_p"]
+        refs = {"best": p["best"], "bound": p["bound"], "gap_pct": p["gap_pct"], "best_from": p["best_from"],
+                "B0": {"notice": p["candidates"]["B0"]}, "naive": p["controls"]["naive"]}
+        plan = {int(k) if k != "reports" else k: v for k, v in d["best_plan_p"].items()}
+        return replace(w, refs=refs, best_plan=plan, passengers=Passengers.from_dict(d["passengers"]))
 
     @functools.cached_property
     def partner(self) -> dict[int, int]:
@@ -73,3 +90,16 @@ class Pack:
             raise ValueError(f"unknown task id {task_id!r}")
         raw = gzip.decompress((self.path / "dates" / f"{self.tasks[task_id]['date']}.json.gz").read_bytes())
         return World.from_dict(json.loads(raw))
+
+
+class Pack3(Pack):
+    """A b6-v3 pack folder: v2's dates with their passengers and references under cost P."""
+
+    def __init__(self, path: Path | str | None = None):
+        super().__init__(path or os.environ.get("AIROPS_OCC3_PACK") or PACK3)
+
+    def world(self, task_id: str) -> World:
+        if task_id not in self.tasks:
+            raise ValueError(f"unknown task id {task_id!r}")
+        raw = gzip.decompress((self.path / "dates" / f"{self.tasks[task_id]['date']}.json.gz").read_bytes())
+        return World.from_v3(json.loads(raw))

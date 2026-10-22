@@ -10,7 +10,7 @@ from ..core.model import hhmm, parse_hhmm
 from ..core.sim import AUTO_CANCELLED, CANCELLED, FLOWN
 from ..programs import crews, crewsim, sim
 from ..programs.advisories import GDP, GDP_CNX, GS, GS_CNX, PROPOSED, Advisory
-from ..programs.cost import cancel_price
+from ..programs.cost import RATES, REFUND, cancel_price, late
 from . import run
 
 ROWS, LOOKUP_ROWS, CREW_ROWS, REQUESTS, CHARS, OPTIONS, PRICED = 30, 60, 40, 12, 3600, 12, 4
@@ -111,11 +111,13 @@ def run_claim(e: Mapping, t: int) -> int | None:
 
 def header(day, desk: str) -> str:
     task = day.task
-    kind = {"crew": "crew turn", "ops": "ops turn", "reply": "crew reply turn", "one": "your turn"}[day.turn["kind"]]
+    kind = {"crew": "crew turn", "ops": "ops turn", "reply": "crew reply turn", "one": "your turn",
+            "customer": "customer turn", "creply": "customer reply turn"}[day.turn["kind"]]
     committed = sum(not day.gone(i) and not day.cancelled(i) for i in day.committed)
     line = "nothing is committed yet; holds from now" if day.line is None else \
         f"freeze line {hhmm(day.line)}: holds go no earlier, and {committed} open flights are committed"
-    return (f"# {'Ops controller' if desk == 'ops' else 'Crew scheduler' if desk == 'crew' else 'Ops control'}, "
+    title = {"ops": "Ops controller", "crew": "Crew scheduler", "customer": "Customer desk"}.get(desk, "Ops control")
+    return (f"# {title}, "
             f"JetBlue, {task.date}, {hhmm(day.t)} (watch {day.k + 1} of {len(day.times)}, {kind}); {line}.")
 
 
@@ -127,6 +129,10 @@ def cost_line(proj, desk: str) -> str:
     if desk == "crew":
         return (f"Crew cost of the day as projected: deadhead {crew['deadhead']:,.0f}, hotel {crew['hotel']:,.0f}, end "
                 f"of day {crew['end']:,.0f} pax-min{tail}.")
+    if c.passengers:
+        return (f"The plan as projected costs {proj.day.total:,.0f} pax-min: passenger delay {c.delay:,}, refund "
+                f"exposure {c.cancel:,}, notice {c.notice:,}, nights away {c.lodging:,}, refunded fares {c.fare:,}, "
+                f"aircraft {c.gate + c.overrun - c.saved + c.ferry:,}, crew {sum(crew.values()):,.0f}{tail}.")
     return (f"The plan as projected costs {proj.day.total:,.0f} pax-min: delay {c.delay:,}, cancel {c.cancel:,}, "
             f"notice {c.notice:,}, aircraft {c.gate + c.overrun - c.saved + c.ferry:,}, crew "
             f"{sum(crew.values()):,.0f}{tail}.")
@@ -164,7 +170,7 @@ def messages(day, desk: str) -> str:
             (f" {'until' if r['type'] == 'HOLD' else 'by'} {hhmm(r['params']['time'])}" if "time" in r["params"]
              else "")
         lines.append(f"{r['id']} from {r['sender']} at {hhmm(r['sent'])}: {what}" +
-                     (f' "{r["text"]}"' if r["text"] else ""))
+                     (f" ({r['pax']} pax)" if r.get("pax") else "") + (f' "{r["text"]}"' if r["text"] else ""))
     if len(asked) > REQUESTS:
         lines.append(f"{len(asked) - REQUESTS} more open requests: answer these to see them")
     return "## Messages\n" + ("\n".join(lines) if lines else "None new.")
@@ -173,7 +179,8 @@ def messages(day, desk: str) -> str:
 def attention(day, proj, flags) -> str:
     rows = attention_rows(day, proj, flags)
     out = ["## Attention: open flights in the next 4 h late 30+ min, auto-cancelling, with a crew flag or a request",
-           "id flight route sched pax type delay plan proj(dep-arr +late) slot pilot/cabin deadline"]
+           f"id flight route sched {'pax(conn in/out)' if paxed(day) else 'pax'} type delay plan proj(dep-arr +late) "
+           "slot pilot/cabin deadline"]
     out += [row_text(day, proj, flags, i) for i in rows[:ROWS]]
     if len(rows) > ROWS:
         out.append(f'{len(rows) - ROWS} more: ops_flights(status="attention")')
@@ -200,7 +207,8 @@ def row_text(day, proj, flags, i: int, units: bool = False) -> str:
     task, t = day.task, day.t
     f, r = task.flight(i), proj.day.run.flights[i]
     delay = f.lb if f.sched_dep <= t + LOOK else "?"
-    out = (f"{fid(i)} {f.flight.split()[-1]} {f.orig}-{f.dest} {hhmm(f.sched_dep)} {f.pax} {f.family} {delay} "
+    load = day.book.pax_text(i) if paxed(day) else f.pax
+    out = (f"{fid(i)} {f.flight.split()[-1]} {f.orig}-{f.dest} {hhmm(f.sched_dep)} {load} {f.family} {delay} "
            f"{plan_text(day, i)} {proj_text(r, f)} {'-' if r.slot is None else hhmm(r.slot)} "
            f"{flag_text(flags.get(i, {}))} {hhmm(f.deadline)}")
     if units and (c := proj.day.crews.get(i)):
@@ -379,14 +387,23 @@ def flights(day, ids, station, status, start, end, units: bool) -> dict:
             continue
         line = row_text(day, proj, flags, i, units)
         extra = []
-        if not gone and not cancelled:
+        if not gone and not cancelled and paxed(day):
+            extra.append(f"cancel now {f.pax * (REFUND + late(f, day.t)) - RATES[f.family].saved * f.sched_block:,} "
+                         "before rebooking")
+        elif not gone and not cancelled:
             extra.append(f"cancel now {cancel_price(f, day.t):,}")
         if (j := day.w.partner.get(i)) is not None:
             extra.append(f"pair {fid(j)}")
         out.append(f"{line} [{state}{'; ' + '; '.join(extra) if extra else ''}]")
-    return {"columns": "id flight route sched pax type delay plan proj slot pilot/cabin deadline" +
+    return {"columns": f"id flight route sched {'pax(conn in/out)' if paxed(day) else 'pax'} type delay plan proj "
+                       "slot pilot/cabin deadline" +
             (" crews" if units else "") + " [status; cancel cost now; round-trip partner]",
             **fit(out, "ids, station, status, start or end")}
+
+
+def paxed(day) -> bool:
+    """Whether the day has passengers (v3): its pages then show them."""
+    return getattr(day, "book", None) is not None
 
 
 def program(day, hub) -> dict:

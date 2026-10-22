@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from .day import OccDay, digest
 from .pack import World
 
-ROLE = {"ops": "ops", "crew": "crew", "one": "both"}
+ROLE = {"ops": "ops", "crew": "crew", "customer": "customer", "one": "both"}
 
 
 @dataclass(frozen=True)

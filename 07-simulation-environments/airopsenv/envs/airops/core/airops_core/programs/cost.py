@@ -24,6 +24,13 @@ The end-of-day ferries are v1's, (30 + miles / 8) minutes of block, now at the F
 that every aircraft-minute is priced alike. The flat cost, every cancellation at 523 whenever decided, carries the
 airline's cost too: only the notice term sets it apart, and it is kept for the leverage and control clauses, which the
 notice term would otherwise decide.
+
+With passengers (programs.pax, cost P) `delay` is every passenger's delay at the final destination, rebooked or a
+later day's arrival included (for a passenger refunded, the time waited up to the refund), in place of v2's delay at
+every leg; a cancelled flight's booked passengers cost REFUND each, K_CANCEL's refund-exposure part (v1's assumed 0.3
+take-up of the fare), their real delay replacing its 457 minutes; `lodging` (a GSA lodging night per night away) and
+`fare` (the full fare of every passenger refunded) join the flat cost. The notice term and the airline's terms are
+v2's. Without passengers every term and output is v2's.
 """
 
 from collections.abc import Iterable, Mapping
@@ -33,6 +40,7 @@ from ..core.cost import FERRY_BASE_MIN, FERRY_MILES_PER_MIN, K_CANCEL, miles
 from .model import Flight, Task
 
 NOTICE = 120
+REFUND = 66
 FAA_YE_JUNE_2023 = {
     "165k lb or more": {"fuel_oil": 2663, "maintenance": 954, "crew": 1378, "fixed": 656, "total": 5650},
     "under 165k lb": {"fuel_oil": 2322, "maintenance": 1004, "crew": 1336, "fixed": 587, "total": 5248}}
@@ -73,6 +81,9 @@ class Cost:
     gate: int
     overrun: int
     saved: int
+    lodging: int = 0
+    fare: int = 0
+    passengers: bool = False
 
     @property
     def total(self) -> int:
@@ -80,11 +91,15 @@ class Cost:
 
     @property
     def flat(self) -> int:
-        return self.delay + self.cancel + self.ferry + self.gate + self.overrun - self.saved
+        return (self.delay + self.cancel + self.ferry + self.gate + self.overrun - self.saved + self.lodging
+                + self.fare)
 
     def to_dict(self) -> dict:
-        return {"delay": self.delay, "cancel": self.cancel, "notice": self.notice, "ferry": self.ferry,
-                "gate": self.gate, "overrun": self.overrun, "saved": self.saved, "total": self.total, "flat": self.flat}
+        out = {"delay": self.delay, "cancel": self.cancel, "notice": self.notice, "ferry": self.ferry,
+               "gate": self.gate, "overrun": self.overrun, "saved": self.saved, "total": self.total, "flat": self.flat}
+        if self.passengers:
+            out |= {"lodging": self.lodging, "fare": self.fare}
+        return out
 
 
 def late(f: Flight, decided: int) -> int:
@@ -100,10 +115,11 @@ def flat_price(f: Flight) -> int:
     return f.pax * K_CANCEL - RATES[f.family].saved * f.sched_block
 
 
-def flown_price(f: Flight, dep: int, arr: int) -> int:
-    """A flight that left at `dep` and arrived at `arr`: its passengers' delay and its aircraft's minutes."""
+def flown_price(f: Flight, dep: int, arr: int, pax: int | None = None) -> int:
+    """A flight that left at `dep` and arrived at `arr`: its passengers' delay (`pax` of them, its own by default) and
+    its aircraft's minutes."""
     r = RATES[f.family]
-    return (f.pax * max(0, arr - f.sched_arr) + r.gate * max(0, dep - f.sched_dep)
+    return ((f.pax if pax is None else pax) * max(0, arr - f.sched_arr) + r.gate * max(0, dep - f.sched_dep)
             + r.block * max(0, arr - dep - f.sched_block))
 
 
@@ -115,11 +131,11 @@ def ferry_cost(task: Task, family: str, a: str, b: str) -> int:
 
 
 def priced(task: Task, dep: Mapping[int, int | None], arr: Mapping[int, int | None], decided: Mapping[int, int],
-           ferries: Iterable[tuple[str, str, str]]) -> Cost:
+           ferries: Iterable[tuple[str, str, str]], pax=None) -> Cost:
     """The cost of a day: `dep` and `arr` map each flight to its departure and its arrival, None when it had none,
     `decided` each flight that never arrived to the minute its cancellation was decided, `ferries` are the end-of-day
-    (family, from, to) moves."""
-    delay = cancel = notice = gate = overrun = saved = 0
+    (family, from, to) moves, `pax` the passengers' day (pax.Day) when the day has passengers."""
+    delay = cancel = notice = gate = overrun = saved = lost = 0
     for i, a in arr.items():
         f, d = task.flight(i), dep[i]
         r = RATES[f.family]
@@ -127,9 +143,13 @@ def priced(task: Task, dep: Mapping[int, int | None], arr: Mapping[int, int | No
             gate += r.gate * max(0, d - f.sched_dep)
         if a is None:
             cancel += K_CANCEL * f.pax
+            lost += f.pax
             notice += f.pax * late(f, decided[i])
             saved += 0 if d is not None else r.saved * f.sched_block
         else:
             delay += f.pax * max(0, a - f.sched_arr)
             overrun += r.block * max(0, a - d - f.sched_block)
-    return Cost(delay, cancel, notice, sum(ferry_cost(task, *x) for x in ferries), gate, overrun, saved)
+    ferry = sum(ferry_cost(task, *x) for x in ferries)
+    if pax is None:
+        return Cost(delay, cancel, notice, ferry, gate, overrun, saved)
+    return Cost(pax.delay, REFUND * lost, notice, ferry, gate, overrun, saved, pax.lodging, pax.fare, True)

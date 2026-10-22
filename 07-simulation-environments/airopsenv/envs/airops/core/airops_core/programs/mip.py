@@ -37,6 +37,22 @@ returned. A second pass that runs out of time leaves the proven cost solve's sta
 canonical. With `fix` a canonical solve first solves the LP relaxation: an integral LP optimum is the proven optimum,
 and its reduced costs fix, for the second pass, every column no plan within the optimum's cost can move (an LP
 duality bound, so the plan is the one the second pass would find without it).
+
+With passengers (`pax`, a pax.Proxy) the model prices them as the proxy does. A copy carries the delay of the
+passengers its flight takes to their destination; a cancellation (the desk's or an auto-cancel) its passengers'
+refund exposure and notice. Each flight a booked connection uses gets its departure minute as a column (the sum of its
+copies' minutes, which the cover row makes the minute it leaves, 0 when cancelled), and each booked connection a binary
+y that its inbound flown and its outbound cancelled, y >= cancelled(j) - cancelled(i), or a gap under the MCT, dep_j -
+dep_i - block_i + M y >= MCT (its cancelled terms raised so that it binds only when both fly, M the widest gap short
+of the MCT their copies allow, no row where none falls short), force to 1. Valid cuts tighten the relaxation: with
+columns counting each such flight's copies by minutes on a GRID-minute grid, y >= left(j, a) - left(i, a - MCT -
+block_i, rounded up) - cancelled(i) for every grid minute a in the RISK minutes after the outbound's earliest one.
+Every way a group is disrupted (its first leg's cancel column, its auto-cancel column, or its connection's y) rebooks
+it, as a column per option, onto the proxy's itineraries within each flight's seats as booked (none on a cancelled
+one) and the following days' seats left, or refunds it at the proxy's refund price (a last resort, pax.last_resort).
+Rebooking costs at least 0, so a
+y at 1 that nothing forces never lowers the cost: every day the sim runs is a solution at its proxy cost
+(pax.Proxy.cost, the rebooking an LP), every optimum replays at its cost, and the bound is the proxy's.
 """
 
 import time
@@ -52,9 +68,11 @@ from ..refs.mip import GAP, _Model
 from . import sim
 from .cost import cancel_price, ferry_cost, flat_price, flown_price
 from .model import Flight, Tail, Task
+from .pax import Proxy, mct
 
 INF = highspy.kHighsInf
 INTEGRAL = 1e-6
+GRID, RISK = 5, 180
 
 
 @dataclass(frozen=True)
@@ -92,12 +110,12 @@ def solve(task: Task, world: sim.World | None = None, price: Mapping[int, int] |
           fixed: Mapping[int, int | None] | None = None, earliest: int | None = None, step: int = 1,
           time_limit: float = 600.0, gap: float = GAP, threads: int = 1, canonical: bool = True,
           start: sim.Execution | None = None, lapsed: Collection[int] = (), fix: bool = True,
-          flat: bool = False) -> Solution:
+          flat: bool = False, pax: Proxy | None = None) -> Solution:
     """The optimum in `world` (the truth by default) with each cancel arc at `price` (default: notice-priced at the
     first watch, or flat with `flat`). `fixed` pins flights to a departure minute (None: cancelled, or auto-cancelled
     for those in `lapsed`); the others leave at or after `earliest`. `start` is a day sim.execute ran in `world` that
-    the model holds, to start the search from."""
-    net = Network(task, world, price, fixed, earliest, step, lapsed, flat)
+    the model holds, to start the search from; `pax` prices the passengers by their proxy."""
+    net = Network(task, world, price, fixed, earliest, step, lapsed, flat, pax)
     return net.solve(time_limit, gap, threads, canonical, None if start is None else net.vector(start), fix)
 
 
@@ -123,11 +141,12 @@ class Network:
 
     def __init__(self, task: Task, world: sim.World | None = None, price: Mapping[int, int] | None = None,
                  fixed: Mapping[int, int | None] | None = None, earliest: int | None = None, step: int = 1,
-                 lapsed: Collection[int] = (), flat: bool = False):
-        self.task = task
+                 lapsed: Collection[int] = (), flat: bool = False, pax: Proxy | None = None):
+        self.task, self.pax = task, pax
         self.world = world = sim.truth(task) if world is None else world
         if price is None:
-            price = {f.id: flat_price(f) if flat else cancel_price(f, task.start) for f in task.flights}
+            price = {f.id: pax.price(f, task.start, flat) if pax else flat_price(f) if flat else
+                     cancel_price(f, task.start) for f in task.flights}
         fixed = fixed or {}
         rules = sim.Rules(task, world)
         pools = {s.id: set(s.slots) for segs in world.segments.values() for s in segs}
@@ -225,7 +244,8 @@ class Network:
             r = {}
             for d, (kind, key) in copies[f.id]:
                 arr = d + world.block[f.id]
-                c = m.col(flown_price(f, d, arr), 1, True, (d - f.sched_dep + 1) * w)
+                c = m.col(pax.flown(f, d, arr) if pax else flown_price(f, d, arr), 1, True,
+                          (d - f.sched_dep + 1) * w)
                 self.xs[(f.id, d)] = c
                 arc(gate.get((f.id, d), node[((f.family, f.orig), d)]),
                     lane.get((f.id, d), node[((f.family, f.dest), task.back(f, arr))]), c)
@@ -241,8 +261,9 @@ class Network:
                                           (f.deadline - f.sched_dep + 2) * w)
             r[c] = 1
             if f.id in on_line:
-                self.lapsed[f.id] = c = m.col(flat_price(f) if flat else cancel_price(f, task.auto_at(f)),
-                                              ub if lapses else 0, True, (f.deadline - f.sched_dep + 3) * w)
+                auto = pax.price(f, task.auto_at(f), flat) if pax else flat_price(f) if flat else \
+                    cancel_price(f, task.auto_at(f))
+                self.lapsed[f.id] = c = m.col(auto, ub if lapses else 0, True, (f.deadline - f.sched_dep + 3) * w)
                 r[c] = 1
             cover.append(r)
         self.landed: dict[tuple[int, int], int] = dict(self.xs)
@@ -359,10 +380,75 @@ class Network:
             room = 1 if kind == "slot" else world.nominal[key[0]][key[1]]
             m.row(r, -INF, max(0, room - pinned[(kind, key)]))
         self.copies = copies
+        self.at: dict[int, int] = {}
+        self.links: dict[tuple[int, int], int] = {}
+        self.upto: dict[tuple[int, int], int] = {}
+        self.rebook: dict[tuple[int, int], int] = {}
+        self.refund: dict[int, int] = {}
+        if pax is not None:
+            self._passengers(pax)
+
+    def _passengers(self, pax: Proxy) -> None:
+        m, copies, task = self.m, self.copies, self.task
+        gone = {f.id: {c: 1 for c in (self.cancel[f.id], self.lapsed.get(f.id)) if c is not None}
+                for f in task.flights}
+        for k in sorted({k for x in pax.links for k in (x.i, x.j)}):
+            self.at[k] = c = m.col(0, max((d for d, _ in copies[k]), default=0), False)
+            m.row({c: 1, **{self.xs[(k, d)]: -d for d, _ in copies[k]}}, 0, 0)
+        cuts, need = [], defaultdict(set)
+        for x in pax.links:
+            gi, gj = gone[x.i], gone[x.j]
+            self.links[(x.i, x.j)] = y = m.col(0, 1, True)
+            m.row({y: 1, **{c: -1 for c in gj}, **gi}, 0, INF)
+            if not copies[x.i] or not copies[x.j]:
+                continue
+            b, gap = self.world.block[x.i], mct(x.hub)
+            lo, hi = min(d for d, _ in copies[x.j]), max(d for d, _ in copies[x.i]) + b
+            if gap + hi - lo > 0:
+                m.row({self.at[x.j]: 1, self.at[x.i]: -1, **{c: b for c in gi}, **{c: lo for c in gj},
+                       y: gap + hi - lo}, gap + b, INF)
+            for a in range(-(-lo // GRID) * GRID, min(max(d for d, _ in copies[x.j]), hi + gap - 1, lo + RISK) + 1,
+                           GRID):
+                t = -(-(a - gap - b) // GRID) * GRID
+                cuts.append((x, a, t))
+                need[x.j].add(a)
+                need[x.i].add(t)
+        for k, ts in sorted(need.items()):
+            ds, pos, prev = sorted(d for d, _ in copies[k]), 0, None
+            for t in sorted(ts):
+                self.upto[(k, t)] = c = m.col(0, 1, False)
+                row = {c: 1} if prev is None else {c: 1, self.upto[(k, prev)]: -1}
+                while pos < len(ds) and ds[pos] <= t:
+                    row[self.xs[(k, ds[pos])]] = -1
+                    pos += 1
+                m.row(row, 0, 0)
+                prev = t
+        for x, a, t in cuts:
+            m.row({self.links[(x.i, x.j)]: 1, self.upto[(x.j, a)]: -1, self.upto[(x.i, t)]: 1, **gone[x.i]}, 0, INF)
+        room: dict[int | str, dict[int, int]] = defaultdict(dict)
+        for n, mode in enumerate(pax.modes):
+            if mode.link is not None:
+                hit = {self.links[mode.link]: 1}
+            else:
+                hit = {self.lapsed[mode.cut]: 1} if mode.lapse else {self.cancel[mode.cut]: 1}
+            row = {c: -mode.pax for c in hit}
+            for o, (legs, price) in enumerate(mode.options):
+                self.rebook[(n, o)] = c = m.col(price, mode.pax, False)
+                row[c] = 1
+                for k in legs:
+                    if k in pax.free:
+                        room[k][c] = 1
+            self.refund[n] = c = m.col(mode.refund, mode.pax, False)
+            row[c] = 1
+            m.row(row, 0, 0)
+        for k, r in sorted(room.items(), key=lambda kv: str(kv[0])):
+            m.row({**r, **({c: pax.free[k] for c in gone[k]} if isinstance(k, int) else {})}, -INF, pax.free[k])
 
     def solve(self, time_limit: float = 600.0, gap: float = GAP, threads: int = 1, canonical: bool = True,
-              start: np.ndarray | None = None, fix: bool = True) -> Solution:
+              start: np.ndarray | None = None, fix: bool = True, seed: int | None = None) -> Solution:
+        """`seed` sets HiGHS's random seed, for independent searches of one model."""
         m = self.m
+        m.seed = seed
         lp = m.relax(time_limit, threads) if fix and canonical else None
         if lp is not None and lp.integral:
             status, objective, bound, mip_gap, wall, x = "Optimal", lp.objective, lp.objective, 0.0, lp.wall, lp.x
@@ -386,6 +472,30 @@ class Network:
         lapsed = {i: self.task.flight(i).deadline + 1 for i, c in self.lapsed.items() if x[c] > 0.5}
         return Solution(status, round(objective), bound, round(100 * mip_gap, 4), round(wall, 2), deps, len(m.cost),
                         len(m.rows), sum(len(v) for v in self.copies.values()), start is not None, settled, lapsed)
+
+    def rounded(self, time_limit: float = 600.0, threads: int = 1) -> dict[int, dict] | None:
+        """The LP relaxation's optimum rounded to a plan the sim can play, a start for the search: a flight more
+        cancelled than not is cancelled at the start (held past its deadline where the LP lets it auto-cancel more than
+        the desk cancels it), any other held to the minute by which half of it has left; None if the LP isn't
+        reached."""
+        h = self.m._highs(time_limit, threads)
+        h.run()
+        if h.modelStatusToString(h.getModelStatus()) != "Optimal":
+            return None
+        x, task = np.array(h.getSolution().col_value), self.task
+        plan = {}
+        for f in task.flights:
+            cut, auto = x[self.cancel[f.id]], x[self.lapsed[f.id]] if f.id in self.lapsed else 0.0
+            if cut + auto >= 0.5:
+                plan[f.id] = {"not_before": f.deadline + 1} if auto > cut else {"cancel": True, "decided": task.start}
+                continue
+            left = 0.0
+            for d, _ in self.copies[f.id]:
+                left += x[self.xs[(f.id, d)]]
+                if left >= 0.5 * (1 - cut - auto):
+                    plan[f.id] = {"not_before": d}
+                    break
+        return plan
 
     def vector(self, run: sim.Execution) -> np.ndarray | None:
         """`run` (a day sim.execute ran in this world, holding every pin) as a solution of the model, or None if a
@@ -440,6 +550,8 @@ class Network:
                 held += delta[key][t]
                 x[c] = held
             ends[key] = held
+        if self.pax is not None:
+            self._riders(run, x)
         out = Counter((fy.family, fy.orig, fy.dest) for fy in run.ferries)
         for (fam, a), n in ends.items():
             stay = min(n, self.need[(fam, a)])
@@ -449,6 +561,22 @@ class Network:
                 if (g, o) == (fam, a):
                     x[self.ferry[(fam, a, b)]] = v
         return x
+
+    def _riders(self, run: sim.Execution, x: np.ndarray) -> None:
+        """`run`'s passengers into x: departure minutes, delays, broken connections and the rebooking LP's
+        assignment."""
+        pax, runs = self.pax, run.flights
+        for k, c in self.at.items():
+            x[c] = runs[k].dep if runs[k].status == FLOWN else 0
+        for (k, t), c in self.upto.items():
+            x[c] = runs[k].status == FLOWN and runs[k].dep <= t
+        for link in pax.links:
+            x[self.links[(link.i, link.j)]] = pax.broken(link, runs)
+        _, rebooked, refunded = pax.assign(runs)
+        for key, v in rebooked.items():
+            x[self.rebook[key]] = v
+        for n, v in refunded.items():
+            x[self.refund[n]] = v
 
     def _carry(self, ln: Line, run: sim.Execution, x: np.ndarray, delta: dict[tuple, Counter],
                fast: set[int]) -> None:
@@ -491,13 +619,18 @@ class Network:
 
 
 class _Started(_Model):
-    """v1's model, run from a start solution when one is given, within column bounds when given, or relaxed."""
+    """v1's model, run from a start solution when one is given, within column bounds when given, or relaxed, under a
+    HiGHS random seed when one is set."""
+
+    seed: int | None = None
 
     def run(self, time_limit: float, gap: float, threads: int, start: np.ndarray | None = None,
             lower: np.ndarray | None = None,
             upper: np.ndarray | None = None) -> tuple[str, float, float, float, float, np.ndarray]:
         h = self._highs(time_limit, threads, lower, upper)
         h.setOptionValue("mip_rel_gap", gap)
+        if self.seed is not None:
+            h.setOptionValue("random_seed", self.seed)
         n = len(self.cost)
         ints = np.array([c for c in range(n) if self.integer[c]], dtype=np.int32)
         h.changeColsIntegrality(len(ints), ints, np.array([highspy.HighsVarType.kInteger] * len(ints)))
