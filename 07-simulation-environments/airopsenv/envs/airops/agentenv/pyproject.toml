@@ -7,8 +7,8 @@ name = "airops-agentenv"
 version = "0.4.2"
 description = "AgentEnv environments for JetBlue's storm days: airops-day, one hub desk's window (v1), airops-occ, the whole network from the two desks of the control center (v2), and airops-occ3, with its passengers and a third desk for them (v3), their task steps and a rollout"
 requires-python = ">=3.11.4"
-# agentenv-framework, fastmcp, mcp and pydantic are pinned exactly: the versions the published runs were recorded with,
-# whose tool outputs embed their error text.
+# agentenv-framework, fastmcp, mcp and pydantic are pinned exactly: the versions the v1 and v2 runs were recorded with,
+# whose tool outputs embed their error text; all 48 v3 board runs replay exactly on them.
 dependencies = [
     "airops-core",
     "agentenv-framework==0.9.1323",

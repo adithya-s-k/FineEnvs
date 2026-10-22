@@ -66,13 +66,13 @@ failures: hold, short-turn or cancel so opposing trains cross safely.</p>
 </tr>
 <tr>
 <td width="33%" valign="top">
-<a href="airopsenv/"><img src="airopsenv/assets/banner.jpg" alt="AirOpsEnv v2: JetBlue's operations control center in 3D, the ops controller and the crew scheduler at their pods under the video wall of the network, on the Boston storm day of 13 July 2024" width="100%"></a>
-<h3><a href="airopsenv/">AirOpsEnv v1–v2</a></h3>
+<a href="airopsenv/"><img src="airopsenv/assets/banner.jpg" alt="AirOpsEnv v3: JetBlue's operations control center in 3D, the customer desk, the ops controller and the crew scheduler at their pods under the video wall of the radar, the network and the passengers, on the storm day of 8 July 2025" width="100%"></a>
+<h3><a href="airopsenv/">AirOpsEnv v1–v3</a></h3>
 <sub>by <a href="https://github.com/earakely-scale">Edgar Arakelyan</a> (Scale AI)</sub>
 <p>Run JetBlue through a real storm day at JFK or Boston, from public flight and FAA records: one hub's desk cancels
 and holds flights (v1), then the whole network's control center, where an ops controller and a crew scheduler talk
-(v2).</p>
-<sub>AgentEnv · 5 of 20 + 24 eval days · 1 model</sub><br>
+(v2), then with its passengers on board and a customer desk for them (v3).</p>
+<sub>AgentEnv · 5 of 20 + 24 eval days (v2 and v3) · 1 model</sub><br>
 <a href="https://huggingface.co/spaces/earakely-scale/AirOpsEnv-AgentEnv">3D replays</a> ·
 <a href="https://huggingface.co/datasets/earakely-scale/AirOpsEnv-AgentEnv">Dataset</a> ·
 <a href="airopsenv/results/board.md">Board</a>
@@ -100,6 +100,7 @@ published schedule) played on the same tasks.
 | RailSimEnv | 45 hard tasks | the CP-SAT optimum | | 4 | Qwen3.8-2.4T-A95B 0.556 | reported by the author |
 | AirOpsEnv v1, one desk | 5 of 20 days, picked by hand | the hindsight optimum | 0.25 | 1 | GPT-6.1 Sol 0.419 | [eval-v1.json](airopsenv/results/eval-v1.json) |
 | AirOpsEnv v2, two desks | 24 dates | the best plan of aircraft and crews found in hindsight, beside its proven bound | 0.31 | 1 | GPT-6.1 Sol, two desks 0.598 | [eval-v2.json](airopsenv/results/eval-v2.json) |
+| AirOpsEnv v3, three desks | 24 dates | the best plan found in hindsight under a passenger cost, beside its bound | 0.39 | 1 | GPT-6.1 Sol, three desks 0.721 | [eval-v3.json](airopsenv/results/eval-v3.json) |
 
 The versions are not comparable with each other: each plays its own weeks with its own harness. Each card says how
 its tasks were picked and what its grade excuses.

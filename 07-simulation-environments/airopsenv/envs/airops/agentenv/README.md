@@ -68,16 +68,15 @@ AIROPS_IMAGE=airops-day-agentenv AIROPS_OCC_IMAGE=airops-occ-agentenv AIROPS_OCC
 uv run --frozen --extra dev ruff check . ../core ../tools
 ```
 
-The fixtures, all committed: four v1 days, three v2 dates and two v3 dates cut from the packs
-(`tests/fixtures/b6-v1/`, `../core/tests/fixtures/b6-v2/`, `../core/tests/fixtures/b6-v3/`), the plugin's fixture v1
-days, real windows without their news (`../core/tests/fixtures/tasks.jsonl`), a slice of the raw inputs for the pack
-builders (`../core/tests/pack/fixtures/`), the dataset's task files for those days (`tests/fixtures/bundles/`), and
-three recorded runs (`tests/fixtures/runs/`): v1's `b6-bos-20250216-1500` with the day its verifier read, the v2
-board's one-agent day of 2025-01-11 and the v3 board's three-desk day of the same date. v3's passenger tests read the
-survey extracts in `../tasks/pax/`. No test needs the fetched packs, the network, Docker or a model; with
-`AIROPS_IMAGE`, `AIROPS_OCC_IMAGE` and `AIROPS_OCC3_IMAGE` set, the server tests start a container of each image
-instead. CI's test job runs the first two lines
-and ruff; its image job runs the slow replays and the image tests.
+The fixtures, all committed: four v1 days, three v2 dates and two v3 dates cut from the packs (`tests/fixtures/b6-v1/`,
+`../core/tests/fixtures/b6-v2/`, `../core/tests/fixtures/b6-v3/`), the plugin's fixture v1 days, real windows without
+their news (`../core/tests/fixtures/tasks.jsonl`), a slice of the raw inputs for the pack builders
+(`../core/tests/pack/fixtures/`), the dataset's task files for those days (`tests/fixtures/bundles/`), and three
+recorded runs (`tests/fixtures/runs/`): v1's `b6-bos-20250216-1500` with the day its verifier read, the v2 board's
+one-agent day of 2025-01-11 and the v3 board's three-desk day of the same date. v3's passenger tests read the survey
+extracts in `../tasks/pax/`. No test needs the fetched packs, the network, Docker or a model; with `AIROPS_IMAGE`,
+`AIROPS_OCC_IMAGE` and `AIROPS_OCC3_IMAGE` set, the server tests start a container of each image instead. CI's test job
+runs the first two lines and ruff; its image job runs the slow replays and the image tests.
 
 ## Docker
 
@@ -99,19 +98,19 @@ Each env image holds its own pack only; `Dockerfile.dockerignore`, `Dockerfile.o
 use (the stopped flow model, the CLI, the sweep and trial-run runners, the viewer and the Hub tooling): every module is
 byte for byte the plugin's except `occ/pack.py` and `programs/pax.py`, where the packs' and the survey extracts' default
 paths changed, and the two package docstrings (`__init__.py`, `occ/__init__.py`). The env servers here differ from the
-plugin's only in their imports, the v1 pack's path and, for v3's task steps, the verifier's path; the verifiers not at
-all; and the agents by two checks, for every desk: a task whose time limit is within the 1,200 seconds the harness
-keeps for its last turn, or runs out before the first turn, now fails, where the plugin's agents ended the day at turn 0
-and let it be graded. With no passengers v3's code leaves every v2 output byte for byte as it was (a test checks the
-digests). Replayed through this code, all 5 published v1 runs give every tool output byte for byte and the graded day
-their verifier read; all 55 recorded v2 attempts (the board's 48, its retry and the 6 runs of the trial sweep before
-it) and all 48 v3 board attempts give every call's result, the grade, the audit and the digest. The whole record the env
-served matches too (v3's passengers included), but for one detail on two dates when the replay runs on macOS: on v2's
-2026-06-14 (one agent) and v3's 2025-12-14 (three desks) the end-of-day crew problem has two equal-cost ways to send two
-cabin units home, and HiGHS picks the other one there, so their shares come out 67.7 passenger-minutes apart from the
-record's, the day's cost the same. Replayed on Linux, as the boards ran, the v2 record matches in full in the
-`airops-occ` image, and so do all 48 v3 records in the `airops-occ3` image (`../tools/replay_runs.py` over the
-dataset's `runs/`):
+plugin's only in their imports, the v1 pack's path and, for v3's task steps, the verifier's path and the bundle README's
+deploy line (the v1 and v2 task modules also drop the plugin's click CLI); the verifiers not at all; and the agents by
+two checks, for every desk: a task whose time limit is within the 1,200 seconds the harness keeps for its last turn, or
+runs out before the first turn, now fails, where the plugin's agents ended the day at turn 0 and let it be graded. With
+no passengers v3's code leaves every v2 output byte for byte as it was (a test checks the digests). Replayed through
+this code, all 5 published v1 runs give every tool output byte for byte and the graded day their verifier read; all 55
+recorded v2 attempts (the board's 48, its retry and the 6 runs of the trial sweep before it) and all 48 v3 board
+attempts give every call's result, the grade, the audit and the digest. The whole record the env served matches too
+(v3's passengers included), but for one detail on two dates when the replay runs on macOS: on v2's 2026-06-14 (one
+agent) and v3's 2025-12-14 (three desks) the end-of-day crew problem has two equal-cost ways to send two cabin units
+home, and HiGHS picks the other one there, so their shares come out 67.7 passenger-minutes apart from the record's, the
+day's cost the same. Replayed on Linux, as the boards ran, the v2 record matches in full in the `airops-occ` image, and
+so do all 48 v3 records in the `airops-occ3` image (`../tools/replay_runs.py` over the dataset's `runs/`):
 
 ```bash
 cd ..   # envs/airops
@@ -151,7 +150,8 @@ machine for v2 and v3.
 The packs, the survey extracts in `../tasks/pax/` (from the DOT's Origin and Destination Survey, DB1B and DB1C), the
 test fixtures and the recorded runs derive from U.S. Government works in the public domain (BTS, DOT, FAA, and NWS
 products archived by the Iowa Environmental Mesonet, which asks for attribution, given here); every pack date and
-fixture date copies airportsdata's airport rows, so they carry its MIT notice
+fixture date copies airportsdata's airport rows, so they carry its MIT notice; the recorded runs also hold the model's
+own words (requests, replies, notes), as the dataset publishes them under its card's terms
 ([../../../data/airportsdata/SOURCE.md](../../../data/airportsdata/SOURCE.md)). Each source's terms are in
 [../../../data/](../../../data/), and the card's [Data and licence](../../../README.md#data-and-licence) section has the
 whole list.

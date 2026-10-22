@@ -1,11 +1,12 @@
-# AirOpsEnv design (v1 and v2)
+# AirOpsEnv design (v1, v2 and v3)
 
-How the two envs work: what a day holds, what is known when, how the plan is flown, what it costs, the references the
+How the three envs work: what a day holds, what is known when, how the plan is flown, what it costs, the references the
 grade reads, and the contract the env servers keep. The README says how to run them; each module's docstring has the
 rule in full. Module paths are under `envs/airops/core/airops_core/` unless they name `airops_agentenv`.
 
 **Contents:** [Units and time](#units-and-time) · [v1: one desk at one hub](#v1-one-desk-at-one-hub) ·
-[v2: the ops control center](#v2-the-ops-control-center) · [The env servers](#the-env-servers) ·
+[v2: the ops control center](#v2-the-ops-control-center) ·
+[v3: passengers and the customer desk](#v3-passengers-and-the-customer-desk) · [The env servers](#the-env-servers) ·
 [What no tool reveals](#what-no-tool-reveals) · [Determinism and replay](#determinism-and-replay)
 
 ## Units and time
@@ -178,15 +179,151 @@ decision reached back before its minute; A4 each desk kept to its role; A5 every
 named crews replay to the same cost; A6 the day's cost is not under the bound; A7 both desks were present to the end or
 stood down.
 
+## v3: passengers and the customer desk
+
+v3 (`airops-occ3`) plays v2's day on a b6-v3 date with its passengers on board and a third desk. The bookings, the
+passengers' day and the passengers as the MIP prices them are `programs/pax.py`; cost P is `programs/cost.py`; the
+customer desk's page and lookups `occ/customer.py`; the day `occ/day3.py`; the following days' schedules
+`build/nextday.py`. Passengers never change what aircraft and crews do, so v2's sim and crew sim play every v3 day as
+before, and with the passengers off every cost and output is v2's to the byte.
+
+### The pack
+
+`tasks/b6-v3/` holds v2's 70 dates (24 eval, 44 train and 2 calm controls), each `dates/<date>.json.gz` the b6-v2 date
+unchanged with three keys added (`occ/pack.py`, `Pack3`):
+
+```
+passengers   {source: "DB1C 2025-07",                     # the date's survey period: a DB1B quarter or a DB1C month
+              fare: 154.59,                               # a refunded passenger's fare, in passenger-minutes
+              groups: [[id, [flight ids], pax]],          # one leg, or two through JFK, BOS, FLL, MCO or SJU
+              later: [[flight, orig, dest, dep, arr, free, day, booked]]}   # the next 5 days' flights, seats left
+refs_p       {best, bound, gap_pct, best_from, bound_from, mode,
+              candidates: {v2_best, B0, incumbent_desk, rounded_desk, A_v2_desk, repair},   # each one's P
+              controls: {naive, B0, reference, naive_over_reference, B0_over_reference},
+              airline}                                    # JetBlue's own decisions replayed under P
+best_plan_p  {...}                                        # the best plan under P, in best_plan's shape
+```
+
+The manifest adds `base` (b6-v2) with its manifest's sha256 and the sha256 of the three survey extracts in `tasks/pax/`.
+The env never regenerates passengers, so a day starts the same on any machine.
+
+### The passengers
+
+No airline's itineraries are public, so each date's passengers are generated stand-ins (`pax.book`):
+
+- **Who flies.** A flight's booked passengers are its seats times its route's T-100 load factor that month, as in v2.
+- **Who connects.** At JetBlue's connecting stations (JFK, BOS, FLL, MCO, SJU) part of a route's departing passengers
+  arrived on an earlier JetBlue flight: per origin, the share the DOT's Origin and Destination Survey of the date's own
+  period shows (the DB1B quarter up to 2025 Q2, then the DB1C month; `tasks/pax/b6-transfers.csv`), times the route's
+  booked passengers that day. They are spread over the day's scheduled JetBlue-to-JetBlue connections onto the route,
+  from the station's minimum connection time to 6 hours, in proportion to DB1C's connection times at the station
+  (`tasks/pax/b6-dwell.csv`), never more than either flight has left. A passenger connects at most once; everyone
+  else is local.
+- **Minimum connection times.** JetBlue publishes none; its connections sold in DB1C hardly ever go below 45 minutes at
+  JFK and Boston or 40 elsewhere, so those are the minimums.
+- **The following days.** For each of the 5 days after the date, every flight BTS has JetBlue scheduled, with its
+  seats left after its own T-100 load (`build/nextday.py`).
+- **The fare** of a refunded passenger is the period's passenger-weighted median one-way JetBlue market fare in the
+  same survey, taxes included, taken to 2025 dollars by CPI-U (`tasks/pax/b6-fares.csv`).
+
+The same date always gets the same passengers.
+
+### Rebooking
+
+`pax.fly` is a pass over a finished day. Crews riding a flight take their seats first, so the crew sim is v2's. A group
+is disrupted when a leg it holds is cancelled (at the decision, or when it reaches that leg's origin if later) or when
+it misses a connection (it arrives later than the outbound's departure less the station's minimum connection time).
+Disrupted groups are rebooked by the rules JetBlue publishes:
+
+| Rule | Source |
+|---|---|
+| On JetBlue only, onto the next available flight, from the decision | Contract of Carriage §37(c): "reaccommodation on the next available JetBlue flight in the same class of service at no additional charge", the same words in Rev 88 (in force in December 2022), Rev 98 and Rev 103; the contract gives no right to another airline (§25(a)) |
+| Up to five days, then a refund: a group with no seat today takes the first seats of the next five days, a night away for each night it waits; with none, it is refunded | JetBlue's Customer Service Plan, which offers to rebook "to an alternate flight within 5 days" or a refund in its archived captures from May 2025 on; the same window is applied on every date |
+| A flight leaving 3 h or more before the one booked only when no other seat is left, today or in the five days; otherwise that move would be a refund | DOT, 14 CFR 260.2 (89 FR 32760; compliance from 2024-10-28): a departure 3 h or more earlier is a significant change the passenger may refuse for a refund; applied on every date |
+| The earliest scheduled arrival at the final destination first, then the earliest departure; first come, first served in the order the passengers are disrupted | JetBlue publishes no order; this is how automatic re-accommodation works |
+| Ready one minimum connection time after the decision at the origin, or after arriving at a connection | an assumption: a passenger at its origin is taken to be at the airport |
+| Nothing owed on a storm day: no compensation, meals or hotels | the contract treats weather and air traffic control as force majeure, and the disruptions that follow from them too |
+
+A group rebooked onto a flight later cancelled, or that misses a connection again, is disrupted again. The day gives
+each group's outcome (`flew`, `rebooked`, `stranded`, `refunded`), the misconnects, and the delay, lodging and fares P
+charges.
+
+### Cost P
+
+`cost.priced` with the passengers' day keeps every term of v2's cost but two:
+
+- **Delay is charged at each passenger's final destination,** rebooked or a later day's arrival included, in place of
+  v2's delay at every leg; a refunded passenger is charged the time waited, from the booked departure to the refund.
+- **A cancelled flight's booked passengers cost 66 each,** the refund exposure in v1's 523 (an assumed 0.3 take-up of
+  the $235 DB1B median fare at $1.07 a minute), their real delay now replacing its flat 457 minutes. The notice term,
+  one more passenger-minute for every minute a cancellation is decided later than 2 hours ahead, is v2's.
+
+Two terms join: a lodging night for each night a passenger waits away, at the GSA per diem lodging rate for the city
+(DoD's for Puerto Rico and the U.S. Virgin Islands), the passenger's own cost since JetBlue owes no hotel on a storm
+day; and the fare of every refunded passenger. The airline's aircraft and crew terms are v2's. Costs stay in
+passenger-minutes at the FAA's $1.07, its value of a passenger's time.
+
+### The customer desk
+
+- **Roles:** `ops`, `crew` and `customer` in mode `joint`; `both` in mode `one`. Each role sees its tools by prefix,
+  `ops_`, `crew_` and `cust_`, and every role has `end_turn`, `wait_turn` and `resign`. One agent sees 16 of the 22: no
+  requests or replies, and no `crew_program`.
+- **Turns,** each watch: crew, customer, ops; then a crew reply turn if ops sent the crew desk a request or a text, and
+  a customer reply turn if ops texted the customer desk. Mode `one` has one turn a watch and no channel.
+- **The page** (`customer.page`): the connections at risk (departures in the next 4 hours whose connecting passengers
+  make it with 15 minutes or less, or miss it by 2 hours or less, with the hold that makes them and how many have no
+  later JetBlue seat today) and the flights ops might cancel in the next 6 hours (auto-cancelling on the projection, no
+  crew, a cancellation asked, or 3 hours late or more), each with where its passengers would go if it were cancelled
+  now: the same day, a later day or a refund.
+- **Lookups,** on the projection at the watch: `cust_flights` (flights by ids, station, status and departure window;
+  status `attention` for the page's two lists) and `cust_flight` (one flight's passengers, its connections and their
+  margins, the later JetBlue itineraries with seats, and where they would go were it cancelled now).
+- **Requests:** `cust_request` asks ops HOLD (a departure until a time, for connecting passengers), PROTECT (don't
+  cancel a flight), SUGGEST_CANCEL (cancel it) or TEXT. A request other than a TEXT carries `pax`: for a HOLD the
+  connecting passengers who miss the departure as projected and make it at the hold, otherwise the flight's booked
+  passengers. Ops answers with `ops_reply` and texts the customer desk with `ops_request` (`to: "customer"`, TEXT only).
+- **Ops decides.** An accepted HOLD is carried out as ops' hold, as a crew HOLD is; PROTECT and SUGGEST_CANCEL are
+  advice, which ops carries out, if at all, with its own tools. No desk rebooks: the passenger system does,
+  automatically. A new request on a flight replaces an older one from the same side (the customer desk, or ops and
+  crew), never one across the two.
+
+### The best plan, the bound and the reward
+
+- **best:** the cheapest plan under P that replays exactly with a legal crew on every flight it flies, from a fixed
+  set: v2's best plan; B0; the aircraft plans of the passenger-aware MIP (its incumbent and its rounded LP plan, the
+  passengers priced as `pax.Proxy` prices them, under the 3-hour line) and v2's aircraft plan, each played through the
+  standard crew desk; and one repair of the best of those with v2's crew-plan search, capped at 30 minutes (a cap it
+  ran past on 49 of the 70 dates). No other search (`tools/passenger_plans.py` for the aircraft plans,
+  `tools/passenger_references.py` for the rest). On the 24 eval dates it is the repair on 16, v2's best plan on 7 and
+  B0 on 1. It is not a proven optimum, and it isn't updated from played runs.
+- **bound:** a capacity-aware lower bound on P (`pax.Proxy.lower`): a local passenger's delay charged exactly, a
+  connection that holds at 0, and every disrupted passenger at the cheapest outcome P could give it: the earliest
+  possible arrival today into its destination with seats relaxed to the family's largest aircraft, the first arrival
+  on a later day plus one night at the cheapest lodging, or the refund at the fare alone (`tools/passenger_bound.py`).
+  It never charges more than P. HiGHS stopped at its 30-minute limit on every date, so the bound is weak: 54% to 79%
+  under the best plan on the eval dates, and below zero on the winter control (2025-01-15).
+- **B0** is v2's standard crew desk with the aircraft doing nothing, priced under P; `naive`, doing nothing, the
+  planned crews by the trip rule with no desk; `airline`, JetBlue's own decisions with the generated crews and
+  passengers.
+- **Reward:** v2's under P, 0.2 + 0.8 · exp(−g / 0.5), g = max(0, P − best) / max(B0 − best, 0.1 · best). B0 scores
+  about 0.31 where it costs at least 10% over the best plan, more where it is closer. A day under the best plan scores
+  1.0 and is flagged `below_best`; `reward_L` is the same reward against the bound.
+- **Audit:** v2's A1 to A7 over the three desks; A5 also plays the passengers' day again over the day's flights and
+  riders and checks it costs what the grade read.
+
 ## The env servers
 
-Both are AgentEnv environments (`airops_agentenv`), MCP servers on port 18765 behind the gateway, with these
+All three are AgentEnv environments (`airops_agentenv`), MCP servers on port 18765 behind the gateway, with these
 extensions:
 
 | env | load | end | clock | hidden tool |
 |---|---|---|---|---|
 | `airops-day` (`live.py`) | `urn:airops:live-load/v1 {task_id}` | `urn:airops:end-day/v1` | `urn:agentenv:clock/v1` | `airops_notice(news_id)` |
 | `airops-occ` (`occ/live.py`) | `urn:airops:occ-load/v1 {task_id, mode, turn_timeout_s}` | `urn:airops:end-day/v1` | `urn:agentenv:clock/v1` | `airops_notice(news_id)` |
+| `airops-occ3` (`occ/live3.py`) | `urn:airops:occ-load/v1 {task_id, mode, turn_timeout_s}` | `urn:airops:end-day/v1` | `urn:agentenv:clock/v1` | `airops_notice(news_id)` |
+
+`airops-occ3` is `airops-occ` with the customer desk's tools added and `ops_request` taking `to` (`crew` or
+`customer`); its `mode` is `joint` (three desks) or `one`.
 
 - **One day per deploy.** Loading again is refused: it would replay the day with its news already seen.
 - **The clock and the triggers.** The task arms the gateway's clock frozen at the first watch (`sync_env_clock`, rate
@@ -194,9 +331,10 @@ extensions:
   the hidden `airops_notice` on the call that opens the watch (`advance` on v1, `end_turn` on v2), behind a barrier on
   that call, so the news comes with the agent's next tool result. v2's env delivers a watch's advisories itself if the
   trigger hasn't in 60 seconds, logged as late, which fails the audit.
-- **v2's turns over MCP.** `wait_turn` long-polls (240 seconds, a re-poll costs no model call) until the desk's turn is
-  granted; `end_turn` returns at once, so the trigger can fire. A desk holding its turn past the turn timeout (1,800
-  seconds) is taken off. The caller's role on the gateway (`ops`, `crew` or `both`) picks its desk.
+- **v2's and v3's turns over MCP.** `wait_turn` long-polls (240 seconds, a re-poll costs no model call) until the
+  desk's turn is granted; `end_turn` returns at once, so the trigger can fire. A desk holding its turn past the turn
+  timeout (1,800 seconds) is taken off. The caller's role on the gateway (`ops`, `crew`, v3's `customer`, or `both`)
+  picks its desk.
 - **Strict schemas.** Every field of every tool is required and nullable where optional, so the schemas pass OpenAI's
   strict mode; a call may still leave a nullable field out.
 - **end-day** runs whatever the agents left of the day, flies it on the truth and grades it; **data/get** serves the
@@ -209,7 +347,13 @@ replies are the day as known (caps as known, delays once known, the plan's cost 
 returns the reward only after the last watch, and `end-day` after the play. v2's pages and lookups are the projection on
 what is known at the watch; `wait_turn` returns the reward only once the day is over. data/get serves the record, with
 the grade only once the day is done. `tools/scripted_desks.py` checks it on each date it plays: with the delays and
-blocks past a watch's look-ahead changed, every call and result up to that watch is the same.
+blocks past a watch's look-ahead changed, every call and result up to that watch is the same. v3's pages and lookups,
+the customer desk's included, are the projection on what is known at the watch too, and the passengers' bookings and
+the following days' seats are the airline's own. `tools/scripted_desks3.py` checks v3 on each date it plays, with every
+desk calling every lookup it has: the day played again with the pack's references moved (the best plan's cost and plan,
+the bound, B0, the gap and the doing-nothing control) gives every page, reply and record before the end byte for byte;
+no page or reply before the end shows a reference, the bound or a reward; and with every delay and block a desk can't
+yet know changed, every reply and record up to the first watch from 10:00 is the same.
 
 ## Determinism and replay
 
@@ -222,3 +366,12 @@ v2 days replay that way. One part of the v2 record can depend on the platform: t
 which one HiGHS returns can differ between machines. On 2026-06-14 (one agent), replayed on macOS, two cabin units'
 end-of-day shares come out 67.68 passenger-minutes apart from the record's, one higher and one lower, the day's cost
 the same; replayed in the `airops-occ` image on Linux, as the board ran, the record matches in full.
+
+v3's day replays the same way, through an `OccDay3` on the b6-v3 pack, and its digest and record add the passengers'
+day. The passengers are generated once, into the pack, and `pax.fly` is a pass in a fixed order with no solver, so the
+passengers' part of a replay doesn't depend on the machine; the crews' end-of-day problem is v2's, with the same caveat.
+`tools/replay_runs.py` takes v3's runs too (the pilot folders named `occ3-*`), comparing each call's result digest and
+the record's grade, audit, digest and passengers: all 48 v3 board attempts replay that way. The same end-of-day crew
+caveat shows once in v3: on 2025-12-14 (three desks), replayed on macOS, two A220 cabin units' end-of-day shares come
+out 67.68 passenger-minutes apart from the record's, the day's cost the same; replayed in the `airops-occ3` image on
+Linux, as the board ran, every v3 record matches in full.

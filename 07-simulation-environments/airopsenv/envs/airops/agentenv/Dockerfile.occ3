@@ -7,7 +7,7 @@ LABEL org.opencontainers.image.source="https://github.com/adithya-s-k/FineEnvs" 
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.description="AirOpsEnv v3, the ops control center with passengers, as an AgentEnv environment. Built from public U.S. records: BTS on-time and T-100 data, the DB1B and DB1C passenger surveys, the FAA registry and FAA Command Center advisories; crews generated from the published schedule under FAR 117 and 14 CFR 121.467; passengers' itineraries generated from the surveys' connecting shares."
 ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 AIROPS_OCC3_PACK=/app/tasks/b6-v3
-# The versions the published runs were recorded with.
+# The versions the v1 and v2 runs were recorded with; all 48 v3 board runs replay exactly on them.
 RUN pip install "agentenv-framework-protocol==0.1.338" "fastmcp==3.4.8" "mcp==1.30.0" "pydantic==2.13.5" "tzdata" \
     "httpx==0.28.1" "numpy==2.5.4" "pandas==3.0.6" "highspy==1.15.1" "airportsdata==20260905"
 WORKDIR /app

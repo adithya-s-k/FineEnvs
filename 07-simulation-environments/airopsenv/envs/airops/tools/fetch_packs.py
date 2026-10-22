@@ -1,5 +1,5 @@
-"""Fetch the days the three envs play, which this repository doesn't commit: b6-v1's tasks.jsonl (4.5 MB), b6-v2's 70
-dates (6.2 MB) and b6-v3's 70 dates (10 MB), rebuilt byte for byte from the v1_tasks, v2_tasks and v3_tasks tables of
+"""Fetch the days the three envs play, which this repository doesn't commit: b6-v1's tasks.jsonl (4.7 MB), b6-v2's 70
+dates (6.3 MB) and b6-v3's 70 dates (10.5 MB), rebuilt byte for byte from the v1_tasks, v2_tasks and v3_tasks tables of
 the dataset earakely-scale/AirOpsEnv-AgentEnv at v0.4.2, the release the v3 board played; its v1 and v2 tables are
 v0.3.3's byte for byte, the release the v1 and v2 runs played. Each table is checked against its sha256 before it is
 read, and each file written against the committed manifest of its pack, which pins tasks.jsonl and every date.

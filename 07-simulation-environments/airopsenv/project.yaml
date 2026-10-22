@@ -1,7 +1,7 @@
 # Project manifest. `tools/build_index.py` renders the root README table from it.
 name: airopsenv
-title: "AirOpsEnv v1–v2: the storm day and the ops control center"
-tagline: "Run JetBlue through a real storm day, from one hub's desk to the whole network's control center, where two desks talk."
+title: "AirOpsEnv v1–v3: the storm day, the ops control center and its passengers"
+tagline: "Run JetBlue through a real storm day, from one hub's desk to the whole network's control center, where two desks talk, then three with the passengers on board."
 order: 7.2        # just after portsim-live (7.1)
 status: wip
 authors:
@@ -17,12 +17,12 @@ hub:
 
 envs:
   - name: airops
-    summary: "JetBlue's real storm days at JFK and Boston from public BTS, FAA and NWS records, played watch by watch on AgentEnv's virtual clock, as two envs: airops-day (v1: one hub's desk cancels and holds flights in its storm hours, graded against the hindsight optimum) and airops-occ (v2: the whole network from 04:00, run by an ops controller and a crew scheduler who talk, with pilots under FAR 117 and flight attendants under 14 CFR 121.467, graded against the best plan of aircraft and crews found in hindsight and its proven bound)."
+    summary: "JetBlue's real storm days at JFK and Boston from public BTS, FAA and NWS records, played watch by watch on AgentEnv's virtual clock, as three envs: airops-day (v1: one hub's desk cancels and holds flights in its storm hours, graded against the hindsight optimum); airops-occ (v2: the whole network from 04:00, run by an ops controller and a crew scheduler who talk, with pilots under FAR 117 and flight attendants under 14 CFR 121.467, graded against the best plan of aircraft and crews found in hindsight and its proven bound); and airops-occ3 (v3: v2's day with its passengers on board, generated from T-100 loads and the DOT's ticket survey and rebooked on JetBlue only by its published rules, and a third desk, the customer desk, that asks ops to hold, protect or cancel flights for them, graded under a passenger cost against the best plan found in hindsight under it)."
     backend: python-offline
-    tools: 23   # v1 4 (get_situation check_plan confirm_changes advance), v2 19 (7 ops, 9 crew, end_turn wait_turn resign); airops_notice, the triggers' tool, is hidden from the agents
+    tools: 26   # v1 4 (get_situation check_plan confirm_changes advance), v2 19 (7 ops, 9 crew, end_turn wait_turn resign), v3 adds the customer desk's 3 (cust_flights cust_flight cust_request; v3's ops_request also takes `to`); airops_notice, the triggers' tool, is hidden from the agents
     frameworks:
       agentenv:
         transport: http-mcp
         verified: true
-# The days the envs play (tasks/b6-v1/tasks.jsonl and tasks/b6-v2/dates/) are fetched from the dataset at v0.3.3 by
-# envs/airops/tools/fetch_packs.py and checked against the committed manifests, which pin them.
+# The days the envs play (tasks/b6-v1/tasks.jsonl, tasks/b6-v2/dates/ and tasks/b6-v3/dates/) are fetched from the
+# dataset at v0.4.2 by envs/airops/tools/fetch_packs.py and checked against the committed manifests, which pin them.
