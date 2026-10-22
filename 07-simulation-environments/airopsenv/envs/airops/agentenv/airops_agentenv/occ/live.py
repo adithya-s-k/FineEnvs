@@ -95,8 +95,10 @@ def _rows(items) -> list[dict]:
 
 @environment_card(name=ENV)
 class OccEnv(AgentEnvEnvironment):
+    DAY, PACK = OccDay, Pack
+
     def __init__(self):
-        self.pack = Pack()
+        self.pack = self.PACK()
         self.set_time_url: str | None = None
         self.loaded = False
         self.turn_timeout = 1800.0
@@ -305,7 +307,7 @@ class OccEnv(AgentEnvEnvironment):
         if task_id not in self.pack.tasks:
             raise ValueError(f"unknown task id {task_id!r}")
         self.reset()
-        self.day = OccDay(self.pack.world(task_id), mode)
+        self.day = self.DAY(self.pack.world(task_id), mode)
         self.loaded, self.turn_timeout = True, float(turn_timeout_s)
         self.clock_k = 0
         return {"task_id": task_id, "mode": mode, "watches": len(self.day.times), "max_turns": self.day.max_turns}

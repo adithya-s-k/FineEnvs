@@ -1,8 +1,10 @@
-"""airops-desk on scripted model turns from the fake LiteLLM against a served airops-occ day (no gateway, so every tool
-is listed): the model sees its page as the result of end_turn, never sees wait_turn or resign, and the day goes on
+"""airops-desk on scripted model turns from the fake LiteLLM against a served airops-occ day, or an airops-occ3 day
+with its passengers (no gateway, so every tool is listed): the model sees its page as the result of end_turn, never
+sees wait_turn or resign, and the day goes on
 without a desk that stops at its cost cap, which it leaves as played; a request that fails is sent again and costs
 nothing; a reply cut off at the output limit leaves no reasoning without its answer in the history, a call after
-end_turn in the same reply isn't run, and an error from wait_turn stops the desk unscored. No model is called."""
+end_turn in the same reply isn't run, an error from wait_turn stops the desk unscored, and a time limit within the
+margin fails any desk, the customer desk too, before it plays. No model is called."""
 
 import json
 import sys
@@ -13,9 +15,10 @@ import httpx
 import pytest
 from agentenv_protocol.a2a_agent import TaskOutcome, TaskRequest, TextPart
 from airops_core.occ.day import OccDay
-from occ_helpers import desk_agent, serve, storm, write_pack
+from occ_helpers import desk_agent, serve, storm, storm3, write_pack, write_pack3
 
 from airops_agentenv.occ.live import OccEnv
+from airops_agentenv.occ.live3 import OccEnv3
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from fake_litellm import FakeLiteLLM  # noqa: E402
@@ -32,14 +35,17 @@ def end(i: int, big: bool = False) -> dict:
 
 
 async def run(tmp_path, monkeypatch, cap: str | None = None, turns: list[dict] | None = None,
-              turn_timeout: float | None = None):
-    """The one-desk day served, its advisories delivered by the env as each watch opens (no gateway, no trigger)."""
-    monkeypatch.setenv("AIROPS_OCC_PACK", str(write_pack(tmp_path / "pack", storm())))
+              turn_timeout: float | None = None, v3: bool = False):
+    """The one-desk day served (airops-occ3's with its passengers when v3), its advisories delivered by the env as each
+    watch opens (no gateway, no trigger)."""
+    world = storm3() if v3 else storm()
+    monkeypatch.setenv("AIROPS_OCC3_PACK" if v3 else "AIROPS_OCC_PACK",
+                       str((write_pack3 if v3 else write_pack)(tmp_path / "pack", world)))
     opened = OccDay._open
     monkeypatch.setattr(OccDay, "_open", lambda self, by: opened(self, "env"))
-    env = OccEnv()
+    env = OccEnv3() if v3 else OccEnv()
     mcp = env.create_app()
-    env.occ_load(storm().task.task_id, "one", *([turn_timeout] if turn_timeout is not None else []))
+    env.occ_load(world.task.task_id, "one", *([turn_timeout] if turn_timeout is not None else []))
     turns = turns or [end(i, cap is not None) for i in range(60)]
     with serve(mcp.http_app()) as url, FakeLiteLLM(turns) as fake:
         monkeypatch.setenv("LITELLM_BASE_URL", fake.url)
@@ -49,7 +55,7 @@ async def run(tmp_path, monkeypatch, cap: str | None = None, turns: list[dict] |
         result = await desk_agent.AirOpsDesk().run(TaskRequest(
             task_id="t", context_id="c", parts=(TextPart(text="You run both desks."),),
             config=desk_agent.DeskConfig(model=SOL, system_prompt="The rules.", role="both", max_turns=200),
-            mcp_servers={"airops-occ": {"url": f"{url}/mcp", "headers": {}}}))
+            mcp_servers={mcp.name: {"url": f"{url}/mcp", "headers": {}}}))
     return result, fake, env
 
 
@@ -76,6 +82,17 @@ async def test_a_desk_at_its_cost_cap_leaves_and_the_day_goes_on_without_it(tmp_
     assert s["end_reason"] == "cost_cap" and result.outcome is TaskOutcome.SUCCEEDED and len(fake.requests) == 3
     assert env.day.absent["one"]["reason"] == "cost_cap" and env.day.done and env.day.audit()["ok"]
     assert env.day.grade["end_reason"] == "done" and env.day.grade["cost"] == env.day.w.refs["idle"]
+
+
+async def test_one_desk_plays_a_day_with_passengers_with_the_customer_desks_lookups_too(tmp_path, monkeypatch):
+    result, fake, env = await run(tmp_path, monkeypatch, v3=True)
+    s = result.parts[1].data["structured_output"]
+    day = env.day
+    assert result.outcome is TaskOutcome.SUCCEEDED and day.done and day.audit()["ok"] and day.grade["reward_L"]
+    assert (s["end_reason"], s["desk"], s["turns"]) == ("done", "one", len(day.turns))
+    first = fake.requests[0][2]
+    assert "## Connections at risk" in first["input"][0]["content"][0]["text"]
+    assert {"cust_flights", "cust_flight", "ops_confirm", "crew_confirm"} <= {t["name"] for t in first["tools"]}
 
 
 async def test_a_request_that_fails_mid_stream_is_sent_again_and_costs_nothing(tmp_path, monkeypatch):
@@ -126,8 +143,9 @@ async def test_wait_turn_polls_until_the_page_and_an_error_without_done_stops_th
     assert episode.record["end_reason"] == "error" and episode.failure[0] == "error"
 
 
-async def test_a_time_limit_within_the_margin_fails_before_the_desk_plays():
-    config = desk_agent.DeskConfig(role="ops", model=SOL, timeout_seconds=desk_agent.TIME_MARGIN)
+@pytest.mark.parametrize("role", ["ops", "crew", "customer", "both"])
+async def test_a_time_limit_within_the_margin_fails_before_the_desk_plays(role):
+    config = desk_agent.DeskConfig(role=role, model=SOL, timeout_seconds=desk_agent.TIME_MARGIN)
     episode = desk_agent.Episode(config, {"LITELLM_BASE_URL": "http://127.0.0.1:9", "LITELLM_API_KEY": "sk-none"})
     await episode.run({"url": "http://127.0.0.1:9/mcp"}, "")
     assert episode.failure[0] == "timeout" and "leaves no turn" in episode.failure[1]

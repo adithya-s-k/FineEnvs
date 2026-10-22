@@ -18,7 +18,7 @@ def test_a_day_with_no_desk_grades_at_the_idle_reference():
         card = httpx.get(f"{base}/.well-known/agent-env.json").raise_for_status().json()
         assert card["name"] == "airops-occ"
         loaded = httpx.post(f"{base}{client.extension_params(card, LOAD_URI)['endpoint']}",
-                            json={"task_id": CONTROL, "mode": "idle"}).json()
+                            json={"task_id": CONTROL, "mode": "idle"}, timeout=120).json()
         assert loaded["task_id"] == CONTROL and loaded["mode"] == "idle"
         httpx.post(f"{base}{client.extension_params(card, END_DAY_URI)['endpoint']}", json={},
                    timeout=600).raise_for_status()

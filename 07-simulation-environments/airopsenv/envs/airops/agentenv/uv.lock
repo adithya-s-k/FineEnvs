@@ -266,7 +266,7 @@ wheels = [
 
 [[package]]
 name = "airops-agentenv"
-version = "0.3.3"
+version = "0.4.2"
 source = { editable = "." }
 dependencies = [
     { name = "agentenv-framework" },
@@ -312,7 +312,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "airops-core"
-version = "0.3.3"
+version = "0.4.2"
 source = { editable = "../core" }
 dependencies = [
     { name = "airportsdata" },

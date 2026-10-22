@@ -1,14 +1,14 @@
-"""A desk of the AirOps ops control center as an A2A agent: the ops controller, the crew scheduler, or one desk running
-both, in its role on the airops-occ env (ops and both through an MCP session, crew through the gateway's REST /step
-under its role header). Its turns come from the env: it reads its page with wait_turn, which it polls again unseen by
-the model until the turn is its own, acts through its desk's tools, and ends the turn with end_turn, whose result the
-model sees as the next page. With policy "llm" a model plays through agent-env's model endpoint, on the API each
-provider's models take (Anthropic Messages, OpenAI Responses, OpenAI-compatible chat), cost as usage times PRICES and
-capped by AIROPS_MAX_COST_USD; with policy "script" (AIROPS_DESK_POLICY) a fixed script plays on the pages and tools
-alone, with no model. Either way the desk resigns as it stops, with its reason; the summary gives its cost, tokens,
-turns and the largest context it sent. A model desk stops once a turn would start within TIME_MARGIN of the time limit;
-a time limit that leaves it no turn at all fails it, so the day is unscored. A request with its retries can outlast
-TIME_MARGIN, and then the step times out."""
+"""A desk of the AirOps ops control center as an A2A agent: the ops controller, the crew scheduler, the customer desk
+(airops-occ3), or one desk running them all, in its role on the airops-occ or airops-occ3 env (ops, customer and both
+through an MCP session, crew through the gateway's REST /step under its role header). Its turns come from the env: it
+reads its page with wait_turn, which it polls again unseen by the model until the turn is its own, acts through its
+desk's tools, and ends the turn with end_turn, whose result the model sees as the next page. With policy "llm" a model
+plays through agent-env's model endpoint, on the API each provider's models take (Anthropic Messages, OpenAI Responses,
+OpenAI-compatible chat), cost as usage times PRICES and capped by AIROPS_MAX_COST_USD; with policy "script"
+(AIROPS_DESK_POLICY) a fixed script plays on the pages and tools alone, with no model. Either way the desk resigns as it
+stops, with its reason; the summary gives its cost, tokens, turns and the largest context it sent. A model desk stops
+once a turn would start within TIME_MARGIN of the time limit; a time limit that leaves it no turn at all fails it, so
+the day is unscored. A request with its retries can outlast TIME_MARGIN, and then the step times out."""
 
 import asyncio
 import contextlib
@@ -432,15 +432,22 @@ def mid_stream(error: BaseException) -> bool:
 # ================================================================ scripts
 
 NOW = re.compile(r"^now f(\d+) \S+ \S+ \S+ (pilot|cabin): (?:HOLD (\S+)|CANCEL)", re.M)
-OPEN = re.compile(r"^(R\d+) from (ops|crew) at \S+: (CANCEL_PAIR|CANCEL|HOLD|COVER) f(\d+)", re.M)
+OPEN = re.compile(r"^(R\d+) from (ops|crew|customer) at \S+: (CANCEL_PAIR|CANCEL|HOLD|COVER|PROTECT|SUGGEST_CANCEL) "
+                  r"f(\d+)", re.M)
 LINE = re.compile(r"freeze line (\S+):")
+RISK = re.compile(r"^f(\d+) \S+ \S+ (\S+)( committed)?: .*; misses (\d+), hold to (\S+) makes them", re.M)
+STUCK = re.compile(r"^f(\d+) \S+ \S+ \S+ (\d+)\(\d+/\d+\) .*; no later seat today (\d+)$", re.M)
+CUSTOMER_SLACK, CUSTOMER_PAX = 15, 10
 
 
 class Script:
     """policy "script": a fixed desk on its pages and tools alone, acting once on each of the crew system's words (a
     flight's latest on the page). The crew desk forwards them, CANCEL as a CANCEL request, HOLD as a TEXT; the ops desk
-    accepts each CANCEL request at its turn; one desk running both cancels the flights the crew system can't crew and
-    holds the others to its crew times."""
+    accepts each CANCEL request at its turn, and each customer HOLD; one desk running both cancels the flights the crew
+    system can't crew and holds the others to its crew times. The customer desk (airops-occ3) asks ops to HOLD a
+    departure its page shows CUSTOMER_PAX or more connecting passengers missing, when a hold of CUSTOMER_SLACK minutes
+    or less makes them, no earlier than the freeze line, and to PROTECT a flight ops might cancel when at least half of
+    its passengers have no later seat today; once each."""
 
     def __init__(self, desk: str):
         self.desk = desk
@@ -466,9 +473,24 @@ class Script:
                 else:
                     await call("crew_request", {"type": "CANCEL", "flight": f"f{i}", "time": None, "text": None})
         elif self.desk == "ops":
-            for rid, _, kind, _ in OPEN.findall(page):
-                if kind in ("CANCEL", "CANCEL_PAIR"):
+            for rid, sender, kind, _ in OPEN.findall(page):
+                if kind in ("CANCEL", "CANCEL_PAIR") or (sender, kind) == ("customer", "HOLD"):
                     await call("ops_reply", {"request": rid, "answer": "accept", "text": None})
+        elif self.desk == "customer":
+            line = LINE.search(page)
+            for i, dep, committed, miss, need in RISK.findall(page):
+                key = f"hold {i}"
+                if committed or key in self.acted or int(miss) < CUSTOMER_PAX or \
+                        minutes(need) - minutes(dep) > CUSTOMER_SLACK or \
+                        (line is not None and minutes(need) < minutes(line.group(1))):
+                    continue
+                self.acted.add(key)
+                await call("cust_request", {"type": "HOLD", "flight": f"f{i}", "until": need, "note": None})
+            for i, booked, stuck in STUCK.findall(page):
+                key = f"protect {i}"
+                if key not in self.acted and int(booked) and 2 * int(stuck) >= int(booked):
+                    self.acted.add(key)
+                    await call("cust_request", {"type": "PROTECT", "flight": f"f{i}", "until": None, "note": None})
         else:
             line = LINE.search(page)
             changes = []
@@ -493,7 +515,7 @@ def minutes(text: str) -> int:
 class Episode:
     def __init__(self, config: DeskConfig, environ: dict[str, str]):
         self.config, self.model = config, config.model
-        self.desk = {"ops": "ops", "crew": "crew", "both": "one"}.get(config.role or "", "")
+        self.desk = {"ops": "ops", "crew": "crew", "customer": "customer", "both": "one"}.get(config.role or "", "")
         self.policy = environ.get("AIROPS_DESK_POLICY", "llm")
         self.base, self.key = environ.get("LITELLM_BASE_URL", ""), environ.get("LITELLM_API_KEY", "")
         cap = environ.get("AIROPS_MAX_COST_USD")
@@ -532,7 +554,8 @@ class Episode:
 
     async def run(self, server: dict, opening: str) -> None:
         if not self.desk:
-            return self.stop("error", f"role must be ops, crew or both, not {self.config.role!r}", failed=True)
+            return self.stop("error", f"role must be ops, crew, customer or both, not {self.config.role!r}",
+                             failed=True)
         if self.policy == "llm" and (not self.base or not self.key):
             return self.stop("model_endpoint", "no model endpoint: agent-env passes LITELLM_BASE_URL and "
                                                "LITELLM_API_KEY ([model] in .agentenv/config.toml)", failed=True)
@@ -745,8 +768,9 @@ RESIGN = ("done", "cost_cap", "context_full", "turn_limit", "time_limit", "error
 @a2a_agent(
     identity=AgentIdentity(
         name="airops-desk",
-        description="A desk of the AirOps ops control center: the ops controller, the crew scheduler, or both, playing "
-                    "a storm day turn by turn through the env's tools under its role.",
+        description="A desk of the AirOps ops control center: the ops controller, the crew scheduler, the customer "
+                    "desk, or one desk running them all, playing a storm day turn by turn through the env's tools "
+                    "under its role.",
         version="0.1.0",
     ),
     config=DeskConfig,

@@ -1,6 +1,6 @@
-"""An env server as its image runs it: `python -m airops_agentenv.server` (or `.occ_server`) on a free port, or, with
-AIROPS_IMAGE (AIROPS_OCC_IMAGE) set to an image built from agentenv/Dockerfile (Dockerfile.occ), a container of it,
-which serves the fetched pack it holds."""
+"""An env server as its image runs it: `python -m airops_agentenv.server` (or `.occ_server`, `.occ3_server`) on a free
+port, or, with AIROPS_IMAGE (AIROPS_OCC_IMAGE, AIROPS_OCC3_IMAGE) set to an image built from agentenv/Dockerfile
+(Dockerfile.occ, Dockerfile.occ3), a container of it, which serves the fetched pack it holds."""
 
 import os
 import socket
@@ -12,7 +12,8 @@ from contextlib import contextmanager
 import httpx
 
 IMAGES = {"airops_agentenv.server": os.environ.get("AIROPS_IMAGE"),
-          "airops_agentenv.occ_server": os.environ.get("AIROPS_OCC_IMAGE")}
+          "airops_agentenv.occ_server": os.environ.get("AIROPS_OCC_IMAGE"),
+          "airops_agentenv.occ3_server": os.environ.get("AIROPS_OCC3_IMAGE")}
 HOST_GATEWAY = ["--add-host=host.docker.internal:host-gateway"] if sys.platform == "linux" else []
 """How a container reaches the host's fake gateway: Docker Desktop and Colima name the host themselves."""
 
