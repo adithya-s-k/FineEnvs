@@ -1,0 +1,163 @@
+{
+  "env": "airops-occ3",
+  "version": "v3",
+  "authors": [
+    {
+      "name": "Edgar Arakelyan",
+      "github": "earakely-scale",
+      "affiliation": "Scale AI"
+    }
+  ],
+  "framework": "agentenv",
+  "tasks": {
+    "split": "eval",
+    "n": 24,
+    "unit": "dates",
+    "source": "JetBlue's whole network from 04:00 Eastern on real storm days at JFK and Boston from December 2022 to July 2026: the flights, tails and delays from BTS on-time data, aircraft from Form 41 B-43 and the FAA registry, the FAA Command Center's ground stops and ground delay programs as issued; pilots under FAR 117 and flight attendants under 14 CFR 121.467 on trips generated from the published schedule, with reserves at a sourced industry band; passengers generated per flight from BTS T-100 loads and the DB1B (to 2025 Q2) or DB1C (from 2025-07) itinerary survey of each date's own period, connecting at JFK, BOS, FLL, MCO and SJU, domestic itineraries only",
+    "selection": "the pack's eval dates: per hub 8 summer and 4 winter storm dates, each from its own storm event, where the FAA's programs controlled or held at least 5 JetBlue flights and the crew model passed its filter (at most 1% of JetBlue's flown flights without a legal crew, crews adding at most 2% to the calm day); they are b6-v2's 24 eval dates, drawn with seed 0 and fixed before the v2 board"
+  },
+  "harness": {
+    "agent": "airops-desk",
+    "tools": [
+      "crew_flights",
+      "crew_crews",
+      "crew_reserves",
+      "crew_program",
+      "crew_options",
+      "crew_check",
+      "crew_confirm",
+      "crew_request",
+      "crew_reply",
+      "end_turn",
+      "wait_turn",
+      "resign",
+      "cust_flights",
+      "cust_flight",
+      "cust_request",
+      "ops_flights",
+      "ops_program",
+      "ops_aircraft",
+      "ops_check",
+      "ops_confirm",
+      "ops_request",
+      "ops_reply"
+    ],
+    "max_turns": 380
+  },
+  "grading": {
+    "reference": "the cheapest plan of aircraft and crews under the passenger cost P among v2's best plan, B0, the passenger-aware aircraft plans played through the standard crew desk and a repair of the best of them, replayed exactly with a legal crew on every flight; published with a capacity-aware lower bound where one was found",
+    "reward": "0.2 + 0.8 exp(-g/0.5), g = max(0, P - best) / max(B0 - best, 0.1 best), B0 being standard crew-desk practice with the aircraft doing nothing; P in passenger-minutes: each passenger's arrival delay at the final destination after JetBlue-only rebooking (up to five days, then a refund), 66 per cancelled passenger (more when decided under 2 hours ahead), a lodging night per night away, each refunded fare, and v2's aircraft and crew costs; reward_L is the same against the bound",
+    "excused": "nothing: a run is scored only if its audit passes (news, turns, causality, roles, crew legality, the bound, the desks' presence); a day that comes in under the best plan, which is not a proven optimum, scores 1.0 and is flagged below_best (24 of the 168 runs, all on 7 dates: GPT-6.1 Sol's 12, 7 with three desks and 5 with one agent; GPT-6 Astra's 6, Claude Opus 5.5's 3, Claude Sonnet 5.5's 2, GPT-5.6 Terra's 1 and Kimi K3's none), with reward_L beside it; a first attempt that lost a desk to the provider's rate limit was retried, as registered (7 of GPT-5.6 Terra's 24 runs, each scored on its retry; every attempt is kept in v3_episodes)",
+    "judge": false
+  },
+  "baselines": [
+    {
+      "name": "B0: standard crew-desk practice, the aircraft doing nothing",
+      "mean": 0.3861
+    },
+    {
+      "name": "doing nothing: the planned crews by the trip rule, no desk",
+      "mean": 0.3295
+    },
+    {
+      "name": "v2's best plan, blind to passengers, played with them",
+      "mean": 0.6018
+    },
+    {
+      "name": "the airline: JetBlue's own decisions, replayed with the generated crews and passengers",
+      "mean": 0.2387
+    }
+  ],
+  "models": [
+    {
+      "model": "GPT-6 Astra, three desks, talking",
+      "provider": "Azure OpenAI",
+      "runs": 24,
+      "mean": 0.7421,
+      "ci95": [
+        0.6726,
+        0.8134
+      ],
+      "feasible": 24,
+      "usd_per_episode": 22.6768
+    },
+    {
+      "model": "GPT-6.1 Sol, three desks, talking",
+      "provider": "Azure OpenAI",
+      "runs": 24,
+      "mean": 0.7208,
+      "ci95": [
+        0.6328,
+        0.8107
+      ],
+      "feasible": 24,
+      "usd_per_episode": 2.9741
+    },
+    {
+      "model": "Claude Opus 5.5, three desks, talking",
+      "provider": "Anthropic",
+      "runs": 24,
+      "mean": 0.6264,
+      "ci95": [
+        0.5445,
+        0.7113
+      ],
+      "feasible": 24,
+      "usd_per_episode": 10.8943
+    },
+    {
+      "model": "Claude Sonnet 5.5, three desks, talking",
+      "provider": "Anthropic",
+      "runs": 24,
+      "mean": 0.5556,
+      "ci95": [
+        0.4765,
+        0.6442
+      ],
+      "feasible": 24,
+      "usd_per_episode": 3.0116
+    },
+    {
+      "model": "GPT-5.6 Terra, three desks, talking",
+      "provider": "Azure OpenAI",
+      "runs": 24,
+      "mean": 0.5154,
+      "ci95": [
+        0.4427,
+        0.5938
+      ],
+      "feasible": 24,
+      "usd_per_episode": 3.517
+    },
+    {
+      "model": "Kimi K3, three desks, talking",
+      "provider": "Fireworks",
+      "runs": 24,
+      "mean": 0.4259,
+      "ci95": [
+        0.366,
+        0.491
+      ],
+      "feasible": 24,
+      "usd_per_episode": 6.2714
+    },
+    {
+      "model": "GPT-6.1 Sol, one agent at all three desks",
+      "provider": "Azure OpenAI",
+      "runs": 24,
+      "mean": 0.6768,
+      "ci95": [
+        0.5916,
+        0.766
+      ],
+      "feasible": 24,
+      "usd_per_episode": 1.4858
+    }
+  ],
+  "links": {
+    "runs": "https://huggingface.co/datasets/earakely-scale/AirOpsEnv-AgentEnv/viewer/v3_episodes",
+    "replay": "https://huggingface.co/spaces/earakely-scale/AirOpsEnv-AgentEnv",
+    "code": "https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/airopsenv"
+  },
+  "date": "2026-10-22"
+}

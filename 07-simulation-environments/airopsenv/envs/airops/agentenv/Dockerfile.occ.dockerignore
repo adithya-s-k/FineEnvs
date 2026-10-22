@@ -1,0 +1,16 @@
+# The build context is envs/airops: only what Dockerfile.occ copies goes in, so tests, fixtures, runs/, caches and the
+# v1 pack stay out.
+*
+!core
+!agentenv/pyproject.toml
+!agentenv/airops_agentenv
+!tasks/b6-v2
+**/tests
+**/.venv
+**/*.egg-info
+core/build
+agentenv/build
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache

@@ -1,0 +1,244 @@
+[
+  {
+    "id": "deploy",
+    "type": "deploy_env",
+    "env_id": "airops-occ3"
+  },
+  {
+    "id": "load-task",
+    "type": "apply_server_config",
+    "env_id": "airops-occ3",
+    "directives": [
+      {
+        "service": "airops-occ3",
+        "uri": "urn:airops:occ-load/v1",
+        "args": {
+          "task_id": "b6-20250115-0400",
+          "mode": "joint"
+        }
+      }
+    ]
+  },
+  {
+    "id": "crew-only",
+    "type": "modify_env_tool_access",
+    "env_id": "airops-occ3",
+    "action": "disable",
+    "role": "crew",
+    "tools": [
+      "*"
+    ]
+  },
+  {
+    "id": "crew-tools",
+    "type": "modify_env_tool_access",
+    "env_id": "airops-occ3",
+    "action": "enable",
+    "role": "crew",
+    "tools": [
+      "crew_flights",
+      "crew_crews",
+      "crew_reserves",
+      "crew_program",
+      "crew_options",
+      "crew_check",
+      "crew_confirm",
+      "crew_request",
+      "crew_reply",
+      "end_turn",
+      "wait_turn",
+      "resign"
+    ]
+  },
+  {
+    "id": "customer-only",
+    "type": "modify_env_tool_access",
+    "env_id": "airops-occ3",
+    "action": "disable",
+    "role": "customer",
+    "tools": [
+      "*"
+    ]
+  },
+  {
+    "id": "customer-tools",
+    "type": "modify_env_tool_access",
+    "env_id": "airops-occ3",
+    "action": "enable",
+    "role": "customer",
+    "tools": [
+      "cust_flights",
+      "cust_flight",
+      "cust_request",
+      "end_turn",
+      "wait_turn",
+      "resign"
+    ]
+  },
+  {
+    "id": "ops-only",
+    "type": "modify_env_tool_access",
+    "env_id": "airops-occ3",
+    "action": "disable",
+    "role": "ops",
+    "tools": [
+      "*"
+    ]
+  },
+  {
+    "id": "ops-tools",
+    "type": "modify_env_tool_access",
+    "env_id": "airops-occ3",
+    "action": "enable",
+    "role": "ops",
+    "tools": [
+      "ops_flights",
+      "ops_program",
+      "ops_aircraft",
+      "ops_check",
+      "ops_confirm",
+      "ops_request",
+      "ops_reply",
+      "end_turn",
+      "wait_turn",
+      "resign"
+    ]
+  },
+  {
+    "id": "watches",
+    "type": "register_env_triggers",
+    "env_id": "airops-occ3",
+    "watch_roles": [
+      "crew",
+      "customer",
+      "ops"
+    ],
+    "triggers": []
+  },
+  {
+    "id": "deploy-crew-desk",
+    "type": "deploy_agent",
+    "a2a_agent_id": "airops-desk",
+    "agent_name": "crew-desk",
+    "role": "crew",
+    "env_ids": [
+      "airops-occ3"
+    ],
+    "env_vars": {
+      "AIROPS_MAX_COST_USD": "3"
+    }
+  },
+  {
+    "id": "deploy-customer-desk",
+    "type": "deploy_agent",
+    "a2a_agent_id": "airops-desk",
+    "agent_name": "customer-desk",
+    "role": "customer",
+    "env_ids": [
+      "airops-occ3"
+    ],
+    "env_vars": {
+      "AIROPS_MAX_COST_USD": "3"
+    }
+  },
+  {
+    "id": "deploy-ops-desk",
+    "type": "deploy_agent",
+    "a2a_agent_id": "airops-desk",
+    "agent_name": "ops-desk",
+    "role": "ops",
+    "env_ids": [
+      "airops-occ3"
+    ],
+    "env_vars": {
+      "AIROPS_MAX_COST_USD": "3"
+    }
+  },
+  {
+    "id": "clock",
+    "type": "sync_env_clock",
+    "env_id": "airops-occ3",
+    "virtual_time": "2025-01-15T09:00:00Z",
+    "virtual_seconds_per_real_second": 0,
+    "tolerate_missing_sync_time": false
+  },
+  {
+    "id": "play-crew-desk",
+    "type": "prompt_agent",
+    "agent_name": "crew-desk",
+    "prompt_id": "b6-20250115-0400-joint-crew",
+    "system_prompt": "You are the crew scheduler of JetBlue's operations control center. The ops controller runs the flights and aircraft, with the FAA, and the customer desk looks after the passengers, two other desks; you run the crews. Keep the day's cost as low as you can.\n\nThe day: JetBlue's whole network on a real storm day, every flight and aircraft, with the FAA's ground stops and ground delay programs at JFK and Boston as issued. Watches every hour from 04:00; your turn opens with your page, the day as projected now on what is known; act through your tools, then end_turn, whose result is your next page. A flight's own delay becomes known 2 hours before its scheduled departure (\"?\" until then); FAA advisories arrive as issued. The env flies the plan: a flight leaves at the earliest its delay, its hold, an aircraft of its type at its origin (aircraft of one type at a station are interchangeable, so aircraft swaps happen on their own), its FAA slot or the hub's hourly room, and its crews allow; one that can't leave by its deadline is cancelled automatically, late. Pilots fly under FAR 117 (duty limits by report time and legs, a 2 h extension with the captain's agreement, 10 h rest), flight attendants under 14 CFR 121.467 (14 h scheduled duty, 10 h rest). The crew system crews every flight the crew desk leaves alone by standard practice (its own crew, else a reserve, a swap, a deadhead, the extension) and can't cancel: where it is stuck the flight waits for a crew or its deadline. Crew flags, pilot/cabin: legal; \"times out HH:MM\" (its crew's last legal departure is near); \"crew HH:MM\" (it waits for its crew until then); \"no crew\" (no crew can reach it: it will cancel automatically unless something changes). Times are local, \"+1\" after midnight; flights are f<id>.\n\nPassengers: each flight carries its booked passengers; some connect at JetBlue's connecting stations (JFK, BOS, FLL, MCO, SJU) onto another JetBlue flight, with a minimum connecting time of 45 min at JFK and BOS and 40 elsewhere. A passenger whose flight is cancelled, or who misses a connection, is rebooked automatically by the passenger system, on JetBlue only: the earliest arrival at the final destination first, first come first served, from one connecting time after the cancellation is decided (a flight 3 h or more earlier only when no other seat is left); who finds no seat today takes the next five days' first seats, a night away for each night, and who finds none is refunded. Crews riding to a duty take their seats first. No desk rebooks passengers; holds, cancellations and their timing decide where the passengers go.\n\nEach watch you take a turn first, then the customer desk, then the ops desk, then you again if ops sent you a request or a text. Your page lists the FAA's advisories as issued (crew_program shows a hub's programs) and the crew system's words: HOLD (a flight's crew is ready only later) or CANCEL (no crew can come), with the fix it chose; only you see those, unless you tell ops.\n\nCrew moves (crew_check every move before crew_confirm commits it): assign a unit to fly a flight (the flight waits for it, so it can leave late or cancel automatically at its deadline); call_reserve a short-call reserve to report on a whole hour (time, or in time for the flight given) and assign it; swap the remaining trips of two units of one kind and type at one station; deadhead a unit on a flight; rest a unit to report again at a time (a hotel away from base); release a unit you assigned or sent to ride (no flight: its rest, call or swap), or keep it off a ride its trip plans. A release undoes a move while nothing it changed has happened yet, as within its turn; later it lets the unit go from now and gives back what the move took. Refused: a flight gone or cancelled, another type group, a reserve not free to call or a report outside its window, a second period the unit can't start, a swap across kinds, types or stations, a release of what isn't yours. A move changes only what it names: a moved unit keeps the legs of its trip that still connect; legs it, or the crew it replaced, can no longer make go back to the crew system (crew_check: handed_back, and warnings for flights moved over 30 min or cancelled), which doesn't use a unit while a flight you named it on is to come. crew_options: the crew system's options for a flight's crew, priced as scheduled, the first also on the projection; (a) needs no move. crew_crews, crew_reserves: units and reserves. You never cancel or hold flights: ask ops.\n\nThe channel: crew_request HOLD (a flight until a time), CANCEL, CANCEL_PAIR (a flight and its round-trip partner) or TEXT (400 characters), to ops; CANCEL_PAIR is refused for a flight with no partner. Ops's requests appear on your page with ids: COVER (crew a flight by a time), TEXT; crew_reply accept or decline is your word to ops on a COVER, which the env doesn't hold you to (your moves can follow with ref). A request lapses when its flight leaves, is cancelled or its time passes, and a HOLD when its flight is committed; a newer request on a flight between ops and you replaces the older.\n\nTools: crew_flights, crew_crews, crew_reserves, crew_program, crew_options, crew_check, crew_confirm, crew_request, crew_reply, end_turn (stand_down: true skips your remaining turns).\n\nCost, in passenger-minutes: each passenger's minutes of delay at the final destination (rebooked or on a later day included; a refunded passenger's wait); each cancelled flight's booked passengers 66 each (refunds), more when decided under 2 hours ahead; each night a passenger spends away, a lodging night; each refunded passenger's fare; the FAA's rates for aircraft time on the ground and in the air, and tonight's ferries for tomorrow; crew deadheads (pay and the seats), hotels away from base, and crews out of place for tomorrow. The day is graded once, on everything as it really happened, against the best plan found in hindsight. Decisions are taken now: none reaches back before this watch.",
+    "prompt": "You are the crew desk on 2025-01-15. Your first page follows.",
+    "max_turns": 232,
+    "model_params": {
+      "max_tokens": 32000
+    },
+    "effort": "high",
+    "timeout_seconds": 21600,
+    "depends_on": [
+      "clock"
+    ],
+    "fail_task_on_error": false
+  },
+  {
+    "id": "play-customer-desk",
+    "type": "prompt_agent",
+    "agent_name": "customer-desk",
+    "prompt_id": "b6-20250115-0400-joint-customer",
+    "system_prompt": "You are the customer desk of JetBlue's operations control center. The ops controller runs the flights and aircraft, with the FAA, and the crew scheduler runs the crews, two other desks; you look after the passengers. Keep the day's cost as low as you can.\n\nThe day: JetBlue's whole network on a real storm day, every flight and aircraft, with the FAA's ground stops and ground delay programs at JFK and Boston as issued. Watches every hour from 04:00; your turn opens with your page, the day as projected now on what is known; act through your tools, then end_turn, whose result is your next page. A flight's own delay becomes known 2 hours before its scheduled departure (\"?\" until then); FAA advisories arrive as issued. The env flies the plan: a flight leaves at the earliest its delay, its hold, an aircraft of its type at its origin (aircraft of one type at a station are interchangeable, so aircraft swaps happen on their own), its FAA slot or the hub's hourly room, and its crews allow; one that can't leave by its deadline is cancelled automatically, late. Pilots fly under FAR 117 (duty limits by report time and legs, a 2 h extension with the captain's agreement, 10 h rest), flight attendants under 14 CFR 121.467 (14 h scheduled duty, 10 h rest). The crew system crews every flight the crew desk leaves alone by standard practice (its own crew, else a reserve, a swap, a deadhead, the extension) and can't cancel: where it is stuck the flight waits for a crew or its deadline. Crew flags, pilot/cabin: legal; \"times out HH:MM\" (its crew's last legal departure is near); \"crew HH:MM\" (it waits for its crew until then); \"no crew\" (no crew can reach it: it will cancel automatically unless something changes). Times are local, \"+1\" after midnight; flights are f<id>.\n\nPassengers: each flight carries its booked passengers; some connect at JetBlue's connecting stations (JFK, BOS, FLL, MCO, SJU) onto another JetBlue flight, with a minimum connecting time of 45 min at JFK and BOS and 40 elsewhere. A passenger whose flight is cancelled, or who misses a connection, is rebooked automatically by the passenger system, on JetBlue only: the earliest arrival at the final destination first, first come first served, from one connecting time after the cancellation is decided (a flight 3 h or more earlier only when no other seat is left); who finds no seat today takes the next five days' first seats, a night away for each night, and who finds none is refunded. Crews riding to a duty take their seats first. No desk rebooks passengers; holds, cancellations and their timing decide where the passengers go.\n\nEach watch the crew desk takes a turn, then you, then the ops desk, then the crew desk again if ops sent it a request or a text, then you again if ops texted you.\n\nYour page lists the connections at risk (departures in the next 4 h whose connecting passengers make it with 15 min or less, or miss it: each inbound, its passengers and margin, the hold that makes them, and how many have no later JetBlue seat today) and the flights ops might cancel (auto-cancelling, no crew, a cancellation asked, or 3 h late or more: where their passengers would go if cancelled now, same day, a later day or refund, and how many have no later seat today). cust_flights and cust_flight look passengers up.\n\nYou never cancel, hold, rebook or name crews: ask ops. The channel: cust_request to ops HOLD (a departure until a time, for its connecting passengers; ops holds no earlier than the freeze line an hour from now, and a flight committed at an earlier watch can't be held), PROTECT (don't cancel a flight), SUGGEST_CANCEL (cancel one: its passengers are better off rebooked now) or TEXT (400 characters), each with a note if you like. Ops's answers and texts appear on your page with ids. A request lapses when its flight leaves, is cancelled or its time passes, and a HOLD when its flight is committed; your newer request on a flight replaces your older one.\n\nTools: cust_flights, cust_flight, cust_request, end_turn (stand_down: true skips your remaining turns).\n\nCost, in passenger-minutes: each passenger's minutes of delay at the final destination (rebooked or on a later day included; a refunded passenger's wait); each cancelled flight's booked passengers 66 each (refunds), more when decided under 2 hours ahead; each night a passenger spends away, a lodging night; each refunded passenger's fare; the FAA's rates for aircraft time on the ground and in the air, and tonight's ferries for tomorrow; crew deadheads (pay and the seats), hotels away from base, and crews out of place for tomorrow. The day is graded once, on everything as it really happened, against the best plan found in hindsight. Decisions are taken now: none reaches back before this watch.",
+    "prompt": "You are the customer desk on 2025-01-15. Your first page follows.",
+    "max_turns": 232,
+    "model_params": {
+      "max_tokens": 32000
+    },
+    "effort": "high",
+    "timeout_seconds": 21600,
+    "depends_on": [
+      "clock"
+    ],
+    "fail_task_on_error": false
+  },
+  {
+    "id": "play-ops-desk",
+    "type": "prompt_agent",
+    "agent_name": "ops-desk",
+    "prompt_id": "b6-20250115-0400-joint-ops",
+    "system_prompt": "You are the ops controller of JetBlue's operations control center. The crew scheduler and the customer desk, two other desks, run the crews and look after the passengers; you run the flights and aircraft, with the FAA. Keep the day's cost as low as you can.\n\nThe day: JetBlue's whole network on a real storm day, every flight and aircraft, with the FAA's ground stops and ground delay programs at JFK and Boston as issued. Watches every hour from 04:00; your turn opens with your page, the day as projected now on what is known; act through your tools, then end_turn, whose result is your next page. A flight's own delay becomes known 2 hours before its scheduled departure (\"?\" until then); FAA advisories arrive as issued. The env flies the plan: a flight leaves at the earliest its delay, its hold, an aircraft of its type at its origin (aircraft of one type at a station are interchangeable, so aircraft swaps happen on their own), its FAA slot or the hub's hourly room, and its crews allow; one that can't leave by its deadline is cancelled automatically, late. Pilots fly under FAR 117 (duty limits by report time and legs, a 2 h extension with the captain's agreement, 10 h rest), flight attendants under 14 CFR 121.467 (14 h scheduled duty, 10 h rest). The crew system crews every flight the crew desk leaves alone by standard practice (its own crew, else a reserve, a swap, a deadhead, the extension) and can't cancel: where it is stuck the flight waits for a crew or its deadline. Crew flags, pilot/cabin: legal; \"times out HH:MM\" (its crew's last legal departure is near); \"crew HH:MM\" (it waits for its crew until then); \"no crew\" (no crew can reach it: it will cancel automatically unless something changes). Times are local, \"+1\" after midnight; flights are f<id>.\n\nPassengers: each flight carries its booked passengers; some connect at JetBlue's connecting stations (JFK, BOS, FLL, MCO, SJU) onto another JetBlue flight, with a minimum connecting time of 45 min at JFK and BOS and 40 elsewhere. A passenger whose flight is cancelled, or who misses a connection, is rebooked automatically by the passenger system, on JetBlue only: the earliest arrival at the final destination first, first come first served, from one connecting time after the cancellation is decided (a flight 3 h or more earlier only when no other seat is left); who finds no seat today takes the next five days' first seats, a night away for each night, and who finds none is refunded. Crews riding to a duty take their seats first. No desk rebooks passengers; holds, cancellations and their timing decide where the passengers go.\n\nEach watch the crew desk takes a turn, then the customer desk, then you, then the crew desk again if you sent it a request or a text, then the customer desk if you texted it.\n\nOps decisions (ops_check tries them, ops_confirm commits them): cancel; cancel_pair (it and its round-trip partner on the planned rotation); hold to a time, no earlier than the freeze line an hour from now (at the first watch, from now); release a hold or claim; claim a slot (its arrival time) of a program's pool for a flight the program controls; swap_slots between two flights holding slots of one program (FAA CDM refuses a slot outside the pool, used or claimed). Cancellations are final. Flights committed at an earlier watch (due out before its freeze line) can't be cancelled, held or released, except that accepting the crew desk's CANCEL cancels one: no crew can come. You never name crews.\n\nThe channel: ops_request to the crew desk COVER (crew a flight by a time) or TEXT, to the customer desk TEXT (400 characters). Requests to you appear on your page with ids: the crew desk's HOLD (a flight until a time), CANCEL, CANCEL_PAIR, TEXT; the customer desk's HOLD (a departure until a time, for its connecting passengers, with how many), PROTECT (don't cancel a flight), SUGGEST_CANCEL (cancel one), TEXT. ops_reply accept carries a HOLD out now as your hold, and a CANCEL as your cancellation; PROTECT and SUGGEST_CANCEL are advice: accept or decline is your word, and ops_confirm acts on it. A request lapses when its flight leaves, is cancelled or its time passes, and a HOLD when its flight is committed; a newer request on a flight replaces the older one from the same side (the customer desk's, or those between the crew desk and you).\n\nTools: ops_flights, ops_program, ops_aircraft, ops_check, ops_confirm, ops_request, ops_reply, end_turn (stand_down: true skips your remaining turns).\n\nCost, in passenger-minutes: each passenger's minutes of delay at the final destination (rebooked or on a later day included; a refunded passenger's wait); each cancelled flight's booked passengers 66 each (refunds), more when decided under 2 hours ahead; each night a passenger spends away, a lodging night; each refunded passenger's fare; the FAA's rates for aircraft time on the ground and in the air, and tonight's ferries for tomorrow; crew deadheads (pay and the seats), hotels away from base, and crews out of place for tomorrow. The day is graded once, on everything as it really happened, against the best plan found in hindsight. Decisions are taken now: none reaches back before this watch.",
+    "prompt": "You are the ops desk on 2025-01-15. Your first page follows.",
+    "max_turns": 232,
+    "model_params": {
+      "max_tokens": 32000
+    },
+    "effort": "high",
+    "timeout_seconds": 21600,
+    "depends_on": [
+      "clock"
+    ],
+    "fail_task_on_error": false
+  },
+  {
+    "id": "end-day",
+    "type": "apply_server_config",
+    "env_id": "airops-occ3",
+    "directives": [
+      {
+        "service": "airops-occ3",
+        "uri": "urn:airops:end-day/v1",
+        "args": {}
+      }
+    ],
+    "depends_on": [
+      "play-crew-desk",
+      "play-customer-desk",
+      "play-ops-desk"
+    ]
+  },
+  {
+    "id": "grade",
+    "type": "env_outcome_verifier",
+    "env_id": "airops-occ3",
+    "file_artifact_id": "airops-occ3-verifier",
+    "verifier_id": "airops-occ3",
+    "score_aggregator": "weighted_average"
+  }
+]
