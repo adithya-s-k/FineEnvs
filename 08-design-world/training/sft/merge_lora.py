@@ -30,7 +30,8 @@ def main() -> None:
     ap.add_argument("--base", default="Qwen/Qwen3.6-35B-A3B")
     ap.add_argument("--adapter", required=True, help="model repo with the PEFT adapter")
     ap.add_argument("--subfolder", default="", help="e.g. checkpoint-120 (empty: repo root)")
-    ap.add_argument("--repo", required=True, help="output model repo (public)")
+    ap.add_argument("--repo", default="", help="output model repo (public); empty: only write --out")
+    ap.add_argument("--out", default="/tmp/merged", help="local folder for the merged weights (e.g. an eval job's disk)")
     a = ap.parse_args()
 
     pattern = f"{a.subfolder}/adapter_*" if a.subfolder else "adapter_*"
@@ -45,7 +46,7 @@ def main() -> None:
     print(f"{len(lora)} LoRA-adapted weights, scale {scale}", flush=True)
 
     base = Path(snapshot_download(a.base))
-    out = Path("/tmp/merged")
+    out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     done = set()
     for src in sorted(base.iterdir()):
@@ -68,6 +69,9 @@ def main() -> None:
     missing = set(lora) - done
     if missing:
         raise SystemExit(f"{len(missing)} adapter weights have no base tensor, e.g. {sorted(missing)[:3]}")
+    if not a.repo:  # an eval job serves the local folder; nothing is published
+        print(f"merged into {out} ({len(done)} weights)", flush=True)
+        return
     (out / "README.md").write_text(
         f"---\nbase_model: {a.base}\ntags: [designgym, openenv, trl, sft, lora]\n---\n\n# {a.repo.split('/')[-1]}\n\n"
         f"`{a.base}` with the LoRA `{a.adapter}`{'/' + a.subfolder if a.subfolder else ''} merged in (TRL SFT on "
