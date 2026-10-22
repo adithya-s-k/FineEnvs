@@ -53,6 +53,7 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **06** | **[Multilingual](./06-multilingual/)** | Document OCR over a million pages in 22 languages and speech recognition over 102, each behind one OpenEnv server, and Gemma 4 trained to read and hear Kannada. | 2 | 1 | 2 | ✅ trained |
 | **07** | **[PortSimEnv v1](./07-simulation-environments/portsim-v1/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub><br><sub>`agentenv` port by [Edgar Arakelyan](https://github.com/earakely-scale) (Scale AI)</sub> | Re-plan a broken week of container-ship dockings at the Port of Barcelona, graded against a proven optimum. | 1 | 2 | 1 | 🚧 wip |
 | **07** | **[PortSimEnv v2–v5: live, marine, wind and lines](./07-simulation-environments/portsim-live/)**<br><sub>by [Edgar Arakelyan](https://github.com/earakely-scale) (Scale AI)</sub> | Run a Port of Barcelona quay through a week as it unfolds, with live news, pilots and tugs, real wind and shipping lines that answer back. | 1 | 1 | 0 | 🚧 wip |
+| **08** | **[TraceAudit](./08-traceaudit/)**<br><sub>by Rahul Badhan</sub> | Judge failures in recorded agent traces with verified outcome labels. | 1 | 1 | 0 | 🚧 wip |
 <!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
@@ -178,6 +179,12 @@ the same format.
 Everything is in the [Simulation RL Envs collection](https://huggingface.co/collections/FineEnvs/simulation-rl-envs-6ac4eca150bd4b91790e2540),
 and [the article](https://huggingface.co/spaces/FineEnvs/simulation-rl-environments) covers all of it.
 Built a simulation environment? [Add it to the catalog](./07-simulation-environments/#add-your-environment).
+
+### [08 · TraceAudit](./08-traceaudit/)
+
+A single-turn auditor reads recorded agent traces and predicts failure probability with a verified
+outcome reward. Offline core, source adapters, human-review queues and a Verifiers port are implemented.
+Production data audits and collection are pending; no model has been trained.
 
 > **More coming.** Each new project is another end-to-end recipe: an environment, a training run, and
 > the artifacts on the Hub. [Proposals and contributions welcome →](./CONTRIBUTING.md)
@@ -379,6 +386,7 @@ FineEnvs/
 ├── 05-multi-harness-rl/     the same tasks trained through TRL, OpenCode and Harbor
 ├── 06-multilingual/         OCR over 22 languages and ASR over 102, two OpenEnv servers
 ├── 07-simulation-environments/  a catalog of simulation environments: PortSimEnv v1–v5 and more
+├── 08-traceaudit/           failure-probability auditing of recorded agent traces
 ├── content/
 │   ├── articles/            long-form sources (Astro → Docker Space)
 │   └── slides/              talk decks (Vite → static Space)

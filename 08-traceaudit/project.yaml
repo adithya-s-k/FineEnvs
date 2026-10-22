@@ -1,0 +1,15 @@
+# TraceAudit project manifest; drives the generated README tables.
+name: traceaudit
+authors:
+  - name: Rahul Badhan
+title: "TraceAudit"
+tagline: "Judge failures in recorded agent traces with verified outcome labels."
+order: 8
+status: wip
+envs:
+  - name: trace_audit
+    summary: "Single-turn auditor: full trace to failure probability, scored with Brier reward."
+    backend: none
+    tools: 0
+    frameworks:
+      verifiers: {transport: in-process, verified: true}

@@ -1,0 +1,26 @@
+{
+  "repository": "https://github.com/asappresearch/abcd",
+  "commit": "6b8700ce67c6b37b062dd7a60abc76d7ef832a97",
+  "files": {
+    "abcd_v1.1.json.gz": {
+      "url": "https://raw.githubusercontent.com/asappresearch/abcd/6b8700ce67c6b37b062dd7a60abc76d7ef832a97/data/abcd_v1.1.json.gz",
+      "sha256": "2bdf53ac359543dcdc38d55bc6513e78df120363f8f44870716e909f4606de15",
+      "bytes": 36985084
+    },
+    "kb.json": {
+      "url": "https://raw.githubusercontent.com/asappresearch/abcd/6b8700ce67c6b37b062dd7a60abc76d7ef832a97/data/kb.json",
+      "sha256": "7b1cdb1002e3353451f9a3c3f389f1eabd8ae5d46c1d76f567c71819711f3857",
+      "bytes": 5186
+    },
+    "guidelines.json": {
+      "url": "https://raw.githubusercontent.com/asappresearch/abcd/6b8700ce67c6b37b062dd7a60abc76d7ef832a97/data/guidelines.json",
+      "sha256": "9264557941df24fe075138a632a2345172971573124a354ccb2ceee2a12e4c2a",
+      "bytes": 95293
+    },
+    "LICENSE": {
+      "url": "https://raw.githubusercontent.com/asappresearch/abcd/6b8700ce67c6b37b062dd7a60abc76d7ef832a97/LICENSE",
+      "sha256": "3ab7e179a7f13027b7bc64293541f0e9beacca3701cade67fb8fce78c2d9317b",
+      "bytes": 1071
+    }
+  }
+}

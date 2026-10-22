@@ -1,0 +1,34 @@
+name: TraceAudit
+on:
+  pull_request:
+    paths: ['08-traceaudit/**', '.github/workflows/traceaudit.yml']
+  push:
+    branches: [main]
+    paths: ['08-traceaudit/**', '.github/workflows/traceaudit.yml']
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: 08-traceaudit/envs/trace_audit/verifiers
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Install locked test/runtime dependencies
+        run: uv sync --frozen --extra native --extra dev
+      - name: Fetch hash-pinned official validation modules (setup only)
+        run: uv run --offline --frozen --extra native --extra dev python ../../../tools/validate_harbor.py --fetch
+      - name: Tests and rollout with outbound sockets blocked
+        env:
+          HF_HUB_OFFLINE: '1'
+          HF_DATASETS_OFFLINE: '1'
+          TRACEAUDIT_OFFLINE: '1'
+        run: |
+          uv run --offline --frozen --extra native --extra dev python ../../../tools/offline.py -m pytest ../../../tests -q --basetemp ../../../.cache/pytest
+          uv run --offline --frozen --extra native --extra dev python ../../../tools/offline.py rollout.py
+          uv run --offline --frozen --extra native --extra dev python ../../../tools/offline.py ../../../tools/validate_harbor.py

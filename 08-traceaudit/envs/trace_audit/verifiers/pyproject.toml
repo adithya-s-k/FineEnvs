@@ -1,0 +1,13 @@
+[project]
+name = "traceaudit-verifiers"
+version = "0.1.0"
+description = "Single-turn recorded-agent-trace auditor"
+requires-python = ">=3.11,<3.14"
+dependencies = []
+
+[project.optional-dependencies]
+native = ["verifiers==0.1.9", "datasets>=3,<5"]
+dev = ["pytest>=8,<10", "pydantic>=2.11,<3"]
+
+[tool.uv]
+package = false

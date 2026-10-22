@@ -1,0 +1,26 @@
+{
+  "commit": "209a48a7424218828465c3c716b042f2b381dbed",
+  "license_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+  "note": "Generated from pinned upstream Trajectory.model_json_schema(); restrict version enum/default to ATIF-v1.7.",
+  "repository": "https://github.com/harbor-framework/harbor",
+  "schema_sha256": "cc1d32a4bb4362a14d3085c6f9e56d28686123d5d1ddb4b2f0b5b7ab84b63901",
+  "schema_version": "ATIF-v1.7",
+  "upstream_files": {
+    "harbor/__init__.py": "d30c7240c9baa8d699ec8ef3d92668bef8e6a805f24f2d2be851b444ce0a0303",
+    "harbor/models/__init__.py": "d30c7240c9baa8d699ec8ef3d92668bef8e6a805f24f2d2be851b444ce0a0303",
+    "harbor/models/trajectories/__init__.py": "8eac32584166ff8f3a30d42027bc53793c4804fed7b07dcc4a94795557e11846",
+    "harbor/models/trajectories/agent.py": "ae26f91b1aa9cba2f9f308b3b1b6a8e92c0851bb191e4bd8df3042b49a0425c6",
+    "harbor/models/trajectories/content.py": "568f8ac708141b63b5facb363274b93d8bb76ae36250bcee656781f189ad3426",
+    "harbor/models/trajectories/final_metrics.py": "c4897c3b7f6d6be0d891d5fc9a72d13407d01c897c099e3ca195c50424734caf",
+    "harbor/models/trajectories/metrics.py": "c6d724d80d250dd27fefc4462a3f70aff2333fe42775382cb8073b889becf165",
+    "harbor/models/trajectories/observation.py": "2bb40e781053428e172af45110b0119bda4143594d592e414e9af0a60f057d28",
+    "harbor/models/trajectories/observation_result.py": "edbe26ca85aa8ef5f13a08a62d4d777d20832a7a5b67dcfa9162d6dbdaaf4c0a",
+    "harbor/models/trajectories/step.py": "6d8cc176449e0d5be46b40fdc9802bcb417f6b11d295c111e670055552abaa4a",
+    "harbor/models/trajectories/subagent_trajectory_ref.py": "207388b30eec20aaba3d21effb66f984caecfa0cb23dbaaa8fc055abd6347aea",
+    "harbor/models/trajectories/tool_call.py": "b28fc0526c45a5a253edaaaa305a8f53ac436e5fd44918fe4dadbe573214030b",
+    "harbor/models/trajectories/trajectory.py": "74c3aa74f3de38cdcdf3727b771c7ad75d66c2f5a6b43ec7982ed5b1e56b6fbf",
+    "harbor/utils/__init__.py": "d30c7240c9baa8d699ec8ef3d92668bef8e6a805f24f2d2be851b444ce0a0303",
+    "harbor/utils/trajectory_validator.py": "0b3dd6a74caf09010cbeb20e6cf610d1992f8f8f8e4f24a76afe9441831d216a"
+  },
+  "upstream_license": "Apache-2.0"
+}
