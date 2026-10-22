@@ -13,7 +13,7 @@ NGPU=$(python -c "import torch; print(torch.cuda.device_count())")
 
 hf download "$BUNDLE_REPO" "$BUNDLE_PATH" --repo-type dataset --local-dir /work/in >/dev/null
 tar xzf "/work/in/$BUNDLE_PATH" -C /work
-ls /data /data/data 2>/dev/null | head -20
+ls /data /data/data 2>/dev/null | head -20 || true  # (no mount when reading the bucket over HTTP)
 t0=$(date +%s); hf download "$MODEL" --quiet >/dev/null; echo "[job] base weights in $(( $(date +%s) - t0 ))s"
 
 cd /work/sft
