@@ -421,7 +421,8 @@ def main() -> None:
     ap.add_argument("--max-steps", type=int, default=50)
     ap.add_argument("--save-steps", type=int, default=0, help="checkpoint every N steps (0: only by --save-minutes)")
     ap.add_argument("--save-minutes", type=float, default=45)
-    ap.add_argument("--eval-windows", type=int, default=32)
+    ap.add_argument("--eval-windows", type=int, default=8, help="validation windows per config of --eval-mix")
+    ap.add_argument("--eval-mix", default=None, help="configs to validate on (same syntax as --mix; default: --mix)")
     ap.add_argument("--hours", type=float, default=7.6)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--output", default="/work/out")
@@ -437,12 +438,22 @@ def main() -> None:
     weights = {k: float(v) for k, v in (p.split("=") for p in a.mix.split(","))}
     processor = AutoProcessor.from_pretrained(a.model)
     train = Windows(root, weights, processor, windows_per_row=a.windows_per_row, max_tokens=a.max_tokens, split="train", seed=0, source=a.data_source, bucket=a.bucket, ids=a.ids, mount=Path(a.data), prefetch=a.prefetch)
-    ev = Windows(root, weights, processor, windows_per_row=2, max_tokens=a.max_tokens, split="eval", seed=1, shard=False, source=a.data_source, bucket=a.bucket, ids=a.ids, mount=Path(a.data), prefetch=a.prefetch)
-    eval_items = []
-    for item in ev if a.eval_windows else ():
-        eval_items.append(item)
-        if len(eval_items) >= a.eval_windows:
-            break
+    # validation: the same windows for every run (--eval-mix, default --mix), --eval-windows per config, each config
+    # its own eval set (eval_<config>_loss), so runs trained on different mixes are compared on identical windows
+    eval_weights = ({k: float(v) for k, v in (p.split("=") for p in a.eval_mix.split(","))} if a.eval_mix else weights)
+    eval_items: dict[str, list] = {}
+    for c in eval_weights if a.eval_windows else ():
+        ev = Windows(root, {c: 1.0}, processor, windows_per_row=4, max_tokens=a.max_tokens, split="eval", seed=1,
+                     shard=False, source=a.data_source, bucket=a.bucket, ids=a.ids, mount=Path(a.data), prefetch=a.prefetch)
+        items = []
+        for item in ev:
+            items.append(item)
+            if len(items) >= a.eval_windows:
+                break
+        if items:
+            eval_items[c] = items
+    print(f"[data] {time.strftime('%H:%M:%S')} eval windows per config: "
+          f"{ {c: len(v) for c, v in eval_items.items()} }", flush=True)
 
     local_rank = int(os.environ.get("LOCAL_RANK", 0))
     device = f"cuda:{local_rank}" if torch.cuda.is_available() else "cpu"
@@ -470,7 +481,7 @@ def main() -> None:
         eval_strategy="steps" if eval_items else "no", eval_steps=a.save_steps or 10**9, per_device_eval_batch_size=1,
         push_to_hub=bool(a.hub_model_id), hub_model_id=a.hub_model_id, hub_strategy="all_checkpoints",
         hub_private_repo=False, max_length=None, dataset_kwargs={"skip_prepare_dataset": True},
-        remove_unused_columns=False, dataloader_num_workers=a.workers, dataloader_persistent_workers=True,
+        remove_unused_columns=False, dataloader_num_workers=a.workers, dataloader_persistent_workers=a.workers > 0,
         dataloader_prefetch_factor=4 if a.workers else None,
         ddp_find_unused_parameters=False, prediction_loss_only=True, router_aux_loss_coef=0.0, report_to=a.report_to, seed=0,
     )
@@ -484,10 +495,10 @@ def main() -> None:
     )
     trainer.timer = timer
     # SFTTrainer only accepts `datasets` objects; the windows are already processed, so the streams go in afterwards
-    trainer.train_dataset, trainer.eval_dataset = train, (eval_items or None)
+    trainer.train_dataset, trainer.eval_dataset = train, (eval_items or None)  # a dict: one eval set per config
     if trainer.is_world_process_zero():
         trainable = sum(p.numel() for p in trainer.model.parameters() if p.requires_grad)
-        print(json.dumps({"time": time.strftime("%H:%M:%S"), "trainable_params": trainable, "eval_windows": len(eval_items),
+        print(json.dumps({"time": time.strftime("%H:%M:%S"), "trainable_params": trainable, "eval_windows": sum(map(len, eval_items.values())),
                           "args": vars(a)}), flush=True)
     trainer.train()
     trainer.save_model(f"{a.output}/final")
