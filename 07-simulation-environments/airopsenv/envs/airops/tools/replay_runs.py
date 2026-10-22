@@ -1,6 +1,6 @@
 """Replay the published runs through this code: every scored v1 run (a sweep folder with sweep.json), every v2 attempt
 that recorded its day (a pilot folder with pilot.json) and every v3 one (a pilot folder named occ3-*, as the plugin's
-dataset build reads them) under RUNS, the dataset's runs/ at v0.4.2 or the plugin's results/runs. A v1 run's tool calls
+dataset build reads them) under RUNS, the dataset's runs/ at v0.5.0 or the plugin's results/runs. A v1 run's tool calls
 go through a fresh Day in order, each output compared byte for byte with its transcript, and the day the env then grades
 is compared with the one its verifier read (from the dataset's raw/airops.jsonl, when --raw names it); a v2 attempt's
 calls go through a fresh OccDay on b6-v2 and a v3 attempt's through a fresh OccDay3 on b6-v3, each result compared with

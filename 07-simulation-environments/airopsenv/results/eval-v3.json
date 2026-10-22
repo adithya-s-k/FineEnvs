@@ -47,7 +47,7 @@
   "grading": {
     "reference": "the cheapest plan of aircraft and crews under the passenger cost P among v2's best plan, B0, the passenger-aware aircraft plans played through the standard crew desk and a repair of the best of them, replayed exactly with a legal crew on every flight; published with a capacity-aware lower bound where one was found",
     "reward": "0.2 + 0.8 exp(-g/0.5), g = max(0, P - best) / max(B0 - best, 0.1 best), B0 being standard crew-desk practice with the aircraft doing nothing; P in passenger-minutes: each passenger's arrival delay at the final destination after JetBlue-only rebooking (up to five days, then a refund), 66 per cancelled passenger (more when decided under 2 hours ahead), a lodging night per night away, each refunded fare, and v2's aircraft and crew costs; reward_L is the same against the bound",
-    "excused": "nothing: a run is scored only if its audit passes (news, turns, causality, roles, crew legality, the bound, the desks' presence); a day that comes in under the best plan, which is not a proven optimum, scores 1.0 and is flagged below_best (12 of 48 runs: both modes on 5 dates, three desks alone on 2), with reward_L beside it",
+    "excused": "nothing: a run is scored only if its audit passes (news, turns, causality, roles, crew legality, the bound, the desks' presence); a day that comes in under the best plan, which is not a proven optimum, scores 1.0 and is flagged below_best (24 of the 168 runs, all on 7 dates: GPT-6.1 Sol's 12, 7 with three desks and 5 with one agent; GPT-6 Astra's 6, Claude Opus 5.5's 3, Claude Sonnet 5.5's 2, GPT-5.6 Terra's 1 and Kimi K3's none), with reward_L beside it; a first attempt that lost a desk to the provider's rate limit was retried, as registered (7 of GPT-5.6 Terra's 24 runs, each scored on its retry; every attempt is kept in v3_episodes)",
     "judge": false
   },
   "baselines": [
@@ -70,6 +70,18 @@
   ],
   "models": [
     {
+      "model": "GPT-6 Astra, three desks, talking",
+      "provider": "Azure OpenAI",
+      "runs": 24,
+      "mean": 0.7421,
+      "ci95": [
+        0.6726,
+        0.8134
+      ],
+      "feasible": 24,
+      "usd_per_episode": 22.6768
+    },
+    {
       "model": "GPT-6.1 Sol, three desks, talking",
       "provider": "Azure OpenAI",
       "runs": 24,
@@ -80,6 +92,54 @@
       ],
       "feasible": 24,
       "usd_per_episode": 2.9741
+    },
+    {
+      "model": "Claude Opus 5.5, three desks, talking",
+      "provider": "Anthropic",
+      "runs": 24,
+      "mean": 0.6264,
+      "ci95": [
+        0.5445,
+        0.7113
+      ],
+      "feasible": 24,
+      "usd_per_episode": 10.8943
+    },
+    {
+      "model": "Claude Sonnet 5.5, three desks, talking",
+      "provider": "Anthropic",
+      "runs": 24,
+      "mean": 0.5556,
+      "ci95": [
+        0.4765,
+        0.6442
+      ],
+      "feasible": 24,
+      "usd_per_episode": 3.0116
+    },
+    {
+      "model": "GPT-5.6 Terra, three desks, talking",
+      "provider": "Azure OpenAI",
+      "runs": 24,
+      "mean": 0.5154,
+      "ci95": [
+        0.4427,
+        0.5938
+      ],
+      "feasible": 24,
+      "usd_per_episode": 3.517
+    },
+    {
+      "model": "Kimi K3, three desks, talking",
+      "provider": "Fireworks",
+      "runs": 24,
+      "mean": 0.4259,
+      "ci95": [
+        0.366,
+        0.491
+      ],
+      "feasible": 24,
+      "usd_per_episode": 6.2714
     },
     {
       "model": "GPT-6.1 Sol, one agent at all three desks",
@@ -99,5 +159,5 @@
     "replay": "https://huggingface.co/spaces/earakely-scale/AirOpsEnv-AgentEnv",
     "code": "https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/airopsenv"
   },
-  "date": "2026-10-21"
+  "date": "2026-10-22"
 }

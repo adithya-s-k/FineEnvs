@@ -371,7 +371,13 @@ v3's day replays the same way, through an `OccDay3` on the b6-v3 pack, and its d
 day. The passengers are generated once, into the pack, and `pax.fly` is a pass in a fixed order with no solver, so the
 passengers' part of a replay doesn't depend on the machine; the crews' end-of-day problem is v2's, with the same caveat.
 `tools/replay_runs.py` takes v3's runs too (the pilot folders named `occ3-*`), comparing each call's result digest and
-the record's grade, audit, digest and passengers: all 48 v3 board attempts replay that way. The same end-of-day crew
-caveat shows once in v3: on 2025-12-14 (three desks), replayed on macOS, two A220 cabin units' end-of-day shares come
-out 67.68 passenger-minutes apart from the record's, the day's cost the same; replayed in the `airops-occ3` image on
-Linux, as the board ran, every v3 record matches in full.
+the record's grade, audit, digest and passengers: all 48 of GPT-6.1 Sol's v3 board attempts replay that way. The same
+end-of-day crew caveat shows once in v3: on 2025-12-14 (three desks), replayed on macOS, two A220 cabin units'
+end-of-day shares come out 67.68 passenger-minutes apart from the record's, the day's cost the same; replayed in the
+`airops-occ3` image on Linux, as the board ran, every one of Sol's v3 records matches in full. The five other models'
+120 board runs replay the same way through this code on Linux, every record matching in full. The plugin's
+[FIDELITY.md](https://github.com/earakely-scale/agentenv-airops-plugin/blob/v0.5.0/FIDELITY.md) records one more case
+from the five other models' boards: GPT-5.6 Terra's run on 2023-06-16 and Kimi K3's on 2023-12-18 mismatched in the crew
+tools when replayed on a heavily loaded Mac, and each replayed exactly three times out of three on an idle Linux
+machine. The crew tools solve a MIP under a time limit, so a loaded machine can return another answer and the replay
+diverges from there; replay on a machine with cores to spare.

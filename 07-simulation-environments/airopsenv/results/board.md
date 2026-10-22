@@ -1,15 +1,19 @@
-# The board: GPT-6.1 Sol on the storm days, at the control center and with its passengers
+# The board: GPT-6.1 Sol on the storm days and at the control center, six models with its passengers
 
 On 14 October 2026 GPT-6.1 Sol played 5 of v1's 20 eval days once each (the sweep `sol-v1`): a first look at 3 JFK and 2
 Boston days picked by hand, not a random sample, and the plugin didn't record how they were chosen. On 19 and 20 October
 it played every one of v2's 24 eval dates once in each mode, 48 runs (`occ-board-sol`), and on 21 October every one of
-v3's 24 eval dates once in each mode, 48 runs (`occ3-board-sol`), all through the agentenv-airops plugin, whose env
-servers, task steps, verifiers and agents now live here with the same tool outputs and rewards: every call of every run
+v3's 24 eval dates once in each mode, 48 runs (`occ3-board-sol`). On 22 October five more models played v3's 24 eval
+dates with three desks, once a date each, 120 runs (`occ3-board-astra`, `occ3-board-opus`, `occ3-board-sonnet`,
+`occ3-board-terra` and `occ3-board-kimi`). All ran through the agentenv-airops plugin, whose env servers, task steps,
+verifiers and agents now live here with the same tool outputs and rewards: every call of every v1, v2 and Sol v3 run
 replays through this code exactly and grades to the same day; on Linux, as the boards ran, the whole record matches too
 (on macOS two crews' end-of-day shares can differ on one v2 and one v3 run,
-[DESIGN.md](../DESIGN.md#determinism-and-replay)). Every run, with its transcript, is in the plugin's dataset
-[earakely-scale/AirOpsEnv-AgentEnv](https://huggingface.co/datasets/earakely-scale/AirOpsEnv-AgentEnv), v1's and v2's at
-v0.3.3 and v3's at v0.4.2 (published under the terms on its card, not part of this repository), and replays in 3D in the
+[DESIGN.md](../DESIGN.md#determinism-and-replay)). The five other models' 120 runs replay through this code the same way
+on Linux, every record matching in full. Every run, with its transcript, is in the plugin's dataset
+[earakely-scale/AirOpsEnv-AgentEnv](https://huggingface.co/datasets/earakely-scale/AirOpsEnv-AgentEnv) at v0.5.0, each
+file as first published (v1's and v2's at v0.3.3, Sol's v3 runs at v0.4.2; published under the terms on its card, not
+part of this repository), and replays in 3D in the
 [Space](https://huggingface.co/spaces/earakely-scale/AirOpsEnv-AgentEnv). The eval cards, `eval-v1.json`, `eval-v2.json`
 and `eval-v3.json`, recompute from the dataset's runs and the packs.
 
@@ -19,6 +23,130 @@ found and its bound; v3 is v2's day with its passengers on board and a third des
 passenger cost P, against the best plan found under P. None is comparable with PortSimEnv's evals.
 
 ## v3: passengers and the customer desk
+
+Six models ran JetBlue's control center with three desks talking (the crew scheduler, the customer desk and the ops
+controller, each its own agent) on the same 24 eval dates, once a date each, at reasoning effort `high`, on the same
+env, pack and grading: GPT-6.1 Sol on its board of 21 October, which also played every date with one agent at all three
+desks ([below](#gpt-61-sol-three-desks-against-one-agent)), and on 22 October GPT-6 Astra, Claude Opus 5.5, Claude
+Sonnet 5.5, GPT-5.6 Terra and Kimi K3.
+
+| | Model | Mean reward (95% CI) | reward_L (95% CI) | Over the best plan, median | Avoidable cost saved, median | Under the best plan | Valid days | Spend | Cap a desk | Median day |
+|---:|---|---|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | GPT-6 Astra | 0.742 (0.673 to 0.813) | 0.377 (0.356 to 0.406) | 6.0% | 75% | 6 | 24 of 24 | $544.24 | $23.50 | 58 min, $21.33 |
+| 2 | GPT-6.1 Sol | 0.721 (0.633 to 0.811) | 0.372 (0.351 to 0.398) | 7.7% | 71% | 7 | 24 of 24 | $71.38 | $3 | 70 min, $2.79 |
+| 3 | Claude Opus 5.5 | 0.626 (0.544 to 0.711) | 0.357 (0.340 to 0.376) | 10.4% | 60% | 3 | 24 of 24 | $261.46 | $9.50 | 43 min, $10.40 |
+| 4 | Claude Sonnet 5.5 | 0.556 (0.476 to 0.644) | 0.347 (0.330 to 0.367) | 14.0% | 44% | 2 | 24 of 24 | $72.28 | $5 | 27 min, $3.23 |
+| 5 | GPT-5.6 Terra | 0.515 (0.443 to 0.594) | 0.337 (0.324 to 0.353) | 14.1% | 44% | 1 | 24 of 24 | $84.41 | $5 | 52 min, $3.70 |
+| 6 | Kimi K3 | 0.426 (0.366 to 0.491) | 0.326 (0.310 to 0.342) | 23.1% | 31% | 0 | 24 of 24 | $150.51 | $7.50 | 57 min, $6.01 |
+| | GPT-6.1 Sol, one agent at all three desks | 0.677 (0.592 to 0.766) | 0.366 (0.346 to 0.391) | 7.7% | 72% | 5 | 24 of 24 | $35.66 | $6 | 44 min, $1.52 |
+| | Standard crew desk (B0) | 0.386 | | | 0% | | | | | |
+| | v2's best plan, blind to passengers | 0.602 | | | | | | | | |
+
+Rows 1 to 6 are each model's three desks, ranked by their mean. The 95% CIs are a bootstrap over the 24 dates (10,000
+resamples). "Under the best plan": the runs that came in under the best plan found, which score 1.0 and are flagged
+`below_best`. "Valid days": the runs whose audit passed. "Spend": the model spend of the 24 scored runs. "Median day":
+a day's wall time and spend at the median. The avoidable cost is B0's excess over the best plan, so its median is over
+the 23 dates where B0 isn't the best plan.
+
+- **GPT-6 Astra has the highest mean, but the board doesn't separate it from GPT-6.1 Sol or Claude Opus 5.5:** their
+  95% intervals overlap Astra's (its lower end is 0.673; Sol's upper end 0.811, Opus's 0.711), and Astra's lead over
+  Sol is 0.021. Claude Sonnet 5.5, GPT-5.6 Terra and Kimi K3 score below Astra: their intervals lie wholly under its
+  own. `reward_L`, which the best plan doesn't cap, ranks the six in the same order.
+- **One run a date for each model.** A model's interval is over the dates, not over repeated runs, and nothing is
+  paired across models; as registered, the models are compared by whether their intervals overlap the leader's.
+- **The best plan's ceiling compresses the top.** A run under the best plan found scores 1.0 whichever model played it
+  and however far under it came: 24 of the 168 runs, all on the 7 dates where Sol's three desks did (Sol's 12 over both
+  modes, Astra's 6, Opus's 3, Sonnet's 2, Terra's 1 and Kimi K3's none). `reward_L` is the fairer reading there.
+- **Spend doesn't follow the ranking.** Astra's board cost $544.24, 7.6 times Sol's $71.38, for 0.021 more; Opus's
+  $261.46, 3.7 times; Kimi K3's $150.51, 2.1 times Sol's, for the lowest mean; Sonnet's ($72.28) and Terra's ($84.41)
+  are near Sol's.
+
+**How the five ran.** As the plugin's
+[README](https://github.com/earakely-scale/agentenv-airops-plugin/blob/v0.5.0/README.md#the-v3-board) records, the
+models, the dates, the caps, the retries and how the models would be compared were registered before the first of them
+ran, and the five boards ran at its commit 6e5ec17, which priced GPT-5.6 Terra and Kimi K3 in the desk agent. Sol
+wasn't run again: its three-desk runs are its board's 24.
+
+- **Caps.** A desk's cap buys what $3 bought a Sol desk: Sol's median desk's tokens at the model's prices, rounded up to
+  the next $0.50, so $23.50 a desk for GPT-6 Astra, $9.50 for Claude Opus 5.5, $7.50 for Kimi K3 and $5 for Claude
+  Sonnet 5.5 and GPT-5.6 Terra. The caps stopped 5 of the five boards' 360 desks, all crew desks: Astra's on 2023-12-18,
+  Opus's on 2023-07-08, 2023-07-29 and 2023-12-10, and Kimi K3's on 2025-12-14. Each of those runs scored.
+- **Retries.** GPT-5.6 Terra's 24 runs took 31 attempts: 7 first attempts lost a desk to the provider's token rate
+  limit (`provider_error`), so their audits failed and they weren't scored; each was retried, as registered, and scored
+  on its retry. The dataset keeps every attempt: `v3_episodes` has 175 rows on the eval split, the 168 scored runs and
+  Terra's 7 superseded attempts.
+- **Spend.** $1,125.30 on the models for the five boards, Terra's 7 unscored attempts ($12.39) included; the table's
+  spend is each model's 24 scored runs.
+- **Checks.** All 120 runs passed their audits, and every reward and `reward_L` recomputes from the run's graded cost
+  and the pack's best plan, bound and B0 (within 1e-6). The plugin replayed all 168 board runs exactly through its env
+  on Linux. This port's code replays all 120 the same way on Linux (54,036 calls): every call's result, the grade,
+  the audit, the digest and the passengers.
+
+Each model's three-desk run, by date:
+
+| Date | GPT-6 Astra | GPT-6.1 Sol | Claude Opus 5.5 | Claude Sonnet 5.5 | GPT-5.6 Terra | Kimi K3 |
+|---|---:|---:|---:|---:|---:|---:|
+| 2022-12-07 | **0.484** | 0.477 | 0.378 | 0.296 | 0.288 | 0.249 |
+| 2023-06-06 | 0.775 | **0.848** | 0.696 | 0.594 | 0.821 | 0.668 |
+| 2023-06-16 | **0.686** | 0.548 | 0.481 | 0.434 | 0.620 | 0.432 |
+| 2023-07-08 | **0.555** | 0.528 | 0.471 | 0.385 | 0.462 | 0.321 |
+| 2023-07-09 | **0.488** | 0.468 | 0.441 | 0.378 | 0.270 | 0.330 |
+| 2023-07-13 | 1.000 \* | 1.000 \* | 0.558 | 0.741 | 0.696 | 0.580 |
+| 2023-07-29 | 1.000 \* | 1.000 \* | 1.000 \* | 1.000 \* | 0.644 | 0.543 |
+| 2023-12-10 | 0.772 | **0.825** | 0.708 | 0.563 | 0.419 | 0.416 |
+| 2023-12-18 | **0.655** | 0.406 | 0.260 | 0.355 | 0.304 | 0.302 |
+| 2024-06-23 | 1.000 \* | 1.000 \* | 0.798 | 1.000 \* | 0.853 | 0.203 |
+| 2024-07-13 | 1.000 \* | 1.000 \* | 0.657 | 0.713 | 0.593 | 0.564 |
+| 2024-07-15 | 1.000 \* | 1.000 \* | 1.000 \* | 0.576 | 1.000 \* | 0.201 |
+| 2024-07-22 | 1.000 \* | 1.000 \* | 1.000 \* | 0.933 | 0.296 | 0.803 |
+| 2025-01-11 | 0.816 | 0.853 | **0.868** | 0.725 | 0.612 | 0.579 |
+| 2025-07-08 | **0.815** | 0.795 | 0.751 | 0.780 | 0.358 | 0.413 |
+| 2025-07-12 | **0.601** | 0.587 | 0.561 | 0.418 | 0.462 | 0.303 |
+| 2025-12-02 | 0.534 | 0.393 | **0.541** | 0.329 | 0.467 | 0.415 |
+| 2025-12-14 | **0.518** | 0.452 | 0.424 | 0.357 | 0.316 | 0.381 |
+| 2025-12-19 | 0.598 | **0.650** | 0.462 | 0.510 | 0.474 | 0.407 |
+| 2025-12-30 | 0.834 | **1.000** \* | 0.887 | 0.349 | 0.443 | 0.717 |
+| 2026-06-14 | **0.658** | 0.628 | 0.430 | 0.397 | 0.324 | 0.291 |
+| 2026-07-01 | 0.673 | **0.708** | 0.653 | 0.544 | 0.529 | 0.401 |
+| 2026-07-09 | **0.641** | 0.595 | 0.496 | 0.462 | 0.535 | 0.328 |
+| 2026-07-15 | **0.705** | 0.538 | 0.512 | 0.494 | 0.585 | 0.375 |
+
+The day's highest in bold, none where several runs share 1.0. \* Under the best plan found, so 1.0 and flagged
+`below_best`. Sol's dates, with their storm hubs, flights, passengers and B0, are in its table below.
+
+`reward_L`, against the bound:
+
+| Date | GPT-6 Astra | GPT-6.1 Sol | Claude Opus 5.5 | Claude Sonnet 5.5 | GPT-5.6 Terra | Kimi K3 |
+|---|---:|---:|---:|---:|---:|---:|
+| 2022-12-07 | 0.329 | 0.329 | 0.319 | 0.306 | 0.304 | 0.294 |
+| 2023-06-06 | 0.345 | 0.348 | 0.341 | 0.336 | 0.347 | 0.340 |
+| 2023-06-16 | 0.366 | 0.351 | 0.342 | 0.335 | 0.359 | 0.335 |
+| 2023-07-08 | 0.371 | 0.366 | 0.354 | 0.333 | 0.352 | 0.313 |
+| 2023-07-09 | 0.364 | 0.359 | 0.352 | 0.334 | 0.290 | 0.317 |
+| 2023-07-13 | 0.383 | 0.380 | 0.343 | 0.357 | 0.354 | 0.345 |
+| 2023-07-29 | 0.344 | 0.339 | 0.329 | 0.311 | 0.301 | 0.298 |
+| 2023-12-10 | 0.388 | 0.393 | 0.380 | 0.362 | 0.337 | 0.336 |
+| 2023-12-18 | 0.356 | 0.327 | 0.293 | 0.319 | 0.307 | 0.307 |
+| 2024-06-23 | 0.340 | 0.337 | 0.304 | 0.323 | 0.305 | 0.246 |
+| 2024-07-13 | 0.634 | 0.586 | 0.469 | 0.489 | 0.444 | 0.433 |
+| 2024-07-15 | 0.332 | 0.323 | 0.332 | 0.304 | 0.320 | 0.241 |
+| 2024-07-22 | 0.351 | 0.359 | 0.344 | 0.323 | 0.292 | 0.319 |
+| 2025-01-11 | 0.483 | 0.493 | 0.496 | 0.459 | 0.427 | 0.417 |
+| 2025-07-08 | 0.435 | 0.431 | 0.424 | 0.429 | 0.328 | 0.346 |
+| 2025-07-12 | 0.345 | 0.344 | 0.342 | 0.327 | 0.332 | 0.307 |
+| 2025-12-02 | 0.330 | 0.319 | 0.330 | 0.311 | 0.325 | 0.321 |
+| 2025-12-14 | 0.356 | 0.344 | 0.339 | 0.323 | 0.311 | 0.329 |
+| 2025-12-19 | 0.350 | 0.355 | 0.335 | 0.341 | 0.337 | 0.327 |
+| 2025-12-30 | 0.370 | 0.383 | 0.374 | 0.318 | 0.333 | 0.362 |
+| 2026-06-14 | 0.355 | 0.352 | 0.331 | 0.326 | 0.312 | 0.304 |
+| 2026-07-01 | 0.406 | 0.413 | 0.402 | 0.380 | 0.376 | 0.342 |
+| 2026-07-09 | 0.365 | 0.360 | 0.347 | 0.341 | 0.352 | 0.314 |
+| 2026-07-15 | 0.355 | 0.341 | 0.338 | 0.336 | 0.345 | 0.321 |
+
+### GPT-6.1 Sol: three desks against one agent
+
+Sol's board, which the plugin published in v0.4.0, also played every date with one agent at all three desks; it is
+here as it was.
 
 Registered before the first run, as the plugin's
 [README](https://github.com/earakely-scale/agentenv-airops-plugin/blob/v0.4.2/README.md#the-v3-board) records: the
@@ -202,23 +330,30 @@ doing nothing 0.297 and JetBlue's own decisions 0.210.
   a reply, capped at $5 a desk in a two-desk run and $8 for one agent; v3's desks, the same agent in role `crew`,
   `customer`, `ops` or `both`, reasoning effort `high`, 6 model turns a watch plus 10 for a desk of a three-desk run
   (up to 232) and 10 plus 10 for one agent (up to 380), 32,000 output tokens a reply, capped at $3 a desk in a
-  three-desk run and $6 for one agent. One agent at v3's three desks sees 16 of their 22 tools: no requests or replies,
-  and no `crew_program`. One run per date and mode, on local Docker.
-- **Route:** GPT-6.1 Sol on the Responses API, served by Azure OpenAI, through a LiteLLM proxy. Spend is the harness's
-  tokens times the prices pinned in the agent.
-- **Spend:** v1 $2.99. v2's board $73.94 with the superseded attempt; the 6-run trial sweep before it $6.88. v3's board
-  $107.04; the plugin's FIDELITY.md gives $6.20 for the 4-run pilot before it, which the dataset doesn't hold.
+  three-desk run and $6 for one agent; the five other models' desks, the same agent with three desks only, capped at
+  $23.50 a desk for GPT-6 Astra, $9.50 for Claude Opus 5.5, $7.50 for Kimi K3 and $5 for Claude Sonnet 5.5 and GPT-5.6
+  Terra. One agent at v3's three desks sees 16 of their 22 tools: no requests or replies, and no `crew_program`. One
+  run per date and mode, on local Docker; the five other models' boards on five machines at once, one a model.
+- **Route:** GPT-6.1 Sol on the Responses API, served by Azure OpenAI, through a LiteLLM proxy. The five other models
+  through the same agent, on the API it uses for each provider: GPT-6 Astra and GPT-5.6 Terra on the Responses API,
+  served by Azure OpenAI; Claude Opus 5.5 and Claude Sonnet 5.5 on the Messages API, served by Anthropic; Kimi K3 on
+  OpenAI-compatible chat, served by Fireworks. Spend is the harness's tokens times the prices pinned in the agent.
+- **Spend:** v1 $2.99. v2's board $73.94 with the superseded attempt; the 6-run trial sweep before it $6.88. v3: Sol's
+  board $107.04, and the plugin's FIDELITY.md gives $6.20 for the 4-run pilot before it, which the dataset doesn't
+  hold; the five other models' boards $1,125.30, GPT-5.6 Terra's 7 unscored attempts ($12.39) included.
 - **Checks:** every scored run replays exactly through the env's calls and passes the audit, and an independent
-  recheck recomputed every reward and reward_L from the graded costs and the pack's best plan, bound and B0.
+  recheck recomputed every reward and reward_L from the graded costs and the pack's best plan, bound and B0 (all 168 of
+  v3's board runs within 1e-6).
 
 ## Caveats
 
-- One model, one run per date and mode: the intervals, a bootstrap over the dates, are wide, and five v1 days are
-  not a board.
+- One run per date and mode, and one model on v1 and v2: the intervals, a bootstrap over the dates, are wide; v3's six
+  models are compared by whether their intervals overlap the leader's, with nothing paired across models; and five v1
+  days are not a board.
 - The crews are generated and the crew filter leans the eval dates toward moderate storms; the plugin's
   [FIDELITY.md](https://github.com/earakely-scale/agentenv-airops-plugin/blob/v0.3.3/FIDELITY.md) sets out every
   layer's checks and misses.
 - v3's passengers are generated too, from route-month loads and a ticket survey, and its best plan is the best of a
   fixed set of candidates, not an optimum; its bound sits 54% to 79% under it. The plugin's
-  [FIDELITY.md at v0.4.2](https://github.com/earakely-scale/agentenv-airops-plugin/blob/v0.4.2/FIDELITY.md) sets out
-  v3's checks and misses.
+  [FIDELITY.md at v0.5.0](https://github.com/earakely-scale/agentenv-airops-plugin/blob/v0.5.0/FIDELITY.md) sets out
+  v3's checks and misses, the five other models' boards among them.

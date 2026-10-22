@@ -48,12 +48,14 @@ HARNESS_CAP = "length (harness cap)"
 ROLE_HEADER = "AgentEnv-Role"
 STEP_TIMEOUT = 600.0
 CACHE_SECONDS = 300
-PRICES = {  # USD per 1M tokens: input, output, cache read. LiteLLM public price map, 2026-10-06 and 2026-10-09.
+PRICES = {  # USD per 1M tokens: input, output, cache read. LiteLLM public price map, 2026-10-06 to 2026-10-21.
     "anthropic/claude-opus-5-5": (4.00, 20.00, 0.40),
     "anthropic/claude-sonnet-5-5": (2.00, 10.00, 0.20),
     "anthropic/claude-haiku-5-5": (0.10, 0.50, 0.01),
     "openai/gpt-6-astra": (10.00, 50.00, 1.00),
     "openai/gpt-6.1-sol": (2.00, 10.00, 0.10),
+    "openai/gpt-5.6-terra": (2.00, 12.00, 0.20),
+    "fireworks_ai/kimi-k3": (3.00, 15.00, 0.30),
     "openai/gpt-6-luna": (0.10, 0.50, 0.01),
 }
 CONTEXT_FULL = re.compile(r"context.{0,20}(length|window|limit)|too long|maximum context|too many tokens", re.I)

@@ -25,4 +25,4 @@ envs:
         transport: http-mcp
         verified: true
 # The days the envs play (tasks/b6-v1/tasks.jsonl, tasks/b6-v2/dates/ and tasks/b6-v3/dates/) are fetched from the
-# dataset at v0.4.2 by envs/airops/tools/fetch_packs.py and checked against the committed manifests, which pin them.
+# dataset at v0.5.0 by envs/airops/tools/fetch_packs.py and checked against the committed manifests, which pin them.

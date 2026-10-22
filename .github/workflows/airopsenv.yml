@@ -11,7 +11,7 @@ permissions:
 # fixture days, a slice of the raw inputs, v3's survey extracts, a recorded run of each env and the task files the
 # published runs played. So the test job needs neither the network nor the packs, and nothing in it skips. The five
 # replays that take minutes (marked slow: three follower days and the recorded v2 and v3 days) run in the image job
-# instead, which also fetches the packs from the dataset at v0.4.2 (21 MB, checked against the committed manifests),
+# instead, which also fetches the packs from the dataset at v0.5.0 (21 MB, checked against the committed manifests),
 # builds the env and agent images, replays the recorded v1 run and plays a v2 and a v3 day against containers of them,
 # and plays the zero-spend days through AgentEnv.
 jobs:
@@ -50,7 +50,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: '3.12'
-      - name: Fetch the packs from the dataset at v0.4.2 and check them against the committed manifests
+      - name: Fetch the packs from the dataset at v0.5.0 and check them against the committed manifests
         run: uv run -p 3.12 --with pyarrow python tools/fetch_packs.py
       - name: The slow replays (three follower days and the recorded v2 and v3 days, no Docker or network)
         run: uv run --frozen --project agentenv --extra dev pytest -q -rs -m slow agentenv/tests

@@ -1,8 +1,9 @@
 """Fetch the days the three envs play, which this repository doesn't commit: b6-v1's tasks.jsonl (4.7 MB), b6-v2's 70
 dates (6.3 MB) and b6-v3's 70 dates (10.5 MB), rebuilt byte for byte from the v1_tasks, v2_tasks and v3_tasks tables of
-the dataset earakely-scale/AirOpsEnv-AgentEnv at v0.4.2, the release the v3 board played; its v1 and v2 tables are
-v0.3.3's byte for byte, the release the v1 and v2 runs played. Each table is checked against its sha256 before it is
-read, and each file written against the committed manifest of its pack, which pins tasks.jsonl and every date.
+the dataset earakely-scale/AirOpsEnv-AgentEnv at v0.5.0, the release with every published run, the v3 board's six
+models included; its v3 tables are v0.4.2's byte for byte, the release Sol's v3 board played, and its v1 and v2 tables
+v0.3.3's, the release the v1 and v2 runs played. Each table is checked against its sha256 before it is read, and each
+file written against the committed manifest of its pack, which pins tasks.jsonl and every date.
 
 - fetch (the default): the nine tables into --cache (a rerun reuses them), then tasks/b6-v1/tasks.jsonl in the
   manifest's order and tasks/b6-v2/dates/<date>.json.gz and tasks/b6-v3/dates/<date>.json.gz as the packs' builder
@@ -26,8 +27,8 @@ from pathlib import Path
 TASKS = Path(__file__).resolve().parents[1] / "tasks"
 V1, V2, V3 = TASKS / "b6-v1", TASKS / "b6-v2", TASKS / "b6-v3"
 REPO = "earakely-scale/AirOpsEnv-AgentEnv"
-REVISION = "781bca423300c8fb921eead316a9120291d536cb"
-"""The dataset's commit tagged v0.4.2."""
+REVISION = "a83af3b7226bd37c915238f4ef3b804a17db3db1"
+"""The dataset's commit tagged v0.5.0."""
 TABLES = {
     "tasks/v1-eval.parquet": "a925fa7d95dc86365b72931e2d9baf8b27ae7972bf4fc1f648d5dc5f01cc8de4",
     "tasks/v1-control.parquet": "34a6b874734df8ac58f2df097752d32f4acbf713a492562b5a2b4b77fd9c6876",
@@ -39,7 +40,7 @@ TABLES = {
     "tasks/v3-control.parquet": "b14b4a9da92dfccfdf9992549d3b96d5ed4f2170d528524d7a0f178a1b714272",
     "tasks/v3-train.parquet": "518d802e5611aa76abe62148fd0401c966146b3334bd7ce1cc058293eedd7726",
 }
-"""The v1 and v2 tables are the six v0.3.3 pinned, unchanged at v0.4.2."""
+"""The v1 and v2 tables are the six v0.3.3 pinned and the v3 tables the three v0.4.2 pinned, unchanged at v0.5.0."""
 DATED = {"b6-v2": V2, "b6-v3": V3}
 
 

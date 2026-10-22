@@ -138,35 +138,52 @@ The reward is v2's, under P: `0.2 + 0.8·e^(−g/0.5)`, with `g = max(0, P − b
 end or stood down, and the audit plays the passengers' day again to check what it cost. A day that comes in under the
 best plan, which is not a proven optimum, scores 1.0 and is flagged `below_best`, with `reward_L` beside it. No judge.
 
-### The Sol board
+### The v3 board
 
-GPT-6.1 Sol (reasoning effort `high`) played the 24 eval dates once in each mode on 21 October 2026, registered before
-the first run: the code and the pack, the dates, the caps ($3 a desk in a three-desk run, $6 for one agent) and the
-budget.
+Six models ran the control center with three desks on the 24 eval dates, once a date each, at reasoning effort `high`:
+GPT-6.1 Sol on 21 October 2026, which also played every date with one agent at all three desks, and on 22 October GPT-6
+Astra, Claude Opus 5.5, Claude Sonnet 5.5, GPT-5.6 Terra and Kimi K3. Each board was registered before its first run,
+as the plugin's README records: the dates, the caps and, for the five, the retries and how the models are compared.
+Sol's cap was $3 a desk ($6 for one agent); each other model's buys what $3 bought a Sol desk, at its own prices.
 
-| Mode | Mean reward (95% CI) | reward_L (95% CI) | Over the best plan, median | Avoidable cost saved, median | Valid days | Cost per episode |
-|---|---|---|---:|---:|---:|---:|
-| GPT-6.1 Sol, three desks, talking | **0.721** (0.633 to 0.811) | 0.372 (0.351 to 0.398) | 7.7% | 71% | 24 of 24 | $2.97 |
-| GPT-6.1 Sol, one agent at all three desks | **0.677** (0.592 to 0.766) | 0.366 (0.346 to 0.391) | 7.7% | 72% | 24 of 24 | $1.49 |
-| Standard crew desk (B0) | 0.386 | | | 0% | | |
-| v2's best plan, blind to passengers | 0.602 | | | | | |
+| | Model | Mean reward (95% CI) | reward_L (95% CI) | Under the best plan | Valid days | Cost per episode | Cap a desk |
+|---:|---|---|---|---:|---:|---:|---:|
+| 1 | GPT-6 Astra, three desks | 0.742 (0.673 to 0.813) | 0.377 (0.356 to 0.406) | 6 | 24 of 24 | $22.68 | $23.50 |
+| 2 | GPT-6.1 Sol, three desks | 0.721 (0.633 to 0.811) | 0.372 (0.351 to 0.398) | 7 | 24 of 24 | $2.97 | $3 |
+| 3 | Claude Opus 5.5, three desks | 0.626 (0.544 to 0.711) | 0.357 (0.340 to 0.376) | 3 | 24 of 24 | $10.89 | $9.50 |
+| 4 | Claude Sonnet 5.5, three desks | 0.556 (0.476 to 0.644) | 0.347 (0.330 to 0.367) | 2 | 24 of 24 | $3.01 | $5 |
+| 5 | GPT-5.6 Terra, three desks | 0.515 (0.443 to 0.594) | 0.337 (0.324 to 0.353) | 1 | 24 of 24 | $3.52 | $5 |
+| 6 | Kimi K3, three desks | 0.426 (0.366 to 0.491) | 0.326 (0.310 to 0.342) | 0 | 24 of 24 | $6.27 | $7.50 |
+| | GPT-6.1 Sol, one agent at all three desks | 0.677 (0.592 to 0.766) | 0.366 (0.346 to 0.391) | 5 | 24 of 24 | $1.49 | $6 |
+| | Standard crew desk (B0) | 0.386 | | | | | |
+| | v2's best plan, blind to passengers | 0.602 | | | | | |
 
-- **Three desks against one agent, paired by date:** +0.044 reward (95% CI 0.007 to 0.083), three desks higher on 14
-  of 24 dates, lower on 5 and level on the 5 where both came in under the best plan.
+- **GPT-6 Astra has the highest mean, but the board doesn't separate it from GPT-6.1 Sol or Claude Opus 5.5:** their
+  95% intervals overlap Astra's, and Astra leads Sol by 0.021. Claude Sonnet 5.5, GPT-5.6 Terra and Kimi K3 score below
+  Astra, their intervals wholly under its own, and `reward_L` ranks the six in the same order. Each model played each
+  date once, so a model's interval is over the dates, and nothing is paired across models.
+- **Spend doesn't follow the ranking:** Astra's board cost 7.6 times Sol's for 0.021 more, and Kimi K3's 2.1 times
+  Sol's for the lowest mean.
+- **Flagged:** 24 of the 168 runs came in under the best plan found, all on 7 dates: Sol's 12 (7 three-desk and 5
+  one-agent runs), Astra's 6, Opus's 3, Sonnet's 2, Terra's 1 and Kimi K3's none. They score 1.0, flagged
+  `below_best`, which compresses the top of the board, and their `reward_L` is the fairer reading. On 4 of the 5 dates
+  where both Sol modes did, B0 itself comes within 10% of the best plan, which is weak there.
+- **Every run scored.** GPT-5.6 Terra's 24 took 31 attempts: 7 first attempts lost a desk to the provider's rate limit
+  and scored on their retry, as registered. The caps stopped 5 of the five boards' 360 desks, all crew desks, and each
+  of those runs scored.
+- **Sol's three desks against its one agent, paired by date:** +0.044 reward (95% CI 0.007 to 0.083), three desks
+  higher on 14 of 24 dates, lower on 5 and level on the 5 where both came in under the best plan.
 - **It doesn't show that the third desk or talking helps.** A sign test on the 19 dates where the two differ gives
   p = 0.064. The three desks used about twice the compute (2.0× the spend), and there is no two-desk arm under P, so
   the board measures neither talking nor what the customer desk adds by itself.
-- **The customer desk was busy:** 1,303 requests over the 24 three-desk days, 887 HOLDs (463 accepted by ops), 184
+- **Sol's customer desk was busy:** 1,303 requests over the 24 three-desk days, 887 HOLDs (463 accepted by ops), 184
   PROTECTs (177 accepted), 76 SUGGEST_CANCELs (24 accepted) and 156 texts.
-- **Both well above standard practice:** at the median a Sol day saves 71% (three desks) or 72% (one agent) of what B0
-  leaves on the table, and both modes' means are above v2's best plan played with its passengers.
-- **Flagged:** 12 of the 48 runs came in under the best plan found, 7 three-desk and 5 one-agent runs on 7 dates; they
-  score 1.0, flagged `below_best`, and their `reward_L` is the fairer reading. On 4 of the 5 dates where both modes did,
-  B0 itself comes within 10% of the best plan, which is weak there.
+- **Both Sol modes well above standard practice:** at the median a Sol day saves 71% (three desks) or 72% (one agent)
+  of what B0 leaves on the table, and both modes' means are above v2's best plan played with its passengers.
 
-[results/board.md](results/board.md#v3-passengers-and-the-customer-desk) has every date, the requests, the spend and how
-the runs were made; the eval card is [results/eval-v3.json](results/eval-v3.json). These scores are not comparable with
-v2's: the cost and the best plan differ.
+[results/board.md](results/board.md#v3-passengers-and-the-customer-desk) has every date, the caps, the retries, the
+requests, the spend and how the runs were made; the eval card is [results/eval-v3.json](results/eval-v3.json). These
+scores are not comparable with v2's: the cost and the best plan differ.
 
 ### Run v3 here
 
@@ -175,7 +192,7 @@ packs, which now include b6-v3's 70 dates, then play a day through AgentEnv on l
 
 ```bash
 cd envs/airops
-uv run -p 3.12 --with pyarrow python tools/fetch_packs.py           # b6-v1, b6-v2 and b6-v3 from the dataset at v0.4.2
+uv run -p 3.12 --with pyarrow python tools/fetch_packs.py           # b6-v1, b6-v2 and b6-v3 from the dataset at v0.5.0
 cd agentenv
 uv run -p 3.12 python rollout.py --env occ3 --smoke                 # no model: the crew and passenger systems alone
 uv run -p 3.12 --extra dev python rollout.py --env occ3 --script    # no model: the scripted desks, both modes
@@ -183,9 +200,12 @@ uv run -p 3.12 python rollout.py --env occ3 --model openai/gpt-6.1-sol --mode jo
 uv run -p 3.12 python rollout.py --env occ3 --model openai/gpt-6.1-sol --mode one --episode-cap-usd 6
 ```
 
-The board ran at $3 a desk for three desks and $6 for one agent; a median three-desk Sol day took 70 minutes and $2.79,
-one agent 44 minutes and $1.52. `tools/scripted_desks3.py` plays the scripted desks in process with the leak checks
-below, and `tools/replay_runs.py` replays the dataset's recorded v3 runs through this code
+The board ran Sol at $3 a desk for three desks and $6 for one agent, and the other five models with three desks at
+their own caps a desk (`--episode-cap-usd`): 23.5 for `openai/gpt-6-astra`, 9.5 for `anthropic/claude-opus-5-5`, 7.5
+for `fireworks_ai/kimi-k3`, and 5 for `anthropic/claude-sonnet-5-5` and `openai/gpt-5.6-terra`. A median three-desk
+Sol day took 70 minutes and $2.79, one agent 44 minutes and $1.52; [results/board.md](results/board.md) has every
+model's. `tools/scripted_desks3.py` plays the scripted desks in process with the leak checks below, and
+`tools/replay_runs.py` replays the dataset's recorded v3 runs through this code
 ([envs/airops/agentenv/README.md](envs/airops/agentenv/README.md) has the commands).
 
 ### How v3 was checked
@@ -193,7 +213,7 @@ below, and `tools/replay_runs.py` replays the dataset's recorded v3 runs through
 v3 was built in stages, as v2 was: each check registered before it ran (FIDELITY.md discloses one eval date, 2024-07-13,
 run once against a discarded model before step 0 was registered), every change to a rule recorded with its reason before
 it was used, and the call to ship or stop made once. The plugin's
-[FIDELITY.md](https://github.com/earakely-scale/agentenv-airops-plugin/blob/v0.4.2/FIDELITY.md) has the full report.
+[FIDELITY.md](https://github.com/earakely-scale/agentenv-airops-plugin/blob/v0.5.0/FIDELITY.md) has the full report.
 
 - **The premise.** Priced by P, v2's best plan costs at least 5% more than v3's best plan on 17 of the 24 eval dates (12
   needed), and before crews were added, v2's aircraft plan cost at least 5% more than a passenger-aware one on 16 (14
@@ -217,13 +237,14 @@ it was used, and the call to ship or stop made once. The plugin's
   desk calling every lookup it has: every day graded, audited and replaying byte for byte; the day played again with
   every reference moved gives every page, reply and record before the end byte for byte, and none of them shows a
   reference, the bound or a reward; and the day with every delay a desk couldn't yet know changed gives everything up to
-  the first watch from 10:00 byte for byte. A Sol pilot on 2 training dates scored all 4 runs, then the board all 48,
-  each replaying exactly through the env's calls with its audit passing.
+  the first watch from 10:00 byte for byte. A Sol pilot on 2 training dates scored all 4 runs, then Sol's board all 48
+  and the five other models' boards all 120, each replaying exactly through the env's calls in the plugin, with its
+  audit passing. This port's code replays Sol's 48 the same way, and the other models' 120 on Linux.
 - **The numbers here.** Every v3 board number on this page, in [results/board.md](results/board.md) and in
-  [results/eval-v3.json](results/eval-v3.json) recomputes from the dataset's v3 tables at v0.4.2: each run's reward and
-  `reward_L` from its graded cost and the pack's best plan, bound and B0 (all 48 within 1e-6), the means and their
-  bootstrap intervals, the paired difference and its sign test, the baselines, and the customer desk's requests; the
-  stage checks above are FIDELITY.md's.
+  [results/eval-v3.json](results/eval-v3.json) recomputes from the dataset's v3 tables and runs at v0.5.0: each run's
+  reward and `reward_L` from its graded cost and the pack's best plan, bound and B0 (all 168 within 1e-6), the means and
+  their bootstrap intervals, the runs under the best plan, the desks the caps stopped, the spend, the paired difference
+  and its sign test, the baselines, and the customer desk's requests; the stage checks above are FIDELITY.md's.
 
 ### What v3 doesn't model
 
@@ -240,8 +261,9 @@ it was used, and the call to ship or stop made once. The plugin's
   validated. And P prices a calm-day cancellation cheaply: on the winter control date the best plan cancels 7 flights
   at 04:00.
 - **The best plan is a best-found plan,** from fixed candidates and one repair capped at 30 minutes (it ran past the cap
-  on 49 of the 70 dates, which can only have made the plan cheaper), so 12 board runs came in under it; **the bound is
-  weak**, so `reward_L` reads low; and **B0 is near the best plan** on 4 eval dates, where it scores above 0.308.
+  on 49 of the 70 dates, which can only have made the plan cheaper), so 24 of the 168 board runs came in under it;
+  **the bound is weak**, so `reward_L` reads low; and **B0 is near the best plan** on 4 eval dates, where it scores
+  above 0.308.
 - The Space's gate halls, crowds, walks, service counter and hotel shuttle are drawn for display only, not public
   data; the gate area is a generic one, not JetBlue's real Terminal 5 or Terminal C.
 
@@ -340,7 +362,7 @@ the runs are.
 ### Results
 
 GPT-6.1 Sol played both envs, one run per day, through the agentenv-airops plugin, whose env servers, task steps,
-verifiers and agents, now at [v0.4.2](https://github.com/earakely-scale/agentenv-airops-plugin/tree/v0.4.2), live here;
+verifiers and agents, now at [v0.5.0](https://github.com/earakely-scale/agentenv-airops-plugin/tree/v0.5.0), live here;
 every call of every run replays through them exactly, to the same grade (on Linux the whole record matches too; see
 [DESIGN.md](DESIGN.md#determinism-and-replay)):
 
@@ -416,8 +438,9 @@ what is real data, what is modelled and how each layer was checked against the r
 You need [uv](https://docs.astral.sh/uv/) and Python 3.12, as CI and the images use, and Docker for the runs through
 AgentEnv: `rollout.py` stages a bundle, agent-env builds the env and agent images on first use, starts a registry on
 `127.0.0.1:5000` and runs the day on local Docker. The days the envs play are fetched, not committed (about 21 MB):
-one command rebuilds them byte for byte from the dataset's tables at v0.4.2, whose v1 and v2 tables are v0.3.3's, and
-checks every file against the committed manifests, which pin them. v3's commands are [above](#run-v3-here).
+one command rebuilds them byte for byte from the dataset's tables at v0.5.0, whose v1 and v2 tables are v0.3.3's and v3
+tables v0.4.2's, and checks every file against the committed manifests, which pin them. v3's commands are
+[above](#run-v3-here).
 
 ```bash
 cd envs/airops

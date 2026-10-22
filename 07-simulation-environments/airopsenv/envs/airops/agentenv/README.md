@@ -20,7 +20,7 @@ end the day, grade), the same files the published runs played. The day logic is 
 First fetch the days the envs play, from `envs/airops`:
 
 ```bash
-uv run -p 3.12 --with pyarrow python tools/fetch_packs.py      # 21 MB from the dataset at v0.4.2, checked by sha256
+uv run -p 3.12 --with pyarrow python tools/fetch_packs.py      # 21 MB from the dataset at v0.5.0, checked by sha256
 ```
 
 Then, from here:
@@ -47,10 +47,12 @@ process: no desk, or the agent's own scripts at every desk (`Script` in `agents/
 `--script` needs the dev extra). Flags: `--env day|occ|occ3`, `--model`, `--tasks N` (v1 by fewest watches, v2 and v3
 by date), `--task-id ID` (repeatable), `--mode joint|one|both`, `--episode-cap-usd` (2; v1 the episode's, v2 and v3
 each desk's; the v2 board ran at 5 a desk for two desks and 8 for one agent, and one board desk spent $2.68; the v3
-board at 3 a desk for three desks and 6 for one agent), `--hf-bill-to ORG`, `--keep`. Only v1's agent prices the
-Hugging Face router's models; the desks take Anthropic and OpenAI models through LiteLLM. A v1 day takes a few
-minutes; a two-desk v2 day with GPT-6.1 Sol took a median of 37 minutes and $2, one agent 20 minutes and $1; a
-three-desk v3 day 70 minutes and $2.79, one agent 44 minutes and $1.52.
+board ran GPT-6.1 Sol at 3 a desk for three desks and 6 for one agent, and its five other models, three desks only, at
+23.5 a desk for GPT-6 Astra, 9.5 for Claude Opus 5.5, 7.5 for Kimi K3 and 5 for Claude Sonnet 5.5 and GPT-5.6 Terra),
+`--hf-bill-to ORG`, `--keep`. Only v1's agent prices the Hugging Face router's models; the desks take the Anthropic and
+OpenAI models in their `PRICES` and Kimi K3 on Fireworks, through LiteLLM. A v1 day takes a few minutes; a two-desk v2
+day with GPT-6.1 Sol took a median of 37 minutes and $2, one agent 20 minutes and $1; a three-desk v3 day 70 minutes and
+$2.79, one agent 44 minutes and $1.52.
 
 The agents play only the models in their `PRICES`; when `AIROPS_MAX_COST_USD` is set they stop before a request that
 could take the episode (v2 and v3: the desk) past it. `airops-desk` with `AIROPS_DESK_POLICY=script` plays a fixed
@@ -94,28 +96,30 @@ Each env image holds its own pack only; `Dockerfile.dockerignore`, `Dockerfile.o
 
 ## Parity with the plugin
 
-`../core/airops_core` is the plugin's `src/agentenv_airops` at v0.4.2, file for file, without the parts the envs don't
-use (the stopped flow model, the CLI, the sweep and trial-run runners, the viewer and the Hub tooling): every module is
-byte for byte the plugin's except `occ/pack.py` and `programs/pax.py`, where the packs' and the survey extracts' default
-paths changed, and the two package docstrings (`__init__.py`, `occ/__init__.py`). The env servers here differ from the
-plugin's only in their imports, the v1 pack's path and, for v3's task steps, the verifier's path and the bundle README's
-deploy line (the v1 and v2 task modules also drop the plugin's click CLI); the verifiers not at all; and the agents by
-two checks, for every desk: a task whose time limit is within the 1,200 seconds the harness keeps for its last turn, or
-runs out before the first turn, now fails, where the plugin's agents ended the day at turn 0 and let it be graded. With
-no passengers v3's code leaves every v2 output byte for byte as it was (a test checks the digests). Replayed through
-this code, all 5 published v1 runs give every tool output byte for byte and the graded day their verifier read; all 55
+`../core/airops_core` is the plugin's `src/agentenv_airops` at v0.5.0 (as at v0.4.2), file for file, without the parts
+the envs don't use (the stopped flow model, the CLI, the sweep and trial-run runners, the viewer and the Hub tooling):
+every module is byte for byte the plugin's except `occ/pack.py` and `programs/pax.py`, where the packs' and the survey
+extracts' default paths changed, and the two package docstrings (`__init__.py`, `occ/__init__.py`). The env servers here
+differ from the plugin's only in their imports, the v1 pack's path and, for v3's task steps, the verifier's path and the
+bundle README's deploy line (the v1 and v2 task modules also drop the plugin's click CLI); the verifiers not at all; and
+the agents (`airops-desk` at v0.5.0, whose only change from v0.4.2 is the prices of GPT-5.6 Terra and Kimi K3) by two
+checks, for every desk: a task whose time limit is within the 1,200 seconds the harness keeps for its last turn, or runs
+out before the first turn, now fails, where the plugin's agents ended the day at turn 0 and let it be graded. With no
+passengers v3's code leaves every v2 output byte for byte as it was (a test checks the digests). Replayed through this
+code, all 5 published v1 runs give every tool output byte for byte and the graded day their verifier read; all 55
 recorded v2 attempts (the board's 48, its retry and the 6 runs of the trial sweep before it) and all 48 v3 board
-attempts give every call's result, the grade, the audit and the digest. The whole record the env served matches too
-(v3's passengers included), but for one detail on two dates when the replay runs on macOS: on v2's 2026-06-14 (one
-agent) and v3's 2025-12-14 (three desks) the end-of-day crew problem has two equal-cost ways to send two cabin units
-home, and HiGHS picks the other one there, so their shares come out 67.7 passenger-minutes apart from the record's, the
-day's cost the same. Replayed on Linux, as the boards ran, the v2 record matches in full in the `airops-occ` image, and
-so do all 48 v3 records in the `airops-occ3` image (`../tools/replay_runs.py` over the dataset's `runs/`):
+attempts of GPT-6.1 Sol give every call's result, the grade, the audit and the digest. The whole record the env served
+matches too (v3's passengers included), but for one detail on two dates when the replay runs on macOS: on v2's
+2026-06-14 (one agent) and v3's 2025-12-14 (three desks) the end-of-day crew problem has two equal-cost ways to send two
+cabin units home, and HiGHS picks the other one there, so their shares come out 67.7 passenger-minutes apart from the
+record's, the day's cost the same. Replayed on Linux, as the boards ran, the v2 record matches in full in the
+`airops-occ` image, and so do all 48 of Sol's v3 records in the `airops-occ3` image. So do all 120 of the five other
+models' records, replayed on Linux. `../tools/replay_runs.py` replays them over the dataset's `runs/`:
 
 ```bash
 cd ..   # envs/airops
 uv run -p 3.12 --with huggingface-hub hf download earakely-scale/AirOpsEnv-AgentEnv --repo-type dataset \
-    --revision v0.4.2 --include 'runs/*' 'raw/*' --local-dir cache/dataset
+    --revision v0.5.0 --include 'runs/*' 'raw/*' --local-dir cache/dataset
 uv run --project agentenv python tools/replay_runs.py cache/dataset/runs --raw cache/dataset/raw/airops.jsonl \
     --workers 8                                      # --only v3 for the v3 board alone, about 5 minutes a day
 ```
