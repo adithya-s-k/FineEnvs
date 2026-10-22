@@ -1,0 +1,27 @@
+spec_version: 1
+# the env id, kept from the package's earlier name so clients and the Task API (/design_canvas/...) keep working
+name: design_canvas
+type: space
+runtime: fastapi
+app: designgym.server.app:create_server
+port: 8000
+description: Recreate graphic designs through MCP tool calls, one page of HTML, or computer use (mouse and keyboard on a Figma-, Canva- or Photoshop-style editor, or on a real app - LibreOffice Impress, LibreOffice Draw, Inkscape - that the server runs locally or in Daytona sandboxes), scored against a render of the ground truth.
+version: "0.1.0"
+validation:
+  reward:
+    range: [0.0, 1.0]
+    # the expert replay (core/expert.py) scores 1.000 on every task; an empty submission scores 0
+    oracle_tolerance: 0.001
+    floor_margin: 0.5
+  resources:
+    # per server: Chromium for the GUI surface; real apps run outside it (realapps/)
+    cpu: 8.0
+    memory_mb: 32768
+    disk_mb: 20480
+    episode_timeout_s: 3600.0
+  capabilities:
+    verifier:
+      kind: reward_channel
+    task_api: true
+  types:
+    tags: [design, graphic-design, computer-use, gui, mcp, html]

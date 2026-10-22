@@ -1,0 +1,19 @@
+[project]
+name = "designgym-tinker"
+version = "0.1.0"
+description = "Tinker RL on OpenEnv environments (DesignGym first). openenv_rl/ is laid out as a future tinker-cookbook recipe."
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "openenv>=0.7.0",
+  "tinker>=0.31.0",
+  "tinker-cookbook>=0.5.7",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.12,<1"]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 120
