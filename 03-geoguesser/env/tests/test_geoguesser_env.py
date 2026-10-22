@@ -10,11 +10,16 @@ download.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import pathlib
+import re
+import shutil
+import subprocess
 
 import pytest
+from openenv.core.env_server.mcp_types import CallToolAction
 
 from geoguesser_env.models import (
     EpisodeMode,
@@ -154,6 +159,69 @@ def test_parser_converts_dms_correctly():
     parsed = parse_guess("48°51'29\"N 2°17'40\"E")
     assert parsed.lat == pytest.approx(48.8581, abs=1e-3)
     assert parsed.lon == pytest.approx(2.2944, abs=1e-3)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "48°99'29\"N 2°17'40\"E",
+        "48°51'99\"N 2°17'40\"E",
+        "48°51'29\"N 2°77'40\"E",
+        "48°51'29\"N 2°17'99\"E",
+    ],
+)
+def test_parser_rejects_dms_minutes_and_seconds_over_sixty(text):
+    parsed = parse_guess(text)
+    assert not parsed.ok
+    assert "DMS" in parsed.note
+
+
+def test_parser_routes_labelled_dms_through_dms_validation():
+    parsed = parse_guess("lat: 48°59'59\"N lon: 12°17'40\"E")
+    assert parsed.ok
+    assert parsed.source == "dms"
+    assert parsed.lat == pytest.approx(48.9997, abs=1e-3)
+    assert parsed.lon == pytest.approx(12.2944, abs=1e-3)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "lat: 48°60'00\"N lon: 2°17'40\"E",
+        "lat: 48°59'60\"N lon: 2°17'40\"E",
+        "lat: 48°59'59\"N lon: 2°60'00\"E",
+        "lat: 48°59'59\"N lon: 2°17'60\"E",
+    ],
+)
+def test_parser_rejects_labelled_dms_sixty_boundary(text):
+    parsed = parse_guess(text)
+    assert not parsed.ok
+    assert "DMS" in parsed.note
+
+
+def test_parser_keeps_full_decimal_tokens_before_unit_words():
+    parsed = parse_guess("lat: 55.67 degrees, lon: 12.56 degrees")
+    assert parsed.ok
+    assert parsed.source == "labelled"
+    assert (parsed.lat, parsed.lon) == (55.67, 12.56)
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("lat: 55.67 lon: 12.56", (55.67, 12.56)),
+        ("latitude=55.67 longitude=12.56", (55.67, 12.56)),
+        ("lat: -16.4897, lon: -68.1193", (-16.4897, -68.1193)),
+        ("latitude: 0 longitude: 0", (0.0, 0.0)),
+        ("lat: 89.999 lon: 179.999", (89.999, 179.999)),
+        ("lat: 12.9 degrees north, lon: 77.5 degrees east", (12.9, 77.5)),
+    ],
+)
+def test_parser_labelled_decimals_match_complete_number_tokens(text, expected):
+    parsed = parse_guess(text)
+    assert parsed.ok
+    assert parsed.source == "labelled"
+    assert (parsed.lat, parsed.lon) == expected
 
 
 def test_parser_prefers_labelled_over_stray_numbers():
@@ -490,6 +558,74 @@ def test_step_budget_blocks_further_gathering():
     assert "Out of actions" in observation.feedback
 
 
+def test_step_budget_exhaustion_ends_the_episode_without_a_guess():
+    env = make_env(max_steps=1)
+    env.reset(task_index=0)
+
+    exhausted = env.step(to_wire(LookAction(heading_deg=0)))
+    assert exhausted.done
+    assert exhausted.reward == 0.0
+    assert exhausted.score == 0.0
+    assert exhausted.parsed_ok is False
+    assert exhausted.true_lat == pytest.approx(env._task.truth[0])
+    assert exhausted.true_lon == pytest.approx(env._task.truth[1])
+    assert exhausted.metadata["no_guess"] is True
+    assert exhausted.metadata["country"] == env._task.country
+    assert exhausted.metadata["task_index"] == env.state.task_index
+    assert exhausted.metadata["task_id"] == env.state.task_id
+    assert env.state.submitted
+
+    true_lat, true_lon = env._task.truth
+    late_guess = env.step(to_wire(GuessAction(lat=true_lat, lon=true_lon)))
+    assert late_guess.done
+    assert late_guess.reward is None
+    assert "over" in late_guess.feedback
+
+
+def _assert_terminal_mcp_result(result, env):
+    assert result.done
+    assert result.reward == 0.0
+    assert result.metadata["no_guess"] is True
+    assert result.metadata["country"] == env._task.country
+    assert result.metadata["task_id"] == env.state.task_id
+    assert result.metadata["true_lat"] == pytest.approx(env._task.truth[0])
+    assert result.metadata["true_lon"] == pytest.approx(env._task.truth[1])
+    assert result.metadata["score"] == 0.0
+    assert result.metadata["parsed_ok"] is False
+    assert result.result.structured_content["result"]
+    assert "Out of actions" in result.result.structured_content["result"]
+
+
+def test_mcp_sync_tool_call_propagates_exhausted_terminal_observation():
+    env = make_env(max_steps=1)
+    env.reset(task_index=0)
+
+    result = env.step(
+        CallToolAction(
+            tool_name="look",
+            arguments={"heading_deg": 0, "pitch_deg": 0, "fov_deg": 90},
+        )
+    )
+
+    _assert_terminal_mcp_result(result, env)
+
+
+def test_mcp_async_tool_call_propagates_exhausted_terminal_observation():
+    env = make_env(max_steps=1)
+    env.reset(task_index=0)
+
+    result = asyncio.run(
+        env.step_async(
+            CallToolAction(
+                tool_name="look",
+                arguments={"heading_deg": 0, "pitch_deg": 0, "fov_deg": 90},
+            )
+        )
+    )
+
+    _assert_terminal_mcp_result(result, env)
+
+
 def test_stepping_before_reset_is_an_error():
     env = make_env()
     with pytest.raises(RuntimeError):
@@ -583,6 +719,60 @@ def test_play_page_scores_one_guess_out_of_five_thousand():
     assert f"MAX_POINTS = {MAX_POINTS_PER_ROUND}" in page
     assert "ROUNDS" not in page
     assert "load another episode" in page
+
+
+def test_play_page_terminal_guards_are_idempotent_without_browser():
+    from geoguesser_env.server.gradio_ui import play_page_html
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node.js is unavailable; full DOM behavior needs a browser")
+
+    page = play_page_html(1)
+    helpers = []
+    for name in ("ggCanStep", "ggBeginReveal"):
+        start = page.find(f"function {name}(state)")
+        assert start != -1, f"{name} helper missing from play page"
+        brace = page.find("{", start)
+        depth = 0
+        for end in range(brace, len(page)):
+            if page[end] == "{":
+                depth += 1
+            elif page[end] == "}":
+                depth -= 1
+                if depth == 0:
+                    helpers.append(page[start : end + 1])
+                    break
+        else:
+            raise AssertionError(f"{name} helper body is incomplete")
+    script = "\n".join(helpers) + """
+const state = {terminal: false, busy: false, ready: true};
+const firstReveal = ggBeginReveal(state);
+const secondReveal = ggBeginReveal(state);
+const canAfterReveal = ggCanStep(state);
+const busyState = {terminal: false, busy: true, ready: true};
+const notReadyState = {terminal: false, busy: false, ready: false};
+console.log(JSON.stringify({
+  firstReveal, secondReveal, canAfterReveal,
+  canWhenBusy: ggCanStep(busyState),
+  canWhenNotReady: ggCanStep(notReadyState)
+}));
+"""
+    completed = subprocess.run(
+        [node, "-e", script],
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    result = json.loads(completed.stdout)
+    assert result == {
+        "firstReveal": True,
+        "secondReveal": False,
+        "canAfterReveal": False,
+        "canWhenBusy": False,
+        "canWhenNotReady": False,
+    }
 
 
 def test_play_page_pad_hides_what_the_backend_cannot_do():
