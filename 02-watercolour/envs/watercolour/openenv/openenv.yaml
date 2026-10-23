@@ -2,7 +2,7 @@ spec_version: 1
 name: watercolour_env
 type: space
 runtime: fastapi
-app: server.app:app
+app: watercolour_env.server.app:app
 port: 8000
 
 description: >

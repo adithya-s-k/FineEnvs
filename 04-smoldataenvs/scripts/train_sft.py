@@ -14,9 +14,9 @@
 """SFT a small model on SmolDataEnvs-sft.
 
 The simplest thing that trains on SmolDataEnvs. `SmolDataEnvs-sft` ships
-conversational `messages` plus the `bash` tool schema in `tools`, which is exactly
-what TRL's SFTTrainer wants, so there is no preprocessing step here and none is
-hiding in a helper: load, train, push.
+conversational `messages` plus the `bash` tool schema in `tools`, which TRL
+renders directly. A per-row template setting keeps thinking disabled, matching
+RL and eval: load, train, push.
 
 Every trajectory in that dataset reached the correct answer under the deterministic
 grader, so this is imitation of known-correct work rather than of plausible-looking
@@ -66,6 +66,8 @@ USE_LORA = os.environ.get("USE_LORA", "1") != "0"
 ds = load_dataset(DATASET, split="train")
 if MAX_SAMPLES:
     ds = ds.select(range(min(MAX_SAMPLES, len(ds))))
+# SFT reads template kwargs from each row; SFTConfig does not accept them.
+ds = ds.map(lambda row: {"chat_template_kwargs": {"enable_thinking": False}})
 
 # A held-out slice so the loss curve has something to be checked against. It is
 # cut from the same pool on purpose: the real held-out measurement is pass@1 on
@@ -79,9 +81,6 @@ if TRACKIO_SPACE:
 # ── train ────────────────────────────────────────────────────────────────────
 args = SFTConfig(
     output_dir=RUN_NAME,
-    # non-thinking everywhere: SFT, RL and eval have to render the same template
-    # or a model trained under one is measured under another.
-    chat_template_kwargs={"enable_thinking": False},
     num_train_epochs=EPOCHS,
     max_steps=MAX_STEPS or -1,
     max_length=MAX_LENGTH,
