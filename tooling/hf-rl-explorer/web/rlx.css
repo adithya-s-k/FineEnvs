@@ -395,6 +395,7 @@ body[data-view="home"] .top-search { visibility: hidden; }
 html:not(.js) #view > .boot { display: none; }
 .ssr ul { padding-left: 18px; display: grid; gap: 6px; }
 .ssr .crumbs { margin-bottom: 12px; }
+.seo-prompt { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 85ch; line-height: 1.65; }
 
 /* ── RL framework rows (renderers/rl.js): NeMo Gym, Verifiers, verl / SkyRL ───────────────────────────────────────
    A conversation as the policy gets it and the tools it may call. Nothing scrolls inside the page: long parts fold. */
