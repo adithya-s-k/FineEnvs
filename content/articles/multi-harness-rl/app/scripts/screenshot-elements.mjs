@@ -40,6 +40,12 @@ async function cloneEmbed(page, element, idx) {
     // Clone the inner card (or the whole element if no card)
     const inner = el.querySelector('.html-embed__card') || el;
     const clone = inner.cloneNode(true);
+    // DOM cloning preserves canvas elements and dimensions, but not their pixels.
+    const sourceCanvases = inner.querySelectorAll('canvas');
+    const clonedCanvases = clone.querySelectorAll('canvas');
+    sourceCanvases.forEach((canvas, i) => {
+      clonedCanvases[i].getContext('2d')?.drawImage(canvas, 0, 0);
+    });
     clone.id = cloneId;
     clone.style.cssText = `background:white;border:none;border-radius:0;box-shadow:none;width:${el.getBoundingClientRect().width}px;`;
 
