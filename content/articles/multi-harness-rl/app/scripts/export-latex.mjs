@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import { resolve, dirname, basename, extname } from 'node:path';
 import process from 'node:process';
@@ -166,7 +166,47 @@ function cleanMdxToMarkdown(content) {
   return content.trim();
 }
 
-async function processChapterImports(content, contentDir) {
+async function convertImportedImages(content, sourceFile, imageContext) {
+  const imports = new Map();
+  for (const match of content.matchAll(/^import\s+([\w$]+)\s+from\s+["']([^"']+)["'];?\s*$/gm)) {
+    imports.set(match[1], match[2]);
+  }
+  const readString = (attributes, name) => {
+    const match = attributes.match(new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`));
+    return match ? match[1] ?? match[2] : '';
+  };
+  for (const [component, path] of imports) {
+    if (!/(?:^|\/)Image\.astro$/.test(path)) continue;
+    const escapedName = component.replace(/\$/g, '\\$');
+    // Quoted attributes can contain HTML, including the caption's <a> tag.
+    const tags = new RegExp(`<${escapedName}(?![\\w$])((?:"[^"]*"|'[^']*'|[^'">])*)\\/>`, 'g');
+    for (const match of content.matchAll(tags)) {
+      const attributes = match[1];
+      const binding = attributes.match(/(?:^|\s)src\s*=\s*\{\s*([\w$]+)\s*\}/)?.[1];
+      const imageImport = imports.get(binding);
+      if (!imageImport || !imageImport.startsWith('.') || !/\.(?:png|jpe?g)$/i.test(imageImport)) continue;
+      const imageFile = resolve(dirname(sourceFile), imageImport);
+      let resource = imageContext.images.get(imageFile);
+      if (!resource) {
+        resource = `${imageContext.assetsDir}/image-${imageContext.images.size + 1}${extname(imageFile)}`;
+        await fs.mkdir(resolve(imageContext.outputDir, imageContext.assetsDir), { recursive: true });
+        await fs.copyFile(imageFile, resolve(imageContext.outputDir, resource));
+        imageContext.images.set(imageFile, resource);
+      }
+      const alt = readString(attributes, 'alt');
+      const caption = readString(attributes, 'caption');
+      // The component renders HTML captions. Let Pandoc preserve their links
+      // rather than placing raw HTML in Markdown image text (where it is lost).
+      const label = caption ? execFileSync('pandoc', ['--from=html', '--to=markdown', '--wrap=none'], {
+        input: caption, encoding: 'utf8',
+      }).trim() : alt.replace(/([\\\[\]])/g, '\\$1');
+      content = content.replace(match[0], `\n![${label}](<${resource}>){alt=${JSON.stringify(alt)}}\n`);
+    }
+  }
+  return content;
+}
+
+async function processChapterImports(content, contentDir, imageContext) {
   let processedContent = content;
 
   // First, extract all import statements and their corresponding component calls
@@ -191,7 +231,8 @@ async function processChapterImports(content, contentDir) {
       const chapterFile = resolve(contentDir, 'chapters', chapterPath);
       const chapterContent = await readMdxFile(chapterFile);
       const { content: chapterMarkdown } = extractFrontmatter(chapterContent);
-      const cleanChapter = cleanMdxToMarkdown(chapterMarkdown);
+      const withImages = await convertImportedImages(chapterMarkdown, chapterFile, imageContext);
+      const cleanChapter = cleanMdxToMarkdown(withImages);
 
       processedContent = processedContent.replace(componentCallPattern, cleanChapter);
       console.log(`✅ Processed chapter: ${chapterPath}`);
@@ -276,15 +317,23 @@ async function main() {
   const articleContent = await readMdxFile(articleFile);
   const { frontmatter, content } = extractFrontmatter(articleContent);
 
-  console.log('> Processing chapters...');
-  const processedContent = await processChapterImports(content, contentDir);
-
-  console.log('> Converting MDX to Markdown...');
-  const markdownContent = cleanMdxToMarkdown(processedContent);
-
-  // Generate output filename
+  // Keep exported figures beside the .tex file, so the output can be moved
+  // together and chapter-relative image imports resolve before flattening.
   const title = frontmatter.title ? frontmatter.title.replace(/\n/g, ' ') : 'article';
   const outFileBase = args.filename ? String(args.filename).replace(/\.(tex|pdf)$/i, '') : slugify(title);
+  const outputLatex = resolve(cwd, 'dist', `${outFileBase}.tex`);
+  const imageContext = {
+    outputDir: dirname(outputLatex),
+    assetsDir: `${basename(outputLatex, '.tex')}-assets`,
+    images: new Map(),
+  };
+
+  console.log('> Processing chapters...');
+  const processedContent = await processChapterImports(content, contentDir, imageContext);
+
+  console.log('> Converting MDX to Markdown...');
+  const withImages = await convertImportedImages(processedContent, articleFile, imageContext);
+  const markdownContent = cleanMdxToMarkdown(withImages);
 
   // Create temporary markdown file (ensure it's pure markdown without YAML frontmatter)
   const tempMdFile = resolve(cwd, 'temp-article.md');
@@ -300,8 +349,6 @@ async function main() {
 
 
   console.log('> Converting to LaTeX with Pandoc...');
-  const outputLatex = resolve(cwd, 'dist', `${outFileBase}.tex`);
-
   // Ensure dist directory exists
   await fs.mkdir(resolve(cwd, 'dist'), { recursive: true });
 
@@ -337,7 +384,7 @@ async function main() {
     if (args.pdf) {
       console.log('> Compiling LaTeX to PDF...');
       const outputPdf = resolve(cwd, 'dist', `${outFileBase}.pdf`);
-      await run('pdflatex', ['-output-directory', resolve(cwd, 'dist'), outputLatex]);
+      await run('pdflatex', ['-output-directory', resolve(cwd, 'dist'), outputLatex], { cwd: dirname(outputLatex) });
       console.log(`✅ PDF generated: ${outputPdf}`);
     }
 
