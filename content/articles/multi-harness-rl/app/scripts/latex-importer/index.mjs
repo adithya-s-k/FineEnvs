@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { join, dirname } from 'path';
+import { join, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import { copyFileSync } from 'fs';
 import { convertLatexToMarkdown } from './latex-converter.mjs';
@@ -107,11 +107,11 @@ function main() {
             convertLatexToMarkdown(config.input, config.output);
 
             // Convert to MDX if requested
-            const markdownFile = join(config.output, 'main.md');
+            const markdownFile = join(config.output, `${basename(config.input, '.tex')}.md`);
             const mdxFile = join(config.output, 'main.mdx');
 
             console.log('📝 Converting Markdown to MDX...');
-            convertToMdx(markdownFile, mdxFile);
+            convertToMdx(markdownFile, mdxFile, config.input);
 
             // Copy MDX to Astro content directory
             console.log('📋 Copying MDX to Astro content directory...');
