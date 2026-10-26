@@ -62,7 +62,11 @@
     requestAnimationFrame(() => wrapper?.classList.add("animated"));
 
     if (!saved && media) {
-      const syncWithSystem = (e) => apply(e.matches ? "dark" : "light");
+      const syncWithSystem = (e) => {
+        if (!localStorage.getItem("theme")) {
+          apply(e.matches ? "dark" : "light");
+        }
+      };
       if (media.addEventListener)
         media.addEventListener("change", syncWithSystem);
       else if (media.addListener) media.addListener(syncWithSystem);
