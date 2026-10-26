@@ -34,8 +34,16 @@ if [ "${ENABLE_NOTION_IMPORT:-false}" = "true" ] && [ -n "$NOTION_TOKEN" ] && [ 
 else
     if [ "${ENABLE_NOTION_IMPORT:-false}" = "true" ]; then
         echo "⚠️  Notion import enabled but NOTION_TOKEN or NOTION_PAGE_ID not found"
-        echo "   NOTION_TOKEN: ${NOTION_TOKEN:+SET}${NOTION_TOKEN:-NOT SET}"
-        echo "   NOTION_PAGE_ID: ${NOTION_PAGE_ID:+SET}${NOTION_PAGE_ID:-NOT SET}"
+        if [ -n "$NOTION_TOKEN" ]; then
+            echo "   NOTION_TOKEN: SET"
+        else
+            echo "   NOTION_TOKEN: NOT SET"
+        fi
+        if [ -n "$NOTION_PAGE_ID" ]; then
+            echo "   NOTION_PAGE_ID: SET"
+        else
+            echo "   NOTION_PAGE_ID: NOT SET"
+        fi
         echo "   → Using pre-built content"
     else
         echo "⏭️  Notion import disabled - serving pre-built content"
