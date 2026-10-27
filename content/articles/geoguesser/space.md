@@ -27,7 +27,7 @@ tags:
 # How to turn a game into an RL environment
 
 The technical intuition, worked end to end on one example: curating a dataset that makes the task
-learnable, designing the environment, shipping it with [OpenEnv](https://github.com/huggingface/OpenEnv)
+learnable, designing the environment, shipping it with [OpenEnv](https://github.com/openenv/OpenEnv)
 so other people can run it, and training a Qwen3.5-4B against it with
 [TRL](https://github.com/huggingface/trl) until it outscored `gpt-5.4-mini` and `claude-haiku-4.5`
 at GeoGuessr.

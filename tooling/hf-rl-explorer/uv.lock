@@ -2126,7 +2126,7 @@ wheels = [
 [[package]]
 name = "openenv"
 version = "0.7.1.dev0"
-source = { git = "https://github.com/huggingface/OpenEnv?rev=49aa302ba5c67041d11da128139ba3ae15529543#49aa302ba5c67041d11da128139ba3ae15529543" }
+source = { git = "https://github.com/openenv/OpenEnv?rev=49aa302ba5c67041d11da128139ba3ae15529543#49aa302ba5c67041d11da128139ba3ae15529543" }
 dependencies = [
     { name = "fastapi" },
     { name = "fastmcp" },
@@ -3123,7 +3123,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.27" },
     { name = "huggingface-hub", specifier = ">=1.29" },
     { name = "langdetect", specifier = ">=1.0.9" },
-    { name = "openenv", git = "https://github.com/huggingface/OpenEnv?rev=49aa302ba5c67041d11da128139ba3ae15529543" },
+    { name = "openenv", git = "https://github.com/openenv/OpenEnv?rev=49aa302ba5c67041d11da128139ba3ae15529543" },
     { name = "openpyxl", specifier = ">=3.1" },
     { name = "packaging", specifier = ">=24.2" },
     { name = "pandas", specifier = ">=2.2" },

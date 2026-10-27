@@ -11,7 +11,7 @@
 <a href="https://huggingface.co/spaces/FineEnvs/nayana-ocr-env"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Space-Try%20it%20now-FFD21E?style=for-the-badge&labelColor=1a1a1a" alt="Try the environment" height="32"></a>
 <a href="https://huggingface.co/FineEnvs/gemma-4-E4B-it-kannada-ocr-grpo"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Model-Kannada%20OCR-4F46E5?style=for-the-badge&labelColor=1a1a1a" alt="The trained model" height="32"></a>
 <a href="https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Collection-Multilingual%20Multimodal%20Envs-10B981?style=for-the-badge&labelColor=1a1a1a" alt="The collection" height="32"></a>
-<a href="https://github.com/huggingface/OpenEnv"><img src="https://img.shields.io/badge/framework-OpenEnv-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="OpenEnv" height="32"></a>
+<a href="https://github.com/openenv/OpenEnv"><img src="https://img.shields.io/badge/framework-OpenEnv-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="OpenEnv" height="32"></a>
 
 </div>
 

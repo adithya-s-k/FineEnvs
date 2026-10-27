@@ -2,7 +2,7 @@
 
 Train **Qwen3-VL-2B** to transcribe formula images into LaTeX with GRPO and an OpenEnv reward server.
 This project houses the environment, notebook, training and HF Jobs scripts, and smoke-test results.
-It continues the environment originally proposed in [OpenEnv #1003](https://github.com/huggingface/OpenEnv/pull/1003).
+It continues the environment originally proposed in [OpenEnv #1003](https://github.com/openenv/OpenEnv/pull/1003).
 
 | Part | Source |
 |---|---|

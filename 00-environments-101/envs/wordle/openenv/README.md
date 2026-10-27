@@ -1,6 +1,6 @@
 # Wordle — OpenEnv
 
-A multi-turn Wordle environment, packaged using **[OpenEnv](https://github.com/huggingface/OpenEnv)** (Hugging Face's HTTP-server / MCP-protocol framework). Pure Python game logic, no E2B sandbox needed — Wordle is the cleanest way to see how OpenEnv handles a multi-turn env.
+A multi-turn Wordle environment, packaged using **[OpenEnv](https://github.com/openenv/OpenEnv)** (Hugging Face's HTTP-server / MCP-protocol framework). Pure Python game logic, no E2B sandbox needed — Wordle is the cleanest way to see how OpenEnv handles a multi-turn env.
 
 **Deployed:** [`FineEnvs/wordle-openenv`](https://huggingface.co/spaces/FineEnvs/wordle-openenv)
 
@@ -98,5 +98,5 @@ Discovered 3 tools: ['guess', 'get_history', 'reset_game']
 
 ## References
 
-- [OpenEnv tutorial](https://github.com/huggingface/OpenEnv/blob/main/tutorial/01-environments.md)
+- [OpenEnv tutorial](https://github.com/openenv/OpenEnv/blob/main/tutorial/01-environments.md)
 - [HF Inference Providers — Chat Completion API](https://huggingface.co/docs/inference-providers/en/tasks/chat-completion)

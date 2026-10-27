@@ -22,7 +22,7 @@ datasets:
 Read a page, transcribe a region, mark its layout, or answer a question about it, and see how the
 answer scores. This Space serves the whole
 [Nayana corpus](https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025), 1,006,170
-pages in 22 languages, as an [OpenEnv](https://github.com/huggingface/OpenEnv) environment you can
+pages in 22 languages, as an [OpenEnv](https://github.com/openenv/OpenEnv) environment you can
 use in the browser or train a model against. Sarvam Indic OCR Bench is served beside it for evaluation.
 
 Open [the playground](https://fineenvs-nayana-ocr-env.hf.space/web/), pick a task and a language,

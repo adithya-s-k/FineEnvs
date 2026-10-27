@@ -11,7 +11,7 @@
   "theme": "forge",
   "defaultMode": "dark",
   "links": {
-    "paper": "https://github.com/huggingface/OpenEnv/pull/1036",
+    "paper": "https://github.com/openenv/OpenEnv/pull/1036",
     "code": "https://github.com/adithya-s-k/RL_Envs_101",
     "site": "https://huggingface.co/spaces/AdithyaSK/rl-environments-guide"
   },

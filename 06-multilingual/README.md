@@ -9,7 +9,7 @@
 <a href="https://huggingface.co/spaces/FineEnvs/nayana-ocr-env"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Space-OCR%20env-FFD21E?style=for-the-badge&labelColor=1a1a1a" alt="The OCR environment" height="32"></a>
 <a href="https://huggingface.co/spaces/FineEnvs/fleurs-asr-env"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Space-ASR%20env-FFD21E?style=for-the-badge&labelColor=1a1a1a" alt="The ASR environment" height="32"></a>
 <a href="https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Collection-Multilingual%20Multimodal%20Envs-10B981?style=for-the-badge&labelColor=1a1a1a" alt="The collection" height="32"></a>
-<a href="https://github.com/huggingface/OpenEnv"><img src="https://img.shields.io/badge/framework-OpenEnv-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="OpenEnv" height="32"></a>
+<a href="https://github.com/openenv/OpenEnv"><img src="https://img.shields.io/badge/framework-OpenEnv-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="OpenEnv" height="32"></a>
 
 </div>
 

@@ -136,6 +136,6 @@ the column vars if they differ).
 
 ## Origin and license
 
-Adapted from [OpenEnv #1003](https://github.com/huggingface/OpenEnv/pull/1003), commit
+Adapted from [OpenEnv #1003](https://github.com/openenv/OpenEnv/pull/1003), commit
 `9fc674b9922f22d2e62274b09476236bcf7984eb`. Imported source retains its
 [BSD-3-Clause license](./LICENSE) and [attribution](./NOTICE).

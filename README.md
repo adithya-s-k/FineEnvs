@@ -359,7 +359,7 @@ npx skills add adithya-s-k/FineEnvs
 | Skill | What it builds |
 |---|---|
 | **`rl-env-from-description`** | Orchestrator — interviews you, then ports across all four frameworks |
-| `generate-openenv-env` | [OpenEnv](https://github.com/huggingface/OpenEnv) (Hugging Face / Meta) — HTTP + MCP |
+| `generate-openenv-env` | [OpenEnv](https://github.com/openenv/OpenEnv) (Hugging Face / Meta) — HTTP + MCP |
 | `generate-ors-env` | [OpenReward](https://openreward.ai) (ORS) — per-tool-call rewards |
 | `generate-verifiers-env` | [Verifiers](https://github.com/PrimeIntellect-ai/verifiers) (Prime Intellect) — in-process + rubrics |
 | `generate-nemo-gym-env` | [NeMo Gym](https://github.com/NVIDIA-NeMo/Gym) (NVIDIA) — HTTP + post-episode `/verify` |

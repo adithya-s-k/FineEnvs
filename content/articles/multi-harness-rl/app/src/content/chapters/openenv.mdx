@@ -13,21 +13,21 @@ them, then covers each part in turn.
 OpenEnv is a standard interface for RL environments [@openenv2026]. It offers [Gymnasium](https://gymnasium.farama.org)-style `reset`, `step`, and
 `state` over a client and server transport, with typed actions and observations, packaged as Docker
 and publishable to the Hub. It began as a Meta PyTorch and Hugging Face collaboration and now lives
-at [`huggingface/OpenEnv`](https://github.com/huggingface/OpenEnv), steered by a committee of twelve organisations, under BSD-3-Clause.
+at [`openenv/OpenEnv`](https://github.com/openenv/OpenEnv), steered by a committee of twelve organisations, under BSD-3-Clause.
 
 In this article, OpenEnv is the shared interface that the harness, the environment, and the trainer
 all connect to. It does not train anything or define rewards. The **capture proxy** records what RL
 training needs from any agent that calls a model API. The **Harbor integration** [@openenv2026harbor]
 serves Harbor's containerised tasks as OpenEnv environments, with the harness and sandbox chosen per rollout.
 
-Training through the typed `TrainingTrace` API needs [OpenEnv 0.7.0](https://github.com/huggingface/OpenEnv/releases/tag/v0.7.0)
+Training through the typed `TrainingTrace` API needs [OpenEnv 0.7.0](https://github.com/openenv/OpenEnv/releases/tag/v0.7.0)
 or later and **Python 3.12** for the Harbor extra. On Python 3.10 or 3.11, `openenv[harbor]` does not
 install the Harbor dependencies. The `harbor_env` package also comes from the repository's `envs/`
 directory, not the OpenEnv wheel. For a checkout from main:
 
 ```bash
 # Run in a Python 3.12 virtual environment.
-git clone --depth 1 --branch main https://github.com/huggingface/OpenEnv.git
+git clone --depth 1 --branch main https://github.com/openenv/OpenEnv.git
 python -m pip install -e './OpenEnv[harbor]'
 export PYTHONPATH="$PWD/OpenEnv/envs${PYTHONPATH:+:$PYTHONPATH}"
 ```

@@ -44,7 +44,7 @@ def test_failures_cannot_become_api_checked(change):
     ("openenv_core[core]>=0.2.0,<0.3", "<0.3,>=0.2.0", "Dependency constraint"),
     ("openenv-core==0.2.*", "==0.2.*", "Dependency constraint"),
     ("openenv-core", "Unpinned", "Dependency constraint"),
-    ("openenv-core @ git+https://github.com/meta-pytorch/OpenEnv.git@abc123", "git:abc123", "Source reference"),
+    ("openenv-core @ git+https://github.com/openenv/OpenEnv.git@abc123", "git:abc123", "Source reference"),
     ('openenv-core==0.2.3; python_version < "3.12"', "Conditional", "Dependency constraint"),
 ])
 def test_declared_versions_keep_constraints_and_source_refs(dependency, value, source):
