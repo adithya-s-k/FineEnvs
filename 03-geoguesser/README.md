@@ -10,7 +10,7 @@
 
 <a href="https://huggingface.co/spaces/HuggingEnvs/geoguesser-env"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Space-Play%20it%20now-FFD21E?style=for-the-badge&labelColor=1a1a1a" alt="Play the environment" height="32"></a>
 <a href="https://huggingface.co/datasets/HuggingEnvs/geoguesser-tasks"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Task%20splits-4F46E5?style=for-the-badge&labelColor=1a1a1a" alt="Task splits" height="32"></a>
-<a href="https://github.com/huggingface/OpenEnv"><img src="https://img.shields.io/badge/framework-OpenEnv-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="OpenEnv" height="32"></a>
+<a href="https://github.com/openenv/OpenEnv"><img src="https://img.shields.io/badge/framework-OpenEnv-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="OpenEnv" height="32"></a>
 <a href="https://huggingface.co/spaces/HuggingEnvs/geoguesser-article"><img src="https://img.shields.io/badge/%F0%9F%93%84%20Article-Read%20the%20write--up-10B981?style=for-the-badge&labelColor=1a1a1a" alt="Read the article" height="32"></a>
 
 </div>
@@ -49,7 +49,7 @@ The 4B did not get better at looking at pictures. It got better at not looking. 
 
 You are standing on a road somewhere in the world. You can turn your head, zoom in to read a shop sign, walk a few metres, and drop a pin on a world map to check what country a coordinate is in. Then you commit to a latitude and longitude and are scored on how many kilometres you were off.
 
-That is GeoGuessr, built as an [OpenEnv](https://github.com/huggingface/OpenEnv) environment so a model can play it and you can train one to play it better.
+That is GeoGuessr, built as an [OpenEnv](https://github.com/openenv/OpenEnv) environment so a model can play it and you can train one to play it better.
 
 It makes a good RL target for four reasons. The reward is continuous, so a group of eight rollouts has real spread instead of the all-zero groups a pass/fail reward gives you. The truth is a coordinate, so there is no rubric and no judge to game. The task is unsolved: the best model still misses by a median of 324 km. And it runs on CPU from a local cache, so you can debug a rollout for pennies before spending a GPU-hour.
 

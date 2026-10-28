@@ -181,7 +181,7 @@ def find_openenv_src() -> pathlib.Path:
     raise SystemExit(
         "cannot find the OpenEnv source tree, which the Space image vendors.\n"
         "Clone it beside this repository, or point OPENENV_SRC at its src/:\n"
-        "  git clone https://github.com/huggingface/OpenEnv\n"
+        "  git clone https://github.com/openenv/OpenEnv\n"
         "  export OPENENV_SRC=$PWD/OpenEnv/src\n"
         "Tried: " + ", ".join(str(c) for c in candidates)
     )
@@ -417,7 +417,7 @@ and per contributor: one contributor alone holds 8% of the pool.
 ## Reproducing
 
 ```bash
-git clone https://github.com/huggingface/OpenEnv
+git clone https://github.com/openenv/OpenEnv
 cd HuggingEnvs/03-geoguesser/env
 export MAPILLARY_API_KEY_TRAIN="MLY|..."
 

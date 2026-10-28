@@ -294,7 +294,7 @@ def test_dockerfile_and_pyproject_facts():
     assert d["expose"] == 7860 and d["port"] == 8000
     assert sf.parse_dockerfile("FROM python:3.12\nENV ENABLE_WEB_INTERFACE false\n", "Dockerfile")["web_interface"] is False
     git = sf.parse_pyproject('[project]\nname = "openenv-echo-env"\ndependencies = ["fastapi", '
-                             '"openenv-core[core] @ git+https://github.com/meta-pytorch/OpenEnv.git@v0.2.3"]\n'
+                             '"openenv-core[core] @ git+https://github.com/openenv/OpenEnv.git@v0.2.3"]\n'
                              '[project.scripts]\nserver = "echo_env.server.app:main"\n', "pyproject.toml")
     assert git["package"] == "openenv-echo-env" and git["openenv_version"] == "0.2.3" and git["server_script"] == "echo_env.server.app:main"
     assert sf.parse_pyproject('[project]\ndependencies = ["openenv==0.3.1"]\n', "p")["openenv_version"] == "0.3.1"

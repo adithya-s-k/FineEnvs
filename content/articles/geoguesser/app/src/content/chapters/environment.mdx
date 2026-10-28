@@ -38,7 +38,7 @@ Movement is bounded by what was actually captured, so there are dead ends, and f
 
 ### Why OpenEnv
 
-We built this on [OpenEnv](https://github.com/huggingface/OpenEnv). "We used a framework" is usually a throwaway line, so here is what it actually bought.
+We built this on [OpenEnv](https://github.com/openenv/OpenEnv). "We used a framework" is usually a throwaway line, so here is what it actually bought.
 
 What we wrote is a Python class with three methods and a set of tools. `reset()` returns the first observation for a `(split, index)`, `step()` applies one typed action, `state` reports where the episode is. The tools are registered on a `FastMCP` server inside the class, the action and observation are Pydantic models, and there is a twelve-line `openenv.yaml` naming the entrypoint and the Space variables. That is the contract.
 

@@ -14,8 +14,8 @@ these short-lived environments, so a core change is not required to serve Nayana
 
 Verified against OpenEnv main at `a3ee76444a8d1ec93a255db079bc848fc0540ad9`:
 [Task API guide](https://huggingface.co/docs/openenv/guides/task-api),
-[TaskProvider interface](https://github.com/huggingface/OpenEnv/blob/a3ee76444a8d1ec93a255db079bc848fc0540ad9/src/openenv/core/env_server/interfaces.py),
-[HTTP discovery dispatch](https://github.com/huggingface/OpenEnv/blob/a3ee76444a8d1ec93a255db079bc848fc0540ad9/src/openenv/core/env_server/http_server.py).
+[TaskProvider interface](https://github.com/openenv/OpenEnv/blob/a3ee76444a8d1ec93a255db079bc848fc0540ad9/src/openenv/core/env_server/interfaces.py),
+[HTTP discovery dispatch](https://github.com/openenv/OpenEnv/blob/a3ee76444a8d1ec93a255db079bc848fc0540ad9/src/openenv/core/env_server/http_server.py).
 These are proposals, not claims that upstream lacks all related work.
 
 ## 1. Dataset catalog and resource lifecycle

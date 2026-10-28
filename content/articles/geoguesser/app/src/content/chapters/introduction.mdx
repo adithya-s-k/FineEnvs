@@ -9,7 +9,7 @@ That gap matters, because a finished environment hides almost everything interes
 
 So this is the path for one idea, in the order we actually walked it, with the dead ends left in.
 
-The idea was to **make a vision-language model play GeoGuessr.** Everything else follows from that. Curating a dataset that makes the task learnable, building the environment, deploying it so other people can use it, running evals we could trust, and finally training a model that performs well on it. Built with [OpenEnv](https://github.com/huggingface/OpenEnv), trained with [TRL](https://github.com/huggingface/trl).
+The idea was to **make a vision-language model play GeoGuessr.** Everything else follows from that. Curating a dataset that makes the task learnable, building the environment, deploying it so other people can use it, running evals we could trust, and finally training a model that performs well on it. Built with [OpenEnv](https://github.com/openenv/OpenEnv), trained with [TRL](https://github.com/huggingface/trl).
 
 It worked well enough to write down. A Qwen3.5-4B with a LoRA adapter finished ahead of `gpt-5.4-mini` and `claude-haiku-4.5` on the held-out split, ahead of every Qwen3.5 up to 397B, and behind only `claude-sonnet-5`. Ten hours on four A100s, around $100, and it runs on a single GPU if you want to try it more cheaply. None of that came from a clever algorithm. It came from the decisions in the sections below, which is why those are the subject rather than the number.
 

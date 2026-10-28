@@ -2,7 +2,7 @@
 
 A model is dropped at a random street corner on Earth. It can turn its head, zoom in to read a sign, walk a few metres, and drop pins on a world map to check what is actually at a coordinate. Then it commits to a latitude and longitude and is scored on how far off it was.
 
-Built on [OpenEnv](https://github.com/huggingface/OpenEnv). It speaks HTTP for trainers and MCP for agents.
+Built on [OpenEnv](https://github.com/openenv/OpenEnv). It speaks HTTP for trainers and MCP for agents.
 
 ## Two ways to run it
 

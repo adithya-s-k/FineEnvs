@@ -20,7 +20,7 @@ datasets:
 
 Listen to a clip, write down what was said, and see how it scores. This Space serves all of
 [FLEURS](https://huggingface.co/datasets/google/fleurs), 102 languages and 1,151,940 tasks, as an
-[OpenEnv](https://github.com/huggingface/OpenEnv) environment you can play in the browser or train
+[OpenEnv](https://github.com/openenv/OpenEnv) environment you can play in the browser or train
 a model against.
 
 Open [the playground](https://fineenvs-fleurs-asr-env.hf.space/web/), pick a language, and press

@@ -17,7 +17,7 @@ short_description: Cloud Linux desktop with computer-use tools, backed by E2B
 
 # Desktop Environment (OpenEnv)
 
-`desktop_env` exposes a full Linux desktop via the [OpenEnv](https://github.com/huggingface/OpenEnv) MCP-tool protocol. Each episode spins up a fresh [E2B Desktop](https://e2b.dev) sandbox; the agent observes the screen as PNG image blocks and drives the mouse/keyboard with tool calls.
+`desktop_env` exposes a full Linux desktop via the [OpenEnv](https://github.com/openenv/OpenEnv) MCP-tool protocol. Each episode spins up a fresh [E2B Desktop](https://e2b.dev) sandbox; the agent observes the screen as PNG image blocks and drives the mouse/keyboard with tool calls.
 
 The action surface mirrors **Anthropic's `computer_20251124`** schema (the broadest superset across Claude / OpenAI Operator / Qwen3-VL ComputerUse), so a model's native computer-use output drives the env with minimal token-level adaptation.
 
