@@ -414,12 +414,33 @@ _TEMPLATE = r"""<!doctype html>
   let viewer = null, map = null, guessMarker = null, truthMarker = null;
   let lineAdded = false, guess = null, taskIndex = 0, compass = 0;
   let taskMeta = null, frameIndex = 0;
-  let total = 0, played = 0, busy = false, cost = 0;
+  let total = 0, played = 0, busy = false, cost = 0, terminal = false;
 
   const DIRS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   const fmt = (la, lo) => la.toFixed(4) + ", " + lo.toFixed(4);
   const yaw = () => (viewer ? ((viewer.getYaw() % 360) + 360) % 360 : 0);
   const hfov = () => (viewer ? viewer.getHfov() : 90);
+
+  function ggCanStep(state) {
+    return !state.terminal && !state.busy && state.ready;
+  }
+
+  function ggBeginReveal(state) {
+    if (state.terminal) return false;
+    state.terminal = true;
+    return true;
+  }
+
+  function canStepNow() {
+    return ggCanStep({ terminal: terminal, busy: busy, ready: ready });
+  }
+
+  function beginTerminalReveal() {
+    const state = { terminal: terminal };
+    const shouldReveal = ggBeginReveal(state);
+    terminal = state.terminal;
+    return shouldReveal;
+  }
 
   // ---- the environment, over the same WebSocket session API a client uses --
   // Plain REST /step builds a fresh environment per request, so a stateful
@@ -600,7 +621,7 @@ _TEMPLATE = r"""<!doctype html>
   }
 
   function step(op, data, label, waitingFor) {
-    if (busy || !ready) return;
+    if (!canStepNow()) return;
     setBusy(true, waitingFor);
     send("step", Object.assign({ op: op }, data), function (observation) {
       setBusy(false);
@@ -620,11 +641,12 @@ _TEMPLATE = r"""<!doctype html>
       // Only now is the guess actually submittable: until the pin's step has
       // come back the environment has not registered it, and a click would be
       // dropped by the `busy` guard above without any visible effect.
-      if (op === "pin" && guess) {
+      if (observation.done) {
+        reveal(observation);
+      } else if (op === "pin" && guess) {
         $("submit").className = "ready";
         $("submit").textContent = "submit guess";
       }
-      if (op === "guess") reveal(observation);
     });
   }
 
@@ -742,11 +764,13 @@ _TEMPLATE = r"""<!doctype html>
     return {
       busy: busy,
       ready: ready,
+      terminal: terminal,
       pendingHandler: !!pending,
       socket: socket ? socket.readyState : null,
       steps: document.querySelectorAll('#steps .step').length,
     };
   };
+  window.__ggUiGuards = { canStep: ggCanStep, beginReveal: ggBeginReveal };
 
   /**
    * Half-width of the visible map, in degrees.
@@ -808,13 +832,10 @@ _TEMPLATE = r"""<!doctype html>
   };
 
   function reveal(observation) {
-    if (observation.distance_km === null || observation.distance_km === undefined) {
-      addStep("guess rejected",
-              observation.feedback || "the environment returned no distance",
-              observation);
-      return;
-    }
-    const km = observation.distance_km;
+    if (!beginTerminalReveal()) return;
+    const hasDistance = observation.distance_km !== null &&
+      observation.distance_km !== undefined;
+    const km = hasDistance ? observation.distance_km : null;
     const reward = observation.reward === null ? 0 : observation.reward;
     const score = observation.score === null ? 0 : observation.score;
     const points = Math.round(score * MAX_POINTS);
@@ -823,10 +844,13 @@ _TEMPLATE = r"""<!doctype html>
     played += 1;
     $("played").textContent = played + (played === 1 ? " episode" : " episodes");
 
-    $("verdict").textContent =
-      km < 0.025 ? "Perfect." : km < 25 ? "Pinpoint." : km < 200 ? "Close." :
-      km < 1500 ? "Right region." : "Wrong continent.";
-    $("dist").textContent = km < 10 ? (km * 1000).toFixed(0) + " m" : km.toFixed(0) + " km";
+    $("verdict").textContent = hasDistance
+      ? (km < 0.025 ? "Perfect." : km < 25 ? "Pinpoint." : km < 200 ? "Close." :
+         km < 1500 ? "Right region." : "Wrong continent.")
+      : "Out of actions.";
+    $("dist").textContent = hasDistance
+      ? (km < 10 ? (km * 1000).toFixed(0) + " m" : km.toFixed(0) + " km")
+      : "no guess";
     $("points").textContent = points + " / " + MAX_POINTS;
     $("reward").textContent = reward.toFixed(3);
     $("breakdown2").textContent =
@@ -838,38 +862,51 @@ _TEMPLATE = r"""<!doctype html>
     document.body.classList.add("revealing");
     $("actions").style.opacity = "0";
 
-    truthMarker = new maplibregl.Marker({ color: "#5aa06e" })
-      .setLngLat([truthLon, truthLat]).addTo(map);
-    const line = {
-      type: "Feature",
-      geometry: {
-        type: "LineString",
-        coordinates: [[guess.lng, guess.lat], [truthLon, truthLat]],
-      },
-    };
-    if (lineAdded) {
-      map.getSource("shot").setData(line);
-    } else {
-      map.addSource("shot", { type: "geojson", data: line });
-      map.addLayer({
-        id: "shot", type: "line", source: "shot",
-        paint: { "line-color": "#c4332a", "line-width": 2.5, "line-dasharray": [2, 1.6] },
-      });
-      lineAdded = true;
+    if (truthLat !== null && truthLat !== undefined &&
+        truthLon !== null && truthLon !== undefined) {
+      truthMarker = new maplibregl.Marker({ color: "#5aa06e" })
+        .setLngLat([truthLon, truthLat]).addTo(map);
+    }
+    if (guess && truthLat !== null && truthLat !== undefined &&
+        truthLon !== null && truthLon !== undefined) {
+      const line = {
+        type: "Feature",
+        geometry: {
+          type: "LineString",
+          coordinates: [[guess.lng, guess.lat], [truthLon, truthLat]],
+        },
+      };
+      if (lineAdded) {
+        map.getSource("shot").setData(line);
+      } else {
+        map.addSource("shot", { type: "geojson", data: line });
+        map.addLayer({
+          id: "shot", type: "line", source: "shot",
+          paint: { "line-color": "#c4332a", "line-width": 2.5, "line-dasharray": [2, 1.6] },
+        });
+        lineAdded = true;
+      }
     }
     $("mapwrap").classList.add("reveal");
     map.resize();
     setTimeout(function () {
-      map.fitBounds(
-        [[Math.min(guess.lng, truthLon), Math.min(guess.lat, truthLat)],
-         [Math.max(guess.lng, truthLon), Math.max(guess.lat, truthLat)]],
-        { padding: 80, maxZoom: 7, duration: 900 }
-      );
+      if (guess && truthLat !== null && truthLat !== undefined &&
+          truthLon !== null && truthLon !== undefined) {
+        map.fitBounds(
+          [[Math.min(guess.lng, truthLon), Math.min(guess.lat, truthLat)],
+           [Math.max(guess.lng, truthLon), Math.max(guess.lat, truthLat)]],
+          { padding: 80, maxZoom: 7, duration: 900 }
+        );
+      } else if (truthLat !== null && truthLat !== undefined &&
+                 truthLon !== null && truthLon !== undefined) {
+        map.flyTo({ center: [truthLon, truthLat], zoom: 5, duration: 900 });
+      }
     }, 260);
   }
 
   function clearRound() {
     guess = null;
+    terminal = false;
     setBusy(false);
     if (guessMarker) { guessMarker.remove(); guessMarker = null; }
     if (truthMarker) { truthMarker.remove(); truthMarker = null; }

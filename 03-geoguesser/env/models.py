@@ -442,6 +442,8 @@ class GeoGuesserState(State):
             Cumulative distance travelled.
         submitted (`bool`):
             Whether the single allowed guess has been made.
+        ended_without_guess (`bool`):
+            Whether the episode ended because the action budget was exhausted.
         pins (`list[dict]`):
             Pins placed so far.
     """
@@ -459,4 +461,5 @@ class GeoGuesserState(State):
     n_free: int = 0
     total_moved_meters: float = 0.0
     submitted: bool = False
+    ended_without_guess: bool = False
     pins: list[dict[str, Any]] = Field(default_factory=list)

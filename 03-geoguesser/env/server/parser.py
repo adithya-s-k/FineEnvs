@@ -27,9 +27,9 @@ _DMS = re.compile(
 )
 
 _LABELLED = re.compile(
-    r"lat(?:itude)?\s*[:=]\s*(-?\d{1,3}(?:\.\d+)?)"
+    r"lat(?:itude)?\s*[:=]\s*(-?\d{1,3}(?:\.\d*)?)(?![\d.])"
     r".{0,40}?"
-    r"lon(?:g|gitude)?\s*[:=]\s*(-?\d{1,3}(?:\.\d+)?)",
+    r"lon(?:g|gitude)?\s*[:=]\s*(-?\d{1,3}(?:\.\d*)?)(?![\d.])",
     re.IGNORECASE | re.DOTALL,
 )
 
@@ -79,6 +79,11 @@ def _dms_to_decimal(deg: str, minute: str | None, sec: str | None, hemi: str) ->
     return -value if hemi.upper() in ("S", "W") else value
 
 
+def _valid_dms(match: tuple[str, str | None, str | None, str]) -> bool:
+    _, minute, sec, _ = match
+    return float(minute or 0) < 60 and float(sec or 0) < 60
+
+
 def parse_guess(response: str) -> ParsedGuess:
     """
     Pull a coordinate pair out of a model reply.
@@ -109,26 +114,42 @@ def parse_guess(response: str) -> ParsedGuess:
     haystacks.append((response, "body"))
 
     for text, origin in haystacks:
-        for pattern, name in ((_JSON_ISH, "json"), (_LABELLED, "labelled")):
-            m = pattern.search(text)
-            if m:
-                lat, lon = float(m.group(1)), float(m.group(2))
-                if _valid(lat, lon):
-                    src = name if origin == "body" else "tag"
-                    return ParsedGuess(lat, lon, src)
-                return ParsedGuess(
-                    None, None, "none", f"Coordinates out of range: {lat}, {lon}."
-                )
+        m = _JSON_ISH.search(text)
+        if m:
+            lat, lon = float(m.group(1)), float(m.group(2))
+            if _valid(lat, lon):
+                src = "json" if origin == "body" else "tag"
+                return ParsedGuess(lat, lon, src)
+            return ParsedGuess(
+                None, None, "none", f"Coordinates out of range: {lat}, {lon}."
+            )
 
         dms = _DMS.findall(text)
         if len(dms) >= 2:
             lat_m = next((d for d in dms if d[3].upper() in ("N", "S")), None)
             lon_m = next((d for d in dms if d[3].upper() in ("E", "W")), None)
             if lat_m and lon_m:
+                if not _valid_dms(lat_m) or not _valid_dms(lon_m):
+                    return ParsedGuess(
+                        None,
+                        None,
+                        "none",
+                        "Invalid DMS coordinates: minutes and seconds must be < 60.",
+                    )
                 lat = _dms_to_decimal(*lat_m)
                 lon = _dms_to_decimal(*lon_m)
                 if _valid(lat, lon):
                     return ParsedGuess(lat, lon, "dms")
+
+        m = _LABELLED.search(text)
+        if m:
+            lat, lon = float(m.group(1)), float(m.group(2))
+            if _valid(lat, lon):
+                src = "labelled" if origin == "body" else "tag"
+                return ParsedGuess(lat, lon, src)
+            return ParsedGuess(
+                None, None, "none", f"Coordinates out of range: {lat}, {lon}."
+            )
 
         m = _DECIMAL_PAIR.search(text)
         if m:
