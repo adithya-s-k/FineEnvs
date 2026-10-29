@@ -27,6 +27,8 @@ PASS = "API checked"
 UNKNOWN = "Not checked"
 _cache = (None, 0.0, {})
 _lock = threading.Lock()
+_write_lock = threading.Lock()
+_refreshing = {}
 _stop = threading.Event()
 _worker = None
 log = logging.getLogger("rlx")
@@ -39,7 +41,8 @@ def _path(spec):
 def save(rec):
     global _cache
     path = _path(rec["id"])
-    with _lock:
+    # Bucket I/O must not hold the catalog's reader lock.
+    with _write_lock:
         try:
             old = json.loads(path.read_bytes())
             if old.get("checked_at", 0) > rec["checked_at"]:
@@ -47,29 +50,74 @@ def save(rec):
         except (OSError, ValueError):
             pass
         catalog.atomic_write(path, json.dumps(rec, separators=(",", ":")).encode())
-        _cache = (None, 0.0, {})
+        with _lock:
+            directory = path.parent
+            records = dict(_cache[2]) if _cache[0] == directory else {}
+            records[rec["id"]] = rec
+            _cache = (directory, _cache[1] if _cache[0] == directory else 0.0, records)
 
 
-def inventory():
+def _read_inventory(directory):
     """Public evidence only; invalid or oversized files are ignored, never trusted."""
+    records = {}
+    for path in sorted(directory.glob("*.json"))[:20000]:
+        try:
+            if path.stat().st_size > 32 * 1024:
+                continue
+            r = json.loads(path.read_bytes())
+            spec = catalog.check_spec(r["id"])
+            if r.get("schema") == 1 and isinstance(r.get("checked_at"), (float, int)):
+                records[spec] = r
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+    return records
+
+
+def _refresh_inventory(directory, done):
+    global _cache
+    try:
+        records = _read_inventory(directory)
+        with _lock:
+            if _cache[0] == directory:
+                # A check may finish during the read. Its newer evidence,
+                # including a failure superseding a pass, must win.
+                for spec, rec in _cache[2].items():
+                    if rec.get("checked_at", 0) > records.get(spec, {}).get("checked_at", 0):
+                        records[spec] = rec
+                _cache = (directory, time.time(), records)
+    except Exception:
+        log.exception("Could not read stored OpenEnv checks")
+    finally:
+        with _lock:
+            _refreshing.pop(directory, None)
+        done.set()
+
+
+def inventory(*, wait=False):
+    """Serve cached evidence immediately; refresh bucket files off the request path.
+
+    Cold readers see no verified Spaces until the first read completes. Expiry
+    still uses checked_at. Only the background checker waits for storage so it
+    does not re-probe everything on boot.
+    """
     global _cache
     directory = config.STORAGE_DIR / "openenv-checks"
     with _lock:
-        if _cache[0] == directory and time.time() - _cache[1] < 15:
+        if _cache[0] != directory:
+            _cache = (directory, 0.0, {})
+        if time.time() - _cache[1] < 60:
             return _cache[2]
-        records = {}
-        for path in sorted(directory.glob("*.json"))[:20000]:
-            try:
-                if path.stat().st_size > 32 * 1024:
-                    continue
-                r = json.loads(path.read_bytes())
-                spec = catalog.check_spec(r["id"])
-                if r.get("schema") == 1 and isinstance(r.get("checked_at"), (float, int)):
-                    records[spec] = r
-            except (OSError, ValueError, KeyError, TypeError):
-                continue
-        _cache = (directory, time.time(), records)
+        done = _refreshing.get(directory)
+        if done is None:
+            done = _refreshing[directory] = threading.Event()
+            threading.Thread(target=_refresh_inventory, args=(directory, done), daemon=True,
+                             name="read-openenv-checks").start()
+        records = _cache[2]
+    if not wait:
         return records
+    done.wait()
+    with _lock:
+        return _cache[2]
 
 
 def status(rec, now=None):
@@ -219,6 +267,17 @@ def assess(api, health, metadata, schema, tools):
             "failed": [k for k, ok in checks.items() if not ok], "tools": len(tools or [])}
 
 
+def _task_splits(task_api):
+    from .seo_tasks import ranges
+
+    out = []
+    for row in ranges(task_api):
+        if len(json.dumps(out + [row]).encode()) > 12000:
+            break
+        out.append(row)
+    return out
+
+
 def check(spec):
     from . import spaces_live as live
     rec = {"schema": 1, "id": catalog.check_spec(spec), "checked_at": time.time(), "status": "Check unavailable"}
@@ -249,6 +308,7 @@ def check(spec):
             from . import space_tasks
             task_api = space_tasks.discover(hub, paths)
             rec["task_catalog"] = space_tasks.summary(task_api)
+            rec["task_splits"] = _task_splits(task_api)
             if rec["status"] == PASS:
                 rec["version"] = declared_version(spec, hub.get("tags"))
             elif rec["version"]["value"] == "Unknown":
@@ -273,6 +333,7 @@ def observe(spec, info):
             rec["interface"] = environment_interface({"info": {"version": info.get("openapi_version")}, "paths": info.get("endpoint_methods")})
             from . import space_tasks
             rec["task_catalog"] = space_tasks.summary(info.get("task_api"))
+            rec["task_splits"] = _task_splits(info.get("task_api"))
         info["openenv_verified"] = verified(rec)
         save(rec)
     except Exception:
@@ -297,7 +358,7 @@ def scan():
 
 def _scan():
     from . import snapshot
-    old = inventory()
+    old = inventory(wait=True)
     with snapshot.use() as (_, conn):
         candidates = list(conn.execute("SELECT id, stage FROM envs WHERE kind = 'space' ORDER BY trending DESC, likes DESC"))
     due = pending(candidates, old)

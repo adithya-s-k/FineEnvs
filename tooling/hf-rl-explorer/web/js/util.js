@@ -1,14 +1,35 @@
 // Shared helpers: DOM, formatting, API, markdown, modal, loading states.
 import { icon, FILE_ICON } from "./icons.js";
+import { SITE, DESCRIPTION, canonicalPath, imagePath } from "./seo-meta.js";
 
 export const $ = (s, el = document) => el.querySelector(s);
 // the page's title, description and canonical address as you move around (the server writes them for a first load)
-export function setMeta({ title, description } = {}) {
-  const site = "HF RL Explorer";
-  document.title = !title ? `${site}: Explore RL environments on Hugging Face` : title.includes(site) ? title : `${title} · ${site}`;
-  if (description) document.querySelector('meta[name="description"]')?.setAttribute("content", description.slice(0, 300));
+export function setMeta({ title, description, indexable } = {}) {
+  const url = location.origin + canonicalPath(location.href);
+  const rendered = document.querySelector('meta[name="rlx-page-url"]');
+  const changed = rendered?.content !== url;
+  if (changed) {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach((s) => s.remove());
+    if (rendered) rendered.content = url;
+  }
+  if (title || changed) document.title = !title ? `${SITE}: RL environments on the Hugging Face Hub` : title.includes(SITE) ? title : `${title} · ${SITE}`;
+  const desc = (description || (changed ? DESCRIPTION : document.querySelector('meta[name="description"]')?.content) || DESCRIPTION).slice(0, 300);
+  const set = (selector, value) => document.querySelector(selector)?.setAttribute("content", value);
+  set('meta[name="description"]', desc);
+  for (const key of ["og:title", "twitter:title"]) set(`meta[${key.startsWith("og:") ? "property" : "name"}="${key}"]`, document.title);
+  set('meta[property="og:description"]', desc);
+  set('meta[name="twitter:description"]', desc);
+  set('meta[property="og:url"]', url);
+  if (changed) {
+    const image = location.origin + imagePath(location.href);
+    set('meta[property="og:image"]', image);
+    set('meta[name="twitter:image"]', image);
+    set('meta[property="og:type"]', /^\/t\//.test(location.pathname) || location.search.includes("task=") ? "article" : "website");
+  }
+  if (changed || indexable !== undefined) set('meta[name="robots"]', indexable === false || /^\/(runs|run\/|compare\/)/.test(location.pathname)
+    ? "noindex, follow" : "index, follow, max-image-preview:large, max-snippet:-1");
   const canon = document.querySelector('link[rel="canonical"]');
-  if (canon) canon.href = location.origin + location.pathname;
+  if (canon) canon.href = url;
 }
 
 // go to another page of the app: a real path (/d/org/name, /t/...), so every page has its own address for search
