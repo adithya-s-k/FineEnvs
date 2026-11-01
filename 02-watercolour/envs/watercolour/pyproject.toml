@@ -17,14 +17,14 @@ dependencies = [
     "requests>=2.31.0",
     # The submission is untrusted JavaScript and p5.brush needs a real WEBGL
     # context, so rendering runs in Chromium. The matching browser build is
-    # installed in the image; see server/Dockerfile.
+    # installed in the image; see openenv/Dockerfile.
     "playwright==1.62.0",
     "pillow>=10.0.0",
     "numpy>=1.24.0",
     # Only needed when the vision judge is enabled.
     "huggingface-hub>=0.34.0",
     # Only needed when the dense term is served by an HPSv3 Space rather than by
-    # the judge model. See [`~envs.watercolour_env.server.quality.HPSv3Scorer`].
+    # the judge model. See [`watercolour_env.core.quality.HPSv3Scorer`].
     "aiohttp>=3.9.0",
 ]
 
@@ -40,10 +40,11 @@ server = "watercolour_env.server.app:main"
 
 [tool.setuptools]
 include-package-data = true
-packages = ["watercolour_env", "watercolour_env.server"]
-package-dir = { "watercolour_env" = ".", "watercolour_env.server" = "server" }
+packages = ["watercolour_env", "watercolour_env.server", "watercolour_env.core"]
+package-dir = { "watercolour_env" = ".", "watercolour_env.server" = "openenv", "watercolour_env.core" = "core" }
 
-# The vendored p5 bundles and the reference paintings are data the server reads
-# at runtime, so they have to travel with the wheel.
+# The vendored p5 bundles are runtime data. Reference paintings are downloaded
+# from the separately pinned dataset in core/pool.py.
 [tool.setuptools.package-data]
-"watercolour_env.server" = ["vendor/*"]
+"watercolour_env.server" = ["openenv.yaml"]
+"watercolour_env.core" = ["vendor/*"]

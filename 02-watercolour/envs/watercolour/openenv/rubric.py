@@ -38,7 +38,7 @@ from pathlib import Path
 # 2. The path entry is appended rather than inserted, and points at the folder
 #    holding `core/`, so an installed package always wins over a local directory.
 _ENV_ROOT = str(Path(__file__).resolve().parents[1])
-if _ENV_ROOT not in sys.path:
+if not __package__ and _ENV_ROOT not in sys.path:
     sys.path.append(_ENV_ROOT)
 
 
@@ -48,14 +48,14 @@ from typing import Any
 
 from openenv.core.rubrics import Gate, Rubric, Sequential, WeightedSum
 
-try:
-    from core.scoring import (
+if __package__:
+    from ..core.scoring import (
         GATE_WEIGHT,
         JUDGE_WEIGHT,
         LENGTH_WEIGHT,
         QUALITY_WEIGHT,
     )
-except ImportError:
+else:
     from core.scoring import (
         GATE_WEIGHT,
         JUDGE_WEIGHT,

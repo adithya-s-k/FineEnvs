@@ -17,7 +17,7 @@ from pathlib import Path
 # 2. The path entry is appended rather than inserted, and points at the folder
 #    holding `core/`, so an installed package always wins over a local directory.
 _ENV_ROOT = str(Path(__file__).resolve().parents[1])
-if _ENV_ROOT not in sys.path:
+if not __package__ and _ENV_ROOT not in sys.path:
     sys.path.append(_ENV_ROOT)
 
 
@@ -26,11 +26,18 @@ from typing import Any, Dict
 from openenv.core.client_types import StepResult
 from openenv.core.env_client import EnvClient
 
-from models import (  # noqa: E402
-    WatercolourAction,
-    WatercolourObservation,
-    WatercolourState,
-)
+if __package__:
+    from .models import (  # noqa: E402
+        WatercolourAction,
+        WatercolourObservation,
+        WatercolourState,
+    )
+else:
+    from models import (  # noqa: E402
+        WatercolourAction,
+        WatercolourObservation,
+        WatercolourState,
+    )
 
 
 class WatercolourEnv(

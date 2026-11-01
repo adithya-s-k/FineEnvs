@@ -494,6 +494,13 @@ class TestTheTwoRewardPaths:
         assert build_rubric()(None, Observation()) == pytest.approx(evaluation.reward)
 
 
+browser = pytest.mark.skipif(
+    not list((pathlib.Path.home() / "Library/Caches/ms-playwright").glob("chromium*"))
+    and not list(pathlib.Path("/ms-playwright").glob("chromium*")),
+    reason="no Chromium build for Playwright",
+)
+
+
 class TestRevisions:
     """The multi-turn episode, and the guarantee that it changes nothing by default."""
 
@@ -508,6 +515,7 @@ class TestRevisions:
         assert env._episode_references == 0
         assert env._episode_revisions == 0
 
+    @browser
     def test_the_default_episode_is_still_one_shot(self):
         # Six runs trained against a single-shot episode and the reward was only
         # ever measured against that shape. Revisions are opt-in so none of that
@@ -520,6 +528,7 @@ class TestRevisions:
         assert env.state.submitted
         asyncio.run(env.close())
 
+    @browser
     def test_a_budget_keeps_the_episode_open(self):
         env = WatercolourEnvironment(
             subject="two ripe plums", enable_judge=False, revisions=2
@@ -532,6 +541,7 @@ class TestRevisions:
         assert seen == [(False, 2), (False, 1), (True, 0)]
         asyncio.run(env.close())
 
+    @browser
     def test_the_critique_never_names_the_references_or_the_score(self):
         # The line that separates a harder task from a rigged one. With a shared
         # seed the whole group faces the same eight references, so telling the
@@ -866,11 +876,6 @@ class TestReward:
         assert rubric(None, Observation()) == 0.0
 
 
-browser = pytest.mark.skipif(
-    not list((pathlib.Path.home() / "Library/Caches/ms-playwright").glob("chromium*"))
-    and not list(pathlib.Path("/ms-playwright").glob("chromium*")),
-    reason="no Chromium build for Playwright",
-)
 
 
 @browser

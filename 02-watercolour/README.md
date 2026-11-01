@@ -134,7 +134,19 @@ Then give the Space GPU hardware and point the environment at it:
 WATERCOLOUR_HPSV3_URL=https://<you>-watercolour-hpsv3.hf.space
 ```
 
-The environment itself deploys the same way, from `envs/watercolour/openenv/`.
+The environment package is installed from `envs/watercolour/`, which includes the shared
+`core/` and the OpenEnv adapter. Keep the reference dataset revision configured in `core/pool.py`.
+Build its container from this package root so Chromium, the adapter and the vendored brush bundles
+travel together:
+
+```bash
+uv sync --frozen --project envs/watercolour
+uv run --project envs/watercolour server
+# Or build the browser-equipped container:
+docker build -f envs/watercolour/openenv/Dockerfile -t watercolour-env envs/watercolour
+```
+
+Flat source imports used by the existing tests and rollout script remain supported.
 
 The env Space must also be running on paid hardware and have `HF_TOKEN` set. Without
 the scorer the reward loses its 0.30 (or 0.90) silently, and without the token the
