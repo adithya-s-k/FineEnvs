@@ -30,6 +30,7 @@ accepted (exactly the original statement, standard axioms only, checked by the L
 - Tasks on the Hub: [FineEnvs/openai-math](https://huggingface.co/datasets/FineEnvs/openai-math) (369 tasks, the
   dataset card lists the rest with the reason each was left out)
 - Generator, grader and image: [`envs/openai_math/harbor/`](envs/openai_math/harbor/)
+- How the tasks were curated, and why: [DESIGN.md](DESIGN.md)
 - Grading design, threat model and limits: [`envs/openai_math/harbor/README.md`](envs/openai_math/harbor/README.md)
 
 <!-- BEGIN:matrix -->
