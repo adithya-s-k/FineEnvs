@@ -1,0 +1,38 @@
+openai-math
+===========
+
+This dataset packages the Lean statements of OpenAI's "openai/math" release as Harbor tasks.
+
+Redistributed material
+----------------------
+Each task's tests/Challenge.lean, and the Lean block quoted in its instruction.md, is the file
+lean/ComparatorChallenges/<Name>.lean from https://github.com/openai/math at commit
+$source_commit, copyright OpenAI, licensed under the Apache License, Version 2.0 (see
+LICENSE-openai-math). The files are unchanged.
+
+Modified material
+-----------------
+The Comparator configuration of each task (tests/task.json) is derived from the corresponding
+lean/ComparatorChallenges/<Name>.json in that repository. In eight tasks, definitions that the
+original listed under "definition_names" although their bodies are written out were removed from
+that list, so that Comparator requires them to match exactly; task.toml records them under
+[metadata] fixed_definitions.
+
+Only statements whose official proof was verified in the environment are included; the README
+lists the others and why each could not be validated. One challenge (DefocusingNLS) is left out
+by design.
+
+Not included
+------------
+OpenAI's proofs (the lean/OAI library) are not part of this dataset.
+
+Everything else in this dataset (task.toml, instruction.md apart from the quoted statement,
+tests/grade.py, tests/test.sh, environment/, solution/, generator/) is licensed under the
+Apache License, Version 2.0 (see LICENSE).
+
+Third-party software in the sandbox image
+-----------------------------------------
+Lean 4 and Mathlib (Apache-2.0); Comparator and lean4export by the Lean FRO (Apache-2.0),
+Comparator built from leanprover/comparator@d03acab with a one-line patch that passes
+LEAN_NUM_THREADS into its sandbox; landrun (MIT). The image is built from environment/ at run
+time; none of this software is stored in the dataset.

@@ -1,0 +1,22 @@
+# Project manifest. `tools/build_index.py` renders the root README table from it.
+name: openai-math
+title: "openai/math: research-level Lean proofs"
+tagline: "OpenAI's Comparator challenges as Harbor tasks: prove a research result in Lean 4, graded by Comparator in a separate sandbox."
+order: 8
+status: wip
+authors:
+  - {name: Adithya S Kolavi, github: adithya-s-k, affiliation: Hugging Face}
+
+hub:
+  org: FineEnvs
+  datasets:
+    - FineEnvs/openai-math
+
+envs:
+  - name: openai_math
+    summary: "369 Lean 4 + Mathlib proving tasks from github.com/openai/math whose official proof the grader accepts end to end; reward 1 only for a kernel-checked proof of the exact statement."
+    tools: "shell (Lean, Lake, Mathlib)"
+    backend: daytona
+    frameworks:
+      harbor:
+        verified: true

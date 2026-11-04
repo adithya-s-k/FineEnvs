@@ -1,0 +1,17 @@
+# Project manifest. `tools/build_index.py` renders the root README table from it.
+name: qed-nano
+title: "QED-Nano: olympiad proofs with a rubric judge"
+tagline: "Write a natural-language proof of an olympiad problem; an LLM judge grades it 0–7 against the problem's rubric, as in the QED-Nano recipe."
+order: 8.1
+status: wip
+authors:
+  - {name: Adithya S Kolavi, github: adithya-s-k, affiliation: Hugging Face}
+
+envs:
+  - name: olympiad_proofs
+    summary: "Planned: FineProofs-RL (5,227 problems with Gemini 3 Pro rubrics) for training, IMOProofBench and ProofBench for eval; reward = gpt-oss-20b rubric score / 7, the judge QED-Nano trained with."
+    tools: "shell (Python)"
+    backend: daytona
+    frameworks:
+      harbor:
+        verified: false

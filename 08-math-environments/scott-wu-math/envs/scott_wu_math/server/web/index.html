@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scott Wu Math</title>
+<meta name="description" content="Make the target from playing cards with + − × ÷, every card once. An OpenEnv environment people and language models play the same way.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='5' y='2' width='22' height='28' rx='3' fill='%23fff' stroke='%23222' stroke-width='2'/%3E%3Ctext x='16' y='22' font-size='14' text-anchor='middle' fill='%23c0392b'%3E%E2%99%A5%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="bar">
+  <div class="brand">Scott Wu Math</div>
+  <nav>
+    <a href="#rules" id="rules-link">Rules</a>
+    <a href="/static/card.html">Environment card</a>
+    <a href="/docs">API</a>
+  </nav>
+</header>
+
+<main class="layout">
+  <section class="game">
+    <div class="modes" role="tablist" aria-label="Level">
+      <button role="tab" data-level="24">24 <span>4 cards</span></button>
+      <button role="tab" data-level="three-digit">Three-digit <span>6</span></button>
+      <button role="tab" data-level="year">Year <span>8</span></button>
+      <button role="tab" data-level="four-digit">Four-digit <span>9</span></button>
+      <button role="tab" data-level="custom">Your number</button>
+      <button role="tab" data-level="video">From the video</button>
+    </div>
+
+    <form class="custom" id="custom" hidden>
+      <label for="custom-target">Target</label>
+      <input id="custom-target" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="6843" autocomplete="off">
+      <button type="submit" class="btn">Deal</button>
+      <span class="muted" id="custom-hint">Any number up to 999,999. 4 cards below 100, 6 below 1,000, 8 below 3,000, else 9.</span>
+    </form>
+
+    <div class="table" id="table">
+      <div class="table-head">
+        <div class="target"><span class="target-label">Make</span> <span id="target">—</span></div>
+        <div class="table-meta">
+          <span id="task-id" class="muted"></span>
+          <span id="timer" class="timer">0:00</span>
+        </div>
+      </div>
+      <div class="piles" id="piles" aria-live="polite"></div>
+      <div class="ops" id="ops" aria-label="Operators">
+        <button data-op="+" title="Add (+)">+</button>
+        <button data-op="-" title="Subtract (−)">−</button>
+        <button data-op="*" title="Multiply (× or x)">×</button>
+        <button data-op="/" title="Divide (÷ or /)">÷</button>
+      </div>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="undo" title="Undo (Backspace)">Undo</button>
+      <button class="btn" id="restart" title="Put every card back">Start over</button>
+      <span class="grow"></span>
+      <button class="btn" id="giveup" title="End this deal and show a solution">Show a solution</button>
+      <button class="btn primary" id="deal">New deal</button>
+    </div>
+
+    <form class="typed" id="typed">
+      <label for="expr">Or type it</label>
+      <input id="expr" autocomplete="off" spellcheck="false" placeholder="((13 − 12) + (11 − 10) + 7) × 9 × 5 × 5">
+      <button class="btn" type="submit">Submit</button>
+    </form>
+
+    <div class="result" id="result" hidden></div>
+  </section>
+
+  <aside class="side">
+    <section>
+      <h2>Steps</h2>
+      <ol class="steps" id="steps"></ol>
+      <p class="muted" id="steps-empty">Pick a card, an operator, then another card.</p>
+    </section>
+    <section>
+      <h2>Expression</h2>
+      <code class="expression" id="expression">—</code>
+    </section>
+    <section>
+      <details>
+        <summary>Prompt the model reads</summary>
+        <pre class="prompt" id="prompt"></pre>
+      </details>
+    </section>
+    <section>
+      <h2>This browser</h2>
+      <table class="stats" id="stats">
+        <thead><tr><th>Level</th><th>Solved</th><th>Best</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </aside>
+</main>
+
+<dialog id="rules">
+  <form method="dialog">
+    <h2>Rules</h2>
+    <ul>
+      <li>Use every card exactly once. A = 1, J = 11, Q = 12, K = 13.</li>
+      <li>Combine two at a time with + − × ÷. Division is exact, so fractions are fine along the way.</li>
+      <li>No joining cards into longer numbers, no powers, no minus sign in front of a card.</li>
+      <li>One submission per deal. Exact is 1 point; a valid answer within 10% earns up to 0.3.</li>
+    </ul>
+    <p class="muted">Keys: + − × ÷ pick an operator (x and * work for ×, / for ÷), Backspace undoes, Enter deals again once a deal is over.</p>
+    <button class="btn" value="close">Close</button>
+  </form>
+</dialog>
+
+<script src="/static/cards.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
