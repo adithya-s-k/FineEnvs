@@ -4,7 +4,7 @@
 
 <h3>Write an olympiad proof in plain language, graded 0–7 by a rubric judge</h3>
 
-<p>QED-Nano's training problems, rubrics and judge as Harbor tasks. Work in progress.</p>
+<p>QED-Nano's training problems, rubrics and judge as Harbor tasks, and a small model trained on them through our own harness.</p>
 
 <a href="https://github.com/harbor-framework/harbor"><img src="https://img.shields.io/badge/framework-Harbor-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="Harbor" height="32"></a>
 <a href="https://huggingface.co/spaces/lm-provers/qed-nano-blogpost"><img src="https://img.shields.io/badge/%F0%9F%93%84%20Source-QED--Nano%20blog%20post-10B981?style=for-the-badge&labelColor=1a1a1a" alt="The QED-Nano blog post" height="32"></a>
@@ -13,7 +13,9 @@
 
 ---
 
-> **Work in progress.** Nothing here is built yet; [DESIGN.md](DESIGN.md) is the plan.
+> **Work in progress.** The tasks, the verifier and the training recipe are built and pass a local end-to-end run
+> (harness → sandbox → separate verifier); no judge call or training run has happened yet. [DESIGN.md](DESIGN.md)
+> has the reasoning, [training/](training/) the recipe.
 
 [QED-Nano](https://huggingface.co/lm-provers/QED-Nano) is a 4B model trained by CMU, Hugging Face, ETH Zurich and
 Numina to write olympiad proofs. Its reward is an LLM judge: gpt-oss-20b scores each proof 0–7 against a
@@ -30,12 +32,19 @@ statement exactly; here a natural-language proof earns partial credit for the st
 | **olympiad_proofs** | shell (Python) | `daytona` | — |
 <!-- END:matrix -->
 
-## Planned task sets
+## What's here
+
+- [`envs/qed_nano/harbor/`](envs/qed_nano/harbor/): the generator (`python -m qed_nano_harbor.adapter`), the verifier
+  (`templates/tests/grade.py`, QED-Nano's judge plus safeguards against injected grades) and its unit tests.
+- [`training/`](training/): **qed-proof**, our own Harbor harness (write a proof, grade it, rewrite it), and the
+  AsyncGRPO recipe that trains through it with OpenEnv's Harbor integration, as in 05-multi-harness-rl.
+
+## Task sets
 
 | Set | Tasks | From |
 |---|---:|---|
-| train | 5,227 | [lm-provers/FineProofs-RL](https://huggingface.co/datasets/lm-provers/FineProofs-RL), with QED-Nano's difficulty labels |
-| test | 128 | `lm-provers/FineProofs-RL-test` |
+| train | 5,099 | [lm-provers/FineProofs-RL](https://huggingface.co/datasets/lm-provers/FineProofs-RL), with QED-Nano's difficulty labels |
+| test | 128 | `lm-provers/FineProofs-RL-test`; these 128 are also in FineProofs-RL, so train leaves them out |
 | IMO-ProofBench | 60 | [lm-provers/IMOProofBench](https://huggingface.co/datasets/lm-provers/IMOProofBench) |
 | ProofBench | 145 | [lm-provers/ProofBench](https://huggingface.co/datasets/lm-provers/ProofBench), splits `24_25` and `other` |
 

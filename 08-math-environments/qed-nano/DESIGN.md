@@ -1,7 +1,8 @@
 # QED-Nano proofs as Harbor tasks: design
 
-Status: design, nothing built yet. This note records what QED-Nano released, how its reward works, and how we
-plan to turn it into Harbor tasks.
+Status: tasks, verifier and training recipe built; a local end-to-end run (our harness, Docker sandboxes, separate
+verifier) works up to the judge call. This note records what QED-Nano released, how its reward works, and how we
+turned it into Harbor tasks.
 
 ## What QED-Nano is
 
@@ -25,7 +26,9 @@ IMO-ProofBench and 45 on ProofBench alone, and 54 on both with a test-time scaff
 | [lm-provers/matharena-gradingbench](https://huggingface.co/datasets/lm-provers/matharena-gradingbench) | 438 | MathArena model proofs with **human** points | does our judge agree with people |
 | [lm-provers/olympiads-proof-graderbench](https://huggingface.co/datasets/lm-provers/olympiads-proof-graderbench) | 480 | in-distribution proofs with Gemini 3 Pro grades | does our judge agree with theirs |
 
-FineProofs was filtered against IMOProofBench and ProofBench (fuzzy matching, no 2025 problems).
+FineProofs was filtered against IMOProofBench and ProofBench (fuzzy matching, no 2025 problems). One catch: all 128
+problems of `FineProofs-RL-test` are also in `FineProofs-RL`, so our train set removes them; otherwise a model would
+be evaluated on problems it trained on.
 
 ## How QED-Nano's harnesses and judges work
 
@@ -82,6 +85,16 @@ Their parser has gaps that matter once a policy is optimising against it:
 - proofs are capped in length; an over-length proof scores 0.
 - if the judge call fails after retries, no reward is written, so Harbor reports an error rather than a 0, as the
   openai-math grader does for a broken setup.
+
+## Training through our own harness
+
+[training/](training/) trains a small model on these tasks with OpenEnv's Harbor integration and TRL's AsyncGRPO,
+the path 05-multi-harness-rl built for stock coding agents, but every rollout runs **qed-proof**: a host-side Harbor
+agent that writes a proof, grades it the way a strict grader would, and rewrites it. That is the move QED-Nano's best
+scaffolds end in, and here RL trains it directly. Every call goes through OpenEnv's capture proxy, the conversation is
+append-only (one training row), and the reward is the verifier's score / 7. OpenEnv documents `module:Class`
+harnesses but resolves only registered names, so `training/server.py` registers a `qed-proof` seam in the Harbor
+server process.
 
 ## How we validate it
 
