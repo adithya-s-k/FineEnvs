@@ -6,12 +6,18 @@ proxy, so every call is recorded as training data; the session id is the API key
 final proof lands: `/workspace/proof.md`, which the task's collect hook hands to the verifier.
 
 Registered with OpenEnv in training/server.py; with plain Harbor, use
-`harbor run -a qed_proof_agent.agent:QedProofAgent -m <model> --ak api_base=<url>/v1 --ak api_key=<key>`.
+`harbor run -a qed_proof_agent.agent:QedProofAgent -m <model> --ak api_base=<url>/v1 --ak api_key_env=<VAR>`
+(the key is read from that environment variable, so it never lands in Harbor's job config). `extra_body` (JSON)
+adds provider options, e.g. `--ak 'extra_body={"chat_template_kwargs": {"enable_thinking": false}}'`, and
+`--ak stream=true` streams replies, which hosted routers need for long generations (they time out otherwise).
+Calls are retried on rate limits, 5xx and dropped connections.
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
+import os
 import tempfile
 from pathlib import Path
 
@@ -27,13 +33,17 @@ PROOF_PATH = "/workspace/proof.md"
 
 class QedProofAgent(BaseAgent):
     def __init__(self, logs_dir: Path, model_name: str | None = None, *args, api_base: str | None = None,
-                 api_key: str | None = None, rounds: int | str = 1, max_tokens: int | str = 8192,
-                 request_timeout_sec: float = 900, **kwargs):
+                 api_key: str | None = None, api_key_env: str | None = None, rounds: int | str = 1,
+                 max_tokens: int | str = 8192, extra_body: dict | str | None = None,
+                 stream: bool | str = False, retries: int | str = 4, request_timeout_sec: float = 900, **kwargs):
         super().__init__(logs_dir, model_name, *args, **kwargs)
         if not api_base:
             raise ValueError("qed-proof needs api_base (an OpenAI-compatible /v1 endpoint)")
         self.api_base = api_base.rstrip("/")
-        self.api_key = api_key or "unused"
+        self.api_key = api_key or (os.environ.get(api_key_env) if api_key_env else None) or "unused"
+        self.extra_body = json.loads(extra_body) if isinstance(extra_body, str) else dict(extra_body or {})
+        self.stream = str(stream).lower() in ("1", "true", "yes")
+        self.retries = int(retries)
         self.rounds = int(rounds)
         self.max_tokens = int(max_tokens)
         self.request_timeout_sec = float(request_timeout_sec)
@@ -51,22 +61,47 @@ class QedProofAgent(BaseAgent):
 
     async def run(self, instruction: str, environment: BaseEnvironment, context: AgentContext) -> None:
         async with httpx.AsyncClient(timeout=self.request_timeout_sec) as client:
+            async def call(messages: list[dict]) -> tuple[str, dict]:
+                # Only what the capture proxy accepts while training: no sampling overrides, n=1, plain text.
+                payload = {**self.extra_body, "model": self.model_name or "policy", "messages": messages,
+                           "max_tokens": self.max_tokens}
+                headers = {"Authorization": f"Bearer {self.api_key}"}
+                url = f"{self.api_base}/chat/completions"
+                if not self.stream:
+                    response = await client.post(url, headers=headers, json=payload)
+                    response.raise_for_status()
+                    body = response.json()
+                    return body["choices"][0]["message"].get("content") or "", body.get("usage") or {}
+                payload.update(stream=True, stream_options={"include_usage": True})
+                parts, usage = [], {}
+                async with client.stream("POST", url, headers=headers, json=payload) as response:
+                    response.raise_for_status()
+                    async for line in response.aiter_lines():
+                        if not line.startswith("data:") or line.strip() == "data: [DONE]":
+                            continue
+                        chunk = json.loads(line[5:])
+                        usage = chunk.get("usage") or usage
+                        for choice in chunk.get("choices") or []:
+                            parts.append((choice.get("delta") or {}).get("content") or "")
+                return "".join(parts), usage
+
             async def complete(messages: list[dict]) -> str:
-                response = await client.post(
-                    f"{self.api_base}/chat/completions",
-                    headers={"Authorization": f"Bearer {self.api_key}"},
-                    # Only what the capture proxy accepts while training: no sampling overrides, n=1, plain text.
-                    json={"model": self.model_name or "policy", "messages": messages, "max_tokens": self.max_tokens},
-                )
-                response.raise_for_status()
-                body = response.json()
-                usage = body.get("usage") or {}
+                for attempt in range(self.retries + 1):
+                    try:
+                        text, usage = await call(messages)
+                        break
+                    except (httpx.HTTPStatusError, httpx.TransportError) as exc:
+                        status = getattr(getattr(exc, "response", None), "status_code", None)
+                        retryable = status is None or status == 429 or status >= 500
+                        if not retryable or attempt == self.retries:
+                            raise
+                        await asyncio.sleep(10 * 2 ** attempt)
                 self.usage["prompt_tokens"] += usage.get("prompt_tokens") or 0
                 self.usage["completion_tokens"] += usage.get("completion_tokens") or 0
                 self.usage["calls"] += 1
                 context.n_input_tokens = self.usage["prompt_tokens"]
                 context.n_output_tokens = self.usage["completion_tokens"]
-                return (body["choices"][0]["message"].get("content") or "").strip()
+                return text.strip()
 
             proof, messages = await loop.run(complete, instruction, rounds=self.rounds)
 

@@ -69,13 +69,23 @@ def fetch(cache: Path) -> dict[str, Path]:
     return paths
 
 
+# DeepSeek-Math-V2 answers with a solution and then grades it ("## Self Evaluation ... the final overall score should
+# be 1"). 780 of FineProofs-SFT's 4,281 proofs carry that section; an oracle submits the solution only.
+SELF_EVALUATION = re.compile(r"(?:^\s*-{3,}\s*\n\s*)?^\s*#{1,6}\s*self[- ]evaluation\b", re.I | re.M)
+
+
+def strip_self_evaluation(proof: str) -> str:
+    match = SELF_EVALUATION.search(proof)
+    return (proof[: match.start()] if match else proof).rstrip()
+
+
 def reference_proofs(sft_path: Path) -> dict[str, dict]:
     """Normalized problem text -> the best-graded DeepSeek-Math-V2 proof and its metadata."""
     best: dict[str, dict] = {}
     for r in _read(sft_path):
         key = normalize(r["problem"])
         if key not in best or r["gemini-3-pro-grade"] > best[key]["grade"]:
-            best[key] = {"proof": r["proof"], "grade": r["gemini-3-pro-grade"], "category": r["category"],
+            best[key] = {"proof": strip_self_evaluation(r["proof"]), "grade": r["gemini-3-pro-grade"], "category": r["category"],
                          "competition": r["competition"]}
     return best
 
