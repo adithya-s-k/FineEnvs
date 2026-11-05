@@ -7,7 +7,7 @@ Same service as 05-multi-harness-rl/envs/harbor (task API, capture proxy, sandbo
   - a larger per-call output cap than 05's (proofs plus a critique run past 4,096 tokens);
   - `/qed/splits`, the prepared dataset folders.
 
-The judge's key reaches each task's verifier through `[verifier] env = { HF_TOKEN = "${HF_TOKEN}" }`, which Harbor
+The judge's key reaches each task's verifier through `[verifier] env = { JUDGE_API_KEY = "${JUDGE_API_KEY}" }`, which Harbor
 resolves from this process's environment. It is never given to the agent.
 """
 

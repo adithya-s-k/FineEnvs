@@ -67,6 +67,51 @@ class BuildPrompt(unittest.TestCase):
         self.assertNotEqual(a, b)
 
 
+class Providers(unittest.TestCase):
+    def request(self, **env):
+        with mock.patch.dict("os.environ", env, clear=True):
+            return grade.judge_request("PROMPT")
+
+    def test_hf_default(self):
+        url, headers, body = self.request(JUDGE_API_KEY="k")
+        self.assertEqual(url, "https://router.huggingface.co/v1/chat/completions")
+        self.assertEqual(headers["Authorization"], "Bearer k")
+        self.assertEqual((body["model"], body["max_tokens"], body["reasoning_effort"]),
+                         ("openai/gpt-oss-20b:deepinfra", 32768, "medium"))
+
+    def test_openai(self):
+        url, _, body = self.request(JUDGE_API_KEY="k", JUDGE_PROVIDER="openai", JUDGE_MODEL="gpt-5-mini")
+        self.assertEqual(url, "https://api.openai.com/v1/chat/completions")
+        self.assertIn("max_completion_tokens", body)
+        self.assertNotIn("max_tokens", body)
+        self.assertNotIn("temperature", body)
+
+    def test_vllm_needs_base_url(self):
+        with self.assertRaises(grade.JudgeUnavailable):
+            self.request(JUDGE_API_KEY="k", JUDGE_PROVIDER="vllm")
+        url, _, _ = self.request(JUDGE_API_KEY="k", JUDGE_PROVIDER="vllm", JUDGE_BASE_URL="http://host:8000/v1/")
+        self.assertEqual(url, "http://host:8000/v1/chat/completions")
+
+    def test_anthropic(self):
+        url, headers, body = self.request(JUDGE_API_KEY="k", JUDGE_PROVIDER="anthropic", JUDGE_MODEL="claude-x",
+                                          JUDGE_EXTRA_BODY='{"thinking": {"type": "enabled", "budget_tokens": 8000}}')
+        self.assertEqual(url, "https://api.anthropic.com/v1/messages")
+        self.assertEqual(headers["x-api-key"], "k")
+        self.assertNotIn("reasoning_effort", body)
+        self.assertEqual(body["thinking"]["budget_tokens"], 8000)
+        reply = {"content": [{"type": "thinking", "thinking": "<score>7</score>"},
+                             {"type": "text", "text": "<score>3</score>"}]}
+        self.assertEqual(grade.parse_score(grade.judge_reply(reply)), 3)  # the verdict, never the reasoning
+
+    def test_bad_settings(self):
+        for env in ({"JUDGE_PROVIDER": "hf"}, {"JUDGE_API_KEY": "k", "JUDGE_PROVIDER": "bard"},
+                    {"JUDGE_API_KEY": "k", "JUDGE_EXTRA_BODY": "{not json"}):
+            with self.assertRaises(grade.JudgeUnavailable):
+                self.request(**env)
+        _, _, body = self.request(JUDGE_API_KEY="k", JUDGE_REASONING_EFFORT="")
+        self.assertNotIn("reasoning_effort", body)
+
+
 class Main(unittest.TestCase):
     def run_main(self, proof: bytes | None, judge=None, env=None):
         tmp = Path(tempfile.mkdtemp())

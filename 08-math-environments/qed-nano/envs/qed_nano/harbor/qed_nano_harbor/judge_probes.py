@@ -3,7 +3,7 @@ the reference proof of each problem is graded alongside as the positive control.
 
     python -m qed_nano_harbor.judge_probes --tasks out/qed-nano/test/tasks --n 3 --out probes.json
 
-Needs HF_TOKEN (or JUDGE_API_KEY). Empty and over-long proofs never reach the judge (grade.py scores them 0 first)
+Needs JUDGE_API_KEY (and JUDGE_PROVIDER/JUDGE_MODEL for a judge other than the default). Empty and over-long proofs never reach the judge (grade.py scores them 0 first)
 and are covered by the unit tests.
 """
 

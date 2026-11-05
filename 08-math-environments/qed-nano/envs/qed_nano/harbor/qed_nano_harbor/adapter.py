@@ -29,6 +29,11 @@ DATASET = "qed-nano"
 VERSION = "1.0"
 AGENT_TIMEOUT = 3600
 VERIFIER_TIMEOUT = 1800
+MIN_ORACLE_CHARS = 400
+# The training reward is QED-Nano's (gpt-oss-20b). The benchmarks get a stronger default judge, as QED-Nano graded its
+# benchmarks with a stronger model: gpt-oss-20b gave an IMO-ProofBench official solution 1/7 where gpt-oss-120b gave 7.
+JUDGES = {"train": "openai/gpt-oss-20b:deepinfra", "test": "openai/gpt-oss-20b:deepinfra",
+          "imo": "openai/gpt-oss-120b:novita", "proofbench": "openai/gpt-oss-120b:novita"}
 SET_NAMES = {"train": "train", "test": "test", "imo": "imo-proofbench", "proofbench": "proofbench"}
 
 
@@ -52,7 +57,7 @@ keywords = ["olympiad", "proof", "rubric", "llm-judge", "qed-nano"]
 
 [metadata]
 source_dataset = "https://huggingface.co/lm-provers"
-judge = "gpt-oss-20b, QED-Nano's {'IMO-ProofBench' if r['prompt_style'] == 'imo' else 'training'} prompt"
+judge = "{JUDGES[r['set']]}, QED-Nano's {'IMO-ProofBench' if r['prompt_style'] == 'imo' else 'training'} prompt"
 {meta_lines}
 
 [agent]
@@ -68,7 +73,8 @@ workdir = "/workspace"
 [verifier]
 timeout_sec = {VERIFIER_TIMEOUT}
 environment_mode = "separate"
-env = {{ HF_TOKEN = "${{HF_TOKEN}}", JUDGE_MODEL = "${{JUDGE_MODEL:-openai/gpt-oss-20b:deepinfra}}", JUDGE_SAMPLES = "${{JUDGE_SAMPLES:-1}}" }}
+# The judge's key and settings come from the environment `harbor run` is started in. JUDGE_API_KEY is required.
+env = {{ JUDGE_API_KEY = "${{JUDGE_API_KEY}}", JUDGE_PROVIDER = "${{JUDGE_PROVIDER:-hf}}", JUDGE_MODEL = "${{JUDGE_MODEL:-{JUDGES[r['set']]}}}", JUDGE_BASE_URL = "${{JUDGE_BASE_URL:-}}", JUDGE_REASONING_EFFORT = "${{JUDGE_REASONING_EFFORT:-medium}}", JUDGE_MAX_TOKENS = "${{JUDGE_MAX_TOKENS:-32768}}", JUDGE_EXTRA_BODY = "${{JUDGE_EXTRA_BODY:-}}", JUDGE_SAMPLES = "${{JUDGE_SAMPLES:-1}}" }}
 
 [[verifier.collect]]
 command = "python3 /opt/qed-nano/collect_proof.py"
@@ -95,6 +101,8 @@ def write_task(r: dict, out: Path) -> dict:
         shutil.copy(TEMPLATES / "tests" / name, d / "tests" / name)
     has_oracle = bool(r.get("reference_proof")) and r.get("reference_grade") == 7
     proof = r.get("reference_proof") if has_oracle else r.get("reference_solution")
+    if proof and len(proof.strip()) < MIN_ORACLE_CHARS:
+        proof = None  # a few benchmark "solutions" are only the final answer: no use as an oracle proof
     if proof:
         (d / "solution").mkdir()
         (d / "solution" / "proof.md").write_text(proof.strip() + "\n")

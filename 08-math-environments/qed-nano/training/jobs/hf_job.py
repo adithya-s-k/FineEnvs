@@ -6,7 +6,8 @@
     python jobs/hf_job.py train --name qed-train --bucket ... --steps 100 --submit
     python jobs/hf_job.py eval  --name qed-eval-step100 --bucket ... --checkpoint /outputs/qed-train/checkpoint-100 --step 100 --submit
 
-Secrets sent: HF_TOKEN (model downloads and the judge) and DAYTONA_API_KEY (sandboxes).
+Secrets sent: HF_TOKEN (model downloads), DAYTONA_API_KEY (sandboxes) and JUDGE_API_KEY (the verifier's judge).
+JUDGE_PROVIDER / JUDGE_MODEL / JUDGE_BASE_URL are passed through when set.
 """
 
 import argparse
@@ -68,8 +69,9 @@ def main():
     if args.space_id:
         command += ["--space-id", args.space_id]
     env = {"PYTHONUNBUFFERED": "1", "QED_PREPARE_ARGS": args.prepare_args}
-    if os.environ.get("DAYTONA_API_URL"):
-        env["DAYTONA_API_URL"] = os.environ["DAYTONA_API_URL"]
+    for name in ("DAYTONA_API_URL", "JUDGE_PROVIDER", "JUDGE_MODEL", "JUDGE_BASE_URL", "JUDGE_SAMPLES"):
+        if os.environ.get(name):
+            env[name] = os.environ[name]
     specification = {
         "image": "huggingface/trl@sha256:8433cde7eaf3b289f3daffdaefcab6bb71499ca1ff59dc5d05abba7a71603a58",
         "command": command,
@@ -80,15 +82,15 @@ def main():
         "env": env,
     }
     files = sorted(source_files())
-    print(json.dumps({**specification, "bucket": args.bucket, "secrets": ["HF_TOKEN", "DAYTONA_API_KEY"],
+    print(json.dumps({**specification, "bucket": args.bucket, "secrets": ["HF_TOKEN", "DAYTONA_API_KEY", "JUDGE_API_KEY"],
                       "source_files": len(files)}, indent=2))
     if not args.submit:
         return
     from huggingface_hub import Volume, get_token, run_job, sync_job_volume
 
     token = os.environ.get("HF_TOKEN") or get_token()
-    if not token or not os.environ.get("DAYTONA_API_KEY"):
-        parser.error("Set HF_TOKEN (or log in to HF) and DAYTONA_API_KEY")
+    if not token or not os.environ.get("DAYTONA_API_KEY") or not os.environ.get("JUDGE_API_KEY"):
+        parser.error("Set HF_TOKEN (or log in to HF), DAYTONA_API_KEY and JUDGE_API_KEY")
     with tempfile.TemporaryDirectory() as directory:
         for source in files:
             target = Path(directory) / source.relative_to(PROJECT)
@@ -98,7 +100,8 @@ def main():
     job = run_job(
         **specification,
         volumes=[source_volume, Volume(type="bucket", source=args.bucket, mount_path="/outputs", read_only=False)],
-        secrets={"HF_TOKEN": token, "DAYTONA_API_KEY": os.environ["DAYTONA_API_KEY"]},
+        secrets={"HF_TOKEN": token, "DAYTONA_API_KEY": os.environ["DAYTONA_API_KEY"],
+                 "JUDGE_API_KEY": os.environ["JUDGE_API_KEY"]},
     )
     print(job.url)
 

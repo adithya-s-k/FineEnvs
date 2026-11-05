@@ -43,8 +43,8 @@ def main():
     subprocess.run([sys.executable, "check_setup.py"], check=True)
     if not Path("prepared/ready.json").exists():
         raise RuntimeError("Run prepare.py before allocating GPUs")
-    if not os.environ.get("HF_TOKEN"):
-        raise RuntimeError("HF_TOKEN is needed: the verifier's judge calls Hugging Face Inference Providers with it")
+    if not os.environ.get("JUDGE_API_KEY"):
+        raise RuntimeError("JUDGE_API_KEY is needed: each task's verifier calls the judge with it")
     output = Path(args.output).resolve()
     if output.exists() and args.action == "train":
         raise ValueError("Use a fresh training output directory")

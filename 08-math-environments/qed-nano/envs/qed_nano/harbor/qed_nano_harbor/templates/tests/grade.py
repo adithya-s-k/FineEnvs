@@ -11,9 +11,17 @@ What this adds to QED-Nano's grader, because a policy will be optimised against 
   - the score is the last `<score>` tag of the judge's final answer, clamped to 0..7;
   - if the judge cannot be reached, no reward is written, so Harbor reports an error instead of a 0.
 
-Configuration (environment, all optional except a key): JUDGE_API_KEY or HF_TOKEN, JUDGE_BASE_URL
-(default Hugging Face Inference Providers), JUDGE_MODEL (default openai/gpt-oss-20b:deepinfra),
-JUDGE_REASONING_EFFORT (medium), JUDGE_SAMPLES (1: average of N independent grades).
+The judge can be any model behind one of these APIs (JUDGE_PROVIDER):
+  hf         Hugging Face Inference Providers (default), https://router.huggingface.co/v1, chat completions
+  openai     OpenAI, https://api.openai.com/v1, chat completions (max_completion_tokens)
+  vllm       any OpenAI-compatible server, e.g. your own vLLM: set JUDGE_BASE_URL
+  anthropic  Anthropic Messages API, https://api.anthropic.com/v1
+
+Configuration (environment): JUDGE_API_KEY (required; HF_TOKEN is accepted for the hf provider), JUDGE_PROVIDER,
+JUDGE_MODEL (default openai/gpt-oss-20b:deepinfra), JUDGE_BASE_URL (overrides the provider's), JUDGE_REASONING_EFFORT
+(medium; empty to omit; chat-completions providers), JUDGE_MAX_TOKENS (32768), JUDGE_EXTRA_BODY (JSON merged into the
+request, e.g. Anthropic's thinking settings), JUDGE_SAMPLES (1: average of N independent grades). Changing the judge
+changes the reward: QED-Nano's validation numbers are for gpt-oss-20b (training) and gpt-oss-120b (benchmarks).
 """
 
 from __future__ import annotations
@@ -36,8 +44,13 @@ SUBMISSIONS = (Path("/logs/artifacts/proof.md"), Path("/workspace/proof.md"))
 
 MAX_PROOF_CHARS = 60_000
 MAX_SCORE = 7
-DEFAULT_BASE_URL = "https://router.huggingface.co/v1"
 DEFAULT_MODEL = "openai/gpt-oss-20b:deepinfra"
+PROVIDERS = {
+    "hf": "https://router.huggingface.co/v1",
+    "openai": "https://api.openai.com/v1",
+    "vllm": None,  # JUDGE_BASE_URL is required
+    "anthropic": "https://api.anthropic.com/v1",
+}
 RETRIES = 4
 # Tags the judge prompt asks the judge to emit, and the prompt's own section headers. A proof that contains them
 # could pass for the judge's verdict or for a new section of the prompt.
@@ -87,22 +100,57 @@ def build_prompt(template: str, task: dict, proof: str) -> str:
     return PLACEHOLDER.sub(lambda m: values[m.group(1)], template)
 
 
-def call_judge(prompt: str) -> dict:
-    key = os.environ.get("JUDGE_API_KEY") or os.environ.get("HF_TOKEN")
+def judge_request(prompt: str) -> tuple[str, dict, dict]:
+    """(url, headers, body) for the configured provider."""
+    provider = (os.environ.get("JUDGE_PROVIDER") or "hf").lower()
+    if provider not in PROVIDERS:
+        raise JudgeUnavailable(f"unknown JUDGE_PROVIDER {provider!r}; use one of {sorted(PROVIDERS)}")
+    key = os.environ.get("JUDGE_API_KEY") or (os.environ.get("HF_TOKEN") if provider == "hf" else None)
     if not key:
-        raise JudgeUnavailable("no JUDGE_API_KEY or HF_TOKEN in the verifier's environment")
-    body = {
-        "model": os.environ.get("JUDGE_MODEL", DEFAULT_MODEL),
-        "messages": [{"role": "user", "content": prompt}],
-        "reasoning_effort": os.environ.get("JUDGE_REASONING_EFFORT", "medium"),
-        "temperature": 1.0,
-        "max_tokens": 65_536,
-    }
-    url = os.environ.get("JUDGE_BASE_URL", DEFAULT_BASE_URL).rstrip("/") + "/chat/completions"
+        raise JudgeUnavailable("no JUDGE_API_KEY in the verifier's environment")
+    base = os.environ.get("JUDGE_BASE_URL") or PROVIDERS[provider]
+    if not base:
+        raise JudgeUnavailable(f"JUDGE_PROVIDER={provider} needs JUDGE_BASE_URL")
+    model = os.environ.get("JUDGE_MODEL") or DEFAULT_MODEL
+    # Judge replies so far used under 11k tokens; 32k is the most every gpt-oss provider accepts.
+    max_tokens = int(os.environ.get("JUDGE_MAX_TOKENS") or "32768")
+    effort = os.environ.get("JUDGE_REASONING_EFFORT", "medium")
+    try:
+        extra = json.loads(os.environ.get("JUDGE_EXTRA_BODY") or "{}")
+    except json.JSONDecodeError as exc:
+        raise JudgeUnavailable(f"JUDGE_EXTRA_BODY is not valid JSON: {exc}")
+    messages = [{"role": "user", "content": prompt}]
+    if provider == "anthropic":
+        url = base.rstrip("/") + "/messages"
+        headers = {"x-api-key": key, "anthropic-version": "2023-06-01"}
+        body = {"model": model, "messages": messages, "max_tokens": max_tokens}
+    else:
+        url = base.rstrip("/") + "/chat/completions"
+        headers = {"Authorization": f"Bearer {key}"}
+        body = {"model": model, "messages": messages, "temperature": 1.0}
+        # OpenAI's reasoning models take max_completion_tokens and only their default temperature.
+        if provider == "openai":
+            body["max_completion_tokens"] = max_tokens
+            del body["temperature"]
+        else:
+            body["max_tokens"] = max_tokens
+        if effort:
+            body["reasoning_effort"] = effort
+    return url, {**headers, "Content-Type": "application/json"}, {**body, **extra}
+
+
+def judge_reply(out: dict) -> str:
+    """The judge's final answer (not its reasoning), from a chat-completions or an Anthropic Messages response."""
+    if "choices" in out:
+        return (out["choices"] or [{}])[0].get("message", {}).get("content") or ""
+    return "".join(block.get("text", "") for block in out.get("content") or [] if block.get("type") == "text")
+
+
+def call_judge(prompt: str) -> dict:
+    url, headers, body = judge_request(prompt)
     last = ""
     for attempt in range(RETRIES):
-        req = urllib.request.Request(url, data=json.dumps(body).encode(), method="POST", headers={
-            "Authorization": f"Bearer {key}", "Content-Type": "application/json"})
+        req = urllib.request.Request(url, data=json.dumps(body).encode(), method="POST", headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=900) as resp:
                 return json.load(resp)
@@ -127,7 +175,7 @@ def grade(proof: str, task: dict, template: str, samples: int) -> dict:
     grades, usage = [], []
     for _ in range(samples):
         out = call_judge(prompt)
-        reply = (out.get("choices") or [{}])[0].get("message", {}).get("content") or ""
+        reply = judge_reply(out)
         score = parse_score(reply)
         grades.append({"score": score, "assessment": reply[-4000:]})
         usage.append(out.get("usage") or {})
@@ -143,7 +191,8 @@ def main() -> int:
     task = json.loads((TESTS / "task.json").read_text())
     template = (TESTS / "judge_prompt.md").read_text()
     details: dict = {"task": task["id"], "started_at": time.time(),
-                     "judge_model": os.environ.get("JUDGE_MODEL", DEFAULT_MODEL)}
+                     "judge_provider": os.environ.get("JUDGE_PROVIDER") or "hf",
+                     "judge_model": os.environ.get("JUDGE_MODEL") or DEFAULT_MODEL}
     reward: float | None
     proof, where = read_submission()
     if proof is None:

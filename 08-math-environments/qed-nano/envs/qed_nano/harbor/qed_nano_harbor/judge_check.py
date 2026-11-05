@@ -9,7 +9,7 @@ olympiads  lm-provers/olympiads-proof-graderbench: 480 in-distribution proofs (6
 Each proof is graded by the task verifier's own code (templates/tests/grade.py: same prompt, safeguards and score
 parsing). The headline number is QED-Nano's: the mean absolute difference between the judge's and the reference's
 *advantages* (a grade minus its problem's mean grade), since a constant shift between graders does not change GRPO.
-QED-Nano reports about 1.2 to 1.4 points on the 0-7 scale for gpt-oss-20b. Needs HF_TOKEN (or JUDGE_API_KEY).
+QED-Nano reports about 1.2 to 1.4 points on the 0-7 scale for gpt-oss-20b. Needs JUDGE_API_KEY (and JUDGE_PROVIDER/JUDGE_MODEL for a judge other than the default).
 """
 
 from __future__ import annotations
