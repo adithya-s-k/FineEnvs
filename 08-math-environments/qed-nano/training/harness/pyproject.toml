@@ -1,0 +1,13 @@
+[project]
+name = "qed-proof-agent"
+version = "1.0.0"
+description = "The qed-proof Harbor agent: write an olympiad proof, check it like a grader, rewrite it."
+requires-python = ">=3.12"
+dependencies = ["harbor>=0.23", "httpx>=0.27"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["qed_proof_agent"]
