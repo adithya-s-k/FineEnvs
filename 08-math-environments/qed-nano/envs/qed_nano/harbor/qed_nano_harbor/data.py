@@ -30,6 +30,12 @@ FILES = {
     "proofbench_other": ("ProofBench", "data/other-00000-of-00001.parquet"),
 }
 SFT = ("FineProofs-SFT", ["data/train-00000-of-00002.parquet", "data/train-00001-of-00002.parquet"])
+# The revisions the published tasks were built from, so a rerun reproduces them. None = the latest.
+REVISIONS = {
+    "FineProofs-RL": "61c9ade2e04ab4ee7e257434e0826cb9b737f63e",
+    "FineProofs-RL-test": "f2f55ba4a125aa0cb2fde0e3e75df9ce8971774a",
+    "FineProofs-SFT": "73661e62811cf2940a0d3f82788a4f4332204c2f",
+}
 
 
 def normalize(text: str) -> str:
@@ -56,12 +62,13 @@ def fetch(cache: Path) -> dict[str, Path]:
     cache.mkdir(parents=True, exist_ok=True)
     paths = {}
     for key, (repo, file) in FILES.items():
-        paths[key] = Path(hf_hub_download(f"{REPO}/{repo}", file, repo_type="dataset", cache_dir=cache / "hub"))
+        paths[key] = Path(hf_hub_download(f"{REPO}/{repo}", file, repo_type="dataset", revision=REVISIONS.get(repo),
+                                            cache_dir=cache / "hub"))
     sft = cache / "FineProofs-SFT.proofs.parquet"
     if not sft.exists():
         fs, parts = HfFileSystem(), []
         for file in SFT[1]:
-            with fs.open(f"datasets/{REPO}/{SFT[0]}/{file}", "rb", block_size=2**20) as fh:
+            with fs.open(f"datasets/{REPO}/{SFT[0]}@{REVISIONS[SFT[0]]}/{file}", "rb", block_size=2**20) as fh:
                 parts.append(pq.ParquetFile(fh).read(columns=["problem", "proof", "gemini-3-pro-grade", "category",
                                                               "competition"]))
         pq.write_table(pa.concat_tables(parts), sft, compression="zstd")

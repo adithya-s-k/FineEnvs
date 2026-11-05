@@ -1,7 +1,7 @@
 """Grade every task's reference proof once, so each task records how its own oracle scores.
 
     JUDGE_API_KEY=... JUDGE_MODEL=openai/gpt-oss-120b:deepinfra JUDGE_REASONING_EFFORT=high \\
-        python -m qed_nano_harbor.oracle_sweep out/qed-nano-envs/{train,test}/tasks --out oracle.jsonl --limit 200
+        python -m qed_nano_harbor.oracle_sweep out/release/{train,test}/tasks --out oracle.jsonl --limit 200
 
 Each task's solution/proof.md is graded by that task's own tests/grade.py logic, prompt and rubric, with the judge
 set in the environment (a stronger one than the training reward's is the point: this checks the task, not a
