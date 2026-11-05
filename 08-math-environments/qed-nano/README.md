@@ -13,9 +13,11 @@
 
 ---
 
-> **Work in progress.** The tasks, the verifier and the training recipe are built and pass a local end-to-end run
-> (harness → sandbox → separate verifier); no judge call or training run has happened yet. [DESIGN.md](DESIGN.md)
-> has the reasoning, [training/](training/) the recipe.
+> **Work in progress.** The tasks and the verifier are built and validated: the judge's agreement on QED-Nano's
+> grader benchmarks, cheating probes, a sweep grading every reference proof, and end-to-end runs on Daytona with
+> Harbor 0.25. The train and test sets are staged as the Hub datasets `FineEnvs/qed-nano-envs-train` and
+> `FineEnvs/qed-nano-envs-test` (not uploaded yet). The training recipe is built but has not run.
+> [DESIGN.md](DESIGN.md) has the reasoning, [training/](training/) the recipe.
 
 [QED-Nano](https://huggingface.co/lm-provers/QED-Nano) is a 4B model trained by CMU, Hugging Face, ETH Zurich and
 Numina to write olympiad proofs. Its reward is an LLM judge: gpt-oss-20b scores each proof 0–7 against a
@@ -29,7 +31,7 @@ statement exactly; here a natural-language proof earns partial credit for the st
 <!-- BEGIN:matrix -->
 | Env | Tools | Backend | `harbor` |
 |---|---|---|---|
-| **olympiad_proofs** | shell (Python) | `daytona` | — |
+| **olympiad_proofs** | shell (Python) | `daytona` | ✅ |
 <!-- END:matrix -->
 
 ## What's here

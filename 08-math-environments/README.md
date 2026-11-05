@@ -68,7 +68,7 @@ Each row comes from an eval card.
 | Scott Wu Math, at once | 20 test deals, 5 per level | the target, exactly | no | 12 | GPT-6.1 Sol 0.70 | [eval-v1.json](scott-wu-math/results/eval-v1.json) |
 | Scott Wu Math, reasoning | the same 20 deals | the target, exactly | no | 12 | 7 of 12 solve all 20 | [eval-v1.json](scott-wu-math/results/eval-v1.json) |
 | openai/math | 369 tasks | a kernel-checked proof of the exact statement | no | | not run yet | |
-| QED-Nano proofs | IMO-ProofBench (60), ProofBench (145) | 7 of 7 on the rubric | gpt-oss-20b | | not built yet | |
+| QED-Nano proofs | IMO-ProofBench (60), ProofBench (145) | 7 of 7 on the rubric | gpt-oss-120b | | not run yet | |
 
 ## Add your environment
 
