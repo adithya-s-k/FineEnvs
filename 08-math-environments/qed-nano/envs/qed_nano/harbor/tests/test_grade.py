@@ -112,6 +112,24 @@ class Providers(unittest.TestCase):
         self.assertNotIn("reasoning_effort", body)
 
 
+class Streaming(unittest.TestCase):
+    def test_read_stream_assembles_content_and_usage(self):
+        lines = [b'data: {"choices":[{"delta":{"reasoning_content":"<score>7</score>"}}]}\n', b"\n",
+                 b'data: {"choices":[{"delta":{"content":"<assessment>ok</assessment>"}}]}\n',
+                 b'data: {"choices":[{"delta":{"content":"<score>4</score>"}}]}\n',
+                 b'data: {"choices":[],"usage":{"prompt_tokens":10,"completion_tokens":5}}\n', b"data: [DONE]\n"]
+        out = grade.read_stream(iter(lines))
+        self.assertEqual(grade.parse_score(grade.judge_reply(out)), 4)  # reasoning never counts
+        self.assertEqual(out["usage"]["completion_tokens"], 5)
+
+    def test_stream_defaults(self):
+        with mock.patch.dict("os.environ", {}, clear=True):
+            self.assertTrue(grade.streams("hf"))
+            self.assertFalse(grade.streams("openai"))
+        with mock.patch.dict("os.environ", {"JUDGE_STREAM": "0"}, clear=True):
+            self.assertFalse(grade.streams("hf"))
+
+
 class Main(unittest.TestCase):
     def run_main(self, proof: bytes | None, judge=None, env=None):
         tmp = Path(tempfile.mkdtemp())

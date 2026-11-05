@@ -20,7 +20,8 @@ The judge can be any model behind one of these APIs (JUDGE_PROVIDER):
 Configuration (environment): JUDGE_API_KEY (required; HF_TOKEN is accepted for the hf provider), JUDGE_PROVIDER,
 JUDGE_MODEL (default openai/gpt-oss-20b:deepinfra), JUDGE_BASE_URL (overrides the provider's), JUDGE_REASONING_EFFORT
 (medium; empty to omit; chat-completions providers), JUDGE_MAX_TOKENS (32768), JUDGE_EXTRA_BODY (JSON merged into the
-request, e.g. Anthropic's thinking settings), JUDGE_SAMPLES (1: average of N independent grades). Changing the judge
+request, e.g. Anthropic's thinking settings), JUDGE_STREAM (on for hf: the router times out long replies otherwise),
+JUDGE_SAMPLES (1: average of N independent grades). Changing the judge
 changes the reward: QED-Nano's validation numbers are for gpt-oss-20b (training) and gpt-oss-120b (benchmarks).
 """
 
@@ -138,7 +139,9 @@ def judge_request(prompt: str) -> tuple[str, dict, dict]:
             body["max_tokens"] = max_tokens
         if effort:
             body["reasoning_effort"] = effort
-    return url, {**headers, "Content-Type": "application/json"}, {**body, **extra}
+    # A named client: some providers' edge protection rejects Python's default user agent with an HTML 403.
+    return url, {**headers, "Content-Type": "application/json", "User-Agent": "qed-nano-envs-grader/1.0"}, \
+        {**body, **extra}
 
 
 def judge_reply(out: dict) -> str:
@@ -148,14 +151,39 @@ def judge_reply(out: dict) -> str:
     return "".join(block.get("text", "") for block in out.get("content") or [] if block.get("type") == "text")
 
 
+def streams(provider: str) -> bool:
+    """Stream chat-completions replies through the HF router by default: it times out long non-streamed replies."""
+    default = "1" if provider == "hf" else "0"
+    return (os.environ.get("JUDGE_STREAM") or default).lower() in ("1", "true", "yes")
+
+
+def read_stream(resp) -> dict:
+    """Assemble a streamed chat-completions reply into the non-streamed shape."""
+    parts, usage = [], {}
+    for raw in resp:
+        line = raw.decode("utf-8", errors="replace").strip()
+        if not line.startswith("data:") or line == "data: [DONE]":
+            continue
+        chunk = json.loads(line[5:])
+        if chunk.get("error"):
+            raise urllib.error.URLError(f"stream error: {chunk['error']}")
+        usage = chunk.get("usage") or usage
+        for choice in chunk.get("choices") or []:
+            parts.append((choice.get("delta") or {}).get("content") or "")
+    return {"choices": [{"message": {"content": "".join(parts)}}], "usage": usage}
+
+
 def call_judge(prompt: str) -> dict:
     url, headers, body = judge_request(prompt)
+    stream = streams((os.environ.get("JUDGE_PROVIDER") or "hf").lower()) and url.endswith("/chat/completions")
+    if stream:
+        body = {**body, "stream": True, "stream_options": {"include_usage": True}}
     last = ""
     for attempt in range(RETRIES):
         req = urllib.request.Request(url, data=json.dumps(body).encode(), method="POST", headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=900) as resp:
-                return json.load(resp)
+                return read_stream(resp) if stream else json.load(resp)
         except urllib.error.HTTPError as exc:
             last = f"HTTP {exc.code}: {exc.read()[:300]!r}"
             if exc.code in (400, 401, 403, 404):

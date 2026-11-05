@@ -25,7 +25,8 @@ from . import data
 
 TEMPLATES = Path(__file__).parent / "templates"
 PROMPTS = Path(__file__).parent / "prompts"
-DATASET = "qed-nano"
+DATASET = "qed-nano-envs"
+VALIDATED_SCORE = 6  # a task is "validated" when its reference proof scores at least this (0-7) in the oracle sweep
 VERSION = "1.0"
 AGENT_TIMEOUT = 3600
 VERIFIER_TIMEOUT = 3600  # room for judge retries and JUDGE_SAMPLES > 1
@@ -43,7 +44,7 @@ def toml_str(value: str) -> str:
 
 def task_toml(r: dict) -> str:
     meta = {k: r[k] for k in ("set", "source", "category", "competition", "level", "split") if r.get(k)}
-    for k in ("reward_mean", "reward_std", "num_rewards", "reference_grade"):
+    for k in ("reward_mean", "reward_std", "num_rewards", "reference_grade", "oracle_score", "oracle_judge"):
         if r.get(k) is not None:
             meta[k] = r[k]
     meta_lines = "\n".join(f"{k} = {json.dumps(v, ensure_ascii=False)}" for k, v in meta.items())
@@ -79,7 +80,7 @@ workdir = "/workspace"
 timeout_sec = {VERIFIER_TIMEOUT}
 environment_mode = "separate"
 # The judge's key and settings come from the environment `harbor run` is started in. JUDGE_API_KEY is required.
-env = {{ JUDGE_API_KEY = "${{JUDGE_API_KEY}}", JUDGE_PROVIDER = "${{JUDGE_PROVIDER:-hf}}", JUDGE_MODEL = "${{JUDGE_MODEL:-{JUDGES[r['set']]}}}", JUDGE_BASE_URL = "${{JUDGE_BASE_URL:-}}", JUDGE_REASONING_EFFORT = "${{JUDGE_REASONING_EFFORT:-medium}}", JUDGE_MAX_TOKENS = "${{JUDGE_MAX_TOKENS:-32768}}", JUDGE_EXTRA_BODY = "${{JUDGE_EXTRA_BODY:-}}", JUDGE_SAMPLES = "${{JUDGE_SAMPLES:-1}}" }}
+env = {{ JUDGE_API_KEY = "${{JUDGE_API_KEY}}", JUDGE_PROVIDER = "${{JUDGE_PROVIDER:-hf}}", JUDGE_MODEL = "${{JUDGE_MODEL:-{JUDGES[r['set']]}}}", JUDGE_BASE_URL = "${{JUDGE_BASE_URL:-}}", JUDGE_REASONING_EFFORT = "${{JUDGE_REASONING_EFFORT:-medium}}", JUDGE_MAX_TOKENS = "${{JUDGE_MAX_TOKENS:-32768}}", JUDGE_EXTRA_BODY = "${{JUDGE_EXTRA_BODY:-}}", JUDGE_STREAM = "${{JUDGE_STREAM:-}}", JUDGE_SAMPLES = "${{JUDGE_SAMPLES:-1}}" }}
 """
 
 
@@ -110,9 +111,10 @@ def write_task(r: dict, out: Path) -> dict:
         shutil.copy(TEMPLATES / "solution" / "solve.sh", d / "solution" / "solve.sh")
     for sh in d.rglob("*.sh"):
         sh.chmod(0o755)
-    return {"task": r["id"], "set": r["set"], "oracle": "deepseek-math-v2" if has_oracle else
-            ("reference-solution" if proof else None),
-            **{k: r.get(k) for k in ("source", "category", "reward_mean", "reward_std", "level")}}
+    oracle_kind = None if not proof else ("deepseek-math-v2" if has_oracle else "reference-solution")
+    return {"task": r["id"], "set": r["set"], "oracle": oracle_kind,
+            **{k: r.get(k) for k in ("source", "category", "competition", "reward_mean", "reward_std", "level",
+                                     "oracle_score", "oracle_judge")}}
 
 
 def main() -> None:
@@ -121,7 +123,15 @@ def main() -> None:
     ap.add_argument("--cache", type=Path, default=Path(".cache/qed-nano"))
     ap.add_argument("--sets", default="train,test,imo,proofbench")
     ap.add_argument("--limit", type=int, default=0, help="first N tasks of each set (for smoke tests)")
+    ap.add_argument("--oracle-results", type=Path,
+                    help="JSONL from oracle_sweep: stamps oracle_score/oracle_judge and adds *-validated registries")
     args = ap.parse_args()
+    oracle = {}
+    if args.oracle_results:
+        for line in args.oracle_results.read_text().splitlines():
+            row = json.loads(line)
+            if row.get("score") is not None:
+                oracle[row["task"]] = {"oracle_score": row["score"], "oracle_judge": f"{row['judge']} ({row['effort']})"}
 
     sets = data.load_all(data.fetch(args.cache))
     test_ids = {r["id"] for r in sets["test"]}
@@ -129,15 +139,35 @@ def main() -> None:
 
     manifest, registry = [], []
     for name in args.sets.split(","):
-        records = sets[name][: args.limit or None]
+        records = [{**r, **oracle.get(r["id"], {})} for r in sets[name][: args.limit or None]]
         written = [write_task(r, args.out / SET_NAMES[name]) for r in records]
         manifest += written
-        registry.append({"name": f"{DATASET}-{SET_NAMES[name]}", "version": VERSION,
-                         "description": f"{len(written)} olympiad proof tasks ({SET_NAMES[name]}) from QED-Nano's release, rubric-graded by an LLM judge.",
-                         "tasks": [{"name": w["task"], "path": f"{SET_NAMES[name]}/tasks/{w['task']}"} for w in written]})
-        print(f"{name}: {len(written)} tasks, {sum(1 for w in written if w['oracle'])} with an oracle proof")
+        label = SET_NAMES[name]
+        entry = lambda suffix, rows, what: {  # noqa: E731
+            "name": f"{DATASET}-{label}{suffix}", "version": VERSION,
+            "description": f"{len(rows)} olympiad proof tasks ({label}{what}) from QED-Nano's release, graded 0-7 by "
+                           "an LLM judge against each problem's rubric; reward = score / 7.",
+            "metrics": [{"type": "mean"}],
+            "tasks": [{"name": w["task"], "path": f"{label}/tasks/{w['task']}"} for w in rows]}
+        registry.append(entry("", written, ""))
+        validated = [w for w in written if (w.get("oracle_score") or 0) >= VALIDATED_SCORE]
+        if oracle:
+            registry.append(entry("-validated", validated, f", reference proof scored >= {VALIDATED_SCORE}/7"))
+        print(f"{name}: {len(written)} tasks, {sum(1 for w in written if w['oracle'])} with an oracle proof, "
+              f"{len(validated)} validated")
     (args.out / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False))
     (args.out / "registry.json").write_text(json.dumps(registry, indent=2))
+    write_parquet(args.out / "manifest.parquet", manifest)
+
+
+def write_parquet(path: Path, rows: list[dict]) -> None:
+    """manifest.parquet: one row per task, for filtering without walking the task folders."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    columns = ["task", "set", "source", "category", "competition", "reward_mean", "reward_std", "oracle",
+               "oracle_score", "oracle_judge"]
+    pq.write_table(pa.Table.from_pylist([{c: r.get(c) for c in columns} for r in rows]), path)
 
 
 if __name__ == "__main__":
