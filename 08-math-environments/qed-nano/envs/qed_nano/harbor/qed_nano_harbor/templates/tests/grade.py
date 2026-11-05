@@ -30,6 +30,7 @@ import json
 import os
 import re
 import secrets
+import stat
 import sys
 import time
 import urllib.error
@@ -38,9 +39,9 @@ from pathlib import Path
 
 TESTS = Path(__file__).resolve().parent
 VERIFIER_DIR = Path("/logs/verifier")
-# The collect hook copies the proof here when the verifier runs in its own sandbox; a shared verifier reads the
-# agent's workspace directly.
-SUBMISSIONS = (Path("/logs/artifacts/proof.md"), Path("/workspace/proof.md"))
+# task.toml declares /workspace/proof.md as an artifact, so Harbor restores it at the same path in the verifier's
+# sandbox (and a shared verifier reads it in place). /logs/artifacts/proof.md is where older task versions put it.
+SUBMISSIONS = (Path("/workspace/proof.md"), Path("/logs/artifacts/proof.md"))
 
 MAX_PROOF_CHARS = 60_000
 MAX_SCORE = 7
@@ -69,13 +70,14 @@ class JudgeUnavailable(Exception):
 def read_submission() -> tuple[str | None, str]:
     for path in SUBMISSIONS:
         try:
-            if path.is_symlink() or not path.is_file():
+            st = path.lstat()
+            if not stat.S_ISREG(st.st_mode):
                 continue
+            if st.st_size > 4 * MAX_PROOF_CHARS:
+                return None, f"{path} is larger than the limit"
             data = path.read_bytes()
         except OSError:
             continue
-        if len(data) > 4 * MAX_PROOF_CHARS:
-            return None, f"{path} is larger than the limit"
         return data.decode("utf-8", errors="replace"), str(path)
     return None, "no proof: /workspace/proof.md was not found"
 

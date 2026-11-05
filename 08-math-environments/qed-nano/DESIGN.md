@@ -63,12 +63,16 @@ scaffold-agnostic: any Harbor agent writes a proof file, and the verifier grades
 | Harbor piece | Contents |
 |---|---|
 | `instruction.md` | the problem, and "write a complete, rigorous proof to `/workspace/proof.md`" |
-| `environment/` | a small Python image (sympy available for checking computations); no network for the agent, since most problems are public AoPS threads |
-| collect hook | packs `/workspace/proof.md` (regular file, size-capped) into `/logs/artifacts/` |
-| `tests/` | the rubric and `grade.py`: calls gpt-oss-20b through Hugging Face Inference Providers with their v1 prompt and settings, writes `reward.txt` = score / 7 |
-| verifier | `environment_mode = "separate"`, network allowed only to the judge's host, `env = { HF_TOKEN = "${HF_TOKEN}" }`; the agent never sees the key or the rubric (the rubric sketches the solution) |
-| `solution/` | a proof that Gemini graded 7 in FineProofs-SFT, or the official solution for olympiad-sourced problems; tasks with neither ship without an oracle |
+| `environment/` | a small Python image pinned by digest (sympy for checking computations) |
+| `[agent] network_mode = "no-network"` | most problems are public AoPS threads; Harbor >= 0.25 still lets installed agents reach their model's host and turns off their built-in web search, and a host-side agent (qed-proof) calls its model from outside the sandbox |
+| `artifacts = ["/workspace/proof.md"]` | the one file that crosses: Harbor copies it to the same path in the verifier's sandbox (and sanitizes it on 0.25); grade.py re-checks it is a regular, size-capped file |
+| `tests/` | `task.json` (problem, marking scheme, reference solution for the IMO prompt), `judge_prompt.md` (QED-Nano's prompt, verbatim apart from placeholder names) and `grade.py`, which writes `reward.txt` = score / 7 |
+| verifier | `environment_mode = "separate"`; `env` forwards `JUDGE_API_KEY` (required) and the optional `JUDGE_PROVIDER` (hf, openai, vllm, anthropic), `JUDGE_MODEL`, `JUDGE_BASE_URL`, `JUDGE_REASONING_EFFORT`, `JUDGE_MAX_TOKENS`, `JUDGE_EXTRA_BODY`, `JUDGE_SAMPLES` from the host; the agent never sees the key or the rubric (the rubric sketches the solution). Default judge: gpt-oss-20b for train and test (QED-Nano's training reward), gpt-oss-120b for the benchmarks |
+| `solution/` | a DeepSeek-Math-V2 proof Gemini 3 Pro graded 7 (FineProofs-SFT, its appended self-evaluation removed), or the benchmark's official solution; answer-only solutions are not used, so those tasks ship without an oracle |
 | `task.toml` metadata | source, category, `reward_mean` / `reward_std` from the 128 attempts, so users can filter to QED-Nano's training subset (mean ≤ 0.7, std > 0.08) |
+
+Checked against Harbor 0.25.0 (and main, 2026-11-04): `harbor lint --select ALL` passes except `root-agent`, which
+is deliberate (the agent may be root in its own sandbox; grading happens in another).
 
 Registry entries: `qed-nano-train` (FineProofs-RL), `qed-nano-test` (FineProofs-RL-test), `imo-proofbench`,
 `proofbench`. Eval sets carry the benchmark's own grading guidelines in place of a FineProofs rubric.

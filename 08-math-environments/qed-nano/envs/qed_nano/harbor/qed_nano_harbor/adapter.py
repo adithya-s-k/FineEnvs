@@ -6,7 +6,7 @@
 Each task:
     instruction.md          the problem and what to submit
     task.toml               limits, network policy, verifier settings, metadata (difficulty, source)
-    environment/Dockerfile  a small Python image; the agent writes /workspace/proof.md
+    environment/Dockerfile  a small Python image; the agent writes /workspace/proof.md (declared as an artifact)
     tests/                  task.json (problem, marking scheme, reference solution), judge_prompt.md, grade.py
     solution/solve.sh       the oracle: a DeepSeek-Math-V2 proof Gemini 3 Pro graded 7 (FineProofs-SFT), when one exists
 
@@ -28,7 +28,7 @@ PROMPTS = Path(__file__).parent / "prompts"
 DATASET = "qed-nano"
 VERSION = "1.0"
 AGENT_TIMEOUT = 3600
-VERIFIER_TIMEOUT = 1800
+VERIFIER_TIMEOUT = 3600  # room for judge retries and JUDGE_SAMPLES > 1
 MIN_ORACLE_CHARS = 400
 # The training reward is QED-Nano's (gpt-oss-20b). The benchmarks get a stronger default judge, as QED-Nano graded its
 # benchmarks with a stronger model: gpt-oss-20b gave an IMO-ProofBench official solution 1/7 where gpt-oss-120b gave 7.
@@ -48,6 +48,8 @@ def task_toml(r: dict) -> str:
             meta[k] = r[k]
     meta_lines = "\n".join(f"{k} = {json.dumps(v, ensure_ascii=False)}" for k, v in meta.items())
     return f"""schema_version = "1.4"
+# The one file the verifier reads. Harbor copies it from the agent's sandbox to the same path in the verifier's.
+artifacts = ["/workspace/proof.md"]
 
 [task]
 name = "{DATASET}/{r['id']}"
@@ -62,6 +64,9 @@ judge = "{JUDGES[r['set']]}, QED-Nano's {'IMO-ProofBench' if r['prompt_style'] =
 
 [agent]
 timeout_sec = {AGENT_TIMEOUT}
+# Most problems are public forum threads. Harbor >= 0.25 still lets installed agents reach their model's host and
+# turns off their built-in web search; a host-side agent (like qed-proof) calls its model from outside the sandbox.
+network_mode = "no-network"
 
 [environment]
 build_timeout_sec = 900
@@ -75,10 +80,6 @@ timeout_sec = {VERIFIER_TIMEOUT}
 environment_mode = "separate"
 # The judge's key and settings come from the environment `harbor run` is started in. JUDGE_API_KEY is required.
 env = {{ JUDGE_API_KEY = "${{JUDGE_API_KEY}}", JUDGE_PROVIDER = "${{JUDGE_PROVIDER:-hf}}", JUDGE_MODEL = "${{JUDGE_MODEL:-{JUDGES[r['set']]}}}", JUDGE_BASE_URL = "${{JUDGE_BASE_URL:-}}", JUDGE_REASONING_EFFORT = "${{JUDGE_REASONING_EFFORT:-medium}}", JUDGE_MAX_TOKENS = "${{JUDGE_MAX_TOKENS:-32768}}", JUDGE_EXTRA_BODY = "${{JUDGE_EXTRA_BODY:-}}", JUDGE_SAMPLES = "${{JUDGE_SAMPLES:-1}}" }}
-
-[[verifier.collect]]
-command = "python3 /opt/qed-nano/collect_proof.py"
-timeout_sec = 60
 """
 
 
