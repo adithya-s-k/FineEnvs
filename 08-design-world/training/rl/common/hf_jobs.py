@@ -34,7 +34,9 @@ TASKS = RLF / "tinker" / "tasks" / "rl-train-gui.jsonl"
 SKINS = ("figma", "canva", "photoshop", "slides", "powerpoint", "inkscape")  # the mocked editors
 SKIP = {".venv", "__pycache__", ".pytest_cache", ".ruff_cache", "tests", "artifacts", "runs"}
 IMAGES = {
-    "miles": "radixark/miles:latest",
+    # pinned: `latest` moves several times a day and broke our flags (2026-11-06 renamed --rollout-max-context-len);
+    # this is the build the multi-turn overfit run (lr 1e-4, group 32) used
+    "miles": "radixark/miles:dev-202611051637",
     "skyrl": "novaskyai/skyrl-train-ray-2.57.0-py3.12-cu13.0-megatron",
 }
 
@@ -82,6 +84,7 @@ def bundle(tasks: bytes) -> bytes:
         for name in ("__init__.py", "common", "miles", "skyrl"):
             tar.add(RLF / name, arcname=f"rl/{name}", filter=_keep)
         tar.add(ENV_PKG, arcname="designgym", filter=_keep)
+        tar.add(EXP / "training" / "sft" / "merge_lora.py", arcname="rl/merge_lora.py")  # SFT_ADAPTER merges
         info = tarfile.TarInfo("tasks/train.jsonl")
         info.size = len(tasks)
         tar.addfile(info, io.BytesIO(tasks))

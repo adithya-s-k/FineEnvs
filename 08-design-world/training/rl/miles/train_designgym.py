@@ -11,6 +11,11 @@ from __future__ import annotations
 
 import argparse
 import os
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
 
 from miles.utils.external_utils.command_utils.base_backend import default_config
 
@@ -20,53 +25,84 @@ MODELS = {
     "Qwen/Qwen3.6-35B-A3B": {
         "registry": "qwen3.6-35B-A3B_lora",
         # TP<=2 (num_query_groups=2), EP over the node; GatedDeltaNet rejects packed thd -> bshd, micro-batch 1
-        "parallel": "--tensor-model-parallel-size 2 --sequence-parallel --pipeline-model-parallel-size 1 "
+        "parallel": "--tensor-model-parallel-size {tp} {sp}--pipeline-model-parallel-size 1 "
                     "--context-parallel-size 1 --expert-model-parallel-size {gpus} --expert-tensor-parallel-size 1",
-        "lora_extra": "--experts-shared-outer-loras",
+        "tp": 2,
+        "lora_extra": "--experts-shared-outer-loras",  # only when the LoRA targets include the MoE experts
         "engine_gpus": 8,
     },
     "Qwen/Qwen3.8-27B": {
         "registry": "qwen3.8-27B",
         # TP4 hung in the first backward (NCCL all-reduce timeout in the TP group); TP2 + SP is the layout the
         # 35B-A3B recipe validates
-        "parallel": "--tensor-model-parallel-size 2 --sequence-parallel --pipeline-model-parallel-size 1 "
+        "parallel": "--tensor-model-parallel-size {tp} {sp}--pipeline-model-parallel-size 1 "
                     "--context-parallel-size 1",
+        "tp": 2,
         "lora_extra": "",
         "engine_gpus": 2,
     },
     # dev loop on one GPU: the dense Qwen3.5 VLM class the 27B uses
     "Qwen/Qwen3.5-4B": {
         "registry": "qwen3.5-4B",
-        "parallel": "--tensor-model-parallel-size 1 --pipeline-model-parallel-size 1 --context-parallel-size 1",
+        "parallel": "--tensor-model-parallel-size {tp} {sp}--pipeline-model-parallel-size 1 --context-parallel-size 1",
+        "tp": 1,
         "lora_extra": "",
         "engine_gpus": 1,
     },
 }
 
 
+def wait_for_ray_job_agent(timeout_s: float = 180.0, floor_s: float = 15.0) -> None:
+    """Miles submits the Ray job right after `ray start --head`; if the dashboard agent (which runs job
+    submissions) is not serving yet, the submit fails with HTTP 500 "Server disconnected". Wait for it."""
+    t0 = time.time()
+    port = os.environ.get("RAY_DASHBOARD_AGENT_LISTEN_PORT", "52365")
+    while time.time() - t0 < timeout_s:
+        try:
+            urllib.request.urlopen(f"http://127.0.0.1:{port}/api/local_raylet_healthz", timeout=5)
+            break
+        except urllib.error.HTTPError:  # any HTTP answer means the agent is serving
+            break
+        except OSError:
+            time.sleep(2)
+    time.sleep(max(0.0, floor_s - (time.time() - t0)))
+    print(f"[designgym] ray job agent ready after {time.time() - t0:.0f}s", flush=True)
+
+
 def build_args(a) -> str:
     spec = MODELS[a.model]
     gpus = a.gpus
-    lora = (f"--lora-rank {a.lora_rank} --lora-alpha {a.lora_alpha} --lora-dropout 0 --target-modules all-linear "
-            f"{spec['lora_extra']} --no-gradient-accumulation-fusion --lora-base-cpu-backup "
-            f"--sglang-max-lora-rank {a.lora_rank} --sglang-lora-backend triton") if a.lora_rank else ""
+    tp = a.train_tp or spec["tp"]
+    # LoRA on the routed MoE experts is the costly part to serve; "attn" (attention + linear attention) skips them
+    extra = spec["lora_extra"] if a.lora_targets in ("all-linear", "mlp") or "mlp" in a.lora_targets.split(",") else ""
+    lora = (f"--lora-rank {a.lora_rank} --lora-alpha {a.lora_alpha} --lora-dropout 0 --target-modules {a.lora_targets} "
+            f"{extra} --no-gradient-accumulation-fusion --lora-base-cpu-backup "
+            f"--sglang-max-lora-rank {a.lora_rank} --sglang-lora-backend {a.lora_backend}") if a.lora_rank else ""
     parts = [
         f"--hf-checkpoint {a.hf_dir} --megatron-to-hf-mode bridge",
         lora,
         # rollout: our generate function plays the episode and sets the reward
         "--custom-generate-function-path rl.miles.designgym_generate.generate",
         f"--designgym-url {a.env_url} --designgym-max-turns {a.max_turns} --designgym-max-images {a.max_images} "
-        f"--designgym-keep-images {a.keep_images} --designgym-samples-per-episode {a.samples_per_episode}",
+        f"--designgym-keep-images {a.keep_images} --designgym-samples-per-episode {a.samples_per_episode} "
+        f"--designgym-train-chunks {a.train_chunks}",
         f"--prompt-data {a.data} --input-key prompt --metadata-key metadata --rollout-shuffle",
         f"--num-rollout {a.num_rollout} --rollout-batch-size {a.rollout_batch_size} "
         f"--n-samples-per-prompt {a.group_size} --rollout-max-response-len {a.max_new_tokens} "
         f"--rollout-max-context-len {a.max_context} --rollout-temperature 1.0 "
         f"--global-batch-size {a.global_batch_size}",
         "--advantage-estimator grpo --entropy-coef 0.00 --eps-clip 0.2 --eps-clip-high 0.28",
-        f"--optimizer adam --lr {a.lr} --lr-decay-style constant --weight-decay 0.1 --adam-beta1 0.9 "
+        # explicit decay length: Miles derives train_iters = num_rollout * rollout_batch * group // global_batch,
+        # which is 0 when episodes are several samples (global batch > rollout_batch * group) -> Megatron asserts
+        f"--optimizer adam --lr {a.lr} --lr-decay-style constant --lr-decay-iters 1000000 --weight-decay 0.1 "
+        "--adam-beta1 0.9 "
         "--adam-beta2 0.98",
-        spec["parallel"].format(gpus=gpus),
-        "--recompute-granularity full --recompute-method uniform --recompute-num-layers 1 "
+        # PPO ratio against the rollout engine's own log probs (train/rollout mismatch ~0.001). Not with
+        # --skip-actor-forward-only: Miles requires one optimizer step over rollout-batch x group samples for it,
+        # and our episodes are several samples (one per image-window chunk)
+        "--use-rollout-logprobs" if a.rollout_logprobs else "",
+        spec["parallel"].format(gpus=gpus, tp=tp, sp="--sequence-parallel " if tp > 1 else ""),
+        "" if a.no_recompute else "--recompute-granularity full --recompute-method uniform --recompute-num-layers 1",
         f"--qkv-format bshd --micro-batch-size 1 --max-tokens-per-gpu {a.max_tokens_per_gpu}",
         f"--rollout-num-gpus-per-engine {a.engine_gpus or min(spec['engine_gpus'], gpus)} "
         f"--sglang-mem-fraction-static {a.sglang_mem} --sglang-dtype bfloat16 --sglang-decode-log-interval 1000",
@@ -105,28 +141,61 @@ def main() -> None:
     ap.add_argument("--sglang-mem", type=float, default=0.4)
     ap.add_argument("--lr", type=float, default=1e-5)
     ap.add_argument("--save-interval", type=int, default=1)
+    ap.add_argument("--train-tp", type=int, default=0, help="Megatron tensor parallel size; 0: the model's default")
+    ap.add_argument("--lora-targets", default="all-linear",
+                    help="Miles --target-modules: all-linear, or groups such as attn / attn,mlp")
+    ap.add_argument("--rollout-logprobs", action="store_true",
+                    help="use the rollout engine's log probs for the PPO ratio (the trainer still runs its forward pass)")
+    ap.add_argument("--no-recompute", action="store_true", help="no activation recompute (faster, more memory)")
+    ap.add_argument("--lora-backend", default="triton", choices=["triton", "csgmv"],
+                    help="SGLang's LoRA kernels for rollout (csgmv: chunked SGMV, usually faster)")
+    ap.add_argument("--train-chunks", type=int, default=0,
+                    help="train on this many randomly chosen chunks per episode (the rest are inert); 0: all")
     ap.add_argument("--extra", default="", help="more Miles flags, verbatim")
     a = ap.parse_args()
     from rl.common.episode import EpisodeConfig
 
     a.samples_per_episode = a.samples_per_episode or EpisodeConfig(
         max_turns=a.max_turns, max_images=a.max_images, keep_images=a.keep_images).chunk_bound()
-    total = a.rollout_batch_size * a.group_size * a.samples_per_episode
+    per_episode = a.train_chunks or a.samples_per_episode  # samples each episode returns (see designgym_generate)
+    total = a.rollout_batch_size * a.group_size * per_episode
     if total % a.steps_per_rollout:
         raise SystemExit(f"{total} samples per rollout do not split into {a.steps_per_rollout} steps")
     a.global_batch_size = total // a.steps_per_rollout
-    print(f"[designgym] {total} samples per rollout ({a.samples_per_episode} per episode) -> global batch "
+    print(f"[designgym] {total} samples per rollout ({per_episode} per episode, chunk cap {a.samples_per_episode}) "
+          f"-> global batch "
           f"{a.global_batch_size}, {a.steps_per_rollout} optimizer steps per rollout", flush=True)
     train_args = build_args(a)
     print("[designgym] miles args:", train_args, flush=True)
     backend = default_config().create_backend()
-    backend.execute_train(
-        train_args=train_args, num_gpus_per_node=a.gpus, megatron_model_type=MODELS[a.model]["registry"],
-        megatron_path="/root/Megatron-LM",
-        # Ray workers inherit HF_TOKEN from the job's environment; never put secrets here: Miles prints the
-        # runtime env (`ray job submit --runtime-env-json=...`) into the log.
-        extra_env_vars={"PYTHONPATH": os.environ.get("DESIGNGYM_PYTHONPATH", "/work")},
-    )
+    registry = MODELS[a.model]["registry"]
+    pythonpath = os.environ.get("DESIGNGYM_PYTHONPATH", "/work")
+    if os.environ.get("DESIGNGYM_RAY_SUBMIT", "0") == "1":  # Miles' own path: `ray job submit` via the job agent
+        backend.execute_train(
+            train_args=train_args, num_gpus_per_node=a.gpus, megatron_model_type=registry,
+            megatron_path="/root/Megatron-LM",
+            before_ray_job_submit=wait_for_ray_job_agent,
+            # Ray workers inherit HF_TOKEN from the job's environment; never put secrets here: Miles prints the
+            # runtime env (`ray job submit --runtime-env-json=...`) into the log.
+            extra_env_vars={"PYTHONPATH": pythonpath},
+        )
+        return
+    # Default: run train.py as the Ray driver on the head node. On some HF Jobs nodes Ray's dashboard agent dies
+    # while creating the job (POST /api/jobs/ -> 500 "Server disconnected"), with the same image and request that
+    # work elsewhere; the driver path does not use the job agent. The runtime env Miles would submit goes into
+    # this process's environment before `ray start --head`, so the raylet and every worker inherit it.
+    os.environ.update({"PYTHONUNBUFFERED": "1", "CUDA_DEVICE_MAX_CONNECTIONS": "1", "NCCL_NVLS_ENABLE": "1",
+                       "no_proxy": f"127.0.0.1,{os.environ.get('MASTER_ADDR', '127.0.0.1')}",
+                       "MASTER_ADDR": os.environ.get("MASTER_ADDR", "127.0.0.1"),  # the job's Ray preflight picks it
+                       "PYTHONPATH": f"/root/miles:/root/Megatron-LM:{pythonpath}",
+                       "MILES_SCRIPT_ENABLE_RAY_SUBMIT": "0"})
+    backend.execute_train(train_args=train_args, num_gpus_per_node=a.gpus, megatron_model_type=registry,
+                          megatron_path="/root/Megatron-LM")  # cleans up, starts the Ray head, does not submit
+    from miles.utils.external_utils.model_args_utils import shell_safe_model_args
+
+    cmd = f"python3 /root/miles/train.py {shell_safe_model_args(registry)} {train_args} --deploy-component all"
+    print(f"[designgym] running the Ray driver directly: {cmd[:300]} ...", flush=True)
+    sys.exit(subprocess.call(["bash", "-c", cmd], env={**os.environ, "RAY_ADDRESS": "auto"}))
 
 
 if __name__ == "__main__":

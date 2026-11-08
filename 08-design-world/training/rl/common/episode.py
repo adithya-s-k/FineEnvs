@@ -22,6 +22,8 @@ the episode's reward.
 from __future__ import annotations
 
 import asyncio
+import json
+import os
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
@@ -179,12 +181,17 @@ class Trajectory:
 
 
 def _task_reset_kwargs(task: dict, cfg: EpisodeConfig) -> dict:
+    """Reset arguments for a task row. A DesignWorldBench v2 frozen episode (seed, look, file window, workspace,
+    `budget_note="efficient"`, its own `max_steps`) passes through as is, so the prompt matches the SFT traces;
+    the harness still stops at `cfg.max_turns` with a forced submit."""
     kwargs = {k: v for k, v in task.items() if k in ("task_id", "split", "index", "mode", "surface", "skin",
-                                                       "coordinates", "theme", "layout")}
+                                                       "coordinates", "theme", "layout", "seed", "file_dialog",
+                                                       "workspace", "budget_note", "max_steps")
+              and v is not None}
     kwargs.setdefault("surface", "gui")
     kwargs.setdefault("mode", "reference")
     kwargs.setdefault("coordinates", "normalized")
-    kwargs["max_steps"] = cfg.max_turns
+    kwargs.setdefault("max_steps", cfg.max_turns)
     return kwargs
 
 
@@ -322,8 +329,23 @@ async def run_episode(env_url: str, chat: QwenChat, task: dict, generate: Genera
     m["seconds"] = time.time() - t0
     m["reward"] = res.reward
     if grade:
-        for k in ("structure", "visual", "coverage", "order", "background"):
+        for k in ("structure", "visual", "coverage", "order", "background", "n_gt", "n_submitted", "n_matched"):
             if isinstance(grade.get(k), (int, float)):
                 m[f"grade_{k}"] = float(grade[k])
     res.metrics = {k: float(v) for k, v in m.items()}
+    _log_episode(res)
     return res
+
+
+def _log_episode(res: EpisodeResult) -> None:
+    """One JSON line per episode to $DESIGNGYM_EPISODE_LOG (the job uploads it): the reward curve per task."""
+    path = os.environ.get("DESIGNGYM_EPISODE_LOG")
+    if not path:
+        return
+    row = {"t": round(time.time(), 1), "task_id": res.task.get("task_id"), "skin": res.task.get("skin"),
+           "reward": res.reward, "status": res.status, "error": res.error, **res.metrics}
+    try:
+        with open(path, "a") as f:
+            f.write(json.dumps(row) + "\n")
+    except OSError:
+        pass

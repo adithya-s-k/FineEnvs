@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import random
 import time
 from copy import deepcopy
 
@@ -104,13 +105,21 @@ def _inert(src: Sample, chat: QwenChat, rollout_id: int, reward: float, metadata
     return s
 
 
-def _samples(input: GenerateFnInput, chat: QwenChat, res: EpisodeResult, n: int) -> list[Sample]:
+def _samples(input: GenerateFnInput, chat: QwenChat, res: EpisodeResult, n: int, train_chunks: int = 0) -> list[Sample]:
+    """`train_chunks` > 0: the episode returns exactly that many samples: that many of its chunks, chosen at random
+    (cuts training time), padded with inert samples when it has fewer. Otherwise it returns `n` (the chunk cap)."""
     src = input.sample
     rollout_id = src.index if src.rollout_id is None else src.rollout_id
     meta = {**(src.metadata or {}), **{f"designgym/{k}": v for k, v in res.metrics.items()},
             "designgym_chunks": len(res.chunks), "designgym_status": res.status, "designgym_error": res.error}
     out = []
-    for chunk in res.chunks[:n]:
+    chunks = res.chunks[:n]
+    if train_chunks > 0:
+        n = train_chunks  # the fixed per-episode sample count Miles sees
+        if train_chunks < len(chunks):
+            keep = set(random.sample(range(len(chunks)), train_chunks))
+            chunks = [c for i, c in enumerate(chunks) if i in keep]
+    for chunk in chunks:
         s = deepcopy(src)
         p = chunk.prompt_len
         s.tokens = list(chunk.tokens)
@@ -143,13 +152,17 @@ async def generate(input: GenerateFnInput) -> GenerateFnOutput:
     chat = _chat(input)
     task = dict(input.sample.metadata or {})
     t0 = time.time()
-    res = await run_episode(args.designgym_url, chat, task, _engine(input), _config(args))
+    # --designgym-url may list several servers (comma-separated, e.g. env Spaces): episodes spread by sample index
+    urls = [u for u in args.designgym_url.split(",") if u]
+    url = urls[(input.sample.index or 0) % len(urls)]
+    res = await run_episode(url, chat, task, _engine(input), _config(args))
     if res.status == "error":
         logger.warning("designgym episode failed (%s): %s", task.get("task_id"), res.error)
     else:
         logger.info("designgym %s reward=%.3f status=%s turns=%d chunks=%d %.0fs", task.get("task_id"), res.reward,
                     res.status, res.metrics.get("turns", 0), len(res.chunks), time.time() - t0)
-    return GenerateFnOutput(samples=_samples(input, chat, res, _config(args).max_chunks))
+    return GenerateFnOutput(samples=_samples(input, chat, res, _config(args).max_chunks,
+                                             getattr(args, "designgym_train_chunks", 0)))
 
 
 def _add_arguments(parser: argparse.ArgumentParser):
@@ -160,6 +173,8 @@ def _add_arguments(parser: argparse.ArgumentParser):
     parser.add_argument("--designgym-max-context", type=int, default=32768)
     parser.add_argument("--designgym-samples-per-episode", type=int, default=0,
                         help="samples (chunks) each episode returns; 0: the window's chunk bound for max turns")
+    parser.add_argument("--designgym-train-chunks", type=int, default=0,
+                        help="train on this many randomly chosen chunks per episode, the rest inert; 0: all")
 
 
 generate.add_arguments = _add_arguments
