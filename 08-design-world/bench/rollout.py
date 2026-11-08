@@ -129,6 +129,10 @@ def main(argv=None) -> int:
     ap.add_argument("--max-tokens", type=int, default=16000)
     ap.add_argument("--keep-images", type=int, default=4)
     ap.add_argument("--image-window", default=None, type=lambda v: tuple(int(x) for x in v.split(",")))
+    ap.add_argument("--episode-timeout", type=float, default=None, help="seconds per episode, overriding the set's "
+                    "(at the deadline the canvas is submitted and graded as it stands)")
+    ap.add_argument("--timeout-after-reset", action="store_true", help="start the episode clock after the reset, so "
+                    "a real app's desktop start-up does not eat into the episode's time")
     ap.add_argument("--request-timeout", type=float, default=300.0)
     ap.add_argument("--no-frames", action="store_true")
     ap.add_argument("--env-file", default=None)
@@ -167,12 +171,14 @@ def main(argv=None) -> int:
     out.mkdir(parents=True, exist_ok=True)
     (out / "run.json").write_text(json.dumps({
         "evalset": record["name"], "evalset_id": record["evalset_id"], "settings": settings, "models": models,
-        "editors": editors, "tasks": task_ids, "base_url": base_url, "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "editors": editors, "tasks": task_ids, "base_url": base_url,
+        "episode_timeout": a.episode_timeout or settings["episode_timeout"], "timeout_after_reset": a.timeout_after_reset, "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }, indent=1))
 
     # the episode loop takes its limits from these, as the v1 harness's flags
     args = argparse.Namespace(coordinates=a.coordinates or settings.get("coordinates", "auto"), max_steps=settings["max_steps"],
-                              max_turns=settings["max_turns"], episode_timeout=settings["episode_timeout"],
+                              max_turns=settings["max_turns"], episode_timeout=a.episode_timeout or settings["episode_timeout"],
+                              timeout_after_reset=a.timeout_after_reset,
                               max_tokens=a.max_tokens, keep_images=a.keep_images, image_window=a.image_window,
                               no_frames=a.no_frames)
     trace_path = out / "trace.jsonl"

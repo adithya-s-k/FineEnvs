@@ -646,7 +646,9 @@ def run_episode(base_url: str, spec: str, surface: str, mode: str, split: str, i
 
         done, grade, nudges = False, None, 0
         max_turns = args.max_turns or DEFAULT_TURNS[surface]
-        deadline = t0 + args.episode_timeout
+        # (by default the clock includes the reset, as published v2 runs; with timeout_after_reset it starts here, after
+        #  a real app's desktop has started)
+        deadline = (time.time() if getattr(args, "timeout_after_reset", False) else t0) + args.episode_timeout
         for turn_no in range(max_turns):
             if time.time() > deadline:
                 record["error"] = f"episode exceeded {args.episode_timeout}s"
