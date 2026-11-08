@@ -5,7 +5,7 @@ transformers @ git+https://github.com/huggingface/transformers.git@d6c1e71bd717b
 datasets
 accelerate
 bitsandbytes
-kernels
+kernels>=0.17,<0.18  # the pinned Transformers loads its attention kernel through kernels 0.17.x
 trackio
 harbor[daytona]==0.24.0
 daytona>=0.203.0

@@ -6,7 +6,7 @@ TRL_COMMIT=52fb144e7ece97e26aabd3c025740022838e46b5
 # OpenEnv main (9fac2a9a) + openenv/OpenEnv#1573, which runs `--harness module:Class` and hands host-side agents
 # (qed-proof) the capture proxy's loopback URL. Switch to the merge commit on openenv/OpenEnv once it lands.
 OPENENV_REPO=${OPENENV_REPO:-https://github.com/adithya-s-k/OpenEnv.git}
-OPENENV_COMMIT=${OPENENV_COMMIT:-6fb632a4c1687489d7d3e7bf9aae18586b9b465a}
+OPENENV_COMMIT=${OPENENV_COMMIT:-0bd1a89d165f65ba865cfe792b9cb6fd5c5525d5}
 python -m pip install -r requirements.txt
 python -m pip install "trl @ git+https://github.com/huggingface/trl.git@${TRL_COMMIT}"
 mkdir -p .deps

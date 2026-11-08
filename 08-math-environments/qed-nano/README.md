@@ -69,6 +69,16 @@ gpt-oss-20b. The two paths agree within noise ([results/openenv-parity-v1.json](
 Per task, OpenEnv minus Harbor averages −0.049 with a standard error of 0.046. Every rollout made exactly 2 model
 calls on both paths.
 
+Training tier, on the same 64 tasks: Qwen3.5-9B on our own vLLM (one B200, serving token ids and processed
+logprobs) with the recipe's training sampling (temperature 0.8, top_p 1). 63 of 64 rollouts were graded; the judge's
+provider rate-limited the last one. Mean reward 0.753, 42 full marks
+([results/openenv-training-tier-v1.json](results/openenv-training-tier-v1.json)). Every graded rollout gave a valid
+`TrainingTrace`, the object TRL's `HarnessRolloutWorker` trains on:
+- both calls are trainable;
+- there is one logprob per sampled token;
+- the prompt is masked out;
+- the engine's prompt tokens match a local re-render on all 126 turns.
+
 ## Credits
 
 Problems, rubrics, benchmarks and the judge's prompt are from the

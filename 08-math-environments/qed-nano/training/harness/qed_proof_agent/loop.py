@@ -1,8 +1,9 @@
 """The qed-proof harness: write a proof, check it like a strict grader, rewrite it.
 
 QED-Nano's best scaffolds (DeepSeek-Math, Self-Check) all end in the same move: the model reads its own proof
-critically and writes a better one. This harness trains that move directly. One episode is one conversation,
-append-only so every turn is a prefix of the next (what OpenEnv's capture needs for training):
+critically and writes a better one. This harness trains that move directly. One episode is one conversation, and
+its messages only ever grow (whether the token sequences also extend each other depends on the chat template; see
+training/README.md):
 
     system   how replies are used
     user     the task instruction (the problem)

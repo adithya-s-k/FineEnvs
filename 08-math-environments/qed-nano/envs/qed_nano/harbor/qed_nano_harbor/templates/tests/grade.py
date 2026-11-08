@@ -53,7 +53,11 @@ PROVIDERS = {
     "vllm": None,  # JUDGE_BASE_URL is required
     "anthropic": "https://api.anthropic.com/v1",
 }
-RETRIES = 4
+# A shared provider rate-limits for minutes at a time (an HTTP 429 lasting past 4 tries, in a 64-rollout run), and an
+# unreachable judge costs the rollout its grade. Six tries wait up to 15+30+60+120+240 s, or the provider's
+# Retry-After, capped.
+RETRIES = 6
+RETRY_CAP_SEC = 300
 # Tags the judge prompt asks the judge to emit, and the prompt's own section headers. A proof that contains them
 # could pass for the judge's verdict or for a new section of the prompt.
 JUDGE_TAG = re.compile(r"</?\s*(score|points|assessment|errors)\b[^>]*>", re.I)
@@ -181,6 +185,7 @@ def call_judge(prompt: str) -> dict:
     last = ""
     for attempt in range(RETRIES):
         req = urllib.request.Request(url, data=json.dumps(body).encode(), method="POST", headers=headers)
+        retry_after = None
         try:
             with urllib.request.urlopen(req, timeout=900) as resp:
                 return read_stream(resp) if stream else json.load(resp)
@@ -188,10 +193,22 @@ def call_judge(prompt: str) -> dict:
             last = f"HTTP {exc.code}: {exc.read()[:300]!r}"
             if exc.code in (400, 401, 403, 404):
                 break  # a request the provider will never accept: retrying cannot help
+            retry_after = exc.headers.get("Retry-After") if exc.headers else None
         except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
             last = f"{type(exc).__name__}: {exc}"
-        time.sleep(15 * 2 ** attempt)
+        if attempt + 1 < RETRIES:
+            time.sleep(retry_delay(attempt, retry_after))
     raise JudgeUnavailable(f"judge request failed: {last}")
+
+
+def retry_delay(attempt: int, retry_after: str | None = None) -> float:
+    """Seconds before the next try: the provider's Retry-After (in seconds) when it sends one, else 15 s doubling."""
+    try:
+        if retry_after is not None:
+            return min(RETRY_CAP_SEC, max(0.0, float(retry_after)))
+    except ValueError:
+        pass  # an HTTP date: fall back to the backoff
+    return min(RETRY_CAP_SEC, 15 * 2 ** attempt)
 
 
 def parse_score(reply: str) -> int | None:

@@ -1,5 +1,8 @@
 """Submit a run to HF Jobs, with the qed-nano source and a bucket for outputs. Adapted from 05's jobs/hf_job.py.
 
+A run writes to the Job's local disk and jobs/entrypoint.sh copies it to <bucket>/<name>/ every 5 minutes and at the
+end. The bucket is also mounted read-only at /outputs, so an eval can load a checkpoint an earlier run saved there.
+
     python jobs/hf_job.py smoke --name qed-smoke --bucket <owner>/<bucket>              # prints the plan
     python jobs/hf_job.py smoke --name qed-smoke --bucket <owner>/<bucket> --submit
     python jobs/hf_job.py eval  --name qed-eval-base --bucket ... --submit
@@ -61,15 +64,15 @@ def main():
     if not separator or not namespace or not bucket:
         parser.error("Use owner/bucket for --bucket")
     command = ["bash", "/qed-nano-source/training/jobs/entrypoint.sh", args.action, "--model", args.model,
-               "--output", "/outputs/" + args.name, "--steps", str(args.steps), "--save-steps", str(args.save_steps),
-               "--step", str(args.step), "--tasks", str(args.tasks), "--samples", str(args.samples),
+               "--output", "/workspace/outputs/" + args.name, "--steps", str(args.steps),
+               "--save-steps", str(args.save_steps), "--step", str(args.step), "--tasks", str(args.tasks), "--samples", str(args.samples),
                "--concurrency", str(args.concurrency)]
     if args.checkpoint:
         command += ["--checkpoint", args.checkpoint]
     if args.space_id:
         command += ["--space-id", args.space_id]
-    env = {"PYTHONUNBUFFERED": "1", "QED_PREPARE_ARGS": args.prepare_args}
-    for name in ("DAYTONA_API_URL", "JUDGE_PROVIDER", "JUDGE_MODEL", "JUDGE_BASE_URL", "JUDGE_SAMPLES"):
+    env = {"PYTHONUNBUFFERED": "1", "QED_PREPARE_ARGS": args.prepare_args, "QED_OUTPUT_BUCKET": args.bucket}
+    for name in ("DAYTONA_API_URL", "JUDGE_PROVIDER", "JUDGE_MODEL", "JUDGE_BASE_URL", "JUDGE_SAMPLES", "QED_PROOF_ROUNDS"):
         if os.environ.get(name):
             env[name] = os.environ[name]
     specification = {
@@ -99,7 +102,7 @@ def main():
         source_volume = sync_job_volume(directory, "/qed-nano-source", namespace=namespace)
     job = run_job(
         **specification,
-        volumes=[source_volume, Volume(type="bucket", source=args.bucket, mount_path="/outputs", read_only=False)],
+        volumes=[source_volume, Volume(type="bucket", source=args.bucket, mount_path="/outputs", read_only=True)],
         secrets={"HF_TOKEN": token, "DAYTONA_API_KEY": os.environ["DAYTONA_API_KEY"],
                  "JUDGE_API_KEY": os.environ["JUDGE_API_KEY"]},
     )

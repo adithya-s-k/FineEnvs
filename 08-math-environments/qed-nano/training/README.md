@@ -18,8 +18,12 @@ user       "grade it step by step, list every gap, then write the corrected proo
 assistant  the critique and the final proof   ──►  /workspace/proof.md  ──►  verifier: rubric judge, score / 7
 ```
 
-The conversation is append-only, so OpenEnv's capture proxy records it as one training row, and every call the
-harness makes is trained. The harness is a host-side Harbor agent
+Every call the harness makes goes through OpenEnv's capture proxy and is trained. With Qwen3.5 in non-thinking mode
+the two calls are two training rows, not one. The chat template drops the empty `<think></think>` block from an
+assistant turn once a user message follows it, so the second call's prompt re-renders the first proof instead of
+extending the first call's tokens. OpenEnv records each call with the engine's own token ids and logprobs, and both
+rows get the rollout's reward. The cost is the first proof, repeated as context in the second row. The harness is a
+host-side Harbor agent
 ([`harness/qed_proof_agent/agent.py`](harness/qed_proof_agent/agent.py)): it calls the policy over an OpenAI chat
 endpoint and writes the final proof into the sandbox. The loop itself is
 [`harness/qed_proof_agent/loop.py`](harness/qed_proof_agent/loop.py), and the number of check-and-rewrite rounds is
@@ -68,7 +72,16 @@ python jobs/hf_job.py eval  --name qed-eval-step100 --bucket <owner>/<bucket> \
 ```
 
 Without `--submit` each command prints the job it would run. On your own two-GPU machine, run `bash jobs/install.sh`
-and `python prepare.py`, then `python jobs/run.py {train,eval} ...` with the same options.
+and `python prepare.py`, then `python jobs/run.py {train,eval} ...` with the same options. The GPUs must be A100s,
+H100s or H200s: the pinned TRL's AsyncGRPO trains with `kernels-community/flash-attn3`, which is built for those
+architectures (sm80, sm90) and refuses a B200.
+
+On a shared cluster whose user ids a Daytona sandbox cannot map (uid 150234 on the HF cluster), every rollout fails
+before grading with `tar: .: Cannot change ownership to uid …`. Harbor's Daytona backend copies the agent's proof into
+the verifier's sandbox as an archive and unpacks it as root, keeping the host's owner
+([harbor-framework/harbor#1959](https://github.com/harbor-framework/harbor/issues/1959)). Until
+[harbor-framework/harbor#2043](https://github.com/harbor-framework/harbor/pull/2043) is released, add
+`--no-same-owner` to the `tar -xzf` command in the installed `harbor/environments/tar_transfer.py`.
 
 ## Tests
 

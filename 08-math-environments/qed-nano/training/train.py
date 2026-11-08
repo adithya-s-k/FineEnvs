@@ -18,7 +18,11 @@ from transformers import AutoTokenizer
 from tasks import TaskFactory, dataset_dir, load_tasks
 
 # The pinned revision 05-multi-harness-rl validated. LFM2.5 needs 05's packed-convolution fix, not ported here.
-MODEL_REVISIONS = {"Qwen/Qwen3.5-2B": "15852e8c16360a2fea060d615a32b45270f8a8fc"}
+MODEL_REVISIONS = {
+    "Qwen/Qwen3.5-2B": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+    "Qwen/Qwen3.5-4B": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "Qwen/Qwen3.5-9B": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+}
 
 
 def arguments():

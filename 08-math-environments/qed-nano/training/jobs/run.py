@@ -115,7 +115,8 @@ def main():
             "OPENENV_HARBOR_TRIALS_DIR": str(output / "trials"),
             "OPENENV_MAX_OUTPUT_TOKENS": "8192",
             "OPENENV_CAPTURE_PORT": str(capture_port),
-            "OPENENV_EXPOSE": "gradio",
+            # qed-proof runs host-side and reaches the capture proxy on loopback, so no public tunnel is needed.
+            "OPENENV_EXPOSE": os.environ.get("OPENENV_EXPOSE", "direct"),
             "MAX_CONCURRENT_ENVS": str(max(32, args.concurrency) + 8),
             "ENABLE_WEB_INTERFACE": "false",
         })

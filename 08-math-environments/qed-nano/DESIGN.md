@@ -95,10 +95,10 @@ Their parser has gaps that matter once a policy is optimising against it:
 [training/](training/) trains a small model on these tasks with OpenEnv's Harbor integration and TRL's AsyncGRPO,
 the path 05-multi-harness-rl built for stock coding agents, but every rollout runs **qed-proof**: a host-side Harbor
 agent that writes a proof, grades it the way a strict grader would, and rewrites it. That is the move QED-Nano's best
-scaffolds end in, and here RL trains it directly. Every call goes through OpenEnv's capture proxy, the conversation is
-append-only (one training row), and the reward is the verifier's score / 7. OpenEnv documents `module:Class`
-harnesses but resolves only registered names, so `training/server.py` registers a `qed-proof` seam in the Harbor
-server process.
+scaffolds end in, and here RL trains it directly. Every call goes through OpenEnv's capture proxy and is trained
+(with Qwen3.5 in non-thinking mode, as one row per call: see training/README.md), and the reward is the verifier's
+score / 7. The Harbor server is OpenEnv's own; rollouts name the harness by import path
+(`qed_proof_agent.agent:QedProofAgent`), which needs [openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573).
 
 ## How we validate it
 

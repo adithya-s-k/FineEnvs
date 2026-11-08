@@ -130,6 +130,60 @@ class Streaming(unittest.TestCase):
             self.assertFalse(grade.streams("hf"))
 
 
+class Retries(unittest.TestCase):
+    ENV = {"JUDGE_API_KEY": "k", "JUDGE_STREAM": "0"}
+
+    def http_error(self, code, retry_after=None):
+        import email.message
+        import io
+        import urllib.error
+
+        headers = email.message.Message()
+        if retry_after is not None:
+            headers["Retry-After"] = retry_after
+        return urllib.error.HTTPError("u", code, "x", headers, io.BytesIO(b"busy"))
+
+    def call(self, outcomes):
+        reply = mock.MagicMock()
+        reply.__enter__.return_value = io_json({"choices": [{"message": {"content": "<score>5</score>"}}]})
+        side = [o if isinstance(o, Exception) else reply for o in outcomes]
+        with mock.patch.dict("os.environ", self.ENV, clear=True), \
+                mock.patch.object(grade.urllib.request, "urlopen", side_effect=side) as opened, \
+                mock.patch.object(grade.time, "sleep") as slept:
+            try:
+                out = grade.call_judge("p")
+            except grade.JudgeUnavailable as exc:
+                out = exc
+        return out, opened.call_count, [c.args[0] for c in slept.call_args_list]
+
+    def test_rate_limit_honours_retry_after_then_backs_off(self):
+        out, calls, sleeps = self.call([self.http_error(429, "7"), self.http_error(503), "ok"])
+        self.assertEqual(grade.parse_score(grade.judge_reply(out)), 5)
+        self.assertEqual((calls, sleeps), (3, [7.0, 30]))
+
+    def test_gives_up_without_a_last_sleep(self):
+        out, calls, sleeps = self.call([self.http_error(429)] * grade.RETRIES)
+        self.assertIsInstance(out, grade.JudgeUnavailable)
+        self.assertIn("HTTP 429", str(out))
+        self.assertEqual(calls, grade.RETRIES)
+        self.assertEqual(sleeps, [15, 30, 60, 120, 240][: grade.RETRIES - 1])
+
+    def test_rejected_request_is_not_retried(self):
+        out, calls, sleeps = self.call([self.http_error(401)])
+        self.assertIsInstance(out, grade.JudgeUnavailable)
+        self.assertEqual((calls, sleeps), (1, []))
+
+    def test_retry_after_is_capped_and_dates_fall_back(self):
+        self.assertEqual(grade.retry_delay(0, "100000"), grade.RETRY_CAP_SEC)
+        self.assertEqual(grade.retry_delay(2, "Wed, 21 Oct 2026 07:28:00 GMT"), 60)
+
+
+def io_json(value):
+    import io
+
+    return io.BytesIO(json.dumps(value).encode())
+
+
 class Main(unittest.TestCase):
     def run_main(self, proof: bytes | None, judge=None, env=None):
         tmp = Path(tempfile.mkdtemp())
