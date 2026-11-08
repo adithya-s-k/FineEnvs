@@ -141,6 +141,47 @@ class RetroEnvClient:
         self.close()
 
 
+def malformed(submission: Any) -> tuple[Any, str | None]:
+    """(the submission, parsed if it came as a JSON string; why it is not JSON, or None).
+
+    Models write the route tree as one deeply nested JSON value and most often break it by
+    miscounting the closing run at the end (`}]}]}`). The description names the parser's
+    error, shows the text around it and lists the brackets still open there, closers in order.
+    """
+    if not isinstance(submission, str):
+        return submission, None
+    try:
+        return json.loads(submission), None
+    except json.JSONDecodeError as error:
+        stack, inside, escaped = [], False, False
+        for char in submission[: error.pos]:
+            if inside:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    inside = False
+            elif char == '"':
+                inside = True
+            elif char in "{[":
+                stack.append(char)
+            elif char in "}]" and stack:
+                stack.pop()
+        closers = "".join("}" if c == "{" else "]" for c in reversed(stack))
+        around = submission[max(0, error.pos - 80) : error.pos] + "<<HERE>>" + submission[error.pos : error.pos + 40]
+        problem = (
+            f"submission is not valid JSON: {error.msg} at character {error.pos} of {len(submission)}. "
+            f"Around it: ...{around}... "
+            + (
+                f"Still open there: {len(stack)} brackets, closed by {closers!r}."
+                if stack
+                else "No bracket is open there."
+            )
+        )
+        return submission, problem
+
+
 class RemoteRetroRouteEnv:
     """TRL ``environment_factory`` tools backed by a RetroEnv server.
 
@@ -159,6 +200,7 @@ class RemoteRetroRouteEnv:
 
     REMIND_AT = 4  # tool calls left when the reminder to submit starts
     RESET_ATTEMPTS = 5  # connect retries, backing off 2-16 s, before an episode is given up
+    JSON_RETRIES = 2  # malformed submissions handed back, ungraded, before one is graded as sent
 
     def __init__(self, server: str | None = None):
         import os
@@ -192,6 +234,7 @@ class RemoteRetroRouteEnv:
     def reset(self, split: str = "train", index: int = 0, **_: Any) -> str:
         self._reward, self._failed, self._calls, self._submitted, self._passed = 0.0, False, 0, False, False
         self._failure = None
+        self._json_retries = 0
         for attempt in range(self.RESET_ATTEMPTS):
             try:
                 self._opening = self._client.reset(split=split, index=index)
@@ -224,6 +267,7 @@ class RemoteRetroRouteEnv:
                 "passed": self._passed,
                 "failure": self._failure,  # the grader's first hard failure, when the submission failed
                 "tool_calls": self._calls,
+                "json_retries": self._json_retries,
                 "failed": self._failed,
             }
             try:
@@ -373,4 +417,17 @@ class RemoteRetroRouteEnv:
         Args:
             submission: {"routes": [root molecule nodes]}, as described above; an object, not a string.
         """
+        # A submission that is not JSON is handed back ungraded, with where it broke, up to
+        # JSON_RETRIES times: the single graded call is spent only on a tree the grader can read.
+        submission, problem = malformed(submission)
+        if problem and self._json_retries < self.JSON_RETRIES:
+            self._json_retries += 1
+            left = self.JSON_RETRIES - self._json_retries
+            return json.dumps(
+                {
+                    "error": problem,
+                    "graded": False,
+                    "note": f"Nothing was graded. Fix it and call emit_routes again ({left} more ungraded retries).",
+                }
+            )
         return self._call("emit_routes", submission=submission)

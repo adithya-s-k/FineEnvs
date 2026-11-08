@@ -58,10 +58,13 @@ def main():
         template = {"enable_thinking": False, "preserve_thinking": True}
     if args.train_tasks:
         # An overfitting run trains on one round per update: a group of every task, one sample per
-        # row per GPU (no packing), close to on-policy. Forked episodes add a sample now and then,
-        # so a step can end a few episodes before or after its round.
+        # row per GPU (no packing). Forked episodes add a sample now and then, so a step can end a
+        # few episodes before or after its round.
+        # Episodes take minutes and generation never stops, so a round mixes a few policy
+        # versions; at most one stale dropped 112 of a step's samples, so three are allowed.
         rounds = len(json.loads(Path(args.train_tasks).read_text())) * (4 if args.smoke else args.generations)
-        accumulation, budget, staleness = max(1, rounds // 2), 0, 1  # two training GPUs
+        trainers = int(os.environ.get("WORLD_SIZE", "1"))  # set by accelerate: one per training GPU
+        accumulation, budget, staleness = max(1, rounds // trainers), 0, 3
     else:
         # Rows are packed to `token_budget`: 4 rows per GPU held about 22 eight-attempt episodes on
         # two GPUs; 8 hold about three sixteen-attempt groups.

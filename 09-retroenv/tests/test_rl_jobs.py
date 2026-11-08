@@ -126,6 +126,34 @@ def test_a_server_that_refuses_sessions_costs_one_episode_not_the_run(monkeypatc
     assert not env.failed
 
 
+def test_a_submission_that_is_not_json_comes_back_ungraded_with_the_brackets_to_close(monkeypatch):
+    from retroenv_openenv import client
+
+    graded = []
+
+    class Grader(_LiveClient):
+        def call(self, name, arguments):
+            graded.append(arguments["submission"])
+            return client.ToolOutcome(name=name, result={"score": {"valid": False}}, done=True, reward=0.1, error=None)
+
+    monkeypatch.setattr(client, "RetroEnvClient", Grader)
+    env = client.RemoteRetroRouteEnv("http://server")
+    env.reset(index=3)
+    broken = '{"routes": [{"type": "mol", "smiles": "C/C=C\\\\C", "children": [{"type": "reaction", "children": []}]}'
+    for _ in range(client.RemoteRetroRouteEnv.JSON_RETRIES):
+        reply = json.loads(env.emit_routes(submission=broken))
+        assert (
+            reply["graded"] is False and "closed by ']}'" in reply["error"]
+        )  # the escaped quote stays inside its string
+    assert graded == [] and not env.submitted
+    env.emit_routes(submission=broken)  # retries spent: graded as sent
+    assert graded == [broken] and env.submitted
+
+    env.reset(index=3)
+    env.emit_routes(submission='{"routes": []}')  # valid JSON in a string reaches the grader parsed
+    assert graded[-1] == {"routes": []}
+
+
 def test_a_failed_trace_write_never_reaches_the_trainer(monkeypatch, tmp_path):
     from retroenv_openenv import client
 
