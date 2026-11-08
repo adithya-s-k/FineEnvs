@@ -50,25 +50,32 @@ GPU 1: AsyncGRPO trainer                       (in the Harbor server)           
 - [`evaluate.py`](evaluate.py) scores a base model or a checkpoint on the test problems through the same harness and
   judge: mean rubric reward, share of full-marks proofs, coverage.
 - The judge's key reaches each verifier through the task's `[verifier] env`, resolved from the server's environment;
-  the agent never sees it.
+  the agent never sees it. The judge is gpt-oss-20b on HF Inference Providers, with three providers in
+  `JUDGE_MODEL` (deepinfra, then groq, then featherless-ai): when one rate-limits, the next grades at once, and each
+  grade records which one gave it.
 
 Pinned stack: 05's validated one (TRL `52fb144e`, vLLM 0.25.1, Transformers `d6c1e71b`), with OpenEnv at `main` plus
-[openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573) (`6fb632a4`, custom harnesses and loopback; the
-training path on it is not yet re-tested with vLLM), and
-Harbor 0.24 for separate verifiers. Model: `Qwen/Qwen3.5-2B` in non-thinking mode, at the revision 05 pinned.
+[openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573) (`0bd1a89d`: custom harnesses, loopback, one
+step-limit warning per harness), and Harbor 0.24 for separate verifiers. Models: `Qwen/Qwen3.5-2B`, `-4B` and `-9B`
+in non-thinking mode, at pinned revisions. The two-update smoke (`jobs/smoke.py`) passed on HF Jobs (2× H200) and on
+Slurm (2× H100).
 
 ## Run it
 
-You need an HF token (model, Jobs and the judge on Inference Providers), a Daytona key, and an existing bucket for
-outputs.
+You need an HF token (model, Jobs and the judge on Inference Providers) and an existing bucket for outputs; with
+`--sandbox daytona` (the default), also a Daytona key. With `--sandbox hf-sandbox` the task sandboxes are HF Jobs too
+(`cpu-basic`, shut down after 10 idle minutes), so the whole run stays on Hugging Face. `prepare.py` then gives each
+task its Dockerfile's base image and leaves the agent's network on, which HF Sandbox needs and the FineProof harness
+does not mind: it calls the model from outside the sandbox and only writes the proof into it.
 
 ```bash
 cd 08-math-environments/fineproof/training
-python jobs/hf_job.py smoke --name qed-smoke --bucket <owner>/<bucket> --prepare-args "--train-tasks 16" --submit
-python jobs/hf_job.py eval  --name qed-eval-base --bucket <owner>/<bucket> --submit
-python jobs/hf_job.py train --name qed-train --bucket <owner>/<bucket> --steps 100 --submit
-python jobs/hf_job.py eval  --name qed-eval-step100 --bucket <owner>/<bucket> \
-  --checkpoint /outputs/qed-train/checkpoint-100 --step 100 --submit
+python jobs/hf_job.py smoke --name fp-smoke --bucket <owner>/<bucket> --prepare-args "--train-tasks 16" --submit
+python jobs/hf_job.py smoke --name fp-smoke-hf --sandbox hf-sandbox --bucket <owner>/<bucket> --submit  # all on HF
+python jobs/hf_job.py eval  --name fp-eval-base --bucket <owner>/<bucket> --submit
+python jobs/hf_job.py train --name fp-train --bucket <owner>/<bucket> --steps 100 --submit
+python jobs/hf_job.py eval  --name fp-eval-step100 --bucket <owner>/<bucket> \
+  --checkpoint /outputs/fp-train/checkpoint-100 --step 100 --submit
 ```
 
 Without `--submit` each command prints the job it would run. On your own two-GPU machine, run `bash jobs/install.sh`
