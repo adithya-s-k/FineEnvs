@@ -82,17 +82,25 @@ def tokenizer_for(model, thinking=False):
 
 
 # A turn's token cap must also fit what is left of the context: vLLM rejects a request whose
-# prompt plus max_tokens exceeds its length, and AsyncGRPO's rollout worker dies on that error.
-# This replaces the pinned TRL's turn request with one that caps max_tokens at the room left.
-# It runs in the rollout process too, which imports this module to rebuild the environment.
+# prompt plus max_tokens exceeds its length, and AsyncGRPO retries the rejection 30 times and then
+# ends the rollout process. This replaces the pinned TRL's turn request (on `_AsyncRolloutLoop`,
+# the class that generates in the rollout process) with one that caps max_tokens at the room
+# left, and ends just that episode if vLLM still rejects it. It runs in the rollout process too,
+# which imports this module to rebuild the environment.
 def cap_turns_to_context():
     limit = int(os.environ.get("RETROENV_MAX_MODEL_LEN", "0"))
-    try:
-        from trl.experimental.async_grpo import async_rollout_worker as worker
-    except ImportError:
+    if not limit:
         return
-    if not limit or getattr(worker.AsyncRolloutWorker, "_turns_capped", False):
+    from trl.experimental.async_grpo import async_rollout_worker as worker
+
+    loop = worker._AsyncRolloutLoop
+    if getattr(loop, "_turns_capped", False):
         return
+    if not hasattr(loop, "_generate_one_turn"):
+        raise RuntimeError("TRL's rollout loop changed: _AsyncRolloutLoop._generate_one_turn is gone")
+
+    class Rejected(Exception):
+        """A request vLLM refused (4xx): not retried, it would only be refused again."""
 
     async def generate_one_turn(self, prompt_ids):
         room = limit - len(prompt_ids) - 64
@@ -113,16 +121,27 @@ def cap_turns_to_context():
         }
         if self.min_p is not None:
             payload["min_p"] = self.min_p
-        output = await self._retry(
-            lambda: self._post("/v1/completions", payload, self.request_timeout),
-            max_attempts=30,
-            label="vllm /v1/completions",
-        )
+
+        async def post():
+            import aiohttp
+
+            try:
+                return await self._post("/v1/completions", payload, self.request_timeout)
+            except aiohttp.ClientResponseError as error:
+                if 400 <= error.status < 500:
+                    raise Rejected(f"{error.status} {error.message}") from error
+                raise
+
+        try:
+            output = await self._retry(post, max_attempts=30, label="vllm /v1/completions")
+        except Rejected as error:
+            print(f"vLLM refused a turn ({error}; prompt {len(prompt_ids)} tokens): episode ended", flush=True)
+            return [self.tokenizer.eos_token_id], [0.0]
         choice = output["choices"][0]
         return choice["token_ids"], choice["logprobs"]["token_logprobs"]
 
-    worker.AsyncRolloutWorker._generate_one_turn = generate_one_turn
-    worker.AsyncRolloutWorker._turns_capped = True
+    loop._generate_one_turn = generate_one_turn
+    loop._turns_capped = True
 
 
 cap_turns_to_context()
