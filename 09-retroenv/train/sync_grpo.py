@@ -16,6 +16,7 @@ import argparse
 import json
 import math
 import os
+import random
 import socket
 from functools import partial
 from pathlib import Path
@@ -65,27 +66,66 @@ def arguments(description=__doc__, output="runs/rl/sync_grpo"):
 
 # %% 2. Load the tokenizer: non-thinking, as the evaluation board runs, or thinking.
 #
-# Inside a tool loop Qwen's template renders every earlier turn's thinking again, so a thinking
-# episode would grow into one sequence of every turn's reasoning (50-190k tokens over 16 turns).
-# The evaluation harness never sends thinking back, so neither does training: the template keeps
-# earlier thinking only when asked to (preserve_thinking), and TRL trains each turn as its own row.
-HISTORY_THINKING = "preserve_thinking is undefined or preserve_thinking is true or loop.index0 > ns.last_query_index"
-
-
+# Thinking keeps Qwen's own template, which re-renders every earlier turn's thinking inside a
+# tool loop. Every vendor that documents agentic thinking keeps it (MiniMax measured large drops
+# without it), and it keeps the history exactly as generated, so each episode trains as one row.
 def tokenizer_for(model, thinking=False):
     from copy import deepcopy
 
     from trl.chat_template_utils import qwen3_5_template
 
     tokenizer = AutoTokenizer.from_pretrained(model, revision=MODEL_REVISIONS[model])
-    if thinking:
-        if HISTORY_THINKING not in tokenizer.chat_template:
-            raise RuntimeError("The chat template's thinking rule changed; check what earlier turns render")
-        tokenizer.chat_template = tokenizer.chat_template.replace(HISTORY_THINKING, "preserve_thinking is true")
-    else:
+    if not thinking:
         tokenizer.chat_template = "{%- set enable_thinking = false -%}\n" + tokenizer.chat_template
     tokenizer.response_template = deepcopy(qwen3_5_template)  # how TRL parses Qwen's XML tool calls
     return tokenizer
+
+
+# A turn's token cap must also fit what is left of the context: vLLM rejects a request whose
+# prompt plus max_tokens exceeds its length, and AsyncGRPO's rollout worker dies on that error.
+# This replaces the pinned TRL's turn request with one that caps max_tokens at the room left.
+# It runs in the rollout process too, which imports this module to rebuild the environment.
+def cap_turns_to_context():
+    limit = int(os.environ.get("RETROENV_MAX_MODEL_LEN", "0"))
+    try:
+        from trl.experimental.async_grpo import async_rollout_worker as worker
+    except ImportError:
+        return
+    if not limit or getattr(worker.AsyncRolloutWorker, "_turns_capped", False):
+        return
+
+    async def generate_one_turn(self, prompt_ids):
+        room = limit - len(prompt_ids) - 64
+        if room < 16:  # no room for a reply: end the episode as if the model stopped
+            return [self.tokenizer.eos_token_id], [0.0]
+        payload = {
+            "model": self._request_model,
+            "prompt": prompt_ids,
+            "max_tokens": min(self.max_tokens, room),
+            "temperature": self.temperature,
+            "top_p": self.top_p,
+            "top_k": self.top_k,
+            "repetition_penalty": self.repetition_penalty,
+            "n": 1,
+            "return_token_ids": True,
+            "logprobs": 0,
+            "seed": random.getrandbits(63),
+        }
+        if self.min_p is not None:
+            payload["min_p"] = self.min_p
+        output = await self._retry(
+            lambda: self._post("/v1/completions", payload, self.request_timeout),
+            max_attempts=30,
+            label="vllm /v1/completions",
+        )
+        choice = output["choices"][0]
+        return choice["token_ids"], choice["logprobs"]["token_logprobs"]
+
+    worker.AsyncRolloutWorker._generate_one_turn = generate_one_turn
+    worker.AsyncRolloutWorker._turns_capped = True
+
+
+cap_turns_to_context()
 
 
 # %% 3. One row per train task. The environment fetches the task itself from the server.

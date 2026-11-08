@@ -15,7 +15,15 @@ import json
 import os
 from pathlib import Path
 
-from train.sync_grpo import MODEL_REVISIONS, arguments, environment_factory, lora_config, task_dataset, tokenizer_for
+from train.sync_grpo import (
+    MODEL_REVISIONS,
+    arguments,
+    cap_turns_to_context,
+    environment_factory,
+    lora_config,
+    task_dataset,
+    tokenizer_for,
+)
 
 
 # %% 6. Configure AsyncGRPO. Batch, lengths, sampling and clipping match sync_grpo.py.
@@ -36,18 +44,22 @@ def main():
     dataset = task_dataset(args.server, args.max_depth, tasks=args.train_tasks)
     tokenizer = tokenizer_for(args.model, thinking=args.thinking)
     if args.thinking:
-        # Qwen's thinking-mode sampling (its generation_config.json). In the thinking eval the
-        # first turn alone thought for a median of about 8.5k tokens (it plans the whole route),
-        # so an 8k cap cut most first turns off before their tool call; 16k covers 99% of turns.
-        # A row is the history without earlier thinking plus this turn, so rows run longer than a
-        # non-thinking episode's and get a larger budget.
-        sampling = {"temperature": 1.0, "top_p": 0.95, "top_k": 20}
-        per_turn, budget = 16384, 49152
-        template = {"enable_thinking": True, "preserve_thinking": False}
+        # Thinking keeps earlier turns' thinking in the history (see sync_grpo.py), so a whole
+        # episode is one row and must fit the context. The template's default reasoning effort
+        # (xhigh) asks for long deliberation: the first turn of the thinking eval ran ~8.5k tokens.
+        # Medium adds no instruction. Sampling is untruncated (no top-p/top-k): on vLLM 0.25
+        # TRL cannot correct the importance ratios for truncated sampling.
+        sampling = {"temperature": 1.0, "top_p": 1.0, "top_k": -1}
+        per_turn, budget = 16384, 65536
+        template = {"enable_thinking": True, "reasoning_effort": "medium"}
     else:
         sampling = {"temperature": 0.8, "top_p": 1.0, "top_k": -1}  # as the difficulty sweep sampled
         per_turn, budget = 16384, 40960
         template = {"enable_thinking": False, "preserve_thinking": True}
+    os.environ["RETROENV_MAX_MODEL_LEN"] = (
+        "65536"  # vLLM's --max-model-len (serve_model.py); the rollout process inherits it
+    )
+    cap_turns_to_context()
     config = AsyncGRPOConfig(
         output_dir=str(output),
         learning_rate=args.lr,
@@ -67,7 +79,7 @@ def main():
         chat_template_kwargs=template,
         # Episodes in flight against vLLM and the server, and how stale a trained episode may be.
         max_inflight_tasks=4 if args.smoke else args.inflight,  # run.py sets 32 per vLLM replica
-        max_staleness=4,
+        max_staleness=2 if args.thinking else 4,  # long thinking episodes: keep samples near on-policy
         token_budget=budget,  # tokens packed into one forward pass; a longer sample is dropped
         fork_threshold_tokens=0,
         optim="adamw_torch_fused",  # LoRA state is small; bitsandbytes 8-bit Adam rejects FSDP2 tensors
@@ -83,6 +95,7 @@ def main():
         save_steps=1 if args.smoke else args.save_steps,
         save_total_limit=None,
         logging_steps=1,
+        log_completions=args.thinking,  # thinking traces in trackio, to read what the model thinks
         report_to="trackio",
         project="retroenv-rl",
         run_name=output.parent.name if output.name == "train" else output.name,
