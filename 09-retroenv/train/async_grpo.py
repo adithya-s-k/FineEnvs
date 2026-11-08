@@ -56,9 +56,19 @@ def main():
         sampling = {"temperature": 0.8, "top_p": 1.0, "top_k": -1}  # as the difficulty sweep sampled
         per_turn, budget = 16384, 40960
         template = {"enable_thinking": False, "preserve_thinking": True}
-    os.environ["RETROENV_MAX_MODEL_LEN"] = (
-        "65536"  # vLLM's --max-model-len (serve_model.py); the rollout process inherits it
-    )
+    if args.train_tasks:
+        # An overfitting run trains on one round per update: a group of every task, one sample per
+        # row per GPU (no packing), close to on-policy. Forked episodes add a sample now and then,
+        # so a step can end a few episodes before or after its round.
+        rounds = len(json.loads(Path(args.train_tasks).read_text())) * (4 if args.smoke else args.generations)
+        accumulation, budget, staleness = max(1, rounds // 2), 0, 1  # two training GPUs
+    else:
+        # Rows are packed to `token_budget`: 4 rows per GPU held about 22 eight-attempt episodes on
+        # two GPUs; 8 hold about three sixteen-attempt groups.
+        accumulation = 4 if args.smoke or args.generations <= 8 else 8
+        staleness = 2 if args.thinking else 4  # long thinking episodes: keep samples near on-policy
+    # vLLM's --max-model-len (serve_model.py); the rollout process inherits it.
+    os.environ["RETROENV_MAX_MODEL_LEN"] = "65536"
     cap_turns_to_context()
     config = AsyncGRPOConfig(
         output_dir=str(output),
@@ -66,11 +76,8 @@ def main():
         lr_scheduler_type="constant",
         warmup_steps=0,
         max_steps=2 if args.smoke else args.steps,
-        # Rows are packed to `token_budget`, so an update's episode count is set by accumulation:
-        # 4 rows per GPU held about 22 eight-attempt episodes on two GPUs; 8 hold about three
-        # sixteen-attempt groups.
-        per_device_train_batch_size=1 if args.smoke else 4,
-        gradient_accumulation_steps=4 if args.smoke or args.generations <= 8 else 8,
+        per_device_train_batch_size=1 if args.smoke or args.train_tasks else 4,
+        gradient_accumulation_steps=accumulation,
         num_generations=4 if args.smoke else args.generations,
         max_completion_length=per_turn,  # per model turn: AsyncGRPO caps each generation call
         max_tool_calling_iterations=20,  # 16 in the prompt, 4 to spare for the submission
@@ -79,8 +86,8 @@ def main():
         chat_template_kwargs=template,
         # Episodes in flight against vLLM and the server, and how stale a trained episode may be.
         max_inflight_tasks=4 if args.smoke else args.inflight,  # run.py sets 32 per vLLM replica
-        max_staleness=2 if args.thinking else 4,  # long thinking episodes: keep samples near on-policy
-        token_budget=budget,  # tokens packed into one forward pass; a longer sample is dropped
+        max_staleness=staleness,
+        token_budget=budget,  # tokens packed into one forward pass (0: one sample per row); longer is dropped
         fork_threshold_tokens=0,
         optim="adamw_torch_fused",  # LoRA state is small; bitsandbytes 8-bit Adam rejects FSDP2 tensors
         bf16=True,

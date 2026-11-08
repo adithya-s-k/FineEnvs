@@ -134,7 +134,8 @@ def task_dataset(server, max_depth, seed=0, tasks=None):
     from retroenv_openenv.client import RetroEnvClient
 
     if tasks:
-        # A fixed handful, repeated so the trainer never runs out of rows.
+        # An overfitting run: the same tasks in the same order, round after round, so every
+        # update sees one group of each and rewards are comparable from step to step.
         chosen = [index for index in json.loads(Path(tasks).read_text()).values()] * 100
     else:
         with RetroEnvClient(server) as client:
@@ -147,7 +148,8 @@ def task_dataset(server, max_depth, seed=0, tasks=None):
         {"prompt": [{"role": "system", "content": system}, {"role": "user", "content": ""}], "index": i}
         for i in chosen
     ]
-    return Dataset.from_list(rows).shuffle(seed=seed)
+    dataset = Dataset.from_list(rows)
+    return dataset if tasks else dataset.shuffle(seed=seed)
 
 
 # %% 4. Give TRL the environment. Its public methods become the model's tools.
