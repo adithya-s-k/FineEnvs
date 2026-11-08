@@ -93,6 +93,8 @@ def main():
         VLLM_USE_DEEP_GEMM="0",
         VLLM_DEEP_GEMM_WARMUP="skip",
         VLLM_USE_FLASHINFER_SAMPLER="0",
+        # vLLM's periodic stats (throughput, KV-cache use, prefix-cache hit rate) in vllm.log.
+        VLLM_LOGGING_LEVEL="INFO",
         # The evaluator's OpenAI client needs a key; vLLM runs without one. Not VLLM_API_KEY,
         # which `vllm serve` reads as the key every request must carry.
         RETROENV_EVAL_KEY="EMPTY",

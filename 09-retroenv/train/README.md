@@ -143,6 +143,37 @@ python train/difficulty_sweep.py report runs/sweep250 --server http://127.0.0.1:
 task (`never`, `learnable` or `always` solved, with broken submissions re-graded as repaired),
 `learnable.txt` for the next run's task list, and the solved transcripts as `sft.jsonl`.
 
+### Overfitting run: does the reward climb on fixed tasks?
+
+Before spending on the full pool, train on a handful of tasks over and over and check that the
+solve rate climbs. `train/sweeps/overfit8-index.json` holds eight easy train tasks the base model
+solves a few times in sixteen (the sweep's learnable tasks, one per reaction type).
+
+```bash
+python train/jobs/hf_job.py train --mode async --bucket <owner>/<bucket> --flavor h200x8 \
+  --train-tasks train/sweeps/overfit8-index.json --generations 16 --reward solved --lr 1e-4 \
+  --inflight 192 --steps 20 --save-steps 5 --name overfit8-nothink --submit
+# thinking: add --thinking and use --inflight 128
+```
+
+- **Same tasks every update.** The tasks stay in a fixed order and an update is one round: a
+  group of sixteen of every task, one sample per row per GPU, up to three policy versions stale.
+  Step rewards are comparable, and each task's r-th group of sixteen gives a per-task curve.
+- **Reward `solved`:** 1 for a solve, 0 otherwise. The grade's partial-credit band can be gamed
+  (one accepted cut scores 0.6 of a solve), so a rising reward here can only mean more solves.
+- **Thinking** keeps the template as shipped, so earlier turns' thinking stays in the history and
+  an episode trains as one row (Qwen, MiniMax, Kimi, GLM and DeepSeek all keep it). Reasoning
+  effort is `medium` (the default `xhigh` asks for long deliberation), sampling is untruncated at
+  temperature 1, and each turn's token cap is clamped to the context left.
+- **Malformed submissions** come back ungraded, up to twice, with where the JSON broke and the
+  brackets left to close; only a tree the grader can read spends the single graded call.
+- **Environment.** By default each job serves episodes itself (256 sessions). `--env-url`
+  points it at a hosted Space instead; the Space holds 64 sessions across every job using it.
+- **Fixed on the way:** an unpinned `kernels` broke model loading, two jobs exhausted the
+  Space's sessions, an EIO on the bucket mount ended the rollout process (traces now go to local
+  disk and are copied each minute), the turn cap patched TRL's controller instead of
+  `_AsyncRolloutLoop`, and a one-version staleness limit dropped 112 of a step's samples.
+
 ## SFT warm start
 
 The scripted chemist (`retroenv_openenv/agent_reference.py`, `--provider reference` in
