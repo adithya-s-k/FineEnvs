@@ -48,30 +48,59 @@ def arguments(description=__doc__, output="runs/rl/sync_grpo"):
     )
     parser.add_argument("--inflight", type=int, default=32, help="AsyncGRPO: episodes in flight against vLLM")
     parser.add_argument("--space-id", help="Optional Trackio Space; local logs are always kept")
+    # An overfitting run trains on a handful of fixed tasks, over and over, to see whether the
+    # reward climbs at all before spending on the full task pool.
+    parser.add_argument("--train-tasks", type=Path, help="JSON {task_id: index}: train only on these tasks")
+    parser.add_argument("--generations", type=int, default=8, help="Rollouts per task in a GRPO group")
+    parser.add_argument(
+        "--reward",
+        choices=["graded", "solved"],
+        default="graded",
+        help="graded: the server's grade, failures scaled by --partial-credit; solved: 1 for a solve, else 0",
+    )
+    parser.add_argument("--lr", type=float, default=2e-5)
+    parser.add_argument("--thinking", action="store_true", help="AsyncGRPO: let the model think before each turn")
     return parser.parse_args()
 
 
-# %% 2. Load the tokenizer in non-thinking mode, as the evaluation board runs.
-def tokenizer_for(model):
+# %% 2. Load the tokenizer: non-thinking, as the evaluation board runs, or thinking.
+#
+# Inside a tool loop Qwen's template renders every earlier turn's thinking again, so a thinking
+# episode would grow into one sequence of every turn's reasoning (50-190k tokens over 16 turns).
+# The evaluation harness never sends thinking back, so neither does training: the template keeps
+# earlier thinking only when asked to (preserve_thinking), and TRL trains each turn as its own row.
+HISTORY_THINKING = "preserve_thinking is undefined or preserve_thinking is true or loop.index0 > ns.last_query_index"
+
+
+def tokenizer_for(model, thinking=False):
     from copy import deepcopy
 
     from trl.chat_template_utils import qwen3_5_template
 
     tokenizer = AutoTokenizer.from_pretrained(model, revision=MODEL_REVISIONS[model])
-    tokenizer.chat_template = "{%- set enable_thinking = false -%}\n" + tokenizer.chat_template
+    if thinking:
+        if HISTORY_THINKING not in tokenizer.chat_template:
+            raise RuntimeError("The chat template's thinking rule changed; check what earlier turns render")
+        tokenizer.chat_template = tokenizer.chat_template.replace(HISTORY_THINKING, "preserve_thinking is true")
+    else:
+        tokenizer.chat_template = "{%- set enable_thinking = false -%}\n" + tokenizer.chat_template
     tokenizer.response_template = deepcopy(qwen3_5_template)  # how TRL parses Qwen's XML tool calls
     return tokenizer
 
 
 # %% 3. One row per train task. The environment fetches the task itself from the server.
-def task_dataset(server, max_depth, seed=0):
+def task_dataset(server, max_depth, seed=0, tasks=None):
     from retroenv_openenv.agent import SYSTEM_PROMPT
     from retroenv_openenv.client import RetroEnvClient
 
-    with RetroEnvClient(server) as client:
-        tasks = client.tasks("train")
-    # Public fields only: the depth budget and the variant. Constraint variants come later.
-    chosen = [t["index"] for t in tasks if t["variant"] == "standard" and t["max_depth"] <= max_depth]
+    if tasks:
+        # A fixed handful, repeated so the trainer never runs out of rows.
+        chosen = [index for index in json.loads(Path(tasks).read_text()).values()] * 100
+    else:
+        with RetroEnvClient(server) as client:
+            pool = client.tasks("train")
+        # Public fields only: the depth budget and the variant. Constraint variants come later.
+        chosen = [t["index"] for t in pool if t["variant"] == "standard" and t["max_depth"] <= max_depth]
     system = SYSTEM_PROMPT.format(max_turns=16)  # the system prompt the evaluation harness sends
     rows = [
         # reset() returns the task prompt, and TRL appends it to the last message.
@@ -99,18 +128,27 @@ from retroenv_openenv.client import RemoteRetroRouteEnv  # noqa: E402  (imported
 # reach that floor by checking one cut and stopping. Training scales a failed submission's grade
 # by `partial_credit`, so solving pays clearly more than stopping early while a better failed tree
 # still beats a worse one. A solved task keeps its grade; episodes.jsonl keeps the pure grade.
+#
+# With --reward solved, the reward is 1 for a solve and 0 otherwise: the partial-credit band can
+# be gamed (stopping after one accepted cut scores 0.6 of a solve), so a rising solved reward can
+# only mean more solves.
 class TrainingEnv(RemoteRetroRouteEnv):
-    def __init__(self, server, partial_credit=0.5):
+    def __init__(self, server, partial_credit=0.5, reward="graded"):
         super().__init__(server)
         self._partial_credit = partial_credit
+        self._reward_kind = reward
 
     def get_reward(self):
         grade = super().get_reward()  # NaN when the session broke: no grade, not a wrong answer
-        return grade if math.isnan(grade) or self.passed else self._partial_credit * grade
+        if math.isnan(grade):
+            return grade
+        if self._reward_kind == "solved":
+            return float(self.passed)
+        return grade if self.passed else self._partial_credit * grade
 
 
-def environment_factory(server, partial_credit=0.5):
-    return partial(TrainingEnv, server, partial_credit=partial_credit)  # picklable, for AsyncGRPO
+def environment_factory(server, partial_credit=0.5, reward="graded"):
+    return partial(TrainingEnv, server, partial_credit=partial_credit, reward=reward)  # picklable, for AsyncGRPO
 
 
 # Logged beside the reward with weight 0: the share of episodes that solved the task, and that submitted.
@@ -148,21 +186,24 @@ def main():
     os.environ["TRACKIO_DIR"] = str(output.resolve() / "trackio")
     from trl import GRPOConfig, GRPOTrainer
 
-    dataset = task_dataset(args.server, args.max_depth)
+    if args.thinking:
+        # GRPOTrainer trains each episode as one sequence, which needs earlier turns re-rendered exactly.
+        raise SystemExit("--thinking needs async_grpo.py, which trains each turn as its own row")
+    dataset = task_dataset(args.server, args.max_depth, tasks=args.train_tasks)
     tokenizer = tokenizer_for(args.model)
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
         weight_sync_port = listener.getsockname()[1]
     config = GRPOConfig(
         output_dir=str(output),
-        learning_rate=2e-5,  # LoRA wants roughly ten times the full fine-tuning rate
+        learning_rate=args.lr,  # 2e-5 by default: LoRA wants roughly ten times the full fine-tuning rate
         lr_scheduler_type="constant",
         warmup_steps=0,
         max_steps=2 if args.smoke else args.steps,
         # One optimizer step sees 16 episodes: two tasks, eight attempts each.
         per_device_train_batch_size=1,
         gradient_accumulation_steps=4 if args.smoke else 16,
-        num_generations=4 if args.smoke else 8,
+        num_generations=4 if args.smoke else args.generations,
         max_completion_length=16384,  # every turn of the episode, tool results included
         # The prompt gives the board's 16 turns; training allows 20, so a rollout that overruns
         # can still submit (evaluation forces emit_routes on its last turn instead).
@@ -210,7 +251,7 @@ def main():
         args=config,
         train_dataset=dataset,
         reward_funcs=[solved, submitted],
-        environment_factory=environment_factory(args.server, args.partial_credit),
+        environment_factory=environment_factory(args.server, args.partial_credit, args.reward),
         peft_config=lora_config(),
     )
     # TRL's text-only tool loop reads the context limit from the outer (multimodal) config.

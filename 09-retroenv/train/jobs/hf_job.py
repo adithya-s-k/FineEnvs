@@ -74,7 +74,14 @@ def main(argv=None):
     parser.add_argument("--task-ids", help="For eval: a task-id file in this project, e.g. train/sweeps/<name>-0.txt")
     parser.add_argument("--attempts", type=int, default=1, help="For eval: episodes per task")
     parser.add_argument("--temperature", type=float, help="For eval: sampling temperature (default: the board's 0)")
-    parser.add_argument("--thinking", action="store_true", help="For eval: thinking on (the board runs it off)")
+    parser.add_argument("--thinking", action="store_true", help="For eval and async train: thinking on")
+    parser.add_argument("--env-url", help="A running RetroEnv server, e.g. https://fineenvs-retroenv.hf.space")
+    parser.add_argument(
+        "--train-tasks", help="For train: a project JSON {task_id: index}, e.g. train/sweeps/overfit10-index.json"
+    )
+    parser.add_argument("--generations", type=int, help="For train: rollouts per task in a GRPO group")
+    parser.add_argument("--reward", choices=["graded", "solved"], help="For train: see train/sync_grpo.py")
+    parser.add_argument("--lr", type=float, help="For train: learning rate")
     parser.add_argument("--concurrency", type=int, default=16)
     parser.add_argument("--label")
     parser.add_argument("--vllm-gpus", type=int, help="For train/smoke: GPUs serving vLLM (default: half)")
@@ -112,6 +119,13 @@ def main(argv=None):
     if args.action in ("smoke", "train"):
         command += ["--mode", args.mode]
     if args.action == "train":
+        if args.train_tasks and not (ROOT / args.train_tasks).is_file():
+            parser.error(f"{args.train_tasks} is not a file in this project")
+        command += ["--train-tasks", args.train_tasks] if args.train_tasks else []
+        command += ["--generations", str(args.generations)] if args.generations else []
+        command += ["--reward", args.reward] if args.reward else []
+        command += ["--lr", str(args.lr)] if args.lr else []
+        command += ["--thinking"] if args.thinking else []
         command += [
             "--steps",
             str(args.steps),
@@ -131,6 +145,8 @@ def main(argv=None):
         command += ["--attempts", str(args.attempts)] if args.attempts > 1 else []
         command += ["--temperature", str(args.temperature)] if args.temperature is not None else []
         command += ["--thinking"] if args.thinking else []
+    if args.env_url and args.action in ("train", "eval"):
+        command += ["--env-url", args.env_url]
     if args.action in ("smoke", "eval") and args.tasks:
         command += ["--tasks", str(args.tasks)]
     if args.action in ("smoke", "train"):

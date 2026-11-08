@@ -41,7 +41,12 @@ def main():
     parser.add_argument("--task-ids", help="For eval: a file of task ids in --set's split, one per line")
     parser.add_argument("--attempts", type=int, default=1, help="For eval: episodes per task")
     parser.add_argument("--temperature", type=float, help="For eval: sampling temperature (default: the board's 0)")
-    parser.add_argument("--thinking", action="store_true", help="For eval: thinking on (the board runs it off)")
+    parser.add_argument("--thinking", action="store_true", help="Thinking on (the board runs it off)")
+    parser.add_argument("--env-url", help="A running RetroEnv server, e.g. the hosted Space, instead of one in the job")
+    parser.add_argument("--train-tasks", help="For train: JSON {task_id: index}, train only on these tasks")
+    parser.add_argument("--generations", type=int, help="For train: rollouts per task in a GRPO group")
+    parser.add_argument("--reward", choices=["graded", "solved"], help="For train: see sync_grpo.py")
+    parser.add_argument("--lr", type=float, help="For train: learning rate")
     parser.add_argument("--concurrency", type=int, default=16, help="For eval: episodes at once")
     parser.add_argument("--label", help="For eval: the name on the board")
     parser.add_argument("--vllm-gpus", type=int, help="For train: GPUs serving vLLM (default: half)")
@@ -86,7 +91,7 @@ def main():
         for listener in sockets:
             listener.bind(("127.0.0.1", 0))
         server_port, engine_port = [s.getsockname()[1] for s in sockets]
-    server_url = f"http://127.0.0.1:{server_port}"
+    server_url = args.env_url.rstrip("/") if args.env_url else f"http://127.0.0.1:{server_port}"
     engine_url = f"http://127.0.0.1:{engine_port}"
     (output / "services.json").write_text(json.dumps({"retroenv": server_url, "vllm": engine_url}))
     children = []
@@ -140,16 +145,18 @@ def main():
 
     signal.signal(signal.SIGTERM, stop)
     try:
-        # The RetroEnv server: CPU only, one WebSocket session per episode in flight.
-        spawn(
-            [
-                ENV_PYTHON, "-m", "uvicorn", "retroenv_openenv.server:app",
-                "--host", "127.0.0.1", "--port", str(server_port),
-                "--ws-ping-timeout", "3600",
-            ],
-            "retroenv",
-            {"MAX_CONCURRENT_ENVS": "256", "ENABLE_WEB_INTERFACE": "false", "OMP_NUM_THREADS": "4"},
-        )  # fmt: skip
+        # The RetroEnv server: CPU only, one WebSocket session per episode in flight. With
+        # --env-url the hosted Space serves the episodes instead (64 sessions at once).
+        if not args.env_url:
+            spawn(
+                [
+                    ENV_PYTHON, "-m", "uvicorn", "retroenv_openenv.server:app",
+                    "--host", "127.0.0.1", "--port", str(server_port),
+                    "--ws-ping-timeout", "3600",
+                ],
+                "retroenv",
+                {"MAX_CONCURRENT_ENVS": "256", "ENABLE_WEB_INTERFACE": "false", "OMP_NUM_THREADS": "4"},
+            )  # fmt: skip
         weights = None
         if args.action == "eval" and args.checkpoint:
             weights = Path("/tmp/merged")  # local disk; tens of GB that need not reach the bucket
@@ -192,9 +199,16 @@ def main():
                 "--save-steps", str(args.save_steps),
                 "--max-depth", str(args.max_depth),
             ]  # fmt: skip
-            command += ["--inflight", str(args.inflight or 32 * len(vllm_devices))]
+            inflight = args.inflight or 32 * len(vllm_devices)
+            # The hosted Space holds 64 WebSocket sessions (MAX_CONCURRENT_ENVS), one per episode in flight.
+            command += ["--inflight", str(min(inflight, 64) if args.env_url else inflight)]
             command += ["--smoke"] if args.smoke else []
             command += ["--space-id", args.space_id] if args.space_id else []
+            command += ["--train-tasks", args.train_tasks] if args.train_tasks else []
+            command += ["--generations", str(args.generations)] if args.generations else []
+            command += ["--reward", args.reward] if args.reward else []
+            command += ["--lr", str(args.lr)] if args.lr else []
+            command += ["--thinking"] if args.thinking else []
             # One JSON line per graded episode: task, reward, whether it submitted, tool calls.
             trace = {
                 "CUDA_VISIBLE_DEVICES": ",".join(train_devices),

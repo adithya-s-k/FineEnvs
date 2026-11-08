@@ -33,29 +33,40 @@ def main():
     os.environ["TRACKIO_DIR"] = str(output.resolve() / "trackio")
     from trl.experimental.async_grpo import AsyncGRPOConfig, AsyncGRPOTrainer
 
-    dataset = task_dataset(args.server, args.max_depth)
-    tokenizer = tokenizer_for(args.model)
+    dataset = task_dataset(args.server, args.max_depth, tasks=args.train_tasks)
+    tokenizer = tokenizer_for(args.model, thinking=args.thinking)
+    if args.thinking:
+        # Qwen's thinking-mode sampling (its generation_config.json). A turn may think for up to
+        # 8k tokens; a row is the history without earlier thinking plus this turn, so rows run
+        # longer than a non-thinking episode's and get a larger budget.
+        sampling = {"temperature": 1.0, "top_p": 0.95, "top_k": 20}
+        per_turn, budget = 8192, 49152
+        template = {"enable_thinking": True, "preserve_thinking": False}
+    else:
+        sampling = {"temperature": 0.8, "top_p": 1.0, "top_k": -1}  # as the difficulty sweep sampled
+        per_turn, budget = 16384, 40960
+        template = {"enable_thinking": False, "preserve_thinking": True}
     config = AsyncGRPOConfig(
         output_dir=str(output),
-        learning_rate=2e-5,
+        learning_rate=args.lr,
         lr_scheduler_type="constant",
         warmup_steps=0,
         max_steps=2 if args.smoke else args.steps,
-        # One optimizer step sees 16 episodes, as in sync_grpo.py: two tasks, eight attempts each.
+        # Rows are packed to `token_budget`, so an update's episode count is set by accumulation:
+        # 4 rows per GPU held about 22 eight-attempt episodes on two GPUs; 8 hold about three
+        # sixteen-attempt groups.
         per_device_train_batch_size=1 if args.smoke else 4,
-        gradient_accumulation_steps=4 if args.smoke else 4,
-        num_generations=4 if args.smoke else 8,
-        max_completion_length=16384,
+        gradient_accumulation_steps=4 if args.smoke or args.generations <= 8 else 8,
+        num_generations=4 if args.smoke else args.generations,
+        max_completion_length=per_turn,  # per model turn: AsyncGRPO caps each generation call
         max_tool_calling_iterations=20,  # 16 in the prompt, 4 to spare for the submission
-        temperature=0.8,
-        top_p=1.0,
-        top_k=-1,
+        **sampling,
         epsilon_high=0.28,
-        chat_template_kwargs={"enable_thinking": False, "preserve_thinking": True},
+        chat_template_kwargs=template,
         # Episodes in flight against vLLM and the server, and how stale a trained episode may be.
         max_inflight_tasks=4 if args.smoke else args.inflight,  # run.py sets 32 per vLLM replica
         max_staleness=4,
-        token_budget=40960,  # tokens packed into one forward pass
+        token_budget=budget,  # tokens packed into one forward pass; a longer sample is dropped
         fork_threshold_tokens=0,
         optim="adamw_torch_fused",  # LoRA state is small; bitsandbytes 8-bit Adam rejects FSDP2 tensors
         bf16=True,
@@ -81,7 +92,7 @@ def main():
         args=config,
         processing_class=tokenizer,
         train_dataset=dataset,
-        environment_factory=environment_factory(args.server, args.partial_credit),  # rebuilt in the rollout process
+        environment_factory=environment_factory(args.server, args.partial_credit, args.reward),  # rebuilt per process
         peft_config=lora_config(),
     )
 
