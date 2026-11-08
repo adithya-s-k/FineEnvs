@@ -36,11 +36,13 @@ def main():
     dataset = task_dataset(args.server, args.max_depth, tasks=args.train_tasks)
     tokenizer = tokenizer_for(args.model, thinking=args.thinking)
     if args.thinking:
-        # Qwen's thinking-mode sampling (its generation_config.json). A turn may think for up to
-        # 8k tokens; a row is the history without earlier thinking plus this turn, so rows run
-        # longer than a non-thinking episode's and get a larger budget.
+        # Qwen's thinking-mode sampling (its generation_config.json). In the thinking eval the
+        # first turn alone thought for a median of about 8.5k tokens (it plans the whole route),
+        # so an 8k cap cut most first turns off before their tool call; 16k covers 99% of turns.
+        # A row is the history without earlier thinking plus this turn, so rows run longer than a
+        # non-thinking episode's and get a larger budget.
         sampling = {"temperature": 1.0, "top_p": 0.95, "top_k": 20}
-        per_turn, budget = 8192, 49152
+        per_turn, budget = 16384, 49152
         template = {"enable_thinking": True, "preserve_thinking": False}
     else:
         sampling = {"temperature": 0.8, "top_p": 1.0, "top_k": -1}  # as the difficulty sweep sampled
