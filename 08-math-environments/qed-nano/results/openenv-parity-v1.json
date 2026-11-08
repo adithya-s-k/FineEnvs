@@ -1,0 +1,363 @@
+{
+  "name": "QED-Nano Envs through OpenEnv: parity with plain Harbor",
+  "date": "2026-11-08",
+  "tasks": "qed-nano-envs-test-validated (64 tasks whose reference proof scored >= 6/7)",
+  "model": "Qwen/Qwen3.5-9B:deepinfra via HF Inference Providers, thinking off (chat_template_kwargs.enable_thinking=false and reasoning_effort=none), provider-default sampling",
+  "harness": "qed-proof (qed_proof_agent.agent:QedProofAgent), 1 check-and-rewrite round, 8192 tokens per call",
+  "judge": "openai/gpt-oss-20b:deepinfra, medium reasoning (the tasks' default)",
+  "sandbox": "Daytona, separate verifier environment",
+  "stacks": {
+    "openenv": "openenv harbor serve, OpenEnv main 9fac2a9a + openenv/OpenEnv#1573 (+ #1565 for the :provider suffix), Harbor 0.25.0, client: training/evaluate.py --hosted (HarborSession), 12 concurrent",
+    "harbor": "harbor run -a qed_proof_agent.agent:QedProofAgent, Harbor 0.25.0, 12 concurrent"
+  },
+  "summary": {
+    "openenv": {
+      "graded": 64,
+      "mean_reward": 0.6674,
+      "full_marks": 34
+    },
+    "harbor": {
+      "graded": 64,
+      "mean_reward": 0.7165,
+      "full_marks": 40
+    },
+    "paired_mean_difference_openenv_minus_harbor": -0.0491,
+    "paired_standard_error": 0.0465,
+    "tasks_better": {
+      "openenv": 13,
+      "harbor": 15,
+      "same": 36
+    },
+    "model_calls_per_rollout": "exactly 2 on both stacks (128 proxy POSTs for 64 rollouts, no retries)"
+  },
+  "terminus_2_through_serve": {
+    "tasks": 8,
+    "graded": 8,
+    "mean_reward": 0.7143,
+    "roots_per_rollout": [
+      1
+    ]
+  },
+  "per_task": [
+    {
+      "task": "aops-0420a942ac",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-0476f4e70f",
+      "openenv": 0.1429,
+      "harbor": 0.1429
+    },
+    {
+      "task": "aops-069b341fbd",
+      "openenv": 1.0,
+      "harbor": 0.7143
+    },
+    {
+      "task": "aops-0cd1e75c62",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-1d26c6b7c8",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-1ded3532b9",
+      "openenv": 0.0,
+      "harbor": 0.0
+    },
+    {
+      "task": "aops-2c5fcdc9ba",
+      "openenv": 0.1429,
+      "harbor": 0.0
+    },
+    {
+      "task": "aops-2ef212b9e5",
+      "openenv": 0.7143,
+      "harbor": 0.4286
+    },
+    {
+      "task": "aops-2f237d4b6b",
+      "openenv": 0.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-3275eb2beb",
+      "openenv": 0.8571,
+      "harbor": 0.2857
+    },
+    {
+      "task": "aops-38b8a63efd",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-3f918d0d03",
+      "openenv": 0.0,
+      "harbor": 0.0
+    },
+    {
+      "task": "aops-421db7ec71",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-4ff5edee73",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-532d547843",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-548dfa7701",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-5ea11b7195",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-6443ff2d52",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-6c1539c3a0",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-73416cc53f",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-7343d340fd",
+      "openenv": 0.0,
+      "harbor": 0.0
+    },
+    {
+      "task": "aops-774ffe94b4",
+      "openenv": 0.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-80c50a1d51",
+      "openenv": 0.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-839a5dc180",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-83bf78c5ce",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-84205fd689",
+      "openenv": 0.5714,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-850025ad44",
+      "openenv": 0.7143,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-8587ea07f8",
+      "openenv": 0.0,
+      "harbor": 0.0
+    },
+    {
+      "task": "aops-86e0033279",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-88dc0c05db",
+      "openenv": 1.0,
+      "harbor": 0.8571
+    },
+    {
+      "task": "aops-896321d87f",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-8a1c5e4618",
+      "openenv": 0.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-965ac49695",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-a07b236488",
+      "openenv": 0.5714,
+      "harbor": 0.0
+    },
+    {
+      "task": "aops-ae31609aa8",
+      "openenv": 0.0,
+      "harbor": 0.1429
+    },
+    {
+      "task": "aops-bc008ed67d",
+      "openenv": 0.7143,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-bce6a09f7c",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-c1f1155a0d",
+      "openenv": 0.0,
+      "harbor": 0.1429
+    },
+    {
+      "task": "aops-c36f8b2190",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-c5978edaf3",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-c71f68e7f6",
+      "openenv": 0.0,
+      "harbor": 0.0
+    },
+    {
+      "task": "aops-d0eac31816",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-de44bb882e",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-dff064c8d6",
+      "openenv": 0.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-e65e1a5bcc",
+      "openenv": 1.0,
+      "harbor": 0.0
+    },
+    {
+      "task": "aops-ea024c648b",
+      "openenv": 1.0,
+      "harbor": 0.4286
+    },
+    {
+      "task": "aops-ed03f1409b",
+      "openenv": 0.8571,
+      "harbor": 1.0
+    },
+    {
+      "task": "aops-f090c5dad9",
+      "openenv": 0.8571,
+      "harbor": 0.5714
+    },
+    {
+      "task": "aops-f55ae27e62",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "olympiads-051f9503b5",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "olympiads-13fe78d178",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "olympiads-28069210b4",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "olympiads-306660eeeb",
+      "openenv": 0.0,
+      "harbor": 0.5714
+    },
+    {
+      "task": "olympiads-80257e8458",
+      "openenv": 0.2857,
+      "harbor": 0.5714
+    },
+    {
+      "task": "olympiads-8415208543",
+      "openenv": 0.4286,
+      "harbor": 1.0
+    },
+    {
+      "task": "olympiads-95c3e4616b",
+      "openenv": 0.7143,
+      "harbor": 0.2857
+    },
+    {
+      "task": "olympiads-991ec85a12",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "olympiads-9c84b07c60",
+      "openenv": 0.2857,
+      "harbor": 0.1429
+    },
+    {
+      "task": "olympiads-9e14be3b3c",
+      "openenv": 0.0,
+      "harbor": 0.2857
+    },
+    {
+      "task": "olympiads-cba4923cf4",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "olympiads-cfbd7db94f",
+      "openenv": 0.4286,
+      "harbor": 0.1429
+    },
+    {
+      "task": "olympiads-e08dc3c77b",
+      "openenv": 0.4286,
+      "harbor": 0.1429
+    },
+    {
+      "task": "olympiads-edc6695b2a",
+      "openenv": 1.0,
+      "harbor": 1.0
+    },
+    {
+      "task": "olympiads-f07172bbd7",
+      "openenv": 1.0,
+      "harbor": 1.0
+    }
+  ]
+}

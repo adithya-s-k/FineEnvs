@@ -50,6 +50,25 @@ statement exactly; here a natural-language proof earns partial credit for the st
 | IMO-ProofBench | 60 | [lm-provers/IMOProofBench](https://huggingface.co/datasets/lm-provers/IMOProofBench) |
 | ProofBench | 145 | [lm-provers/ProofBench](https://huggingface.co/datasets/lm-provers/ProofBench), splits `24_25` and `other` |
 
+## Through OpenEnv
+
+The tasks and qed-proof run through stock `openenv harbor serve`, the server training uses, with the harness named
+by import path (`--harness qed_proof_agent.agent:QedProofAgent`). That needs
+[openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573), which makes `module:Class` work and gives a
+host-side agent the capture proxy's loopback URL. Before it, a public tunnel cut long proofs with a 502 and the
+retries were recorded as extra conversations.
+
+Eval mode, on the 64 validated test tasks: Qwen3.5-9B on deepinfra (thinking off), qed-proof, Daytona, judge
+gpt-oss-20b. The two paths agree within noise ([results/openenv-parity-v1.json](results/openenv-parity-v1.json)):
+
+| Path | Graded | Mean reward | Full marks |
+|---|---:|---:|---:|
+| `openenv harbor serve` + `training/evaluate.py --hosted` | 64/64 | 0.667 | 34 |
+| `harbor run` | 64/64 | 0.717 | 40 |
+
+Per task, OpenEnv minus Harbor averages −0.049 with a standard error of 0.046. Every rollout made exactly 2 model
+calls on both paths.
+
 ## Credits
 
 Problems, rubrics, benchmarks and the judge's prompt are from the

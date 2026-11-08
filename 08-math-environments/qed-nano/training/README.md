@@ -48,7 +48,9 @@ GPU 1: AsyncGRPO trainer                       (in the Harbor server)           
 - The judge's key reaches each verifier through the task's `[verifier] env`, resolved from the server's environment;
   the agent never sees it.
 
-Pinned stack: 05's validated one (TRL `52fb144e`, OpenEnv `7ee88d59`, vLLM 0.25.1, Transformers `d6c1e71b`), with
+Pinned stack: 05's validated one (TRL `52fb144e`, vLLM 0.25.1, Transformers `d6c1e71b`), with OpenEnv at `main` plus
+[openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573) (`6fb632a4`, custom harnesses and loopback; the
+training path on it is not yet re-tested with vLLM), and
 Harbor 0.24 for separate verifiers. Model: `Qwen/Qwen3.5-2B` in non-thinking mode, at the revision 05 pinned.
 
 ## Run it

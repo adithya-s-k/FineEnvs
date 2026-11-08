@@ -3,12 +3,15 @@
 # with TRL and OpenEnv pinned to the commits 05 validated instead of main.
 set -euo pipefail
 TRL_COMMIT=52fb144e7ece97e26aabd3c025740022838e46b5
-OPENENV_COMMIT=7ee88d590d36ae1ac3daf2cc11bc551bca7a804f
+# OpenEnv main (9fac2a9a) + openenv/OpenEnv#1573, which runs `--harness module:Class` and hands host-side agents
+# (qed-proof) the capture proxy's loopback URL. Switch to the merge commit on openenv/OpenEnv once it lands.
+OPENENV_REPO=${OPENENV_REPO:-https://github.com/adithya-s-k/OpenEnv.git}
+OPENENV_COMMIT=${OPENENV_COMMIT:-6fb632a4c1687489d7d3e7bf9aae18586b9b465a}
 python -m pip install -r requirements.txt
 python -m pip install "trl @ git+https://github.com/huggingface/trl.git@${TRL_COMMIT}"
 mkdir -p .deps
 if [[ ! -d .deps/OpenEnv/.git ]]; then
-    git clone --filter=blob:none https://github.com/openenv/OpenEnv.git .deps/OpenEnv
+    git clone --filter=blob:none "${OPENENV_REPO}" .deps/OpenEnv
 fi
 git -C .deps/OpenEnv fetch --quiet origin "${OPENENV_COMMIT}" && git -C .deps/OpenEnv checkout --quiet "${OPENENV_COMMIT}"
 python -m pip install -e .deps/OpenEnv
