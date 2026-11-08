@@ -104,4 +104,4 @@ under openai/math's Apache-2.0 license, with its `LICENSE` and a `NOTICE` that a
 The reward is 1 only for a complete proof of the exact statement. That makes it hard to game and easy to trust, but
 a correct proof of an equivalent statement, or real partial progress, scores 0, and on open research problems
 almost every attempt will score 0. A reward that recognises valid alternative formulations and partial progress
-would be a better training signal; [qed-nano](../qed-nano/) explores that end, with a rubric judge.
+would be a better training signal; [FineProofEnvs](../fineproof/) explores that end, with a rubric judge.

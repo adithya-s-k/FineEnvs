@@ -22,7 +22,7 @@ about which.
 |---|---|---|---|
 | Scott Wu Math | one arithmetic expression | exact evaluation with fractions | shaped, for near misses |
 | openai/math | a Lean 4 proof | Comparator: exact statement, standard axioms, kernel replay | none |
-| QED-Nano proofs | a proof in plain language | an LLM judge against a per-problem rubric, 0–7 | yes, by rubric step |
+| FineProofEnvs | a proof in plain language | an LLM judge against a per-problem rubric, 0–7 | yes, by rubric step |
 
 ## The catalog
 
@@ -47,13 +47,13 @@ reward 1 only for a kernel-checked proof of the exact statement.</p>
 <a href="openai-math/envs/openai_math/harbor/README.md">Grading and threat model</a>
 </td>
 <td width="33%" valign="top">
-<h3><a href="qed-nano/">QED-Nano proofs</a></h3>
+<h3><a href="fineproof/">FineProofEnvs</a></h3>
 <sub>by <a href="https://github.com/adithya-s-k">Adithya S Kolavi</a> (Hugging Face), from the
 <a href="https://huggingface.co/lm-provers">LM-Provers</a> release</sub>
 <p>Write an olympiad proof in plain language; gpt-oss-20b grades it 0–7 against the problem's rubric, the reward
 QED-Nano was trained with. Work in progress.</p>
 <sub>Harbor · 5,227 train problems, IMO-ProofBench, ProofBench</sub><br>
-<a href="qed-nano/DESIGN.md">Design</a> ·
+<a href="fineproof/DESIGN.md">Design</a> ·
 <a href="https://huggingface.co/spaces/lm-provers/qed-nano-blogpost">QED-Nano</a>
 </td>
 </tr>
@@ -68,7 +68,7 @@ Each row comes from an eval card.
 | Scott Wu Math, at once | 20 test deals, 5 per level | the target, exactly | no | 12 | GPT-6.1 Sol 0.70 | [eval-v1.json](scott-wu-math/results/eval-v1.json) |
 | Scott Wu Math, reasoning | the same 20 deals | the target, exactly | no | 12 | 7 of 12 solve all 20 | [eval-v1.json](scott-wu-math/results/eval-v1.json) |
 | openai/math | 369 tasks | a kernel-checked proof of the exact statement | no | | not run yet | |
-| QED-Nano proofs | IMO-ProofBench (60), ProofBench (145) | 7 of 7 on the rubric | gpt-oss-120b | | not run yet | |
+| FineProofEnvs | IMO-ProofBench (60), ProofBench (145) | 7 of 7 on the rubric | gpt-oss-120b | | not run yet | |
 
 ## Add your environment
 

@@ -1,0 +1,17 @@
+# Project manifest. `tools/build_index.py` renders the root README table from it.
+name: fineproof
+title: "FineProofEnvs: olympiad proofs with a rubric judge"
+tagline: "Write a natural-language proof of an olympiad problem; an LLM judge grades it 0–7 against the problem's rubric, as in the QED-Nano recipe."
+order: 8.1
+status: wip
+authors:
+  - {name: Adithya S Kolavi, github: adithya-s-k, affiliation: Hugging Face}
+
+envs:
+  - name: olympiad_proofs
+    summary: "FineProofs-RL as Harbor tasks (5,099 train, 128 test, Gemini 3 Pro rubrics), IMOProofBench and ProofBench for eval; reward = LLM judge rubric score / 7, gpt-oss-20b by default, the judge QED-Nano trained with."
+    tools: "shell (Python)"
+    backend: daytona
+    frameworks:
+      harbor:
+        verified: true

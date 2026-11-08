@@ -134,7 +134,7 @@ is the expected result; the value is in the rare 1 and in the trajectories.
 - **Lean parallelism.** Lean sees every host CPU, not the sandbox's 4; tasks set `LEAN_NUM_THREADS=3` for agents and
   the grader uses 2, retrying once single-threaded if a build runs out of memory.
 - **A strict reward.** Only a complete proof of the statement exactly as formalized scores. A correct proof of an
-  equivalent statement, or partial progress, scores 0. [qed-nano](../qed-nano/) is the other end of that trade-off.
+  equivalent statement, or partial progress, scores 0. [FineProofEnvs](../fineproof/) is the other end of that trade-off.
 - **Contamination.** The statements *and proofs* have been public since 6 October 2026. Report the model's training
   cutoff with every result.
 - **One kernel.** Comparator's optional second kernel (nanoda) is off. The trust base is the Lean kernel,
