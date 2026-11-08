@@ -24,6 +24,10 @@ SYSTEM = (
     "You are solving an olympiad problem by writing a proof. There are no tools: reply in Markdown, with LaTeX for "
     "formulas. Your proof is read by a strict grader who gives credit only for steps that are fully justified."
 )
+ONLY = (
+    "{instruction}\n\nThis harness has no tools: reply with your complete proof in Markdown. It is saved to "
+    "/workspace/proof.md for you."
+)
 FIRST = (
     "{instruction}\n\nThis harness has no tools: reply with your complete proof in Markdown. You will then be asked "
     "to check it, and your final version is saved to /workspace/proof.md for you."
@@ -50,7 +54,7 @@ async def run(complete: Callable[[list[dict]], Awaitable[str]], instruction: str
               rounds: int = 1) -> tuple[str, list[dict]]:
     """Run one episode. Returns (the proof to grade, the conversation)."""
     messages = [{"role": "system", "content": SYSTEM},
-                {"role": "user", "content": FIRST.format(instruction=instruction.strip())}]
+                {"role": "user", "content": (FIRST if rounds else ONLY).format(instruction=instruction.strip())}]
     reply = await complete(messages)
     messages.append({"role": "assistant", "content": reply})
     proof = extract_final(reply) or reply.strip()

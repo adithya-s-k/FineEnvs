@@ -27,11 +27,16 @@ def main():
     for option in ("--steps", "--save-steps", "--step", "--samples"):
         parser.add_argument(option, type=int)
     parser.add_argument("--checkpoint")
+    parser.add_argument("--rounds", type=int)
+    parser.add_argument("--max-tokens", type=int)
     args = parser.parse_args()
     output = Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     train, evaluation = output / "train", output / "reload-eval"
     common = ["--model", args.model, "--sandbox", args.sandbox] + (["--space-id", args.space_id] if args.space_id else [])
+    for flag, value in (("--rounds", args.rounds), ("--max-tokens", args.max_tokens)):
+        if value is not None:
+            common += [flag, str(value)]
     subprocess.run([sys.executable, str(ROOT / "jobs/run.py"), "train", *common, "--smoke", "--output", str(train)],
                    check=True, cwd=ROOT)
     for step in (1, 2):

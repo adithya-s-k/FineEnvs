@@ -45,7 +45,8 @@ VERIFIER_DIR = Path("/logs/verifier")
 # sandbox (and a shared verifier reads it in place). /logs/artifacts/proof.md is where older task versions put it.
 SUBMISSIONS = (Path("/workspace/proof.md"), Path("/logs/artifacts/proof.md"))
 
-MAX_PROOF_CHARS = 60_000
+# 16,384 output tokens of LaTeX-heavy prose run to about 50-65k characters; the cap only stops runaway output.
+MAX_PROOF_CHARS = 100_000
 MAX_SCORE = 7
 DEFAULT_MODEL = "openai/gpt-oss-20b:deepinfra,openai/gpt-oss-20b:groq,openai/gpt-oss-20b:featherless-ai"
 PROVIDERS = {

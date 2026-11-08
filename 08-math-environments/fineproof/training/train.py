@@ -38,6 +38,7 @@ def arguments():
     parser.add_argument("--steps", type=int, default=100)
     parser.add_argument("--save-steps", type=int, default=25)
     parser.add_argument("--inflight", type=int, default=32)
+    parser.add_argument("--grad-accum", type=int, default=40, help="Rollouts per update (5 groups of 8)")
     parser.add_argument("--space-id", default=None, help="Optional Trackio Space; local logs are always kept")
     parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
                         help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
@@ -83,8 +84,11 @@ def main():
         lr_scheduler_type="constant",
         warmup_steps=0,
         max_steps=2 if args.smoke else args.steps,
-        per_device_train_batch_size=1 if args.smoke else 4,
-        gradient_accumulation_steps=2 if args.smoke else 4,
+        # One rollout per row, never packed: TRL marks packed samples only by position_ids resets, which reach the
+        # attention layers but not Qwen3.5's linear-attention (gated delta rule) layers, so their recurrent state would
+        # run from one sample into the next. An update is then gradient_accumulation_steps rollouts.
+        per_device_train_batch_size=1,
+        gradient_accumulation_steps=2 if args.smoke else args.grad_accum,
         num_generations=generations,
         max_completion_length=16384,
         temperature=0.8,
@@ -92,11 +96,12 @@ def main():
         top_k=-1,
         max_inflight_tasks=inflight,
         max_staleness=4,
-        token_budget=40960,
+        token_budget=0,
         fork_threshold_tokens=0,
         optim="paged_adamw_8bit",
+        # Weights and Adam state stay in fp32 (TRL's default dtype): in bf16 an update of about lr rounds away on most
+        # weights. bf16 is the compute precision.
         bf16=True,
-        dtype="bfloat16",
         model_init_kwargs={"revision": MODEL_REVISIONS[args.model]},
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},

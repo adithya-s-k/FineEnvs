@@ -21,6 +21,8 @@ sync_outputs() { hf buckets sync "$outputs" "hf://buckets/${FINEPROOF_OUTPUT_BUC
     sync_outputs || echo "periodic sync to the bucket failed; the next one retries" >&2
 done) &
 syncer=$!
+# A Job that is stopped or times out gets SIGTERM first: copy what is there before it goes.
+trap 'sync_outputs || true; exit 143' TERM
 
 action=$1
 shift

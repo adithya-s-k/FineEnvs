@@ -35,12 +35,31 @@ def load_tasks(dataset):
     return tasks
 
 
+def _session_class():
+    """HarborSession, except that a rollout the server did not finish cleanly has no grade.
+
+    When the agent times out (a slow engine, say), Harbor still runs the verifier, which scores the missing proof 0:
+    a wrong answer as far as GRPO can tell. Such a rollout says nothing about the policy, so it is left ungraded and
+    drops out of its group, like a judge failure.
+    """
+    from harbor_env.harness import HarborSession
+
+    class FineProofSession(HarborSession):
+        def verify(self, transcript, final_state=None):
+            verdict = super().verify(transcript, final_state)
+            result = self.result
+            if result is not None and (not result.ok or result.exception_type == "AgentTimeoutError"):
+                return type(verdict)(env_reward=None, done=True)
+            return verdict
+
+    return FineProofSession
+
+
 def session_for(args, index, task, split, sampling):
     """`sampling=None` is an eval rollout on the server's own engine (a hosted provider is eval-only)."""
     from harbor_env import HarborEnv
-    from harbor_env.harness import HarborSession
 
-    session = HarborSession(
+    session = _session_class()(
         env=HarborEnv(args.server, message_timeout_s=1800),
         owns_env=True,
         split=split,

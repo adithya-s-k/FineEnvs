@@ -40,6 +40,12 @@ def main():
     parser.add_argument("--space-id")
     parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
                         help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
+    parser.add_argument("--rounds", type=int, default=int(os.environ.get("FINEPROOF_ROUNDS", "1")),
+                        help="Check-and-rewrite rounds of the FineProof harness (0: one call per proof)")
+    parser.add_argument("--max-tokens", type=int, default=16384, help="Output cap per model call")
+    parser.add_argument("--grad-accum", type=int, default=40, help="Train: rollouts per update")
+    parser.add_argument("--inflight", type=int, default=32)
+    parser.add_argument("--task-seed", type=int, help="Eval: score a seeded random --tasks subset of test")
     args = parser.parse_args()
     os.chdir(ROOT)
     subprocess.run([sys.executable, "check_setup.py"], check=True)
@@ -112,16 +118,16 @@ def main():
                "--port", str(server_port), "--ws-ping-timeout", "1800"], "harbor", {
             "OPENENV_DATASETS": ",".join(str(Path("prepared", "datasets", s).resolve()) for s in ("train", "test")),
             "OPENENV_HARBOR_REWARD_KEY": "reward",
-            "FINEPROOF_ROUNDS": os.environ.get("FINEPROOF_ROUNDS", "1"),
-            "FINEPROOF_MAX_TOKENS": "8192",
+            "FINEPROOF_ROUNDS": str(args.rounds),
+            "FINEPROOF_MAX_TOKENS": str(args.max_tokens),
             "OPENENV_LLM_URL": engine_url,
             "OPENENV_MODEL": args.model,
             "OPENENV_HARBOR_TRIALS_DIR": str(output / "trials"),
-            "OPENENV_MAX_OUTPUT_TOKENS": "8192",
+            "OPENENV_MAX_OUTPUT_TOKENS": str(args.max_tokens),
             "OPENENV_CAPTURE_PORT": str(capture_port),
             # The FineProof harness runs host-side and reaches the capture proxy on loopback, so no public tunnel is needed.
             "OPENENV_EXPOSE": os.environ.get("OPENENV_EXPOSE", "direct"),
-            "MAX_CONCURRENT_ENVS": str(max(32, args.concurrency) + 8),
+            "MAX_CONCURRENT_ENVS": str(max(args.inflight, args.concurrency) + 8),
             "ENABLE_WEB_INTERFACE": "false",
         })
         wait(server_url + "/health")
@@ -131,11 +137,15 @@ def main():
             common += ["--space-id", args.space_id]
         if args.action == "train":
             command = [sys.executable, "train.py", *common, "--steps", str(args.steps),
-                       "--save-steps", str(args.save_steps)] + (["--smoke"] if args.smoke else [])
+                       "--save-steps", str(args.save_steps), "--grad-accum", str(args.grad_accum),
+                       "--inflight", str(args.inflight)] + (["--smoke"] if args.smoke else [])
         else:
             command = [sys.executable, "evaluate.py", *common, "--checkpoint", args.checkpoint or args.model,
                        "--step", str(args.step), "--tasks", str(args.tasks), "--samples", str(args.samples),
-                       "--concurrency", str(args.concurrency)]
+                       "--concurrency", str(args.concurrency), "--rounds", str(args.rounds),
+                       "--max-tokens", str(args.max_tokens)]
+            if args.task_seed is not None:
+                command += ["--task-seed", str(args.task_seed)]
         worker = spawn(command, args.action, {"CUDA_VISIBLE_DEVICES": devices[1]})
         children.remove(worker)
         try:

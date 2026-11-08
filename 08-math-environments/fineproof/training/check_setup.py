@@ -27,6 +27,12 @@ def main():
         raise RuntimeError(f"OpenEnv does not wire {HARNESS} as a host-side agent")
     assert callable(TrainingTrace) and callable(AsyncGRPOTrainer) and callable(HarborSession)
     assert FineProofAgent.name() == "fineproof"
+    # Without flash-linear-attention, Transformers runs Qwen3.5's gated delta rule in PyTorch, which is slow and
+    # carries state across the samples AsyncGRPO packs into one row.
+    try:
+        import fla  # noqa: F401
+    except ImportError as exc:
+        raise RuntimeError("flash-linear-attention is missing; run bash jobs/install.sh") from exc
     print(json.dumps({name: version(name) for name in ("trl", "openenv", "transformers", "vllm", "harbor")}, indent=2))
     print("Required APIs are present. GPU training and sandbox connectivity still need a smoke test.")
 

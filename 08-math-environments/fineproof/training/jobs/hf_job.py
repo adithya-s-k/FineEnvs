@@ -52,6 +52,11 @@ def main():
     parser.add_argument("--concurrency", type=int)
     parser.add_argument("--prepare-args", default="", help='Passed to prepare.py, e.g. "--train-tasks 64"')
     parser.add_argument("--space-id")
+    parser.add_argument("--rounds", type=int, default=1, help="Harness check-and-rewrite rounds (0: one call)")
+    parser.add_argument("--max-tokens", type=int, default=16384, help="Output cap per model call")
+    parser.add_argument("--grad-accum", type=int, default=40, help="Train: rollouts per update")
+    parser.add_argument("--inflight", type=int, default=32, help="Train: rollouts in flight")
+    parser.add_argument("--task-seed", type=int, help="Eval: a seeded random --tasks subset of test")
     parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
                         help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
     parser.add_argument("--submit", action="store_true", help="Without this flag, print the job plan")
@@ -68,14 +73,19 @@ def main():
     command = ["bash", "/fineproof-source/training/jobs/entrypoint.sh", args.action, "--model", args.model,
                "--output", "/workspace/outputs/" + args.name, "--steps", str(args.steps),
                "--save-steps", str(args.save_steps), "--step", str(args.step), "--tasks", str(args.tasks), "--samples", str(args.samples),
-               "--concurrency", str(args.concurrency), "--sandbox", args.sandbox]
+               "--concurrency", str(args.concurrency), "--sandbox", args.sandbox, "--rounds", str(args.rounds),
+               "--max-tokens", str(args.max_tokens)]
+    if args.action != "smoke":
+        command += ["--grad-accum", str(args.grad_accum), "--inflight", str(args.inflight)]
+    if args.task_seed is not None:
+        command += ["--task-seed", str(args.task_seed)]
     if args.checkpoint:
         command += ["--checkpoint", args.checkpoint]
     if args.space_id:
         command += ["--space-id", args.space_id]
     prepare_args = args.prepare_args + (" --sandbox hf-sandbox" if args.sandbox == "hf-sandbox" else "")
     env = {"PYTHONUNBUFFERED": "1", "FINEPROOF_PREPARE_ARGS": prepare_args.strip(), "FINEPROOF_OUTPUT_BUCKET": args.bucket}
-    for name in ("DAYTONA_API_URL", "JUDGE_PROVIDER", "JUDGE_MODEL", "JUDGE_BASE_URL", "JUDGE_SAMPLES", "FINEPROOF_ROUNDS"):
+    for name in ("DAYTONA_API_URL", "JUDGE_PROVIDER", "JUDGE_MODEL", "JUDGE_BASE_URL", "JUDGE_SAMPLES"):
         if os.environ.get(name):
             env[name] = os.environ[name]
     specification = {

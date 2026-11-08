@@ -36,6 +36,11 @@ from pydantic import Field
 
 from . import loop
 
+# Harbor's hf-sandbox backend stops a sandbox after 10 minutes with no API call and no running process. This agent
+# does not touch its sandbox while the model writes, so a long generation would lose the sandbox before proof.md
+# lands; a cheap command every few minutes keeps it alive.
+KEEPALIVE_SEC = 180
+
 PROOF_PATH = "/workspace/proof.md"
 
 
@@ -161,7 +166,19 @@ class FineProofAgent(BaseAgent):
                 context.n_output_tokens = self.usage["completion_tokens"]
                 return text.strip()
 
-            proof, messages = await loop.run(complete, instruction, rounds=self.rounds)
+            async def keep_sandbox_alive() -> None:
+                while True:
+                    await asyncio.sleep(KEEPALIVE_SEC)
+                    try:
+                        await environment.exec("true")
+                    except Exception:  # noqa: BLE001 - a missed ping is retried; the proof upload reports its own error
+                        pass
+
+            keepalive = asyncio.create_task(keep_sandbox_alive())
+            try:
+                proof, messages = await loop.run(complete, instruction, rounds=self.rounds)
+            finally:
+                keepalive.cancel()
 
         self.logs_dir.mkdir(parents=True, exist_ok=True)
         (self.logs_dir / "conversation.json").write_text(json.dumps(messages, indent=2, ensure_ascii=False))

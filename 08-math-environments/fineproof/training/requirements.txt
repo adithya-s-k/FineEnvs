@@ -5,6 +5,7 @@ transformers @ git+https://github.com/huggingface/transformers.git@d6c1e71bd717b
 datasets
 accelerate
 bitsandbytes
+flash-linear-attention==0.6.0  # Qwen3.5's linear attention: without it the PyTorch fallback is slow and ignores packed-sequence boundaries
 kernels>=0.17,<0.18  # the pinned Transformers loads its attention kernel through kernels 0.17.x
 trackio
 harbor[daytona]==0.24.0

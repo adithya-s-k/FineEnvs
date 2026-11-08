@@ -16,7 +16,10 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from tasks import HARNESS, dataset_dir, load_tasks, session_for
+import os
+import random
+
+from tasks import AGENT_TIMEOUT_SEC, HARNESS, dataset_dir, load_tasks, session_for
 
 TEMPERATURE = 0.8
 
@@ -36,7 +39,7 @@ def episode(args, index, task, split):
     sampling = None if args.hosted else {"temperature": TEMPERATURE, "top_p": 1.0, "top_k": -1}
     session = session_for(args, index, task, split, sampling)
     try:
-        session.wait_for_completion(timeout_s=1800)
+        session.wait_for_completion(timeout_s=AGENT_TIMEOUT_SEC)  # as in training
         reward = session.verify([]).env_reward
         if reward is None or not math.isfinite(reward):
             raise RuntimeError("No verifier grade")
@@ -76,6 +79,9 @@ def main():
     parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
                         help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
     parser.add_argument("--dataset", help="The served test folder, if not <data>/datasets/test")
+    parser.add_argument("--task-seed", type=int, help="Score a seeded random --tasks subset instead of the first ones")
+    parser.add_argument("--rounds", type=int, help="The server's harness rounds, recorded in identity.json")
+    parser.add_argument("--max-tokens", type=int, help="The server's output cap per call, recorded in identity.json")
     parser.add_argument("--hosted", action="store_true",
                         help="Eval rollouts on the server's own engine (e.g. a hosted provider) with its default sampling")
     args = parser.parse_args()
@@ -83,7 +89,10 @@ def main():
         args.vllm_url = ""
     split = str(Path(args.dataset).resolve()) if args.dataset else dataset_dir(args.data, "test")
     tasks = load_tasks(split)
-    selected = list(enumerate(tasks))[: args.tasks]
+    selected = list(enumerate(tasks))
+    if args.task_seed is not None:
+        selected = sorted(random.Random(args.task_seed).sample(selected, min(args.tasks, len(selected))))
+    selected = selected[: args.tasks]
     output = Path(args.output)
     identity = {
         "protocol_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
@@ -91,6 +100,10 @@ def main():
         "model": args.model,
         "harness": HARNESS,
         "sandbox": args.sandbox,
+        "rounds": args.rounds,
+        "max_tokens": args.max_tokens,
+        "task_seed": args.task_seed,
+        "judge_model": os.environ.get("JUDGE_MODEL") or "task default",
         "samples": args.samples,
         "temperature": None if args.hosted else TEMPERATURE,
         "task_names": [t["name"] for _, t in selected],
@@ -124,8 +137,6 @@ def main():
     summary = summarize(rows, len(pairs))
     summary["identity"] = identity
     write_json(output / "summary.json", summary)
-    import os
-
     os.environ["TRACKIO_DIR"] = str(output.resolve() / "trackio")
     try:
         import trackio
