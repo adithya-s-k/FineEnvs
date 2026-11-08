@@ -18,7 +18,8 @@ The judge can be any model behind one of these APIs (JUDGE_PROVIDER):
   anthropic  Anthropic Messages API, https://api.anthropic.com/v1
 
 Configuration (environment): JUDGE_API_KEY (required; HF_TOKEN is accepted for the hf provider), JUDGE_PROVIDER,
-JUDGE_MODEL (default openai/gpt-oss-20b:deepinfra), JUDGE_BASE_URL (overrides the provider's), JUDGE_REASONING_EFFORT
+JUDGE_MODEL (a model, or a comma-separated list tried in turn when one is rate-limited or down; default gpt-oss-20b on
+deepinfra, then groq, then featherless-ai), JUDGE_BASE_URL (overrides the provider's), JUDGE_REASONING_EFFORT
 (medium; empty to omit; chat-completions providers), JUDGE_MAX_TOKENS (32768), JUDGE_EXTRA_BODY (JSON merged into the
 request, e.g. Anthropic's thinking settings), JUDGE_STREAM (on for hf: the router times out long replies otherwise),
 JUDGE_SAMPLES (1: average of N independent grades). Changing the judge
@@ -46,7 +47,7 @@ SUBMISSIONS = (Path("/workspace/proof.md"), Path("/logs/artifacts/proof.md"))
 
 MAX_PROOF_CHARS = 60_000
 MAX_SCORE = 7
-DEFAULT_MODEL = "openai/gpt-oss-20b:deepinfra"
+DEFAULT_MODEL = "openai/gpt-oss-20b:deepinfra,openai/gpt-oss-20b:groq,openai/gpt-oss-20b:featherless-ai"
 PROVIDERS = {
     "hf": "https://router.huggingface.co/v1",
     "openai": "https://api.openai.com/v1",
@@ -107,7 +108,7 @@ def build_prompt(template: str, task: dict, proof: str) -> str:
     return PLACEHOLDER.sub(lambda m: values[m.group(1)], template)
 
 
-def judge_request(prompt: str) -> tuple[str, dict, dict]:
+def judge_request(prompt: str, model: str | None = None) -> tuple[str, dict, dict]:
     """(url, headers, body) for the configured provider."""
     provider = (os.environ.get("JUDGE_PROVIDER") or "hf").lower()
     if provider not in PROVIDERS:
@@ -118,7 +119,7 @@ def judge_request(prompt: str) -> tuple[str, dict, dict]:
     base = os.environ.get("JUDGE_BASE_URL") or PROVIDERS[provider]
     if not base:
         raise JudgeUnavailable(f"JUDGE_PROVIDER={provider} needs JUDGE_BASE_URL")
-    model = os.environ.get("JUDGE_MODEL") or DEFAULT_MODEL
+    model = model or judge_models()[0]
     # Judge replies so far used under 11k tokens; 32k is the most every gpt-oss provider accepts.
     max_tokens = int(os.environ.get("JUDGE_MAX_TOKENS") or "32768")
     effort = os.environ.get("JUDGE_REASONING_EFFORT", "medium")
@@ -177,28 +178,46 @@ def read_stream(resp) -> dict:
     return {"choices": [{"message": {"content": "".join(parts)}}], "usage": usage}
 
 
+def judge_models() -> list[str]:
+    """JUDGE_MODEL as a list: one model, or several (comma-separated) tried in turn."""
+    return [m.strip() for m in (os.environ.get("JUDGE_MODEL") or DEFAULT_MODEL).split(",") if m.strip()]
+
+
 def call_judge(prompt: str) -> dict:
-    url, headers, body = judge_request(prompt)
-    stream = streams((os.environ.get("JUDGE_PROVIDER") or "hf").lower()) and url.endswith("/chat/completions")
-    if stream:
-        body = {**body, "stream": True, "stream_options": {"include_usage": True}}
-    last = ""
-    for attempt in range(RETRIES):
-        req = urllib.request.Request(url, data=json.dumps(body).encode(), method="POST", headers=headers)
-        retry_after = None
-        try:
-            with urllib.request.urlopen(req, timeout=900) as resp:
-                return read_stream(resp) if stream else json.load(resp)
-        except urllib.error.HTTPError as exc:
-            last = f"HTTP {exc.code}: {exc.read()[:300]!r}"
-            if exc.code in (400, 401, 403, 404):
-                break  # a request the provider will never accept: retrying cannot help
-            retry_after = exc.headers.get("Retry-After") if exc.headers else None
-        except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
-            last = f"{type(exc).__name__}: {exc}"
-        if attempt + 1 < RETRIES:
-            time.sleep(retry_delay(attempt, retry_after))
-    raise JudgeUnavailable(f"judge request failed: {last}")
+    """The judge's reply, with `_judge_model` naming the model that gave it.
+
+    A rate limit, a server error or a timeout moves on to the next model in JUDGE_MODEL at once; after a full round
+    of failures, the next round waits (15 s doubling, or the provider's Retry-After). A request a provider rejects
+    outright (400, 401, 403, 404) drops that model, since resending it cannot help.
+    """
+    models = judge_models()
+    stream = streams((os.environ.get("JUDGE_PROVIDER") or "hf").lower())
+    last, retry_after, attempt = "", None, 0
+    for cycle in range(RETRIES):
+        for model in list(models):
+            url, headers, body = judge_request(prompt, model)
+            if stream and url.endswith("/chat/completions"):
+                body = {**body, "stream": True, "stream_options": {"include_usage": True}}
+            req = urllib.request.Request(url, data=json.dumps(body).encode(), method="POST", headers=headers)
+            attempt += 1
+            try:
+                with urllib.request.urlopen(req, timeout=900) as resp:
+                    out = read_stream(resp) if "stream" in body else json.load(resp)
+                return {**out, "_judge_model": model}
+            except urllib.error.HTTPError as exc:
+                last = f"{model}: HTTP {exc.code}: {exc.read()[:300]!r}"
+                if exc.code in (400, 401, 403, 404):
+                    models.remove(model)  # a request this provider will never accept
+                    continue
+                retry_after = exc.headers.get("Retry-After") if exc.headers else None
+            except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
+                last = f"{model}: {type(exc).__name__}: {exc}"
+        if not models:
+            break
+        if cycle + 1 < RETRIES:
+            time.sleep(retry_delay(cycle, retry_after))
+            retry_after = None
+    raise JudgeUnavailable(f"judge request failed after {attempt} tries: {last}")
 
 
 def retry_delay(attempt: int, retry_after: str | None = None) -> float:
@@ -224,7 +243,7 @@ def grade(proof: str, task: dict, template: str, samples: int) -> dict:
         out = call_judge(prompt)
         reply = judge_reply(out)
         score = parse_score(reply)
-        grades.append({"score": score, "assessment": reply[-4000:]})
+        grades.append({"score": score, "assessment": reply[-4000:], "model": out.get("_judge_model")})
         usage.append(out.get("usage") or {})
     scores = [g["score"] if g["score"] is not None else 0 for g in grades]  # no verdict counts as 0, as in QED-Nano
     return {"scores": scores, "score": sum(scores) / len(scores), "sanitized_edits": edits,

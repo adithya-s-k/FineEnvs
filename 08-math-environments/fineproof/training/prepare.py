@@ -24,6 +24,23 @@ sys.path.insert(0, str(ROOT.parent / "envs" / "fineproof" / "harbor"))
 from fineproof_harbor import adapter, data  # noqa: E402
 
 
+def for_hf_sandbox(task: Path) -> None:
+    """Make a task runnable on Harbor's hf-sandbox backend (sandboxes as HF Jobs).
+
+    HF Sandbox cannot build a Dockerfile, so the task names a prebuilt image: the Dockerfile's own pinned base
+    (Python; sympy is not in it). It also cannot change network policy after start, so the agent phase keeps the
+    network. Both are harmless for the FineProof harness, which calls the model from outside the sandbox and only
+    writes proof.md into it; an agent that runs commands in the sandbox should use Daytona.
+    """
+    image = next(line.split()[1] for line in (task / "environment" / "Dockerfile").read_text().splitlines()
+                 if line.startswith("FROM "))
+    toml = task / "task.toml"
+    text = toml.read_text()
+    if "docker_image" not in text:
+        text = text.replace("[environment]\n", f'[environment]\ndocker_image = "{image}"\n', 1)
+    toml.write_text(text.replace('network_mode = "no-network"', 'network_mode = "public"'))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", type=Path, default=ROOT / "prepared")
@@ -32,6 +49,8 @@ def main() -> None:
     ap.add_argument("--min-mean", type=float, default=0.25)
     ap.add_argument("--max-mean", type=float, default=0.9)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
+                    help="hf-sandbox: run each task from its Dockerfile's base image with the network on (see for_hf_sandbox)")
     args = ap.parse_args()
 
     sets = data.load_all(data.fetch(args.cache))
@@ -48,6 +67,8 @@ def main() -> None:
         root = args.out / "datasets" / split
         for r in records:
             adapter.write_task(r, root)
+            if args.sandbox == "hf-sandbox":
+                for_hf_sandbox(root / "tasks" / r["id"])
         names = sorted(r["id"] for r in records)
         summary[split] = {
             "tasks": len(names),

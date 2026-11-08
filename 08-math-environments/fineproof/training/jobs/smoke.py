@@ -21,6 +21,8 @@ def main():
     parser.add_argument("--tasks", type=int, default=4)
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--space-id")
+    parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
+                        help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
     # Accept the launcher's shared options; the smoke always runs two updates.
     for option in ("--steps", "--save-steps", "--step", "--samples"):
         parser.add_argument(option, type=int)
@@ -29,7 +31,7 @@ def main():
     output = Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     train, evaluation = output / "train", output / "reload-eval"
-    common = ["--model", args.model] + (["--space-id", args.space_id] if args.space_id else [])
+    common = ["--model", args.model, "--sandbox", args.sandbox] + (["--space-id", args.space_id] if args.space_id else [])
     subprocess.run([sys.executable, str(ROOT / "jobs/run.py"), "train", *common, "--smoke", "--output", str(train)],
                    check=True, cwd=ROOT)
     for step in (1, 2):

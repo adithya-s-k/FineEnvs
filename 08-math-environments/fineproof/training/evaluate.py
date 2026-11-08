@@ -73,6 +73,8 @@ def main():
     parser.add_argument("--samples", type=int, default=1)
     parser.add_argument("--concurrency", type=int, default=32)
     parser.add_argument("--space-id", default=None)
+    parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
+                        help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
     parser.add_argument("--dataset", help="The served test folder, if not <data>/datasets/test")
     parser.add_argument("--hosted", action="store_true",
                         help="Eval rollouts on the server's own engine (e.g. a hosted provider) with its default sampling")
@@ -88,6 +90,7 @@ def main():
         "checkpoint": args.checkpoint,
         "model": args.model,
         "harness": HARNESS,
+        "sandbox": args.sandbox,
         "samples": args.samples,
         "temperature": None if args.hosted else TEMPERATURE,
         "task_names": [t["name"] for _, t in selected],

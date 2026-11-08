@@ -38,11 +38,15 @@ def main():
     parser.add_argument("--samples", type=int, default=1)
     parser.add_argument("--concurrency", type=int, default=32)
     parser.add_argument("--space-id")
+    parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
+                        help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
     args = parser.parse_args()
     os.chdir(ROOT)
     subprocess.run([sys.executable, "check_setup.py"], check=True)
     if not Path("prepared/ready.json").exists():
         raise RuntimeError("Run prepare.py before allocating GPUs")
+    if args.sandbox == "daytona" and not os.environ.get("DAYTONA_API_KEY"):
+        raise RuntimeError("DAYTONA_API_KEY is needed for --sandbox daytona")
     if not os.environ.get("JUDGE_API_KEY"):
         raise RuntimeError("JUDGE_API_KEY is needed: each task's verifier calls the judge with it")
     output = Path(args.output).resolve()
@@ -122,7 +126,7 @@ def main():
         })
         wait(server_url + "/health")
         common = ["--model", args.model, "--output", str(output), "--vllm-url", engine_url, "--server", server_url,
-                  "--trials", str(output / "trials")]
+                  "--trials", str(output / "trials"), "--sandbox", args.sandbox]
         if args.space_id:
             common += ["--space-id", args.space_id]
         if args.action == "train":

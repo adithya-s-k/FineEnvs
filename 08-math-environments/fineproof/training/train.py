@@ -39,6 +39,8 @@ def arguments():
     parser.add_argument("--save-steps", type=int, default=25)
     parser.add_argument("--inflight", type=int, default=32)
     parser.add_argument("--space-id", default=None, help="Optional Trackio Space; local logs are always kept")
+    parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
+                        help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
     return parser.parse_args()
 
 

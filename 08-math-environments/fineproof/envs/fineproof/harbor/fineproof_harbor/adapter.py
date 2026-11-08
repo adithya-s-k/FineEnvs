@@ -33,7 +33,9 @@ VERIFIER_TIMEOUT = 3600  # room for judge retries and JUDGE_SAMPLES > 1
 MIN_ORACLE_CHARS = 400
 # The training reward is QED-Nano's (gpt-oss-20b). The benchmarks get a stronger default judge, as QED-Nano graded its
 # benchmarks with a stronger model: gpt-oss-20b gave an IMO-ProofBench official solution 1/7 where gpt-oss-120b gave 7.
-JUDGES = {"train": "openai/gpt-oss-20b:deepinfra", "test": "openai/gpt-oss-20b:deepinfra",
+# gpt-oss-20b on three providers, tried in turn: one provider rate-limited gpt-oss-20b for minutes at a time.
+GPT_OSS_20B = "openai/gpt-oss-20b:deepinfra,openai/gpt-oss-20b:groq,openai/gpt-oss-20b:featherless-ai"
+JUDGES = {"train": GPT_OSS_20B, "test": GPT_OSS_20B,
           "imo": "openai/gpt-oss-120b:novita", "proofbench": "openai/gpt-oss-120b:novita"}
 SET_NAMES = {"train": "train", "test": "test", "imo": "imo-proofbench", "proofbench": "proofbench"}
 

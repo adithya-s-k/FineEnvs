@@ -12,11 +12,11 @@ cd /workspace/fineproof/training
 uv venv --python 3.12 --seed .venv
 export PATH="$PWD/.venv/bin:$PATH"
 bash jobs/install.sh
-python prepare.py ${QED_PREPARE_ARGS:-}
+python prepare.py ${FINEPROOF_PREPARE_ARGS:-}
 
 outputs=/workspace/outputs
 mkdir -p "$outputs"
-sync_outputs() { hf buckets sync "$outputs" "hf://buckets/${QED_OUTPUT_BUCKET}" --format quiet; }
+sync_outputs() { hf buckets sync "$outputs" "hf://buckets/${FINEPROOF_OUTPUT_BUCKET}" --format quiet; }
 (while sleep "${QED_SYNC_EVERY_SEC:-300}"; do
     sync_outputs || echo "periodic sync to the bucket failed; the next one retries" >&2
 done) &
@@ -41,5 +41,5 @@ for attempt in 1 2 3; do
     fi
     sleep 30
 done
-echo "outputs synced to hf://buckets/${QED_OUTPUT_BUCKET}"
+echo "outputs synced to hf://buckets/${FINEPROOF_OUTPUT_BUCKET}"
 exit "$status"

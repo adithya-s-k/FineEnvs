@@ -47,7 +47,7 @@ def session_for(args, index, task, split, sampling):
         task_index=index,
         instruction=task["instruction"],
         harness=HARNESS,
-        sandbox="daytona",
+        sandbox=getattr(args, "sandbox", None) or "daytona",
         llm_url=getattr(args, "env_llm_url", None) or args.vllm_url or "",
         model=args.model,
         sampling=sampling,

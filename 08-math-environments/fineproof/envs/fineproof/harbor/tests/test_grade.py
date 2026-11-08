@@ -131,7 +131,7 @@ class Streaming(unittest.TestCase):
 
 
 class Retries(unittest.TestCase):
-    ENV = {"JUDGE_API_KEY": "k", "JUDGE_STREAM": "0"}
+    ENV = {"JUDGE_API_KEY": "k", "JUDGE_STREAM": "0", "JUDGE_MODEL": "m"}
 
     def http_error(self, code, retry_after=None):
         import email.message
@@ -143,11 +143,12 @@ class Retries(unittest.TestCase):
             headers["Retry-After"] = retry_after
         return urllib.error.HTTPError("u", code, "x", headers, io.BytesIO(b"busy"))
 
-    def call(self, outcomes):
+    def call(self, outcomes, models=None):
         reply = mock.MagicMock()
         reply.__enter__.return_value = io_json({"choices": [{"message": {"content": "<score>5</score>"}}]})
         side = [o if isinstance(o, Exception) else reply for o in outcomes]
-        with mock.patch.dict("os.environ", self.ENV, clear=True), \
+        env = {**self.ENV, **({"JUDGE_MODEL": models} if models else {})}
+        with mock.patch.dict("os.environ", env, clear=True), \
                 mock.patch.object(grade.urllib.request, "urlopen", side_effect=side) as opened, \
                 mock.patch.object(grade.time, "sleep") as slept:
             try:
@@ -172,6 +173,22 @@ class Retries(unittest.TestCase):
         out, calls, sleeps = self.call([self.http_error(401)])
         self.assertIsInstance(out, grade.JudgeUnavailable)
         self.assertEqual((calls, sleeps), (1, []))
+
+    def test_a_rate_limited_provider_hands_over_to_the_next_at_once(self):
+        out, calls, sleeps = self.call([self.http_error(429), "ok"], models="a,b")
+        self.assertEqual((out["_judge_model"], calls, sleeps), ("b", 2, []))
+
+    def test_a_provider_that_rejects_the_request_is_dropped(self):
+        out, calls, sleeps = self.call([self.http_error(400), self.http_error(503), "ok"], models="a,b")
+        self.assertEqual((out["_judge_model"], calls, sleeps), ("b", 3, [15]))
+
+    def test_a_full_round_of_failures_backs_off_before_the_next(self):
+        out, calls, sleeps = self.call([self.http_error(429), self.http_error(503), "ok"], models="a,b")
+        self.assertEqual((out["_judge_model"], calls, sleeps), ("a", 3, [15]))
+
+    def test_the_default_judge_lists_three_providers(self):
+        with mock.patch.dict("os.environ", {}, clear=True):
+            self.assertEqual(len(grade.judge_models()), 3)
 
     def test_retry_after_is_capped_and_dates_fall_back(self):
         self.assertEqual(grade.retry_delay(0, "100000"), grade.RETRY_CAP_SEC)

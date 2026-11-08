@@ -52,6 +52,8 @@ def main():
     parser.add_argument("--concurrency", type=int)
     parser.add_argument("--prepare-args", default="", help='Passed to prepare.py, e.g. "--train-tasks 64"')
     parser.add_argument("--space-id")
+    parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
+                        help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
     parser.add_argument("--submit", action="store_true", help="Without this flag, print the job plan")
     args = parser.parse_args()
     args.tasks = args.tasks or (4 if args.action == "smoke" else 128)
@@ -66,12 +68,13 @@ def main():
     command = ["bash", "/fineproof-source/training/jobs/entrypoint.sh", args.action, "--model", args.model,
                "--output", "/workspace/outputs/" + args.name, "--steps", str(args.steps),
                "--save-steps", str(args.save_steps), "--step", str(args.step), "--tasks", str(args.tasks), "--samples", str(args.samples),
-               "--concurrency", str(args.concurrency)]
+               "--concurrency", str(args.concurrency), "--sandbox", args.sandbox]
     if args.checkpoint:
         command += ["--checkpoint", args.checkpoint]
     if args.space_id:
         command += ["--space-id", args.space_id]
-    env = {"PYTHONUNBUFFERED": "1", "QED_PREPARE_ARGS": args.prepare_args, "QED_OUTPUT_BUCKET": args.bucket}
+    prepare_args = args.prepare_args + (" --sandbox hf-sandbox" if args.sandbox == "hf-sandbox" else "")
+    env = {"PYTHONUNBUFFERED": "1", "FINEPROOF_PREPARE_ARGS": prepare_args.strip(), "FINEPROOF_OUTPUT_BUCKET": args.bucket}
     for name in ("DAYTONA_API_URL", "JUDGE_PROVIDER", "JUDGE_MODEL", "JUDGE_BASE_URL", "JUDGE_SAMPLES", "FINEPROOF_ROUNDS"):
         if os.environ.get(name):
             env[name] = os.environ[name]
@@ -92,8 +95,10 @@ def main():
     from huggingface_hub import Volume, get_token, run_job, sync_job_volume
 
     token = os.environ.get("HF_TOKEN") or get_token()
-    if not token or not os.environ.get("DAYTONA_API_KEY") or not os.environ.get("JUDGE_API_KEY"):
-        parser.error("Set HF_TOKEN (or log in to HF), DAYTONA_API_KEY and JUDGE_API_KEY")
+    if not token or not os.environ.get("JUDGE_API_KEY"):
+        parser.error("Set HF_TOKEN (or log in to HF) and JUDGE_API_KEY")
+    if args.sandbox == "daytona" and not os.environ.get("DAYTONA_API_KEY"):
+        parser.error("Set DAYTONA_API_KEY, or pass --sandbox hf-sandbox")
     with tempfile.TemporaryDirectory() as directory:
         for source in files:
             target = Path(directory) / source.relative_to(PROJECT)
@@ -103,8 +108,8 @@ def main():
     job = run_job(
         **specification,
         volumes=[source_volume, Volume(type="bucket", source=args.bucket, mount_path="/outputs", read_only=True)],
-        secrets={"HF_TOKEN": token, "DAYTONA_API_KEY": os.environ["DAYTONA_API_KEY"],
-                 "JUDGE_API_KEY": os.environ["JUDGE_API_KEY"]},
+        secrets={"HF_TOKEN": token, "JUDGE_API_KEY": os.environ["JUDGE_API_KEY"],
+                 **({"DAYTONA_API_KEY": os.environ["DAYTONA_API_KEY"]} if args.sandbox == "daytona" else {})},
     )
     print(job.url)
 
