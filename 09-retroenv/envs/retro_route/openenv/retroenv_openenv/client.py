@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import math
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -157,6 +158,7 @@ class RemoteRetroRouteEnv:
     """
 
     REMIND_AT = 4  # tool calls left when the reminder to submit starts
+    RESET_ATTEMPTS = 5  # connect retries, backing off 2-16 s, before an episode is given up
 
     def __init__(self, server: str | None = None):
         import os
@@ -190,14 +192,23 @@ class RemoteRetroRouteEnv:
     def reset(self, split: str = "train", index: int = 0, **_: Any) -> str:
         self._reward, self._failed, self._calls, self._submitted, self._passed = 0.0, False, 0, False, False
         self._failure = None
-        try:
-            self._opening = self._client.reset(split=split, index=index)
-        except Exception:
-            # A session the server dropped stays dead in the client, and every later call on it
-            # fails; open a fresh one once instead of losing this instance for the whole run.
-            self._close()
-            self._client = RetroEnvClient(self._server)
-            self._opening = self._client.reset(split=split, index=index)
+        for attempt in range(self.RESET_ATTEMPTS):
+            try:
+                self._opening = self._client.reset(split=split, index=index)
+                return self._opening["prompt"]
+            except Exception:
+                # A session the server dropped stays dead in the client, and a server at its
+                # session limit refuses new ones for a while: open a fresh session and back off.
+                self._close()
+                if attempt + 1 < self.RESET_ATTEMPTS:
+                    time.sleep(2 ** (attempt + 1))
+                try:
+                    self._client = RetroEnvClient(self._server)
+                except Exception:
+                    continue
+        # Still no session: this one episode has no grade (NaN reward), and training goes on.
+        self._failed = True
+        self._opening = {"prompt": "The environment is unavailable for this episode.", "index": index}
         return self._opening["prompt"]
 
     def get_reward(self) -> float:

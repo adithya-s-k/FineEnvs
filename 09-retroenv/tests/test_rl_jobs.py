@@ -112,6 +112,20 @@ def test_a_broken_session_scores_nan_and_the_next_reset_reconnects(monkeypatch):
     assert env.get_reward() == 0.0
 
 
+def test_a_server_that_refuses_sessions_costs_one_episode_not_the_run(monkeypatch):
+    from retroenv_openenv import client
+
+    monkeypatch.setattr(client, "RetroEnvClient", _DeadClient)
+    monkeypatch.setattr(client.time, "sleep", lambda seconds: None)
+    env = client.RemoteRetroRouteEnv("http://server")
+    env.reset(index=3)  # every attempt refused: no exception into the trainer
+    assert env.failed and math.isnan(env.get_reward())
+
+    monkeypatch.setattr(client, "RetroEnvClient", _LiveClient)
+    assert env.reset(index=3) == "Plan a retrosynthesis for CCO."  # the next episode connects again
+    assert not env.failed
+
+
 def test_tool_results_count_down_the_budget_and_the_trace_records_each_episode(monkeypatch, tmp_path):
     from retroenv_openenv import client
 
