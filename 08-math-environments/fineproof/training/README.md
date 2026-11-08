@@ -83,7 +83,7 @@ and `python prepare.py`, then `python jobs/run.py {train,eval} ...` with the sam
 H100s or H200s: the pinned TRL's AsyncGRPO trains with `kernels-community/flash-attn3`, which is built for those
 architectures (sm80, sm90) and refuses a B200.
 
-On a shared cluster whose user ids a Daytona sandbox cannot map (uid 150234 on the HF cluster), every rollout fails
+On a shared cluster whose user ids a Daytona sandbox cannot map (ids above 65535 are common), every rollout fails
 before grading with `tar: .: Cannot change ownership to uid …`. Harbor's Daytona backend copies the agent's proof into
 the verifier's sandbox as an archive and unpacks it as root, keeping the host's owner
 ([harbor-framework/harbor#1959](https://github.com/harbor-framework/harbor/issues/1959)). Until
