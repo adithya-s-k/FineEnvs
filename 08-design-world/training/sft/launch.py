@@ -31,7 +31,7 @@ from huggingface_hub import HfApi, Volume
 
 HERE = Path(__file__).resolve().parent
 EXP = HERE.parents[1]
-CODE = ("train.py", "sft_format.py", "collator.py", "check_format.py", "sft_job.sh")
+CODE = ("train.py", "sft_format.py", "collator.py", "check_format.py", "tiled_mlp.py", "sft_job.sh")
 
 
 def _token() -> str:
@@ -62,6 +62,8 @@ def _bundle() -> bytes:
         for name in CODE:
             tar.add(HERE / name, arcname=f"sft/{name}")
         tar.add(EXP / "envs" / "designgym" / "cua_format.py", arcname="sft/cua_format.py")
+        if (HERE / "smoke").is_dir():  # small training views for smoke tests (--ids /work/sft/smoke/<name>)
+            tar.add(HERE / "smoke", arcname="sft/smoke")
     return buf.getvalue()
 
 

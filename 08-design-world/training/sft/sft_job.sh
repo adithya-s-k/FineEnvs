@@ -5,7 +5,7 @@ cd /work 2>/dev/null || { mkdir -p /work && cd /work; }
 echo "[job] $(date -u +%FT%TZ) run $RUN_NAME"
 uv venv -q /opt/venv --python 3.12
 . /opt/venv/bin/activate
-uv pip install -q torch==2.14.1 torchvision==0.29.1 transformers==5.19.0 trl==1.15.0 peft==0.21.2 accelerate==1.15.0 \
+uv pip install -q torch==2.14.1 torchvision==0.29.1 transformers==5.22.1 trl==1.17.1 peft==0.21.2 accelerate==1.15.0 \
     datasets==5.1.0 pyarrow==26.0.0 pillow==12.3.0 safetensors==0.8.0 "huggingface_hub[hf_xet]" flash-linear-attention
 python -c "import torch, fla; print('[job] torch', torch.__version__, 'cuda', torch.version.cuda, 'fla', fla.__version__, [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())])"
 NGPU=$(python -c "import torch; print(torch.cuda.device_count())")

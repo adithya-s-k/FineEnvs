@@ -28,14 +28,15 @@ from safetensors.torch import save_file
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="Qwen/Qwen3.6-35B-A3B")
-    ap.add_argument("--adapter", required=True, help="model repo with the PEFT adapter")
+    ap.add_argument("--adapter", required=True, help="model repo with the PEFT adapter, or a local run folder")
     ap.add_argument("--subfolder", default="", help="e.g. checkpoint-120 (empty: repo root)")
     ap.add_argument("--repo", default="", help="output model repo (public); empty: only write --out")
     ap.add_argument("--out", default="/tmp/merged", help="local folder for the merged weights (e.g. an eval job's disk)")
     a = ap.parse_args()
 
     pattern = f"{a.subfolder}/adapter_*" if a.subfolder else "adapter_*"
-    ad = Path(snapshot_download(a.adapter, allow_patterns=[pattern])) / a.subfolder
+    local = Path(a.adapter)
+    ad = (local if local.is_dir() else Path(snapshot_download(a.adapter, allow_patterns=[pattern]))) / a.subfolder
     cfg = json.loads((ad / "adapter_config.json").read_text())
     scale = cfg["lora_alpha"] / cfg["r"]
     lora = {}
