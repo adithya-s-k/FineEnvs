@@ -45,6 +45,12 @@ def main():
         for key in ("loss", "grad_norm"):
             if key in row:
                 assert math.isfinite(row[key]), f"Non-finite {key}"
+    # Checked before the eval, so a run that cannot learn fails without paying for one.
+    assert any(row.get("grad_norm", 0) > 0 for row in updates), (
+        "No update had a gradient: every group's rewards tied, so this model and these problems give GRPO no signal")
+    ratios = [row["ratio"] for row in updates if "ratio" in row]
+    assert all(abs(r - 1) < 0.05 for r in ratios), (
+        f"Importance ratios {ratios} are far from 1: the captured logprobs disagree with the trainer's")
     subprocess.run([sys.executable, str(ROOT / "jobs/run.py"), "eval", *common, "--checkpoint",
                     str(train / "checkpoint-2"), "--step", "2", "--tasks", str(args.tasks), "--concurrency",
                     str(args.concurrency), "--output", str(evaluation)], check=True, cwd=ROOT)
@@ -53,6 +59,7 @@ def main():
     rewards = [row.get("reward") for row in updates if "reward" in row]
     report = {
         "model": args.model,
+        "sandbox": args.sandbox,
         "steps": 2,
         "optimizer_metrics": updates,
         "train_reward_logged": rewards,
