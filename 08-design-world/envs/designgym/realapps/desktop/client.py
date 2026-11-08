@@ -9,6 +9,7 @@ screenshots and input to the desktop instead of a browser page, so the GUI tools
 from __future__ import annotations
 
 import base64
+import errno
 import fcntl
 import hashlib
 import json
@@ -27,6 +28,55 @@ from .. import registry
 LOCKS = Path(os.environ.get("DESIGN_CANVAS_LOCK_DIR", "/tmp/design-canvas-locks"))
 
 
+# Connection-level failures on the way to a desktop (the request never reached it): DNS not answering, the TCP
+# connect timing out, refused, host or network unreachable, reset before anything was sent. Over a weak link these
+# come and go within seconds; a request is tried again a few times before it counts as an error. A request that
+# was answered with an error, or timed out while being read, is not: for an input it may have been carried out.
+_RETRY_ERRNO = {errno.ENETDOWN, errno.ENETUNREACH, errno.ETIMEDOUT, errno.ECONNREFUSED, errno.EHOSTDOWN,
+                errno.EHOSTUNREACH}  # (by name: the numbers differ between macOS and Linux)
+_RETRIES = int(os.environ.get("DESIGN_CANVAS_DESKTOP_RETRIES", "4"))
+
+
+def _connection_error(e: BaseException, sent: bool) -> bool:
+    """A failure before the request reached the desktop. A reset counts only for a request without a body (a
+    read): for an /input the body may have gone out before the reset, and the click may have happened."""
+    import socket
+
+    if isinstance(e, urllib.error.HTTPError):
+        return False
+    r = getattr(e, "reason", e)
+    if isinstance(r, socket.gaierror):  # (DNS not answering)
+        return True
+    code = getattr(r, "errno", None) if isinstance(r, OSError) else None
+    return code in _RETRY_ERRNO or (code == errno.ECONNRESET and not sent)
+
+
+def _open(req, timeout: float, retry_reads: bool = False):
+    """urlopen with retries on connection-level failures (and, for reads, on a timed-out read as well)."""
+    import socket
+    import time
+
+    sent = req.data is not None  # (a POST: its body may have reached the desktop before a failure)
+    for k in range(_RETRIES + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return r.read()
+        except urllib.error.HTTPError:
+            raise
+        except (urllib.error.URLError, OSError, socket.timeout) as e:
+            read_timeout = isinstance(e, (socket.timeout, TimeoutError)) or "timed out" in str(getattr(e, "reason", e))
+            if k == _RETRIES or not (_connection_error(e, sent) or (retry_reads and read_timeout)):
+                raise
+            time.sleep(2.0 * 2 ** k)  # 2, 4, 8, 16 s
+
+
+# DESIGN_CANVAS_SCREENSHOT_FORMAT=webp asks the desktop agent for WebP screenshots (quality DESIGN_CANVAS_SCREENSHOT_QUALITY,
+# default 90) instead of PNG: four to six times less traffic for a recorder on a slow or metered link. Unset: PNG.
+_SHOT_QUERY = ""
+if os.environ.get("DESIGN_CANVAS_SCREENSHOT_FORMAT", "").lower() == "webp":
+    _SHOT_QUERY = f"?fmt=webp&q={int(os.environ.get('DESIGN_CANVAS_SCREENSHOT_QUALITY', '90'))}"
+
+
 class DesktopClient:
     def __init__(self, base_url: str, headers: dict[str, str] | None = None):
         self.base = base_url.rstrip("/")
@@ -36,23 +86,20 @@ class DesktopClient:
         req = urllib.request.Request(self.base + path, data=json.dumps(body).encode(), method="POST",
                                      headers={"Content-Type": "application/json", **self.headers})
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as r:
-                return json.loads(r.read())
+            return json.loads(_open(req, timeout))
         except urllib.error.HTTPError as e:
             raise RuntimeError(f"desktop {path}: {e.read()[:1500].decode(errors='replace')}") from None
 
     def screenshot(self) -> bytes:
-        req = urllib.request.Request(self.base + "/screenshot", headers=self.headers)
-        with urllib.request.urlopen(req, timeout=60) as r:
-            return r.read()
+        req = urllib.request.Request(self.base + "/screenshot" + _SHOT_QUERY, headers=self.headers)
+        return _open(req, 60, retry_reads=True)
 
     def a11y(self) -> list[dict]:
         """The on-screen widgets from the accessibility tree (agent.py GET /a11y): role, name, tooltip ("desc"),
         box [x, y, w, h] in screenshot pixels, states, text and value. For scripted recorders; agents see pixels."""
         req = urllib.request.Request(self.base + "/a11y", headers=self.headers)
         try:
-            with urllib.request.urlopen(req, timeout=120) as r:
-                return json.loads(r.read())["nodes"]
+            return json.loads(_open(req, 120, retry_reads=True))["nodes"]
         except urllib.error.HTTPError as e:
             raise RuntimeError(f"desktop /a11y: {e.read()[:1500].decode(errors='replace')}") from None
 
@@ -60,10 +107,9 @@ class DesktopClient:
         """The widgets (as a11y) and the screen taken right after them, in one round trip (agent.py GET /observe)."""
         import base64
 
-        req = urllib.request.Request(self.base + "/observe", headers=self.headers)
+        req = urllib.request.Request(self.base + "/observe" + _SHOT_QUERY, headers=self.headers)
         try:
-            with urllib.request.urlopen(req, timeout=120) as r:
-                o = json.loads(r.read())
+            o = json.loads(_open(req, 120, retry_reads=True))
         except urllib.error.HTTPError as e:
             raise RuntimeError(f"desktop /observe: {e.read()[:1500].decode(errors='replace')}") from None
         return o["nodes"], base64.b64decode(o["png"])

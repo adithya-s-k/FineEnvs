@@ -294,13 +294,31 @@ def a11y(max_nodes: int = 6000) -> dict:
     return {"nodes": json.loads(r.stdout)}
 
 
-def screenshot() -> bytes:
+def screenshot(fmt: str = "png", quality: int = 90) -> bytes:
+    """The screen as PNG (lossless, the default), or as WebP when asked (`?fmt=webp&q=90`): a recorder on a slow or
+    metered link gets a screenshot four to six times smaller, at the quality it would store it in anyway."""
     from PIL import ImageGrab
 
     img = ImageGrab.grab(xdisplay=DISPLAY)
     buf = io.BytesIO()
-    img.convert("RGB").save(buf, "PNG")
+    if fmt == "webp":
+        img.convert("RGB").save(buf, "WEBP", quality=max(1, min(100, quality)), method=4)
+    else:
+        img.convert("RGB").save(buf, "PNG")
     return buf.getvalue()
+
+
+def _shot_args(path: str) -> tuple[str, int]:
+    """fmt and quality from a request's query string (/screenshot?fmt=webp&q=90)."""
+    from urllib.parse import parse_qs, urlparse
+
+    q = parse_qs(urlparse(path).query)
+    fmt = (q.get("fmt") or ["png"])[0].lower()
+    try:
+        quality = int((q.get("q") or ["90"])[0])
+    except ValueError:
+        quality = 90
+    return ("webp" if fmt == "webp" else "png"), quality
 
 
 XKEYS = {"ControlOrMeta": "ctrl", "Control": "ctrl", "Meta": "super", "Alt": "alt", "Shift": "shift",
@@ -1378,16 +1396,19 @@ class Handler(BaseHTTPRequestHandler):
                 r = subprocess.run(["tar", "czf", "-", "-C", str(src), "."], capture_output=True, timeout=300)
                 self._send(200 if r.returncode == 0 else 500, r.stdout if r.returncode == 0 else
                            {"error": r.stderr.decode(errors="replace")[-500:]}, "application/gzip")
-            elif self.path == "/screenshot":
-                self._send(200, screenshot(), "image/png")
+            elif self.path.split("?")[0] == "/screenshot":
+                fmt, quality = _shot_args(self.path)
+                self._send(200, screenshot(fmt, quality), f"image/{fmt}")
             elif self.path == "/a11y":
                 with LOCK:
                     self._send(200, a11y())
-            elif self.path == "/observe":  # a recorder's turn in one round trip: the widgets, then the screen
+            elif self.path.split("?")[0] == "/observe":  # a recorder's turn in one round trip: the widgets, then the screen
+                fmt, quality = _shot_args(self.path)
                 with LOCK:
                     nodes = a11y()["nodes"]
-                    png = screenshot()
-                self._send(200, {"nodes": nodes, "png": base64.b64encode(png).decode()})
+                    shot = screenshot(fmt, quality)
+                # ("png" keeps its name for older clients; the bytes are whatever fmt was asked for)
+                self._send(200, {"nodes": nodes, "png": base64.b64encode(shot).decode(), "format": fmt})
             else:
                 self._send(404, {"error": "not found"})
         except Exception as exc:  # noqa: BLE001

@@ -150,7 +150,10 @@ class DaytonaApps:
         from daytona import CreateSnapshotParams, Image, Resources
 
         dockerfile = registry.desktop().dockerfile
-        name = "design-canvas-desktop-" + _fingerprint(dockerfile.read_bytes())
+        # DESIGN_CANVAS_DAYTONA_DESKTOP_MEM (GB, default 4): a desktop uses under 1 GB recording (LibreOffice,
+        # ONLYOFFICE, Inkscape, Scribus measured 2026-10-13), so a big run can take smaller ones: its own snapshot
+        mem = int(os.environ.get("DESIGN_CANVAS_DAYTONA_DESKTOP_MEM", "4"))
+        name = "design-canvas-desktop-" + _fingerprint(dockerfile.read_bytes()) + (f"-m{mem}" if mem != 4 else "")
         try:
             snap = self.d.snapshot.get(name)
             if str(snap.state).split(".")[-1].lower() == "active":
@@ -167,7 +170,7 @@ class DaytonaApps:
         _log(f"building snapshot {name} from {dockerfile} (once; several minutes)")
         self.d.snapshot.create(
             CreateSnapshotParams(name=name, image=Image.from_dockerfile(dockerfile),
-                                 resources=Resources(cpu=2, memory=4, disk=8),
+                                 resources=Resources(cpu=2, memory=mem, disk=8),
                                  # the agent is uploaded and started by the server, not the image
                                  entrypoint=["sh", "-c", "sleep infinity"]),
             on_logs=lambda line: None)
