@@ -1,0 +1,191 @@
+/* The in-page file chooser: macOS, Windows 11 and GNOME looks, light and dark. */
+
+.fc {
+  position: fixed; z-index: 900; display: flex; flex-direction: column; outline: none;
+  --fc-bg: #ececec; --fc-side: #e5e5e7; --fc-pane: #ffffff; --fc-fg: #1d1d1f; --fc-muted: #6e6e73; --fc-line: #d5d5d7;
+  --fc-hover: rgba(0, 0, 0, 0.05); --fc-sel: #0a60ff; --fc-sel-fg: #ffffff; --fc-sel-soft: rgba(0, 0, 0, 0.1);
+  --fc-accent: #0a84ff; --fc-accent-fg: #ffffff; --fc-field: #ffffff; --fc-field-line: #cfcfd3;
+  background: var(--fc-bg); color: var(--fc-fg); user-select: none;
+}
+.fc .grow { flex: 1; }
+/* The frame clips to the window's rounded corners; the resize handles sit outside it, straddling the edge as an OS's do. */
+.fc-frame { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: inherit; }
+.fc-main { flex: 1; display: flex; min-height: 0; }
+.fc-side { width: 180px; flex: none; overflow: auto; padding: 8px 8px; background: var(--fc-side); }
+.fc-side-group { margin-bottom: 10px; }
+.fc-side-title { font-size: 11px; font-weight: 600; color: var(--fc-muted); padding: 6px 8px 4px; }
+.fc-place { width: 100%; display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; border: 0; background: transparent;
+  color: var(--fc-fg); font: inherit; font-size: 13px; text-align: left; border-radius: 6px; cursor: default; white-space: nowrap; }
+.fc-place:hover { background: var(--fc-hover); }
+.fc-place.on { background: var(--fc-sel-soft); }
+.fc-place-ic { display: inline-flex; color: var(--fc-accent); }
+.fc-files { flex: 1; overflow: auto; background: var(--fc-pane); outline: none; position: relative; }
+.fc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); align-content: start; gap: 6px; padding: 14px; }
+.fc-grid .fc-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 4px; border-radius: 6px; cursor: default; }
+.fc-grid .fc-thumb { width: 80px; height: 70px; display: flex; align-items: center; justify-content: center; border-radius: 5px; }
+.fc-grid .fc-thumb img { max-width: 76px; max-height: 66px; object-fit: contain; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); background:
+  repeating-conic-gradient(#e6e6e6 0 25%, #ffffff 0 50%) 0 0 / 10px 10px; }
+.fc-grid .fc-folder { color: var(--fc-accent); }
+.fc-grid .fc-item-name { max-width: 100px; font-size: 12px; line-height: 1.25; text-align: center; padding: 1px 5px; border-radius: 4px;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-all; }
+.fc-grid .fc-item.on .fc-thumb { background: var(--fc-sel-soft); }
+.fc-grid .fc-item.on .fc-item-name { background: var(--fc-sel); color: var(--fc-sel-fg); }
+.fc-list { display: flex; flex-direction: column; padding: 0 0 8px; }
+.fc-row { display: grid; grid-template-columns: minmax(180px, 2.2fr) minmax(120px, 1.4fr) 80px minmax(90px, 1fr); align-items: center;
+  height: 26px; padding: 0 12px; font-size: 13px; column-gap: 10px; cursor: default; }
+.fc-row > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.fc-row-head { height: 26px; font-size: 12px; color: var(--fc-muted); border-bottom: 1px solid var(--fc-line); position: sticky; top: 0;
+  background: var(--fc-pane); z-index: 1; }
+.fc-list .fc-item:nth-child(even) { background: rgba(0, 0, 0, 0.025); }
+.fc-list .fc-item.on { background: var(--fc-sel); color: var(--fc-sel-fg); }
+.fc-list .fc-item.on .fc-col-date, .fc-list .fc-item.on .fc-col-size, .fc-list .fc-item.on .fc-col-kind { color: var(--fc-sel-fg); }
+.fc-col-date, .fc-col-size, .fc-col-kind { color: var(--fc-muted); }
+.fc-col-name { display: flex; align-items: center; gap: 8px; }
+.fc-list .fc-thumb { width: 18px; height: 18px; flex: none; display: flex; align-items: center; justify-content: center; }
+.fc-list .fc-thumb img { max-width: 18px; max-height: 18px; object-fit: contain; }
+.fc-list .fc-folder { color: var(--fc-accent); }
+.fc-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--fc-muted); font-size: 13px; }
+.fc-btn { width: 28px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent;
+  color: var(--fc-fg); border-radius: 6px; cursor: default; flex: none; }
+.fc-btn:hover:not(:disabled) { background: var(--fc-hover); }
+.fc-btn:disabled { opacity: 0.35; }
+.fc-seg { display: inline-flex; gap: 2px; }
+.fc-view.on { background: var(--fc-sel-soft); }
+.fc-search-box { display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; border-radius: 6px; background: var(--fc-field);
+  border: 1px solid var(--fc-field-line); color: var(--fc-muted); width: 190px; flex: none; }
+.fc-search { border: 0; outline: none; background: transparent; color: var(--fc-fg); font: inherit; font-size: 12.5px; width: 100%; min-width: 0; }
+.fc-foot { display: flex; align-items: center; gap: 10px; padding: 10px 14px; flex: none; }
+.fc-action { height: 26px; min-width: 76px; padding: 0 14px; border-radius: 6px; font: inherit; font-size: 13px; cursor: default;
+  border: 1px solid var(--fc-field-line); background: var(--fc-field); color: var(--fc-fg); }
+.fc-open { background: var(--fc-accent); color: var(--fc-accent-fg); border-color: transparent; }
+.fc-open:disabled { opacity: 0.45; }
+.fc-rz { position: absolute; z-index: 2; }
+.fc-rz-n, .fc-rz-s { left: 12px; right: 12px; height: 10px; cursor: ns-resize; }
+.fc-rz-n { top: -6px; } .fc-rz-s { bottom: -6px; }
+.fc-rz-e, .fc-rz-w { top: 12px; bottom: 12px; width: 10px; cursor: ew-resize; }
+.fc-rz-e { right: -6px; } .fc-rz-w { left: -6px; }
+.fc-rz-ne, .fc-rz-nw, .fc-rz-se, .fc-rz-sw { width: 18px; height: 18px; z-index: 3; }
+.fc-rz-ne { top: -7px; right: -7px; cursor: nesw-resize; } .fc-rz-sw { bottom: -7px; left: -7px; cursor: nesw-resize; }
+.fc-rz-nw { top: -7px; left: -7px; cursor: nwse-resize; } .fc-rz-se { bottom: -7px; right: -7px; cursor: nwse-resize; }
+.fc-ghost { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; opacity: 0.85; }
+.fc-ghost img { max-width: 64px; max-height: 64px; object-fit: contain; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35); }
+.fc-ghost-count { position: absolute; right: -6px; top: -6px; min-width: 20px; height: 20px; border-radius: 10px; background: #e5484d; color: #fff;
+  font: 600 12px/20px -apple-system, "Segoe UI", sans-serif; text-align: center; padding: 0 5px; }
+
+/* ---------------------------------------------------------------- macOS */
+.fc-mac { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 13px; border-radius: 12px;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.35), 0 22px 70px rgba(0, 0, 0, 0.4); }
+.fc-mac .fc-top { height: 52px; flex: none; display: flex; align-items: center; gap: 6px; padding: 0 12px; border-bottom: 1px solid var(--fc-line);
+  background: var(--fc-bg); }
+.fc-mac .fc-lights { display: flex; gap: 8px; margin-right: 10px; }
+.fc-mac .fc-light { width: 12px; height: 12px; border-radius: 50%; border: 0; padding: 0; background: #d0d0d2; }
+.fc-mac .fc-light.close { background: #ff5f57; cursor: default; }
+.fc-mac .fc-path { height: 26px; min-width: 160px; border-radius: 6px; border: 1px solid var(--fc-field-line); background: var(--fc-field);
+  color: var(--fc-fg); font: inherit; font-size: 13px; padding: 0 8px; }
+.fc-mac .fc-side { background: var(--fc-side); border-right: 1px solid var(--fc-line); }
+.fc-mac .fc-foot { border-top: 1px solid var(--fc-line); background: var(--fc-bg); }
+.fc-mac .fc-action { border-radius: 6px; height: 24px; }
+html[data-theme="dark"] .fc-mac {
+  --fc-bg: #2b2b2d; --fc-side: #262628; --fc-pane: #1f1f21; --fc-fg: #e8e8ea; --fc-muted: #98989d; --fc-line: #3a3a3c;
+  --fc-hover: rgba(255, 255, 255, 0.06); --fc-sel-soft: rgba(255, 255, 255, 0.12); --fc-field: #3a3a3c; --fc-field-line: #4a4a4c;
+  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.15), 0 22px 70px rgba(0, 0, 0, 0.6);
+}
+html[data-theme="dark"] .fc-mac .fc-light { background: #4e4e50; }
+html[data-theme="dark"] .fc-mac .fc-light.close { background: #ff5f57; }
+html[data-theme="dark"] .fc-mac .fc-list .fc-item:nth-child(even) { background: rgba(255, 255, 255, 0.03); }
+
+/* ---------------------------------------------------------------- Windows 11 */
+.fc-windows { font-family: "Segoe UI Variable Text", "Segoe UI", Tahoma, Arial, sans-serif; font-size: 13px; border-radius: 8px;
+  --fc-bg: #f3f3f3; --fc-side: #f3f3f3; --fc-pane: #ffffff; --fc-fg: #1a1a1a; --fc-muted: #5f5f5f; --fc-line: #e5e5e5;
+  --fc-sel: #cce8ff; --fc-sel-fg: #1a1a1a; --fc-sel-soft: #e0eef9; --fc-accent: #005fb8; --fc-accent-fg: #ffffff;
+  --fc-field: #ffffff; --fc-field-line: #e0e0e0; border: 1px solid #c9c9c9; box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28); }
+.fc-windows .fc-title { height: 32px; display: flex; align-items: center; gap: 10px; padding-left: 12px; font-size: 12px; }
+.fc-windows .fc-app { display: inline-flex; color: var(--fc-accent); }
+.fc-windows .fc-winclose { width: 46px; height: 32px; border: 0; background: transparent; color: var(--fc-fg); display: flex; align-items: center;
+  justify-content: center; cursor: default; }
+.fc-windows .fc-winclose:hover { background: #c42b1c; color: #fff; }
+.fc-windows .fc-nav { height: 44px; display: flex; align-items: center; gap: 6px; padding: 0 10px; }
+.fc-windows .fc-crumb { flex: 1; height: 32px; display: flex; align-items: center; gap: 4px; padding: 0 10px; background: var(--fc-field);
+  border: 1px solid var(--fc-field-line); border-radius: 4px; font-size: 13px; min-width: 0; overflow: hidden; }
+.fc-windows .fc-search-box { height: 32px; border-radius: 4px; width: 220px; }
+.fc-windows .fc-side { background: var(--fc-side); padding: 6px 6px; }
+.fc-windows .fc-side-group { border-bottom: 1px solid var(--fc-line); padding-bottom: 6px; margin-bottom: 6px; }
+.fc-windows .fc-place { height: 32px; border-radius: 4px; position: relative; }
+.fc-windows .fc-place.on { background: #e5e5e5; }
+.fc-windows .fc-place.on::before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; border-radius: 2px; background: var(--fc-accent); }
+.fc-windows .fc-files { border-top: 1px solid var(--fc-line); border-left: 1px solid var(--fc-line); border-top-left-radius: 8px; }
+.fc-windows .fc-list .fc-item.on { background: var(--fc-sel); box-shadow: inset 0 0 0 1px #99d1ff; }
+.fc-windows .fc-grid .fc-item.on { background: var(--fc-sel); box-shadow: inset 0 0 0 1px #99d1ff; }
+.fc-windows .fc-grid .fc-item.on .fc-item-name, .fc-windows .fc-grid .fc-item.on .fc-thumb { background: transparent; color: var(--fc-sel-fg); }
+.fc-windows .fc-list .fc-item:nth-child(even) { background: transparent; }
+.fc-windows .fc-foot { display: grid; grid-template-columns: 1fr 250px; grid-template-rows: auto auto; gap: 10px; padding: 12px 14px;
+  border-top: 1px solid var(--fc-line); }
+.fc-windows .fc-name-label { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.fc-windows .fc-name { flex: 1; height: 32px; border: 1px solid var(--fc-field-line); border-bottom: 2px solid #8a8a8a; border-radius: 4px; padding: 0 10px;
+  background: var(--fc-field); color: var(--fc-fg); font: inherit; outline: none; }
+.fc-windows .fc-name:focus { border-bottom-color: var(--fc-accent); }
+.fc-windows .fc-filter { height: 32px; border: 1px solid var(--fc-field-line); border-radius: 4px; background: var(--fc-field); color: var(--fc-fg);
+  font: inherit; padding: 0 8px; }
+.fc-windows .fc-foot-btns { grid-column: 2; display: flex; gap: 8px; }
+.fc-windows .fc-action { flex: 1; height: 32px; border-radius: 4px; }
+html[data-theme="dark"] .fc-windows {
+  --fc-bg: #202020; --fc-side: #202020; --fc-pane: #191919; --fc-fg: #ffffff; --fc-muted: #c5c5c5; --fc-line: #2d2d2d;
+  --fc-sel: #3b3b3b; --fc-sel-fg: #ffffff; --fc-sel-soft: #2d2d2d; --fc-accent: #4cc2ff; --fc-accent-fg: #000000;
+  --fc-field: #2d2d2d; --fc-field-line: #3a3a3a; --fc-hover: rgba(255, 255, 255, 0.06); border-color: #3a3a3a;
+}
+html[data-theme="dark"] .fc-windows .fc-place.on { background: #2d2d2d; }
+html[data-theme="dark"] .fc-windows .fc-list .fc-item.on, html[data-theme="dark"] .fc-windows .fc-grid .fc-item.on { box-shadow: inset 0 0 0 1px #5a5a5a; }
+html[data-theme="dark"] .fc-windows .fc-name { border-bottom-color: #9a9a9a; }
+
+/* ---------------------------------------------------------------- GNOME (Adwaita) */
+.fc-linux { font-family: Cantarell, "Noto Sans", "Ubuntu", "DejaVu Sans", Arial, sans-serif; font-size: 13.5px; border-radius: 12px;
+  --fc-bg: #fafafb; --fc-side: #ebebed; --fc-pane: #ffffff; --fc-fg: #1e1e20; --fc-muted: #6a6a6f; --fc-line: #dcdcde;
+  --fc-sel: rgba(53, 132, 228, 0.22); --fc-sel-fg: #1e1e20; --fc-sel-soft: rgba(0, 0, 0, 0.08); --fc-accent: #3584e4; --fc-accent-fg: #ffffff;
+  --fc-field: rgba(0, 0, 0, 0.06); --fc-field-line: transparent; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15), 0 18px 56px rgba(0, 0, 0, 0.32); }
+.fc-linux .fc-head { height: 47px; display: flex; align-items: center; gap: 8px; padding: 0 8px; background: var(--fc-side); }
+.fc-linux .fc-head-title { font-weight: 700; }
+.fc-linux .fc-action { height: 34px; border-radius: 6px; border: 0; background: var(--fc-field); font-weight: 700; }
+.fc-linux .fc-open { background: var(--fc-accent); color: var(--fc-accent-fg); }
+.fc-linux .fc-nav { height: 44px; display: flex; align-items: center; gap: 6px; padding: 0 10px; background: var(--fc-side); border-bottom: 1px solid var(--fc-line); }
+.fc-linux .fc-crumb { display: flex; align-items: center; gap: 2px; }
+.fc-linux .fc-crumb-part { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 6px; background: var(--fc-field);
+  font-weight: 600; }
+.fc-linux .fc-crumb-sep { display: inline-flex; color: var(--fc-muted); }
+.fc-linux .fc-search-box { height: 32px; border-radius: 6px; border: 0; }
+.fc-linux .fc-side { background: var(--fc-side); }
+.fc-linux .fc-place { height: 34px; }
+.fc-linux .fc-place-ic { color: var(--fc-fg); }
+.fc-linux .fc-list .fc-row { height: 36px; }
+.fc-linux .fc-list .fc-item:nth-child(even) { background: transparent; }
+.fc-linux .fc-list .fc-item.on, .fc-linux .fc-grid .fc-item.on .fc-item-name { background: var(--fc-sel); color: var(--fc-sel-fg); }
+.fc-linux .fc-foot { background: var(--fc-side); border-top: 1px solid var(--fc-line); }
+.fc-linux .fc-filter { height: 32px; border-radius: 6px; border: 0; background: var(--fc-field); color: var(--fc-fg); font: inherit; padding: 0 8px; }
+html[data-theme="dark"] .fc-linux {
+  --fc-bg: #242424; --fc-side: #303030; --fc-pane: #1e1e1e; --fc-fg: #ffffff; --fc-muted: #a0a0a4; --fc-line: #3a3a3a;
+  --fc-sel: rgba(120, 174, 237, 0.3); --fc-sel-fg: #ffffff; --fc-sel-soft: rgba(255, 255, 255, 0.1); --fc-accent: #3584e4;
+  --fc-field: rgba(255, 255, 255, 0.1); --fc-hover: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 18px 56px rgba(0, 0, 0, 0.55);
+}
+
+/* Inkscape's "bitmap image import" question and Figma's place cursor */
+.ik-import .ik-import-grid { display: grid; grid-template-columns: 140px 1fr; gap: 10px 14px; align-items: center; font-size: 13px; }
+.ik-import label { display: flex; align-items: center; gap: 6px; }
+.stage.placing { cursor: crosshair; }
+.place-ghost { position: fixed; z-index: 800; pointer-events: none; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;
+  transform: translate(12px, 12px); opacity: 0.9; }
+.place-ghost img { max-width: 56px; max-height: 56px; object-fit: contain; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+.place-ghost .fc-ghost-count { right: -8px; top: -8px; }
+.ik-import .ik-import-value { font-weight: 500; }
+.ik-import .ik-import-label { color: var(--ui-fg, inherit); }
+
+/* the selected picture, large (GNOME beside the list; Windows' preview pane) */
+.fc-preview { flex: none; width: 230px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 12px;
+  background: var(--fc-pane); border-left: 1px solid var(--fc-line); overflow: hidden; font-size: 12px; }
+.fc-preview[hidden] { display: none; }
+.fc-preview-img { width: 206px; height: 206px; display: flex; align-items: center; justify-content: center;
+  background: repeating-conic-gradient(rgba(0,0,0,0.06) 0 25%, transparent 0 50%) 0 0 / 14px 14px; }
+.fc-preview-img img { max-width: 206px; max-height: 206px; object-fit: contain; }
+.fc-preview-name { max-width: 206px; text-align: center; word-break: break-all; }
+.fc-preview-dims { opacity: 0.65; }
+.fc-preview-btn.on { background: var(--fc-sel-soft); }
+.fc-mac .fc-item[data-type="doc"] { opacity: 0.45; }  /* the Mac lists files the filter excludes, greyed out */

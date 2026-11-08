@@ -1,0 +1,8 @@
+{"trace_id": "train-01846__reference__photocraft__s400__20261018212054", "task_id": "train-01846", "config": "real_photocraft", "shard": "data/real_photocraft/v7-00100.parquet", "row": 22}
+{"trace_id": "train-00885__reference__scribus__s400__20261021051532", "task_id": "train-00885", "config": "real_scribus", "shard": "data/real_scribus/v8-00008.parquet", "row": 11}
+{"trace_id": "train-03692__reference__scribus__s400__20261021015750", "task_id": "train-03692", "config": "real_scribus", "shard": "data/real_scribus/v8-00003.parquet", "row": 4}
+{"trace_id": "train-10773__reference__draw__s50__20261010171154", "task_id": "train-10773", "config": "real_draw", "shard": "data/real_draw/v1-00001.parquet", "row": 31}
+{"trace_id": "train-08599__reference__draw__s400__20261018223115", "task_id": "train-08599", "config": "real_draw", "shard": "data/real_draw/v7-00101.parquet", "row": 10}
+{"trace_id": "train-06870__reference__inkscape-desktop__s136__20261010220431", "task_id": "train-06870", "config": "real_inkscape", "shard": "data/real_inkscape/v1-00001.parquet", "row": 27}
+{"trace_id": "train-06870__reference__impress__s300__20261011010937", "task_id": "train-06870", "config": "real_impress", "shard": "data/real_impress/v1-00003.parquet", "row": 18}
+{"trace_id": "train-00074__reference__impress__s300__20261012075337", "task_id": "train-00074", "config": "real_impress", "shard": "data/real_impress/v2-00000.parquet", "row": 31}
