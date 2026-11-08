@@ -126,6 +126,16 @@ def test_a_server_that_refuses_sessions_costs_one_episode_not_the_run(monkeypatc
     assert not env.failed
 
 
+def test_a_failed_trace_write_never_reaches_the_trainer(monkeypatch, tmp_path):
+    from retroenv_openenv import client
+
+    monkeypatch.setattr(client, "RetroEnvClient", _LiveClient)
+    monkeypatch.setenv("RETROENV_TRACE_PATH", str(tmp_path))  # a directory: opening it to append raises OSError
+    env = client.RemoteRetroRouteEnv("http://server")
+    env.reset(index=3)
+    assert env.get_reward() == 0.0  # the episode is still scored
+
+
 def test_tool_results_count_down_the_budget_and_the_trace_records_each_episode(monkeypatch, tmp_path):
     from retroenv_openenv import client
 

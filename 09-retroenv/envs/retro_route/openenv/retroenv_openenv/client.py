@@ -226,8 +226,11 @@ class RemoteRetroRouteEnv:
                 "tool_calls": self._calls,
                 "failed": self._failed,
             }
-            with open(self._trace, "a", encoding="utf-8") as trace:
-                trace.write(json.dumps(record) + "\n")
+            try:
+                with open(self._trace, "a", encoding="utf-8") as trace:
+                    trace.write(json.dumps(record) + "\n")
+            except OSError:
+                pass  # the trace is a record, not the reward: a failed write never stops training
         return reward
 
     def _close(self) -> None:

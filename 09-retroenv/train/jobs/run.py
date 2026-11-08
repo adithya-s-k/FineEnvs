@@ -10,10 +10,12 @@ server runs on CPU from the project's own environment.
 import argparse
 import json
 import os
+import shutil
 import signal
 import socket
 import subprocess
 import sys
+import threading
 import time
 from contextlib import ExitStack
 from pathlib import Path
@@ -23,6 +25,15 @@ import httpx
 ROOT = Path(__file__).resolve().parents[2]
 TRAIN_PYTHON = sys.executable  # .venv-train: vLLM, TRL, PEFT
 ENV_PYTHON = str(ROOT / ".venv-env" / "bin" / "python")  # the project's locked environment: server, evaluator
+
+
+def mirror(source, target):
+    """Copy a local file over the bucket mount; a failed copy is retried at the next call."""
+    if source.exists():
+        try:
+            shutil.copyfile(source, target)
+        except OSError:
+            pass
 
 
 def main():
@@ -210,11 +221,24 @@ def main():
             command += ["--lr", str(args.lr)] if args.lr else []
             command += ["--thinking"] if args.thinking else []
             # One JSON line per graded episode: task, reward, whether it submitted, tool calls.
-            trace = {
-                "CUDA_VISIBLE_DEVICES": ",".join(train_devices),
-                "RETROENV_TRACE_PATH": str(output / "episodes.jsonl"),
-            }
-            run(command, "train", trace)
+            # The trace is written to local disk and copied to the bucket every minute: an append
+            # on the bucket mount can fail with EIO, which once ended a run's rollout process.
+            local_trace = Path("/tmp") / output.name / "episodes.jsonl"
+            local_trace.parent.mkdir(parents=True, exist_ok=True)
+            trace = {"CUDA_VISIBLE_DEVICES": ",".join(train_devices), "RETROENV_TRACE_PATH": str(local_trace)}
+            stop_copy = threading.Event()
+
+            def copy_trace():
+                while not stop_copy.wait(60):
+                    mirror(local_trace, output / "episodes.jsonl")
+
+            copier = threading.Thread(target=copy_trace, daemon=True)
+            copier.start()
+            try:
+                run(command, "train", trace)
+            finally:
+                stop_copy.set()
+                mirror(local_trace, output / "episodes.jsonl")
         else:
             # The board's evaluator and protocol, with vLLM as the provider.
             label = args.label or (f"{args.model} + {Path(args.checkpoint).name}" if args.checkpoint else args.model)
