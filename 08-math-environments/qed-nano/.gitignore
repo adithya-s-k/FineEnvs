@@ -6,3 +6,4 @@ training/.deps/
 training/.cache/
 training/prepared/
 training/runs/
+.gradio/

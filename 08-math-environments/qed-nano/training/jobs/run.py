@@ -102,9 +102,14 @@ def main():
             command += ["--eval"] + (["--checkpoint", args.checkpoint] if args.checkpoint else [])
         spawn(command, "vllm", {"CUDA_VISIBLE_DEVICES": devices[0] if args.action == "train" else ",".join(devices[:2])})
         wait(engine_url + "/health")
-        spawn([sys.executable, "-m", "uvicorn", "server:app", "--host", "127.0.0.1", "--port", str(server_port),
-               "--ws-ping-timeout", "1800"], "harbor", {
-            "QED_DATA": str(Path("prepared").resolve()),
+        # OpenEnv's own Harbor server: it resolves `--harness qed_proof_agent.agent:QedProofAgent` itself and serves
+        # each dataset folder as a split named by its path (tasks.dataset_dir).
+        spawn([sys.executable, "-m", "uvicorn", "harbor_env.server.app:app", "--host", "127.0.0.1",
+               "--port", str(server_port), "--ws-ping-timeout", "1800"], "harbor", {
+            "OPENENV_DATASETS": ",".join(str(Path("prepared", "datasets", s).resolve()) for s in ("train", "test")),
+            "OPENENV_HARBOR_REWARD_KEY": "reward",
+            "QED_PROOF_ROUNDS": os.environ.get("QED_PROOF_ROUNDS", "1"),
+            "QED_PROOF_MAX_TOKENS": "8192",
             "OPENENV_LLM_URL": engine_url,
             "OPENENV_MODEL": args.model,
             "OPENENV_HARBOR_TRIALS_DIR": str(output / "trials"),

@@ -15,7 +15,7 @@ from pathlib import Path
 from datasets import Dataset
 from transformers import AutoTokenizer
 
-from tasks import TaskFactory, load_tasks
+from tasks import TaskFactory, dataset_dir, load_tasks
 
 # The pinned revision 05-multi-harness-rl validated. LFM2.5 needs 05's packed-convolution fix, not ported here.
 MODEL_REVISIONS = {"Qwen/Qwen3.5-2B": "15852e8c16360a2fea060d615a32b45270f8a8fc"}
@@ -65,7 +65,7 @@ def main():
     from trl.experimental.async_grpo import AsyncGRPOConfig, AsyncGRPOTrainer
     from trl.experimental.async_grpo.openenv_harness import HarnessRolloutWorker
 
-    tasks = load_tasks(args.data, "train")
+    tasks = load_tasks(dataset_dir(args.data, "train"))
     dataset = Dataset.from_list(
         [{"prompt": [{"role": "user", "content": task["instruction"]}]} for task in tasks]).shuffle(seed=0)
     tokenizer = tokenizer_for(args.model)

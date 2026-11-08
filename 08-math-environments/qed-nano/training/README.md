@@ -23,7 +23,8 @@ harness makes is trained. The harness is a host-side Harbor agent
 ([`harness/qed_proof_agent/agent.py`](harness/qed_proof_agent/agent.py)): it calls the policy over an OpenAI chat
 endpoint and writes the final proof into the sandbox. The loop itself is
 [`harness/qed_proof_agent/loop.py`](harness/qed_proof_agent/loop.py), and the number of check-and-rewrite rounds is
-`QED_ROUNDS` (default 1).
+`QED_PROOF_ROUNDS` (default 1). Every option can be set as a `QED_PROOF_<OPTION>` environment variable, for launchers
+that cannot pass agent kwargs.
 
 ## How a run is wired
 
@@ -34,9 +35,10 @@ GPU 1: AsyncGRPO trainer                       (in the Harbor server)           
         └──── tokens, logprobs, reward ◄── OpenEnv Harbor server ◄── reward.txt ◄── gpt-oss-20b judge (HF Inference Providers)
 ```
 
-- [`server.py`](server.py) is OpenEnv's Harbor server with the `qed-proof` seam registered. OpenEnv documents
-  `module:Class` harnesses but only resolves names in its seam table, and the trial runs inside this process, so
-  the seam is added here, before any rollout.
+- The Harbor server is OpenEnv's own (`harbor_env.server.app`, or `openenv harbor serve`). Rollouts name the
+  harness by import path, `qed_proof_agent.agent:QedProofAgent`; OpenEnv sees a host-side agent and hands it the
+  capture proxy's loopback URL and the session id as `api_base`/`api_key`. That needs an OpenEnv with
+  `module:Class` support (see `jobs/install.sh`).
 - [`train.py`](train.py) is 05's `multi_harness.py` with one harness and the judge's fractional reward used as is.
 - [`prepare.py`](prepare.py) writes the tasks: by default 1,024 training problems on which QED-Nano's base model
   scored between 0.25 and 0.9, and all 128 FineProofs-RL-test problems for evaluation, which are removed from the

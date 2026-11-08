@@ -16,7 +16,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from tasks import load_tasks, session_for, split_paths
+from tasks import HARNESS, dataset_dir, load_tasks, session_for
 
 TEMPERATURE = 0.8
 
@@ -32,8 +32,9 @@ def graded(row):
     return isinstance(row.get("reward"), (int, float)) and math.isfinite(row["reward"])
 
 
-def episode(args, index, task, split_path):
-    session = session_for(args, index, task, split_path, {"temperature": TEMPERATURE, "top_p": 1.0, "top_k": -1})
+def episode(args, index, task, split):
+    sampling = None if args.hosted else {"temperature": TEMPERATURE, "top_p": 1.0, "top_k": -1}
+    session = session_for(args, index, task, split, sampling)
     try:
         session.wait_for_completion(timeout_s=1800)
         reward = session.verify([]).env_reward
@@ -72,18 +73,23 @@ def main():
     parser.add_argument("--samples", type=int, default=1)
     parser.add_argument("--concurrency", type=int, default=32)
     parser.add_argument("--space-id", default=None)
+    parser.add_argument("--dataset", help="The served test folder, if not <data>/datasets/test")
+    parser.add_argument("--hosted", action="store_true",
+                        help="Eval rollouts on the server's own engine (e.g. a hosted provider) with its default sampling")
     args = parser.parse_args()
-    tasks = load_tasks(args.data, "test")
+    if args.hosted:
+        args.vllm_url = ""
+    split = str(Path(args.dataset).resolve()) if args.dataset else dataset_dir(args.data, "test")
+    tasks = load_tasks(split)
     selected = list(enumerate(tasks))[: args.tasks]
-    split_path = split_paths(args.server)["test"]
     output = Path(args.output)
     identity = {
         "protocol_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "checkpoint": args.checkpoint,
         "model": args.model,
-        "harness": "qed-proof",
+        "harness": HARNESS,
         "samples": args.samples,
-        "temperature": TEMPERATURE,
+        "temperature": None if args.hosted else TEMPERATURE,
         "task_names": [t["name"] for _, t in selected],
     }
     identity_path = output / "identity.json"
@@ -100,7 +106,7 @@ def main():
         start = time.monotonic()
         row = {"task": task["name"], "sample": sample, "base_reward": task["base_reward"]}
         try:
-            row.update(episode(args, index, task, split_path))
+            row.update(episode(args, index, task, split))
         except Exception as exc:  # noqa: BLE001 - keep an ungraded attempt for retry
             row.update(reward=None, error=type(exc).__name__, detail=str(exc)[:1000])
         row["seconds"] = round(time.monotonic() - start, 1)
@@ -118,11 +124,14 @@ def main():
     import os
 
     os.environ["TRACKIO_DIR"] = str(output.resolve() / "trackio")
-    import trackio
-
-    run = trackio.init(project="qed-nano-harbor-rl", name=output.name, space_id=args.space_id, config=identity)
-    run.log({f"eval/{k}": v for k, v in summary.items() if isinstance(v, (int, float))}, step=args.step)
-    run.finish()
+    try:
+        import trackio
+    except ImportError:  # summary.json has everything; Trackio only charts it
+        trackio = None
+    if trackio is not None:
+        run = trackio.init(project="qed-nano-harbor-rl", name=output.name, space_id=args.space_id, config=identity)
+        run.log({f"eval/{k}": v for k, v in summary.items() if isinstance(v, (int, float))}, step=args.step)
+        run.finish()
     print(json.dumps({k: v for k, v in summary.items() if k != "identity"}, indent=2))
     if summary["graded"] != summary["expected"]:
         raise SystemExit(2)

@@ -5,7 +5,10 @@ talks to the model over an OpenAI-compatible chat endpoint. During training that
 proxy, so every call is recorded as training data; the session id is the API key. The sandbox is only where the
 final proof lands: `/workspace/proof.md`, the task's declared artifact, which Harbor hands to the verifier.
 
-Registered with OpenEnv in training/server.py; with plain Harbor, use
+With OpenEnv, name it by import path (`--harness qed_proof_agent.agent:QedProofAgent`): OpenEnv sees a host-side
+agent and passes the capture proxy as `api_base` and the session id as `api_key`. Options OpenEnv cannot pass
+come from QED_PROOF_<OPTION> environment variables (QED_PROOF_EXTRA_BODY, QED_PROOF_ROUNDS, ...). With plain
+Harbor, use
 `harbor run -a qed_proof_agent.agent:QedProofAgent -m <model> --ak api_base=<url>/v1 --ak api_key_env=<VAR>`
 (the key is read from that environment variable, so it never lands in Harbor's job config). `extra_body` (JSON)
 adds provider options, e.g. `--ak 'extra_body={"chat_template_kwargs": {"enable_thinking": false}}'`, and
@@ -24,6 +27,7 @@ import tempfile
 from pathlib import Path
 
 import httpx
+from pydantic import model_validator
 from harbor.agents.base import BaseAgent
 from harbor.agents.options import AgentOptions
 from harbor.environments.base import BaseEnvironment
@@ -53,6 +57,10 @@ class ApiConnectionClosedError(ApiError):
     pass
 
 
+ENV_PREFIX = "QED_PROOF_"
+ENV_OPTIONS = ("rounds", "max_tokens", "extra_body", "stream", "retries", "request_timeout_sec")
+
+
 class QedProofOptions(AgentOptions):
     api_base: str = Field(description="OpenAI-compatible endpoint ending in /v1 (the capture proxy when training).")
     api_key: str | None = Field(default=None, description="Key for api_base. Prefer api_key_env.")
@@ -63,6 +71,21 @@ class QedProofOptions(AgentOptions):
     stream: bool = Field(default=False, description="Stream replies (hosted routers time out long ones otherwise).")
     retries: int = Field(default=4, ge=0, description="Retries on rate limits, 5xx and dropped connections.")
     request_timeout_sec: float = Field(default=900, gt=0, description="Timeout per model call.")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _env_defaults(cls, data):
+        """An option not passed as a kwarg falls back to QED_PROOF_<OPTION> (QED_PROOF_EXTRA_BODY, ...).
+
+        Launchers that cannot pass agent kwargs, such as OpenEnv's `harbor rollout` and `harbor serve`,
+        configure the harness this way. A kwarg always wins.
+        """
+        if isinstance(data, dict):
+            for name in ENV_OPTIONS:
+                value = os.environ.get(ENV_PREFIX + name.upper())
+                if value is not None and name not in data:
+                    data = {**data, name: value}
+        return data
 
 
 class QedProofAgent(BaseAgent):
