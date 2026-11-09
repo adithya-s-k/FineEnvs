@@ -42,6 +42,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
+from urllib.parse import urlparse
 
 import httpx
 from retroenv_openenv import agent, agent_anthropic, agent_reference, agent_responses, agent_training
@@ -486,7 +487,10 @@ def main() -> int:
         if identity_path.exists():
             previous = json.loads(identity_path.read_text())
             changed = sorted(k for k in identity if previous.get(k) != json.loads(json.dumps(identity[k])))
-            recorded = [key for key in changed if key in RECORDED_ONLY]
+            # A job serves its model on a fresh local port each launch: a loopback endpoint that
+            # moved is the same model, as a moved server is the same tasks and tools.
+            local = all(urlparse(url or "").hostname in ("127.0.0.1", "localhost") for url in (previous.get("endpoint"), endpoint))
+            recorded = [key for key in changed if key in RECORDED_ONLY or (key == "endpoint" and local)]
             if recorded and recorded == changed:
                 # A loop fix for one provider, or another server for the same tasks and tools,
                 # should not void a run; the identity keeps what the run started with.
