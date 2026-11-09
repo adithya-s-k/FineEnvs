@@ -1,4 +1,7 @@
-"""Two updates, check the saved checkpoints, then reload checkpoint 2 and score it on a few test problems.
+"""Two updates with a simulated crash in between, check the checkpoints, then reload checkpoint 2 and score it.
+
+The trainer dies right after checkpoint 1 (FINEPROOF_CRASH_AFTER_STEP=1), as a leak would kill it; jobs/run.py must
+restart everything from that checkpoint and finish update 2. The run's thread census must have recorded.
 
 Adapted from 05-multi-harness-rl/jobs/smoke.py; a judge score is fractional, so "graded" means a finite reward.
 """
@@ -29,6 +32,7 @@ def main():
     parser.add_argument("--checkpoint")
     parser.add_argument("--rounds", type=int)
     parser.add_argument("--max-tokens", type=int)
+    parser.add_argument("--learning-rate", type=float)
     args = parser.parse_args()
     output = Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -37,8 +41,13 @@ def main():
     for flag, value in (("--rounds", args.rounds), ("--max-tokens", args.max_tokens)):
         if value is not None:
             common += [flag, str(value)]
-    subprocess.run([sys.executable, str(ROOT / "jobs/run.py"), "train", *common, "--smoke", "--output", str(train)],
-                   check=True, cwd=ROOT)
+    train_extra = ["--learning-rate", str(args.learning_rate)] if args.learning_rate else []
+    subprocess.run([sys.executable, str(ROOT / "jobs/run.py"), "train", *common, *train_extra, "--smoke",
+                    "--output", str(train)], check=True, cwd=ROOT, env={**os.environ, "FINEPROOF_CRASH_AFTER_STEP": "1"})
+    restarts = [json.loads(line) for line in (train / "restarts.jsonl").read_text().splitlines()]
+    assert len(restarts) == 1 and restarts[0]["from"] == "checkpoint-1", f"Expected one resume from checkpoint-1: {restarts}"
+    census = [json.loads(line) for line in (train / "threads.jsonl").read_text().splitlines()]
+    assert census and census[-1]["threads"] > 0, "The thread census recorded nothing"
     for step in (1, 2):
         path = train / f"checkpoint-{step}"
         state = json.loads((path / "trainer_state.json").read_text())
@@ -64,6 +73,8 @@ def main():
     rewards = [row.get("reward") for row in updates if "reward" in row]
     report = {
         "model": args.model,
+        "restarts": restarts,
+        "threads_last": census[-1],
         "sandbox": args.sandbox,
         "steps": 2,
         "optimizer_metrics": updates,

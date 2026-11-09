@@ -19,6 +19,7 @@ import signal
 import socket
 import subprocess
 import sys
+import threading
 import time
 from contextlib import ExitStack
 from pathlib import Path
@@ -41,12 +42,78 @@ def local_checkpoint(checkpoint: str, output: Path) -> str:
     local = Path("/workspace/checkpoints") / path.relative_to("/outputs")
     start = time.monotonic()
     with (output / "checkpoint_copy.log").open("a") as log:
-        subprocess.run(["hf", "buckets", "sync", f"hf://buckets/{bucket}/{path.relative_to('/outputs')}", str(local)],
+        subprocess.run(["hf", "buckets", "sync", f"hf://buckets/{bucket}/{path.relative_to('/outputs')}", str(local),
+                        "--exclude", "optimizer.pt", "--exclude", "scheduler.pt", "--exclude", "rng_state*"],
                        check=True, stdout=log, stderr=subprocess.STDOUT)
         log.write(f"copied {checkpoint} to {local} in {time.monotonic() - start:.0f}s\n")
     if not (local / "config.json").is_file() or not any(local.glob("*.safetensors")):
         raise RuntimeError(f"{checkpoint} did not copy completely to {local}")
     return str(local)
+
+
+def latest_checkpoint(output: Path) -> Path | None:
+    """The newest checkpoint-N whose trainer_state.json (written last) parses: a run can resume from it."""
+    for path in sorted(output.glob("checkpoint-*"), key=lambda p: int(p.name.split("-")[-1]), reverse=True):
+        try:
+            json.loads((path / "trainer_state.json").read_text())
+        except (OSError, ValueError):
+            continue
+        if (path / "optimizer.pt").is_file() or any(path.glob("optimizer*")):
+            return path
+    return None
+
+
+class ThreadCensus(threading.Thread):
+    """Every minute, threads and memory per process in this container, to <output>/threads.jsonl.
+
+    A run died of `can't start new thread` after about 2,250 rollouts; this records which process's thread count
+    grows, against the container's pid limit (cgroup pids.max) when it can read it.
+    """
+
+    ROLES = (("serve_model", "vllm"), ("vllm", "vllm"), ("harbor_env.server", "harbor"), ("train.py", "train"),
+             ("evaluate.py", "eval"), ("jobs/run.py", "run"))
+
+    def __init__(self, path: Path, every_s: float = 60.0):
+        super().__init__(name="thread-census", daemon=True)
+        self.path, self.every_s, self.stopping = path, every_s, threading.Event()
+
+    @staticmethod
+    def _limit(name: str) -> int | None:
+        for base in ("/sys/fs/cgroup", "/sys/fs/cgroup/pids"):
+            try:
+                value = Path(base, name).read_text().strip()
+                return None if value == "max" else int(value)
+            except (OSError, ValueError):
+                continue
+        return None
+
+    def snapshot(self) -> dict:
+        roles: dict[str, dict] = {}
+        for proc in Path("/proc").glob("[0-9]*"):
+            try:
+                status = dict(line.split(":", 1) for line in (proc / "status").read_text().splitlines() if ":" in line)
+                cmdline = (proc / "cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace")
+            except OSError:
+                continue
+            role = next((r for key, r in self.ROLES if key in cmdline), status.get("Name", "?").strip())
+            entry = roles.setdefault(role, {"processes": 0, "threads": 0, "rss_mb": 0})
+            entry["processes"] += 1
+            entry["threads"] += int(status.get("Threads", "0").strip() or 0)
+            entry["rss_mb"] += int(status.get("VmRSS", "0 kB").split()[0]) // 1024
+        top = dict(sorted(roles.items(), key=lambda kv: -kv[1]["threads"])[:12])
+        return {"time": round(time.time(), 1), "threads": sum(r["threads"] for r in roles.values()),
+                "pids_current": self._limit("pids.current"), "pids_max": self._limit("pids.max"), "roles": top}
+
+    def run(self) -> None:
+        while not self.stopping.wait(self.every_s):
+            try:
+                with self.path.open("a") as handle:
+                    handle.write(json.dumps(self.snapshot()) + "\n")
+            except Exception:  # noqa: BLE001 - a census must never stop a run
+                pass
+
+    def stop(self) -> None:
+        self.stopping.set()
 
 
 def visible_gpus() -> list[str]:
@@ -87,6 +154,9 @@ def main():
     parser.add_argument("--max-tokens", type=int, default=16384, help="Output cap per model call")
     parser.add_argument("--grad-accum", type=int, default=40, help="Train: rollouts per update")
     parser.add_argument("--inflight", type=int, default=32)
+    parser.add_argument("--learning-rate", type=float, default=2e-6, help="Train: AsyncGRPO learning rate")
+    parser.add_argument("--max-restarts", type=int, default=3,
+                        help="Train: restarts from the latest full checkpoint when training dies")
     parser.add_argument("--task-seed", type=int, help="Eval: score a seeded random --tasks subset of test")
     parser.add_argument("--task-list", help="Eval: score exactly the test tasks listed in this file")
     args = parser.parse_args()
@@ -165,12 +235,27 @@ def main():
         raise KeyboardInterrupt
 
     signal.signal(signal.SIGTERM, stop)
-    try:
+
+    def stop_children():
+        for process in reversed(children):
+            if process.poll() is None:
+                os.killpg(process.pid, signal.SIGTERM)
+        for process in reversed(children):
+            try:
+                process.wait(timeout=30)
+            except subprocess.TimeoutExpired:
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait()
+        children.clear()
+
+    def start_services(weights=None):
+        """vLLM (serving `weights` when given: a resumed run's latest checkpoint), then the OpenEnv Harbor server."""
         command = [sys.executable, "jobs/serve_model.py", "--model", args.model, "--output", str(output),
-                   "--port", str(engine_port)]
+                   "--port", str(engine_port), "--data-parallel", str(len(engine_devices))]
         if args.action == "eval":
-            command += ["--eval"] + (["--checkpoint", local_checkpoint(args.checkpoint, output)] if args.checkpoint else [])
-        command += ["--data-parallel", str(len(engine_devices))]
+            command += ["--eval"]
+        if weights:
+            command += ["--checkpoint", weights]
         spawn(command, "vllm", {"CUDA_VISIBLE_DEVICES": ",".join(engine_devices)})
         wait(engine_url + "/health")
         # OpenEnv's own Harbor server: it resolves `--harness fineproof_agent.agent:FineProofAgent` itself and serves
@@ -192,28 +277,33 @@ def main():
             "ENABLE_WEB_INTERFACE": "false",
         })
         wait(server_url + "/health")
-        common = ["--model", args.model, "--output", str(output), "--vllm-url", engine_url, "--server", server_url,
-                  "--trials", str(output / "trials"), "--sandbox", args.sandbox]
-        if args.space_id:
-            common += ["--space-id", args.space_id]
-        if args.trackio_bucket:
-            common += ["--trackio-bucket", args.trackio_bucket]
-        if args.action == "train":
-            command = [sys.executable, "train.py", *common, "--steps", str(args.steps),
-                       "--save-steps", str(args.save_steps), "--grad-accum", str(args.grad_accum),
-                       "--inflight", str(args.inflight)] + (["--smoke"] if args.smoke else [])
-        else:
-            command = [sys.executable, "evaluate.py", *common, "--checkpoint", args.checkpoint or args.model,
-                       "--step", str(args.step), "--tasks", str(args.tasks), "--samples", str(args.samples),
-                       "--concurrency", str(args.concurrency), "--rounds", str(args.rounds),
-                       "--max-tokens", str(args.max_tokens)]
-            if args.task_seed is not None:
-                command += ["--task-seed", str(args.task_seed)]
-            if args.task_list:
-                command += ["--task-list", args.task_list]
-            if args.trackio_run:
-                command += ["--trackio-run", args.trackio_run]
-        evals = None
+
+    common = ["--model", args.model, "--output", str(output), "--vllm-url", engine_url, "--server", server_url,
+              "--trials", str(output / "trials"), "--sandbox", args.sandbox]
+    if args.space_id:
+        common += ["--space-id", args.space_id]
+    if args.trackio_bucket:
+        common += ["--trackio-bucket", args.trackio_bucket]
+    if args.action == "train":
+        command = [sys.executable, "train.py", *common, "--steps", str(args.steps),
+                   "--save-steps", str(args.save_steps), "--grad-accum", str(args.grad_accum),
+                   "--inflight", str(args.inflight), "--learning-rate", str(args.learning_rate)]
+        command += ["--smoke"] if args.smoke else []
+    else:
+        command = [sys.executable, "evaluate.py", *common, "--checkpoint", args.checkpoint or args.model,
+                   "--step", str(args.step), "--tasks", str(args.tasks), "--samples", str(args.samples),
+                   "--concurrency", str(args.concurrency), "--rounds", str(args.rounds),
+                   "--max-tokens", str(args.max_tokens)]
+        if args.task_seed is not None:
+            command += ["--task-seed", str(args.task_seed)]
+        if args.task_list:
+            command += ["--task-list", args.task_list]
+        if args.trackio_run:
+            command += ["--trackio-run", args.trackio_run]
+    census = ThreadCensus(output / "threads.jsonl")
+    census.start()
+    evals = None
+    try:
         if args.eval_checkpoints:
             from checkpoint_evals import CheckpointEvals
 
@@ -222,29 +312,43 @@ def main():
                                     space_id=args.space_id, trackio_bucket=args.trackio_bucket,
                                     concurrency=args.eval_concurrency)
             evals.start()
-        worker = spawn(command, args.action, {"CUDA_VISIBLE_DEVICES": devices[-1]})
-        children.remove(worker)
-        try:
-            while worker.poll() is None:
-                healthy()
-                time.sleep(2)
-            if evals is not None:
-                evals.finish()  # the final checkpoint's eval, and any launch that failed earlier
-            if worker.returncode:
-                raise RuntimeError(f"{args.action} exited {worker.returncode}; inspect {output}")
-        finally:
-            children.append(worker)
-    finally:
-        for process in reversed(children):
-            if process.poll() is None:
-                os.killpg(process.pid, signal.SIGTERM)
-        for process in reversed(children):
+        weights = local_checkpoint(args.checkpoint, output) if args.action == "eval" and args.checkpoint else None
+        restarts = 0
+        while True:
+            start_services(weights)
+            worker = spawn(command, args.action, {"CUDA_VISIBLE_DEVICES": devices[-1]})
+            children.remove(worker)  # healthy() watches the services; the worker's own exit is handled here
             try:
-                process.wait(timeout=30)
-            except subprocess.TimeoutExpired:
-                os.killpg(process.pid, signal.SIGKILL)
-                process.wait()
-
+                while worker.poll() is None:
+                    healthy()
+                    time.sleep(2)
+            except RuntimeError as exc:  # vLLM or the Harbor server died under a running trainer
+                os.killpg(worker.pid, signal.SIGTERM)
+                worker.wait()
+                failure = str(exc)
+            else:
+                failure = None if worker.returncode == 0 else f"{args.action} exited {worker.returncode}"
+            finally:
+                children.append(worker)  # so a stop (SIGTERM) or the cleanup below also ends it
+            latest = latest_checkpoint(output) if args.action == "train" else None
+            if failure is None or args.action != "train" or latest is None or restarts >= args.max_restarts:
+                break
+            # Training died (the services or the trainer): restart all of it from the latest full checkpoint, with
+            # vLLM serving that checkpoint's weights, so a slow leak or a crashed engine costs minutes, not the run.
+            restarts += 1
+            with (output / "restarts.jsonl").open("a") as log:
+                log.write(json.dumps({"time": round(time.time(), 1), "restart": restarts, "reason": failure,
+                                      "from": latest.name}) + "\n")
+            stop_children()
+            weights = str(latest)
+            command = [c for c in command if c != "--resume"] + ["--resume"]
+        if evals is not None:
+            evals.finish()  # the final checkpoint's eval, and any launch that failed earlier
+        if failure is not None:
+            raise RuntimeError(f"{failure} after {restarts} restart(s); inspect {output}")
+    finally:
+        census.stop()
+        stop_children()
 
 if __name__ == "__main__":
     main()

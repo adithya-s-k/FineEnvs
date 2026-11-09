@@ -263,7 +263,8 @@ def make_callbacks(path: Path, trial_root: Path, model: str | None = None):
     append the second after it (it logs the traces and alerts once the trainer's own row is written)."""
     from transformers import TrainerCallback
 
-    shared = {"offset": 0, "records": [], "metrics": {}}
+    # Start at the end of the file: a resumed run must not count the rollouts of the run it resumes.
+    shared = {"offset": Path(path).stat().st_size if Path(path).is_file() else 0, "records": [], "metrics": {}}
 
     class RolloutMetrics(TrainerCallback):
         def on_log(self, args, state, control, logs=None, **kwargs):

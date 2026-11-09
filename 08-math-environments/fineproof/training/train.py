@@ -34,11 +34,13 @@ def arguments():
     parser.add_argument("--server", default="http://127.0.0.1:8200")
     parser.add_argument("--trials", default="runs/trials")
     parser.add_argument("--output", default="runs/train")
-    parser.add_argument("--smoke", action="store_true", help="Two updates, two rollouts per group, a small batch")
+    parser.add_argument("--smoke", action="store_true", help="Two updates of one group of four rollouts")
     parser.add_argument("--steps", type=int, default=100)
     parser.add_argument("--save-steps", type=int, default=25)
     parser.add_argument("--inflight", type=int, default=32)
     parser.add_argument("--grad-accum", type=int, default=40, help="Rollouts per update (5 groups of 8)")
+    parser.add_argument("--learning-rate", type=float, default=2e-6)
+    parser.add_argument("--resume", action="store_true", help="Continue from the latest checkpoint in --output")
     parser.add_argument("--space-id", default=None, help="Optional Trackio Space; local logs are always kept")
     parser.add_argument("--trackio-bucket", default=None, help="Bucket the Trackio Space keeps its data in")
     parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
@@ -64,6 +66,27 @@ def reward(outcome):
     return None if outcome.env_reward is None else float(outcome.env_reward)
 
 
+def latest_checkpoint(output):
+    """The newest full checkpoint (trainer_state.json is written last, after the optimizer)."""
+    for path in sorted(Path(output).glob("checkpoint-*"), key=lambda p: int(p.name.split("-")[-1]), reverse=True):
+        if (path / "trainer_state.json").is_file() and any(path.glob("optimizer*")):
+            return path
+    return None
+
+
+def crash_after(step):
+    """A test hook (FINEPROOF_CRASH_AFTER_STEP): die right after checkpoint `step` is saved, as a leak would."""
+    from transformers import TrainerCallback
+
+    class CrashAfter(TrainerCallback):
+        def on_save(self, args, state, control, **kwargs):
+            if state.global_step == step:
+                print(f"FINEPROOF_CRASH_AFTER_STEP: exiting after checkpoint-{step}", flush=True)
+                os._exit(3)
+
+    return CrashAfter()
+
+
 # %% 4. Configure AsyncGRPO. These are the experiment's hyperparameters.
 def main():
     args = arguments()
@@ -77,11 +100,12 @@ def main():
     dataset = Dataset.from_list(
         [{"prompt": [{"role": "user", "content": task["instruction"]}]} for task in tasks]).shuffle(seed=0)
     tokenizer = tokenizer_for(args.model)
-    generations = 2 if args.smoke else 8
-    inflight = min(args.inflight, 4) if args.smoke else args.inflight
+    # The smoke's groups are 4 rollouts (2 tied too often to give a gradient); one group per update.
+    generations = 4 if args.smoke else 8
+    inflight = min(args.inflight, 8) if args.smoke else args.inflight
     config = AsyncGRPOConfig(
         output_dir=str(output),
-        learning_rate=2e-6,
+        learning_rate=args.learning_rate,
         lr_scheduler_type="constant",
         warmup_steps=0,
         max_steps=2 if args.smoke else args.steps,
@@ -89,7 +113,7 @@ def main():
         # attention layers but not Qwen3.5's linear-attention (gated delta rule) layers, so their recurrent state would
         # run from one sample into the next. An update is then gradient_accumulation_steps rollouts.
         per_device_train_batch_size=1,
-        gradient_accumulation_steps=2 if args.smoke else args.grad_accum,
+        gradient_accumulation_steps=4 if args.smoke else args.grad_accum,
         num_generations=generations,
         max_completion_length=16384,
         temperature=0.8,
@@ -109,9 +133,9 @@ def main():
         vllm_server_base_url=args.vllm_url,
         heartbeat_stale_after_s=1800,
         save_strategy="steps",
-        # Weights only: train.py has no resume, and fp32 optimizer state would double each checkpoint (the smoke keeps
-        # full checkpoints because it checks trainer_state.json).
-        save_only_model=not args.smoke,
+        # Full checkpoints (weights, optimizer, scheduler, RNG and rollout state), so jobs/run.py can resume a run that
+        # dies: a 4B one is about 30 GB. Evals copy only the weights.
+        save_only_model=False,
         save_steps=1 if args.smoke else args.save_steps,
         save_total_limit=None,
         logging_steps=1,
@@ -152,11 +176,16 @@ def main():
         Path(args.trials).parent / "rollouts.jsonl", Path(args.trials), args.model)
     trainer.callback_handler.callbacks.insert(0, metrics_callback)
     trainer.add_callback(traces_callback)
+    if os.environ.get("FINEPROOF_CRASH_AFTER_STEP") and not args.resume:
+        trainer.add_callback(crash_after(int(os.environ["FINEPROOF_CRASH_AFTER_STEP"])))
 
     # %% 5. Train, then save weights and tokenizer for evaluation.
     (output / "training_config.json").write_text(json.dumps(config.to_dict(), indent=2))
     (output / "task_names.json").write_text(json.dumps([t["name"] for t in tasks]))
-    trainer.train()
+    resume = latest_checkpoint(output) if args.resume else None
+    if args.resume and resume is None:
+        raise RuntimeError(f"--resume found no full checkpoint in {output}")
+    trainer.train(resume_from_checkpoint=str(resume) if resume else None)
     trainer.save_model(str(output / "final"))
     tokenizer.save_pretrained(output / "final")
     trainer.save_state()
