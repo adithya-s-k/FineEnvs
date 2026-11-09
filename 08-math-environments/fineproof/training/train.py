@@ -41,6 +41,8 @@ def arguments():
     parser.add_argument("--grad-accum", type=int, default=40, help="Rollouts per update (5 groups of 8)")
     parser.add_argument("--learning-rate", type=float, default=2e-6)
     parser.add_argument("--resume", action="store_true", help="Continue from the latest checkpoint in --output")
+    parser.add_argument("--resume-from", help="Continue another run from this checkpoint folder (weights, step and "
+                        "prompt position; a fresh optimizer if it has no optimizer state)")
     parser.add_argument("--space-id", default=None, help="Optional Trackio Space; local logs are always kept")
     parser.add_argument("--trackio-bucket", default=None, help="Bucket the Trackio Space keeps its data in")
     parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
@@ -176,13 +178,14 @@ def main():
         Path(args.trials).parent / "rollouts.jsonl", Path(args.trials), args.model)
     trainer.callback_handler.callbacks.insert(0, metrics_callback)
     trainer.add_callback(traces_callback)
-    if os.environ.get("FINEPROOF_CRASH_AFTER_STEP") and not args.resume:
+    if os.environ.get("FINEPROOF_CRASH_AFTER_STEP") and not (args.resume or args.resume_from):
         trainer.add_callback(crash_after(int(os.environ["FINEPROOF_CRASH_AFTER_STEP"])))
 
     # %% 5. Train, then save weights and tokenizer for evaluation.
     (output / "training_config.json").write_text(json.dumps(config.to_dict(), indent=2))
     (output / "task_names.json").write_text(json.dumps([t["name"] for t in tasks]))
-    resume = latest_checkpoint(output) if args.resume else None
+    # --resume (a restart inside this run) wins over --resume-from (where this run started).
+    resume = latest_checkpoint(output) if args.resume else (Path(args.resume_from) if args.resume_from else None)
     if args.resume and resume is None:
         raise RuntimeError(f"--resume found no full checkpoint in {output}")
     trainer.train(resume_from_checkpoint=str(resume) if resume else None)

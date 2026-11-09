@@ -155,6 +155,8 @@ def main():
     parser.add_argument("--grad-accum", type=int, default=40, help="Train: rollouts per update")
     parser.add_argument("--inflight", type=int, default=32)
     parser.add_argument("--learning-rate", type=float, default=2e-6, help="Train: AsyncGRPO learning rate")
+    parser.add_argument("--resume-from", help="Train: start from another run's checkpoint (/outputs/<run>/checkpoint-N)")
+    parser.add_argument("--evals-run", help="With --eval-checkpoints: the Trackio run evals log to (default <name>-evals)")
     parser.add_argument("--max-restarts", type=int, default=3,
                         help="Train: restarts from the latest full checkpoint when training dies")
     parser.add_argument("--task-seed", type=int, help="Eval: score a seeded random --tasks subset of test")
@@ -310,9 +312,13 @@ def main():
             evals = CheckpointEvals(output, bucket=os.environ["FINEPROOF_OUTPUT_BUCKET"], model=args.model,
                                     sandbox=args.sandbox, rounds=args.rounds, max_tokens=args.max_tokens,
                                     space_id=args.space_id, trackio_bucket=args.trackio_bucket,
-                                    concurrency=args.eval_concurrency)
+                                    concurrency=args.eval_concurrency, trackio_run=args.evals_run)
             evals.start()
         weights = local_checkpoint(args.checkpoint, output) if args.action == "eval" and args.checkpoint else None
+        origin = None
+        if args.action == "train" and args.resume_from:
+            weights = origin = local_checkpoint(args.resume_from, output)  # vLLM serves, the trainer loads, these
+            command += ["--resume-from", weights]
         restarts = 0
         while True:
             start_services(weights)
@@ -331,17 +337,19 @@ def main():
             finally:
                 children.append(worker)  # so a stop (SIGTERM) or the cleanup below also ends it
             latest = latest_checkpoint(output) if args.action == "train" else None
-            if failure is None or args.action != "train" or latest is None or restarts >= args.max_restarts:
+            target = latest or origin  # before this run's first checkpoint, start again from where it began
+            if failure is None or args.action != "train" or target is None or restarts >= args.max_restarts:
                 break
             # Training died (the services or the trainer): restart all of it from the latest full checkpoint, with
             # vLLM serving that checkpoint's weights, so a slow leak or a crashed engine costs minutes, not the run.
             restarts += 1
             with (output / "restarts.jsonl").open("a") as log:
                 log.write(json.dumps({"time": round(time.time(), 1), "restart": restarts, "reason": failure,
-                                      "from": latest.name}) + "\n")
+                                      "from": Path(target).name}) + "\n")
             stop_children()
-            weights = str(latest)
-            command = [c for c in command if c != "--resume"] + ["--resume"]
+            weights = str(target)
+            if latest is not None:
+                command = [c for c in command if c != "--resume"] + ["--resume"]
         if evals is not None:
             evals.finish()  # the final checkpoint's eval, and any launch that failed earlier
         if failure is not None:
