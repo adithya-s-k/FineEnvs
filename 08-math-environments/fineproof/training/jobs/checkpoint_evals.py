@@ -61,6 +61,7 @@ class CheckpointEvals(threading.Thread):
                   "--task-list", BENCHMARK["task_list"], "--samples", str(BENCHMARK["samples"]),
                   "--concurrency", str(BENCHMARK["concurrency"]), "--rounds", str(self.rounds),
                   "--max-tokens", str(self.max_tokens), "--sandbox", self.sandbox, "--timeout", "3h",
+                  "--prepare-args", "--train-tasks 16",  # an eval needs only the test split
                   "--trackio-run", f"{self.run_name}-evals"]
         if self.space_id:
             submit += ["--space-id", self.space_id]
