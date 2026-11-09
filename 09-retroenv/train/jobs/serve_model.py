@@ -70,16 +70,17 @@ def main():
         command += ["--safetensors-load-strategy", "eager"]  # read sequentially, not memory-mapped
     else:
         command += ["--revision", MODEL_REVISIONS[args.model]]
+    # Every turn resends the episode so far, so prefix caching is asked for explicitly: vLLM 0.25
+    # leaves it off for hybrid (Gated DeltaNet) models like Qwen3.8, and an x8 smoke spent ~33 s a
+    # turn re-reading 5-20k-token contexts; an evaluation without it re-read ~9.5k prompt tokens a
+    # second to generate ~370. With it, vLLM caches in its experimental "align" mode (the
+    # linear-attention state is kept at block boundaries).
+    command += ["--enable-prefix-caching"]
     if not args.eval:
-        # Training: the trainer pushes weights over NCCL after each step, and the token ids and
-        # logprobs come back with every completion. CUDA graphs stay on: in eager mode a 27B
-        # turn took about 11 s. Every turn resends the episode so far, so prefix caching is asked
-        # for explicitly: vLLM 0.25 leaves it off for hybrid (Gated DeltaNet) models like
-        # Qwen3.8, and an x8 smoke spent ~33 s a turn re-reading 5-20k-token contexts. With it,
-        # vLLM caches in its experimental "align" mode (the linear-attention state is kept at
-        # block boundaries). The trainer resets the cache after each weight update.
+        # Training: the trainer pushes weights over NCCL after each step (and resets the cache),
+        # and the token ids and logprobs come back with every completion. CUDA graphs stay on: in
+        # eager mode a 27B turn took about 11 s.
         command += [
-            "--enable-prefix-caching",
             "--weight-transfer-config", '{"backend":"nccl"}',
             "--logprobs-mode", "processed_logprobs",
             "--return-tokens-as-token-ids",
