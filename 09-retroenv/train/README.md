@@ -122,6 +122,22 @@ constraint variants. Train against it, watch dev, and report on test_id and test
 - **Flat groups.** A base model that never passes gets no GRPO signal; warm-start it with
   SFT first.
 
+### Training and evaluation tasks
+
+Train on easy tasks first, drawn deterministically from LiteFold/RetroEnv-Curated's training set
+(`data/eval-train12k.json`: 13,200 train-split tasks, 6,812 easy, none sharing a leakage key with
+an evaluation set), and evaluate on its boards: `val150` to pick checkpoints, `core150` to report,
+`heldout300` sealed until the end (50/50/50 and 100/100/100 easy/medium/hard).
+`train/sweeps/train-easy2k.txt` holds 2,000 easy standard tasks (1,000 each with shortest route 2
+and 3), drawn with the evaluation sets' own tiered draw; `train-easy1k.txt` is its first 1,000:
+
+```bash
+python train/difficulty_sweep.py select --name train-easy2k --seed retroenv-train-easy-v1 \
+  --quotas easy=2000,medium=0,hard=0 --shards 1 --from-set train12k
+python train/jobs/hf_job.py train --mode async --bucket <owner>/<bucket> --flavor h200x8 --vllm-gpus 3 \
+  --task-pool train/sweeps/train-easy2k.txt --reward solved --lr 1e-4 --steps 200 --save-steps 25 --submit
+```
+
 ### Difficulty sweep
 
 `difficulty_sweep.py` measures where the base model has signal before a run spends GPUs on

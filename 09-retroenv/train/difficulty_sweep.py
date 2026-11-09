@@ -49,9 +49,15 @@ def select(args):
     }
     quotas = {tier: count for tier, count in quotas.items() if count}
     candidates = [task for task in store.tasks("train") if task.variant == "standard"]
+    if args.from_set:
+        # Draw inside a curated set (data/eval-<set>.json), e.g. train12k, LiteFold/RetroEnv-Curated's
+        # training tasks, which share no leakage key with val150, core150 or heldout300.
+        curated = {t["task_id"] for t in json.loads((ROOT / "data" / f"eval-{args.from_set}.json").read_text())["tasks"]}
+        candidates = [task for task in candidates if task.task_id in curated]
     chosen = select_tiered(candidates, quotas, args.seed)
     design = {
         "source_splits": ["train"],
+        **({"drawn_from": args.from_set} if args.from_set else {}),
         "variant": "standard",
         "quotas": quotas,
         "tier": "the release's difficulty.tier",
@@ -65,6 +71,9 @@ def select(args):
     # Alternate tiers so each shard holds the same mix and its first episodes already show it.
     by_tier = [[t["task_id"] for t in record["tasks"] if t["tier"] == tier] for tier in quotas]
     order = [task_id for row in itertools.zip_longest(*by_tier) for task_id in row if task_id]
+    # The whole sample in draw order, one id a line: a --task-pool for training. A smaller quota
+    # with the same seed draws a prefix of this order, so samples of one seed nest.
+    (SWEEPS / f"{args.name}.txt").write_text("\n".join(t["task_id"] for t in record["tasks"]) + "\n")
     for shard in range(args.shards):
         (SWEEPS / f"{args.name}-{shard}.txt").write_text("\n".join(order[shard::args.shards]) + "\n")
     tasks = record["tasks"]
@@ -255,6 +264,7 @@ def main():
         "--quotas", help=f"tasks per tier, e.g. easy=500,medium=500,hard=0 (default {QUOTAS})"
     )
     choose.add_argument("--shards", type=int, default=SHARDS, help="evaluation jobs to split the sample into")
+    choose.add_argument("--from-set", help="draw only tasks in data/eval-<set>.json (e.g. train12k)")
     summarize = commands.add_parser("report", help="Label tasks from the finished evaluation runs")
     summarize.add_argument("runs", type=Path, help="A directory holding the shards' evaluation outputs")
     summarize.add_argument("--server", help="A RetroEnv server, to re-grade broken submissions as repaired")
