@@ -147,24 +147,79 @@ task (`never`, `learnable` or `always` solved, with broken submissions re-graded
 
 Before spending on the full pool, train on a handful of tasks over and over and check that the
 solve rate climbs. `train/sweeps/overfit8-index.json` holds eight easy train tasks the base model
-solves a few times in sixteen (the sweep's learnable tasks, one per reaction type).
+solves a few times in sixteen (the sweep's learnable tasks, one per reaction type);
+`overfit4-index.json` the four of them with the most signal without thinking (hydrogenation,
+benzyl deprotection, O-alkylation, Suzuki coupling); `think3-index.json` the three that thinking
+still finds hard (carbonyl reduction, Boc protection, ether cleavage).
+
+The run that climbs, non-thinking (Qwen3.8-27B, 2026-11-08, `ab3-n4g32` in
+`AdithyaSK/retroenv-rl-runs`): four tasks, 32 attempts each, learning rate 1e-4, four updates per
+round, three vLLM GPUs and five trainer GPUs. The solve rate per round went
+0.27, 0.27, 0.27, 0.28, 0.41, 0.43, 0.33, 0.49, 0.47, 0.57, 0.63, 0.53, 0.60, 0.66, 0.66, 0.71,
+0.73, 0.74, 0.68, 0.76, 0.78 over its 48 updates (about 65 minutes of training, checkpoints every
+8), every task improving (per task, of 32: 10→19, 7→18, 15→31, 7→29), submissions at 98-100%,
+tool calls per episode falling from 27 to 19, and KL near 0.001. At 2e-4 it climbed no faster (0.60 by round 11)
+and entropy fell faster; eight tasks of sixteen attempts climbed later and less.
+
+What it learned, checked by replaying checkpoint-48 in the training harness at learning rate 0
+(`--init-adapter`, which also records each graded submission and the tools called) and re-scoring
+every submission with the verifier:
+
+- The grades hold: re-scoring agrees with the logged grade (5 of 249 differed only because the
+  trace kept a later, ignored call; the server grades `emit_routes` once).
+- It solves 0.86 in the training harness, about as it ended training. Every solve is a one-step
+  route from template-supported reactions to in-stock precursors, the kind the base model already
+  found; per task it settles on one route (86 of 91, 60 of 66, 27 of 28, 16 of 34): memorizing
+  these tasks' answers, which is what an overfitting run is for. It still looks stock up
+  (3-16 `stock_retrieve` calls per solved episode).
+- One pattern to tighten in the verifier: half the Suzuki solves couple two aryl bromides through
+  a broad "other cross-coupling" template, which a chemist would not accept as a Suzuki route.
+- The gain stays in the training harness: under `eval/evaluate.py` the same checkpoint solves
+  0.56 on these tasks with broken JSON repaired, the base 0.53. The two harnesses give the model
+  different text: tool descriptions from the client's docstrings vs the server's schemas, a
+  calls-remaining count and reminder in every tool result, JSON handed back to fix, 20 turns vs 16.
+  Train and evaluate with one harness, or the board will not show what training learned.
 
 ```bash
 python train/jobs/hf_job.py train --mode async --bucket <owner>/<bucket> --flavor h200x8 \
-  --train-tasks train/sweeps/overfit8-index.json --generations 16 --reward solved --lr 1e-4 \
-  --inflight 192 --steps 20 --save-steps 5 --name overfit8-nothink --submit
-# thinking: add --thinking and use --inflight 128
+  --vllm-gpus 3 --train-tasks train/sweeps/overfit4-index.json --generations 32 --reward solved \
+  --lr 1e-4 --updates-per-round 4 --inflight 128 --steps 48 --save-steps 8 --name overfit4-nothink --submit
+# thinking: --thinking --reasoning-effort low --turn-tokens 32768, the default 4/4 GPU split, and
+# tasks thinking does not already solve (--train-tasks train/sweeps/think3-index.json, with
+# --updates-per-round 3 so an update is still 32 samples)
 ```
 
-- **Same tasks every update.** The tasks stay in a fixed order and an update is one round: a
-  group of sixteen of every task, one sample per row per GPU, up to three policy versions stale.
-  Step rewards are comparable, and each task's r-th group of sixteen gives a per-task curve.
+Thinking (low reasoning effort) climbs too, about five times slower per update. On the three tasks
+it still finds hard (`think3-index.json`: carbonyl reduction, Boc protection, ether cleavage; the
+other overfit tasks it already solves 70-90% of the time), 32 attempts, learning rate 1e-4, three
+updates per round, four vLLM GPUs and four trainer GPUs (`ab5-t3g32`): episodes started under
+the base policy solved 0.27; under updates 1-4, 5-8, 9-12, 13-16 and 17-20 they solved 0.35,
+0.25, 0.30, 0.40 and 0.45, broken JSON falling from 9% to under 5% and unsubmitted episodes to
+about zero, KL near 0.001-0.002. Twenty updates took about 2.5 hours: a group of 32 waits on its
+slowest episode (10-25 minutes, ~20-30k generated tokens), and an update trains ~30 long rows.
+At 2e-4 it did not climb (0.23 to 0.26). Run thinking with the reasoning trim removed from the
+training template (`tokenizer_for`), which this run predates: trimmed, a turn whose thinking began
+or ended with whitespace re-rendered differently from its first token and forked a new row, ~2
+rows per episode; untrimmed, drifts fell from 20k to 7k tokens and forks from ~10% to ~5% of turns.
+A 5/3 vLLM/trainer split made the trainer the bottleneck (352 s an update); keep 4/4.
+
+- **Same tasks every round.** The tasks stay in a fixed order and a round is a group of sixteen
+  of every task, one sample per row per GPU. `--updates-per-round` splits a round into that many
+  optimizer steps: with one update per round the adapter barely moved (KL 0.001 after three), and
+  Adam moves each weight by about the learning rate per step whatever the batch. A sample may be
+  `2 + updates-per-round` policy versions stale. Each task's r-th group gives a per-task curve.
 - **Reward `solved`:** 1 for a solve, 0 otherwise. The grade's partial-credit band can be gamed
   (one accepted cut scores 0.6 of a solve), so a rising reward here can only mean more solves.
 - **Thinking** keeps the template as shipped, so earlier turns' thinking stays in the history and
   an episode trains as one row (Qwen, MiniMax, Kimi, GLM and DeepSeek all keep it). Reasoning
-  effort is `medium` (the default `xhigh` asks for long deliberation), sampling is untruncated at
-  temperature 1, and each turn's token cap is clamped to the context left.
+  effort is `--reasoning-effort` (default `medium`; the template's `xhigh` asks for long
+  deliberation, and at `medium` some tasks' first turn thought past the 16k cap and never called a
+  tool), sampling is untruncated at temperature 1, and each turn's token cap is clamped to the
+  context left.
+- **Turn speed.** Every turn resends the episode so far. vLLM 0.25 leaves prefix caching off for
+  hybrid models like Qwen3.8 and its data-parallel server sends each request to the least-busy
+  replica, so turns took ~33 s re-reading their history. Training asks for prefix caching and pins
+  each episode to one replica (`X-data-parallel-rank`).
 - **Malformed submissions** come back ungraded, up to twice, with where the JSON broke and the
   brackets left to close; only a tree the grader can read spends the single graded call.
 - **Environment.** By default each job serves episodes itself (256 sessions). `--env-url`
