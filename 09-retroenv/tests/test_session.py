@@ -110,3 +110,30 @@ def test_unaided_toolset_drops_the_step_checker(library):
     assert "validate_disconnection" not in s.tool_names
     assert "not available" in s.validate_disconnection(ESTER, ["CCO"])["error"]
     assert step(ESTER, "CCO", "CC(=O)O").product == canonicalize_smiles(ESTER)
+
+
+def test_a_shaped_training_reward_rides_beside_the_grade_and_never_breaks_an_episode(library, monkeypatch):
+    import sys
+
+    sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1]))
+    from retroenv import environment
+
+    task = make_task()
+    reference = routes_to_submission(task.target_smiles, [ReferenceRoute("r", task.reference_routes[0].steps)], STOCK)
+    environment._shaped_scorer.cache_clear()
+    monkeypatch.setenv("RETROENV_SHAPED_REWARD", "research.reward.shaped:v8")
+    s = session(library)
+    s.reset(task, STOCK)
+    score = s.emit_routes(reference)["score"]
+    assert score["valid"] and score["shaped_reward"] >= 0.70  # a solve stays in the solve band
+
+    s.reset(task, STOCK)
+    score = s.emit_routes({"routes": [{"type": "mol", "smiles": task.target_smiles, "in_stock": False}]})["score"]
+    assert not score["valid"] and 0.0 <= score["shaped_reward"] <= 0.20  # a failure stays below it
+
+    environment._shaped_scorer.cache_clear()
+    monkeypatch.setenv("RETROENV_SHAPED_REWARD", "json:loads")  # a scorer that raises
+    s.reset(task, STOCK)
+    score = s.emit_routes(reference)["score"]
+    assert score["valid"] and "shaped_reward_error" in score and "shaped_reward" not in score
+    environment._shaped_scorer.cache_clear()

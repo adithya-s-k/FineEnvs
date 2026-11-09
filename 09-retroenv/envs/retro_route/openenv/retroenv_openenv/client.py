@@ -255,6 +255,7 @@ class RemoteRetroRouteEnv:
         self._started = time.time()  # rows start in dataset order, so start order recovers each group
         self.truncated = False  # set by the trainer when the episode's last turn ran out of room
         self._tools, self._submission = [], None
+        self._shaped: float | None = None  # the server's training reward, when it computes one
 
     def reset(self, split: str = "train", index: int = 0, **_: Any) -> str:
         self._begin()
@@ -295,6 +296,7 @@ class RemoteRetroRouteEnv:
                 "started": round(self._started, 3),
                 "seconds": round(time.time() - self._started, 1),
                 "truncated": self.truncated,
+                "shaped_reward": self._shaped,
                 "tools": self._tools,  # the order of tool calls, emit_routes included
                 "submission": self._submission,  # the graded submission, for auditing what earned the reward
             }
@@ -330,6 +332,11 @@ class RemoteRetroRouteEnv:
             self._submitted = True
             score = payload.get("score") or {}
             self._passed = bool(score.get("valid"))
+            if "shaped_reward" in score and self._shaped is None:
+                self._shaped = float(score["shaped_reward"])
+            # The training reward is the trainer's, not the model's to read.
+            for key in [key for key in score if key.startswith("shaped_")]:
+                score.pop(key)
             failures = score.get("hard_failures") or ([payload["error"]] if "error" in payload else [])
             self._failure = str(failures[0])[:160] if failures and not self._passed else None
         else:

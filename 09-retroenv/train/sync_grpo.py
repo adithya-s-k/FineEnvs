@@ -60,9 +60,10 @@ def arguments(description=__doc__, output="runs/rl/sync_grpo"):
     parser.add_argument("--generations", type=int, default=8, help="Rollouts per task in a GRPO group")
     parser.add_argument(
         "--reward",
-        choices=["graded", "solved"],
+        choices=["graded", "solved", "shaped"],
         default="graded",
-        help="graded: the server's grade, failures scaled by --partial-credit; solved: 1 for a solve, else 0",
+        help="graded: the server's grade, failures scaled by --partial-credit; solved: 1 for a solve, else 0; "
+        "shaped: v8-FINAL from the server (a solve 0.7-1.0, a failure 0-0.2 by how far it reaches stock)",
     )
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument(
@@ -308,6 +309,12 @@ class TrainingEnv(RemoteRetroRouteEnv):
             return math.nan  # cut off by the context or turn cap: no verdict, no gradient (advantage 0)
         if self._reward_kind == "solved":
             return float(self.passed)
+        if self._reward_kind == "shaped":
+            # v8-FINAL from the server (research/reward/shaped.py): a solve 0.7-1.0, a failure
+            # 0-0.2 by how much of its tree reaches stock. An unsubmitted episode scores 0.
+            if not self.submitted:
+                return 0.0
+            return self._shaped if self._shaped is not None else float(self.passed)
         return grade if self.passed else self._partial_credit * grade
 
 

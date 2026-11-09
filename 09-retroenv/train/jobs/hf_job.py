@@ -92,7 +92,7 @@ def main(argv=None):
         "--train-tasks", help="For train: a project JSON {task_id: index}, e.g. train/sweeps/overfit10-index.json"
     )
     parser.add_argument("--generations", type=int, help="For train: rollouts per task in a GRPO group")
-    parser.add_argument("--reward", choices=["graded", "solved"], help="For train: see train/sync_grpo.py")
+    parser.add_argument("--reward", choices=["graded", "solved", "shaped"], help="For train: see train/sync_grpo.py")
     parser.add_argument("--lr", type=float, help="For train: learning rate")
     parser.add_argument("--updates-per-round", type=int, help="For train: optimizer steps per round (overfit runs)")
     parser.add_argument("--concurrency", type=int, default=16)

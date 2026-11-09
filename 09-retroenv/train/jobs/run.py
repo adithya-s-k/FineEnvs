@@ -65,7 +65,7 @@ def main():
     parser.add_argument("--env-url", help="A running RetroEnv server, e.g. the hosted Space, instead of one in the job")
     parser.add_argument("--train-tasks", help="For train: JSON {task_id: index}, train only on these tasks")
     parser.add_argument("--generations", type=int, help="For train: rollouts per task in a GRPO group")
-    parser.add_argument("--reward", choices=["graded", "solved"], help="For train: see sync_grpo.py")
+    parser.add_argument("--reward", choices=["graded", "solved", "shaped"], help="For train: see sync_grpo.py")
     parser.add_argument("--lr", type=float, help="For train: learning rate")
     parser.add_argument("--updates-per-round", type=int, help="For train: optimizer steps per round (overfit runs)")
     parser.add_argument("--concurrency", type=int, default=16, help="For eval: episodes at once")
@@ -205,7 +205,12 @@ def main():
                     "--ws-ping-timeout", "3600",
                 ],
                 "retroenv",
-                {"MAX_CONCURRENT_ENVS": "256", "ENABLE_WEB_INTERFACE": "false", "OMP_NUM_THREADS": "4"},
+                {
+                    "MAX_CONCURRENT_ENVS": "256", "ENABLE_WEB_INTERFACE": "false", "OMP_NUM_THREADS": "4",
+                    # Training on the shaped reward: the server adds v8-FINAL beside each grade.
+                    **({"RETROENV_SHAPED_REWARD": "research.reward.shaped:v8", "PYTHONPATH": str(ROOT)}
+                       if args.action == "train" and args.reward == "shaped" else {}),
+                },
             )  # fmt: skip
         weights = None
         if args.action == "eval" and args.checkpoint:

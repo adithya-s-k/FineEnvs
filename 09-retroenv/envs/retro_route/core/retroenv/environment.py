@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import functools
+import importlib
+import os
 import uuid
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 from .chemistry import ChemistryError, canonicalize_components, canonicalize_smiles
 from .chemistry import inspect_molecule as inspect_with_rdkit
@@ -107,6 +110,7 @@ class RetroRouteSession:
     def reset(self, task: RetroTask, stock: Iterable[str], *, episode_id: str | None = None) -> dict[str, Any]:
         self.task = task
         raw_stock = stock if isinstance(stock, frozenset) else frozenset(stock)
+        self._raw_stock = raw_stock
         self.stock_index = cached_stock_index(raw_stock)
         self.stock = self.stock_index.known  # one shared set, so the verifier's per-stock cache hits
         self.excluded = frozenset(canonicalize_smiles(item) for item in task.constraints.excluded_stock)
@@ -271,6 +275,14 @@ class RetroRouteSession:
         result = self.verifier.score_submission(task, submission, self.stock)
         self.done = True
         self.final_score = result.to_dict()
+        scorer = _shaped_scorer()
+        if scorer is not None:
+            # A training reward beside the grade (RETROENV_SHAPED_REWARD); the grade is unchanged.
+            try:
+                passed = bool(self.final_score.get("valid"))
+                self.final_score.update(scorer(task, submission, self.verifier.library, self._raw_stock, passed))
+            except Exception as exc:  # a training reward never breaks an episode
+                self.final_score["shaped_reward_error"] = f"{type(exc).__name__}: {exc}"[:300]
         return {"done": True, "score": self.final_score, "tool_calls_used": self.tool_calls}
 
     def _search(self, product_smiles: str, reaction_class: str, limit: int) -> dict[str, Any]:
@@ -303,6 +315,16 @@ class RetroRouteSession:
         if self.task is None:
             raise RuntimeError("reset() must be called before using tools")
         return self.task
+
+
+@functools.lru_cache(maxsize=1)
+def _shaped_scorer() -> Callable[..., dict[str, Any]] | None:
+    """The training reward named by RETROENV_SHAPED_REWARD ("module:function"), or None."""
+    name = os.environ.get("RETROENV_SHAPED_REWARD", "").strip()
+    if not name:
+        return None
+    module, _, function = name.partition(":")
+    return getattr(importlib.import_module(module), function)
 
 
 def _reactant_list(reactants: Iterable[str] | str) -> list[str]:

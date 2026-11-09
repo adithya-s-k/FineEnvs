@@ -182,6 +182,33 @@ def test_mask_truncated_leaves_only_a_cut_off_unsubmitted_episode_out_of_the_los
     assert episode(mask=False, submit=False) == 0.0
 
 
+def test_the_shaped_reward_reaches_the_trainer_but_not_the_model(monkeypatch):
+    pytest.importorskip("datasets")
+    pytest.importorskip("transformers")
+    sys.path.insert(0, str(ROOT))
+    from retroenv_openenv import client
+    from train.sync_grpo import TrainingEnv
+
+    class Shaped(_LiveClient):
+        def call(self, name, arguments):
+            from retroenv_openenv.client import ToolOutcome
+
+            if name == "emit_routes":
+                score = {"valid": False, "hard_failures": ["0 valid routes"], "shaped_reward": 0.12}
+                return ToolOutcome(name=name, result={"score": score}, done=True, reward=0.3, error=None)
+            return super().call(name, arguments)
+
+    monkeypatch.setattr(client, "RetroEnvClient", Shaped)
+    env = TrainingEnv("http://server", reward="shaped")
+    env.reset(index=3)
+    shown = json.loads(env.emit_routes(submission={"routes": []}))
+    assert "shaped_reward" not in shown["score"]  # the model sees the grade only
+    assert env.get_reward() == 0.12  # the trainer sees the shaped reward
+
+    env.reset(index=3)
+    assert env.get_reward() == 0.0  # no submission, no reward
+
+
 def test_a_server_that_refuses_sessions_costs_one_episode_not_the_run(monkeypatch):
     from retroenv_openenv import client
 
