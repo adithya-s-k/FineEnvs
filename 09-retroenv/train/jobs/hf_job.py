@@ -49,6 +49,8 @@ def source_files():
             and path.suffix in SOURCE_SUFFIXES
             and not any(part in SKIP_PARTS or part.endswith(".egg-info") for part in path.relative_to(ROOT).parts)
         ]
+    # The training reward the server computes for --reward shaped (research/reward/shaped.py).
+    files += sorted((ROOT / "research").glob("__init__.py")) + sorted((ROOT / "research/reward").glob("*.py"))
     # The server serves its 3D viewer from static/; the playground is off in jobs, but the package imports it.
     files += sorted((ROOT / "envs/retro_route/openenv/retroenv_openenv/static").glob("*"))
     return files
