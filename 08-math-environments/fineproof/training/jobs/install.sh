@@ -8,7 +8,7 @@ TRL_COMMIT=52fb144e7ece97e26aabd3c025740022838e46b5
 # FineProof harness), and the harness preflight. Smoke-tested as fp-smoke-oe1573. Switch to the merge commit on
 # openenv/OpenEnv once it lands. Runs before 2026-11-09 evening used 0bd1a89d.
 OPENENV_REPO=${OPENENV_REPO:-https://github.com/adithya-s-k/OpenEnv.git}
-OPENENV_COMMIT=${OPENENV_COMMIT:-a0068bfd}
+OPENENV_COMMIT=${OPENENV_COMMIT:-a0068bfda8144831a3ddc59c7d5696da34f592db}
 python -m pip install -r requirements.txt
 python -m pip install "trl @ git+https://github.com/huggingface/trl.git@${TRL_COMMIT}"
 mkdir -p .deps
