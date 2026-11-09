@@ -56,6 +56,7 @@ def arguments(description=__doc__, output="runs/rl/sync_grpo"):
     # The full run trains on a pool (a sweep's learnable.txt, or a {task_id: index} JSON): the
     # pool shuffled, batches sized as for the whole split. --train-tasks is the overfit mode.
     parser.add_argument("--task-pool", type=Path, help="task ids (one a line) or JSON {task_id: index}: the training pool")
+    parser.add_argument("--round-tasks", type=int, default=4, help="With --task-pool: task groups per round")
     parser.add_argument("--generations", type=int, default=8, help="Rollouts per task in a GRPO group")
     parser.add_argument(
         "--reward",

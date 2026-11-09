@@ -57,7 +57,9 @@ def main():
         sampling = {"temperature": 0.8, "top_p": 1.0, "top_k": -1}  # as the difficulty sweep sampled
         per_turn, budget = args.turn_tokens, min(40960, args.context)
         template = {"enable_thinking": False, "preserve_thinking": True}
-    if args.train_tasks:
+    if args.train_tasks or args.task_pool:
+        # A pool run is sized like the overfitting run that climbed: a round is --round-tasks
+        # groups (4 by default) of --generations episodes, split into --updates-per-round updates.
         # An overfitting run trains on one round per update: a group of every task, one sample per
         # row per GPU (no packing). Forked episodes add a sample now and then, so a step can end a
         # few episodes before or after its round.
@@ -65,7 +67,8 @@ def main():
         # A group's version is the policy that started it, and a group runs for minutes while
         # generation never stops, so a round mixes a few versions: at most one stale dropped 112 of
         # a step's samples. Each extra update per round ages the queue by one more version.
-        rounds = len(json.loads(Path(args.train_tasks).read_text())) * (4 if args.smoke else args.generations)
+        tasks = len(json.loads(Path(args.train_tasks).read_text())) if args.train_tasks else args.round_tasks
+        rounds = tasks * (4 if args.smoke else args.generations)
         trainers = int(os.environ.get("WORLD_SIZE", "1"))  # set by accelerate: one per training GPU
         # A thinking episode trains as ~2.2 rows: a later turn that re-renders differently from what
         # was generated forks a new row (samples_per_rollout 1.6-2.7, think3 x 32). Sized for one
@@ -91,7 +94,7 @@ def main():
         lr_scheduler_type="constant",
         warmup_steps=0,
         max_steps=2 if args.smoke else args.steps,
-        per_device_train_batch_size=1 if args.smoke or args.train_tasks else 4,
+        per_device_train_batch_size=1 if args.smoke or args.train_tasks or args.task_pool else 4,
         gradient_accumulation_steps=accumulation,
         num_generations=4 if args.smoke else args.generations,
         max_completion_length=per_turn,  # per model turn: AsyncGRPO caps each generation call

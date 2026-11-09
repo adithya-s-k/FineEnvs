@@ -59,6 +59,7 @@ def main():
     parser.add_argument("--turn-tokens", type=int, help="For train: tokens per model turn (default 16384)")
     parser.add_argument("--mask-truncated", action="store_true", help="For train: cut-off episodes out of the loss")
     parser.add_argument("--task-pool", help="For train: the training pool, e.g. a sweep's learnable.txt (shuffled)")
+    parser.add_argument("--round-tasks", type=int, help="For train with --task-pool: task groups per round (default 4)")
     parser.add_argument("--rows-per-episode", type=float, help="For train: training rows per episode (sizes overfit updates)")
     parser.add_argument("--init-adapter", help="For train: start from this LoRA checkpoint (a /outputs/... path)")
     parser.add_argument("--env-url", help="A running RetroEnv server, e.g. the hosted Space, instead of one in the job")
@@ -295,6 +296,7 @@ def main():
             command += ["--mask-truncated"] if args.mask_truncated else []
             command += ["--rows-per-episode", str(args.rows_per_episode)] if args.rows_per_episode else []
             command += ["--task-pool", args.task_pool] if args.task_pool else []
+            command += ["--round-tasks", str(args.round_tasks)] if args.round_tasks else []
             if args.init_adapter:
                 # One sequential copy to local disk: every trainer rank reading the adapter off the
                 # bucket mount at once stalled the start (and an mmap there ended a rank with SIGBUS).

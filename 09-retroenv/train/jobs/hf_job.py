@@ -84,6 +84,7 @@ def main(argv=None):
     parser.add_argument("--mask-truncated", action="store_true", help="For train: cut-off episodes out of the loss")
     parser.add_argument("--source-from", help="With --submit: mount this job's uploaded source instead of uploading it again")
     parser.add_argument("--task-pool", help="For train: the training pool, e.g. a sweep's learnable.txt (shuffled)")
+    parser.add_argument("--round-tasks", type=int, help="For train with --task-pool: task groups per round (default 4)")
     parser.add_argument("--rows-per-episode", type=float, help="For train: training rows per episode (sizes overfit updates)")
     parser.add_argument("--init-adapter", help="For train: start from this LoRA checkpoint (a /outputs/... path)")
     parser.add_argument("--env-url", help="A running RetroEnv server, e.g. https://fineenvs-retroenv.hf.space")
@@ -101,6 +102,7 @@ def main(argv=None):
     parser.add_argument("--run", help="For watch: the training run whose checkpoints to evaluate")
     parser.add_argument("--job", help="For watch: the training job id; the watch ends after it does")
     parser.add_argument("--base", help="For watch: the base model's evaluation in --bucket (default base-eval)")
+    parser.add_argument("--shards", type=int, help="For watch: evaluation jobs per checkpoint, one H200 each")
     parser.add_argument("--space-id")
     parser.add_argument("--submit", action="store_true", help="Without this flag, print the job plan")
     args = parser.parse_args(argv)
@@ -128,6 +130,7 @@ def main(argv=None):
             f" --harness {args.harness or 'board'} --attempts {args.attempts}"
             + (f" --temperature {args.temperature}" if args.temperature is not None else "")
             + (f" --base {args.base}" if args.base else "")
+            + (f" --shards {args.shards}" if args.shards else "")
         )
         command = ["bash", "-c", watch]
     elif args.action != "check":
@@ -149,6 +152,7 @@ def main(argv=None):
         command += ["--mask-truncated"] if args.mask_truncated else []
         command += ["--rows-per-episode", str(args.rows_per_episode)] if args.rows_per_episode else []
         command += ["--task-pool", args.task_pool] if args.task_pool else []
+        command += ["--round-tasks", str(args.round_tasks)] if args.round_tasks else []
         command += ["--init-adapter", args.init_adapter] if args.init_adapter else []
         command += [
             "--steps",
