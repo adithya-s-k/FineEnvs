@@ -124,18 +124,22 @@ constraint variants. Train against it, watch dev, and report on test_id and test
 
 ### Training and evaluation tasks
 
-Train on easy tasks first, drawn deterministically from LiteFold/RetroEnv-Curated's training set
-(`data/eval-train12k.json`: 13,200 train-split tasks, 6,812 easy, none sharing a leakage key with
-an evaluation set), and evaluate on its boards: `val150` to pick checkpoints, `core150` to report,
-`heldout300` sealed until the end (50/50/50 and 100/100/100 easy/medium/hard).
-`train/sweeps/train-easy2k.txt` holds 2,000 easy standard tasks (1,000 each with shortest route 2
-and 3), drawn with the evaluation sets' own tiered draw; `train-easy1k.txt` is its first 1,000:
+Train on a fixed 2,000-task mix, 60% easy and 40% medium, drawn deterministically from
+LiteFold/RetroEnv-Curated's training set (`data/eval-train12k.json`: 13,200 train-split tasks,
+none sharing a leakage key with an evaluation set). Report on `core150` (the curated test board:
+50/50/50 easy/medium/hard from test_id and test_hard, with core30, final_eval and core100 as its
+prefixes); `val150` (50/50/50 from dev) is the dev set for checks along the way, and `heldout300`
+stays sealed until the end. `train/sweeps/train-mix2k.txt` holds 1,200 easy tasks (600 each with
+shortest route 2 and 3) and 800 medium (routes 2 to 8, visited round-robin), drawn with the
+evaluation sets' own tiered draw:
 
 ```bash
-python train/difficulty_sweep.py select --name train-easy2k --seed retroenv-train-easy-v1 \
-  --quotas easy=2000,medium=0,hard=0 --shards 1 --from-set train12k
+python train/difficulty_sweep.py select --name train-mix2k --seed retroenv-train-mix-v1 \
+  --quotas easy=1200,medium=800,hard=0 --shards 1 --from-set train12k
 python train/jobs/hf_job.py train --mode async --bucket <owner>/<bucket> --flavor h200x8 --vllm-gpus 3 \
-  --task-pool train/sweeps/train-easy2k.txt --reward solved --lr 1e-4 --steps 200 --save-steps 25 --submit
+  --task-pool train/sweeps/train-mix2k.txt --reward solved --lr 1e-4 --steps 200 --save-steps 25 --submit
+python train/jobs/hf_job.py eval --bucket <owner>/<bucket> --set core150 --harness training --attempts 4 \
+  --temperature 0.8 --checkpoint /outputs/<run>/checkpoint-<n> --name <run>-<n>-core150 --submit
 ```
 
 ### Difficulty sweep
