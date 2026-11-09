@@ -16,6 +16,7 @@ def main():
     parser.add_argument("--output", required=True)
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--eval", action="store_true")
+    parser.add_argument("--data-parallel", type=int, help="vLLM replicas (default: 2 for eval, 1 for training)")
     args = parser.parse_args()
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
@@ -26,7 +27,7 @@ def main():
         "--host", "127.0.0.1", "--port", str(args.port),
         "--served-model-name", args.model,
         "--tensor-parallel-size", "1",
-        "--data-parallel-size", "2" if args.eval else "1",
+        "--data-parallel-size", str(args.data_parallel or (2 if args.eval else 1)),
         "--dtype", "bfloat16",
         "--max-model-len", "65536",
         "--gpu-memory-utilization", "0.85",

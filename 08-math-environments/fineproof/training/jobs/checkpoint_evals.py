@@ -42,11 +42,12 @@ def complete(path: Path) -> bool:
 
 class CheckpointEvals(threading.Thread):
     def __init__(self, output: Path, *, bucket: str, model: str, sandbox: str, rounds: int, max_tokens: int,
-                 space_id: str | None, trackio_bucket: str | None, scan_every_s: float = 60.0, dry_run: bool = False):
+                 space_id: str | None, trackio_bucket: str | None, concurrency: int = BENCHMARK["concurrency"],
+                 scan_every_s: float = 60.0, dry_run: bool = False):
         super().__init__(name="checkpoint-evals", daemon=True)
         self.output, self.bucket, self.model, self.sandbox = Path(output), bucket, model, sandbox
         self.rounds, self.max_tokens, self.space_id, self.trackio_bucket = rounds, max_tokens, space_id, trackio_bucket
-        self.scan_every_s, self.dry_run = scan_every_s, dry_run
+        self.scan_every_s, self.dry_run, self.concurrency = scan_every_s, dry_run, concurrency
         self.run_name = self.output.name
         self.done: set[int] = set()
         self.stopping = threading.Event()
@@ -59,7 +60,7 @@ class CheckpointEvals(threading.Thread):
                   "--bucket", self.bucket, "--model", self.model,
                   "--checkpoint", f"/outputs/{self.run_name}/{path.name}", "--step", str(step),
                   "--task-list", BENCHMARK["task_list"], "--samples", str(BENCHMARK["samples"]),
-                  "--concurrency", str(BENCHMARK["concurrency"]), "--rounds", str(self.rounds),
+                  "--concurrency", str(self.concurrency), "--rounds", str(self.rounds),
                   "--max-tokens", str(self.max_tokens), "--sandbox", self.sandbox, "--timeout", "3h",
                   "--prepare-args", "--train-tasks 16",  # an eval needs only the test split
                   "--trackio-run", f"{self.run_name}-evals"]

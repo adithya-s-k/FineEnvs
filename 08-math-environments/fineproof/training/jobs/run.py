@@ -1,7 +1,7 @@
-"""Start vLLM and the Harbor server, then train or evaluate, on a two-GPU machine.
+"""Start vLLM and the Harbor server, then train or evaluate, on a machine with two or more GPUs.
 
-Adapted from 05-multi-harness-rl/jobs/run.py, keeping only the Harbor path. Training: vLLM on GPU 0, the trainer
-on GPU 1. Evaluation: vLLM data-parallel on both. Logs go to <output>/{vllm,harbor,train|eval}.log.
+Adapted from 05-multi-harness-rl/jobs/run.py, keeping only the Harbor path. Training: the trainer on the last GPU and
+vLLM data-parallel on the others (generation is what limits a run). Evaluation: vLLM data-parallel on all of them. Logs go to <output>/{vllm,harbor,train|eval}.log.
 
     python jobs/run.py train --output runs/train --steps 100
     python jobs/run.py eval  --output runs/eval-base
@@ -28,6 +28,18 @@ import httpx
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def visible_gpus() -> list[str]:
+    """CUDA_VISIBLE_DEVICES when set (Slurm sets it), else every GPU nvidia-smi lists (an HF Job may set neither)."""
+    if os.environ.get("CUDA_VISIBLE_DEVICES"):
+        return [d for d in os.environ["CUDA_VISIBLE_DEVICES"].split(",") if d.strip()]
+    try:
+        listed = subprocess.run(["nvidia-smi", "--query-gpu=index", "--format=csv,noheader"], capture_output=True,
+                                text=True, check=True).stdout
+        return [line.strip() for line in listed.splitlines() if line.strip()] or ["0", "1"]
+    except (OSError, subprocess.CalledProcessError):
+        return ["0", "1"]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("action", choices=["train", "eval"])
@@ -46,6 +58,7 @@ def main():
     parser.add_argument("--trackio-run", help="Eval: the Trackio run to log into (default: the output's name)")
     parser.add_argument("--eval-checkpoints", action="store_true",
                         help="Train in an HF Job: eval each saved checkpoint in an HF Job of its own")
+    parser.add_argument("--eval-concurrency", type=int, default=64, help="With --eval-checkpoints: rollouts in flight")
     parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
                         help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
     parser.add_argument("--rounds", type=int, default=int(os.environ.get("FINEPROOF_ROUNDS", "1")),
@@ -75,9 +88,10 @@ def main():
         (output / "dependencies.json").write_text(revisions.read_text())
     with (output / "packages.txt").open("w") as packages:
         subprocess.run([sys.executable, "-m", "pip", "freeze"], stdout=packages, check=True)
-    devices = os.environ.get("CUDA_VISIBLE_DEVICES", "0,1").split(",")
+    devices = visible_gpus()
     if len(devices) < 2:
-        raise RuntimeError("Allocate two GPUs")
+        raise RuntimeError("Allocate two or more GPUs")
+    engine_devices = devices[:-1] if args.action == "train" else devices
     env = dict(os.environ, PYTHONUNBUFFERED="1", TRACKIO_DIR=str(output / "trackio"), VLLM_USE_DEEP_GEMM="0",
                VLLM_DEEP_GEMM_WARMUP="skip", VLLM_USE_FLASHINFER_SAMPLER="0",
                # Trackio: keep train.log's console in the run too, and finish the run (flushing it) on SIGTERM.
@@ -133,7 +147,8 @@ def main():
                    "--port", str(engine_port)]
         if args.action == "eval":
             command += ["--eval"] + (["--checkpoint", args.checkpoint] if args.checkpoint else [])
-        spawn(command, "vllm", {"CUDA_VISIBLE_DEVICES": devices[0] if args.action == "train" else ",".join(devices[:2])})
+        command += ["--data-parallel", str(len(engine_devices))]
+        spawn(command, "vllm", {"CUDA_VISIBLE_DEVICES": ",".join(engine_devices)})
         wait(engine_url + "/health")
         # OpenEnv's own Harbor server: it resolves `--harness fineproof_agent.agent:FineProofAgent` itself and serves
         # each dataset folder as a split named by its path (tasks.dataset_dir).
@@ -181,9 +196,10 @@ def main():
 
             evals = CheckpointEvals(output, bucket=os.environ["FINEPROOF_OUTPUT_BUCKET"], model=args.model,
                                     sandbox=args.sandbox, rounds=args.rounds, max_tokens=args.max_tokens,
-                                    space_id=args.space_id, trackio_bucket=args.trackio_bucket)
+                                    space_id=args.space_id, trackio_bucket=args.trackio_bucket,
+                                    concurrency=args.eval_concurrency)
             evals.start()
-        worker = spawn(command, args.action, {"CUDA_VISIBLE_DEVICES": devices[1]})
+        worker = spawn(command, args.action, {"CUDA_VISIBLE_DEVICES": devices[-1]})
         children.remove(worker)
         try:
             while worker.poll() is None:

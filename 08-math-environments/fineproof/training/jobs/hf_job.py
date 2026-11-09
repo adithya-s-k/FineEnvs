@@ -57,6 +57,7 @@ def main():
     parser.add_argument("--trackio-run", help="Eval: the Trackio run to log into")
     parser.add_argument("--eval-checkpoints", action="store_true",
                         help="Train: submit an eval Job for each checkpoint as it is saved (jobs/checkpoint_evals.py)")
+    parser.add_argument("--eval-concurrency", type=int, default=64, help="With --eval-checkpoints: rollouts in flight")
     parser.add_argument("--rounds", type=int, default=1, help="Harness check-and-rewrite rounds (0: one call)")
     parser.add_argument("--max-tokens", type=int, default=16384, help="Output cap per model call")
     parser.add_argument("--grad-accum", type=int, default=40, help="Train: rollouts per update")
@@ -71,8 +72,9 @@ def main():
     args.concurrency = args.concurrency or (4 if args.action == "smoke" else 32)
     if Path(args.name).name != args.name or args.name in {".", ".."}:
         parser.error("Use a single directory name for --name")
-    if args.flavor != "h200x2":
-        parser.error("Use h200x2: one GPU for vLLM, one for the trainer (AsyncGRPO needs FlashAttention 3)")
+    if args.flavor not in ("h200x2", "h200x4"):
+        parser.error("Use h200x2 or h200x4: vLLM on all GPUs but one, the trainer on the last (AsyncGRPO needs "
+                     "FlashAttention 3, so Hopper)")
     namespace, separator, bucket = args.bucket.partition("/")
     if not separator or not namespace or not bucket:
         parser.error("Use owner/bucket for --bucket")
@@ -98,7 +100,7 @@ def main():
     if args.eval_checkpoints:
         if args.action != "train":
             parser.error("--eval-checkpoints is for train")
-        command += ["--eval-checkpoints"]
+        command += ["--eval-checkpoints", "--eval-concurrency", str(args.eval_concurrency)]
     prepare_args = args.prepare_args + (" --sandbox hf-sandbox" if args.sandbox == "hf-sandbox" else "")
     env = {"PYTHONUNBUFFERED": "1", "FINEPROOF_PREPARE_ARGS": prepare_args.strip(), "FINEPROOF_OUTPUT_BUCKET": args.bucket}
     for name in ("DAYTONA_API_URL", "JUDGE_PROVIDER", "JUDGE_MODEL", "JUDGE_BASE_URL", "JUDGE_SAMPLES"):
