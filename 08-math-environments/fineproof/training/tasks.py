@@ -45,15 +45,31 @@ def _session_class():
     from harbor_env.harness import HarborSession
 
     class FineProofSession(HarborSession):
-        def verify(self, transcript, final_state=None):
-            verdict = super().verify(transcript, final_state)
-            result = self.result
-            trial_root = getattr(self, "trial_root", None)
+        def _log_rollout(self):
+            result, trial_root = self.result, getattr(self, "trial_root", None)
             if result is not None and trial_root is not None and not getattr(self, "_logged", False):
                 import rollout_log
 
-                self._logged = True  # one record per rollout, however often verify is called
+                self._logged = True  # one record per rollout, however often it is reached
                 rollout_log.append(Path(trial_root).parent / "rollouts.jsonl", result, trial_root)
+
+        def fetch_training_trace(self):
+            # OpenEnv marks a capture with a FATAL validation finding as unusable ("drop it") and raises ValueError
+            # for it, which TRL's harness worker reads as a broken capture contract and stops training on. One
+            # such rollout (seen when HF Sandbox starts were timing out) ended a smoke run. Drop it as a failed
+            # rollout instead: it is never trained on, it is recorded in rollouts.jsonl, and the ungraded-rollout
+            # alert still fires if many go this way.
+            result = self.result
+            fatal = [f for f in (result.findings or []) if "[FATAL" in f] if result is not None else []
+            if fatal:
+                self._log_rollout()
+                raise RuntimeError(f"unusable capture, dropped: {fatal[0][:300]}")
+            return super().fetch_training_trace()
+
+        def verify(self, transcript, final_state=None):
+            verdict = super().verify(transcript, final_state)
+            result = self.result
+            self._log_rollout()
             if result is not None and (not result.ok or result.exception_type == "AgentTimeoutError"):
                 return type(verdict)(env_reward=None, done=True)
             return verdict
