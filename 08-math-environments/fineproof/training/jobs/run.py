@@ -70,8 +70,9 @@ class ThreadCensus(threading.Thread):
     grows, against the container's pid limit (cgroup pids.max) when it can read it.
     """
 
-    ROLES = (("serve_model", "vllm"), ("vllm", "vllm"), ("harbor_env.server", "harbor"), ("train.py", "train"),
-             ("evaluate.py", "eval"), ("jobs/run.py", "run"))
+    # First match wins: train.py's command line also mentions --vllm-url.
+    ROLES = (("train.py", "train"), ("evaluate.py", "eval"), ("harbor_env.server", "harbor"), ("jobs/run.py", "run"),
+             ("serve_model", "vllm"), ("vllm", "vllm"))
 
     def __init__(self, path: Path, every_s: float = 60.0):
         super().__init__(name="thread-census", daemon=True)
@@ -102,7 +103,17 @@ class ThreadCensus(threading.Thread):
             entry["rss_mb"] += int(status.get("VmRSS", "0 kB").split()[0]) // 1024
         top = dict(sorted(roles.items(), key=lambda kv: -kv[1]["threads"])[:12])
         return {"time": round(time.time(), 1), "threads": sum(r["threads"] for r in roles.values()),
-                "pids_current": self._limit("pids.current"), "pids_max": self._limit("pids.max"), "roles": top}
+                "pids_current": self._limit("pids.current"), "pids_max": self._limit("pids.max"),
+                "nproc_limit": self._nproc_limit(), "roles": top}
+
+    @staticmethod
+    def _nproc_limit() -> str | None:
+        """This process's RLIMIT_NPROC (threads count against it), as /proc/self/limits shows it."""
+        try:
+            line = next(l for l in Path("/proc/self/limits").read_text().splitlines() if l.startswith("Max processes"))
+            return " ".join(line.split()[2:4])
+        except (OSError, StopIteration):
+            return None
 
     def run(self) -> None:
         while not self.stopping.wait(self.every_s):
@@ -190,7 +201,10 @@ def main():
                # Trackio: keep train.log's console in the run too, and finish the run (flushing it) on SIGTERM.
                TRACKIO_CAPTURE_CONSOLE="1", TRACKIO_HANDLE_SIGTERM="1",
                # A 4B checkpoint is 18 GB of fp32 weights; vLLM's default 10 minutes for engines to load is tight.
-               VLLM_ENGINE_READY_TIMEOUT_S=os.environ.get("VLLM_ENGINE_READY_TIMEOUT_S", "1800"))
+               VLLM_ENGINE_READY_TIMEOUT_S=os.environ.get("VLLM_ENGINE_READY_TIMEOUT_S", "1800"),
+               # Thread pools default to one thread per CPU in every process (92 on h200x4); vLLM on three GPUs alone
+               # then ran about 2,200 threads and a run hit the container's thread limit. Eight each is plenty here.
+               OMP_NUM_THREADS="8", MKL_NUM_THREADS="8", RAYON_NUM_THREADS="8", TOKENIZERS_PARALLELISM="false")
     # OpenEnv's Harbor modules log what they decide (budget stops, token clamps, upstream retries) at INFO, which
     # uvicorn's default config drops; this config keeps them, and Harbor's own loggers at WARNING.
     logging_config = output / "harbor_logging.json"
@@ -336,6 +350,10 @@ def main():
                 failure = None if worker.returncode == 0 else f"{args.action} exited {worker.returncode}"
             finally:
                 children.append(worker)  # so a stop (SIGTERM) or the cleanup below also ends it
+            try:  # whatever the worker left behind in its process group (spawned helpers of a crashed trainer)
+                os.killpg(worker.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
             latest = latest_checkpoint(output) if args.action == "train" else None
             target = latest or origin  # before this run's first checkpoint, start again from where it began
             if failure is None or args.action != "train" or target is None or restarts >= args.max_restarts:

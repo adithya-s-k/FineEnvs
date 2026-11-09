@@ -40,6 +40,9 @@ def main():
         "--no-enable-prefix-caching",
         "--limit-mm-per-prompt", '{"image":0,"video":0}',
         "--gdn-prefill-backend", "triton",
+        # One API server in front of every data-parallel engine. vLLM's default starts one per engine, and each runs
+        # about 290 threads on a 92-CPU machine: three of them helped a 4-GPU run hit the container's thread limit.
+        "--api-server-count", "1",
     ]
     if not args.checkpoint:
         command += ["--revision", MODEL_REVISIONS[args.model]]
