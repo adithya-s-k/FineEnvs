@@ -43,7 +43,13 @@ GPU 1: AsyncGRPO trainer                       (in the Harbor server)           
   harness by import path, `fineproof_agent.agent:FineProofAgent`; OpenEnv sees a host-side agent and hands it the
   capture proxy's loopback URL and the session id as `api_base`/`api_key`. That needs an OpenEnv with
   `module:Class` support (see `jobs/install.sh`).
-- [`train.py`](train.py) is 05's `multi_harness.py` with one harness and the judge's fractional reward used as is.
+- [`train.py`](train.py) is 05's `multi_harness.py` with one harness. The reward is the judge's fractional score, and 0
+  for a proof cut off at the output cap ([`tasks.py`](tasks.py)); the judge's own score of a cut-off proof is kept in
+  `rollouts.jsonl` as `judge_reward`. The objective departs from TRL's AsyncGRPO in two ways, both from QED-Nano's
+  recipe and [Dr. GRPO](https://huggingface.co/papers/2503.20783) ([`objective.py`](objective.py)): advantages are the
+  reward minus the group mean, not divided by the group's std, and each rollout's token loss is divided by the output
+  cap rather than by its own length. Our first runs, with TRL's defaults and partial credit for cut-off proofs, rose
+  for about 40 updates and then fell back to the base model while proofs grew until most were cut off.
 - [`prepare.py`](prepare.py) writes the tasks: by default 1,024 training problems on which QED-Nano's base model
   scored between 0.25 and 0.9, and all 128 FineProofs-RL-test problems for evaluation, which are removed from the
   training pool (they are a subset of it).
@@ -83,10 +89,17 @@ on the fixed benchmark step 0 was scored on ([`results/fineproof-bench-4b-step0.
 
 ```bash
 JUDGE_MODEL=openai/gpt-oss-20b:groq,openai/gpt-oss-20b:featherless-ai \
-python jobs/hf_job.py train --name fp-rl-4b --model Qwen/Qwen3.5-4B --bucket <owner>/<bucket> \
-  --sandbox hf-sandbox --rounds 0 --max-tokens 16384 --steps 100 --save-steps 20 --timeout 28h \
+python jobs/hf_job.py train --name fp-rl2-4b --model Qwen/Qwen3.5-4B --bucket <owner>/<bucket> \
+  --sandbox hf-sandbox --rounds 0 --steps 100 --warmup-steps 10 --flavor h200x8 --timeout 48h \
   --space-id <owner>/fineproof-rl --trackio-bucket <owner>/fineproof-trackio --eval-checkpoints --submit
 ```
+
+The defaults are the run's settings: proofs up to 32,768 tokens (vLLM serves 131,072 of context), groups of 16, 128
+rollouts per update, learning rate 1e-6, two judge samples per proof, a full checkpoint every 10 updates and an eval
+Job for every 20th (`--eval-every`) and the last. If the Job ends early (its timeout, a stop, a failed node), submit the
+same command again: it resumes from the latest full checkpoint in the bucket, and its logs, `rollouts.jsonl`, Trackio
+run and eval record carry on where they stopped. Inside a Job, a run that dies restarts from its latest checkpoint up
+to `--max-restarts` times.
 
 Without `--submit` each command prints the job it would run. On your own two-GPU machine, run `bash jobs/install.sh`
 and `python prepare.py`, then `python jobs/run.py {train,eval} ...` with the same options. The GPUs must be A100s,
@@ -112,6 +125,8 @@ In its output folder (copied to the bucket every 5 minutes, when the Job is stop
 | `trials/<trial>/` | Harbor's files for each rollout: the conversation, the proof, `result.json` (phase timings, tokens) and `verifier/grading.json` (every judge grade: provider, score, written assessment, tokens, cost) |
 | `rollouts.jsonl` | One line per rollout ([`rollout_log.py`](rollout_log.py)): the reward, OpenEnv's result (errors, each model call's finish reason and tokens, phase timings, findings) and the judge's summary |
 | `checkpoint_evals.jsonl` | With `--eval-checkpoints`: the eval Job submitted for each checkpoint |
+| `restarts.jsonl`, `resumes.jsonl` | Each restart inside the Job (and why), and each resume of the run by a later Job |
+| `threads.jsonl` | Every minute, threads and memory per process (a run once died of `can't start new thread`) |
 | `trackio/` | The Trackio project, also on the Space when `--space-id` is set |
 
 In Trackio (project `fineproof-rl`), the training run has TRL's metrics for each update (loss, KL, importance ratio,
@@ -128,5 +143,6 @@ problems, full marks, pass@4, best-of-4, learnable share), `eval_rollouts/*`, `e
 
 ```bash
 python -m unittest discover -s harness/tests                       # the loop, against a stub model
+python -m unittest discover -s tests                               # objective, cut-off check, metrics, eval launcher
 python -m unittest discover -s ../envs/fineproof/harbor/tests       # the verifier's grade.py
 ```

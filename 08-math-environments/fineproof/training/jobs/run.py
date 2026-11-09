@@ -345,7 +345,8 @@ def main():
         wait(engine_url + "/health")
         # OpenEnv's own Harbor server: it resolves `--harness fineproof_agent.agent:FineProofAgent` itself and serves
         # each dataset folder as a split named by its path (tasks.dataset_dir).
-        spawn([sys.executable, "-m", "uvicorn", "harbor_env.server.app:app", "--host", "127.0.0.1",
+        # jobs/harbor_server.py runs uvicorn on harbor_env.server.app:app, giving HF Sandboxes 10 minutes to start.
+        spawn([sys.executable, "jobs/harbor_server.py", "--host", "127.0.0.1",
                "--port", str(server_port), "--ws-ping-timeout", "3600", "--log-config", str(logging_config)], "harbor", {
             "OPENENV_DATASETS": ",".join(str(Path("prepared", "datasets", s).resolve()) for s in ("train", "test")),
             "OPENENV_HARBOR_REWARD_KEY": "reward",
