@@ -125,14 +125,15 @@ def main():
     scratch = Path(tempfile.mkdtemp())
     slices = []
     if args.shards > 1:
-        # Contiguous slices of the set, published once beside the run for the jobs to read.
+        # Contiguous slices of the set, published once for the jobs to read: outside the run's own
+        # directory, which the trainer requires empty when it starts.
         ids = [task["task_id"] for task in record["tasks"]]
         size = -(-len(ids) // args.shards)
         for k in range(args.shards):
             path = scratch / f"{args.set}-{k}of{args.shards}.txt"
             path.write_text("\n".join(ids[k * size : (k + 1) * size]) + "\n")
-            slices.append(f"/outputs/{args.run}/evalshards/{path.name}")
-            hub.batch_bucket_files(args.bucket, add=[(str(path), f"{args.run}/evalshards/{path.name}")])
+            slices.append(f"/outputs/evalshards/{args.run}/{path.name}")
+            hub.batch_bucket_files(args.bucket, add=[(str(path), f"evalshards/{args.run}/{path.name}")])
     names = lambda step: [f"{args.run}-eval-{step}-{k}" for k in range(args.shards)] if slices else [f"{args.run}-eval-{step}"]  # noqa: E731
 
     submitted, finished = {}, {}  # step -> {name: job id or None}, step -> score or a failure note
