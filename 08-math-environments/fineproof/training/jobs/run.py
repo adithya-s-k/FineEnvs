@@ -166,6 +166,7 @@ def main():
     parser.add_argument("--grad-accum", type=int, default=40, help="Train: rollouts per update")
     parser.add_argument("--inflight", type=int, default=32)
     parser.add_argument("--learning-rate", type=float, default=2e-6, help="Train: AsyncGRPO learning rate")
+    parser.add_argument("--warmup-steps", type=int, default=0, help="Train: linear learning-rate warm-up")
     parser.add_argument("--resume-from", help="Train: start from another run's checkpoint (/outputs/<run>/checkpoint-N)")
     parser.add_argument("--evals-run", help="With --eval-checkpoints: the Trackio run evals log to (default <name>-evals)")
     parser.add_argument("--max-restarts", type=int, default=3,
@@ -303,7 +304,8 @@ def main():
     if args.action == "train":
         command = [sys.executable, "train.py", *common, "--steps", str(args.steps),
                    "--save-steps", str(args.save_steps), "--grad-accum", str(args.grad_accum),
-                   "--inflight", str(args.inflight), "--learning-rate", str(args.learning_rate)]
+                   "--inflight", str(args.inflight), "--learning-rate", str(args.learning_rate),
+                   "--warmup-steps", str(args.warmup_steps)]
         command += ["--smoke"] if args.smoke else []
     else:
         command = [sys.executable, "evaluate.py", *common, "--checkpoint", args.checkpoint or args.model,

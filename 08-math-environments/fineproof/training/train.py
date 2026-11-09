@@ -40,6 +40,8 @@ def arguments():
     parser.add_argument("--inflight", type=int, default=32)
     parser.add_argument("--grad-accum", type=int, default=40, help="Rollouts per update (5 groups of 8)")
     parser.add_argument("--learning-rate", type=float, default=2e-6)
+    parser.add_argument("--warmup-steps", type=int, default=0,
+                        help="Linear warm-up from 0 (damps a fresh optimizer's first, full-size Adam steps)")
     parser.add_argument("--resume", action="store_true", help="Continue from the latest checkpoint in --output")
     parser.add_argument("--resume-from", help="Continue another run from this checkpoint folder (weights, step and "
                         "prompt position; a fresh optimizer if it has no optimizer state)")
@@ -108,8 +110,8 @@ def main():
     config = AsyncGRPOConfig(
         output_dir=str(output),
         learning_rate=args.learning_rate,
-        lr_scheduler_type="constant",
-        warmup_steps=0,
+        lr_scheduler_type="constant_with_warmup" if args.warmup_steps else "constant",
+        warmup_steps=args.warmup_steps,
         max_steps=2 if args.smoke else args.steps,
         # One rollout per row, never packed: TRL marks packed samples only by position_ids resets, which reach the
         # attention layers but not Qwen3.5's linear-attention (gated delta rule) layers, so their recurrent state would
