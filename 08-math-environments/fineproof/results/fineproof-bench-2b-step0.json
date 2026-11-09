@@ -1,0 +1,75 @@
+{
+  "what": "Step-0 benchmark of Qwen3.5-2B: the 64 validated test problems x 4, same protocol as fineproof-bench-4b-step0.json, run while fp-rl-4b trained (HF Job 6af13988e6320c66fad7c088).",
+  "date": "2026-11-09",
+  "summary": {
+    "expected": 256,
+    "graded": 256,
+    "coverage": 1.0,
+    "mean_reward": 0.18024726562499999,
+    "mean_reward_se": 0.03145100708563268,
+    "full_marks": 0.08203125,
+    "any_credit": 0.359375,
+    "problems": 64,
+    "pass_at_k_full_marks": 0.171875,
+    "best_of_k_mean": 0.351565625,
+    "learnable_problems": 0.609375
+  },
+  "identity": {
+    "protocol_source_sha256": "e60ec37ea607b23f5d07e7bbc75786283fa8de4dd70bb3a6eae28ee5ec98745a",
+    "checkpoint": "Qwen/Qwen3.5-2B",
+    "model": "Qwen/Qwen3.5-2B",
+    "harness": "fineproof_agent.agent:FineProofAgent",
+    "sandbox": "hf-sandbox",
+    "rounds": 0,
+    "max_tokens": 16384,
+    "task_seed": null,
+    "task_list": "test-validated-64.txt",
+    "judge_samples": "2",
+    "judge_model": "openai/gpt-oss-20b:groq,openai/gpt-oss-20b:featherless-ai",
+    "samples": 4,
+    "temperature": 0.8
+  },
+  "extra": {
+    "always_zero_problems": 0.375,
+    "no_signal_problems": 0.391,
+    "truncated_at_16k": 0.3984375,
+    "mean_reward_truncated": 0.058,
+    "mean_reward_finished": 0.261,
+    "per_problem_gap_4b_minus_2b": {
+      "mean": 0.459,
+      "se": 0.035
+    }
+  },
+  "regrade_gpt_oss_120b_high": {
+    "judge": "openai/gpt-oss-120b:groq,openai/gpt-oss-120b:deepinfra,openai/gpt-oss-120b:novita",
+    "effort": "high",
+    "errors": 0,
+    "compared": 256,
+    "problems": 64,
+    "old_mean_reward": 0.1802,
+    "new_mean_reward": 0.2355,
+    "old_full_marks": 0.082,
+    "new_full_marks": 0.1328,
+    "old_any_credit": 0.3594,
+    "new_any_credit": 0.4375,
+    "mean_abs_diff_points": 0.629,
+    "new_lower_by_3plus": 0.0078,
+    "new_higher_by_3plus": 0.0625,
+    "attempt_correlation": 0.843,
+    "problem_correlation": 0.919,
+    "advantage_mad_points": 0.697,
+    "cost_usd": 0.049,
+    "problem_mean_reward_diff_old_minus_new": {
+      "mean": -0.0552,
+      "se": 0.0127
+    },
+    "pass_at_4_full_marks": {
+      "old": 0.172,
+      "new": 0.328
+    },
+    "always_zero_problems": {
+      "old": 0.375,
+      "new": 0.234
+    }
+  }
+}
