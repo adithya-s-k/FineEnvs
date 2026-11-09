@@ -27,6 +27,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -65,12 +66,25 @@ def resolve_set(name: str) -> tuple[str, list[str] | None]:
     return record["design"].get("nested_in", name), [task["task_id"] for task in record["tasks"]]
 
 
+CURATED = ("val150", "core100", "core150", "heldout300")  # LiteFold/RetroEnv-Curated, frozen in data/
+
+
 def prepared_snapshot() -> Path:
-    """Fetch or check the pinned serving snapshot as start.sh does; the directory to serve."""
+    """Fetch or check the pinned serving snapshot as start.sh does; the directory to serve.
+
+    The snapshot serves final_eval (core30 inside it); the curated boards are copied in to be
+    served as their own splits, as the HF Jobs eval does (train/jobs/run.py). prepare.py removes
+    them again on its next check, so they are copied after every one.
+    """
     printed = subprocess.run(
         [sys.executable, "prepare.py"], cwd=OPENENV, check=True, stdout=subprocess.PIPE, text=True
     ).stdout
-    return (OPENENV / printed.strip().splitlines()[-1]).resolve()
+    snapshot = (OPENENV / printed.strip().splitlines()[-1]).resolve()
+    evalsets = snapshot / "evalsets"
+    evalsets.mkdir(exist_ok=True)
+    for name in CURATED:
+        shutil.copyfile(ROOT / "data" / f"eval-{name}.json", evalsets / f"{name}.json")
+    return snapshot
 
 
 def main() -> int:

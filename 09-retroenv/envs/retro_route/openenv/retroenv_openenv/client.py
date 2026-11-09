@@ -235,13 +235,29 @@ class RemoteRetroRouteEnv:
         """Whether the session broke, so the episode has no grade."""
         return self._failed
 
-    def reset(self, split: str = "train", index: int = 0, **_: Any) -> str:
+    @classmethod
+    def attached(cls, client: RetroEnvClient, opening: dict[str, Any]) -> "RemoteRetroRouteEnv":
+        """The training environment over a session someone else opened and reset (the evaluator's).
+
+        Its tools then answer exactly as they do in training: the same result strings, budget
+        countdown, reminder and malformed-submission hand-back. Nothing is traced.
+        """
+        env = cls.__new__(cls)
+        env._server, env._trace, env._client = None, None, client
+        env._begin()
+        env._opening = opening
+        return env
+
+    def _begin(self) -> None:
         self._reward, self._failed, self._calls, self._submitted, self._passed = 0.0, False, 0, False, False
         self._failure = None
         self._json_retries = 0
         self._started = time.time()  # rows start in dataset order, so start order recovers each group
         self.truncated = False  # set by the trainer when the episode's last turn ran out of room
         self._tools, self._submission = [], None
+
+    def reset(self, split: str = "train", index: int = 0, **_: Any) -> str:
+        self._begin()
         for attempt in range(self.RESET_ATTEMPTS):
             try:
                 self._opening = self._client.reset(split=split, index=index)

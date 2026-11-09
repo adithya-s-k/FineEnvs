@@ -29,4 +29,4 @@ include = ["retroenv_openenv*"]
 
 [tool.setuptools.package-data]
 # The vendored 3Dmol.js (BSD-3-Clause) that draws molecules in 3D in the playground.
-retroenv_openenv = ["static/*"]
+retroenv_openenv = ["static/*", "training_tools.json"]

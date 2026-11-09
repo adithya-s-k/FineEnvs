@@ -44,7 +44,7 @@ from pathlib import Path
 from typing import Any, Iterator
 
 import httpx
-from retroenv_openenv import agent, agent_anthropic, agent_reference, agent_responses
+from retroenv_openenv import agent, agent_anthropic, agent_reference, agent_responses, agent_training
 from retroenv_openenv.client import RetroEnvClient
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -277,7 +277,14 @@ def main() -> int:
     parser.add_argument("--task-ids", type=Path, help="file with one task ID per line; overrides --start/--tasks")
     parser.add_argument("--attempts", type=int, default=1)
     parser.add_argument("--concurrency", type=int, default=8)
-    parser.add_argument("--max-turns", type=int, default=16)
+    parser.add_argument(
+        "--harness",
+        choices=("board", "training"),
+        default="board",
+        help="board: the evaluation board's agent; training: the context RL trains in (the training "
+        "environment's tools and results, 20 turns, no forced submission; OpenAI-compatible endpoints)",
+    )
+    parser.add_argument("--max-turns", type=int, help="model turns (default: 16 on the board, 20 in training)")
     parser.add_argument("--max-tokens", type=int, help="per model turn (default 4096; 16000 for Claude and Responses)")
     parser.add_argument("--temperature", type=float, help="override the provider default")
     parser.add_argument("--effort", help="Claude output_config.effort (default: the model's own default)")
@@ -322,6 +329,10 @@ def main() -> int:
     key_env = args.api_key_env or preset["key"]
     if key_env and not os.getenv(key_env):
         parser.error(f"{key_env} is not set")
+    if args.max_turns is None:
+        args.max_turns = agent_training.MAX_TURNS if args.harness == "training" else 16
+    if args.harness == "training" and preset["backend"] in ("anthropic", "reference", "responses"):
+        parser.error("--harness training runs over an OpenAI-compatible endpoint (custom, hf or openrouter)")
     endpoint = args.endpoint or preset.get("endpoint")
     if preset["backend"] not in ("anthropic", "reference") and not endpoint:
         parser.error("--endpoint is required for the custom provider")
@@ -380,7 +391,9 @@ def main() -> int:
 
         llm = OpenAI(base_url=endpoint, api_key=os.environ[key_env], timeout=600, max_retries=4)
         temperature = args.temperature if args.temperature is not None else preset.get("temperature")
-        tool_choice = args.tool_choice or preset.get("tool_choice", "required")
+        # Training lets the model decide; the board requires a tool call every turn.
+        default_choice = "auto" if args.harness == "training" else preset.get("tool_choice", "required")
+        tool_choice = args.tool_choice or default_choice
         config = agent.AgentConfig(
             model=args.model,
             max_turns=args.max_turns,
@@ -392,10 +405,14 @@ def main() -> int:
             extra_body=dict(preset.get("extra_body") or {}),
             repair=not args.no_repair,
         )
+        if args.harness == "training":
+            # Training lets the model call several tools in one turn (TRL runs every call it parses);
+            # one call a turn left base episodes at 20 turns before the budget's reminder to submit.
+            config.parallel_tool_calls = None
         if args.thinking == "off":
             # The chat-template switch Qwen, GLM, DeepSeek, Kimi and Gemma honour on the HF router.
             config.extra_body["chat_template_kwargs"] = {"enable_thinking": False}
-        backend = agent.run_episode
+        backend = agent_training.run_episode if args.harness == "training" else agent.run_episode
         sampling = {
             "max_tokens": config.max_tokens,
             "temperature": temperature,
@@ -436,12 +453,13 @@ def main() -> int:
         if not selected:
             parser.error("the selected task range is empty")
         opening = probe.reset(args.split, index=selected[0]["index"])
-        tools = probe.openai_tools()
+        tools = agent_training.TOOLS if args.harness == "training" else probe.openai_tools()
         probe.call("emit_routes", {"submission": {"routes": []}})
         probe.close()
 
         code = b"".join(
-            Path(module.__file__).read_bytes() for module in (agent, agent_anthropic, agent_reference, agent_responses)
+            Path(module.__file__).read_bytes()
+            for module in (agent, agent_anthropic, agent_reference, agent_responses, agent_training)
         )
         identity = {
             "schema_version": "retro-eval-run-v2",
@@ -452,6 +470,8 @@ def main() -> int:
             "split": args.split,
             "task_ids": [task["task_id"] for task in selected],
             "attempts": args.attempts,
+            # Only the training harness is named, so board runs from before it resume unchanged.
+            **({"harness": args.harness} if args.harness != "board" else {}),
             "max_turns": args.max_turns,
             "sampling": sampling,
             "repair": not args.no_repair,
