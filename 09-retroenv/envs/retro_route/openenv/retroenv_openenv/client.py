@@ -215,6 +215,10 @@ class RemoteRetroRouteEnv:
         self._submitted = False
         self._passed = False
         self._failure: str | None = None
+        self._started = time.time()
+        self.truncated = False
+        self._tools: list[str] = []
+        self._submission: Any = None
 
     @property
     def submitted(self) -> bool:
@@ -235,6 +239,9 @@ class RemoteRetroRouteEnv:
         self._reward, self._failed, self._calls, self._submitted, self._passed = 0.0, False, 0, False, False
         self._failure = None
         self._json_retries = 0
+        self._started = time.time()  # rows start in dataset order, so start order recovers each group
+        self.truncated = False  # set by the trainer when the episode's last turn ran out of room
+        self._tools, self._submission = [], None
         for attempt in range(self.RESET_ATTEMPTS):
             try:
                 self._opening = self._client.reset(split=split, index=index)
@@ -269,6 +276,11 @@ class RemoteRetroRouteEnv:
                 "tool_calls": self._calls,
                 "json_retries": self._json_retries,
                 "failed": self._failed,
+                "started": round(self._started, 3),
+                "seconds": round(time.time() - self._started, 1),
+                "truncated": self.truncated,
+                "tools": self._tools,  # the order of tool calls, emit_routes included
+                "submission": self._submission,  # the graded submission, for auditing what earned the reward
             }
             try:
                 with open(self._trace, "a", encoding="utf-8") as trace:
@@ -285,6 +297,9 @@ class RemoteRetroRouteEnv:
             pass
 
     def _call(self, name: str, **arguments: Any) -> str:
+        self._tools.append(name)
+        if name == "emit_routes" and not self._submitted:  # the graded one; the server ignores later calls
+            self._submission = arguments.get("submission")
         try:
             outcome = self._client.call(name, arguments)
         except Exception as exc:
