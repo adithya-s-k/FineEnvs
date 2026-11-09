@@ -114,7 +114,8 @@ def main():
         command += ["--eval-checkpoints", "--eval-concurrency", str(args.eval_concurrency)]
     prepare_args = args.prepare_args + (" --sandbox hf-sandbox" if args.sandbox == "hf-sandbox" else "")
     env = {"PYTHONUNBUFFERED": "1", "FINEPROOF_PREPARE_ARGS": prepare_args.strip(), "FINEPROOF_OUTPUT_BUCKET": args.bucket}
-    for name in ("DAYTONA_API_URL", "JUDGE_PROVIDER", "JUDGE_MODEL", "JUDGE_BASE_URL", "JUDGE_SAMPLES"):
+    for name in ("DAYTONA_API_URL", "JUDGE_PROVIDER", "JUDGE_MODEL", "JUDGE_BASE_URL", "JUDGE_SAMPLES",
+                 "OPENENV_REPO", "OPENENV_COMMIT"):  # the last two override jobs/install.sh's OpenEnv pin
         if os.environ.get(name):
             env[name] = os.environ[name]
     specification = {
