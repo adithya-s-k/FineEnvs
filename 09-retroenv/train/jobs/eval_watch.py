@@ -155,6 +155,8 @@ def main():
                         "--attempts", str(args.attempts), "--concurrency", "128",
                         *(["--temperature", str(args.temperature)] if args.temperature is not None else []),
                         *(["--task-ids", slices[k]] if slices else []),
+                        # The training job's uploaded source: the same code, and no new upload.
+                        "--source-from", args.job,
                         "--submit",
                     ]
                 )  # fmt: skip
