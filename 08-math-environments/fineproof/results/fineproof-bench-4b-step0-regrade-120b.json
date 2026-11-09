@@ -1,0 +1,42 @@
+{
+  "what": "The step-0 benchmark's 256 proofs (results/fineproof-bench-4b-step0.json) re-graded with gpt-oss-120b at high reasoning effort through the task's own grade.py (training/regrade.py), against the training judge's grades (gpt-oss-20b, medium, mean of 2).",
+  "date": "2026-11-09",
+  "old_judge": "openai/gpt-oss-20b (groq, then featherless-ai), medium, 2 grades averaged",
+  "judge": "openai/gpt-oss-120b:groq,openai/gpt-oss-120b:deepinfra,openai/gpt-oss-120b:novita",
+  "effort": "high",
+  "errors": 0,
+  "compared": 256,
+  "problems": 64,
+  "old_mean_reward": 0.6392,
+  "new_mean_reward": 0.7087,
+  "old_full_marks": 0.457,
+  "new_full_marks": 0.5703,
+  "old_any_credit": 0.8438,
+  "new_any_credit": 0.8711,
+  "mean_abs_diff_points": 0.787,
+  "new_lower_by_3plus": 0.0195,
+  "new_higher_by_3plus": 0.0977,
+  "attempt_correlation": 0.863,
+  "problem_correlation": 0.924,
+  "advantage_mad_points": 0.728,
+  "cost_usd": 0.091,
+  "noise_floor_20b_grade_vs_grade_points": 0.559,
+  "single_20b_grade_vs_120b_points": 0.934,
+  "problem_mean_reward_diff_old_minus_new": {
+    "mean": -0.0695,
+    "se": 0.0151
+  },
+  "pass_at_4_full_marks": {
+    "old": 0.688,
+    "new": 0.781
+  },
+  "learnable_problems": {
+    "old": 0.766,
+    "new": 0.672
+  },
+  "tokens": {
+    "in": 2911762,
+    "out": 1128587
+  },
+  "reading": "120b is more generous than 20b on these proofs (more 7s, fewer 0s), not stricter, and the two rank attempts and problems alike (r = 0.86 and 0.92). The benchmark's high base score comes from its problem selection, not from a lenient training judge."
+}
