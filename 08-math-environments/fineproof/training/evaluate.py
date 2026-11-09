@@ -113,6 +113,7 @@ def main():
     parser.add_argument("--tasks", type=int, default=128)
     parser.add_argument("--samples", type=int, default=1)
     parser.add_argument("--concurrency", type=int, default=32)
+    parser.add_argument("--retries", type=int, default=2, help="Extra passes over attempts that got no grade")
     parser.add_argument("--space-id", default=None)
     parser.add_argument("--trackio-bucket", default=None, help="Bucket the Trackio Space keeps its data in")
     parser.add_argument("--trackio-run", default=None,
@@ -186,11 +187,21 @@ def main():
         write_json(path, row)
         return row
 
-    rows = []
-    with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
-        for future in as_completed([pool.submit(one, pair) for pair in pairs]):
-            rows.append(future.result())
-            write_json(output / "progress.json", summarize(rows, len(pairs)))
+    # An attempt that got no grade (a sandbox that failed to start, the judge unreachable) is retried here, up to
+    # --retries more passes: in an HF Job the output folder is gone once the Job ends, so a later rerun would redo all.
+    latest = {}
+    for attempt in range(1 + max(0, args.retries)):
+        todo = [pair for pair in pairs if not graded(latest.get((pair[1]["name"], pair[2]), {}))]
+        if not todo:
+            break
+        if attempt:
+            print(f"retrying {len(todo)} ungraded attempts (pass {attempt + 1})", flush=True)
+        with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+            for future in as_completed([pool.submit(one, pair) for pair in todo]):
+                row = future.result()
+                latest[(row["task"], row["sample"])] = row
+                write_json(output / "progress.json", summarize(list(latest.values()), len(pairs)))
+    rows = list(latest.values())
     summary = summarize(rows, len(pairs))
     summary["identity"] = identity
     write_json(output / "summary.json", summary)
