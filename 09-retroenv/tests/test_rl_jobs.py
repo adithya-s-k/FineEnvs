@@ -112,6 +112,76 @@ def test_a_broken_session_scores_nan_and_the_next_reset_reconnects(monkeypatch):
     assert env.get_reward() == 0.0
 
 
+def test_a_task_pool_trains_every_pool_task_in_a_fresh_order_each_pass(monkeypatch, tmp_path):
+    pytest.importorskip("datasets")
+    pytest.importorskip("transformers")
+    sys.path.insert(0, str(ROOT))
+    from retroenv_openenv import client
+    from train.sync_grpo import task_dataset
+
+    split = [
+        {"task_id": f"retro_{i}", "index": i, "variant": "standard", "max_depth": depth}
+        for i, depth in enumerate([2, 4, 6, 8])
+    ]
+
+    class Server:
+        def __init__(self, url):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def tasks(self, name):
+            return split
+
+    monkeypatch.setattr(client, "RetroEnvClient", Server)
+    pool = tmp_path / "learnable.txt"
+    pool.write_text("retro_1\nretro_3\n")
+    rows = task_dataset("http://server", max_depth=4, pool=pool)["index"]
+    assert set(rows) == {1, 3}  # the pool, deeper than --max-depth included
+    passes = [rows[k : k + 2] for k in range(0, len(rows), 2)]
+    assert all(sorted(p) == [1, 3] for p in passes) and len({tuple(p) for p in passes}) == 2
+
+    pool.write_text(json.dumps({"retro_0": 0, "retro_9": 9}))
+    with pytest.raises(SystemExit, match="1 pool task ids"):
+        task_dataset("http://server", max_depth=4, pool=pool)
+
+
+def test_the_launcher_passes_the_pool_and_update_sizing_to_the_job(monkeypatch, capsys):
+    plan = _plan(
+        monkeypatch, capsys, "train", "--mode", "async", "--name", "a", "--bucket", "o/b",
+        "--task-pool", "train/sweeps/overfit4.txt", "--rows-per-episode", "2.2",
+    )  # fmt: skip
+    command = plan["command"]
+    assert command[command.index("--task-pool") + 1] == "train/sweeps/overfit4.txt"
+    assert command[command.index("--rows-per-episode") + 1] == "2.2"
+
+
+def test_mask_truncated_leaves_only_a_cut_off_unsubmitted_episode_out_of_the_loss(monkeypatch):
+    pytest.importorskip("datasets")
+    pytest.importorskip("transformers")
+    sys.path.insert(0, str(ROOT))
+    from retroenv_openenv import client
+    from train.sync_grpo import TrainingEnv
+
+    monkeypatch.setattr(client, "RetroEnvClient", _LiveClient)
+
+    def episode(mask, submit):
+        env = TrainingEnv("http://server", reward="solved", mask_truncated=mask)
+        env.reset(index=3)
+        if submit:
+            env.emit_routes(submission={"routes": [{"type": "mol", "smiles": "CCO", "in_stock": True}]})
+        env.truncated = True  # what the turn patch sets when the last turn ran out of room
+        return env.get_reward()
+
+    assert math.isnan(episode(mask=True, submit=False))  # no verdict: advantage 0, out of the group's baseline
+    assert episode(mask=True, submit=True) == 1.0  # graded before the cut: the grade stands
+    assert episode(mask=False, submit=False) == 0.0
+
+
 def test_a_server_that_refuses_sessions_costs_one_episode_not_the_run(monkeypatch):
     from retroenv_openenv import client
 
@@ -224,3 +294,71 @@ def test_a_difficulty_sweep_samples_several_attempts_of_project_task_ids(monkeyp
 def test_the_fsdp2_config_reaches_the_job():
     files = {path.relative_to(ROOT).as_posix() for path in _launcher().source_files()}
     assert "train/jobs/fsdp2.yaml" in files and "train/jobs/eval_watch.py" in files
+
+
+class _FakeLLM:
+    """An OpenAI-compatible chat endpoint that plays back scripted turns and records each request."""
+
+    def __init__(self, turns):
+        from types import SimpleNamespace as NS
+
+        self.requests, self._turns, self._ns = [], list(turns), NS
+        self.chat = NS(completions=NS(create=self._create))
+
+    def _create(self, **kwargs):
+        NS = self._ns
+        self.requests.append(kwargs)
+        calls = [
+            NS(
+                id=f"c{i}",
+                function=NS(name=name, arguments=json.dumps(args)),
+                model_dump=lambda exclude_none=True, n=name, a=args, i=i: {
+                    "id": f"c{i}", "type": "function", "function": {"name": n, "arguments": json.dumps(a)}
+                },
+            )
+            for i, (name, args) in enumerate(self._turns.pop(0))
+        ]  # fmt: skip
+        message = NS(content="", tool_calls=calls or None)
+        return NS(
+            choices=[NS(message=message)], usage=NS(prompt_tokens=10, completion_tokens=5, model_extra={}), model="m"
+        )
+
+
+def test_the_training_harness_eval_runs_the_loop_training_runs(monkeypatch):
+    from retroenv_openenv import agent_training
+    from retroenv_openenv.agent import AgentConfig
+
+    class Server(_LiveClient):  # grades a submission 0.9 and valid
+        def call(self, name, arguments):
+            from retroenv_openenv.client import ToolOutcome
+
+            if name == "emit_routes":
+                return ToolOutcome(
+                    name=name, result={"score": {"valid": True, "hard_failures": []}}, done=True, reward=0.9, error=None
+                )
+            return ToolOutcome(name=name, result={"matches": []}, done=False, reward=None, error=None)
+
+    opening = {"prompt": "Plan a retrosynthesis for CCO.", "task_id": "retro_x", "max_tool_calls": 32}
+    config = AgentConfig(model="m", max_turns=agent_training.MAX_TURNS, tool_choice="auto")
+    broken = '{"routes": [{"type": "mol"'
+    llm = _FakeLLM([
+        [("stock_retrieve", {"query": "CCO"})],
+        [("emit_routes", {"submission": broken})],  # handed back ungraded, as in training
+        [("emit_routes", {"submission": {"routes": []}})],
+        [("stock_retrieve", {"query": "never sent: the episode is graded"})],
+    ])  # fmt: skip
+    result = agent_training.run_episode(llm, Server.__new__(Server), opening, config)
+    assert llm.requests[0]["tools"] is agent_training.TOOLS and llm.requests[0]["tool_choice"] == "auto"
+    assert {t["function"]["name"] for t in agent_training.TOOLS} == {
+        "emit_routes", "inspect_molecule", "pubchem_lookup", "reaction_class_lookup", "reaction_conditions_search",
+        "reaction_precedent_search", "search_literature", "stock_retrieve", "validate_disconnection",
+    }  # fmt: skip
+    tool_results = [json.loads(m["content"]) for m in result["transcript"] if m["role"] == "tool"]
+    assert tool_results[0]["tool_calls_remaining"] == 31  # the training environment's countdown
+    assert tool_results[1]["graded"] is False  # the malformed submission came back to fix
+    assert result["valid"] and result["reward"] == 0.9 and result["turns"] == 3 and result["json_retries"] == 1
+
+    quiet = _FakeLLM([[("stock_retrieve", {"query": "CCO"})], []])  # a turn without a tool call ends it
+    result = agent_training.run_episode(quiet, Server.__new__(Server), opening, config)
+    assert result["turns"] == 2 and not result["valid"] and result["reward"] == 0.0
+    assert result["hard_failures"] == ["no submission"] and not result["auto_emitted"]

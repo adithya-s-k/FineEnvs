@@ -174,11 +174,28 @@ every submission with the verifier:
   (3-16 `stock_retrieve` calls per solved episode).
 - One pattern to tighten in the verifier: half the Suzuki solves couple two aryl bromides through
   a broad "other cross-coupling" template, which a chemist would not accept as a Suzuki route.
-- The gain stays in the training harness: under `eval/evaluate.py` the same checkpoint solves
-  0.56 on these tasks with broken JSON repaired, the base 0.53. The two harnesses give the model
-  different text: tool descriptions from the client's docstrings vs the server's schemas, a
-  calls-remaining count and reminder in every tool result, JSON handed back to fix, 20 turns vs 16.
-  Train and evaluate with one harness, or the board will not show what training learned.
+- Evaluated from its merged weights it first scored like the base model, under either harness.
+  The merge was at fault: transformers' `save_pretrained` of the merged Qwen3.5 model wrote the base
+  weights for every layer past the eighth, so every merged-checkpoint evaluation before this measured
+  a mostly untrained model. `jobs/merge_lora.py` now merges in the checkpoint files (weight +
+  scale x B @ A per tensor) and checks the saved weights against the base layer by layer. With it,
+  under the training harness (below) checkpoint-48 solves 0.78 on these tasks (25 of 32; per task
+  8, 8, 5 and 4 of 8) and the base 0.25, as in training. Under the board's agent (`eval/evaluate.py`)
+  it solves 0.62 (20 of 32) and the base 0.50: part of the gain carries over. The board's agent
+  lifts the base model on its own (the server's tool schemas, a forced final submission), and it
+  does not hand broken JSON back, which fails a quarter of checkpoint-48's board episodes.
+
+Evaluate in the context RL trains in with `--harness training` (`eval/run_eval.py`, passed through
+by `evaluate.py` and the eval job): the training environment's tools as TRL renders them, its tool
+results (calls remaining, the reminder, malformed JSON handed back twice), several calls a turn,
+20 turns and no forced or automatic submission. It runs over any OpenAI-compatible endpoint, so
+base, trained, open and frontier models are compared in one harness. The curated boards (`val150`,
+`core100`, `core150`, `heldout300`, LiteFold/RetroEnv-Curated) are served in jobs as their own sets:
+
+```bash
+python train/jobs/hf_job.py eval --bucket <owner>/<bucket> --set val150 --harness training \
+  --temperature 0.8 --checkpoint /outputs/<run>/checkpoint-<n> --name <run>-val150
+```
 
 ```bash
 python train/jobs/hf_job.py train --mode async --bucket <owner>/<bucket> --flavor h200x8 \
@@ -203,11 +220,36 @@ or ended with whitespace re-rendered differently from its first token and forked
 rows per episode; untrimmed, drifts fell from 20k to 7k tokens and forks from ~10% to ~5% of turns.
 A 5/3 vLLM/trainer split made the trainer the bottleneck (352 s an update); keep 4/4.
 
-- **Same tasks every round.** The tasks stay in a fixed order and a round is a group of sixteen
+Continued from that run's checkpoint-24 with the trim removed (`ab7-t3g32-from24`), episodes
+started under the checkpoint solved 0.31 and under updates 1-3, 4-6 and 7-9 0.44, 0.44 and 0.42:
+one step up, then flat. About 13% of its episodes ran out of context before submitting and scored
+0, and the loss is averaged over every token in the batch, so these long failures carried more of
+each update than their share of episodes. Count a thinking run's solve rate by the policy an
+episode started under, once that policy's slow episodes are in: the first episodes back are the
+quick ones, mostly solves (updates 7-9 read 0.76 at 33 episodes and 0.42 at 119).
+
+Masking those episodes out of the loss (`--mask-truncated`, DAPO's overlong filtering: the reward
+is NaN, so the episode leaves its group's mean and std and gets advantage 0) did not change the
+shape from the base model either: 0.23 to 0.30, 0.40 and 0.33 over nine updates at 1e-4, 0.24 to
+0.34, 0.40 and 0.34 at 2e-4. The trainer was throwing most of the data away. A thinking episode
+trains as about 2.2 rows (a later turn that re-renders differently from what was generated
+starts a new row), while an update was sized for one row per episode: three updates took 96 of a
+round's ~210 rows, each update saw about 14 episodes, often of one task, and the backlog aged to
+the staleness limit and was dropped (356 rows at once, then 14 minutes idle). Updates are now
+sized to a round's rows (`--rows-per-episode`, 2.2 by default with `--thinking`: 72 rows an update).
+With both changes, from the base model at 2e-4 (`ab9-t3g32-rows-lr2e4`), every update trained 72
+rows with nothing dropped, staleness rising one a version while the base policy's backlog drained.
+The run was stopped after 8 updates (about 1.7 hours): episodes started under updates 1-3 solved
+0.22 task-balanced against 0.27 under the base policy, where the non-thinking run was still flat
+at the same point. Whether thinking climbs as non-thinking does is still open; a thinking round
+takes about 28 minutes against non-thinking's 3, so measure it over at least 20 updates.
+
+- **Same tasks every round.** The tasks stay in a fixed order and a round is a group (`--generations`)
   of every task, one sample per row per GPU. `--updates-per-round` splits a round into that many
   optimizer steps: with one update per round the adapter barely moved (KL 0.001 after three), and
   Adam moves each weight by about the learning rate per step whatever the batch. A sample may be
-  `2 + updates-per-round` policy versions stale. Each task's r-th group gives a per-task curve.
+  `2 + 2 x updates-per-round` policy versions stale, so a round's samples are not dropped while the
+  trainer is a round behind. Each task's r-th group gives a per-task curve.
 - **Reward `solved`:** 1 for a solve, 0 otherwise. The grade's partial-credit band can be gamed
   (one accepted cut scores 0.6 of a solve), so a rising reward here can only mean more solves.
 - **Thinking** keeps the template as shipped, so earlier turns' thinking stays in the history and

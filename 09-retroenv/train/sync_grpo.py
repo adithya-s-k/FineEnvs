@@ -53,6 +53,9 @@ def arguments(description=__doc__, output="runs/rl/sync_grpo"):
     # An overfitting run trains on a handful of fixed tasks, over and over, to see whether the
     # reward climbs at all before spending on the full task pool.
     parser.add_argument("--train-tasks", type=Path, help="JSON {task_id: index}: train only on these tasks")
+    # The full run trains on a pool (a sweep's learnable.txt, or a {task_id: index} JSON): the
+    # pool shuffled, batches sized as for the whole split. --train-tasks is the overfit mode.
+    parser.add_argument("--task-pool", type=Path, help="task ids (one a line) or JSON {task_id: index}: the training pool")
     parser.add_argument("--generations", type=int, default=8, help="Rollouts per task in a GRPO group")
     parser.add_argument(
         "--reward",
@@ -82,7 +85,16 @@ def arguments(description=__doc__, output="runs/rl/sync_grpo"):
         action="store_true",
         help="AsyncGRPO: an unsubmitted episode cut off by the context or turn cap gets no reward (out of the loss)",
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--rows-per-episode",
+        type=float,
+        help="AsyncGRPO overfit runs: training rows an episode yields, to size each update to a round's rows "
+        "(default 2.2 with --thinking, else 1)",
+    )
+    args = parser.parse_args()
+    if args.train_tasks and args.task_pool:
+        parser.error("--train-tasks (an overfitting run) and --task-pool (a training pool) are exclusive")
+    return args
 
 
 # %% 2. Load the tokenizer: non-thinking, as the evaluation board runs, or thinking.
@@ -224,7 +236,7 @@ patch_turn_requests()
 
 
 # %% 3. One row per train task. The environment fetches the task itself from the server.
-def task_dataset(server, max_depth, seed=0, tasks=None):
+def task_dataset(server, max_depth, seed=0, tasks=None, pool=None):
     from retroenv_openenv.agent import SYSTEM_PROMPT
     from retroenv_openenv.client import RetroEnvClient
 
@@ -234,9 +246,20 @@ def task_dataset(server, max_depth, seed=0, tasks=None):
         chosen = [index for index in json.loads(Path(tasks).read_text()).values()] * 100
     else:
         with RetroEnvClient(server) as client:
-            pool = client.tasks("train")
-        # Public fields only: the depth budget and the variant. Constraint variants come later.
-        chosen = [t["index"] for t in pool if t["variant"] == "standard" and t["max_depth"] <= max_depth]
+            split = client.tasks("train")
+        if pool:
+            # A chosen pool (a difficulty sweep's learnable tasks): every task in it, whatever its
+            # depth budget, repeated in a fresh order each pass so a long run never runs out.
+            text = Path(pool).read_text()
+            wanted = set(json.loads(text)) if text.lstrip().startswith("{") else set(text.split())
+            chosen = [t["index"] for t in split if t["task_id"] in wanted]
+            if len(chosen) != len(wanted):
+                raise SystemExit(f"{len(wanted) - len(chosen)} pool task ids are not in the train split")
+            passes = [random.Random(f"{seed}:{k}").sample(chosen, len(chosen)) for k in range(200)]
+            chosen = [index for order in passes for index in order]
+        else:
+            # Public fields only: the depth budget and the variant. Constraint variants come later.
+            chosen = [t["index"] for t in split if t["variant"] == "standard" and t["max_depth"] <= max_depth]
     system = SYSTEM_PROMPT.format(max_turns=16)  # the system prompt the evaluation harness sends
     rows = [
         # reset() returns the task prompt, and TRL appends it to the last message.
@@ -244,7 +267,7 @@ def task_dataset(server, max_depth, seed=0, tasks=None):
         for i in chosen
     ]
     dataset = Dataset.from_list(rows)
-    return dataset if tasks else dataset.shuffle(seed=seed)
+    return dataset if tasks or pool else dataset.shuffle(seed=seed)
 
 
 # %% 4. Give TRL the environment. Its public methods become the model's tools.
@@ -330,7 +353,7 @@ def main():
     if args.thinking:
         # GRPOTrainer trains each episode as one sequence, which needs earlier turns re-rendered exactly.
         raise SystemExit("--thinking needs async_grpo.py, which trains each turn as its own row")
-    dataset = task_dataset(args.server, args.max_depth, tasks=args.train_tasks)
+    dataset = task_dataset(args.server, args.max_depth, tasks=args.train_tasks, pool=args.task_pool)
     tokenizer = tokenizer_for(args.model)
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))

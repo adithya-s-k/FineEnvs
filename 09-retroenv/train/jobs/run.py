@@ -52,11 +52,14 @@ def main():
     parser.add_argument("--task-ids", help="For eval: a file of task ids in --set's split, one per line")
     parser.add_argument("--attempts", type=int, default=1, help="For eval: episodes per task")
     parser.add_argument("--temperature", type=float, help="For eval: sampling temperature (default: the board's 0)")
+    parser.add_argument("--harness", choices=("board", "training"), help="For eval: the agent loop (default: board)")
     parser.add_argument("--thinking", action="store_true", help="Thinking on (the board runs it off)")
     parser.add_argument("--reasoning-effort", help="For train with --thinking: low, medium, high or xhigh")
     parser.add_argument("--context", type=int, help="For train: tokens per episode (vLLM and trainer; default 65536)")
     parser.add_argument("--turn-tokens", type=int, help="For train: tokens per model turn (default 16384)")
     parser.add_argument("--mask-truncated", action="store_true", help="For train: cut-off episodes out of the loss")
+    parser.add_argument("--task-pool", help="For train: the training pool, e.g. a sweep's learnable.txt (shuffled)")
+    parser.add_argument("--rows-per-episode", type=float, help="For train: training rows per episode (sizes overfit updates)")
     parser.add_argument("--init-adapter", help="For train: start from this LoRA checkpoint (a /outputs/... path)")
     parser.add_argument("--env-url", help="A running RetroEnv server, e.g. the hosted Space, instead of one in the job")
     parser.add_argument("--train-tasks", help="For train: JSON {task_id: index}, train only on these tasks")
@@ -74,6 +77,14 @@ def main():
     benchmark = os.environ.get("RETROENV_BENCHMARK_DIR")
     if not benchmark or not Path(benchmark, "serving").exists():
         raise RuntimeError("Prepare the serving snapshot first (entrypoint.sh sets RETROENV_BENCHMARK_DIR)")
+    # The published snapshot serves final_eval (core30 inside it). The curated held-out boards
+    # (val150, core100, core150, heldout300; LiteFold/RetroEnv-Curated) are frozen in data/; served
+    # as their own splits, `--set <name>` runs them. Not train12k: training tasks must stay in the
+    # split named train, the one the tools hide a task's own reactions in.
+    evalsets = Path(benchmark) / "evalsets"
+    evalsets.mkdir(exist_ok=True)
+    for name in ("val150", "core100", "core150", "heldout300"):
+        shutil.copyfile(ROOT / "data" / f"eval-{name}.json", evalsets / f"{name}.json")
     output = Path(args.output).resolve()
     if args.action == "train" and output.exists() and any(output.iterdir()):
         raise ValueError(f"{output} is not empty; use a fresh training output")
@@ -282,6 +293,8 @@ def main():
             command += ["--context", str(args.context)] if args.context else []
             command += ["--turn-tokens", str(args.turn_tokens)] if args.turn_tokens else []
             command += ["--mask-truncated"] if args.mask_truncated else []
+            command += ["--rows-per-episode", str(args.rows_per_episode)] if args.rows_per_episode else []
+            command += ["--task-pool", args.task_pool] if args.task_pool else []
             if args.init_adapter:
                 # One sequential copy to local disk: every trainer rank reading the adapter off the
                 # bucket mount at once stalled the start (and an mmap there ended a rank with SIGBUS).
@@ -317,6 +330,7 @@ def main():
             command += ["--task-ids", args.task_ids] if args.task_ids else []
             command += ["--attempts", str(args.attempts)] if args.attempts > 1 else []
             command += ["--temperature", str(args.temperature)] if args.temperature is not None else []
+            command += ["--harness", args.harness] if args.harness else []
             # Thinking turns get twice the board's 16k tokens, so a long one is measured, not cut off.
             command += ["--thinking", "default", "--max-tokens", "32768"] if args.thinking else []
             run(command, "eval")

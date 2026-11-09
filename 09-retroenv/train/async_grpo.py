@@ -41,7 +41,7 @@ def main():
     os.environ["TRACKIO_DIR"] = str(output.resolve() / "trackio")
     from trl.experimental.async_grpo import AsyncGRPOConfig, AsyncGRPOTrainer
 
-    dataset = task_dataset(args.server, args.max_depth, tasks=args.train_tasks)
+    dataset = task_dataset(args.server, args.max_depth, tasks=args.train_tasks, pool=args.task_pool)
     tokenizer = tokenizer_for(args.model, thinking=args.thinking)
     if args.thinking:
         # Thinking keeps earlier turns' thinking in the history (see sync_grpo.py), so a whole
@@ -67,7 +67,12 @@ def main():
         # a step's samples. Each extra update per round ages the queue by one more version.
         rounds = len(json.loads(Path(args.train_tasks).read_text())) * (4 if args.smoke else args.generations)
         trainers = int(os.environ.get("WORLD_SIZE", "1"))  # set by accelerate: one per training GPU
-        accumulation = max(1, rounds // (trainers * args.updates_per_round))
+        # A thinking episode trains as ~2.2 rows: a later turn that re-renders differently from what
+        # was generated forks a new row (samples_per_rollout 1.6-2.7, think3 x 32). Sized for one
+        # row per episode, three updates took 96 of a round's ~210 rows; the backlog aged to the
+        # staleness limit and was dropped (356 rows at once), and each update saw ~14 episodes.
+        rows = args.rows_per_episode or (2.2 if args.thinking else 1.0)
+        accumulation = max(1, round(rounds * rows / (trainers * args.updates_per_round)))
         # A limit at 2 + updates per round made the trainer drop a stale backlog and then sit idle
         # waiting for fresh episodes (110 s idle against 38 s of compute); stale samples were barely
         # clipped (~0.5% of tokens), so they stay useful and the limit is twice as loose.

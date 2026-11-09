@@ -44,29 +44,33 @@ def select(args):
     from retroenv.store import TaskStore
 
     store = TaskStore(args.release / "tasks-private", args.release / "stocks")
+    quotas = dict(QUOTAS) if not args.quotas else {
+        tier: int(count) for tier, count in (part.split("=") for part in args.quotas.split(","))
+    }
+    quotas = {tier: count for tier, count in quotas.items() if count}
     candidates = [task for task in store.tasks("train") if task.variant == "standard"]
-    chosen = select_tiered(candidates, QUOTAS, SEED)
+    chosen = select_tiered(candidates, quotas, args.seed)
     design = {
         "source_splits": ["train"],
         "variant": "standard",
-        "quotas": QUOTAS,
+        "quotas": quotas,
         "tier": "the release's difficulty.tier",
         "strata": "source split x shortest-route depth, visited round-robin from shallow to deep",
         "within_stratum": "sha256(seed:task_id); a first-reaction class the tier has not used is preferred",
         "purpose": "difficulty labels and warm-start transcripts for RL, not an evaluation set",
     }
-    record = make_evalset(NAME, chosen, seed=SEED, design=design)
+    record = make_evalset(args.name, chosen, seed=args.seed, design=design)
     SWEEPS.mkdir(parents=True, exist_ok=True)
-    (SWEEPS / f"{NAME}.json").write_text(json.dumps(record, indent=2) + "\n")
+    (SWEEPS / f"{args.name}.json").write_text(json.dumps(record, indent=2) + "\n")
     # Alternate tiers so each shard holds the same mix and its first episodes already show it.
-    by_tier = [[t["task_id"] for t in record["tasks"] if t["tier"] == tier] for tier in QUOTAS]
+    by_tier = [[t["task_id"] for t in record["tasks"] if t["tier"] == tier] for tier in quotas]
     order = [task_id for row in itertools.zip_longest(*by_tier) for task_id in row if task_id]
-    for shard in range(SHARDS):
-        (SWEEPS / f"{NAME}-{shard}.txt").write_text("\n".join(order[shard::SHARDS]) + "\n")
+    for shard in range(args.shards):
+        (SWEEPS / f"{args.name}-{shard}.txt").write_text("\n".join(order[shard::args.shards]) + "\n")
     tasks = record["tasks"]
-    print(json.dumps({"tiers": Counter(t["tier"] for t in tasks), "shards": SHARDS}, indent=1))
+    print(json.dumps({"tiers": Counter(t["tier"] for t in tasks), "shards": args.shards}, indent=1))
     print("shortest-route depth by tier:")
-    for tier in QUOTAS:
+    for tier in quotas:
         print(f"  {tier}: {dict(sorted(Counter(t['min_depth'] for t in tasks if t['tier'] == tier).items()))}")
 
 
@@ -108,7 +112,7 @@ def report(args):
     from regrade import regrade
     from run_eval import pass_at_k
 
-    sample = {t["task_id"]: t for t in json.loads((SWEEPS / f"{NAME}.json").read_text())["tasks"]}
+    sample = {t["task_id"]: t for t in json.loads((SWEEPS / f"{args.name}.json").read_text())["tasks"]}
     runs = sorted(path.parent for path in args.runs.glob("**/identity.json"))
     if not runs:
         raise SystemExit(f"no evaluation runs under {args.runs}")
@@ -206,7 +210,7 @@ def report(args):
             )
         return "\n".join(lines)
 
-    tiers = list(QUOTAS)
+    tiers = [tier for tier in QUOTAS if any(t["tier"] == tier for t in sample.values())]
     depths = sorted({r["min_depth"] for r in labels if r["min_depth"] is not None})
     mix = ["| Tier | Episodes | " + " | ".join(OUTCOMES) + " |", "|---|---|" + "---|" * len(OUTCOMES)]
     for tier in [*tiers, "all"]:
@@ -223,7 +227,7 @@ def report(args):
     )
     text = "\n\n".join(
         [
-            f"# {NAME}: {identity['label']}",
+            f"# {args.name}: {identity['label']}",
             f"{len(labels)} finished tasks{f' ({pending} still running, left out)' if pending else ''}, "
             f"{len(episodes)} graded episodes; {identity['attempts']} attempts per task at "
             f"temperature {sampling.get('temperature')}, thinking {sampling.get('thinking')}, "
@@ -245,9 +249,16 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     choose = commands.add_parser("select", help="Write the sample and its shard files to train/sweeps/")
     choose.add_argument("--release", type=Path, default=ROOT / "data" / "release" / "RetroEnv-RL")
+    choose.add_argument("--name", default=NAME, help="sample name: train/sweeps/<name>.json and <name>-<shard>.txt")
+    choose.add_argument("--seed", default=SEED, help="draw seed (a new seed draws a new sample)")
+    choose.add_argument(
+        "--quotas", help=f"tasks per tier, e.g. easy=500,medium=500,hard=0 (default {QUOTAS})"
+    )
+    choose.add_argument("--shards", type=int, default=SHARDS, help="evaluation jobs to split the sample into")
     summarize = commands.add_parser("report", help="Label tasks from the finished evaluation runs")
     summarize.add_argument("runs", type=Path, help="A directory holding the shards' evaluation outputs")
     summarize.add_argument("--server", help="A RetroEnv server, to re-grade broken submissions as repaired")
+    summarize.add_argument("--name", default=NAME, help="the sample the runs evaluated (train/sweeps/<name>.json)")
     summarize.add_argument("--output", type=Path, help="Default: <runs>/report")
     summarize.add_argument("--sft-per-task", type=int, default=2, help="Solved transcripts kept per task")
     args = parser.parse_args()
