@@ -18,6 +18,7 @@ def main():
     parser.add_argument("--eval", action="store_true", help="Serve for evaluation: no weight updates")
     parser.add_argument("--data-parallel-size", type=int, default=1, help="Replicas, one per visible GPU")
     parser.add_argument("--trainer", choices=["sync", "async"], default="sync", help="Which trainer syncs weights")
+    parser.add_argument("--max-model-len", type=int, help="Training: tokens per episode (default 65536)")
     parser.add_argument(
         "--thinking", action="store_true", help="Evaluation only: the model's own template, thinking on"
     )
@@ -40,6 +41,8 @@ def main():
     else:
         template.write_text(tokenizer_for(args.model).chat_template)
         chat_kwargs, generation, max_len = '{"enable_thinking":false,"preserve_thinking":true}', "vllm", "65536"
+    if args.max_model_len:
+        max_len = str(args.max_model_len)
     # The vllm executable of this environment; the job never activates it, so it is not on PATH.
     command = [
         str(Path(sys.executable).parent / "vllm"), "serve", args.checkpoint or args.model,
@@ -70,12 +73,13 @@ def main():
     if not args.eval:
         # Training: the trainer pushes weights over NCCL after each step, and the token ids and
         # logprobs come back with every completion. CUDA graphs stay on: in eager mode a 27B
-        # turn took about 11 s. Prefix caching stays on too: every turn resends the episode so
-        # far, and without the cache AsyncGRPO spent most of its time re-reading 5-12k-token
-        # contexts (about 250 generated tokens/s). GRPOTrainer resets the cache after each weight
-        # update; AsyncGRPO does not, which is sound because it trains against the log-probs
-        # vLLM reports, whatever weights computed the cached prefix.
+        # turn took about 11 s. Every turn resends the episode so far, so prefix caching is asked
+        # for explicitly: vLLM 0.25 leaves it off for hybrid (Gated DeltaNet) models like
+        # Qwen3.8, and an x8 smoke spent ~33 s a turn re-reading 5-20k-token contexts. With it,
+        # vLLM caches in its experimental "align" mode (the linear-attention state is kept at
+        # block boundaries). The trainer resets the cache after each weight update.
         command += [
+            "--enable-prefix-caching",
             "--weight-transfer-config", '{"backend":"nccl"}',
             "--logprobs-mode", "processed_logprobs",
             "--return-tokens-as-token-ids",

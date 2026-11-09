@@ -53,11 +53,17 @@ def main():
     parser.add_argument("--attempts", type=int, default=1, help="For eval: episodes per task")
     parser.add_argument("--temperature", type=float, help="For eval: sampling temperature (default: the board's 0)")
     parser.add_argument("--thinking", action="store_true", help="Thinking on (the board runs it off)")
+    parser.add_argument("--reasoning-effort", help="For train with --thinking: low, medium, high or xhigh")
+    parser.add_argument("--context", type=int, help="For train: tokens per episode (vLLM and trainer; default 65536)")
+    parser.add_argument("--turn-tokens", type=int, help="For train: tokens per model turn (default 16384)")
+    parser.add_argument("--mask-truncated", action="store_true", help="For train: cut-off episodes out of the loss")
+    parser.add_argument("--init-adapter", help="For train: start from this LoRA checkpoint (a /outputs/... path)")
     parser.add_argument("--env-url", help="A running RetroEnv server, e.g. the hosted Space, instead of one in the job")
     parser.add_argument("--train-tasks", help="For train: JSON {task_id: index}, train only on these tasks")
     parser.add_argument("--generations", type=int, help="For train: rollouts per task in a GRPO group")
     parser.add_argument("--reward", choices=["graded", "solved"], help="For train: see sync_grpo.py")
     parser.add_argument("--lr", type=float, help="For train: learning rate")
+    parser.add_argument("--updates-per-round", type=int, help="For train: optimizer steps per round (overfit runs)")
     parser.add_argument("--concurrency", type=int, default=16, help="For eval: episodes at once")
     parser.add_argument("--label", help="For eval: the name on the board")
     parser.add_argument("--vllm-gpus", type=int, help="For train: GPUs serving vLLM (default: half)")
@@ -72,6 +78,22 @@ def main():
     if args.action == "train" and output.exists() and any(output.iterdir()):
         raise ValueError(f"{output} is not empty; use a fresh training output")
     output.mkdir(parents=True, exist_ok=True)
+    # Logs and the episode trace are written to local disk and copied to the bucket every minute:
+    # a file on the bucket mount appears only once closed, and an append to it can fail with EIO
+    # (which once ended a run's rollout process).
+    local = Path("/tmp") / output.name
+    local.mkdir(parents=True, exist_ok=True)
+    stop_copy = threading.Event()
+
+    def copy_local():
+        for path in local.iterdir():
+            mirror(path, output / path.name)
+
+    def copy_every_minute():
+        while not stop_copy.wait(60):
+            copy_local()
+
+    threading.Thread(target=copy_every_minute, daemon=True).start()
     for name, python in (("packages-train.txt", TRAIN_PYTHON), ("packages-env.txt", ENV_PYTHON)):
         with (output / name).open("w") as packages:
             subprocess.run(["uv", "pip", "freeze", "--python", python], stdout=packages, check=True)
@@ -95,6 +117,9 @@ def main():
         VLLM_USE_FLASHINFER_SAMPLER="0",
         # vLLM's periodic stats (throughput, KV-cache use, prefix-cache hit rate) in vllm.log.
         VLLM_LOGGING_LEVEL="INFO",
+        # An episode's connection idles while its tools run; at vLLM's 5 s keep-alive the server
+        # had closed it and the next turn failed with "Server disconnected" (10 in 1,305 requests).
+        VLLM_HTTP_TIMEOUT_KEEP_ALIVE="600",
         # The evaluator's OpenAI client needs a key; vLLM runs without one. Not VLLM_API_KEY,
         # which `vllm serve` reads as the key every request must carry.
         RETROENV_EVAL_KEY="EMPTY",
@@ -110,7 +135,7 @@ def main():
     children = []
 
     def spawn(command, name, extra=None):
-        with (output / (name + ".log")).open("a") as stream:
+        with (local / (name + ".log")).open("a") as stream:
             process = subprocess.Popen(
                 command,
                 env={**env, **(extra or {})},
@@ -188,9 +213,39 @@ def main():
             command += ["--thinking"] if args.thinking else []
         else:
             command += ["--trainer", args.mode]
+            command += ["--max-model-len", str(args.context)] if args.context else []
         spawn(command, "vllm", {"CUDA_VISIBLE_DEVICES": ",".join(vllm_devices)})
         wait(server_url + "/health")
         wait(engine_url + "/health")
+        # vLLM logs no throughput or prefix-cache stats with several API servers, so its Prometheus
+        # counters are sampled each minute into vllm-metrics.log: prompt and generated tokens,
+        # prefix-cache queries and hits, requests running and waiting, KV-cache use.
+        wanted = (
+            "vllm:prompt_tokens_total",
+            "vllm:prompt_tokens_cached_total",
+            "vllm:generation_tokens_total",
+            "vllm:prefix_cache_queries_total",
+            "vllm:prefix_cache_hits_total",
+            "vllm:num_requests_running",
+            "vllm:num_requests_waiting",
+            "vllm:kv_cache_usage_perc",
+        )
+
+        def sample_metrics():
+            while not stop_copy.wait(60):
+                try:
+                    text = httpx.get(engine_url + "/metrics", timeout=10).text
+                except httpx.HTTPError:
+                    continue
+                totals = {}
+                for line in text.splitlines():
+                    name = line.split("{", 1)[0].split(" ", 1)[0]
+                    if name in wanted:
+                        totals[name] = totals.get(name, 0.0) + float(line.rsplit(" ", 1)[1])
+                with (local / "vllm-metrics.log").open("a") as stream:
+                    stream.write(json.dumps({"time": time.time(), **totals}) + "\n")
+
+        threading.Thread(target=sample_metrics, daemon=True).start()
 
         if args.action == "train":
             # One training GPU runs the script directly; several run it under FSDP2.
@@ -220,27 +275,28 @@ def main():
             command += ["--train-tasks", args.train_tasks] if args.train_tasks else []
             command += ["--generations", str(args.generations)] if args.generations else []
             command += ["--reward", args.reward] if args.reward else []
-            command += ["--lr", str(args.lr)] if args.lr else []
+            command += ["--lr", str(args.lr)] if args.lr is not None else []
+            command += ["--updates-per-round", str(args.updates_per_round)] if args.updates_per_round else []
             command += ["--thinking"] if args.thinking else []
+            command += ["--reasoning-effort", args.reasoning_effort] if args.reasoning_effort else []
+            command += ["--context", str(args.context)] if args.context else []
+            command += ["--turn-tokens", str(args.turn_tokens)] if args.turn_tokens else []
+            command += ["--mask-truncated"] if args.mask_truncated else []
+            if args.init_adapter:
+                # One sequential copy to local disk: every trainer rank reading the adapter off the
+                # bucket mount at once stalled the start (and an mmap there ended a rank with SIGBUS).
+                adapter = Path("/tmp/init-adapter")  # outside the folder mirrored to the bucket
+                adapter.mkdir(parents=True, exist_ok=True)
+                for name in ("adapter_model.safetensors", "adapter_config.json"):
+                    shutil.copyfile(Path(args.init_adapter) / name, adapter / name)
+                command += ["--init-adapter", str(adapter)]
             # One JSON line per graded episode: task, reward, whether it submitted, tool calls.
-            # The trace is written to local disk and copied to the bucket every minute: an append
-            # on the bucket mount can fail with EIO, which once ended a run's rollout process.
-            local_trace = Path("/tmp") / output.name / "episodes.jsonl"
-            local_trace.parent.mkdir(parents=True, exist_ok=True)
-            trace = {"CUDA_VISIBLE_DEVICES": ",".join(train_devices), "RETROENV_TRACE_PATH": str(local_trace)}
-            stop_copy = threading.Event()
-
-            def copy_trace():
-                while not stop_copy.wait(60):
-                    mirror(local_trace, output / "episodes.jsonl")
-
-            copier = threading.Thread(target=copy_trace, daemon=True)
-            copier.start()
-            try:
-                run(command, "train", trace)
-            finally:
-                stop_copy.set()
-                mirror(local_trace, output / "episodes.jsonl")
+            trace = {
+                "CUDA_VISIBLE_DEVICES": ",".join(train_devices),
+                "RETROENV_TRACE_PATH": str(local / "episodes.jsonl"),
+                "RETROENV_VLLM_REPLICAS": str(len(vllm_devices)),  # each episode is pinned to one replica
+            }
+            run(command, "train", trace)
         else:
             # The board's evaluator and protocol, with vLLM as the provider.
             label = args.label or (f"{args.model} + {Path(args.checkpoint).name}" if args.checkpoint else args.model)
@@ -274,6 +330,8 @@ def main():
             except subprocess.TimeoutExpired:
                 os.killpg(process.pid, signal.SIGKILL)
                 process.wait()
+        stop_copy.set()
+        copy_local()
 
 
 if __name__ == "__main__":

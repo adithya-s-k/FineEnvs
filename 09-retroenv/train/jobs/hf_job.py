@@ -75,6 +75,13 @@ def main(argv=None):
     parser.add_argument("--attempts", type=int, default=1, help="For eval: episodes per task")
     parser.add_argument("--temperature", type=float, help="For eval: sampling temperature (default: the board's 0)")
     parser.add_argument("--thinking", action="store_true", help="For eval and async train: thinking on")
+    parser.add_argument(
+        "--reasoning-effort", choices=["low", "medium", "high", "xhigh"], help="For train: with --thinking"
+    )
+    parser.add_argument("--context", type=int, help="For train: tokens per episode (default 65536)")
+    parser.add_argument("--turn-tokens", type=int, help="For train: tokens per model turn (default 16384)")
+    parser.add_argument("--mask-truncated", action="store_true", help="For train: cut-off episodes out of the loss")
+    parser.add_argument("--init-adapter", help="For train: start from this LoRA checkpoint (a /outputs/... path)")
     parser.add_argument("--env-url", help="A running RetroEnv server, e.g. https://fineenvs-retroenv.hf.space")
     parser.add_argument(
         "--train-tasks", help="For train: a project JSON {task_id: index}, e.g. train/sweeps/overfit10-index.json"
@@ -82,6 +89,7 @@ def main(argv=None):
     parser.add_argument("--generations", type=int, help="For train: rollouts per task in a GRPO group")
     parser.add_argument("--reward", choices=["graded", "solved"], help="For train: see train/sync_grpo.py")
     parser.add_argument("--lr", type=float, help="For train: learning rate")
+    parser.add_argument("--updates-per-round", type=int, help="For train: optimizer steps per round (overfit runs)")
     parser.add_argument("--concurrency", type=int, default=16)
     parser.add_argument("--label")
     parser.add_argument("--vllm-gpus", type=int, help="For train/smoke: GPUs serving vLLM (default: half)")
@@ -124,8 +132,14 @@ def main(argv=None):
         command += ["--train-tasks", args.train_tasks] if args.train_tasks else []
         command += ["--generations", str(args.generations)] if args.generations else []
         command += ["--reward", args.reward] if args.reward else []
-        command += ["--lr", str(args.lr)] if args.lr else []
+        command += ["--lr", str(args.lr)] if args.lr is not None else []
+        command += ["--updates-per-round", str(args.updates_per_round)] if args.updates_per_round else []
         command += ["--thinking"] if args.thinking else []
+        command += ["--reasoning-effort", args.reasoning_effort] if args.reasoning_effort else []
+        command += ["--context", str(args.context)] if args.context else []
+        command += ["--turn-tokens", str(args.turn_tokens)] if args.turn_tokens else []
+        command += ["--mask-truncated"] if args.mask_truncated else []
+        command += ["--init-adapter", args.init_adapter] if args.init_adapter else []
         command += [
             "--steps",
             str(args.steps),
