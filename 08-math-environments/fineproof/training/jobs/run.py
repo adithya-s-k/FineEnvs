@@ -46,6 +46,7 @@ def main():
     parser.add_argument("--grad-accum", type=int, default=40, help="Train: rollouts per update")
     parser.add_argument("--inflight", type=int, default=32)
     parser.add_argument("--task-seed", type=int, help="Eval: score a seeded random --tasks subset of test")
+    parser.add_argument("--task-list", help="Eval: score exactly the test tasks listed in this file")
     args = parser.parse_args()
     os.chdir(ROOT)
     subprocess.run([sys.executable, "check_setup.py"], check=True)
@@ -146,6 +147,8 @@ def main():
                        "--max-tokens", str(args.max_tokens)]
             if args.task_seed is not None:
                 command += ["--task-seed", str(args.task_seed)]
+            if args.task_list:
+                command += ["--task-list", args.task_list]
         worker = spawn(command, args.action, {"CUDA_VISIBLE_DEVICES": devices[1]})
         children.remove(worker)
         try:

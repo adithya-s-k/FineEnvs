@@ -49,15 +49,27 @@ def episode(args, index, task, split):
 
 
 def summarize(rows, expected):
+    """Attempt-level means, then problem-level ones: a problem is the unit, so the standard error is over problems."""
     done = [r for r in rows if graded(r)]
     mean = (lambda xs: sum(xs) / len(xs) if xs else None)
+    by_problem = {}
+    for r in done:
+        by_problem.setdefault(r["task"], []).append(r["reward"])
+    per_problem = [sum(v) / len(v) for v in by_problem.values()]
+    n = len(per_problem)
+    spread = (sum((x - sum(per_problem) / n) ** 2 for x in per_problem) / (n - 1)) ** 0.5 if n > 1 else None
     return {
         "expected": expected,
         "graded": len(done),
         "coverage": len(done) / expected if expected else None,
         "mean_reward": mean([r["reward"] for r in done]),
+        "mean_reward_se": spread / n ** 0.5 if spread is not None else None,
         "full_marks": mean([float(r["reward"] >= 0.999) for r in done]),
         "any_credit": mean([float(r["reward"] > 0) for r in done]),
+        "problems": n,
+        "pass_at_k_full_marks": mean([float(max(v) >= 0.999) for v in by_problem.values()]),
+        "best_of_k_mean": mean([max(v) for v in by_problem.values()]),
+        "learnable_problems": mean([float(len(set(v)) > 1) for v in by_problem.values()]),
     }
 
 
@@ -80,6 +92,7 @@ def main():
                         help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
     parser.add_argument("--dataset", help="The served test folder, if not <data>/datasets/test")
     parser.add_argument("--task-seed", type=int, help="Score a seeded random --tasks subset instead of the first ones")
+    parser.add_argument("--task-list", help="Score exactly the test tasks named in this file (one per line, # comments)")
     parser.add_argument("--rounds", type=int, help="The server's harness rounds, recorded in identity.json")
     parser.add_argument("--max-tokens", type=int, help="The server's output cap per call, recorded in identity.json")
     parser.add_argument("--hosted", action="store_true",
@@ -90,6 +103,14 @@ def main():
     split = str(Path(args.dataset).resolve()) if args.dataset else dataset_dir(args.data, "test")
     tasks = load_tasks(split)
     selected = list(enumerate(tasks))
+    if args.task_list:
+        names = [line.strip() for line in Path(args.task_list).read_text().splitlines()
+                 if line.strip() and not line.startswith("#")]
+        missing = set(names) - {t["name"] for t in tasks}
+        if missing:
+            raise ValueError(f"{len(missing)} listed tasks are not in {split}: {sorted(missing)[:5]}")
+        selected = [(i, t) for i, t in selected if t["name"] in set(names)]
+        args.tasks = len(selected)
     if args.task_seed is not None:
         selected = sorted(random.Random(args.task_seed).sample(selected, min(args.tasks, len(selected))))
     selected = selected[: args.tasks]
@@ -103,6 +124,8 @@ def main():
         "rounds": args.rounds,
         "max_tokens": args.max_tokens,
         "task_seed": args.task_seed,
+        "task_list": Path(args.task_list).name if args.task_list else None,
+        "judge_samples": os.environ.get("JUDGE_SAMPLES") or "task default",
         "judge_model": os.environ.get("JUDGE_MODEL") or "task default",
         "samples": args.samples,
         "temperature": None if args.hosted else TEMPERATURE,

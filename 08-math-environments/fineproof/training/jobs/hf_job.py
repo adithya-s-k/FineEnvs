@@ -57,6 +57,7 @@ def main():
     parser.add_argument("--grad-accum", type=int, default=40, help="Train: rollouts per update")
     parser.add_argument("--inflight", type=int, default=32, help="Train: rollouts in flight")
     parser.add_argument("--task-seed", type=int, help="Eval: a seeded random --tasks subset of test")
+    parser.add_argument("--task-list", help="Eval: a file under training/ listing test tasks, e.g. benchmarks/test-validated-64.txt")
     parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
                         help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
     parser.add_argument("--submit", action="store_true", help="Without this flag, print the job plan")
@@ -79,6 +80,8 @@ def main():
         command += ["--grad-accum", str(args.grad_accum), "--inflight", str(args.inflight)]
     if args.task_seed is not None:
         command += ["--task-seed", str(args.task_seed)]
+    if args.task_list:
+        command += ["--task-list", args.task_list]
     if args.checkpoint:
         command += ["--checkpoint", args.checkpoint]
     if args.space_id:
