@@ -100,6 +100,7 @@ def main(argv=None):
     parser.add_argument("--inflight", type=int, help="For async train: episodes in flight (default: 32 per replica)")
     parser.add_argument("--run", help="For watch: the training run whose checkpoints to evaluate")
     parser.add_argument("--job", help="For watch: the training job id; the watch ends after it does")
+    parser.add_argument("--base", help="For watch: the base model's evaluation in --bucket (default base-eval)")
     parser.add_argument("--space-id")
     parser.add_argument("--submit", action="store_true", help="Without this flag, print the job plan")
     args = parser.parse_args(argv)
@@ -124,6 +125,9 @@ def main(argv=None):
         watch = (
             "pip install -q 'huggingface_hub>=1.32,<2' && python /source/train/jobs/eval_watch.py "
             f"--run {args.run} --job {args.job} --bucket {args.bucket} --model {args.model} --set {args.set}"
+            f" --harness {args.harness or 'board'} --attempts {args.attempts}"
+            + (f" --temperature {args.temperature}" if args.temperature is not None else "")
+            + (f" --base {args.base}" if args.base else "")
         )
         command = ["bash", "-c", watch]
     elif args.action != "check":

@@ -48,6 +48,11 @@ def summary(bucket, name, scratch):
     return None
 
 
+def pass1(s):
+    """pass@1 over every attempt (the summary's pass_at_1 counts only each task's first)."""
+    return (s.get("pass_at_k") or {}).get("1", s["pass_at_1"])
+
+
 def table(rows, base):
     lines = [
         "| Step | Pass@1 | Reward | Tool calls | No emit | Tasks |",
@@ -56,7 +61,7 @@ def table(rows, base):
     for step, s in [("base", base)] + sorted(rows.items()):
         if s:
             lines.append(
-                f"| {step} | {s['pass_at_1']:.3f} | {s['mean_reward']:.3f} | {s['mean_tool_calls']:.1f} | "
+                f"| {step} | {pass1(s):.3f} | {s['mean_reward']:.3f} | {s['mean_tool_calls']:.1f} | "
                 f"{s['no_emit_rate']:.3f} | {s['episodes_graded']}/{s['episodes_expected']} |"
             )
     return "\n".join(lines) + "\n"
@@ -71,6 +76,9 @@ def main():
     parser.add_argument("--set", default="core30")
     parser.add_argument("--base", default="base-eval", help="Evaluation of the untrained model in the same bucket")
     parser.add_argument("--poll", type=int, default=300)
+    parser.add_argument("--harness", choices=("board", "training"), default="board", help="The evaluations' agent loop")
+    parser.add_argument("--attempts", type=int, default=1, help="Episodes per task")
+    parser.add_argument("--temperature", type=float, help="Sampling temperature (default: the board's 0)")
     args = parser.parse_args()
     namespace = args.bucket.split("/")[0]
     scratch = Path(tempfile.mkdtemp())
@@ -89,7 +97,10 @@ def main():
                 [
                     "eval", "--name", name, "--bucket", args.bucket, "--model", args.model, "--flavor", "h200",
                     "--set", args.set, "--checkpoint", f"/outputs/{args.run}/checkpoint-{step}",
-                    "--label", f"{args.run} step {step}", "--submit",
+                    "--label", f"{args.run} step {step}", "--harness", args.harness,
+                    "--attempts", str(args.attempts),
+                    *(["--temperature", str(args.temperature)] if args.temperature is not None else []),
+                    "--submit",
                 ]
             )  # fmt: skip
             submitted[step] = job.id
@@ -101,7 +112,7 @@ def main():
             stage = hub.inspect_job(job_id=job_id, namespace=namespace).status.stage if job_id else "COMPLETED"
             if result or stage in DONE:
                 finished[step] = result
-                row = f"pass@1 {result['pass_at_1']:.3f}, reward {result['mean_reward']:.3f}" if result else stage
+                row = f"pass@1 {pass1(result):.3f}, reward {result['mean_reward']:.3f}" if result else stage
                 print(f"step {step}: {row}", flush=True)
                 curve = scratch / "evals.md"
                 curve.write_text(f"# {args.run} on {args.set}\n\n" + table(finished, base))
