@@ -48,6 +48,12 @@ def _session_class():
         def verify(self, transcript, final_state=None):
             verdict = super().verify(transcript, final_state)
             result = self.result
+            trial_root = getattr(self, "trial_root", None)
+            if result is not None and trial_root is not None and not getattr(self, "_logged", False):
+                import rollout_log
+
+                self._logged = True  # one record per rollout, however often verify is called
+                rollout_log.append(Path(trial_root).parent / "rollouts.jsonl", result, trial_root)
             if result is not None and (not result.ok or result.exception_type == "AgentTimeoutError"):
                 return type(verdict)(env_reward=None, done=True)
             return verdict

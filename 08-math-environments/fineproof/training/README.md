@@ -78,6 +78,16 @@ python jobs/hf_job.py eval  --name fp-eval-step100 --bucket <owner>/<bucket> \
   --checkpoint /outputs/fp-train/checkpoint-100 --step 100 --submit
 ```
 
+The MVP run puts everything on Hugging Face: HF Sandboxes, a public Trackio Space, and an eval Job per checkpoint
+on the fixed benchmark step 0 was scored on ([`results/fineproof-bench-4b-step0.json`](../results/fineproof-bench-4b-step0.json)):
+
+```bash
+JUDGE_MODEL=openai/gpt-oss-20b:groq,openai/gpt-oss-20b:featherless-ai \
+python jobs/hf_job.py train --name fp-rl-4b --model Qwen/Qwen3.5-4B --bucket <owner>/<bucket> \
+  --sandbox hf-sandbox --rounds 0 --max-tokens 16384 --steps 100 --save-steps 20 --timeout 28h \
+  --space-id <owner>/fineproof-rl --trackio-bucket <owner>/fineproof-trackio --eval-checkpoints --submit
+```
+
 Without `--submit` each command prints the job it would run. On your own two-GPU machine, run `bash jobs/install.sh`
 and `python prepare.py`, then `python jobs/run.py {train,eval} ...` with the same options. The GPUs must be A100s,
 H100s or H200s: the pinned TRL's AsyncGRPO trains with `kernels-community/flash-attn3`, which is built for those
@@ -89,6 +99,30 @@ the verifier's sandbox as an archive and unpacks it as root, keeping the host's 
 ([harbor-framework/harbor#1959](https://github.com/harbor-framework/harbor/issues/1959)). Until
 [harbor-framework/harbor#2043](https://github.com/harbor-framework/harbor/pull/2043) is released, add
 `--no-same-owner` to the `tar -xzf` command in the installed `harbor/environments/tar_transfer.py`.
+
+## What a run records
+
+In its output folder (copied to the bucket every 5 minutes, when the Job is stopped, and at the end):
+
+| File | What is in it |
+|---|---|
+| `train.log`, `eval.log` | The trainer's or evaluator's console, with each update's metrics |
+| `vllm.log` | The policy engine |
+| `harbor.log` | OpenEnv's Harbor server at INFO: budget stops, token clamps, upstream retries |
+| `trials/<trial>/` | Harbor's files for each rollout: the conversation, the proof, `result.json` (phase timings, tokens) and `verifier/grading.json` (every judge grade: provider, score, written assessment, tokens, cost) |
+| `rollouts.jsonl` | One line per rollout ([`rollout_log.py`](rollout_log.py)): the reward, OpenEnv's result (errors, each model call's finish reason and tokens, phase timings, findings) and the judge's summary |
+| `checkpoint_evals.jsonl` | With `--eval-checkpoints`: the eval Job submitted for each checkpoint |
+| `trackio/` | The Trackio project, also on the Space when `--space-id` is set |
+
+In Trackio (project `fineproof-rl`), the training run has TRL's metrics for each update (loss, KL, importance ratio,
+reward, gradient norm, staleness, throughput), plus `train/rollouts/*` and `train/judge/*` over the rollouts that
+finished since the last update: graded share, zero and full-marks shares, truncation, timings, tokens, judge
+disagreement and cost. Every graded rollout is a trace (`graded_rollouts`), with spans for the sandbox, each policy
+call and each judge grade, and the judge's written assessment. The run also has GPU and CPU metrics, its console
+output, and alerts when many rollouts go ungraded, the judge fails, or proofs hit the token cap. Each checkpoint's
+eval logs to one run, `<name>-evals`, at the checkpoint's step: `eval/*` (mean reward with its standard error over
+problems, full marks, pass@4, best-of-4, learnable share), `eval_rollouts/*`, `eval_judge/*`, and a trace per attempt.
+`python evaluate.py --report-only --output <eval folder> ...` charts an eval that has already run.
 
 ## Tests
 

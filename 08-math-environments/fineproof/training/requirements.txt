@@ -7,7 +7,7 @@ accelerate
 bitsandbytes
 flash-linear-attention==0.6.0  # Qwen3.5's linear attention: without it the PyTorch fallback is slow and ignores packed-sequence boundaries
 kernels>=0.17,<0.18  # the pinned Transformers loads its attention kernel through kernels 0.17.x
-trackio
+trackio==0.45.0
 harbor[daytona]==0.24.0
 daytona>=0.203.0
 huggingface_hub>=1.29.0

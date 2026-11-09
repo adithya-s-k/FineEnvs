@@ -40,6 +40,7 @@ def arguments():
     parser.add_argument("--inflight", type=int, default=32)
     parser.add_argument("--grad-accum", type=int, default=40, help="Rollouts per update (5 groups of 8)")
     parser.add_argument("--space-id", default=None, help="Optional Trackio Space; local logs are always kept")
+    parser.add_argument("--trackio-bucket", default=None, help="Bucket the Trackio Space keeps its data in")
     parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
                         help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
     return parser.parse_args()
@@ -108,6 +109,9 @@ def main():
         vllm_server_base_url=args.vllm_url,
         heartbeat_stale_after_s=1800,
         save_strategy="steps",
+        # Weights only: train.py has no resume, and fp32 optimizer state would double each checkpoint (the smoke keeps
+        # full checkpoints because it checks trainer_state.json).
+        save_only_model=not args.smoke,
         save_steps=1 if args.smoke else args.save_steps,
         save_total_limit=None,
         logging_steps=1,
@@ -115,6 +119,9 @@ def main():
         project="fineproof-rl",
         run_name=output.parent.name if output.name == "train" else output.name,
         trackio_space_id=args.space_id,
+        trackio_bucket_id=args.trackio_bucket,
+        hub_private_repo=False if args.space_id else None,  # the dashboard Space is public
+        trackio_static_space_id=False,  # no extra snapshot Space at the end; the live one stays
         seed=0,
     )
     worker = HarnessRolloutWorker(
@@ -137,6 +144,14 @@ def main():
     )
     trainer = AsyncGRPOTrainer(
         model=args.model, args=config, processing_class=tokenizer, train_dataset=dataset, rollout_worker=worker)
+    # Per-rollout records from OpenEnv and the judge (rollouts.jsonl next to the trials folder): their metrics join
+    # the trainer's own Trackio row (so the callback goes before Trackio's), then each rollout is logged as a trace.
+    import rollout_log
+
+    metrics_callback, traces_callback = rollout_log.make_callbacks(
+        Path(args.trials).parent / "rollouts.jsonl", Path(args.trials), args.model)
+    trainer.callback_handler.callbacks.insert(0, metrics_callback)
+    trainer.add_callback(traces_callback)
 
     # %% 5. Train, then save weights and tokenizer for evaluation.
     (output / "training_config.json").write_text(json.dumps(config.to_dict(), indent=2))

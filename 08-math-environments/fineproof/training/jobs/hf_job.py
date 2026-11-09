@@ -7,6 +7,7 @@ end. The bucket is also mounted read-only at /outputs, so an eval can load a che
     python jobs/hf_job.py smoke --name qed-smoke --bucket <owner>/<bucket> --submit
     python jobs/hf_job.py eval  --name qed-eval-base --bucket ... --submit
     python jobs/hf_job.py train --name qed-train --bucket ... --steps 100 --submit
+    python jobs/hf_job.py train --name qed-train --bucket ... --eval-checkpoints --submit   # + an eval Job per checkpoint
     python jobs/hf_job.py eval  --name qed-eval-step100 --bucket ... --checkpoint /outputs/qed-train/checkpoint-100 --step 100 --submit
 
 Secrets sent: HF_TOKEN (model downloads), DAYTONA_API_KEY (sandboxes) and JUDGE_API_KEY (the verifier's judge).
@@ -52,6 +53,10 @@ def main():
     parser.add_argument("--concurrency", type=int)
     parser.add_argument("--prepare-args", default="", help='Passed to prepare.py, e.g. "--train-tasks 64"')
     parser.add_argument("--space-id")
+    parser.add_argument("--trackio-bucket", help="Bucket the Trackio Space keeps its data in")
+    parser.add_argument("--trackio-run", help="Eval: the Trackio run to log into")
+    parser.add_argument("--eval-checkpoints", action="store_true",
+                        help="Train: submit an eval Job for each checkpoint as it is saved (jobs/checkpoint_evals.py)")
     parser.add_argument("--rounds", type=int, default=1, help="Harness check-and-rewrite rounds (0: one call)")
     parser.add_argument("--max-tokens", type=int, default=16384, help="Output cap per model call")
     parser.add_argument("--grad-accum", type=int, default=40, help="Train: rollouts per update")
@@ -86,6 +91,14 @@ def main():
         command += ["--checkpoint", args.checkpoint]
     if args.space_id:
         command += ["--space-id", args.space_id]
+    if args.trackio_bucket:
+        command += ["--trackio-bucket", args.trackio_bucket]
+    if args.trackio_run:
+        command += ["--trackio-run", args.trackio_run]
+    if args.eval_checkpoints:
+        if args.action != "train":
+            parser.error("--eval-checkpoints is for train")
+        command += ["--eval-checkpoints"]
     prepare_args = args.prepare_args + (" --sandbox hf-sandbox" if args.sandbox == "hf-sandbox" else "")
     env = {"PYTHONUNBUFFERED": "1", "FINEPROOF_PREPARE_ARGS": prepare_args.strip(), "FINEPROOF_OUTPUT_BUCKET": args.bucket}
     for name in ("DAYTONA_API_URL", "JUDGE_PROVIDER", "JUDGE_MODEL", "JUDGE_BASE_URL", "JUDGE_SAMPLES"):

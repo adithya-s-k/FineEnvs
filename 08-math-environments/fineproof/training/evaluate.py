@@ -73,6 +73,32 @@ def summarize(rows, expected):
     }
 
 
+def report(args, output, summary):
+    """Chart one checkpoint's eval in Trackio: the summary as `eval/*` at --step, the rollout metrics as
+    `eval_rollouts/*` and `eval_judge/*`, and one trace per attempt. summary.json stays the record; a chart that
+    fails never fails the eval."""
+    os.environ.setdefault("TRACKIO_DIR", str(output.resolve() / "trackio"))
+    try:
+        import trackio
+
+        import rollout_log
+
+        trials = Path(args.trials)
+        records, _ = rollout_log.read_new(output / "rollouts.jsonl", 0)
+        records = records or rollout_log.records_from_trials(trials)
+        metrics = {f"eval/{k}": v for k, v in summary.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
+        metrics.update({f"eval_{k}": v for k, v in rollout_log.summarize(records).items()})
+        run = trackio.init(project="fineproof-rl", name=args.trackio_run or output.name, space_id=args.space_id,
+                           bucket_id=args.trackio_bucket, private=False if args.space_id else None,
+                           resume="allow", config=summary.get("identity") or {})
+        run.log(metrics, step=args.step)
+        n = rollout_log.log_traces(run.log, "eval_rollouts", records, trials, args.step, args.model, kind="eval")
+        run.finish()
+        print(f"trackio: logged {len(metrics)} metrics and {n} traces at step {args.step}")
+    except Exception as exc:  # noqa: BLE001
+        print(f"trackio logging failed: {type(exc).__name__}: {exc}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--model", default="Qwen/Qwen3.5-2B", help="The served model name")
@@ -88,6 +114,9 @@ def main():
     parser.add_argument("--samples", type=int, default=1)
     parser.add_argument("--concurrency", type=int, default=32)
     parser.add_argument("--space-id", default=None)
+    parser.add_argument("--trackio-bucket", default=None, help="Bucket the Trackio Space keeps its data in")
+    parser.add_argument("--trackio-run", default=None,
+                        help="Trackio run to log into, e.g. <training run>-evals so every checkpoint lands on one curve")
     parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
                         help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
     parser.add_argument("--dataset", help="The served test folder, if not <data>/datasets/test")
@@ -97,7 +126,12 @@ def main():
     parser.add_argument("--max-tokens", type=int, help="The server's output cap per call, recorded in identity.json")
     parser.add_argument("--hosted", action="store_true",
                         help="Eval rollouts on the server's own engine (e.g. a hosted provider) with its default sampling")
+    parser.add_argument("--report-only", action="store_true",
+                        help="Log an existing eval (<output>/summary.json and its trials) to Trackio, without running")
     args = parser.parse_args()
+    if args.report_only:
+        report(args, Path(args.output), json.loads((Path(args.output) / "summary.json").read_text()))
+        return
     if args.hosted:
         args.vllm_url = ""
     split = str(Path(args.dataset).resolve()) if args.dataset else dataset_dir(args.data, "test")
@@ -160,15 +194,7 @@ def main():
     summary = summarize(rows, len(pairs))
     summary["identity"] = identity
     write_json(output / "summary.json", summary)
-    os.environ["TRACKIO_DIR"] = str(output.resolve() / "trackio")
-    try:
-        import trackio
-    except ImportError:  # summary.json has everything; Trackio only charts it
-        trackio = None
-    if trackio is not None:
-        run = trackio.init(project="fineproof-rl", name=output.name, space_id=args.space_id, config=identity)
-        run.log({f"eval/{k}": v for k, v in summary.items() if isinstance(v, (int, float))}, step=args.step)
-        run.finish()
+    report(args, output, summary)
     print(json.dumps({k: v for k, v in summary.items() if k != "identity"}, indent=2))
     if summary["graded"] != summary["expected"]:
         raise SystemExit(2)

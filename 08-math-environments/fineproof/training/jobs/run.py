@@ -6,6 +6,10 @@ on GPU 1. Evaluation: vLLM data-parallel on both. Logs go to <output>/{vllm,harb
     python jobs/run.py train --output runs/train --steps 100
     python jobs/run.py eval  --output runs/eval-base
     python jobs/run.py eval  --output runs/eval-step100 --checkpoint runs/train/checkpoint-100 --step 100
+
+In an HF Job, `train --eval-checkpoints` also sends each saved checkpoint to an eval Job of its own
+(jobs/checkpoint_evals.py). The OpenEnv server logs at INFO (budget stops, token clamps, upstream retries) to
+<output>/harbor.log, with the config in <output>/harbor_logging.json.
 """
 
 import argparse
@@ -38,6 +42,10 @@ def main():
     parser.add_argument("--samples", type=int, default=1)
     parser.add_argument("--concurrency", type=int, default=32)
     parser.add_argument("--space-id")
+    parser.add_argument("--trackio-bucket", help="Bucket the Trackio Space keeps its data in")
+    parser.add_argument("--trackio-run", help="Eval: the Trackio run to log into (default: the output's name)")
+    parser.add_argument("--eval-checkpoints", action="store_true",
+                        help="Train in an HF Job: eval each saved checkpoint in an HF Job of its own")
     parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
                         help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
     parser.add_argument("--rounds", type=int, default=int(os.environ.get("FINEPROOF_ROUNDS", "1")),
@@ -56,6 +64,8 @@ def main():
         raise RuntimeError("DAYTONA_API_KEY is needed for --sandbox daytona")
     if not os.environ.get("JUDGE_API_KEY"):
         raise RuntimeError("JUDGE_API_KEY is needed: each task's verifier calls the judge with it")
+    if args.eval_checkpoints and (args.action != "train" or not os.environ.get("FINEPROOF_OUTPUT_BUCKET")):
+        raise RuntimeError("--eval-checkpoints is for training in an HF Job (FINEPROOF_OUTPUT_BUCKET names its bucket)")
     output = Path(args.output).resolve()
     if output.exists() and args.action == "train":
         raise ValueError("Use a fresh training output directory")
@@ -69,7 +79,19 @@ def main():
     if len(devices) < 2:
         raise RuntimeError("Allocate two GPUs")
     env = dict(os.environ, PYTHONUNBUFFERED="1", TRACKIO_DIR=str(output / "trackio"), VLLM_USE_DEEP_GEMM="0",
-               VLLM_DEEP_GEMM_WARMUP="skip", VLLM_USE_FLASHINFER_SAMPLER="0")
+               VLLM_DEEP_GEMM_WARMUP="skip", VLLM_USE_FLASHINFER_SAMPLER="0",
+               # Trackio: keep train.log's console in the run too, and finish the run (flushing it) on SIGTERM.
+               TRACKIO_CAPTURE_CONSOLE="1", TRACKIO_HANDLE_SIGTERM="1")
+    # OpenEnv's Harbor modules log what they decide (budget stops, token clamps, upstream retries) at INFO, which
+    # uvicorn's default config drops; this config keeps them, and Harbor's own loggers at WARNING.
+    logging_config = output / "harbor_logging.json"
+    logging_config.write_text(json.dumps({
+        "version": 1, "disable_existing_loggers": False,
+        "formatters": {"plain": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"}},
+        "handlers": {"stdout": {"class": "logging.StreamHandler", "formatter": "plain", "stream": "ext://sys.stdout"}},
+        "root": {"level": "WARNING", "handlers": ["stdout"]},
+        "loggers": {name: {"level": "INFO"} for name in ("openenv", "harbor_env", "uvicorn", "uvicorn.error")},
+    }, indent=2))
     with ExitStack() as stack:
         sockets = [stack.enter_context(socket.socket()) for _ in range(3)]
         for listener in sockets:
@@ -116,7 +138,7 @@ def main():
         # OpenEnv's own Harbor server: it resolves `--harness fineproof_agent.agent:FineProofAgent` itself and serves
         # each dataset folder as a split named by its path (tasks.dataset_dir).
         spawn([sys.executable, "-m", "uvicorn", "harbor_env.server.app:app", "--host", "127.0.0.1",
-               "--port", str(server_port), "--ws-ping-timeout", "1800"], "harbor", {
+               "--port", str(server_port), "--ws-ping-timeout", "1800", "--log-config", str(logging_config)], "harbor", {
             "OPENENV_DATASETS": ",".join(str(Path("prepared", "datasets", s).resolve()) for s in ("train", "test")),
             "OPENENV_HARBOR_REWARD_KEY": "reward",
             "FINEPROOF_ROUNDS": str(args.rounds),
@@ -136,6 +158,8 @@ def main():
                   "--trials", str(output / "trials"), "--sandbox", args.sandbox]
         if args.space_id:
             common += ["--space-id", args.space_id]
+        if args.trackio_bucket:
+            common += ["--trackio-bucket", args.trackio_bucket]
         if args.action == "train":
             command = [sys.executable, "train.py", *common, "--steps", str(args.steps),
                        "--save-steps", str(args.save_steps), "--grad-accum", str(args.grad_accum),
@@ -149,12 +173,24 @@ def main():
                 command += ["--task-seed", str(args.task_seed)]
             if args.task_list:
                 command += ["--task-list", args.task_list]
+            if args.trackio_run:
+                command += ["--trackio-run", args.trackio_run]
+        evals = None
+        if args.eval_checkpoints:
+            from checkpoint_evals import CheckpointEvals
+
+            evals = CheckpointEvals(output, bucket=os.environ["FINEPROOF_OUTPUT_BUCKET"], model=args.model,
+                                    sandbox=args.sandbox, rounds=args.rounds, max_tokens=args.max_tokens,
+                                    space_id=args.space_id, trackio_bucket=args.trackio_bucket)
+            evals.start()
         worker = spawn(command, args.action, {"CUDA_VISIBLE_DEVICES": devices[1]})
         children.remove(worker)
         try:
             while worker.poll() is None:
                 healthy()
                 time.sleep(2)
+            if evals is not None:
+                evals.finish()  # the final checkpoint's eval, and any launch that failed earlier
             if worker.returncode:
                 raise RuntimeError(f"{args.action} exited {worker.returncode}; inspect {output}")
         finally:
