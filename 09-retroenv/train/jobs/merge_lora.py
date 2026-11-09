@@ -7,6 +7,7 @@ module names (TRL trained the checkpoint's own multimodal class) are the base ch
 
 import argparse
 import json
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -15,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from train.sync_grpo import MODEL_REVISIONS
 
 
-def check_saved(output, model, revision):
+def check_saved(output, model, revision, moved):
     """Diff the saved merged weights against the base checkpoint's, by module type.
 
     The merge is checked in memory above; this checks what vLLM will load. An adapted module type
@@ -69,7 +70,9 @@ def check_saved(output, model, revision):
             f"  {kind}: {changed}/{compared} saved tensors differ from the base; layers {sorted(changed_layers[kind])}",
             flush=True,
         )
-    unchanged = [kind for kind, (changed, compared) in by_kind.items() if compared and not changed]
+    # A kind the adapter never moved (lora_B still all zero, e.g. after updates with no gradient)
+    # is the base on disk by design; only a kind it moved must differ.
+    unchanged = [kind for kind, (changed, compared) in by_kind.items() if compared and not changed and kind in moved]
     if unchanged:
         raise RuntimeError(f"The saved merge lost the update for {unchanged}")
 
@@ -99,6 +102,10 @@ def main():
                 module = key.removeprefix("base_model.model.").removesuffix(".lora_A.weight")
                 pairs[module + ".weight"] = (handle.get_tensor(key), handle.get_tensor(key.replace("lora_A", "lora_B")))
     print(f"{len(pairs)} adapted weights, scale {scale}", flush=True)
+    kind = re.compile(r"(self_attn\.(q|k|v|o)_proj|linear_attn\.(in_proj_qkv|in_proj_z|out_proj)|mlp\.(gate|up|down)_proj)\.weight$")
+    moved = {kind.search(key).group(1) for key, (_, lora_b) in pairs.items() if kind.search(key) and bool(lora_b.any())}
+    if not moved:
+        print("note: every lora_B is zero, so this adapter is the base model", flush=True)
 
     # Merge in the checkpoint files themselves, shard by shard, keeping every key and file name:
     # weight + scale * B @ A in float32, back to the weight's dtype (what PEFT's merge computes).
@@ -123,7 +130,7 @@ def main():
     for source in base.iterdir():
         if source.is_file() and source.suffix != ".safetensors":
             shutil.copyfile(source, output / source.name)
-    check_saved(output, args.model, revision)
+    check_saved(output, args.model, revision, moved)
     print(output)
 
 
