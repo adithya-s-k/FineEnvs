@@ -7,14 +7,20 @@ vLLM data-parallel on the others (generation is what limits a run). Evaluation: 
     python jobs/run.py eval  --output runs/eval-base
     python jobs/run.py eval  --output runs/eval-step100 --checkpoint runs/train/checkpoint-100 --step 100
 
-In an HF Job, `train --eval-checkpoints` also sends each saved checkpoint to an eval Job of its own
+In an HF Job, `train --eval-checkpoints` also sends saved checkpoints to eval Jobs of their own
 (jobs/checkpoint_evals.py). The OpenEnv server logs at INFO (budget stops, token clamps, upstream retries) to
 <output>/harbor.log, with the config in <output>/harbor_logging.json.
+
+A run that dies restarts inside the Job from its latest full checkpoint (--max-restarts). A Job that ends early (it
+timed out, or was stopped) resumes when it is submitted again under the same --name: training starts from the latest
+full checkpoint in the bucket, with the run's logs, rollouts.jsonl, Trackio data and eval record copied back first, so
+every log and the Trackio run continue where they stopped (restore_run below).
 """
 
 import argparse
 import json
 import os
+import re
 import signal
 import socket
 import subprocess
@@ -27,6 +33,7 @@ from pathlib import Path
 import httpx
 
 ROOT = Path(__file__).resolve().parents[1]
+OUTPUTS_ROOT = Path("/workspace/outputs")  # jobs/entrypoint.sh copies this folder to the bucket's root
 
 
 def local_checkpoint(checkpoint: str, output: Path) -> str:
@@ -61,6 +68,59 @@ def latest_checkpoint(output: Path) -> Path | None:
         if (path / "optimizer.pt").is_file() or any(path.glob("optimizer*")):
             return path
     return None
+
+
+def bucket_url(output: Path) -> str | None:
+    """Where jobs/entrypoint.sh copies `output` in the run's bucket, in an HF Job."""
+    bucket = os.environ.get("FINEPROOF_OUTPUT_BUCKET")
+    if not bucket or not output.is_relative_to(OUTPUTS_ROOT):
+        return None
+    return f"hf://buckets/{bucket}/{output.relative_to(OUTPUTS_ROOT).as_posix()}"
+
+
+def _bucket_names(url: str) -> list[str]:
+    """The entries directly under `url` (last path part), or nothing when it does not exist."""
+    listed = subprocess.run(["hf", "buckets", "ls", url], capture_output=True, text=True)
+    if listed.returncode != 0:
+        return []
+    return [line.split()[-1].rstrip("/").rsplit("/", 1)[-1] for line in listed.stdout.splitlines() if line.strip()]
+
+
+def remote_checkpoint(url: str) -> str | None:
+    """The newest checkpoint-N in the bucket that a run can resume from: trainer state and optimizer both there."""
+    steps = sorted((int(n.split("-")[1]), n) for n in _bucket_names(url) if re.fullmatch(r"checkpoint-\d+", n))
+    for _, name in reversed(steps):
+        files = _bucket_names(f"{url}/{name}")
+        if "trainer_state.json" in files and any(f.startswith("optimizer") for f in files):
+            return name
+    return None
+
+
+def restore_run(output: Path) -> Path | None:
+    """Continue a run an earlier Job left in the bucket: copy back its state and its latest full checkpoint.
+
+    The small files come first (logs, rollouts.jsonl, threads.jsonl, restarts.jsonl, checkpoint_evals.jsonl and the
+    Trackio folder), so every log continues where it stopped and the eval launcher does not submit the same
+    checkpoint twice; trials and older checkpoints stay in the bucket (the sync to it never deletes). Returns the local
+    checkpoint to resume from, or None for a new run.
+    """
+    url = bucket_url(output)
+    name = remote_checkpoint(url) if url else None
+    if name is None:
+        return None
+    start = time.monotonic()
+    with (output / "resume_copy.log").open("a") as log:
+        subprocess.run(["hf", "buckets", "sync", url, str(output), "--exclude", "checkpoint-*", "--exclude", "trials/*",
+                        "--exclude", "final/*", "--exclude", "trackio/*.lock", "--format", "quiet"],
+                       check=True, stdout=log, stderr=subprocess.STDOUT)
+        subprocess.run(["hf", "buckets", "sync", f"{url}/{name}", str(output / name), "--format", "quiet"],
+                       check=True, stdout=log, stderr=subprocess.STDOUT)
+    if latest_checkpoint(output) != output / name:
+        raise RuntimeError(f"{url}/{name} did not copy completely to {output}")
+    with (output / "resumes.jsonl").open("a") as handle:
+        handle.write(json.dumps({"time": round(time.time(), 1), "from": name, "bucket": url,
+                                 "copy_s": round(time.monotonic() - start, 1)}) + "\n")
+    return output / name
 
 
 class ThreadCensus(threading.Thread):
@@ -146,7 +206,7 @@ def main():
     parser.add_argument("--output", required=True)
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--steps", type=int, default=100)
-    parser.add_argument("--save-steps", type=int, default=25)
+    parser.add_argument("--save-steps", type=int, default=10)
     parser.add_argument("--checkpoint")
     parser.add_argument("--step", type=int, default=0)
     parser.add_argument("--tasks", type=int, default=128)
@@ -158,14 +218,19 @@ def main():
     parser.add_argument("--eval-checkpoints", action="store_true",
                         help="Train in an HF Job: eval each saved checkpoint in an HF Job of its own")
     parser.add_argument("--eval-concurrency", type=int, default=64, help="With --eval-checkpoints: rollouts in flight")
+    parser.add_argument("--eval-every", type=int, default=20,
+                        help="With --eval-checkpoints: eval checkpoints whose step is a multiple of this, and the last")
     parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
                         help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
     parser.add_argument("--rounds", type=int, default=int(os.environ.get("FINEPROOF_ROUNDS", "1")),
                         help="Check-and-rewrite rounds of the FineProof harness (0: one call per proof)")
-    parser.add_argument("--max-tokens", type=int, default=16384, help="Output cap per model call")
-    parser.add_argument("--grad-accum", type=int, default=40, help="Train: rollouts per update")
-    parser.add_argument("--inflight", type=int, default=32)
-    parser.add_argument("--learning-rate", type=float, default=2e-6, help="Train: AsyncGRPO learning rate")
+    parser.add_argument("--max-tokens", type=int, default=32768, help="Output cap per model call")
+    parser.add_argument("--generations", type=int, default=16, help="Train: rollouts per problem (a GRPO group)")
+    parser.add_argument("--grad-accum", type=int, default=128, help="Train: rollouts per update")
+    parser.add_argument("--inflight", type=int, default=128)
+    parser.add_argument("--learning-rate", type=float, default=1e-6, help="Train: AsyncGRPO learning rate")
+    parser.add_argument("--truncated-reward", default="zero", choices=["zero", "judge"],
+                        help="Train: reward of a proof cut off at the cap (see tasks.py)")
     parser.add_argument("--warmup-steps", type=int, default=0, help="Train: linear learning-rate warm-up")
     parser.add_argument("--resume-from", help="Train: start from another run's checkpoint (/outputs/<run>/checkpoint-N)")
     parser.add_argument("--evals-run", help="With --eval-checkpoints: the Trackio run evals log to (default <name>-evals)")
@@ -206,6 +271,9 @@ def main():
                # Thread pools default to one thread per CPU in every process (92 on h200x4); vLLM on three GPUs alone
                # then ran about 2,200 threads and a run hit the container's thread limit. Eight each is plenty here.
                OMP_NUM_THREADS="8", MKL_NUM_THREADS="8", RAYON_NUM_THREADS="8", TOKENIZERS_PARALLELISM="false")
+    # Two judge samples per proof, averaged (the verifier's default is one): a single gpt-oss-20b grade is noisy, and
+    # within a group that noise is most of the difference between near-equal proofs.
+    env.setdefault("JUDGE_SAMPLES", "2")
     # OpenEnv's Harbor modules log what they decide (budget stops, token clamps, upstream retries) at INFO, which
     # uvicorn's default config drops; this config keeps them, and Harbor's own loggers at WARNING.
     logging_config = output / "harbor_logging.json"
@@ -278,7 +346,7 @@ def main():
         # OpenEnv's own Harbor server: it resolves `--harness fineproof_agent.agent:FineProofAgent` itself and serves
         # each dataset folder as a split named by its path (tasks.dataset_dir).
         spawn([sys.executable, "-m", "uvicorn", "harbor_env.server.app:app", "--host", "127.0.0.1",
-               "--port", str(server_port), "--ws-ping-timeout", "1800", "--log-config", str(logging_config)], "harbor", {
+               "--port", str(server_port), "--ws-ping-timeout", "3600", "--log-config", str(logging_config)], "harbor", {
             "OPENENV_DATASETS": ",".join(str(Path("prepared", "datasets", s).resolve()) for s in ("train", "test")),
             "OPENENV_HARBOR_REWARD_KEY": "reward",
             # OpenEnv (openenv/OpenEnv#1573 from bfe8b9d5) serves a `module:Class` harness only when the operator
@@ -286,6 +354,7 @@ def main():
             "OPENENV_HARBOR_ALLOW_HARNESS": "fineproof_agent.agent:FineProofAgent",
             "FINEPROOF_ROUNDS": str(args.rounds),
             "FINEPROOF_MAX_TOKENS": str(args.max_tokens),
+            "FINEPROOF_REQUEST_TIMEOUT_SEC": "3600",  # a 32k-token proof on a loaded engine (tasks.AGENT_TIMEOUT_SEC)
             "OPENENV_LLM_URL": engine_url,
             "OPENENV_MODEL": args.model,
             "OPENENV_HARBOR_TRIALS_DIR": str(output / "trials"),
@@ -308,7 +377,8 @@ def main():
         command = [sys.executable, "train.py", *common, "--steps", str(args.steps),
                    "--save-steps", str(args.save_steps), "--grad-accum", str(args.grad_accum),
                    "--inflight", str(args.inflight), "--learning-rate", str(args.learning_rate),
-                   "--warmup-steps", str(args.warmup_steps)]
+                   "--warmup-steps", str(args.warmup_steps), "--max-tokens", str(args.max_tokens),
+                   "--generations", str(args.generations), "--truncated-reward", args.truncated_reward]
         command += ["--smoke"] if args.smoke else []
     else:
         command = [sys.executable, "evaluate.py", *common, "--checkpoint", args.checkpoint or args.model,
@@ -331,11 +401,16 @@ def main():
             evals = CheckpointEvals(output, bucket=os.environ["FINEPROOF_OUTPUT_BUCKET"], model=args.model,
                                     sandbox=args.sandbox, rounds=args.rounds, max_tokens=args.max_tokens,
                                     space_id=args.space_id, trackio_bucket=args.trackio_bucket,
-                                    concurrency=args.eval_concurrency, trackio_run=args.evals_run)
+                                    concurrency=args.eval_concurrency, trackio_run=args.evals_run,
+                                    eval_every=args.eval_every)
             evals.start()
         weights = local_checkpoint(args.checkpoint, output) if args.action == "eval" and args.checkpoint else None
         origin = None
-        if args.action == "train" and args.resume_from:
+        restored = restore_run(output) if args.action == "train" else None
+        if restored is not None:  # an earlier Job of this run: continue it (its --resume-from is in its checkpoint)
+            weights = str(restored)
+            command += ["--resume"]
+        elif args.action == "train" and args.resume_from:
             weights = origin = local_checkpoint(args.resume_from, output)  # vLLM serves, the trainer loads, these
             command += ["--resume-from", weights]
         restarts = 0

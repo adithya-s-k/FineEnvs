@@ -1,7 +1,8 @@
 """Train a small model to write olympiad proofs through our Harbor harness, with AsyncGRPO.
 
 Adapted from 05-multi-harness-rl/train/multi_harness.py. What changes: one harness, ours (the FineProof harness: write a
-proof, check it, rewrite it), and the reward is the rubric judge's score / 7 from the task's verifier, unchanged.
+proof, check it, rewrite it); the reward is the rubric judge's score / 7 from the task's verifier, and 0 for a proof cut
+off at the output cap; and the objective is mean-centred advantages with a constant loss normaliser (objective.py).
 Read the numbered sections in order.
 """
 
@@ -34,12 +35,17 @@ def arguments():
     parser.add_argument("--server", default="http://127.0.0.1:8200")
     parser.add_argument("--trials", default="runs/trials")
     parser.add_argument("--output", default="runs/train")
-    parser.add_argument("--smoke", action="store_true", help="Two updates of one group of four rollouts")
+    parser.add_argument("--smoke", action="store_true", help="Updates of one group of four rollouts, saved each step")
     parser.add_argument("--steps", type=int, default=100)
-    parser.add_argument("--save-steps", type=int, default=25)
-    parser.add_argument("--inflight", type=int, default=32)
-    parser.add_argument("--grad-accum", type=int, default=40, help="Rollouts per update (5 groups of 8)")
-    parser.add_argument("--learning-rate", type=float, default=2e-6)
+    parser.add_argument("--save-steps", type=int, default=10)
+    parser.add_argument("--inflight", type=int, default=128)
+    parser.add_argument("--generations", type=int, default=16, help="Rollouts per problem (a GRPO group)")
+    parser.add_argument("--grad-accum", type=int, default=128, help="Rollouts per update (8 groups of 16)")
+    parser.add_argument("--max-tokens", type=int, default=32768,
+                        help="Output cap per model call, and the loss normaliser (objective.py)")
+    parser.add_argument("--truncated-reward", default="zero", choices=["zero", "judge"],
+                        help="A proof cut off at the cap: reward 0 (default), or the judge's grade of what was written")
+    parser.add_argument("--learning-rate", type=float, default=1e-6)
     parser.add_argument("--warmup-steps", type=int, default=0,
                         help="Linear warm-up from 0 (damps a fresh optimizer's first, full-size Adam steps)")
     parser.add_argument("--resume", action="store_true", help="Continue from the latest checkpoint in --output")
@@ -97,29 +103,30 @@ def main():
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     os.environ["TRACKIO_DIR"] = str(output.resolve() / "trackio")
-    from trl.experimental.async_grpo import AsyncGRPOConfig, AsyncGRPOTrainer
-    from trl.experimental.async_grpo.openenv_harness import HarnessRolloutWorker
+    from trl.experimental.async_grpo import AsyncGRPOConfig
+
+    from objective import ConstantNormTrainer, MeanCenteredHarnessWorker
 
     tasks = load_tasks(dataset_dir(args.data, "train"))
     dataset = Dataset.from_list(
         [{"prompt": [{"role": "user", "content": task["instruction"]}]} for task in tasks]).shuffle(seed=0)
     tokenizer = tokenizer_for(args.model)
     # The smoke's groups are 4 rollouts (2 tied too often to give a gradient); one group per update.
-    generations = 4 if args.smoke else 8
+    generations = 4 if args.smoke else args.generations
     inflight = min(args.inflight, 8) if args.smoke else args.inflight
     config = AsyncGRPOConfig(
         output_dir=str(output),
         learning_rate=args.learning_rate,
         lr_scheduler_type="constant_with_warmup" if args.warmup_steps else "constant",
         warmup_steps=args.warmup_steps,
-        max_steps=2 if args.smoke else args.steps,
+        max_steps=args.steps,
         # One rollout per row, never packed: TRL marks packed samples only by position_ids resets, which reach the
         # attention layers but not Qwen3.5's linear-attention (gated delta rule) layers, so their recurrent state would
         # run from one sample into the next. An update is then gradient_accumulation_steps rollouts.
         per_device_train_batch_size=1,
         gradient_accumulation_steps=4 if args.smoke else args.grad_accum,
         num_generations=generations,
-        max_completion_length=16384,
+        max_completion_length=args.max_tokens,
         temperature=0.8,
         top_p=1.0,
         top_k=-1,
@@ -135,7 +142,7 @@ def main():
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
         vllm_server_base_url=args.vllm_url,
-        heartbeat_stale_after_s=1800,
+        heartbeat_stale_after_s=3600,  # a 32k-token rollout can take most of an hour on a loaded engine
         save_strategy="steps",
         # Full checkpoints (weights, optimizer, scheduler, RNG and rollout state), so jobs/run.py can resume a run that
         # dies: a 4B one is about 30 GB. Evals copy only the weights.
@@ -152,7 +159,7 @@ def main():
         trackio_static_space_id=False,  # no extra snapshot Space at the end; the live one stays
         seed=0,
     )
-    worker = HarnessRolloutWorker(
+    worker = MeanCenteredHarnessWorker(
         harness_session_factory=partial(TaskFactory, args, tasks, split="train"),
         harness_adapter=None,  # our Harbor agent owns the conversation; OpenEnv captures its model calls
         rollout_reward_fn=reward,
@@ -164,14 +171,15 @@ def main():
         num_generations=generations,
         max_inflight_tasks=inflight,
         vllm_server_url=args.vllm_url,
-        max_tokens=16384,
+        max_tokens=args.max_tokens,
         temperature=0.8,
         top_p=1.0,
         top_k=-1,
         chat_template_kwargs={"enable_thinking": False},
     )
-    trainer = AsyncGRPOTrainer(
-        model=args.model, args=config, processing_class=tokenizer, train_dataset=dataset, rollout_worker=worker)
+    trainer = ConstantNormTrainer(
+        model=args.model, args=config, processing_class=tokenizer, train_dataset=dataset, rollout_worker=worker,
+        loss_norm_tokens=args.max_tokens)
     # Per-rollout records from OpenEnv and the judge (rollouts.jsonl next to the trials folder): their metrics join
     # the trainer's own Trackio row (so the callback goes before Trackio's), then each rollout is logged as a trace.
     import rollout_log
@@ -184,7 +192,10 @@ def main():
         trainer.add_callback(crash_after(int(os.environ["FINEPROOF_CRASH_AFTER_STEP"])))
 
     # %% 5. Train, then save weights and tokenizer for evaluation.
-    (output / "training_config.json").write_text(json.dumps(config.to_dict(), indent=2))
+    objective = {"advantage": "reward - group mean (no std division)", "loss_norm_tokens": args.max_tokens,
+                 "truncated_reward": args.truncated_reward, "generations": generations,
+                 "judge_samples": os.environ.get("JUDGE_SAMPLES", "1")}
+    (output / "training_config.json").write_text(json.dumps({**config.to_dict(), "objective": objective}, indent=2))
     (output / "task_names.json").write_text(json.dumps([t["name"] for t in tasks]))
     # --resume (a restart inside this run) wins over --resume-from (where this run started).
     resume = latest_checkpoint(output) if args.resume else (Path(args.resume_from) if args.resume_from else None)

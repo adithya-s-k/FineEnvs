@@ -29,14 +29,13 @@ def main():
         "--tensor-parallel-size", "1",
         "--data-parallel-size", str(args.data_parallel or (2 if args.eval else 1)),
         "--dtype", "bfloat16",
-        "--max-model-len", "65536",
+        "--max-model-len", os.environ.get("FINEPROOF_MAX_MODEL_LEN", "131072"),
         "--gpu-memory-utilization", "0.85",
         "--chat-template", str(template),
         "--default-chat-template-kwargs", '{"enable_thinking":false,"preserve_thinking":true}',
         "--generation-config", "vllm",
         "--logprobs-mode", "processed_logprobs",
         "--return-tokens-as-token-ids",
-        "--enforce-eager",
         "--no-enable-prefix-caching",
         "--limit-mm-per-prompt", '{"image":0,"video":0}',
         "--gdn-prefill-backend", "triton",
@@ -44,6 +43,10 @@ def main():
         # about 290 threads on a 92-CPU machine: three of them helped a 4-GPU run hit the container's thread limit.
         "--api-server-count", "1",
     ]
+    # Eager mode is what 05-multi-harness-rl validated with NCCL weight transfer; FINEPROOF_VLLM_CUDA_GRAPHS=1 turns on
+    # vLLM's CUDA graphs, which decode several times faster (a 32k-token proof is what limits a run).
+    if os.environ.get("FINEPROOF_VLLM_CUDA_GRAPHS", "0") != "1":
+        command += ["--enforce-eager"]
     if not args.checkpoint:
         command += ["--revision", MODEL_REVISIONS[args.model]]
     else:

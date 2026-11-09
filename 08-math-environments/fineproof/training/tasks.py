@@ -8,7 +8,9 @@ from pathlib import Path
 # Our Harbor agent, by import path: OpenEnv's `--harness module:Class` points a host-side agent at the capture
 # proxy through its `api_base`/`api_key` kwargs. Options the server cannot pass come from FINEPROOF_* env vars.
 HARNESS = "fineproof_agent.agent:FineProofAgent"
-AGENT_TIMEOUT_SEC = 900
+# A 32k-token proof takes 15 minutes or more on a loaded engine; the agent, its model call (FINEPROOF_REQUEST_TIMEOUT_SEC
+# in jobs/run.py) and the server connection all wait an hour.
+AGENT_TIMEOUT_SEC = 3600
 # Our harness makes 1 + rounds model calls (see harness/fineproof_agent/loop.py); the cap is a backstop.
 AGENT_STEP_LIMIT = 6
 
@@ -35,23 +37,36 @@ def load_tasks(dataset):
     return tasks
 
 
+def final_call_truncated(result) -> bool:
+    """Whether the proof the harness submitted was cut off: its last model call stopped at the output cap."""
+    turns = list(getattr(result, "turns", None) or [])
+    return bool(turns) and getattr(turns[-1], "finish_reason", None) == "length"
+
+
 def _session_class():
-    """HarborSession, except that a rollout the server did not finish cleanly has no grade.
+    """HarborSession, except that a rollout the server did not finish cleanly has no grade, and in training a proof
+    cut off at the output cap scores 0.
 
     When the agent times out (a slow engine, say), Harbor still runs the verifier, which scores the missing proof 0:
     a wrong answer as far as GRPO can tell. Such a rollout says nothing about the policy, so it is left ungraded and
     drops out of its group, like a judge failure.
+
+    A proof cut off at the cap is unfinished, but the judge grades whatever was written and often gives it partial
+    credit (0.1 to 0.25 on average in our first runs), so running into the cap cost the policy little and proofs grew
+    until most were cut off. With `zero_truncated` (training) such a proof scores 0, as in QED-Nano, where the judge
+    sees nothing of an answer cut off mid-thought. It stays in its group: masking cut-off proofs instead destabilised
+    Skywork-OR1. The judge's own score is kept in rollouts.jsonl as `judge_reward`. Evaluation keeps the judge's score.
     """
     from harbor_env.harness import HarborSession
 
     class FineProofSession(HarborSession):
-        def _log_rollout(self):
+        def _log_rollout(self, **extra):
             result, trial_root = self.result, getattr(self, "trial_root", None)
             if result is not None and trial_root is not None and not getattr(self, "_logged", False):
                 import rollout_log
 
                 self._logged = True  # one record per rollout, however often it is reached
-                rollout_log.append(Path(trial_root).parent / "rollouts.jsonl", result, trial_root)
+                rollout_log.append(Path(trial_root).parent / "rollouts.jsonl", result, trial_root, **extra)
 
         def fetch_training_trace(self):
             # OpenEnv marks a capture with a FATAL validation finding as unusable ("drop it") and raises ValueError
@@ -69,9 +84,14 @@ def _session_class():
         def verify(self, transcript, final_state=None):
             verdict = super().verify(transcript, final_state)
             result = self.result
-            self._log_rollout()
             if result is not None and (not result.ok or result.exception_type == "AgentTimeoutError"):
+                self._log_rollout()
                 return type(verdict)(env_reward=None, done=True)
+            truncated = result is not None and final_call_truncated(result)
+            if truncated and getattr(self, "zero_truncated", False) and verdict.env_reward is not None:
+                self._log_rollout(reward=0.0, judge_reward=verdict.env_reward, truncated=True)
+                return type(verdict)(env_reward=0.0, done=True)
+            self._log_rollout(truncated=truncated)
             return verdict
 
     return FineProofSession
@@ -82,7 +102,7 @@ def session_for(args, index, task, split, sampling):
     from harbor_env import HarborEnv
 
     session = _session_class()(
-        env=HarborEnv(args.server, message_timeout_s=1800),
+        env=HarborEnv(args.server, message_timeout_s=AGENT_TIMEOUT_SEC),
         owns_env=True,
         split=split,
         task_index=index,
@@ -98,6 +118,7 @@ def session_for(args, index, task, split, sampling):
         agent_timeout_sec=AGENT_TIMEOUT_SEC,
     )
     session.trial_root = Path(args.trials)
+    session.zero_truncated = getattr(args, "truncated_reward", "judge") == "zero"
     return session
 
 

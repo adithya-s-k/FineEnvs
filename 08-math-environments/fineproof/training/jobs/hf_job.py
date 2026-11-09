@@ -10,8 +10,12 @@ end. The bucket is also mounted read-only at /outputs, so an eval can load a che
     python jobs/hf_job.py train --name qed-train --bucket ... --eval-checkpoints --submit   # + an eval Job per checkpoint
     python jobs/hf_job.py eval  --name qed-eval-step100 --bucket ... --checkpoint /outputs/qed-train/checkpoint-100 --step 100 --submit
 
+A training Job that ended early (timed out, stopped, a node failure) resumes when it is submitted again with the same
+--name: it continues from the latest full checkpoint the bucket has for that name (jobs/run.py restore_run).
+
 Secrets sent: HF_TOKEN (model downloads), DAYTONA_API_KEY (sandboxes) and JUDGE_API_KEY (the verifier's judge).
-JUDGE_PROVIDER / JUDGE_MODEL / JUDGE_BASE_URL are passed through when set.
+JUDGE_PROVIDER / JUDGE_MODEL / JUDGE_BASE_URL / JUDGE_SAMPLES are passed through when set, and so are
+FINEPROOF_VLLM_CUDA_GRAPHS (1: vLLM without --enforce-eager) and FINEPROOF_MAX_MODEL_LEN (default 131072).
 """
 
 import argparse
@@ -45,7 +49,7 @@ def main():
     parser.add_argument("--flavor", default="h200x2")
     parser.add_argument("--timeout", default="12h")
     parser.add_argument("--steps", type=int, default=100)
-    parser.add_argument("--save-steps", type=int, default=25)
+    parser.add_argument("--save-steps", type=int, default=10)
     parser.add_argument("--checkpoint", help="For eval: /outputs/<run>/checkpoint-N")
     parser.add_argument("--step", type=int, default=0)
     parser.add_argument("--tasks", type=int)
@@ -58,11 +62,16 @@ def main():
     parser.add_argument("--eval-checkpoints", action="store_true",
                         help="Train: submit an eval Job for each checkpoint as it is saved (jobs/checkpoint_evals.py)")
     parser.add_argument("--eval-concurrency", type=int, default=64, help="With --eval-checkpoints: rollouts in flight")
+    parser.add_argument("--eval-every", type=int, default=20,
+                        help="With --eval-checkpoints: eval checkpoints whose step is a multiple of this, and the last")
     parser.add_argument("--rounds", type=int, default=1, help="Harness check-and-rewrite rounds (0: one call)")
-    parser.add_argument("--max-tokens", type=int, default=16384, help="Output cap per model call")
-    parser.add_argument("--grad-accum", type=int, default=40, help="Train: rollouts per update")
-    parser.add_argument("--inflight", type=int, default=32, help="Train: rollouts in flight")
-    parser.add_argument("--learning-rate", type=float, default=2e-6, help="Train: AsyncGRPO learning rate")
+    parser.add_argument("--max-tokens", type=int, default=32768, help="Output cap per model call")
+    parser.add_argument("--generations", type=int, default=16, help="Train: rollouts per problem (a GRPO group)")
+    parser.add_argument("--grad-accum", type=int, default=128, help="Train: rollouts per update")
+    parser.add_argument("--inflight", type=int, default=128, help="Train: rollouts in flight")
+    parser.add_argument("--learning-rate", type=float, default=1e-6, help="Train: AsyncGRPO learning rate")
+    parser.add_argument("--truncated-reward", default="zero", choices=["zero", "judge"],
+                        help="Train: reward of a proof cut off at the cap (see tasks.py)")
     parser.add_argument("--warmup-steps", type=int, default=0, help="Train: linear learning-rate warm-up")
     parser.add_argument("--max-restarts", type=int, default=3, help="Train: resumes from the latest checkpoint")
     parser.add_argument("--resume-from", help="Train: start from another run's checkpoint, /outputs/<run>/checkpoint-N")
@@ -77,8 +86,8 @@ def main():
     args.concurrency = args.concurrency or (4 if args.action == "smoke" else 32)
     if Path(args.name).name != args.name or args.name in {".", ".."}:
         parser.error("Use a single directory name for --name")
-    if args.flavor not in ("h200x2", "h200x4"):
-        parser.error("Use h200x2 or h200x4: vLLM on all GPUs but one, the trainer on the last (AsyncGRPO needs "
+    if args.flavor not in ("h200x2", "h200x4", "h200x8"):
+        parser.error("Use h200x2, h200x4 or h200x8: vLLM on all GPUs but one, the trainer on the last (AsyncGRPO needs "
                      "FlashAttention 3, so Hopper)")
     namespace, separator, bucket = args.bucket.partition("/")
     if not separator or not namespace or not bucket:
@@ -91,7 +100,8 @@ def main():
     if args.action != "smoke":
         command += ["--grad-accum", str(args.grad_accum), "--inflight", str(args.inflight)]
     if args.action == "train":
-        command += ["--max-restarts", str(args.max_restarts), "--warmup-steps", str(args.warmup_steps)]
+        command += ["--max-restarts", str(args.max_restarts), "--warmup-steps", str(args.warmup_steps),
+                    "--generations", str(args.generations), "--truncated-reward", args.truncated_reward]
         command += ["--resume-from", args.resume_from] if args.resume_from else []
         command += ["--evals-run", args.evals_run] if args.evals_run else []
     if args.action in ("train", "smoke"):
@@ -111,10 +121,12 @@ def main():
     if args.eval_checkpoints:
         if args.action != "train":
             parser.error("--eval-checkpoints is for train")
-        command += ["--eval-checkpoints", "--eval-concurrency", str(args.eval_concurrency)]
+        command += ["--eval-checkpoints", "--eval-concurrency", str(args.eval_concurrency),
+                    "--eval-every", str(args.eval_every)]
     prepare_args = args.prepare_args + (" --sandbox hf-sandbox" if args.sandbox == "hf-sandbox" else "")
     env = {"PYTHONUNBUFFERED": "1", "FINEPROOF_PREPARE_ARGS": prepare_args.strip(), "FINEPROOF_OUTPUT_BUCKET": args.bucket}
     for name in ("DAYTONA_API_URL", "JUDGE_PROVIDER", "JUDGE_MODEL", "JUDGE_BASE_URL", "JUDGE_SAMPLES",
+                 "FINEPROOF_VLLM_CUDA_GRAPHS", "FINEPROOF_MAX_MODEL_LEN",
                  "OPENENV_REPO", "OPENENV_COMMIT"):  # the last two override jobs/install.sh's OpenEnv pin
         if os.environ.get(name):
             env[name] = os.environ[name]

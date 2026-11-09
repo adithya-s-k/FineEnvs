@@ -107,9 +107,11 @@ def records_from_trials(trial_root: Path) -> list[dict]:
     return records
 
 
-def append(path: Path, result, trial_root: Path | None) -> None:
+def append(path: Path, result, trial_root: Path | None, **extra) -> None:
+    """One line for `result`. `extra` overrides or adds fields: in training, a proof cut off at the output cap is
+    recorded with the reward GRPO saw (`reward=0.0`), the judge's own score (`judge_reward`) and `truncated`."""
     try:
-        line = json.dumps(record(result, trial_root), default=str)
+        line = json.dumps({**record(result, trial_root), **extra}, default=str)
         with _LOCK, Path(path).open("a") as handle:
             handle.write(line + "\n")
     except Exception:  # noqa: BLE001 - a log line must never fail a rollout
@@ -131,6 +133,10 @@ def summarize(records: list[dict]) -> dict:
         "rollouts/count": len(records),
         "rollouts/graded_frac": len(graded) / len(records),
         "rollouts/reward_mean": mean(graded),
+        # The judge's score before a cut-off proof's reward is set to 0 (the same as reward_mean when none was).
+        "rollouts/judge_reward_mean": mean([r.get("judge_reward", r["reward"]) for r in records
+                                            if isinstance(r.get("reward"), (int, float))]),
+        "rollouts/zeroed_truncated": sum("judge_reward" in r for r in records),
         "rollouts/full_marks_frac": mean([float(x >= 0.999) for x in graded]),
         "rollouts/zero_frac": mean([float(x <= 0.0) for x in graded]),
         "rollouts/server_errors": sum(not r.get("ok") for r in records),

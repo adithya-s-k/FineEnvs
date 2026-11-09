@@ -6,7 +6,10 @@ jobs/hf_job.py (which mounts the bucket at /outputs). Every eval scores the same
 same judge, and logs to one Trackio run (`<run>-evals`) at the checkpoint's step, so the curve reads across steps.
 
 What was submitted goes to <output>/checkpoint_evals.jsonl and the subprocess output to checkpoint_evals.log. A
-failure is logged and retried at the next scan; it never stops training.
+failure is logged and retried at the next scan; it never stops training. A resumed run (jobs/run.py restore_run) brings
+checkpoint_evals.jsonl back, so a checkpoint is never sent twice. With `eval_every`, only checkpoints whose step is a
+multiple of it are evaluated while training, and the last one when it ends: checkpoints can be saved more often (to
+lose less on a crash) than they are worth evaluating.
 """
 
 from __future__ import annotations
@@ -43,14 +46,24 @@ def complete(path: Path) -> bool:
 class CheckpointEvals(threading.Thread):
     def __init__(self, output: Path, *, bucket: str, model: str, sandbox: str, rounds: int, max_tokens: int,
                  space_id: str | None, trackio_bucket: str | None, concurrency: int = BENCHMARK["concurrency"],
-                 trackio_run: str | None = None, scan_every_s: float = 60.0, dry_run: bool = False):
+                 trackio_run: str | None = None, scan_every_s: float = 60.0, dry_run: bool = False,
+                 eval_every: int = 1):
         super().__init__(name="checkpoint-evals", daemon=True)
         self.output, self.bucket, self.model, self.sandbox = Path(output), bucket, model, sandbox
         self.rounds, self.max_tokens, self.space_id, self.trackio_bucket = rounds, max_tokens, space_id, trackio_bucket
         self.scan_every_s, self.dry_run, self.concurrency = scan_every_s, dry_run, concurrency
         self.run_name = self.output.name
         self.trackio_run = trackio_run or f"{self.run_name}-evals"
+        self.eval_every = max(1, eval_every)
         self.done: set[int] = set()
+        record = self.output / "checkpoint_evals.jsonl"
+        for line in record.read_text().splitlines() if record.is_file() else []:
+            try:
+                entry = json.loads(line)
+            except ValueError:
+                continue
+            if not entry.get("dry_run"):
+                self.done.add(int(entry["step"]))
         self.stopping = threading.Event()
         self.lock = threading.Lock()
 
@@ -62,7 +75,7 @@ class CheckpointEvals(threading.Thread):
                   "--checkpoint", f"/outputs/{self.run_name}/{path.name}", "--step", str(step),
                   "--task-list", BENCHMARK["task_list"], "--samples", str(BENCHMARK["samples"]),
                   "--concurrency", str(self.concurrency), "--rounds", str(self.rounds),
-                  "--max-tokens", str(self.max_tokens), "--sandbox", self.sandbox, "--timeout", "3h",
+                  "--max-tokens", str(self.max_tokens), "--sandbox", self.sandbox, "--timeout", "6h",
                   "--prepare-args", "--train-tasks 16",  # an eval needs only the test split
                   "--trackio-run", self.trackio_run]
         if self.space_id:
@@ -86,11 +99,16 @@ class CheckpointEvals(threading.Thread):
             handle.write(json.dumps({"step": step, "checkpoint": path.name, "job": url, "dry_run": self.dry_run,
                                      "time": round(time.time(), 1)}) + "\n")
 
-    def scan(self) -> None:
+    def scan(self, final: bool = False) -> None:
+        """Launch evals for complete checkpoints not yet sent; `final` also takes the last one off the eval_every grid."""
         with self.lock:
-            for path in sorted(self.output.glob("checkpoint-*"), key=lambda p: checkpoint_step(p) or -1):
+            paths = sorted(self.output.glob("checkpoint-*"), key=lambda p: checkpoint_step(p) or -1)
+            last = checkpoint_step(paths[-1]) if paths else None
+            for path in paths:
                 step = checkpoint_step(path)
                 if step is None or step in self.done or not complete(path):
+                    continue
+                if step % self.eval_every and not (final and step == last):
                     continue
                 try:
                     self.launch(path, step)
@@ -108,4 +126,4 @@ class CheckpointEvals(threading.Thread):
         self.stopping.set()
         self.join(timeout=7200)
         for _ in range(2):
-            self.scan()
+            self.scan(final=True)
