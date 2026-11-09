@@ -28,6 +28,27 @@ import httpx
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def local_checkpoint(checkpoint: str, output: Path) -> str:
+    """A checkpoint on the read-only bucket mount (/outputs/...), copied to local disk first.
+
+    vLLM reads a mounted 18 GB safetensors file far too slowly to start (the first checkpoint eval timed out after
+    10 minutes at 0%); `hf buckets sync` downloads it at full speed. The copy goes outside the output folder, which is
+    itself synced to the bucket.
+    """
+    path, bucket = Path(checkpoint), os.environ.get("FINEPROOF_OUTPUT_BUCKET")
+    if not bucket or not path.is_relative_to("/outputs"):
+        return checkpoint
+    local = Path("/workspace/checkpoints") / path.relative_to("/outputs")
+    start = time.monotonic()
+    with (output / "checkpoint_copy.log").open("a") as log:
+        subprocess.run(["hf", "buckets", "sync", f"hf://buckets/{bucket}/{path.relative_to('/outputs')}", str(local)],
+                       check=True, stdout=log, stderr=subprocess.STDOUT)
+        log.write(f"copied {checkpoint} to {local} in {time.monotonic() - start:.0f}s\n")
+    if not (local / "config.json").is_file() or not any(local.glob("*.safetensors")):
+        raise RuntimeError(f"{checkpoint} did not copy completely to {local}")
+    return str(local)
+
+
 def visible_gpus() -> list[str]:
     """CUDA_VISIBLE_DEVICES when set (Slurm sets it), else every GPU nvidia-smi lists (an HF Job may set neither)."""
     if os.environ.get("CUDA_VISIBLE_DEVICES"):
@@ -95,7 +116,9 @@ def main():
     env = dict(os.environ, PYTHONUNBUFFERED="1", TRACKIO_DIR=str(output / "trackio"), VLLM_USE_DEEP_GEMM="0",
                VLLM_DEEP_GEMM_WARMUP="skip", VLLM_USE_FLASHINFER_SAMPLER="0",
                # Trackio: keep train.log's console in the run too, and finish the run (flushing it) on SIGTERM.
-               TRACKIO_CAPTURE_CONSOLE="1", TRACKIO_HANDLE_SIGTERM="1")
+               TRACKIO_CAPTURE_CONSOLE="1", TRACKIO_HANDLE_SIGTERM="1",
+               # A 4B checkpoint is 18 GB of fp32 weights; vLLM's default 10 minutes for engines to load is tight.
+               VLLM_ENGINE_READY_TIMEOUT_S=os.environ.get("VLLM_ENGINE_READY_TIMEOUT_S", "1800"))
     # OpenEnv's Harbor modules log what they decide (budget stops, token clamps, upstream retries) at INFO, which
     # uvicorn's default config drops; this config keeps them, and Harbor's own loggers at WARNING.
     logging_config = output / "harbor_logging.json"
@@ -126,7 +149,7 @@ def main():
         if any(p.poll() is not None for p in children):
             raise RuntimeError("A service exited; inspect logs in " + str(output))
 
-    def wait(url, timeout=1200):
+    def wait(url, timeout=2400):
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             healthy()
@@ -146,7 +169,7 @@ def main():
         command = [sys.executable, "jobs/serve_model.py", "--model", args.model, "--output", str(output),
                    "--port", str(engine_port)]
         if args.action == "eval":
-            command += ["--eval"] + (["--checkpoint", args.checkpoint] if args.checkpoint else [])
+            command += ["--eval"] + (["--checkpoint", local_checkpoint(args.checkpoint, output)] if args.checkpoint else [])
         command += ["--data-parallel", str(len(engine_devices))]
         spawn(command, "vllm", {"CUDA_VISIBLE_DEVICES": ",".join(engine_devices)})
         wait(engine_url + "/health")
