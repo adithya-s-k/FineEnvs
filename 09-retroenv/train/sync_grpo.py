@@ -13,6 +13,7 @@ async_grpo.py is the same experiment with AsyncGRPO, which keeps generating whil
 
 # %% 1. Choose the model and run settings.
 import argparse
+import contextvars
 import json
 import math
 import os
@@ -60,7 +61,27 @@ def arguments(description=__doc__, output="runs/rl/sync_grpo"):
         help="graded: the server's grade, failures scaled by --partial-credit; solved: 1 for a solve, else 0",
     )
     parser.add_argument("--lr", type=float, default=2e-5)
+    parser.add_argument(
+        "--updates-per-round",
+        type=int,
+        default=1,
+        help="Overfit runs: optimizer steps per round of every task (a round split into equal batches)",
+    )
     parser.add_argument("--thinking", action="store_true", help="AsyncGRPO: let the model think before each turn")
+    parser.add_argument(
+        "--reasoning-effort",
+        choices=["low", "medium", "high", "xhigh"],
+        default="medium",
+        help="With --thinking: the template's reasoning effort (low asks for brevity, xhigh for long deliberation)",
+    )
+    parser.add_argument("--context", type=int, default=65536, help="AsyncGRPO: tokens per episode (vLLM's max length)")
+    parser.add_argument("--turn-tokens", type=int, default=16384, help="AsyncGRPO: tokens per model turn")
+    parser.add_argument("--init-adapter", type=Path, help="AsyncGRPO: start from this LoRA checkpoint's weights")
+    parser.add_argument(
+        "--mask-truncated",
+        action="store_true",
+        help="AsyncGRPO: an unsubmitted episode cut off by the context or turn cap gets no reward (out of the loss)",
+    )
     return parser.parse_args()
 
 
@@ -77,34 +98,83 @@ def tokenizer_for(model, thinking=False):
     tokenizer = AutoTokenizer.from_pretrained(model, revision=MODEL_REVISIONS[model])
     if not thinking:
         tokenizer.chat_template = "{%- set enable_thinking = false -%}\n" + tokenizer.chat_template
+    else:
+        # The template trims each turn's reasoning before re-rendering it. A turn whose thinking
+        # began or ended with extra whitespace (common at temperature 1) then re-rendered
+        # differently from its first token, so TRL saw the whole turn as drift and forked a new
+        # row: ~2 rows per thinking episode, double the trainer's work. Untrimmed, a re-rendered
+        # turn reproduces what was generated (checked against TRL's Qwen3.5 response regex).
+        trim = "{%- set reasoning_content = reasoning_content|trim %}"
+        if trim not in tokenizer.chat_template:
+            raise RuntimeError("The model's chat template changed: the reasoning trim to drop is gone")
+        tokenizer.chat_template = tokenizer.chat_template.replace(trim, "")
     tokenizer.response_template = deepcopy(qwen3_5_template)  # how TRL parses Qwen's XML tool calls
     return tokenizer
 
 
-# A turn's token cap must also fit what is left of the context: vLLM rejects a request whose
-# prompt plus max_tokens exceeds its length, and AsyncGRPO retries the rejection 30 times and then
-# ends the rollout process. This replaces the pinned TRL's turn request (on `_AsyncRolloutLoop`,
-# the class that generates in the rollout process) with one that caps max_tokens at the room
-# left, and ends just that episode if vLLM still rejects it. It runs in the rollout process too,
-# which imports this module to rebuild the environment.
-def cap_turns_to_context():
+# Two changes to the pinned TRL's turn request (on `_AsyncRolloutLoop`, the class that generates in
+# the rollout process). They run in the rollout process too, which imports this module to rebuild
+# the environment.
+#
+# - A turn's token cap must also fit what is left of the context: vLLM rejects a request whose
+#   prompt plus max_tokens exceeds its length, and AsyncGRPO retries the rejection 30 times and
+#   then ends the rollout process. max_tokens is capped at the room left, and an episode vLLM still
+#   rejects ends on its own.
+# - Every turn resends the episode so far. vLLM's data-parallel server sends each request to its
+#   least-busy replica, so most turns landed where the episode's prefix was not cached and re-read
+#   it. Each episode is pinned to one replica (vLLM's X-data-parallel-rank header), the one with the
+#   fewest episodes running, for all its turns.
+# - An episode whose last turn ran out of context or hit the turn cap is marked `truncated` on its
+#   environment, so `--mask-truncated` can leave it out of the loss instead of scoring it 0.
+_replica = contextvars.ContextVar("retroenv_replica", default=None)
+_clipped = contextvars.ContextVar("retroenv_clipped", default=False)
+
+
+def patch_turn_requests():
     limit = int(os.environ.get("RETROENV_MAX_MODEL_LEN", "0"))
+    replicas = int(os.environ.get("RETROENV_VLLM_REPLICAS", "1"))
     if not limit:
         return
     from trl.experimental.async_grpo import async_rollout_worker as worker
 
     loop = worker._AsyncRolloutLoop
-    if getattr(loop, "_turns_capped", False):
+    if getattr(loop, "_turns_patched", False):
         return
-    if not hasattr(loop, "_generate_one_turn"):
-        raise RuntimeError("TRL's rollout loop changed: _AsyncRolloutLoop._generate_one_turn is gone")
+    for name in ("_generate_one", "_generate_one_turn"):
+        if not hasattr(loop, name):
+            raise RuntimeError(f"TRL's rollout loop changed: _AsyncRolloutLoop.{name} is gone")
 
     class Rejected(Exception):
         """A request vLLM refused (4xx): not retried, it would only be refused again."""
 
+    generate_episode = loop._generate_one
+
+    async def generate_one(self, *args, **kwargs):  # one asyncio task per episode, all its turns inside
+        _clipped.set(False)  # this task's context: every turn of this episode sees it
+        load, rank = None, None
+        if replicas > 1:
+            load = self.__dict__.setdefault("_replica_load", [0] * replicas)
+            rank = min(range(replicas), key=load.__getitem__)
+            load[rank] += 1
+            _replica.set(rank)
+        try:
+            result = await generate_episode(self, *args, **kwargs)
+        finally:
+            if load is not None:
+                load[rank] -= 1
+        # The tools are the environment's bound methods; TRL scores it right after this returns.
+        tools = (kwargs.get("tool_dict") or {}).values()
+        environment = next((getattr(tool, "__self__", None) for tool in tools if hasattr(tool, "__self__")), None)
+        if environment is not None:
+            environment.truncated = _clipped.get()
+        return result
+
     async def generate_one_turn(self, prompt_ids):
+        import aiohttp
+
         room = limit - len(prompt_ids) - 64
         if room < 16:  # no room for a reply: end the episode as if the model stopped
+            _clipped.set(True)
             return [self.tokenizer.eos_token_id], [0.0]
         payload = {
             "model": self._request_model,
@@ -121,16 +191,20 @@ def cap_turns_to_context():
         }
         if self.min_p is not None:
             payload["min_p"] = self.min_p
+        rank = _replica.get()
+        headers = {"X-data-parallel-rank": str(rank)} if rank is not None else None
 
         async def post():
-            import aiohttp
-
-            try:
-                return await self._post("/v1/completions", payload, self.request_timeout)
-            except aiohttp.ClientResponseError as error:
-                if 400 <= error.status < 500:
-                    raise Rejected(f"{error.status} {error.message}") from error
-                raise
+            async with self.session.post(
+                f"{self.vllm_server_url}/v1/completions",
+                json=payload,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=self.request_timeout),
+            ) as response:
+                if 400 <= response.status < 500:
+                    raise Rejected(f"{response.status} {(await response.text())[:200]}")
+                response.raise_for_status()
+                return await response.json()
 
         try:
             output = await self._retry(post, max_attempts=30, label="vllm /v1/completions")
@@ -138,13 +212,15 @@ def cap_turns_to_context():
             print(f"vLLM refused a turn ({error}; prompt {len(prompt_ids)} tokens): episode ended", flush=True)
             return [self.tokenizer.eos_token_id], [0.0]
         choice = output["choices"][0]
+        _clipped.set(choice.get("finish_reason") == "length")  # the last turn's says how the episode ended
         return choice["token_ids"], choice["logprobs"]["token_logprobs"]
 
+    loop._generate_one = generate_one
     loop._generate_one_turn = generate_one_turn
-    loop._turns_capped = True
+    loop._turns_patched = True
 
 
-cap_turns_to_context()
+patch_turn_requests()
 
 
 # %% 3. One row per train task. The environment fetches the task itself from the server.
@@ -194,22 +270,26 @@ from retroenv_openenv.client import RemoteRetroRouteEnv  # noqa: E402  (imported
 # be gamed (stopping after one accepted cut scores 0.6 of a solve), so a rising solved reward can
 # only mean more solves.
 class TrainingEnv(RemoteRetroRouteEnv):
-    def __init__(self, server, partial_credit=0.5, reward="graded"):
+    def __init__(self, server, partial_credit=0.5, reward="graded", mask_truncated=False):
         super().__init__(server)
         self._partial_credit = partial_credit
         self._reward_kind = reward
+        self._mask_truncated = mask_truncated
 
     def get_reward(self):
         grade = super().get_reward()  # NaN when the session broke: no grade, not a wrong answer
         if math.isnan(grade):
             return grade
+        if self._mask_truncated and self.truncated and not self.submitted:
+            return math.nan  # cut off by the context or turn cap: no verdict, no gradient (advantage 0)
         if self._reward_kind == "solved":
             return float(self.passed)
         return grade if self.passed else self._partial_credit * grade
 
 
-def environment_factory(server, partial_credit=0.5, reward="graded"):
-    return partial(TrainingEnv, server, partial_credit=partial_credit, reward=reward)  # picklable, for AsyncGRPO
+def environment_factory(server, partial_credit=0.5, reward="graded", mask_truncated=False):
+    # picklable, for AsyncGRPO
+    return partial(TrainingEnv, server, partial_credit=partial_credit, reward=reward, mask_truncated=mask_truncated)
 
 
 # Logged beside the reward with weight 0: the share of episodes that solved the task, and that submitted.
