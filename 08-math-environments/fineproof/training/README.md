@@ -55,8 +55,8 @@ GPU 1: AsyncGRPO trainer                       (in the Harbor server)           
   grade records which one gave it.
 
 Pinned stack: 05's validated one (TRL `52fb144e`, vLLM 0.25.1, Transformers `d6c1e71b`), with OpenEnv at `main` plus
-[openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573) (`0bd1a89d`: custom harnesses, loopback, one
-step-limit warning per harness), and Harbor 0.24 for separate verifiers. Models: `Qwen/Qwen3.5-2B`, `-4B` and `-9B`
+[openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573) (`a0068bfd`: custom harnesses, allowed per server
+with `OPENENV_HARBOR_ALLOW_HARNESS`, loopback for host-side agents, a harness preflight), and Harbor 0.24 for separate verifiers. Models: `Qwen/Qwen3.5-2B`, `-4B` and `-9B`
 in non-thinking mode, at pinned revisions. The two-update smoke (`jobs/smoke.py`) passed on HF Jobs (2× H200) and on
 Slurm (2× H100).
 
