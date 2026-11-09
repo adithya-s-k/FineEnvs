@@ -153,7 +153,9 @@ def main():
                         "eval", "--name", name, "--bucket", args.bucket, "--model", args.model, "--flavor", "h200",
                         "--set", args.set, "--checkpoint", f"/outputs/{args.run}/checkpoint-{step}",
                         "--label", f"{args.run} step {step}", "--harness", args.harness,
-                        "--attempts", str(args.attempts), "--concurrency", "128",
+                        # 64 episodes fit one H200's KV cache: at 120, it filled (99%), the prefix
+                        # cache fell from 84% of prompt tokens to 17%, and episodes took 3x longer.
+                        "--attempts", str(args.attempts), "--concurrency", "64",
                         *(["--temperature", str(args.temperature)] if args.temperature is not None else []),
                         *(["--task-ids", slices[k]] if slices else []),
                         # The training job's uploaded source: the same code, and no new upload.
