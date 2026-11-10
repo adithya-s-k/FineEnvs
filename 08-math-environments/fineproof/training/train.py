@@ -84,6 +84,21 @@ def latest_checkpoint(output):
     return None
 
 
+def keep_intervals(save_steps, logging_steps):
+    """Keep this run's save and logging intervals when it resumes from a checkpoint.
+
+    Transformers reloads them from the checkpoint's trainer_state.json and lets those win over the arguments, so
+    fp-rl2-2b, resumed with --save-steps 25, went on saving every 10 updates as its first Job had.
+    """
+    from transformers import TrainerCallback
+
+    class KeepIntervals(TrainerCallback):
+        def on_step_begin(self, args, state, control, **kwargs):
+            state.save_steps, state.logging_steps = save_steps, logging_steps
+
+    return KeepIntervals()
+
+
 def crash_after(step):
     """A test hook (FINEPROOF_CRASH_AFTER_STEP): die right after checkpoint `step` is saved, as a leak would."""
     from transformers import TrainerCallback
@@ -188,6 +203,7 @@ def main():
         Path(args.trials).parent / "rollouts.jsonl", Path(args.trials), args.model)
     trainer.callback_handler.callbacks.insert(0, metrics_callback)
     trainer.add_callback(traces_callback)
+    trainer.add_callback(keep_intervals(config.save_steps, config.logging_steps))
     if os.environ.get("FINEPROOF_CRASH_AFTER_STEP") and not (args.resume or args.resume_from):
         trainer.add_callback(crash_after(int(os.environ["FINEPROOF_CRASH_AFTER_STEP"])))
 
