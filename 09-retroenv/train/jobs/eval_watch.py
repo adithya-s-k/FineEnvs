@@ -176,14 +176,20 @@ def main():
                 continue
             failed = [name for name, stage in stages.items() if stage != "COMPLETED"]
             result = score(args.bucket, list(jobs), tiers, args.attempts, scratch / f"step-{step}")
-            finished[step] = result if result and not failed else f"failed: {', '.join(failed) or 'no episodes'}"
+            # An evaluation exits non-zero when an episode is left ungraded, which includes an
+            # episode that ran out of context before submitting: the model's failure, recorded as
+            # an unsolved episode. So a checkpoint is complete once every episode is in, whatever
+            # its jobs' exit codes.
+            complete = bool(result) and result["episodes"] == expected
+            finished[step] = result if complete else f"failed: {', '.join(failed) or 'missing episodes'}"
             row = (
                 f"pass@1 {result['pass1']:.3f}, pass@{args.attempts} {result['passk']:.3f}, "
                 f"tiers {', '.join(f'{t} {v:.3f}' for t, v in sorted(result['tiers'].items()))}"
                 if result
                 else finished[step]
             )
-            print(f"step {step}: {row}" + (f" ({finished[step]})" if failed and result else ""), flush=True)
+            note = f" ({result['episodes']}/{expected} episodes; jobs that exited non-zero: {', '.join(failed)})"
+            print(f"step {step}: {row}" + (note if failed and result else ""), flush=True)
             curve = scratch / "evals.md"
             curve.write_text(
                 f"# {args.run} on {args.set}, {args.harness} harness, {args.attempts} attempts\n\n"
