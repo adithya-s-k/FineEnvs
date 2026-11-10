@@ -108,6 +108,7 @@ def main(argv=None):
     )
     parser.add_argument("--shards", type=int, help="For watch: evaluation jobs per checkpoint, one H200 each")
     parser.add_argument("--eval-concurrency", type=int, help="For watch: episodes at a time per evaluation job")
+    parser.add_argument("--step-offset", type=int, help="For watch: steps trained before this run (a continuation)")
     parser.add_argument("--space-id")
     parser.add_argument("--submit", action="store_true", help="Without this flag, print the job plan")
     args = parser.parse_args(argv)
@@ -139,6 +140,7 @@ def main(argv=None):
             + (" --thinking" if args.thinking else "")
             + (f" --reasoning-effort {args.reasoning_effort}" if args.thinking and args.reasoning_effort else "")
             + (f" --concurrency {args.eval_concurrency}" if args.eval_concurrency else "")
+            + (f" --step-offset {args.step_offset}" if args.step_offset else "")
             # A watch mounted on a later upload than the training job's evaluates with that code.
             + (f" --source {args.source_from}" if args.source_from and args.source_from != args.job else "")
         )

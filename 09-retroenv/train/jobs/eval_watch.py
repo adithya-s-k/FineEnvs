@@ -89,12 +89,12 @@ def score(bucket, names, tiers, attempts, scratch):
     }
 
 
-def table(rows, base, attempts, expected):
+def table(rows, base, attempts, expected, offset=0):
     lines = [
         f"| Step | Pass@1 | Pass@{attempts} | Easy | Medium | Hard | Reward | Episodes |",
         "|---|---|---|---|---|---|---|---|",
     ]
-    for step, s in [("base", base)] + sorted(rows.items()):
+    for step, s in [("base", base)] + [(step + offset, s) for step, s in sorted(rows.items())]:
         if isinstance(s, str):
             lines.append(f"| {step} | {s} |  |  |  |  |  |  |")
         elif s:
@@ -129,6 +129,9 @@ def main():
     parser.add_argument("--concurrency", type=int, default=64, help="Episodes at a time per evaluation job")
     parser.add_argument(
         "--source", help="Job whose uploaded source the evaluations mount (default: the training job's)"
+    )
+    parser.add_argument(
+        "--step-offset", type=int, default=0, help="Steps trained before this run (a continuation), added to labels"
     )
     args = parser.parse_args()
     namespace = args.bucket.partition("/")[0]
@@ -211,7 +214,7 @@ def main():
             curve = scratch / "evals.md"
             curve.write_text(
                 f"# {args.run} on {args.set}, {args.harness} harness, {args.attempts} attempts\n\n"
-                + table(finished, base, args.attempts, expected)
+                + table(finished, base, args.attempts, expected, args.step_offset)
             )
             hub.batch_bucket_files(args.bucket, add=[(str(curve), f"{args.run}/evals.md")])
         if (
@@ -219,7 +222,7 @@ def main():
             and len(finished) == len(submitted)
             and not set(checkpoints(args.bucket, args.run)) - set(submitted)
         ):
-            print(table(finished, base, args.attempts, expected), flush=True)
+            print(table(finished, base, args.attempts, expected, args.step_offset), flush=True)
             return
         time.sleep(args.poll)
 
