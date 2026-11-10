@@ -139,6 +139,8 @@ def main(argv=None):
             + (" --thinking" if args.thinking else "")
             + (f" --reasoning-effort {args.reasoning_effort}" if args.thinking and args.reasoning_effort else "")
             + (f" --concurrency {args.eval_concurrency}" if args.eval_concurrency else "")
+            # A watch mounted on a later upload than the training job's evaluates with that code.
+            + (f" --source {args.source_from}" if args.source_from and args.source_from != args.job else "")
         )
         command = ["bash", "-c", watch]
     elif args.action != "check":

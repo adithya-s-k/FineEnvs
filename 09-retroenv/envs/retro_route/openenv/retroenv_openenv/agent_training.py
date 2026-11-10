@@ -33,26 +33,30 @@ TOOLS: list[dict[str, Any]] = json.loads(Path(__file__).with_name("training_tool
 TOOL_NAMES = {tool["function"]["name"] for tool in TOOLS}
 MAX_TURNS = 20  # train/async_grpo.py: max_tool_calling_iterations
 PROMPT_TURNS = 16  # the system prompt training sends says 16 turns (train/sync_grpo.py task_dataset)
-# vLLM's refusal of a turn whose prompt plus max_tokens passes the context.
-CONTEXT_FULL = re.compile(r"maximum context length is (\d+) tokens.*?prompt contains at least (\d+) input tokens", re.S)
+# vLLM's refusal of a turn whose prompt plus max_tokens passes the context. The prompt length it
+# quotes ("at least N input tokens") is only context - max_tokens + 1, not the prompt's length.
+CONTEXT_FULL = re.compile(r"maximum context length is (\d+) tokens")
 
 
 def _request(llm: Any, config: AgentConfig, messages: list[dict[str, Any]]) -> Any:
     """One turn. Near the end of the context, the turn gets the tokens left, as in training.
 
     TRL caps each turn at what the episode's context has left; an endpoint refuses a request whose
-    max_tokens passes it, which would end an episode that training would have let finish.
+    max_tokens passes it, which would end an episode that training would have let finish. On that
+    refusal, a one-token request measures the prompt (its usage; the prefix cache keeps the work),
+    and the turn is sent again with what is left.
     """
-    for _ in range(3):
-        try:
-            return _request_with_retry(llm, config, messages, TOOLS)
-        except Exception as exc:
-            match = CONTEXT_FULL.search(str(exc))
-            left = int(match.group(1)) - int(match.group(2)) if match else 0
-            if left < 1 or left >= config.max_tokens:
-                raise
-            config = replace(config, max_tokens=left)
-    return _request_with_retry(llm, config, messages, TOOLS)
+    try:
+        return _request_with_retry(llm, config, messages, TOOLS)
+    except Exception as exc:
+        match = CONTEXT_FULL.search(str(exc))
+        if not match:
+            raise
+        probe = _request_with_retry(llm, replace(config, max_tokens=1), messages, TOOLS)
+        left = int(match.group(1)) - int(probe.usage.prompt_tokens)
+        if left < 1 or left >= config.max_tokens:
+            raise
+        return _request_with_retry(llm, replace(config, max_tokens=left), messages, TOOLS)
 
 
 def run_episode(llm: Any, env: RetroEnvClient, opening: dict[str, Any], config: AgentConfig) -> dict[str, Any]:

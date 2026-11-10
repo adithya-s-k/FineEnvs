@@ -404,18 +404,21 @@ def test_a_thinking_eval_sends_thinking_back_and_fits_the_context_like_training(
 
             return ToolOutcome(name=name, result={"matches": []}, done=False, reward=None, error=None)
 
-    class Thinker:  # thinks every turn; refuses a turn whose max_tokens passes a 1,000-token context
+    class Thinker:  # thinks every turn; a 1,000-token context and a 900-token prompt, as vLLM words it
         def __init__(self):
             self.requests, self.chat = [], NS(completions=NS(create=self._create))
 
         def _create(self, **kwargs):
             self.requests.append(kwargs)
             if kwargs["max_tokens"] > 1000 - 900:
-                raise RuntimeError(
+                raise RuntimeError(  # vLLM quotes context - max_tokens + 1, not the prompt's length
                     "Error code: 400 - This model's maximum context length is 1000 tokens. However, you requested "
-                    f"{kwargs['max_tokens']} output tokens and your prompt contains at least 900 input tokens"
+                    f"{kwargs['max_tokens']} output tokens and your prompt contains at least "
+                    f"{1000 - kwargs['max_tokens'] + 1} input tokens"
                 )
-            turn = len([r for r in self.requests if r["max_tokens"] <= 100])
+            if kwargs["max_tokens"] == 1:  # the probe that measures the prompt
+                return NS(choices=[NS(message=NS(content="", tool_calls=None))], usage=NS(prompt_tokens=900))
+            turn = len([r for r in self.requests if 1 < r["max_tokens"] <= 100])
             calls = [] if turn > 1 else [
                 NS(id="c0", function=NS(name="stock_retrieve", arguments='{"query": "CCO"}'),
                    model_dump=lambda exclude_none=True: {"id": "c0", "type": "function",
@@ -429,6 +432,7 @@ def test_a_thinking_eval_sends_thinking_back_and_fits_the_context_like_training(
     config = AgentConfig(model="m", max_turns=agent_training.MAX_TURNS, tool_choice="auto", max_tokens=32768)
     result = agent_training.run_episode(llm, Server.__new__(Server), opening, replace(config, send_reasoning=True))
     assert result["turns"] == 2 and not result["errors"]  # each turn got the 100 tokens left, not an error
+    assert [r["max_tokens"] for r in llm.requests] == [32768, 1, 100, 32768, 1, 100]
     sent = llm.requests[-1]["messages"][2]
     assert sent["role"] == "assistant" and sent["reasoning"] == sent["reasoning_content"] == "thought 1"
     assert "reasoning_content" not in result["transcript"][0] and result["transcript"][0]["reasoning"] == "thought 1"
@@ -450,4 +454,8 @@ def test_a_thinking_run_is_evaluated_with_thinking_at_its_effort(monkeypatch, ca
     )["command"][-1]  # fmt: skip
     assert "--thinking --reasoning-effort low --concurrency 32" in watch and "--base b0,b1" in watch
     plain = _plan(monkeypatch, capsys, "watch", "--run", "a", "--job", "j1", "--bucket", "o/b")["command"][-1]
-    assert "--thinking" not in plain and "--concurrency" not in plain
+    assert "--thinking" not in plain and "--concurrency" not in plain and "--source " not in plain
+    later = _plan(
+        monkeypatch, capsys, "watch", "--run", "a", "--job", "j1", "--bucket", "o/b", "--source-from", "j2"
+    )["command"][-1]  # fmt: skip
+    assert later.endswith("--source j2")  # evaluations run the later upload's code

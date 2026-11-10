@@ -127,6 +127,9 @@ def main():
     # fell from 84% of prompt tokens to 17%, and episodes took 3x longer. Thinking episodes hold
     # several times the tokens (24 a GPU filled ~65% in training), so a thinking run takes ~32.
     parser.add_argument("--concurrency", type=int, default=64, help="Episodes at a time per evaluation job")
+    parser.add_argument(
+        "--source", help="Job whose uploaded source the evaluations mount (default: the training job's)"
+    )
     args = parser.parse_args()
     namespace = args.bucket.partition("/")[0]
 
@@ -170,8 +173,9 @@ def main():
                         *(["--thinking"] if args.thinking else []),
                         *(["--reasoning-effort", args.reasoning_effort] if args.thinking and args.reasoning_effort else []),
                         *(["--task-ids", slices[k]] if slices else []),
-                        # The training job's uploaded source: the same code, and no new upload.
-                        "--source-from", args.job,
+                        # The training job's uploaded source (the same code, and no new upload), or a
+                        # later upload with evaluation fixes the training job predates.
+                        "--source-from", args.source or args.job,
                         "--submit",
                     ]
                 )  # fmt: skip
