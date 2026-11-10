@@ -396,6 +396,9 @@ def main():
     census.start()
     evals = None
     try:
+        # Restore before the eval launcher starts: it reads checkpoint_evals.jsonl to know which checkpoints were
+        # already sent, so a resumed run without that record would send the restored checkpoint to a second eval.
+        restored = restore_run(output) if args.action == "train" else None
         if args.eval_checkpoints:
             from checkpoint_evals import CheckpointEvals
 
@@ -407,7 +410,6 @@ def main():
             evals.start()
         weights = local_checkpoint(args.checkpoint, output) if args.action == "eval" and args.checkpoint else None
         origin = None
-        restored = restore_run(output) if args.action == "train" else None
         if restored is not None:  # an earlier Job of this run: continue it (its --resume-from is in its checkpoint)
             weights = str(restored)
             command += ["--resume"]
