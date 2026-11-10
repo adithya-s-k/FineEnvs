@@ -413,6 +413,15 @@ def main() -> int:
         if args.thinking == "off":
             # The chat-template switch Qwen, GLM, DeepSeek, Kimi and Gemma honour on the HF router.
             config.extra_body["chat_template_kwargs"] = {"enable_thinking": False}
+        elif args.harness == "training":
+            # Thinking as RL trains it (train/async_grpo.py): each turn's thinking stays in the
+            # history, and the reasoning effort is a chat-template variable (Qwen's template
+            # reads it there; its default is xhigh).
+            template = {"enable_thinking": True, "preserve_thinking": True}
+            if args.reasoning_effort:
+                template["reasoning_effort"] = args.reasoning_effort
+            config.extra_body["chat_template_kwargs"] = template
+            config.send_reasoning = True
         backend = agent_training.run_episode if args.harness == "training" else agent.run_episode
         sampling = {
             "max_tokens": config.max_tokens,
@@ -420,9 +429,10 @@ def main() -> int:
             "tool_choice": tool_choice,
             "reasoning_effort": args.reasoning_effort,
             "thinking": args.thinking,
+            **({"preserve_thinking": True} if config.send_reasoning else {}),
         }
 
-    private = args.benchmark_dir / "tasks-private" / f"{args.split}.jsonl"
+    private =args.benchmark_dir / "tasks-private" / f"{args.split}.jsonl"
     if not args.server and not private.exists():
         parser.error(f"{private} is missing; download the release from LiteFold/RetroEnv (see eval/README.md)")
     tiers = {}

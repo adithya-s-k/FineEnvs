@@ -22,6 +22,9 @@ def main():
     parser.add_argument(
         "--thinking", action="store_true", help="Evaluation only: the model's own template, thinking on"
     )
+    parser.add_argument(
+        "--harness", choices=("board", "training"), default="board", help="With --thinking: whose thinking setup"
+    )
     args = parser.parse_args()
     if args.thinking and not args.eval:
         parser.error("--thinking is for evaluation; training runs in non-thinking mode")
@@ -38,6 +41,12 @@ def main():
         tokenizer = AutoTokenizer.from_pretrained(args.model, revision=MODEL_REVISIONS[args.model])
         template.write_text(tokenizer.chat_template)
         chat_kwargs, generation, max_len = '{"enable_thinking":true}', "auto", "131072"
+        if args.harness == "training":
+            # As thinking RL samples (train/async_grpo.py): the training template (its reasoning
+            # trim removed), earlier turns' thinking kept (the evaluator sends it back), untruncated
+            # sampling at the request's temperature, and the training context.
+            template.write_text(tokenizer_for(args.model, thinking=True).chat_template)
+            chat_kwargs, generation, max_len = '{"enable_thinking":true,"preserve_thinking":true}', "vllm", "65536"
     else:
         template.write_text(tokenizer_for(args.model).chat_template)
         chat_kwargs, generation, max_len = '{"enable_thinking":false,"preserve_thinking":true}', "vllm", "65536"

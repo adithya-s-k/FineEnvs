@@ -79,7 +79,7 @@ def main(argv=None):
     parser.add_argument("--harness", choices=("board", "training"), help="For eval: the agent loop (default: board)")
     parser.add_argument("--thinking", action="store_true", help="For eval and async train: thinking on")
     parser.add_argument(
-        "--reasoning-effort", choices=["low", "medium", "high", "xhigh"], help="For train: with --thinking"
+        "--reasoning-effort", choices=["low", "medium", "high", "xhigh"], help="For train and eval: with --thinking"
     )
     parser.add_argument("--context", type=int, help="For train: tokens per episode (default 65536)")
     parser.add_argument("--turn-tokens", type=int, help="For train: tokens per model turn (default 16384)")
@@ -103,8 +103,11 @@ def main(argv=None):
     parser.add_argument("--inflight", type=int, help="For async train: episodes in flight (default: 32 per replica)")
     parser.add_argument("--run", help="For watch: the training run whose checkpoints to evaluate")
     parser.add_argument("--job", help="For watch: the training job id; the watch ends after it does")
-    parser.add_argument("--base", help="For watch: the base model's evaluation in --bucket (default base-eval)")
+    parser.add_argument(
+        "--base", help="For watch: the base model's evaluation(s) in --bucket, comma-separated (default base-eval)"
+    )
     parser.add_argument("--shards", type=int, help="For watch: evaluation jobs per checkpoint, one H200 each")
+    parser.add_argument("--eval-concurrency", type=int, help="For watch: episodes at a time per evaluation job")
     parser.add_argument("--space-id")
     parser.add_argument("--submit", action="store_true", help="Without this flag, print the job plan")
     args = parser.parse_args(argv)
@@ -133,6 +136,9 @@ def main(argv=None):
             + (f" --temperature {args.temperature}" if args.temperature is not None else "")
             + (f" --base {args.base}" if args.base else "")
             + (f" --shards {args.shards}" if args.shards else "")
+            + (" --thinking" if args.thinking else "")
+            + (f" --reasoning-effort {args.reasoning_effort}" if args.thinking and args.reasoning_effort else "")
+            + (f" --concurrency {args.eval_concurrency}" if args.eval_concurrency else "")
         )
         command = ["bash", "-c", watch]
     elif args.action != "check":
@@ -177,6 +183,7 @@ def main(argv=None):
         command += ["--temperature", str(args.temperature)] if args.temperature is not None else []
         command += ["--harness", args.harness] if args.harness else []
         command += ["--thinking"] if args.thinking else []
+        command += ["--reasoning-effort", args.reasoning_effort] if args.thinking and args.reasoning_effort else []
     if args.env_url and args.action in ("train", "eval"):
         command += ["--env-url", args.env_url]
     if args.action in ("smoke", "eval") and args.tasks:

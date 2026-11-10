@@ -6,6 +6,7 @@ import importlib.util
 import json
 import math
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -389,3 +390,64 @@ def test_the_training_harness_eval_runs_the_loop_training_runs(monkeypatch):
     result = agent_training.run_episode(quiet, Server.__new__(Server), opening, config)
     assert result["turns"] == 2 and not result["valid"] and result["reward"] == 0.0
     assert result["hard_failures"] == ["no submission"] and not result["auto_emitted"]
+
+
+def test_a_thinking_eval_sends_thinking_back_and_fits_the_context_like_training():
+    from types import SimpleNamespace as NS
+
+    from retroenv_openenv import agent_training
+    from retroenv_openenv.agent import AgentConfig
+
+    class Server(_LiveClient):
+        def call(self, name, arguments):
+            from retroenv_openenv.client import ToolOutcome
+
+            return ToolOutcome(name=name, result={"matches": []}, done=False, reward=None, error=None)
+
+    class Thinker:  # thinks every turn; refuses a turn whose max_tokens passes a 1,000-token context
+        def __init__(self):
+            self.requests, self.chat = [], NS(completions=NS(create=self._create))
+
+        def _create(self, **kwargs):
+            self.requests.append(kwargs)
+            if kwargs["max_tokens"] > 1000 - 900:
+                raise RuntimeError(
+                    "Error code: 400 - This model's maximum context length is 1000 tokens. However, you requested "
+                    f"{kwargs['max_tokens']} output tokens and your prompt contains at least 900 input tokens"
+                )
+            turn = len([r for r in self.requests if r["max_tokens"] <= 100])
+            calls = [] if turn > 1 else [
+                NS(id="c0", function=NS(name="stock_retrieve", arguments='{"query": "CCO"}'),
+                   model_dump=lambda exclude_none=True: {"id": "c0", "type": "function",
+                                                         "function": {"name": "stock_retrieve", "arguments": "{}"}})
+            ]  # fmt: skip
+            message = NS(content="", tool_calls=calls or None, reasoning=f"thought {turn}")
+            return NS(choices=[NS(message=message)], usage=NS(prompt_tokens=900, completion_tokens=5, model_extra={}))
+
+    opening = {"prompt": "Plan a retrosynthesis for CCO.", "task_id": "retro_x", "max_tool_calls": 32}
+    llm = Thinker()
+    config = AgentConfig(model="m", max_turns=agent_training.MAX_TURNS, tool_choice="auto", max_tokens=32768)
+    result = agent_training.run_episode(llm, Server.__new__(Server), opening, replace(config, send_reasoning=True))
+    assert result["turns"] == 2 and not result["errors"]  # each turn got the 100 tokens left, not an error
+    sent = llm.requests[-1]["messages"][2]
+    assert sent["role"] == "assistant" and sent["reasoning"] == sent["reasoning_content"] == "thought 1"
+    assert "reasoning_content" not in result["transcript"][0] and result["transcript"][0]["reasoning"] == "thought 1"
+
+    llm = Thinker()  # without send_reasoning (the board, and non-thinking runs) thinking is never sent
+    agent_training.run_episode(llm, Server.__new__(Server), opening, config)
+    assert "reasoning" not in llm.requests[-1]["messages"][2]
+
+
+def test_a_thinking_run_is_evaluated_with_thinking_at_its_effort(monkeypatch, capsys):
+    plan = _plan(
+        monkeypatch, capsys, "eval", "--name", "t", "--bucket", "o/b", "--harness", "training", "--thinking",
+        "--reasoning-effort", "low",
+    )  # fmt: skip
+    assert plan["command"][-3:] == ["--thinking", "--reasoning-effort", "low"]
+    watch = _plan(
+        monkeypatch, capsys, "watch", "--run", "a", "--job", "j1", "--bucket", "o/b", "--harness", "training",
+        "--thinking", "--reasoning-effort", "low", "--eval-concurrency", "32", "--base", "b0,b1",
+    )["command"][-1]  # fmt: skip
+    assert "--thinking --reasoning-effort low --concurrency 32" in watch and "--base b0,b1" in watch
+    plain = _plan(monkeypatch, capsys, "watch", "--run", "a", "--job", "j1", "--bucket", "o/b")["command"][-1]
+    assert "--thinking" not in plain and "--concurrency" not in plain

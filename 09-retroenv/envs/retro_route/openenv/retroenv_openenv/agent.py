@@ -70,6 +70,9 @@ class AgentConfig:
     reasoning_effort: str | None = None
     extra_body: dict[str, Any] = field(default_factory=dict)
     repair: bool = True  # repair a submission sent as broken JSON (see normalize_arguments)
+    # The training harness with thinking: send each turn's thinking back in the history, as TRL
+    # trains it (preserve_thinking). Otherwise thinking is recorded but never sent back.
+    send_reasoning: bool = False
 
 
 RETRY_DELAYS = (5, 15, 30, 60, 90, 120)

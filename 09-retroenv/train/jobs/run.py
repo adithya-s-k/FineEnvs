@@ -227,7 +227,7 @@ def main():
         command += ["--port", str(engine_port), "--data-parallel-size", str(len(vllm_devices))]
         if args.action == "eval":
             command += ["--eval"] + (["--checkpoint", str(weights)] if weights else [])
-            command += ["--thinking"] if args.thinking else []
+            command += ["--thinking", "--harness", args.harness or "board"] if args.thinking else []
         else:
             command += ["--trainer", args.mode]
             command += ["--max-model-len", str(args.context)] if args.context else []
@@ -340,6 +340,7 @@ def main():
             command += ["--harness", args.harness] if args.harness else []
             # Thinking turns get twice the board's 16k tokens, so a long one is measured, not cut off.
             command += ["--thinking", "default", "--max-tokens", "32768"] if args.thinking else []
+            command += ["--reasoning-effort", args.reasoning_effort] if args.thinking and args.reasoning_effort else []
             run(command, "eval")
     finally:
         for process in reversed(children):

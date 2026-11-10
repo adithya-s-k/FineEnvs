@@ -20,7 +20,9 @@ Regenerate training_tools.json after changing a tool's signature or docstring:
 from __future__ import annotations
 
 import json
+import re
 import time
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +33,26 @@ TOOLS: list[dict[str, Any]] = json.loads(Path(__file__).with_name("training_tool
 TOOL_NAMES = {tool["function"]["name"] for tool in TOOLS}
 MAX_TURNS = 20  # train/async_grpo.py: max_tool_calling_iterations
 PROMPT_TURNS = 16  # the system prompt training sends says 16 turns (train/sync_grpo.py task_dataset)
+# vLLM's refusal of a turn whose prompt plus max_tokens passes the context.
+CONTEXT_FULL = re.compile(r"maximum context length is (\d+) tokens.*?prompt contains at least (\d+) input tokens", re.S)
+
+
+def _request(llm: Any, config: AgentConfig, messages: list[dict[str, Any]]) -> Any:
+    """One turn. Near the end of the context, the turn gets the tokens left, as in training.
+
+    TRL caps each turn at what the episode's context has left; an endpoint refuses a request whose
+    max_tokens passes it, which would end an episode that training would have let finish.
+    """
+    for _ in range(3):
+        try:
+            return _request_with_retry(llm, config, messages, TOOLS)
+        except Exception as exc:
+            match = CONTEXT_FULL.search(str(exc))
+            left = int(match.group(1)) - int(match.group(2)) if match else 0
+            if left < 1 or left >= config.max_tokens:
+                raise
+            config = replace(config, max_tokens=left)
+    return _request_with_retry(llm, config, messages, TOOLS)
 
 
 def run_episode(llm: Any, env: RetroEnvClient, opening: dict[str, Any], config: AgentConfig) -> dict[str, Any]:
@@ -49,7 +71,7 @@ def run_episode(llm: Any, env: RetroEnvClient, opening: dict[str, Any], config: 
 
     for _ in range(config.max_turns):
         try:
-            response = _request_with_retry(llm, config, messages, TOOLS)
+            response = _request(llm, config, messages)
         except Exception as exc:  # provider errors end the episode; it is still scored
             errors.append(f"API error: {type(exc).__name__}: {str(exc)[:500]}")
             break
@@ -69,8 +91,13 @@ def run_episode(llm: Any, env: RetroEnvClient, opening: dict[str, Any], config: 
         assistant: dict[str, Any] = {"role": "assistant", "content": message.content or ""}
         if calls:
             assistant["tool_calls"] = [call.model_dump(exclude_none=True) for call in calls]
-        messages.append(assistant)
         transcript.append(recorded(assistant, message))
+        thinking = getattr(message, "reasoning", None) or getattr(message, "reasoning_content", None)
+        if config.send_reasoning and thinking:
+            # vLLM hands an earlier turn's `reasoning` to the chat template as reasoning_content
+            # (the field older releases read), which Qwen's template keeps under preserve_thinking.
+            assistant = {**assistant, "reasoning": str(thinking), "reasoning_content": str(thinking)}
+        messages.append(assistant)
         if not calls:  # as in training: a turn without a tool call ends the episode
             break
         for call in calls:

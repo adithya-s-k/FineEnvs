@@ -1,7 +1,10 @@
 """Evaluate every checkpoint a training run saves, as it saves it, and keep the curve.
 
     python train/jobs/eval_watch.py --run <run> --job <training job id> --bucket <owner>/<bucket> \\
-        --set core150 --harness training --attempts 4 --temperature 0.8 --shards 5 --base base-core150-th
+        --set core150 --harness training --attempts 4 --temperature 0.8 --shards 10 --base base-core150-th
+
+A thinking run's checkpoints are evaluated with thinking on at its reasoning effort (--thinking
+--reasoning-effort low) and fewer episodes per GPU (--concurrency 32).
 
 Polls <bucket>/<run>/ for checkpoint-N directories (complete once trainer_state.json is there) and
 evaluates each one as --shards jobs on one H200 each: the set's tasks are cut into contiguous
@@ -110,12 +113,20 @@ def main():
     parser.add_argument("--bucket", default="FineEnvs/retroenv-rl-runs")
     parser.add_argument("--model", default="Qwen/Qwen3.8-27B")
     parser.add_argument("--set", default="core30")
-    parser.add_argument("--base", default="base-eval", help="Evaluation of the untrained model in the same bucket")
+    parser.add_argument(
+        "--base", default="base-eval", help="Evaluation(s) of the untrained model in the same bucket, comma-separated"
+    )
     parser.add_argument("--poll", type=int, default=300)
     parser.add_argument("--harness", choices=("board", "training"), default="board", help="The evaluations' agent loop")
     parser.add_argument("--attempts", type=int, default=1, help="Episodes per task")
     parser.add_argument("--temperature", type=float, help="Sampling temperature (default: the board's 0)")
     parser.add_argument("--shards", type=int, default=1, help="Evaluation jobs per checkpoint, one H200 each")
+    parser.add_argument("--thinking", action="store_true", help="Evaluate with thinking on, as a thinking run trains")
+    parser.add_argument("--reasoning-effort", help="With --thinking: the reasoning effort the run trained with")
+    # 64 episodes fit one H200's KV cache without thinking: at 120, it filled (99%), the prefix cache
+    # fell from 84% of prompt tokens to 17%, and episodes took 3x longer. Thinking episodes hold
+    # several times the tokens (24 a GPU filled ~65% in training), so a thinking run takes ~32.
+    parser.add_argument("--concurrency", type=int, default=64, help="Episodes at a time per evaluation job")
     args = parser.parse_args()
     namespace = args.bucket.partition("/")[0]
 
@@ -137,7 +148,8 @@ def main():
     names = lambda step: [f"{args.run}-eval-{step}-{k}" for k in range(args.shards)] if slices else [f"{args.run}-eval-{step}"]  # noqa: E731
 
     submitted, finished = {}, {}  # step -> {name: job id or None}, step -> score or a failure note
-    base = score(args.bucket, [args.base], tiers, args.attempts, scratch / "base")
+    bases = args.base.split(",")
+    base = score(args.bucket, bases, tiers, args.attempts, scratch / "base")
     while True:
         training = hub.inspect_job(job_id=args.job, namespace=namespace).status.stage
         for step in checkpoints(args.bucket, args.run):
@@ -153,10 +165,10 @@ def main():
                         "eval", "--name", name, "--bucket", args.bucket, "--model", args.model, "--flavor", "h200",
                         "--set", args.set, "--checkpoint", f"/outputs/{args.run}/checkpoint-{step}",
                         "--label", f"{args.run} step {step}", "--harness", args.harness,
-                        # 64 episodes fit one H200's KV cache: at 120, it filled (99%), the prefix
-                        # cache fell from 84% of prompt tokens to 17%, and episodes took 3x longer.
-                        "--attempts", str(args.attempts), "--concurrency", "64",
+                        "--attempts", str(args.attempts), "--concurrency", str(args.concurrency),
                         *(["--temperature", str(args.temperature)] if args.temperature is not None else []),
+                        *(["--thinking"] if args.thinking else []),
+                        *(["--reasoning-effort", args.reasoning_effort] if args.thinking and args.reasoning_effort else []),
                         *(["--task-ids", slices[k]] if slices else []),
                         # The training job's uploaded source: the same code, and no new upload.
                         "--source-from", args.job,
@@ -190,6 +202,8 @@ def main():
             )
             note = f" ({result['episodes']}/{expected} episodes; jobs that exited non-zero: {', '.join(failed)})"
             print(f"step {step}: {row}" + (note if failed and result else ""), flush=True)
+            if not base or base["episodes"] < expected:  # the base evaluation may still be running
+                base = score(args.bucket, bases, tiers, args.attempts, scratch / "base")
             curve = scratch / "evals.md"
             curve.write_text(
                 f"# {args.run} on {args.set}, {args.harness} harness, {args.attempts} attempts\n\n"
