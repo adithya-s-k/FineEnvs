@@ -10,7 +10,8 @@ evals; HF Sandboxes for the task containers; Inference Providers for the judge; 
   every eval.
 - **Eval attempts:** [`FineEnvs/fineproof-rl-runs`](https://huggingface.co/datasets/FineEnvs/fineproof-rl-runs) has
   every attempt's proof with the judge's assessment, as tables.
-- **Numbers:** [`../results/fp-rl2-2b.json`](../results/fp-rl2-2b.json).
+- **Numbers:** [`../results/fp-rl2-2b.json`](../results/fp-rl2-2b.json), rebuilt from the run's bucket by
+  [`../results/build_fp_rl2.py`](../results/build_fp_rl2.py).
 - **Figure:** [`../assets/plot_curves.py`](../assets/plot_curves.py) redraws it from the 2B numbers.
 
 ![Training reward, held-out eval and cut-off proofs over 500 updates](../assets/fp-rl2-2b-curves.svg)
@@ -37,13 +38,17 @@ the rubric and the judge are known to reward a correct proof
 ([`benchmarks/test-validated-64.txt`](benchmarks/test-validated-64.txt)). None of the 128 test problems is in the
 training pool. Attempts are sampled at temperature 0.8 with a 32,768-token cap, as in training.
 
+**Cut-off proofs:** the eval scores them differently from training. It keeps the judge's partial credit for a proof
+cut off at the cap, while training scores such a proof 0. Scored the training way, step 0 is 0.216 and step 500 is
+0.395, a paired gain of +0.179 ± 0.027 instead of +0.190. The results file has both (`mean_reward_cutoff_zero`).
+
 ## The run
 
 | | |
 |---|---|
 | Model | `Qwen/Qwen3.5-2B` at a pinned revision, non-thinking mode |
 | Harness | FineProof, one call (`--rounds 0`): write the proof, the verifier grades it |
-| Training problems | 1,066 FineProofs-RL problems on which QED-Nano's base model averaged 0.5–0.9 (`--min-mean 0.5`): the easier end of the pool, for the smaller model |
+| Training problems | 1,024 FineProofs-RL problems, sampled (seed 0) from the 1,066 on which QED-Nano's base model averaged 0.5–0.9 (`--min-mean 0.5`): the easier end of the pool, for the smaller model. The exact list: [`benchmarks/fp-rl2-2b-train-tasks.txt`](benchmarks/fp-rl2-2b-train-tasks.txt) |
 | Update | 128 rollouts: 8 problems × 16 attempts |
 | Objective | reward minus the group mean (no division by its std); token losses summed and divided by 32,768 per rollout |
 | Cut-off proofs | reward 0 (the judge's grade of the text is still logged as `judge_reward`) |
@@ -105,7 +110,7 @@ The first run used TRL's AsyncGRPO defaults with 16k-token proofs and 40 rollout
 - **Advantages were divided by the group's std,** which amplifies a single noisy judge grade. → Mean-centred only,
   with 2 judge grades per proof.
 - **Updates were small** (40 rollouts) and the resumed 2B lost its optimizer state. → 128 rollouts per update, and a
-  resume restores the full checkpoint from the bucket.
+  resume restores the full checkpoint (weights, optimizer, scheduler and RNG state) from the bucket.
 
 The changes are in [`objective.py`](objective.py) and [`tasks.py`](tasks.py), and are covered by
 [`tests/`](tests/).

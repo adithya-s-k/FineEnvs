@@ -68,10 +68,13 @@ Each row comes from an eval card.
 
 | Environment | Eval tasks | 1.0 means | Judge | Models | Best mean reward | Eval card |
 |---|---|---|---|---:|---|---|
-| Scott Wu Math, at once | 20 test deals, 5 per level | the target, exactly | no | 12 | GPT-6.1 Sol 0.70 | [eval-v1.json](scott-wu-math/results/eval-v1.json) |
+| Scott Wu Math, at once | 20 test deals, 5 per level | the target, exactly | no | 12 | GPT-6.1 Sol 0.70\* | [eval-v1.json](scott-wu-math/results/eval-v1.json) |
 | Scott Wu Math, reasoning | the same 20 deals | the target, exactly | no | 12 | 7 of 12 solve all 20 | [eval-v1.json](scott-wu-math/results/eval-v1.json) |
 | openai/math | 369 tasks | a kernel-checked proof of the exact statement | no | | not run yet | |
-| FineProofEnvs | IMO-ProofBench (60), ProofBench (145) | 7 of 7 on the rubric | gpt-oss-120b | | not run yet | |
+| FineProofEnvs, held-out test | 64 validated test problems × 4 | 7 of 7 on the rubric | gpt-oss-20b | 2 | Qwen3.5-2B-FineProof-RL 0.41 (base 0.22) | [eval-v1.json](fineproof/results/eval-v1.json) |
+| FineProofEnvs, benchmarks | IMO-ProofBench (60), ProofBench (145) | 7 of 7 on the rubric | gpt-oss-120b | | not run yet | |
+
+\* In "at once" mode GPT-6.1 Sol and Claude Opus 5.5 still reason briefly (`effort: low`, the lowest their APIs allow), so their rows are not pure mental arithmetic. They are the only two above 5 of 20 in that mode.
 
 ## Add your environment
 

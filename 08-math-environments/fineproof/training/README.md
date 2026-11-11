@@ -10,21 +10,24 @@ our own.
 checks behind them and what failed first are in [RESULTS.md](RESULTS.md). The logs are on the
 [Trackio dashboard](https://huggingface.co/spaces/FineEnvs/fineproof-rl-trackio).
 
-## The harness: write, check, rewrite
+## The harness: write a proof, optionally check and rewrite it
 
-QED-Nano's strongest test-time scaffolds end in the same move: the model reads its own proof as a grader would and
-writes a better one. The FineProof harness makes that move the episode, so RL trains it directly:
+By default the FineProof harness makes one call: the model writes its proof and the verifier grades it. That is what
+the published run trained (`--rounds 0`). QED-Nano's strongest test-time scaffolds end in one more move, the model
+reading its own proof as a grader would and writing a better one, and `--rounds N` adds N such check-and-rewrite
+rounds to the episode so RL trains that move too. It has not been trained yet:
 
 ```
 system     "write a proof; a strict grader gives credit only for fully justified steps"
 user       the task: the problem
-assistant  a first proof
+assistant  a proof    ──►  /workspace/proof.md  ──►  verifier: rubric judge, score / 7
+          with --rounds N, N times before grading:
 user       "grade it step by step, list every gap, then write the corrected proof under ## Final proof"
-assistant  the critique and the final proof   ──►  /workspace/proof.md  ──►  verifier: rubric judge, score / 7
+assistant  the critique and the final proof
 ```
 
-Every call the harness makes goes through OpenEnv's capture proxy and is trained. With Qwen3.5 in non-thinking mode
-the two calls are two training rows, not one. The chat template drops the empty `<think></think>` block from an
+Every call the harness makes goes through OpenEnv's capture proxy and is trained. With rounds, and Qwen3.5 in
+non-thinking mode, the calls are separate training rows, not one. The chat template drops the empty `<think></think>` block from an
 assistant turn once a user message follows it, so the second call's prompt re-renders the first proof instead of
 extending the first call's tokens. OpenEnv records each call with the engine's own token ids and logprobs, and both
 rows get the rollout's reward. The cost is the first proof, repeated as context in the second row. The harness is a
@@ -32,7 +35,7 @@ host-side Harbor agent
 ([`harness/fineproof_agent/agent.py`](harness/fineproof_agent/agent.py)): it calls the policy over an OpenAI chat
 endpoint and writes the final proof into the sandbox. The loop itself is
 [`harness/fineproof_agent/loop.py`](harness/fineproof_agent/loop.py), and the number of check-and-rewrite rounds is
-`FINEPROOF_ROUNDS` (default 1). Every option can be set as a `FINEPROOF_<OPTION>` environment variable, for launchers
+`FINEPROOF_ROUNDS` (default 0). With rounds, `--grad-accum` counts training rows, not rollouts. Every option can be set as a `FINEPROOF_<OPTION>` environment variable, for launchers
 that cannot pass agent kwargs.
 
 ## How a run is wired
@@ -61,23 +64,27 @@ GPU 1: AsyncGRPO trainer                       (in the Harbor server)           
 - [`evaluate.py`](evaluate.py) scores a base model or a checkpoint on the test problems through the same harness and
   judge: mean rubric reward, share of full-marks proofs, coverage.
 - The judge's key reaches each verifier through the task's `[verifier] env`, resolved from the server's environment;
-  the agent never sees it. The judge is gpt-oss-20b on HF Inference Providers, with three providers in
-  `JUDGE_MODEL` (deepinfra, then groq, then featherless-ai): when one rate-limits, the next grades at once, and each
-  grade records which one gave it.
+  the agent never sees it. The judge is gpt-oss-20b on HF Inference Providers, with providers tried in
+  `JUDGE_MODEL` order: when one rate-limits, the next grades at once, and each grade records which one gave it. The
+  default is deepinfra, then groq, then featherless-ai; the published run set groq, then featherless-ai.
 
 Pinned stack: 05's validated one (TRL `52fb144e`, vLLM 0.25.1, Transformers `d6c1e71b`), with OpenEnv at `main` plus
 [openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573) (`a0068bfd`: custom harnesses, allowed per server
-with `OPENENV_HARBOR_ALLOW_HARNESS`, loopback for host-side agents, a harness preflight), and Harbor 0.24 for separate verifiers. Models: `Qwen/Qwen3.5-2B`, `-4B` and `-9B`
+with `OPENENV_HARBOR_ALLOW_HARNESS`, loopback for host-side agents, a harness preflight), and Harbor 0.24 for separate verifiers (the harness accepts 0.24–0.25; the tasks are also checked on 0.25). Models: `Qwen/Qwen3.5-2B`, `-4B` and `-9B`
 in non-thinking mode, at pinned revisions. The two-update smoke (`jobs/smoke.py`) passed on HF Jobs (2× H200) and on
 Slurm (2× H100).
 
 ## Run it
 
-You need an HF token (model, Jobs and the judge on Inference Providers) and an existing bucket for outputs; with
+You need an HF token for the model, Jobs and the bucket, and an existing bucket for outputs. Give the judge its own
+key: a fine-grained token with only Inference Providers access and an expiry, set as `JUDGE_API_KEY`. It reaches every
+verifier sandbox (one per rollout), so it should be able to do nothing else. With
 `--sandbox daytona` (the default), also a Daytona key. With `--sandbox hf-sandbox` the task sandboxes are HF Jobs too
 (`cpu-basic`, shut down after 10 idle minutes), so the whole run stays on Hugging Face. `prepare.py` then gives each
 task its Dockerfile's base image and leaves the agent's network on, which HF Sandbox needs and the FineProof harness
-does not mind: it calls the model from outside the sandbox and only writes the proof into it.
+does not mind: it calls the model from outside the sandbox and only writes the proof into it. `prepare.py` warns about
+this and records `agent_network` in `ready.json`. Do not reuse such tasks with an agent installed in the sandbox: most
+problems are public AoPS threads.
 
 ```bash
 cd 08-math-environments/fineproof/training
@@ -96,12 +103,13 @@ Trackio Space, and an eval Job for every 50th checkpoint on the benchmark step 0
 JUDGE_MODEL=openai/gpt-oss-20b:groq,openai/gpt-oss-20b:featherless-ai FINEPROOF_VLLM_CUDA_GRAPHS=1 \
 python jobs/hf_job.py train --name fp-rl2-2b --model Qwen/Qwen3.5-2B --flavor h200x4 \
   --sandbox hf-sandbox --rounds 0 --steps 500 --save-steps 25 --eval-every 50 --warmup-steps 10 --timeout 48h \
-  --prepare-args "--min-mean 0.5" --bucket <owner>/<bucket> \
+  --prepare-args "--train-list benchmarks/fp-rl2-2b-train-tasks.txt" --bucket <owner>/<bucket> \
   --space-id <owner>/fineproof-rl --trackio-bucket <owner>/fineproof-trackio --eval-checkpoints --submit
 ```
 
 It ran as two Jobs: `--steps 100` with the default save and eval intervals, then this command, which resumed at update
-100.
+100. The run sampled its 1,024 problems with `--min-mean 0.5` (seed 0); `--train-list` rebuilds exactly those, since the
+train set has since been decontaminated and the same filter now samples a slightly different 1,024.
 
 The other defaults are the run's settings:
 - proofs up to 32,768 tokens, with vLLM serving 131,072 of context;
@@ -151,6 +159,8 @@ call and each judge grade, and the judge's written assessment. The run also has 
 output, and alerts when many rollouts go ungraded, the judge fails, or proofs hit the token cap. Each checkpoint's
 eval logs to one run, `<name>-evals`, at the checkpoint's step: `eval/*` (mean reward with its standard error over
 problems, full marks, pass@4, best-of-4, learnable share), `eval_rollouts/*`, `eval_judge/*`, and a trace per attempt.
+pass@4 and best-of-4 count a missing attempt as a failure. An eval with ungraded attempts is marked `partial` in its
+`summary.json` and is not charted.
 `python evaluate.py --report-only --output <eval folder> ...` charts an eval that has already run.
 
 ## Tests

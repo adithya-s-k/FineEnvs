@@ -30,7 +30,7 @@ envs:
   - name: olympiad_proofs
     summary: "FineProofs-RL as Harbor tasks (5,099 train, 128 test, Gemini 3 Pro rubrics), IMOProofBench and ProofBench for eval; reward = LLM judge rubric score / 7, gpt-oss-20b by default, the judge QED-Nano trained with."
     tools: "shell (Python)"
-    backend: daytona
+    backend: "hf-sandbox, daytona"   # the published run used HF Sandboxes; Daytona is the default
     frameworks:
       harbor:
         verified: true

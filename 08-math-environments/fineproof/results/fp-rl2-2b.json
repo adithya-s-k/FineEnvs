@@ -16,17 +16,20 @@
   "loss_normaliser": "32768 tokens per rollout",
   "truncated_reward": 0.0,
   "reward": "gpt-oss-20b rubric score / 7, mean of 2 samples",
-  "train_problems": 1066
+  "train_problems": 1024,
+  "train_problem_list": "training/benchmarks/fp-rl2-2b-train-tasks.txt"
  },
  "eval": {
   "set": "64 validated FineProofs-RL-test problems x 4 attempts, temperature 0.8",
   "judge": "gpt-oss-20b, 2 samples per proof",
+  "cutoff_scoring": "mean_reward keeps the judge's partial credit for a proof cut off at 32,768 tokens; mean_reward_cutoff_zero scores it 0, as training does",
   "points": [
    {
     "step": 0,
     "eval_run": "fp-bench-2b-32k",
     "mean_reward": 0.216798,
     "mean_reward_se": 0.037075,
+    "mean_reward_cutoff_zero": 0.216239,
     "full_marks": 0.121094,
     "any_credit": 0.410156,
     "pass_at_4_full_marks": 0.265625,
@@ -39,6 +42,7 @@
     "eval_run": "fp-rl2-2b-eval-20",
     "mean_reward": 0.237445,
     "mean_reward_se": 0.039971,
+    "mean_reward_cutoff_zero": 0.235491,
     "full_marks": 0.152344,
     "any_credit": 0.429688,
     "pass_at_4_full_marks": 0.265625,
@@ -51,6 +55,13 @@
      "problems_up": 27,
      "problems_down": 19,
      "problems": 64
+    },
+    "vs_step0_cutoff_zero": {
+     "mean": 0.019252,
+     "se": 0.021697,
+     "problems_up": 25,
+     "problems_down": 20,
+     "problems": 64
     }
    },
    {
@@ -58,6 +69,7 @@
     "eval_run": "fp-rl2-2b-eval-40",
     "mean_reward": 0.303294,
     "mean_reward_se": 0.042591,
+    "mean_reward_cutoff_zero": 0.299388,
     "full_marks": 0.195312,
     "any_credit": 0.523438,
     "pass_at_4_full_marks": 0.34375,
@@ -70,6 +82,13 @@
      "problems_up": 39,
      "problems_down": 11,
      "problems": 64
+    },
+    "vs_step0_cutoff_zero": {
+     "mean": 0.083148,
+     "se": 0.022262,
+     "problems_up": 40,
+     "problems_down": 10,
+     "problems": 64
     }
    },
    {
@@ -77,6 +96,7 @@
     "eval_run": "fp-rl2-2b-eval-60",
     "mean_reward": 0.271207,
     "mean_reward_se": 0.039779,
+    "mean_reward_cutoff_zero": 0.268975,
     "full_marks": 0.160156,
     "any_credit": 0.515625,
     "pass_at_4_full_marks": 0.265625,
@@ -89,6 +109,13 @@
      "problems_up": 38,
      "problems_down": 14,
      "problems": 64
+    },
+    "vs_step0_cutoff_zero": {
+     "mean": 0.052736,
+     "se": 0.021654,
+     "problems_up": 38,
+     "problems_down": 14,
+     "problems": 64
     }
    },
    {
@@ -96,6 +123,7 @@
     "eval_run": "fp-rl2-2b-eval-80",
     "mean_reward": 0.31306,
     "mean_reward_se": 0.04398,
+    "mean_reward_cutoff_zero": 0.307201,
     "full_marks": 0.199219,
     "any_credit": 0.511719,
     "pass_at_4_full_marks": 0.328125,
@@ -108,13 +136,21 @@
      "problems_up": 38,
      "problems_down": 13,
      "problems": 64
+    },
+    "vs_step0_cutoff_zero": {
+     "mean": 0.090961,
+     "se": 0.024871,
+     "problems_up": 37,
+     "problems_down": 14,
+     "problems": 64
     }
    },
    {
     "step": 100,
-    "eval_run": "fp-rl2-2b-eval-100",
+    "eval_run": "fp-rl2-2b-eval-100-original",
     "mean_reward": 0.307757,
     "mean_reward_se": 0.042211,
+    "mean_reward_cutoff_zero": 0.3072,
     "full_marks": 0.171875,
     "any_credit": 0.539062,
     "pass_at_4_full_marks": 0.296875,
@@ -127,6 +163,13 @@
      "problems_up": 38,
      "problems_down": 10,
      "problems": 64
+    },
+    "vs_step0_cutoff_zero": {
+     "mean": 0.09096,
+     "se": 0.021681,
+     "problems_up": 38,
+     "problems_down": 10,
+     "problems": 64
     }
    },
    {
@@ -134,6 +177,7 @@
     "eval_run": "fp-rl2-2b-eval-150",
     "mean_reward": 0.337891,
     "mean_reward_se": 0.044544,
+    "mean_reward_cutoff_zero": 0.332589,
     "full_marks": 0.207031,
     "any_credit": 0.582031,
     "pass_at_4_full_marks": 0.34375,
@@ -146,6 +190,13 @@
      "problems_up": 42,
      "problems_down": 10,
      "problems": 64
+    },
+    "vs_step0_cutoff_zero": {
+     "mean": 0.11635,
+     "se": 0.024967,
+     "problems_up": 41,
+     "problems_down": 10,
+     "problems": 64
     }
    },
    {
@@ -153,6 +204,7 @@
     "eval_run": "fp-rl2-2b-eval-200",
     "mean_reward": 0.340403,
     "mean_reward_se": 0.046081,
+    "mean_reward_cutoff_zero": 0.339845,
     "full_marks": 0.226562,
     "any_credit": 0.542969,
     "pass_at_4_full_marks": 0.3125,
@@ -165,6 +217,13 @@
      "problems_up": 41,
      "problems_down": 7,
      "problems": 64
+    },
+    "vs_step0_cutoff_zero": {
+     "mean": 0.123605,
+     "se": 0.026501,
+     "problems_up": 41,
+     "problems_down": 8,
+     "problems": 64
     }
    },
    {
@@ -172,6 +231,7 @@
     "eval_run": "fp-rl2-2b-eval-250",
     "mean_reward": 0.36691,
     "mean_reward_se": 0.047491,
+    "mean_reward_cutoff_zero": 0.360772,
     "full_marks": 0.242188,
     "any_credit": 0.59375,
     "pass_at_4_full_marks": 0.34375,
@@ -184,6 +244,13 @@
      "problems_up": 42,
      "problems_down": 6,
      "problems": 64
+    },
+    "vs_step0_cutoff_zero": {
+     "mean": 0.144533,
+     "se": 0.027259,
+     "problems_up": 40,
+     "problems_down": 7,
+     "problems": 64
     }
    },
    {
@@ -191,6 +258,7 @@
     "eval_run": "fp-rl2-2b-eval-300",
     "mean_reward": 0.381696,
     "mean_reward_se": 0.045613,
+    "mean_reward_cutoff_zero": 0.379464,
     "full_marks": 0.246094,
     "any_credit": 0.65625,
     "pass_at_4_full_marks": 0.375,
@@ -203,6 +271,13 @@
      "problems_up": 51,
      "problems_down": 5,
      "problems": 64
+    },
+    "vs_step0_cutoff_zero": {
+     "mean": 0.163224,
+     "se": 0.026548,
+     "problems_up": 50,
+     "problems_down": 5,
+     "problems": 64
     }
    },
    {
@@ -210,6 +285,7 @@
     "eval_run": "fp-rl2-2b-eval-350",
     "mean_reward": 0.375559,
     "mean_reward_se": 0.044795,
+    "mean_reward_cutoff_zero": 0.375001,
     "full_marks": 0.222656,
     "any_credit": 0.644531,
     "pass_at_4_full_marks": 0.359375,
@@ -222,6 +298,13 @@
      "problems_up": 44,
      "problems_down": 12,
      "problems": 64
+    },
+    "vs_step0_cutoff_zero": {
+     "mean": 0.158761,
+     "se": 0.030034,
+     "problems_up": 44,
+     "problems_down": 12,
+     "problems": 64
     }
    },
    {
@@ -229,6 +312,7 @@
     "eval_run": "fp-rl2-2b-eval-400",
     "mean_reward": 0.39565,
     "mean_reward_se": 0.045512,
+    "mean_reward_cutoff_zero": 0.392859,
     "full_marks": 0.25,
     "any_credit": 0.652344,
     "pass_at_4_full_marks": 0.390625,
@@ -241,6 +325,13 @@
      "problems_up": 46,
      "problems_down": 6,
      "problems": 64
+    },
+    "vs_step0_cutoff_zero": {
+     "mean": 0.17662,
+     "se": 0.031095,
+     "problems_up": 45,
+     "problems_down": 7,
+     "problems": 64
     }
    },
    {
@@ -248,6 +339,7 @@
     "eval_run": "fp-rl2-2b-eval-450",
     "mean_reward": 0.413226,
     "mean_reward_se": 0.046705,
+    "mean_reward_cutoff_zero": 0.403739,
     "full_marks": 0.265625,
     "any_credit": 0.652344,
     "pass_at_4_full_marks": 0.359375,
@@ -260,6 +352,13 @@
      "problems_up": 50,
      "problems_down": 5,
      "problems": 64
+    },
+    "vs_step0_cutoff_zero": {
+     "mean": 0.187499,
+     "se": 0.032481,
+     "problems_up": 49,
+     "problems_down": 5,
+     "problems": 64
     }
    },
    {
@@ -267,6 +366,7 @@
     "eval_run": "fp-rl2-2b-eval-500",
     "mean_reward": 0.406527,
     "mean_reward_se": 0.045795,
+    "mean_reward_cutoff_zero": 0.395088,
     "full_marks": 0.253906,
     "any_credit": 0.640625,
     "pass_at_4_full_marks": 0.40625,
@@ -278,6 +378,13 @@
      "se": 0.029742,
      "problems_up": 47,
      "problems_down": 6,
+     "problems": 64
+    },
+    "vs_step0_cutoff_zero": {
+     "mean": 0.178848,
+     "se": 0.027492,
+     "problems_up": 48,
+     "problems_down": 5,
      "problems": 64
     }
    }
@@ -2856,7 +2963,7 @@
    0.00041
   ],
   "seconds": [
-   NaN,
+   null,
    282.0,
    516.0,
    507.0,
@@ -2956,7 +3063,7 @@
    158.0,
    189.0,
    138.0,
-   NaN,
+   null,
    207.0,
    173.0,
    169.0,

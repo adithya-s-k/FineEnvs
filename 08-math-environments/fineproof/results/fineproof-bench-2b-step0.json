@@ -1,5 +1,5 @@
 {
-  "what": "Step-0 benchmark of Qwen3.5-2B: the 64 validated test problems x 4, same protocol as fineproof-bench-4b-step0.json, run while fp-rl-4b trained (HF Job 6af13988e6320c66fad7c088).",
+  "what": "Step-0 benchmark of Qwen3.5-2B with the first runs' 16,384-token cap: the 64 validated test problems x 4 (HF Job 6af13988e6320c66fad7c088). The step 0 of the first, collapsed run in training/RESULTS.md.",
   "date": "2026-11-09",
   "summary": {
     "expected": 256,

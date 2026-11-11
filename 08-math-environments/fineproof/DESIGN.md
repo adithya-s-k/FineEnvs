@@ -1,7 +1,7 @@
 # FineProofEnvs design
 
-Status: tasks, verifier and training recipe built; a local end-to-end run (our harness, Docker sandboxes, separate
-verifier) works up to the judge call. This note records what QED-Nano released, how its reward works, and how we
+Status: tasks, verifier and training recipe built and used. The train and test sets are on the Hub as
+`FineEnvs/fineproof-envs-{train,test}`, and a 500-update RL run trained through them ([training/RESULTS.md](training/RESULTS.md)). This note records what QED-Nano released, how its reward works, and how we
 turned it into Harbor tasks.
 
 ## What QED-Nano is
@@ -28,7 +28,14 @@ IMO-ProofBench and 45 on ProofBench alone, and 54 on both with a test-time scaff
 
 FineProofs was filtered against IMOProofBench and ProofBench (fuzzy matching, no 2025 problems). One catch: all 128
 problems of `FineProofs-RL-test` are also in `FineProofs-RL`, so our train set removes them; otherwise a model would
-be evaluated on problems it trained on.
+be evaluated on problems it trained on. `data.decontaminate` goes further, and `decontamination.json` in the train
+dataset lists every drop with its reason:
+- train problems whose word 5-grams cover at least 70% of a test or benchmark problem (2 test near-twins);
+- one paraphrase a word filter can't see: ProofBench `TST-2023-4` restated as `aops-c8f456a645`;
+- the same problem under two sources, and near-identical train pairs, at 90% overlap or more (23).
+
+Four statements that ran on into their official solution ("Common remarks", "## a) Solution 1") are cut at that
+point; the task ids still hash the original text.
 
 ## How QED-Nano's harnesses and judges work
 
@@ -67,15 +74,16 @@ scaffold-agnostic: any Harbor agent writes a proof file, and the verifier grades
 | `[agent] network_mode = "no-network"` | most problems are public AoPS threads; Harbor >= 0.25 still lets installed agents reach their model's host and turns off their built-in web search, and a host-side agent (fineproof) calls its model from outside the sandbox |
 | `artifacts = ["/workspace/proof.md"]` | the one file that crosses: Harbor copies it to the same path in the verifier's sandbox (and sanitizes it on 0.25); grade.py re-checks it is a regular, size-capped file |
 | `tests/` | `task.json` (problem, marking scheme, reference solution for the IMO prompt), `judge_prompt.md` (QED-Nano's prompt, verbatim apart from placeholder names) and `grade.py`, which writes `reward.txt` = score / 7 |
-| verifier | `environment_mode = "separate"`; `env` forwards `JUDGE_API_KEY` (required) and the optional `JUDGE_PROVIDER` (hf, openai, vllm, anthropic), `JUDGE_MODEL`, `JUDGE_BASE_URL`, `JUDGE_REASONING_EFFORT`, `JUDGE_MAX_TOKENS`, `JUDGE_EXTRA_BODY`, `JUDGE_SAMPLES` from the host; the agent never sees the key or the rubric (the rubric sketches the solution). Default judge: gpt-oss-20b for train and test (QED-Nano's training reward), gpt-oss-120b for the benchmarks |
+| verifier | `environment_mode = "separate"`; `env` forwards `JUDGE_API_KEY` (required) and the optional `JUDGE_PROVIDER` (hf, openai, vllm, anthropic), `JUDGE_MODEL`, `JUDGE_BASE_URL`, `JUDGE_REASONING_EFFORT`, `JUDGE_MAX_TOKENS`, `JUDGE_EXTRA_BODY`, `JUDGE_STREAM`, `JUDGE_SAMPLES` from the host; the agent never sees the key or the rubric (the rubric sketches the solution). Default judge: gpt-oss-20b for train and test (QED-Nano's training reward), gpt-oss-120b for the benchmarks |
 | `solution/` | a DeepSeek-Math-V2 proof Gemini 3 Pro graded 7 (FineProofs-SFT, its appended self-evaluation removed), or the benchmark's official solution; answer-only solutions are not used, so those tasks ship without an oracle |
 | `task.toml` metadata | source, category, `reward_mean` / `reward_std` from the 128 attempts, so users can filter to QED-Nano's training subset (mean ≤ 0.7, std > 0.08) |
 
 Checked against Harbor 0.25.0 (and main, 2026-11-04): `harbor lint --select ALL` passes except `root-agent`, which
 is deliberate (the agent may be root in its own sandbox; grading happens in another).
 
-Registry entries: `fineproof-envs-train` (FineProofs-RL), `fineproof-envs-test` (FineProofs-RL-test), `imo-proofbench`,
-`proofbench`. Eval sets carry the benchmark's own grading guidelines in place of a FineProofs rubric.
+Registry entries: `fineproof-envs-train` (FineProofs-RL), `fineproof-envs-test` (FineProofs-RL-test),
+`fineproof-envs-imo-proofbench`, `fineproof-envs-proofbench`, and a `-validated` variant of each when oracle results are
+given. Eval sets carry the benchmark's own grading guidelines in place of a FineProofs rubric.
 
 ### Grader hardening (beyond theirs)
 
@@ -94,8 +102,9 @@ Their parser has gaps that matter once a policy is optimising against it:
 
 [training/](training/) trains a small model on these tasks with OpenEnv's Harbor integration and TRL's AsyncGRPO,
 the path 05-multi-harness-rl built for stock coding agents, but every rollout runs the **FineProof harness**: a host-side Harbor
-agent that writes a proof, grades it the way a strict grader would, and rewrites it. That is the move QED-Nano's best
-scaffolds end in, and here RL trains it directly. Every call goes through OpenEnv's capture proxy and is trained
+agent that writes a proof in one call by default. With `--rounds N` it then grades its proof the way a strict grader
+would and rewrites it, N times: the move QED-Nano's best scaffolds end in, which RL can then train directly. The
+published run used one call. Every call goes through OpenEnv's capture proxy and is trained
 (with Qwen3.5 in non-thinking mode, as one row per call: see training/README.md), and the reward is the verifier's
 score / 7. The Harbor server is OpenEnv's own; rollouts name the harness by import path
 (`fineproof_agent.agent:FineProofAgent`), which needs [openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573).
@@ -116,11 +125,13 @@ is statistical:
 
 ## Open questions
 
-- **Licensing.** FineProofs-RL's card says Apache-2.0 in its text but has no `license` field; most problems come
-  from AoPS forum posts via `AI-MO/aops`, which has no license; IMOProofBench and ProofBench state none. Plan: the
-  tasks credit lm-provers and link every source, and we ask before re-hosting anything on the Hub.
-- **Judge cost and noise.** Every trial is one judge call with up to 82k output tokens. Averaging 2–3 calls cuts
-  noise at extra cost; to be measured on the grader benchmarks.
+- **Licensing (open).** FineProofs-RL's card says Apache-2.0 in its text but has no `license` field; most problems
+  come from AoPS forum posts via `AI-MO/aops`, which has no license; IMOProofBench and ProofBench state none. The
+  train and test tasks are public on the Hub under the Apache-2.0 the source card states, crediting lm-provers and
+  linking every source, with AoPS problems noted as their authors'. Confirmation from LM-Provers is still pending.
+- **Judge cost and noise.** Every grade is one judge call with up to 32,768 output tokens (`JUDGE_MAX_TOKENS`;
+  QED-Nano allowed 81,920). The training run averaged 2 grades per proof (`JUDGE_SAMPLES=2`) at about $0.004 per
+  proof.
 - **Oracle coverage.** How many of the 5,227 problems have a 7-graded proof in FineProofs-SFT is not yet known; it
   can be read from two columns without downloading the full ~350 MB.
 - **Harbor or in-process.** One sandbox per attempt suits agents with tools and agent evaluation. For QED-Nano-style

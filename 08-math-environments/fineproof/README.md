@@ -51,7 +51,7 @@ statement exactly; here a natural-language proof earns partial credit for the st
 <!-- BEGIN:matrix -->
 | Env | Tools | Backend | `harbor` |
 |---|---|---|---|
-| **olympiad_proofs** | shell (Python) | `daytona` | ✅ |
+| **olympiad_proofs** | shell (Python) | `hf-sandbox, daytona` | ✅ |
 <!-- END:matrix -->
 
 ## What's here
@@ -59,7 +59,7 @@ statement exactly; here a natural-language proof earns partial credit for the st
 | Folder | What it is responsible for |
 |---|---|
 | [`envs/fineproof/harbor/`](envs/fineproof/harbor/) | The tasks and the verifier. The generator (`python -m fineproof_harbor.adapter`) writes Harbor tasks; `templates/tests/grade.py` is QED-Nano's judge plus safeguards against injected grades; unit tests |
-| [`training/`](training/) | The **FineProof harness** (our Harbor agent: write a proof, grade it, rewrite it) and the AsyncGRPO recipe that trains through it with OpenEnv's Harbor integration: HF Jobs launchers, checkpoint evals, the regrade check. [README](training/README.md) to run it, [RESULTS](training/RESULTS.md) for what it did |
+| [`training/`](training/) | The **FineProof harness** (our Harbor agent: write a proof in one call, with optional check-and-rewrite rounds) and the AsyncGRPO recipe that trains through it with OpenEnv's Harbor integration: HF Jobs launchers, checkpoint evals, the regrade check. [README](training/README.md) to run it, [RESULTS](training/RESULTS.md) for what it did |
 | [`results/`](results/) | Eval cards and run results as JSON: the OpenEnv parity checks, the step-0 benchmarks, and `fp-rl2-2b.json` (every eval, regrade and update) |
 | [`assets/`](assets/) | The figure above and the script that draws it from `results/fp-rl2-2b.json` |
 | [`DESIGN.md`](DESIGN.md) | Why the tasks, the judge and its safeguards are built this way, and the open licensing questions |

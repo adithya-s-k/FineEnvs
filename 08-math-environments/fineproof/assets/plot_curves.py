@@ -56,7 +56,7 @@ def main():
     ax.scatter(updates, cut, s=6, color=DOT, linewidths=0)
     ax.plot(updates, rolling(cut), color=BLUE, lw=2)
     ax.set_title("Proofs cut off at 32k tokens (%)", loc="left", fontsize=12, color=INK)
-    ax.set_ylim(0, 25)
+    ax.set_ylim(0, 50)
 
     for ax in axes:
         ax.set_xlim(0, max(500, last))
