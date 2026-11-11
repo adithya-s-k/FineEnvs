@@ -7,6 +7,7 @@
 <p>A catalog of math environments and their evals, from FineEnvs and the community. Each one says how it grades:
 exact arithmetic, a kernel-checked Lean proof, or a rubric judge.</p>
 
+<a href="https://huggingface.co/collections/FineEnvs/math-environments-6af40312bf237e3c32912840"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Collection-Math%20Environments-10B981?style=for-the-badge&labelColor=1a1a1a" alt="The Math Environments collection" height="32"></a>
 <a href="#add-your-environment"><img src="https://img.shields.io/badge/Contribute-Add%20your%20environment-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="Add your environment" height="32"></a>
 
 </div>
@@ -54,7 +55,8 @@ reward 1 only for a kernel-checked proof of the exact statement.</p>
 QED-Nano was trained with. RL from the base model takes Qwen3.5-2B from 0.22 to 0.41 on held-out proofs.</p>
 <sub>Harbor · 5,227 train problems, IMO-ProofBench, ProofBench</sub><br>
 <a href="fineproof/training/RESULTS.md">Results</a> ·
-<a href="https://huggingface.co/spaces/AdithyaSK/fineproof-rl-results">Training logs</a> ·
+<a href="https://huggingface.co/FineEnvs/Qwen3.5-2B-FineProof-RL">Model</a> ·
+<a href="https://huggingface.co/spaces/FineEnvs/fineproof-rl-trackio">Training logs</a> ·
 <a href="fineproof/DESIGN.md">Design</a>
 </td>
 </tr>

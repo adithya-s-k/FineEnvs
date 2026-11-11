@@ -5,9 +5,10 @@ TRL's AsyncGRPO, the path [05-multi-harness-rl](../../../05-multi-harness-rl/) b
 difference is the harness: instead of OpenCode or Claude Code, every rollout runs the **FineProof harness**, a Harbor agent of
 our own.
 
-**Result:** Qwen3.5-2B, with no SFT, went from 0.217 to 0.407 on held-out proofs in 500 updates. The numbers, the
+**Result:** Qwen3.5-2B, with no SFT, went from 0.217 to 0.407 on held-out proofs in 500 updates
+([`FineEnvs/Qwen3.5-2B-FineProof-RL`](https://huggingface.co/FineEnvs/Qwen3.5-2B-FineProof-RL)). The numbers, the
 checks behind them and what failed first are in [RESULTS.md](RESULTS.md). The logs are on the
-[Trackio dashboard](https://huggingface.co/spaces/AdithyaSK/fineproof-rl-results).
+[Trackio dashboard](https://huggingface.co/spaces/FineEnvs/fineproof-rl-trackio).
 
 ## The harness: write, check, rewrite
 

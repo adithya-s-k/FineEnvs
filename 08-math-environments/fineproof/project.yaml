@@ -8,15 +8,23 @@ authors:
   - {name: Adithya S Kolavi, github: adithya-s-k, affiliation: Hugging Face}
 
 hub:
+  org: FineEnvs
+  collection: FineEnvs/math-environments-6af40312bf237e3c32912840
+  models:
+    - FineEnvs/Qwen3.5-2B-FineProof-RL
   datasets:
+    - FineEnvs/fineproof-envs-train
+    - FineEnvs/fineproof-envs-test
+    - FineEnvs/fineproof-rl-runs
     - lm-provers/FineProofs-RL
     - lm-provers/FineProofs-RL-test
     - lm-provers/IMOProofBench
     - lm-provers/ProofBench
   trackio:
-    - AdithyaSK/fineproof-rl-results
+    - FineEnvs/fineproof-rl-trackio
   buckets:
-    - AdithyaSK/qed-nano-rl-runs
+    - FineEnvs/fineproof-rl-trackio
+    - AdithyaSK/qed-nano-rl-runs   # every checkpoint, rollout and eval trial of the runs
 
 envs:
   - name: olympiad_proofs

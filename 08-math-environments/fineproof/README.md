@@ -6,7 +6,9 @@
 
 <p>QED-Nano's training problems, rubrics and judge as Harbor tasks, and a model trained on them through our FineProof harness.</p>
 
-<a href="https://huggingface.co/spaces/AdithyaSK/fineproof-rl-results"><img src="https://img.shields.io/badge/%F0%9F%93%88%20Trackio-Training%20logs%20%26%20evals-FFD21E?style=for-the-badge&labelColor=1a1a1a" alt="The Trackio dashboard" height="32"></a>
+<a href="https://huggingface.co/FineEnvs/Qwen3.5-2B-FineProof-RL"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Model-Qwen3.5--2B--FineProof--RL-4F46E5?style=for-the-badge&labelColor=1a1a1a" alt="The trained model" height="32"></a>
+<a href="https://huggingface.co/spaces/FineEnvs/fineproof-rl-trackio"><img src="https://img.shields.io/badge/%F0%9F%93%88%20Trackio-Training%20logs%20%26%20evals-FFD21E?style=for-the-badge&labelColor=1a1a1a" alt="The Trackio dashboard" height="32"></a>
+<a href="https://huggingface.co/collections/FineEnvs/math-environments-6af40312bf237e3c32912840"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Collection-Math%20Environments-10B981?style=for-the-badge&labelColor=1a1a1a" alt="The collection" height="32"></a>
 <a href="https://github.com/harbor-framework/harbor"><img src="https://img.shields.io/badge/framework-Harbor-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="Harbor" height="32"></a>
 <a href="https://huggingface.co/spaces/lm-provers/qed-nano-blogpost"><img src="https://img.shields.io/badge/%F0%9F%93%84%20Source-QED--Nano%20blog%20post-10B981?style=for-the-badge&labelColor=1a1a1a" alt="The QED-Nano blog post" height="32"></a>
 
@@ -28,9 +30,14 @@ shows new key ideas, not new phrasing. It also shows that both judges forgive co
 argument, so absolute scores run high. [training/RESULTS.md](training/RESULTS.md) has the full curve, the checks, the
 4B run, and why the first attempts collapsed.
 
-The train and test sets are staged as the Hub datasets `FineEnvs/fineproof-envs-train` and
-`FineEnvs/fineproof-envs-test` (not uploaded yet). [DESIGN.md](DESIGN.md) has the reasoning behind the tasks and the
-verifier.
+On the Hub:
+- **Tasks:** [`FineEnvs/fineproof-envs-train`](https://huggingface.co/datasets/FineEnvs/fineproof-envs-train) and
+  [`-test`](https://huggingface.co/datasets/FineEnvs/fineproof-envs-test), runnable with `harbor run`.
+- **Trained model:** [`FineEnvs/Qwen3.5-2B-FineProof-RL`](https://huggingface.co/FineEnvs/Qwen3.5-2B-FineProof-RL).
+- **Every eval attempt, with its proof and grades:**
+  [`FineEnvs/fineproof-rl-runs`](https://huggingface.co/datasets/FineEnvs/fineproof-rl-runs).
+
+[DESIGN.md](DESIGN.md) has the reasoning behind the tasks and the verifier.
 
 [QED-Nano](https://huggingface.co/lm-provers/QED-Nano) is a 4B model trained by CMU, Hugging Face, ETH Zurich and
 Numina to write olympiad proofs. Its reward is an LLM judge: gpt-oss-20b scores each proof 0–7 against a

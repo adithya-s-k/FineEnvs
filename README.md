@@ -183,6 +183,21 @@ Everything is in the [Simulation RL Envs collection](https://huggingface.co/coll
 and [the article](https://huggingface.co/spaces/FineEnvs/simulation-rl-environments) covers all of it.
 Built a simulation environment? [Add it to the catalog](./07-simulation-environments/#add-your-environment).
 
+### [08 · Math environments](./08-math-environments/) &nbsp;<sub>from mental arithmetic to research-level proofs</sub>
+
+**Three ways to grade maths.** A catalog of math environments, each explicit about how it grades:
+- [Scott Wu Math](./08-math-environments/scott-wu-math/) checks one arithmetic expression exactly.
+- [openai/math](./08-math-environments/openai-math/) accepts only a Lean 4 proof that the kernel checks against the
+  exact statement.
+- [FineProofEnvs](./08-math-environments/fineproof/) has gpt-oss-20b grade a plain-language olympiad proof 0–7
+  against its rubric, the reward QED-Nano trained with.
+
+Qwen3.5-2B, trained with RL from the base model on FineProofEnvs, went from 0.217 to 0.407 on held-out proofs in 500
+updates. A gpt-oss-120b regrade sees 0.259 → 0.464. All of it ran on Hugging Face: Jobs, Sandboxes, Inference
+Providers and a bucket. Reading the proofs shows new key ideas, and also that both judges forgive contradictions
+around a correct argument. The model, the tasks, every eval attempt and the training logs are in the
+[Math Environments collection](https://huggingface.co/collections/FineEnvs/math-environments-6af40312bf237e3c32912840).
+
 > **More coming.** Each new project is another end-to-end recipe: an environment, a training run, and
 > the artifacts on the Hub. [Proposals and contributions welcome →](./CONTRIBUTING.md)
 
@@ -383,6 +398,7 @@ FineEnvs/
 ├── 05-multi-harness-rl/     the same tasks trained through TRL, OpenCode and Harbor
 ├── 06-multilingual/         OCR over 22 languages and ASR over 102, two OpenEnv servers
 ├── 07-simulation-environments/  a catalog of simulation environments: PortSimEnv v1–v5 and more
+├── 08-math-environments/    math environments graded exactly, by Lean, or by a rubric judge
 ├── content/
 │   ├── articles/            long-form sources (Astro → Docker Space)
 │   └── slides/              talk decks (Vite → static Space)

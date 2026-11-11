@@ -4,8 +4,12 @@ Qwen3.5-2B, non-thinking mode, trained with AsyncGRPO through the FineProof harn
 gpt-oss-20b's rubric score / 7. Everything ran on Hugging Face: HF Jobs for the trainer, the policy engine and the
 evals; HF Sandboxes for the task containers; Inference Providers for the judge; a bucket for checkpoints and logs.
 
-- **Logs:** the [Trackio dashboard](https://huggingface.co/spaces/AdithyaSK/fineproof-rl-results) has every update,
-  every eval and every eval attempt's proof with the judge's assessment.
+- **Model:** [`FineEnvs/Qwen3.5-2B-FineProof-RL`](https://huggingface.co/FineEnvs/Qwen3.5-2B-FineProof-RL), the
+  step-500 checkpoint in bf16.
+- **Logs:** the [Trackio dashboard](https://huggingface.co/spaces/FineEnvs/fineproof-rl-trackio) has every update and
+  every eval.
+- **Eval attempts:** [`FineEnvs/fineproof-rl-runs`](https://huggingface.co/datasets/FineEnvs/fineproof-rl-runs) has
+  every attempt's proof with the judge's assessment, as tables.
 - **Numbers:** [`../results/fp-rl2-2b.json`](../results/fp-rl2-2b.json) and
   [`../results/fp-rl2-4b.json`](../results/fp-rl2-4b.json).
 - **Figure:** [`../assets/plot_curves.py`](../assets/plot_curves.py) redraws it from the 2B numbers.
@@ -49,7 +53,7 @@ training pool. Attempts are sampled at temperature 0.8 with a 32,768-token cap, 
 | Judge | gpt-oss-20b on Inference Providers (groq, then featherless-ai), 2 grades per proof, averaged |
 | Hardware | one `h200x4` HF Job: vLLM data-parallel on 3 GPUs, the trainer on 1; task sandboxes as HF Sandboxes |
 | Length | 500 updates in two Jobs: 0 → 100, then resumed from the bucket to 500 (28 h in all) |
-| Judge cost | $241 for the 64,000 training rollouts, as the providers reported it |
+| Cost | about $580 of GPU time ($20/h for `h200x4`) and $241 of judge calls for the 64,000 training rollouts; each eval is a separate, shorter Job |
 
 ## The eval curve
 

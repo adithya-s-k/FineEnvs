@@ -46,6 +46,12 @@ proof checker.
 Part of a pair: [train](https://huggingface.co/datasets/$org/fineproof-envs-train) ·
 [test](https://huggingface.co/datasets/$org/fineproof-envs-test). $overlap_note
 
+Trained on these tasks: [`$org/Qwen3.5-2B-FineProof-RL`](https://huggingface.co/$org/Qwen3.5-2B-FineProof-RL).
+That is Qwen3.5-2B after 500 RL updates from the base model. It went from 0.217 to 0.407 mean reward on the 64
+validated test tasks. [Training logs](https://huggingface.co/spaces/$org/fineproof-rl-trackio) ·
+[every eval attempt](https://huggingface.co/datasets/$org/fineproof-rl-runs) ·
+[recipe](https://github.com/adithya-s-k/FineEnvs/tree/main/08-math-environments/fineproof).
+
 ## Layout
 
 ```text
