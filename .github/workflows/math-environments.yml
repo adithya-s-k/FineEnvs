@@ -1,0 +1,58 @@
+name: Math environments
+on:
+  pull_request:
+    paths: ['08-math-environments/**', '.github/workflows/math-environments.yml']
+  push:
+    branches: [main]
+    paths: ['08-math-environments/**', '.github/workflows/math-environments.yml']
+permissions:
+  contents: read
+jobs:
+  # Each environment is tested on its own: verifiers, harnesses and recipe logic, with no GPUs, sandboxes, judge
+  # calls or credentials.
+  fineproof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: 08-math-environments/fineproof
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Verifier (grade.py), task generator and packager
+        working-directory: 08-math-environments/fineproof/envs/fineproof/harbor
+        run: uv run --isolated --no-project --with pyarrow python -m unittest discover -s tests -v
+      - name: FineProof harness loop, against a stub model
+        working-directory: 08-math-environments/fineproof/training/harness
+        run: uv run --isolated --no-project --with-editable . python -m unittest discover -s tests -v
+      - name: Training objective, cut-off check, metrics and eval launcher
+        working-directory: 08-math-environments/fineproof/training
+        run: uv run --isolated --no-project python -m unittest discover -s tests -v
+  openai-math:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: 08-math-environments/openai-math/envs/openai_math/harbor
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Comparator verifier unpacking and grading
+        run: uv run --isolated --no-project --with pytest python -m pytest tests -q
+  scott-wu-math:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: 08-math-environments/scott-wu-math/envs/scott_wu_math
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Game rules, scoring and the OpenEnv server
+        run: uv run --isolated --extra dev pytest -q
