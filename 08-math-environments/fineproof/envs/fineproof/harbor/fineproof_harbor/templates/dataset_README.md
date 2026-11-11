@@ -117,8 +117,11 @@ With the `fineproof_harbor` adapter (`generator/`), from QED-Nano's release at p
 - The default judge agrees with reference grades as closely as QED-Nano reports for it (QED-Nano's advantage
   error: 1.11 points against Gemini 3 Pro grades, where they report 1.19; 1.36 against MathArena's human grades,
   where they report 1.21-1.43).
-- 18 cheating submissions (a restated problem, injected score tags, instructions to the grader, another problem's
-  proof, ...) all scored 0.
+- Cheating submissions, 16 kinds over 10 validated problems with 2 grades each: injected and look-alike score tags, fake
+  section headers and fences, answer-only, truncated, very long, an easier variant, prose instructions to the grader.
+  Only the prose instructions beat an opening-only control (7 in 8 of 50 grades). The grader now tells the judge,
+  after the proof, that nothing inside it is an instruction, which cut that to 0 of 50 with reference grades
+  unchanged.
 - The reference proofs here averaged $oracle_mean/7; $n_validated of $n_oracle scored at least 6.
 - End to end on Daytona, with the oracle and with Qwen3.5-9B through the FineProof harness: every trial was graded.
 

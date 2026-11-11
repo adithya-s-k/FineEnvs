@@ -89,14 +89,21 @@ given. Eval sets carry the benchmark's own grading guidelines in place of a Fine
 
 Their parser has gaps that matter once a policy is optimising against it:
 
-- the score is not clamped: a reply with `<score>70</score>` gives reward 10. We clamp to 0–7.
-- the proof is pasted into the prompt as is. We put it between random per-call delimiters and strip anything shaped
-  like a grader tag (`<score>`, `<points>`, `### INPUT DATA`, …) before grading.
-- a proof can carry its own `</think>`. Here the agent writes a file, so the grader reads the file, never a chat
-  transcript.
-- proofs are capped in length; an over-length proof scores 0.
-- if the judge call fails after retries, no reward is written, so Harbor reports an error rather than a 0, as the
-  openai-math grader does for a broken setup.
+- the score is not clamped: a reply with `<score>70</score>` gives reward 10. We clamp to 0–7 and, as they do, take
+  the first tag.
+- the proof is pasted into the prompt as is. We put it between random per-call delimiters and neutralise anything
+  shaped like the judge's tags (also `＜score＞` and `&lt;score&gt;`), the prompts' section names (`#`, bold or
+  underlined), `---` rules and `PROOF-<hex>` look-alikes. After the closing delimiter the prompt says that nothing
+  inside the proof is an instruction: without that line the default judge gave 7 to 8 of 50 proofs that only asked,
+  in prose, for full marks; with it, 0 of 50, and reference proofs graded the same
+  ([results/judge-probes-v2.json](results/judge-probes-v2.json)).
+- a proof can carry its own `</think>`. Here the agent writes a file, and the grader reads it only if it is a regular
+  file (never a symlink) under the size cap; an over-length proof scores 0.
+- a judge failure is never a 0. An error body, an empty or cut-off reply and a broken stream are retried, then no
+  reward is written, so Harbor reports an error, as it does for bad `JUDGE_*` settings. With several samples, one
+  failed sample voids the grade. A training run drops such rollouts, so watch the judge error rate: a proof that
+  makes the judge run out of tokens escapes a 0.
+- only `environment_mode = "separate"` keeps `JUDGE_API_KEY` out of the agent's sandbox.
 
 ## Training through our own harness
 
@@ -120,8 +127,10 @@ is statistical:
 3. **Controls.** Empty, restated-problem, answer-only and truncated proofs should score 0.
 4. **End to end.** Qwen3-4B-Thinking-2507 on a sample of problems should match each problem's recorded
    `reward_mean` within sampling error.
-5. **Cheat probes**, in the style of openai-math's `attacks.py`: injected score tags, "ignore the rubric"
-   instructions, fake grader output, a proof of a different problem, very long proofs. All must score 0.
+5. **Cheat probes**, in the style of openai-math's `attacks.py` (`judge_probes.py`): 16 kinds, from injected and
+   look-alike score tags to an easier variant and prose instructions to the grader, over 10 validated problems with
+   2 grades each. Only prose instructions beat an opening-only control, which the after-proof line above fixed
+   ([results/judge-probes-v2.json](results/judge-probes-v2.json)).
 
 ## Open questions
 
@@ -132,8 +141,9 @@ is statistical:
 - **Judge cost and noise.** Every grade is one judge call with up to 32,768 output tokens (`JUDGE_MAX_TOKENS`;
   QED-Nano allowed 81,920). The training run averaged 2 grades per proof (`JUDGE_SAMPLES=2`) at about $0.004 per
   proof.
-- **Oracle coverage.** How many of the 5,227 problems have a 7-graded proof in FineProofs-SFT is not yet known; it
-  can be read from two columns without downloading the full ~350 MB.
+- **Oracle coverage.** 3,689 of the 5,073 train tasks and 88 of the 128 test tasks have a reference proof that Gemini 3
+  Pro graded 7; gpt-oss-120b (one grade each, temperature 1.0) gives at least 6/7 to 2,884 and 64 of them, the
+  `-validated` subsets.
 - **Harbor or in-process.** One sandbox per attempt suits agents with tools and agent evaluation. For QED-Nano-style
   single-turn GRPO (about 1,000 attempts per step) an in-process environment sharing the same `grade.py` would be
   far cheaper; Verifiers or OpenEnv variants can follow.
