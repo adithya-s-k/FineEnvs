@@ -288,11 +288,13 @@ def write_dataset_files(out: Path, included: list[Challenge], written: list[dict
     families = {c.family.number for c in included}
     subjects = sorted({c.family.subject for c in included})
     counts = {s: sum(1 for c in included if c.family.subject == s) for s in subjects}
+    fixed = sorted(w["challenge"] for w in written if w.get("fixed_definitions"))
+    fixed_tasks = f"{len(fixed)} task{'' if len(fixed) == 1 else 's'}" + (f" ({', '.join(fixed)})" if fixed else "")
     card = Template((TEMPLATES / "dataset_README.md").read_text()).substitute(
         validation=validation_block(written + [{"task": n["task"], "oracle_result": n["reason"]}
-                                               for n in (not_validated or []) if n["reason"] != "pending"]
-                                    + [{"task": n["task"]} for n in (not_validated or []) if n["reason"] == "pending"]),
+                                               for n in (not_validated or [])]),
         not_validated=not_validated_block(not_validated or [], excluded or []),
+        fixed_tasks=fixed_tasks,
         n_statements=n_statements or len(written),
         n_not_included=(n_statements or len(written)) - len(written),
         n_tasks=len(written), n_families=len(families), n_subjects=len(subjects),
@@ -301,7 +303,8 @@ def write_dataset_files(out: Path, included: list[Challenge], written: list[dict
     )
     (out / "README.md").write_text(card)
     write_parquet_manifest(out, written)
-    (out / "NOTICE").write_text(Template((TEMPLATES / "NOTICE").read_text()).substitute(source_commit=SOURCE_COMMIT))
+    (out / "NOTICE").write_text(Template((TEMPLATES / "NOTICE").read_text()).substitute(
+        source_commit=SOURCE_COMMIT, fixed_tasks=fixed_tasks))
     shutil.copy(TEMPLATES / "LICENSE-openai-math", out / "LICENSE-openai-math")
     shutil.copy(TEMPLATES / "LICENSE", out / "LICENSE")
 
@@ -329,6 +332,11 @@ def main() -> None:
         missing = wanted - {c.name for c in challenges}
         if missing:
             raise SystemExit(f"unknown challenges: {sorted(missing)}")
+    # The instruction, task.toml and card all need the result family; fail before writing anything.
+    unlinked = sorted(c.name for c in challenges if not c.excluded and c.family is None)
+    if unlinked:
+        raise SystemExit(f"no result family for {', '.join(unlinked)}: each challenge needs a link in "
+                         "lean/docs/NNN.md and that family's \\resultentry in overview.tex")
 
     args.out.mkdir(parents=True, exist_ok=True)
     written, excluded, not_validated = [], [], []

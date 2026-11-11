@@ -111,8 +111,7 @@ Only tasks whose official proof was accepted are published. All runs on Daytona,
 | missing-package | 21 | the official proof needs a Lean library beyond Mathlib (PrimeNumberTheoremAnd, RellichKondrachov, …); agents are unaffected, since every statement imports only Mathlib |
 | memory | 10 | the official proof needs more than the sandbox's 8 GB to build |
 | definition-mismatch | 2 | the official proof restates a definition that elaborates differently in its own library, so the exact-match check fails |
-| timeout | 1 | `erdos-reciprocal`: grading exceeded 6 hours |
-| disk | 1 | `mub-six`: 205 MB of Lean whose compiled output exceeds the 10 GB disk |
+| not completed | 2 | `erdos-reciprocal`, `mub-six`: the Harbor oracle run was cut short by a network drop, so the dataset card and manifest record no verdict. A later detached run of the same `grade.py` inside one sandbox, outside Harbor, scored both 0: `erdos-reciprocal` hit the 6-hour limit, and `mub-six` (205 MB of Lean) filled the 10 GB disk |
 | left out by design | 1 | `DefocusingNLS`: a `sorry` inside a definition its theorems depend on |
 
 | Other check | Expected | Result |
@@ -140,22 +139,42 @@ is the expected result; the value is in the rare 1 and in the trajectories.
 - **One kernel.** Comparator's optional second kernel (nanoda) is off. The trust base is the Lean kernel,
   Comparator's export parser and `lean4export`, landrun, and Daytona's sandbox boundary.
 
+## Known gaps
+
+- **Pinned to an older openai/math.** The dataset uses commit `adc7f12` (6 October 2026). Upstream `main` is at
+  `4eaee87` (30 October) with 13 more challenge configs (405 to 418) and a multi-file Hodge challenge that the
+  loader does not read yet. Upstream also fixed the `definition_names` configs (see below), turned
+  `HarmonicGrowth`'s `axiom mainStatement` into a `sorry`, and added a theorem to `ElementaryPositivity`. At the
+  pin, `harmonic-growth` has no `sorry`: an agent must remove the axiom and prove `main`, which the instruction's
+  "replace every `sorry`" does not say. The Lean and Mathlib pins are unchanged, so regenerating is mostly a new
+  oracle run.
+- **Grader hardening is planned as a follow-up.** Changes to `grade.py` or the image need a new image and a full
+  revalidation, so they are not in this release. Planned: build the trusted Challenge before unpacking the
+  submission (so a submission that hangs the build scores 0 rather than a grading error), a canary that fails
+  closed if landrun runs without Landlock, blocking `AF_UNIX` and limiting processes for the grader user, opening
+  build by-products without following symlinks, skipping non-identifier `.lean` files in the packer, pinning
+  `elan-init.sh`, and moving from standalone Comparator (deprecated upstream) to `lake comparator`.
+
 ## A note on openai/math's Comparator configs
 
 Comparator lets a challenge leave *definition holes*: `definition_names` entries whose body the solver supplies. By
 design it checks only a hole's name and type, never its body, and Comparator's README says such solutions need an
 additional check.
 
-Nine of the 405 configs use `definition_names`, and in eight of them the listed definitions are written out in the
-challenge rather than left open. Run as shipped, a solution could redefine one of them (for instance
-`ProperColoring := False` in the five-colouring challenge) and prove the theorem trivially. This looks like a
-config-generation oversight, not a flaw in the mathematics or in Comparator.
+At the pinned commit, nine of the 405 configs use `definition_names`, and in eight of them the listed definitions
+are written out in the challenge rather than left open. Run as shipped, a solution could redefine one of them (for
+instance `ProperColoring := False` in the five-colouring challenge) and prove the theorem trivially. It was a
+config-generation oversight, not a flaw in the mathematics or in Comparator, and openai/math has since fixed it
+upstream in commit `42907c9` (26 October 2026, PR #3), which empties `definition_names` in those configs. The
+dataset is pinned to `adc7f12`, before that fix, so the generator still has to correct them.
 
 The generator handles it from the files alone: a hole whose body is written out is removed from `definition_names`,
 so the solution's definition must match exactly; a hole whose body is `sorry` and whose name appears nowhere else in
 the file stays open (one case, `ElementaryPositivity`, where the hole's type is the claim); and the one challenge
-with a `sorry` inside a definition its theorems use (`DefocusingNLS`) is left out. The redefinition and a tampered
-structure are among the probes above, and both are rejected.
+with a `sorry` inside a definition its theorems use (`DefocusingNLS`) is left out. Of the eight corrected configs,
+five are in the published dataset (`Brenier`, `EuclideanFiveColor`, `KServer`, `Naimark`, `Rokhlin`);
+`OccupiedOverlap` and `SpinAngle` did not validate (definition-mismatch above), and `DefocusingNLS` is left out. The
+redefinition and a tampered structure are among the probes above, and both are rejected.
 
 ## Licensing and attribution
 

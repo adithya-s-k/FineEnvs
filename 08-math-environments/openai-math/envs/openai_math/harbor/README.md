@@ -48,8 +48,8 @@ per challenge, all from the data:
 
 | What | Count | Handling |
 |---|---|---|
-| Definition holes | 9 configs | Comparator checks only the name and type of a `definition_names` entry, never its body, so a solution could redefine `ProperColoring := False` and prove the theorem trivially. A hole whose body is written out is removed from the config, so it must match exactly (8 configs). A hole whose body is `sorry` stays open only if its name appears nowhere else in the file (`ElementaryPositivity`, whose type is the claim). `DefocusingNLS` has a `sorry` inside a definition the theorems use and is excluded. |
-| Reference proofs needing other Lean libraries | 23 | PrimeNumberTheoremAnd, StrongPNT, RellichKondrachov and others. Every statement imports only Mathlib, so agents are unaffected; only those official proofs cannot be built in this image. |
+| Definition holes | 9 configs | Comparator checks only the name and type of a `definition_names` entry, never its body, so a solution could redefine `ProperColoring := False` and prove the theorem trivially. A hole whose body is written out is removed from the config, so it must match exactly (8 configs at the pinned commit; 5 of them are in the published dataset). A hole whose body is `sorry` stays open only if its name appears nowhere else in the file (`ElementaryPositivity`, whose type is the claim). `DefocusingNLS` has a `sorry` inside a definition the theorems use and is excluded. Upstream openai/math fixed these configs in `42907c9` (26 October 2026); the rewrite is still needed for the pinned `adc7f12`. |
+| Reference proofs needing other Lean libraries | 23 of 405 | PrimeNumberTheoremAnd, StrongPNT, RellichKondrachov and others, per the import graph. Every statement imports only Mathlib, so agents are unaffected; only those official proofs cannot be built in this image. The oracle reports 21 of them as `missing-package`: `DefocusingNLS` is excluded, and `ContinuumCoulombHardness` runs out of memory first. |
 | Grading time | all | 3 h plus 15 min per MB of the reference proof, at most 6 h. |
 
 The 137 result families without Lean statements have no machine-checkable target and are not part

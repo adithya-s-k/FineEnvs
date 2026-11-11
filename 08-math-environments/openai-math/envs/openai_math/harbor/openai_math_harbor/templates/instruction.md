@@ -20,7 +20,7 @@ Write `/workspace/Submission.lean`. Start from a copy of the challenge:
 cp /opt/openai-math/challenges/$challenge.lean /workspace/Submission.lean
 ```
 
-then replace every `sorry` with a proof. The file is graded on three things:
+then replace every `sorry` with a proof. The file is graded on four things:
 
 - **Same statements.** $targets must keep exactly the statement shown above: same names,
   namespaces, binders and types. Every definition the statements use must stay exactly as written.

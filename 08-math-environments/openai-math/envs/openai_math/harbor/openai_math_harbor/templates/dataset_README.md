@@ -115,9 +115,11 @@ that runs during grading, a build that fills the verifier's disk). All scored 0.
 
 ## Notes
 
-- **Configs.** In eight of openai/math's Comparator configs, definitions written out in the statement
-  were listed as "holes" that Comparator does not check, so a solution could redefine them. Here they
-  must match exactly; affected tasks list them under `fixed_definitions` in `task.toml`.
+- **Configs.** At commit `$source_commit`, eight of openai/math's Comparator configs listed definitions
+  written out in the statement as "holes" that Comparator does not check, so a solution could redefine
+  them. Here they must match exactly. Affected in this dataset: $fixed_tasks; each lists them under
+  `fixed_definitions` in `task.toml`. openai/math fixed these configs upstream in commit `42907c9`
+  (26 October 2026).
 - **Contamination.** The statements and proofs have been public since 6 October 2026.
 - **Difficulty.** These are open research problems; expect reward 0 on almost every task.
 

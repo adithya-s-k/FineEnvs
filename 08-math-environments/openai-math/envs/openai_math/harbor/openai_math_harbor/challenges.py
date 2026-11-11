@@ -5,9 +5,10 @@ Each challenge is ``lean/ComparatorChallenges/<Name>.lean`` (the statement, with
 
 * the family it belongs to (number, title, subject), from ``lean/docs/NNN.md`` and ``overview.tex``;
 * a hole policy. Comparator checks only the name and type of a ``definition_names`` entry, never
-  its body (comparator ``Compare.lean``: ``definitionHoleMatches``). openai/math lists fixed
-  definitions as holes in 9 configs, so a solver could redefine e.g. ``ProperColoring := False`` and
-  prove the theorem trivially. Holes are therefore rewritten:
+  its body (comparator ``Compare.lean``: ``definitionHoleMatches``). At the pinned commit, openai/math
+  lists fixed definitions as holes in 8 of the 9 configs that use ``definition_names``, so a solver
+  could redefine e.g. ``ProperColoring := False`` and prove the theorem trivially (fixed upstream in
+  openai/math ``42907c9``). Holes are therefore rewritten:
 
   - a definition with a complete body is removed from ``definition_names``, so Comparator requires
     the solution's definition to be identical;

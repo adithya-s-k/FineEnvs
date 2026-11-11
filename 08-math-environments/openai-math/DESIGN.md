@@ -47,16 +47,19 @@ irrelevant to the grade:
 ## 4. Fix the configs before trusting them
 
 Reading the configs turned up the one real hole. Comparator's `definition_names` lets the solver supply a
-definition's body, and checks only its name and type. Eight configs list definitions that are written out in the
-statement, so a solution could redefine one (`ProperColoring := False`) and prove the theorem trivially. The
-generator decides from the files alone:
+definition's body, and checks only its name and type. At the pinned commit `adc7f12`, eight configs list
+definitions that are written out in the statement, so a solution could redefine one (`ProperColoring := False`) and
+prove the theorem trivially. openai/math has since fixed these configs upstream in `42907c9` (26 October 2026, PR
+#3); the generator fix is still needed for the pinned commit. The generator decides from the files alone:
 
 - a written-out definition loses its hole, so it must match exactly;
 - a `sorry`-bodied hole stays open only if its name appears nowhere else in the file (`ElementaryPositivity`, where
   the hole's type is the claim);
 - `DefocusingNLS`, with a `sorry` inside a definition its theorems use, is left out.
 
-Each affected task records the change under `fixed_definitions` in `task.toml`.
+Each affected task records the change under `fixed_definitions` in `task.toml`. Five of the published tasks have
+one (`Brenier`, `EuclideanFiveColor`, `KServer`, `Naimark`, `Rokhlin`); of the other three corrected configs,
+`OccupiedOverlap` and `SpinAngle` did not validate (section 6) and `DefocusingNLS` is left out.
 
 ## 5. Make every task solvable in the image, and prove it
 
@@ -89,9 +92,10 @@ not in the proofs:
 | small proofs timed out | a few heavy tactic calls take 45+ minutes | 3 h grading floor, plus 15 min per MB of proof |
 
 What remained after the fixes were genuine limits, each listed on the dataset card: 21 official proofs need Lean
-libraries beyond Mathlib (agents are unaffected: every statement imports only Mathlib), 10 need more than 8 GB, 2
-restate a definition that elaborates differently in their own library, one takes more than 6 hours and one is too
-big for the disk.
+libraries beyond Mathlib (agents are unaffected: every statement imports only Mathlib), 10 need more than 8 GB, and 2
+restate a definition that elaborates differently in their own library. Two more (`erdos-reciprocal`, `mub-six`) did
+not complete in the Harbor oracle run and are listed as "not completed"; a detached re-run of the same grader
+outside Harbor showed that one takes more than 6 hours and the other is too big for the disk.
 
 ## 7. Publish only what was validated, and say what was not
 
