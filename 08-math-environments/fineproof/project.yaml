@@ -3,9 +3,20 @@ name: fineproof
 title: "FineProofEnvs: olympiad proofs with a rubric judge"
 tagline: "Write a natural-language proof of an olympiad problem; an LLM judge grades it 0–7 against the problem's rubric, as in the QED-Nano recipe."
 order: 8.1
-status: wip
+status: trained   # tasks and verifier validated; Qwen3.5-2B trained 500 updates from the base model, every 50th checkpoint evaluated and regraded
 authors:
   - {name: Adithya S Kolavi, github: adithya-s-k, affiliation: Hugging Face}
+
+hub:
+  datasets:
+    - lm-provers/FineProofs-RL
+    - lm-provers/FineProofs-RL-test
+    - lm-provers/IMOProofBench
+    - lm-provers/ProofBench
+  trackio:
+    - AdithyaSK/fineproof-rl-results
+  buckets:
+    - AdithyaSK/qed-nano-rl-runs
 
 envs:
   - name: olympiad_proofs

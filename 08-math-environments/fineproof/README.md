@@ -6,6 +6,7 @@
 
 <p>QED-Nano's training problems, rubrics and judge as Harbor tasks, and a model trained on them through our FineProof harness.</p>
 
+<a href="https://huggingface.co/spaces/AdithyaSK/fineproof-rl-results"><img src="https://img.shields.io/badge/%F0%9F%93%88%20Trackio-Training%20logs%20%26%20evals-FFD21E?style=for-the-badge&labelColor=1a1a1a" alt="The Trackio dashboard" height="32"></a>
 <a href="https://github.com/harbor-framework/harbor"><img src="https://img.shields.io/badge/framework-Harbor-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="Harbor" height="32"></a>
 <a href="https://huggingface.co/spaces/lm-provers/qed-nano-blogpost"><img src="https://img.shields.io/badge/%F0%9F%93%84%20Source-QED--Nano%20blog%20post-10B981?style=for-the-badge&labelColor=1a1a1a" alt="The QED-Nano blog post" height="32"></a>
 
@@ -13,11 +14,23 @@
 
 ---
 
-> **Work in progress.** The tasks and the verifier are built and validated: the judge's agreement on QED-Nano's
-> grader benchmarks, cheating probes, a sweep grading every reference proof, and end-to-end runs on Daytona with
-> Harbor 0.25. The train and test sets are staged as the Hub datasets `FineEnvs/fineproof-envs-train` and
-> `FineEnvs/fineproof-envs-test` (not uploaded yet). The training recipe is built but has not run.
-> [DESIGN.md](DESIGN.md) has the reasoning, [training/](training/) the recipe.
+## The result
+
+Qwen3.5-2B, trained with RL from the base model (no SFT) through the FineProof harness, raises its held-out rubric
+score from **0.217 to 0.407** in 500 updates. gpt-oss-120b, regrading the same proofs, sees 0.259 → 0.464. Attempts
+with full marks go from 12.1% to 25.4%. Training took 28 hours on an `h200x4` HF Job, resumed once from the bucket,
+with the sandboxes, the judge and the logs also on Hugging Face.
+
+<img src="./assets/fp-rl2-2b-curves.svg" alt="Training reward, held-out eval with the 20b and 120b judges, and the share of proofs cut off at 32k tokens, over 500 updates" width="100%">
+
+The eval is 64 held-out problems × 4 attempts, and step 500 is the last checkpoint, not the best. Reading the proofs
+shows new key ideas, not new phrasing. It also shows that both judges forgive contradictions around a correct
+argument, so absolute scores run high. [training/RESULTS.md](training/RESULTS.md) has the full curve, the checks, the
+4B run, and why the first attempts collapsed.
+
+The train and test sets are staged as the Hub datasets `FineEnvs/fineproof-envs-train` and
+`FineEnvs/fineproof-envs-test` (not uploaded yet). [DESIGN.md](DESIGN.md) has the reasoning behind the tasks and the
+verifier.
 
 [QED-Nano](https://huggingface.co/lm-provers/QED-Nano) is a 4B model trained by CMU, Hugging Face, ETH Zurich and
 Numina to write olympiad proofs. Its reward is an LLM judge: gpt-oss-20b scores each proof 0–7 against a
@@ -36,10 +49,13 @@ statement exactly; here a natural-language proof earns partial credit for the st
 
 ## What's here
 
-- [`envs/fineproof/harbor/`](envs/fineproof/harbor/): the generator (`python -m fineproof_harbor.adapter`), the verifier
-  (`templates/tests/grade.py`, QED-Nano's judge plus safeguards against injected grades) and its unit tests.
-- [`training/`](training/): the **FineProof harness**, our own Harbor agent (write a proof, grade it, rewrite it), and the
-  AsyncGRPO recipe that trains through it with OpenEnv's Harbor integration, as in 05-multi-harness-rl.
+| Folder | What it is responsible for |
+|---|---|
+| [`envs/fineproof/harbor/`](envs/fineproof/harbor/) | The tasks and the verifier. The generator (`python -m fineproof_harbor.adapter`) writes Harbor tasks; `templates/tests/grade.py` is QED-Nano's judge plus safeguards against injected grades; unit tests |
+| [`training/`](training/) | The **FineProof harness** (our Harbor agent: write a proof, grade it, rewrite it) and the AsyncGRPO recipe that trains through it with OpenEnv's Harbor integration: HF Jobs launchers, checkpoint evals, the regrade check. [README](training/README.md) to run it, [RESULTS](training/RESULTS.md) for what it did |
+| [`results/`](results/) | Eval cards and run results as JSON: the OpenEnv parity checks, the step-0 benchmarks, and `fp-rl2-{2b,4b}.json` (every eval, regrade and update) |
+| [`assets/`](assets/) | The figure above and the script that draws it from `results/fp-rl2-2b.json` |
+| [`DESIGN.md`](DESIGN.md) | Why the tasks, the judge and its safeguards are built this way, and the open licensing questions |
 
 ## Task sets
 

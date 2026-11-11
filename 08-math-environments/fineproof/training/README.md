@@ -5,6 +5,10 @@ TRL's AsyncGRPO, the path [05-multi-harness-rl](../../../05-multi-harness-rl/) b
 difference is the harness: instead of OpenCode or Claude Code, every rollout runs the **FineProof harness**, a Harbor agent of
 our own.
 
+**Result:** Qwen3.5-2B, with no SFT, went from 0.217 to 0.407 on held-out proofs in 500 updates. The numbers, the
+checks behind them and what failed first are in [RESULTS.md](RESULTS.md). The logs are on the
+[Trackio dashboard](https://huggingface.co/spaces/AdithyaSK/fineproof-rl-results).
+
 ## The harness: write, check, rewrite
 
 QED-Nano's strongest test-time scaffolds end in the same move: the model reads its own proof as a grader would and
@@ -84,22 +88,31 @@ python jobs/hf_job.py eval  --name fp-eval-step100 --bucket <owner>/<bucket> \
   --checkpoint /outputs/fp-train/checkpoint-100 --step 100 --submit
 ```
 
-The MVP run puts everything on Hugging Face: HF Sandboxes, a public Trackio Space, and an eval Job per checkpoint
-on the fixed benchmark step 0 was scored on ([`results/fineproof-bench-4b-step0.json`](../results/fineproof-bench-4b-step0.json)):
+The 2B run in [RESULTS.md](RESULTS.md) is this command. Everything stays on Hugging Face: HF Sandboxes, a public
+Trackio Space, and an eval Job for every 50th checkpoint on the benchmark step 0 was scored on:
 
 ```bash
-JUDGE_MODEL=openai/gpt-oss-20b:groq,openai/gpt-oss-20b:featherless-ai \
-python jobs/hf_job.py train --name fp-rl2-4b --model Qwen/Qwen3.5-4B --bucket <owner>/<bucket> \
-  --sandbox hf-sandbox --rounds 0 --steps 100 --warmup-steps 10 --flavor h200x8 --timeout 48h \
+JUDGE_MODEL=openai/gpt-oss-20b:groq,openai/gpt-oss-20b:featherless-ai FINEPROOF_VLLM_CUDA_GRAPHS=1 \
+python jobs/hf_job.py train --name fp-rl2-2b --model Qwen/Qwen3.5-2B --flavor h200x4 \
+  --sandbox hf-sandbox --rounds 0 --steps 500 --save-steps 25 --eval-every 50 --warmup-steps 10 --timeout 48h \
+  --prepare-args "--min-mean 0.5" --bucket <owner>/<bucket> \
   --space-id <owner>/fineproof-rl --trackio-bucket <owner>/fineproof-trackio --eval-checkpoints --submit
 ```
 
-The defaults are the run's settings: proofs up to 32,768 tokens (vLLM serves 131,072 of context), groups of 16, 128
-rollouts per update, learning rate 1e-6, two judge samples per proof, a full checkpoint every 10 updates and an eval
-Job for every 20th (`--eval-every`) and the last. If the Job ends early (its timeout, a stop, a failed node), submit the
-same command again: it resumes from the latest full checkpoint in the bucket, and its logs, `rollouts.jsonl`, Trackio
-run and eval record carry on where they stopped. Inside a Job, a run that dies restarts from its latest checkpoint up
-to `--max-restarts` times.
+It ran as two Jobs: `--steps 100` with the default save and eval intervals, then this command, which resumed at update
+100. The 4B run is the same with `--model Qwen/Qwen3.5-4B --steps 100 --prepare-args "--max-mean 0.6"`.
+
+The other defaults are the run's settings:
+- proofs up to 32,768 tokens, with vLLM serving 131,072 of context;
+- groups of 16 and 128 rollouts per update;
+- learning rate 1e-6;
+- two judge samples per proof.
+
+`--save-steps` must divide `--eval-every`, or some evals have no checkpoint to load.
+
+If the Job ends early (its timeout, a stop, a failed node), submit the same command again. It resumes from the latest
+full checkpoint in the bucket, and its logs, `rollouts.jsonl`, Trackio run and eval record carry on where they stopped.
+Inside a Job, a run that dies restarts from its latest checkpoint up to `--max-restarts` times.
 
 Without `--submit` each command prints the job it would run. On your own two-GPU machine, run `bash jobs/install.sh`
 and `python prepare.py`, then `python jobs/run.py {train,eval} ...` with the same options. The GPUs must be A100s,

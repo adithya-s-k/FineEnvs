@@ -51,10 +51,11 @@ reward 1 only for a kernel-checked proof of the exact statement.</p>
 <sub>by <a href="https://github.com/adithya-s-k">Adithya S Kolavi</a> (Hugging Face), from the
 <a href="https://huggingface.co/lm-provers">LM-Provers</a> release</sub>
 <p>Write an olympiad proof in plain language; gpt-oss-20b grades it 0–7 against the problem's rubric, the reward
-QED-Nano was trained with. Work in progress.</p>
+QED-Nano was trained with. RL from the base model takes Qwen3.5-2B from 0.22 to 0.41 on held-out proofs.</p>
 <sub>Harbor · 5,227 train problems, IMO-ProofBench, ProofBench</sub><br>
-<a href="fineproof/DESIGN.md">Design</a> ·
-<a href="https://huggingface.co/spaces/lm-provers/qed-nano-blogpost">QED-Nano</a>
+<a href="fineproof/training/RESULTS.md">Results</a> ·
+<a href="https://huggingface.co/spaces/AdithyaSK/fineproof-rl-results">Training logs</a> ·
+<a href="fineproof/DESIGN.md">Design</a>
 </td>
 </tr>
 </table>
