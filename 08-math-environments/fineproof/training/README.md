@@ -101,7 +101,7 @@ python jobs/hf_job.py train --name fp-rl2-2b --model Qwen/Qwen3.5-2B --flavor h2
 ```
 
 It ran as two Jobs: `--steps 100` with the default save and eval intervals, then this command, which resumed at update
-100. The 4B run is the same with `--model Qwen/Qwen3.5-4B --steps 100 --prepare-args "--max-mean 0.6"`.
+100.
 
 The other defaults are the run's settings:
 - proofs up to 32,768 tokens, with vLLM serving 131,072 of context;

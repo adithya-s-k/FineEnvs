@@ -27,8 +27,8 @@ with the sandboxes, the judge and the logs also on Hugging Face.
 
 The eval is 64 held-out problems × 4 attempts, and step 500 is the last checkpoint, not the best. Reading the proofs
 shows new key ideas, not new phrasing. It also shows that both judges forgive contradictions around a correct
-argument, so absolute scores run high. [training/RESULTS.md](training/RESULTS.md) has the full curve, the checks, the
-4B run, and why the first attempts collapsed.
+argument, so absolute scores run high. [training/RESULTS.md](training/RESULTS.md) has the full curve, the checks, and why
+the first attempts collapsed.
 
 On the Hub:
 - **Tasks:** [`FineEnvs/fineproof-envs-train`](https://huggingface.co/datasets/FineEnvs/fineproof-envs-train) and
@@ -60,7 +60,7 @@ statement exactly; here a natural-language proof earns partial credit for the st
 |---|---|
 | [`envs/fineproof/harbor/`](envs/fineproof/harbor/) | The tasks and the verifier. The generator (`python -m fineproof_harbor.adapter`) writes Harbor tasks; `templates/tests/grade.py` is QED-Nano's judge plus safeguards against injected grades; unit tests |
 | [`training/`](training/) | The **FineProof harness** (our Harbor agent: write a proof, grade it, rewrite it) and the AsyncGRPO recipe that trains through it with OpenEnv's Harbor integration: HF Jobs launchers, checkpoint evals, the regrade check. [README](training/README.md) to run it, [RESULTS](training/RESULTS.md) for what it did |
-| [`results/`](results/) | Eval cards and run results as JSON: the OpenEnv parity checks, the step-0 benchmarks, and `fp-rl2-{2b,4b}.json` (every eval, regrade and update) |
+| [`results/`](results/) | Eval cards and run results as JSON: the OpenEnv parity checks, the step-0 benchmarks, and `fp-rl2-2b.json` (every eval, regrade and update) |
 | [`assets/`](assets/) | The figure above and the script that draws it from `results/fp-rl2-2b.json` |
 | [`DESIGN.md`](DESIGN.md) | Why the tasks, the judge and its safeguards are built this way, and the open licensing questions |
 

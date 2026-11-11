@@ -10,8 +10,7 @@ evals; HF Sandboxes for the task containers; Inference Providers for the judge; 
   every eval.
 - **Eval attempts:** [`FineEnvs/fineproof-rl-runs`](https://huggingface.co/datasets/FineEnvs/fineproof-rl-runs) has
   every attempt's proof with the judge's assessment, as tables.
-- **Numbers:** [`../results/fp-rl2-2b.json`](../results/fp-rl2-2b.json) and
-  [`../results/fp-rl2-4b.json`](../results/fp-rl2-4b.json).
+- **Numbers:** [`../results/fp-rl2-2b.json`](../results/fp-rl2-2b.json).
 - **Figure:** [`../assets/plot_curves.py`](../assets/plot_curves.py) redraws it from the 2B numbers.
 
 ![Training reward, held-out eval and cut-off proofs over 500 updates](../assets/fp-rl2-2b-curves.svg)
@@ -93,16 +92,10 @@ We read the step-250 eval's proofs next to step 0's on the same problems:
   6–7. The base model already wrote its scratch work into the answer (94% of step-0 replies), so this inflates the
   absolute scores at every step, not the gain.
 
-## The 4B run
-
-Qwen3.5-4B with the same recipe on a harder pool (1,045 problems averaging 0.25–0.6, `--max-mean 0.6`), 100 updates: 0.684 at step 0,
-0.671 at step 100 (−0.013 ± 0.029). Stable, but flat: the 4B starts with a much higher score, so these problems
-leave it less to learn. A longer run or harder problems are the next things to try.
-
 ## What failed first
 
-The first runs used TRL's AsyncGRPO defaults with 16k-token proofs and 40 rollouts per update. Both rose for about
-40 updates and fell back: the 2B went 0.180 → 0.281 → 0.186 at steps 0, 40 and 80. The judge was not being gamed
+The first run used TRL's AsyncGRPO defaults with 16k-token proofs and 40 rollouts per update. It rose for about
+40 updates and fell back: 0.180 → 0.281 → 0.186 at steps 0, 40 and 80. The judge was not being gamed
 (the 120b regrade tracked it, problem correlation 0.93). The proofs grew until most were cut off, because:
 
 - **A cut-off proof still got partial credit,** so running out of tokens cost little. → It now scores 0.
@@ -121,9 +114,9 @@ The changes are in [`objective.py`](objective.py) and [`tasks.py`](tasks.py), an
 
 - **One judge family.** The reward and the eval both come from gpt-oss. The 120b regrade is a second opinion, not an
   independent grader, and the hand audit shows both forgive contradictions around a correct argument.
-- **One run per model,** no seeds, and 64 eval problems. The paired standard errors are about 0.02–0.03.
+- **One run,** no seeds, and 64 eval problems. The paired standard errors are about 0.02–0.03.
 - **One rollout per row.** Packing is off because TRL marks packed samples only through position ids, which Qwen3.5's
   linear-attention layers ignore. This costs throughput, not correctness.
 
-Next: make the judge grade only the final committed proof and deduct for false statements; train the 4B longer on
-harder problems; evaluate on IMO-ProofBench.
+Next: make the judge grade only the final committed proof and deduct for false statements; train longer on harder
+problems; evaluate on IMO-ProofBench.
