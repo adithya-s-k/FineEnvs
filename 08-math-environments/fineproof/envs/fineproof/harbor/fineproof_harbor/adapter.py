@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
+from collections import Counter
 from pathlib import Path
 from string import Template
 
@@ -135,9 +136,11 @@ def main() -> None:
             if row.get("score") is not None:
                 oracle[row["task"]] = {"oracle_score": row["score"], "oracle_judge": f"{row['judge']} ({row['effort']})"}
 
-    sets = data.load_all(data.fetch(args.cache))
-    test_ids = {r["id"] for r in sets["test"]}
-    sets["train"] = [r for r in sets["train"] if r["id"] not in test_ids]
+    sets = data.load_all(data.fetch(args.cache))  # train comes back decontaminated, test problems included
+    args.out.mkdir(parents=True, exist_ok=True)
+    (args.out / "decontamination.json").write_text(json.dumps(sets["removed"], indent=2))
+    print(f"train: dropped {len(sets['removed'])} problems (decontamination.json): "
+          + ", ".join(f"{n} {r}" for r, n in sorted(Counter(x["reason"] for x in sets["removed"]).items())))
 
     manifest, registry = [], []
     for name in args.sets.split(","):

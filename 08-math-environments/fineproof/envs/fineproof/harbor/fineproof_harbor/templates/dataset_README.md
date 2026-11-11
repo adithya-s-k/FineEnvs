@@ -105,7 +105,8 @@ With the `fineproof_harbor` adapter (`generator/`), from QED-Nano's release at p
 - The reference proof is the DeepSeek-Math-V2 proof from FineProofs-SFT that Gemini 3 Pro graded 7/7, without
   the self-evaluation the model appends. We graded each one once with gpt-oss-120b (high reasoning); the score is
   `oracle_score` in `task.toml`, and the `-validated` subset keeps the tasks whose reference proof scored at
-  least 6/7.
+  least 6/7. That is one gpt-oss-120b grade per reference proof, at temperature 1.0, so a borderline proof can land
+  on either side.
 - Grading uses QED-Nano's judge prompt unchanged. Because a policy trains against it, the verifier also fences the
   proof between random markers, neutralises anything in it shaped like the judge's verdict, and writes no reward
   when the judge can't be reached, so Harbor records an error rather than a 0.

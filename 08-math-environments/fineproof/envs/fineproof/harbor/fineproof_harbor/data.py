@@ -104,7 +104,7 @@ def fineproofs(path: Path, split: str, refs: dict[str, dict]) -> list[dict]:
         out.append({
             "id": problem_id(r["source"], r["problem"]),
             "set": split,
-            "problem": r["problem"].strip(),
+            "problem": strip_solution_leak(r["problem"].strip()),
             "marking_scheme": r["rubrics"].strip(),
             "prompt_style": "rubric",
             "source": r["source"],
@@ -147,6 +147,7 @@ def proofbench(path: Path, split: str) -> list[dict]:
 
 
 def load_all(paths: dict[str, Path]) -> dict[str, list[dict]]:
+    """Every set, with train decontaminated (see `decontaminate`); `sets["removed"]` lists what train lost and why."""
     refs = reference_proofs(paths["sft"])
     sets = {
         "train": fineproofs(paths["train"], "train", refs),
@@ -159,4 +160,80 @@ def load_all(paths: dict[str, Path]) -> dict[str, list[dict]]:
         dupes = {i for i in ids if ids.count(i) > 1}
         if dupes:
             raise SystemExit(f"{name}: duplicate task ids {sorted(dupes)[:5]}")
+    sets["train"], sets["removed"] = decontaminate(sets["train"], sets["test"], sets["imo"] + sets["proofbench"])
     return sets
+
+
+# Where a FineProofs problem statement runs on into its official solution (4 rows, all in train): the text from the
+# marker on is cut. The task id still hashes the original statement, so ids don't move.
+SOLUTION_MARKER = re.compile(
+    r"(?im)\bcommon remarks?\b|^\s*#+\s*(?:[a-z]\)\s*)?(?:solution|answer|proof)\b|^\s*(?:solution|answer)\s*\d*\s*[.:]")
+
+# Paraphrases a word-level filter can't see, found by review: train id -> the benchmark problem it restates.
+KNOWN_OVERLAPS = {"aops-c8f456a645": "pb-tst-2023-4"}
+
+NEAR_EVAL = 0.7    # word 5-gram containment: a train problem this close to an eval problem is dropped
+NEAR_TRAIN = 0.9   # ... and this close to another train problem, the larger id is dropped
+
+
+def strip_solution_leak(problem: str) -> str:
+    match = SOLUTION_MARKER.search(problem)
+    return problem[: match.start()].rstrip() if match and match.start() > 0 else problem
+
+
+def _shingles(text: str, k: int = 5) -> set[str]:
+    words = re.findall(r"[a-z0-9]+", normalize(re.sub(r"\\[a-zA-Z]+", " ", text)))
+    return {" ".join(words[i:i + k]) for i in range(max(1, len(words) - k + 1))}
+
+
+def _near(rows: list[dict], others: list[dict], threshold: float, skip=lambda a, b: False):
+    """(row, other, containment) for each pair whose shared 5-grams cover `threshold` of the shorter one."""
+    index: dict[str, set[int]] = {}
+    other_sh = [_shingles(o["problem"]) for o in others]
+    for j, sh in enumerate(other_sh):
+        for s in sh:
+            index.setdefault(s, set()).add(j)
+    for row in rows:
+        sh = _shingles(row["problem"])
+        hits: dict[int, int] = {}
+        for s in sh:
+            for j in index.get(s, ()):
+                hits[j] = hits.get(j, 0) + 1
+        for j, n in hits.items():
+            score = n / max(1, min(len(sh), len(other_sh[j])))
+            if score >= threshold and not skip(row, others[j]):
+                yield row, others[j], round(score, 2)
+
+
+def decontaminate(train: list[dict], test: list[dict], benchmarks: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Drop from train: test problems (by id), near-copies of test or benchmark problems, known paraphrases of them,
+    and duplicates of other train problems (same text under another source, or near-identical). Returns the kept
+    rows and one record per dropped row."""
+    removed: dict[str, dict] = {}
+    test_ids = {t["id"] for t in test}
+
+    def drop(row: dict, reason: str, other: str, score: float | None = None) -> None:
+        removed.setdefault(row["id"], {"id": row["id"], "reason": reason, "matches": other, "containment": score})
+
+    for row in train:
+        if row["id"] in test_ids:
+            drop(row, "test problem", row["id"])
+        elif row["id"] in KNOWN_OVERLAPS:
+            drop(row, "paraphrase of a benchmark problem", KNOWN_OVERLAPS[row["id"]])
+    pool = [r for r in train if r["id"] not in removed]
+    for row, other, score in _near(pool, test, NEAR_EVAL):
+        drop(row, "near-copy of a test problem", other["id"], score)
+    for row, other, score in _near(pool, benchmarks, NEAR_EVAL):
+        drop(row, "near-copy of a benchmark problem", other["id"], score)
+    first: dict[str, str] = {}
+    for row in sorted(pool, key=lambda r: r["id"]):
+        key = normalize(row["problem"])
+        if key in first:
+            drop(row, "duplicate of a train problem", first[key], 1.0)
+        else:
+            first[key] = row["id"]
+    pool = [r for r in pool if r["id"] not in removed]
+    for row, other, score in _near(pool, pool, NEAR_TRAIN, skip=lambda a, b: a["id"] <= b["id"]):
+        drop(row, "near-duplicate of a train problem", other["id"], score)
+    kept = [r for r in train if r["id"] not in removed]
+    return kept, sorted(removed.values(), key=lambda r: (r["reason"], r["id"]))

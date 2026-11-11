@@ -28,7 +28,9 @@ IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store", "*.egg-info
 QED_NANO_LICENSE = "https://raw.githubusercontent.com/CMU-AIRe/QED-Nano/main/LICENSE"
 SPLITS = {
     "train": {"source": "FineProofs-RL", "desc": "the proof problems used to train",
-              "overlap": "FineProofs-RL also holds the 128 test problems; they are left out here."},
+              "overlap": "FineProofs-RL also holds the 128 test problems; they are left out here, along with near-copies of "
+                         "test and benchmark problems and duplicates within train (`decontamination.json` lists each "
+                         "one and why)."},
     "test": {"source": "FineProofs-RL-test", "desc": "the held-out proof problems used to evaluate",
              "overlap": "These problems also appear in FineProofs-RL; the train set leaves them out."},
 }
@@ -94,6 +96,8 @@ def main() -> None:
         git_url = f"https://huggingface.co/datasets/{repo}" if split in pins else None
         (out / "registry.json").write_text(json.dumps(registry(split, rows, git_url, pins.get(split)), indent=2))
         write_parquet(out / "manifest.parquet", rows)
+        if split == "train" and (args.release / "decontamination.json").exists():
+            shutil.copy(args.release / "decontamination.json", out / "decontamination.json")
 
         gen = out / "generator"
         shutil.copytree(HARBOR_DIR / "fineproof_harbor", gen / "fineproof_harbor", ignore=IGNORE)
