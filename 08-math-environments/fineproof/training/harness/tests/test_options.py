@@ -26,7 +26,7 @@ class EnvDefaults(unittest.TestCase):
     def test_defaults_without_env(self):
         with mock.patch.dict(os.environ, {}, clear=True):
             o = FineProofOptions.model_validate({"api_base": "http://proxy/v1"})
-        self.assertEqual((o.rounds, o.max_tokens, o.extra_body), (1, 8192, None))
+        self.assertEqual((o.rounds, o.max_tokens, o.extra_body), (0, 8192, None))  # one call by default
 
 
 if __name__ == "__main__":

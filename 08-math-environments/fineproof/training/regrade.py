@@ -6,7 +6,7 @@ the task's own grade.py (same prompt, sanitising and length limit) with the judg
 compares the two. QED-Nano reports its benchmarks with gpt-oss-120b.
 
     JUDGE_API_KEY=... JUDGE_MODEL=openai/gpt-oss-120b:groq,openai/gpt-oss-120b:deepinfra JUDGE_REASONING_EFFORT=high \\
-        python regrade.py runs/fp-bench-4b-step0 --data prepared
+        python regrade.py runs/fp-bench-2b-32k --data prepared
 
 Rows go to <eval>/regrade-<judge>.jsonl (a rerun resumes) and the comparison to <eval>/regrade-<judge>.json.
 """

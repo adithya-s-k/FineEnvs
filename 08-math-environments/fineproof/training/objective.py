@@ -5,7 +5,9 @@ token cap. Two parts of TRL's defaults push that way (Dr. GRPO, https://huggingf
 QED-Nano's RL recipe drops both:
 
 1. Advantages divided by the group's reward std. With a noisy judge, a group of near-equal proofs (std 0.02, say)
-   turns judge noise into advantages of +-2. Here the advantage is the reward minus the group mean.
+   turns judge noise into advantages of +-2. Here the advantage is the reward minus the group mean, computed from the
+   group's own rewards (not by undoing TRL's division with a std TRL reports, whose metric name changes between TRL
+   versions: on TRL main it is `reward_group_std`, and a lookup that misses would silently restore the division).
 2. Each rollout's loss divided by its own length. AsyncGRPO trains one rollout per micro-step (packing is off, see
    train.py), so its token mean is a per-rollout mean: a 16k-token wrong proof is pushed down 1/16k per token, a 4k
    one 1/4k, and long wrong proofs get cheap. Here every rollout's token sum is divided by the same constant, the
@@ -20,27 +22,46 @@ The third change, reward 0 for a proof cut off at the cap, is in tasks.py: it ac
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 
 from trl.experimental.async_grpo import AsyncGRPOTrainer
 from trl.experimental.async_grpo.openenv_harness import HarnessRolloutWorker, _HarnessRolloutLoop
 
-STD_EPS = 1e-8  # TRL's: advantage = (reward - mean) / (std + 1e-8)
 
+def mean_centered(rewards: Sequence[float | None]) -> list[float]:
+    """One advantage per rollout: its reward minus the mean of the group's scored rewards, never divided by their std.
 
-def mean_centered(advantage: float, reward_std: float | None) -> float:
-    """Undo TRL's division by the group's reward std (the std it used is stamped on each sample's metrics)."""
-    if reward_std is None or not math.isfinite(reward_std):
-        return advantage  # an unscored row: TRL already set its advantage to 0
-    return advantage * (reward_std + STD_EPS)
+    An unscored rollout (reward None or NaN: no grade) gets 0 and is left out of the mean, as TRL does.
+    """
+    scored = [r for r in rewards if r is not None and math.isfinite(r)]
+    mean = sum(scored) / len(scored) if scored else 0.0
+    return [float(r) - mean if r is not None and math.isfinite(r) else 0.0 for r in rewards]
 
 
 class _MeanCenteredLoop(_HarnessRolloutLoop):
-    """The rollout loop, run in the worker's child process: reward minus the group mean, no std division."""
+    """The rollout loop, run in the worker's child process: reward minus the group mean, no std division.
+
+    TRL builds the samples (one per training row; a rollout gives one row per training sequence, in rollout order)
+    with its std-divided advantage; each row's advantage is then replaced by its rollout's mean-centred reward. The
+    rewards are the group's own: the harness's per-rollout reward is this trainer's only reward source.
+    """
 
     async def _score_group(self, group):
         samples = await super()._score_group(group)
-        for sample in samples:
-            sample.advantage = mean_centered(sample.advantage, sample.metrics.get("reward_std"))
+        if not samples:  # newer TRL drops a group whose rewards all tie; its advantages would all be 0 anyway
+            return samples
+        if getattr(self, "reward_funcs", None) or getattr(self, "_env_reward_types", None):
+            raise RuntimeError("mean-centred advantages assume the rollout reward is the only reward source")
+        advantages = mean_centered(group.rollout_rewards)
+        rows = [len(sequences) for sequences in group.completions_sequences]
+        if len(rows) != len(advantages) or sum(rows) != len(samples):
+            raise RuntimeError(f"cannot match {len(samples)} training rows to {len(advantages)} rollouts {rows}; "
+                               "TRL's sample layout changed")
+        position = 0
+        for advantage, count in zip(advantages, rows):
+            for sample in samples[position:position + count]:
+                sample.advantage = advantage
+            position += count
         return samples
 
 

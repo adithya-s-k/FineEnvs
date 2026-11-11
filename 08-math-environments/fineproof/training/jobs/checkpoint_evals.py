@@ -24,7 +24,8 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-# The benchmark step 0 was scored on (results/fineproof-bench-4b-step0.json): 64 validated test problems x 4.
+# The benchmark step 0 was scored on (the 2B run's step-0 point, eval run fp-bench-2b-32k in results/fp-rl2-2b.json):
+# 64 validated test problems x 4.
 BENCHMARK = {"task_list": "benchmarks/test-validated-64.txt", "samples": 4, "concurrency": 64}
 EVAL_JUDGE = {"JUDGE_MODEL": "openai/gpt-oss-20b:groq,openai/gpt-oss-20b:featherless-ai", "JUDGE_SAMPLES": "2"}
 

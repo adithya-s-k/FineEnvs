@@ -64,17 +64,21 @@ def main():
     parser.add_argument("--eval-concurrency", type=int, default=64, help="With --eval-checkpoints: rollouts in flight")
     parser.add_argument("--eval-every", type=int, default=20,
                         help="With --eval-checkpoints: eval checkpoints whose step is a multiple of this, and the last")
-    parser.add_argument("--rounds", type=int, default=1, help="Harness check-and-rewrite rounds (0: one call)")
+    parser.add_argument("--rounds", type=int, default=0,
+                        help="Harness check-and-rewrite rounds after the first proof (default 0: one call per "
+                             "proof, as the published run trained)")
     parser.add_argument("--max-tokens", type=int, default=32768, help="Output cap per model call")
     parser.add_argument("--generations", type=int, default=16, help="Train: rollouts per problem (a GRPO group)")
-    parser.add_argument("--grad-accum", type=int, default=128, help="Train: rollouts per update")
+    parser.add_argument("--grad-accum", type=int, default=128,
+                        help="Train: training rows per update (rollouts with --rounds 0; a rewrite round can add rows)")
     parser.add_argument("--inflight", type=int, default=128, help="Train: rollouts in flight")
     parser.add_argument("--learning-rate", type=float, default=1e-6, help="Train: AsyncGRPO learning rate")
     parser.add_argument("--truncated-reward", default="zero", choices=["zero", "judge"],
                         help="Train: reward of a proof cut off at the cap (see tasks.py)")
     parser.add_argument("--warmup-steps", type=int, default=0, help="Train: linear learning-rate warm-up")
     parser.add_argument("--max-restarts", type=int, default=3, help="Train: resumes from the latest checkpoint")
-    parser.add_argument("--resume-from", help="Train: start from another run's checkpoint, /outputs/<run>/checkpoint-N")
+    parser.add_argument("--resume-from", help="Train: continue from another run's full checkpoint, "
+                        "/outputs/<run>/checkpoint-N (weights, optimizer, scheduler and RNG state)")
     parser.add_argument("--evals-run", help="Train: the Trackio run checkpoint evals log to (default <name>-evals)")
     parser.add_argument("--task-seed", type=int, help="Eval: a seeded random --tasks subset of test")
     parser.add_argument("--task-list", help="Eval: a file under training/ listing test tasks, e.g. benchmarks/test-validated-64.txt")

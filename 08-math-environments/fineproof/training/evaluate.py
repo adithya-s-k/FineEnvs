@@ -3,7 +3,10 @@
 Adapted from 05-multi-harness-rl/eval/evaluate.py for a fractional reward. Every model and checkpoint sees the
 same problems (the first --tasks of the sorted test split) and --samples attempts each. Per attempt it records the
 rubric reward (score / 7); the summary has the mean reward, the share of full-marks proofs, and coverage (attempts
-that got a grade). Runs resume: graded attempts are kept, ungraded ones are retried.
+that got a grade). Runs resume: graded attempts are kept, ungraded ones are retried. Per-problem metrics (pass@k,
+best of k) are over every selected problem, with an attempt that got no grade counted as a failure. An eval whose
+coverage is below 1 still writes summary.json, marked `"partial": true`, but logs nothing to Trackio, so a partial
+point never lands on a checkpoint curve.
 
     python evaluate.py --output runs/eval-base --checkpoint Qwen/Qwen3.5-2B --model Qwen/Qwen3.5-2B ...
 """
@@ -48,16 +51,27 @@ def episode(args, index, task, split):
         session.close()
 
 
-def summarize(rows, expected):
-    """Attempt-level means, then problem-level ones: a problem is the unit, so the standard error is over problems."""
+def summarize(rows, expected, tasks=(), samples=None):
+    """Attempt-level means over graded attempts, then problem-level ones: a problem is the unit, so the standard error
+    is over problems.
+
+    pass@k and best-of-k are over every problem in `tasks` (the selected ones) plus any other graded one, with each
+    of the `samples` attempts a problem should have and has no grade for counted as a failure (reward 0). A problem
+    whose attempts all failed to get a grade stays in the denominator rather than quietly turning pass@k into pass@k
+    over fewer problems.
+    """
     done = [r for r in rows if graded(r)]
     mean = (lambda xs: sum(xs) / len(xs) if xs else None)
-    by_problem = {}
+    attempts = {name: [] for name in tasks}
     for r in done:
-        by_problem.setdefault(r["task"], []).append(r["reward"])
+        attempts.setdefault(r["task"], []).append(r["reward"])
+    by_problem = {name: v for name, v in attempts.items() if v}
     per_problem = [sum(v) / len(v) for v in by_problem.values()]
     n = len(per_problem)
     spread = (sum((x - sum(per_problem) / n) ** 2 for x in per_problem) / (n - 1)) ** 0.5 if n > 1 else None
+    k = samples or max((len(v) for v in attempts.values()), default=0)
+    padded = [v + [0.0] * max(0, k - len(v)) for v in attempts.values()]  # a missing attempt is a failure
+    padded = [v for v in padded if v]
     return {
         "expected": expected,
         "graded": len(done),
@@ -67,10 +81,27 @@ def summarize(rows, expected):
         "full_marks": mean([float(r["reward"] >= 0.999) for r in done]),
         "any_credit": mean([float(r["reward"] > 0) for r in done]),
         "problems": n,
-        "pass_at_k_full_marks": mean([float(max(v) >= 0.999) for v in by_problem.values()]),
-        "best_of_k_mean": mean([max(v) for v in by_problem.values()]),
+        "problems_expected": len(attempts),
+        "pass_at_k_full_marks": mean([float(max(v) >= 0.999) for v in padded]),
+        "best_of_k_mean": mean([max(v) for v in padded]),
         "learnable_problems": mean([float(len(set(v)) > 1) for v in by_problem.values()]),
     }
+
+
+def is_partial(summary) -> bool:
+    """Whether some expected attempt got no grade (older summaries have no `partial` field)."""
+    return bool(summary.get("partial", summary.get("graded") != summary.get("expected")))
+
+
+def publish(args, output, summary):
+    """Write summary.json, and chart it in Trackio unless it is partial."""
+    summary["partial"] = is_partial(summary)
+    write_json(output / "summary.json", summary)
+    if summary["partial"]:
+        print(f"partial eval ({summary['graded']} of {summary['expected']} attempts graded): summary.json is marked "
+              "partial and nothing is logged to Trackio; rerun the same command to retry the ungraded attempts")
+        return
+    report(args, output, summary)
 
 
 def report(args, output, summary):
@@ -131,7 +162,11 @@ def main():
                         help="Log an existing eval (<output>/summary.json and its trials) to Trackio, without running")
     args = parser.parse_args()
     if args.report_only:
-        report(args, Path(args.output), json.loads((Path(args.output) / "summary.json").read_text()))
+        summary = json.loads((Path(args.output) / "summary.json").read_text())
+        if is_partial(summary):
+            raise SystemExit(f"{args.output}/summary.json is partial ({summary.get('graded')} of "
+                             f"{summary.get('expected')} attempts graded): not logging it to Trackio")
+        report(args, Path(args.output), summary)
         return
     if args.hosted:
         args.vllm_url = ""
@@ -171,6 +206,7 @@ def main():
         raise ValueError("Output already belongs to a different evaluation")
     write_json(identity_path, identity)
     pairs = [(i, t, s) for i, t in selected for s in range(args.samples)]
+    names = [t["name"] for _, t in selected]
 
     def one(pair):
         index, task, sample = pair
@@ -200,12 +236,11 @@ def main():
             for future in as_completed([pool.submit(one, pair) for pair in todo]):
                 row = future.result()
                 latest[(row["task"], row["sample"])] = row
-                write_json(output / "progress.json", summarize(list(latest.values()), len(pairs)))
+                write_json(output / "progress.json", summarize(list(latest.values()), len(pairs), names, args.samples))
     rows = list(latest.values())
-    summary = summarize(rows, len(pairs))
+    summary = summarize(rows, len(pairs), names, args.samples)
     summary["identity"] = identity
-    write_json(output / "summary.json", summary)
-    report(args, output, summary)
+    publish(args, output, summary)
     print(json.dumps({k: v for k, v in summary.items() if k != "identity"}, indent=2))
     if summary["graded"] != summary["expected"]:
         raise SystemExit(2)

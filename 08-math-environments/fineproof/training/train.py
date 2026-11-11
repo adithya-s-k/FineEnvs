@@ -1,9 +1,10 @@
 """Train a small model to write olympiad proofs through our Harbor harness, with AsyncGRPO.
 
-Adapted from 05-multi-harness-rl/train/multi_harness.py. What changes: one harness, ours (the FineProof harness: write a
-proof, check it, rewrite it); the reward is the rubric judge's score / 7 from the task's verifier, and 0 for a proof cut
-off at the output cap; and the objective is mean-centred advantages with a constant loss normaliser (objective.py).
-Read the numbered sections in order.
+Adapted from 05-multi-harness-rl/train/multi_harness.py. What changes: one harness, ours (the FineProof harness: by
+default one call that writes the proof, as the published run trained; the Harbor server's FINEPROOF_ROUNDS, set by
+`jobs/run.py --rounds N`, adds optional check-and-rewrite turns); the reward is the rubric judge's score / 7 from the
+task's verifier, and 0 for a proof cut off at the output cap; and the objective is mean-centred advantages with a
+constant loss normaliser (objective.py). Read the numbered sections in order.
 """
 
 # %% 1. Choose the model and run settings.
@@ -40,7 +41,9 @@ def arguments():
     parser.add_argument("--save-steps", type=int, default=10)
     parser.add_argument("--inflight", type=int, default=128)
     parser.add_argument("--generations", type=int, default=16, help="Rollouts per problem (a GRPO group)")
-    parser.add_argument("--grad-accum", type=int, default=128, help="Rollouts per update (8 groups of 16)")
+    parser.add_argument("--grad-accum", type=int, default=128,
+                        help="Training rows per update: rollouts with one call per proof (8 groups of 16); a rewrite "
+                             "round can give a rollout a second row")
     parser.add_argument("--max-tokens", type=int, default=32768,
                         help="Output cap per model call, and the loss normaliser (objective.py)")
     parser.add_argument("--truncated-reward", default="zero", choices=["zero", "judge"],
@@ -49,8 +52,8 @@ def arguments():
     parser.add_argument("--warmup-steps", type=int, default=0,
                         help="Linear warm-up from 0 (damps a fresh optimizer's first, full-size Adam steps)")
     parser.add_argument("--resume", action="store_true", help="Continue from the latest checkpoint in --output")
-    parser.add_argument("--resume-from", help="Continue another run from this checkpoint folder (weights, step and "
-                        "prompt position; a fresh optimizer if it has no optimizer state)")
+    parser.add_argument("--resume-from", help="Continue another run from this full checkpoint folder: weights, "
+                        "optimizer, scheduler, RNG, step and prompt position (refused without that state)")
     parser.add_argument("--space-id", default=None, help="Optional Trackio Space; local logs are always kept")
     parser.add_argument("--trackio-bucket", default=None, help="Bucket the Trackio Space keeps its data in")
     parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
@@ -74,6 +77,11 @@ def tokenizer_for(model):
 # excluded from the group rather than counted as a wrong proof.
 def reward(outcome):
     return None if outcome.env_reward is None else float(outcome.env_reward)
+
+
+def missing_training_state(checkpoint):
+    """What a checkpoint lacks to continue training as it stopped: Trainer's optimizer, scheduler and RNG files."""
+    return [part for part in ("optimizer", "scheduler", "rng_state") if not any(Path(checkpoint).glob(part + "*"))]
 
 
 def latest_checkpoint(output):
@@ -115,6 +123,9 @@ def crash_after(step):
 # %% 4. Configure AsyncGRPO. These are the experiment's hyperparameters.
 def main():
     args = arguments()
+    if args.resume_from and not args.resume and (missing := missing_training_state(args.resume_from)):
+        # Transformers would load the weights and step and silently start a fresh Adam.
+        raise RuntimeError(f"--resume-from {args.resume_from} has no {', '.join(missing)} state")
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     os.environ["TRACKIO_DIR"] = str(output.resolve() / "trackio")

@@ -16,6 +16,11 @@ adds provider options, e.g. `--ak 'extra_body={"chat_template_kwargs": {"enable_
 Calls are retried on rate limits, 5xx and dropped connections; a call that still fails raises one of Harbor's
 model-provider error names, so Harbor classifies the trial as a provider failure rather than an unknown error.
 `harbor agent schema fineproof_agent.agent:FineProofAgent` lists the options.
+
+By default (`rounds=0`) the harness makes one model call and submits its reply; `rounds=N` adds N check-and-rewrite
+turns (loop.py). The trial's agent metadata (`context.metadata["fineproof"]`, kept in Harbor's result.json) records
+each call's finish reason and which call the submitted proof came from (`submitted_call`), so a trainer can tell
+whether the graded proof was cut off at the output cap.
 """
 
 from __future__ import annotations
@@ -70,7 +75,7 @@ class FineProofOptions(AgentOptions):
     api_base: str = Field(description="OpenAI-compatible endpoint ending in /v1 (the capture proxy when training).")
     api_key: str | None = Field(default=None, description="Key for api_base. Prefer api_key_env.")
     api_key_env: str | None = Field(default=None, description="Read the key from this environment variable.")
-    rounds: int = Field(default=1, ge=0, description="Check-and-rewrite rounds after the first proof.")
+    rounds: int = Field(default=0, ge=0, description="Check-and-rewrite rounds after the first proof (0: one call).")
     max_tokens: int = Field(default=8192, ge=1, description="Output tokens per model call.")
     extra_body: str | dict | None = Field(default=None, description="JSON merged into every request.")
     stream: bool = Field(default=False, description="Stream replies (hosted routers time out long ones otherwise).")
@@ -120,8 +125,9 @@ class FineProofAgent(BaseAgent):
         return None  # Harbor >= 0.25 calls this under a restricted network; this harness has no web tools to disable
 
     async def run(self, instruction: str, environment: BaseEnvironment, context: AgentContext) -> None:
+        finish_reasons: list[str | None] = []  # one per completed model call, in order
         async with httpx.AsyncClient(timeout=self.request_timeout_sec) as client:
-            async def call(messages: list[dict]) -> tuple[str, dict]:
+            async def call(messages: list[dict]) -> tuple[str, dict, str | None]:
                 # Only what the capture proxy accepts while training: no sampling overrides, n=1, plain text.
                 payload = {**self.extra_body, "model": self.model_name or "policy", "messages": messages,
                            "max_tokens": self.max_tokens}
@@ -131,9 +137,11 @@ class FineProofAgent(BaseAgent):
                     response = await client.post(url, headers=headers, json=payload)
                     response.raise_for_status()
                     body = response.json()
-                    return body["choices"][0]["message"].get("content") or "", body.get("usage") or {}
+                    choice = body["choices"][0]
+                    return (choice["message"].get("content") or "", body.get("usage") or {},
+                            choice.get("finish_reason"))
                 payload.update(stream=True, stream_options={"include_usage": True})
-                parts, usage = [], {}
+                parts, usage, finish = [], {}, None
                 async with client.stream("POST", url, headers=headers, json=payload) as response:
                     response.raise_for_status()
                     async for line in response.aiter_lines():
@@ -143,12 +151,13 @@ class FineProofAgent(BaseAgent):
                         usage = chunk.get("usage") or usage
                         for choice in chunk.get("choices") or []:
                             parts.append((choice.get("delta") or {}).get("content") or "")
-                return "".join(parts), usage
+                            finish = choice.get("finish_reason") or finish
+                return "".join(parts), usage, finish
 
             async def complete(messages: list[dict]) -> str:
                 for attempt in range(self.retries + 1):
                     try:
-                        text, usage = await call(messages)
+                        text, usage, finish = await call(messages)
                         break
                     except (httpx.HTTPStatusError, httpx.TransportError) as exc:
                         status = getattr(getattr(exc, "response", None), "status_code", None)
@@ -162,6 +171,7 @@ class FineProofAgent(BaseAgent):
                 self.usage["prompt_tokens"] += usage.get("prompt_tokens") or 0
                 self.usage["completion_tokens"] += usage.get("completion_tokens") or 0
                 self.usage["calls"] += 1
+                finish_reasons.append(finish)
                 context.n_input_tokens = self.usage["prompt_tokens"]
                 context.n_output_tokens = self.usage["completion_tokens"]
                 return text.strip()
@@ -176,7 +186,7 @@ class FineProofAgent(BaseAgent):
 
             keepalive = asyncio.create_task(keep_sandbox_alive())
             try:
-                proof, messages = await loop.run(complete, instruction, rounds=self.rounds)
+                proof, messages, submitted = await loop.run(complete, instruction, rounds=self.rounds)
             finally:
                 keepalive.cancel()
 
@@ -190,5 +200,8 @@ class FineProofAgent(BaseAgent):
             await environment.upload_file(handle.name, PROOF_PATH)
         finally:
             Path(handle.name).unlink(missing_ok=True)
-        context.metadata = {**(context.metadata or {}), "fineproof": {**self.usage, "rounds": self.rounds,
-                                                                      "proof_chars": len(proof)}}
+        # `submitted_call` indexes `finish_reasons`: the call whose reply is the graded proof. With rewrite rounds it
+        # need not be the last call (a rewrite without a '## Final proof' heading keeps the earlier proof).
+        context.metadata = {**(context.metadata or {}), "fineproof": {
+            **self.usage, "rounds": self.rounds, "proof_chars": len(proof), "submitted_call": submitted,
+            "finish_reasons": finish_reasons}}

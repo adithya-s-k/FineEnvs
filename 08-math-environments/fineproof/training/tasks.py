@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import tomllib
 from pathlib import Path
 
@@ -37,8 +38,32 @@ def load_tasks(dataset):
     return tasks
 
 
-def final_call_truncated(result) -> bool:
-    """Whether the proof the harness submitted was cut off: its last model call stopped at the output cap."""
+def agent_record(result, trial_root) -> dict:
+    """What the FineProof agent recorded about its episode: `context.metadata["fineproof"]`, which Harbor keeps in the
+    trial's result.json (written before the trial returns). {} when there is none."""
+    name = getattr(result, "trial_name", None)
+    if trial_root is None or not name:
+        return {}
+    try:
+        trial = json.loads((Path(trial_root) / name / "result.json").read_text())
+    except (OSError, ValueError):
+        return {}
+    record = (((trial or {}).get("agent_result") or {}).get("metadata") or {}).get("fineproof")
+    return record if isinstance(record, dict) else {}
+
+
+def submitted_proof_truncated(result, record: dict) -> bool:
+    """Whether the proof the harness submitted was cut off: the model call it came from stopped at the output cap.
+
+    With rewrite rounds that need not be the last call: a rewrite without a '## Final proof' heading keeps the earlier
+    proof, so a rewrite cut off before its heading leaves a complete proof, and a cut-off first proof followed by such
+    a rewrite is still the one graded. The agent records which call it submitted (`submitted_call`) and each call's
+    finish reason (`finish_reasons`). Without that record (an older harness), the last captured call stands in, which
+    is right only when the harness made one call (`--rounds 0`).
+    """
+    reasons, index = record.get("finish_reasons"), record.get("submitted_call")
+    if isinstance(reasons, list) and isinstance(index, int) and 0 <= index < len(reasons) and reasons[index]:
+        return reasons[index] == "length"
     turns = list(getattr(result, "turns", None) or [])
     return bool(turns) and getattr(turns[-1], "finish_reason", None) == "length"
 
@@ -49,7 +74,8 @@ def _session_class():
 
     When the agent times out (a slow engine, say), Harbor still runs the verifier, which scores the missing proof 0:
     a wrong answer as far as GRPO can tell. Such a rollout says nothing about the policy, so it is left ungraded and
-    drops out of its group, like a judge failure.
+    drops out of its group, like a judge failure; rollouts.jsonl records it with no reward too, so its metrics do not
+    count it as graded.
 
     A proof cut off at the cap is unfinished, but the judge grades whatever was written and often gives it partial
     credit (0.1 to 0.25 on average in our first runs), so running into the cap cost the policy little and proofs grew
@@ -77,7 +103,7 @@ def _session_class():
             result = self.result
             fatal = [f for f in (result.findings or []) if "[FATAL" in f] if result is not None else []
             if fatal:
-                self._log_rollout()
+                self._log_rollout(reward=None)  # never trained on, so not counted as graded either
                 raise RuntimeError(f"unusable capture, dropped: {fatal[0][:300]}")
             return super().fetch_training_trace()
 
@@ -85,9 +111,10 @@ def _session_class():
             verdict = super().verify(transcript, final_state)
             result = self.result
             if result is not None and (not result.ok or result.exception_type == "AgentTimeoutError"):
-                self._log_rollout()
+                self._log_rollout(reward=None)  # not the verifier's 0 for a missing proof: GRPO sees no grade either
                 return type(verdict)(env_reward=None, done=True)
-            truncated = result is not None and final_call_truncated(result)
+            truncated = result is not None and submitted_proof_truncated(
+                result, agent_record(result, getattr(self, "trial_root", None)))
             if truncated and getattr(self, "zero_truncated", False) and verdict.env_reward is not None:
                 self._log_rollout(reward=0.0, judge_reward=verdict.env_reward, truncated=True)
                 return type(verdict)(env_reward=0.0, done=True)

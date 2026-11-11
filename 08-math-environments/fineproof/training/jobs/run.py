@@ -14,7 +14,11 @@ In an HF Job, `train --eval-checkpoints` also sends saved checkpoints to eval Jo
 A run that dies restarts inside the Job from its latest full checkpoint (--max-restarts). A Job that ends early (it
 timed out, or was stopped) resumes when it is submitted again under the same --name: training starts from the latest
 full checkpoint in the bucket, with the run's logs, rollouts.jsonl, Trackio data and eval record copied back first, so
-every log and the Trackio run continue where they stopped (restore_run below).
+every log and the Trackio run continue where they stopped (restore_run below). `--resume-from` starts a new run from
+another run's full checkpoint, with its optimizer, scheduler and RNG state.
+
+Each child gets only the secrets it uses (CHILD_SECRETS): the judge and sandbox keys reach the Harbor server, not vLLM
+or the trainer, whose console Trackio streams to the dashboard (TRACKIO_CAPTURE_CONSOLE).
 """
 
 import argparse
@@ -34,28 +38,55 @@ import httpx
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = Path("/workspace/outputs")  # jobs/entrypoint.sh copies this folder to the bucket's root
+CHECKPOINTS_ROOT = Path("/workspace/checkpoints")  # local copies of bucket checkpoints, outside the synced outputs
+# What a checkpoint needs beyond its weights for training to continue where it stopped (Trainer's file names).
+TRAINING_STATE = ("optimizer", "scheduler", "rng_state")
+# Secrets in this process's environment and the children that need each: the Harbor server's verifiers call the
+# judge (JUDGE_API_KEY) and it starts the sandboxes (DAYTONA_API_KEY, or HF_TOKEN for HF Sandboxes); vLLM and the
+# trainer or evaluator only download models and write Trackio (HF_TOKEN). Any other variable passes through.
+SECRETS = ("HF_TOKEN", "HUGGING_FACE_HUB_TOKEN", "JUDGE_API_KEY", "DAYTONA_API_KEY")
+CHILD_SECRETS = {"harbor": set(SECRETS), "vllm": {"HF_TOKEN", "HUGGING_FACE_HUB_TOKEN"},
+                 "train": {"HF_TOKEN", "HUGGING_FACE_HUB_TOKEN"}, "eval": {"HF_TOKEN", "HUGGING_FACE_HUB_TOKEN"}}
 
 
-def local_checkpoint(checkpoint: str, output: Path) -> str:
+def child_env(env: dict, name: str) -> dict:
+    """`env` without the secrets the child `name` does not need (see CHILD_SECRETS; an unknown child gets none)."""
+    keep = CHILD_SECRETS.get(name, set())
+    return {key: value for key, value in env.items() if key not in SECRETS or key in keep}
+
+
+def missing_training_state(path: Path) -> list[str]:
+    """The parts of TRAINING_STATE a checkpoint folder lacks (empty when training can continue from it)."""
+    return [part for part in TRAINING_STATE if not any(Path(path).glob(part + "*"))]
+
+
+def local_checkpoint(checkpoint: str, output: Path, *, training: bool = False) -> str:
     """A checkpoint on the read-only bucket mount (/outputs/...), copied to local disk first.
 
     vLLM reads a mounted 18 GB safetensors file far too slowly to start (the first checkpoint eval timed out after
     10 minutes at 0%); `hf buckets sync` downloads it at full speed. The copy goes outside the output folder, which is
-    itself synced to the bucket.
+    itself synced to the bucket. An eval copies the weights only. `training=True` (--resume-from) copies the optimizer,
+    scheduler and RNG state too, and fails when the checkpoint has none, rather than continue with a fresh Adam.
     """
     path, bucket = Path(checkpoint), os.environ.get("FINEPROOF_OUTPUT_BUCKET")
     if not bucket or not path.is_relative_to("/outputs"):
-        return checkpoint
-    local = Path("/workspace/checkpoints") / path.relative_to("/outputs")
-    start = time.monotonic()
-    with (output / "checkpoint_copy.log").open("a") as log:
-        subprocess.run(["hf", "buckets", "sync", f"hf://buckets/{bucket}/{path.relative_to('/outputs')}", str(local),
-                        "--exclude", "optimizer.pt", "--exclude", "scheduler.pt", "--exclude", "rng_state*"],
-                       check=True, stdout=log, stderr=subprocess.STDOUT)
-        log.write(f"copied {checkpoint} to {local} in {time.monotonic() - start:.0f}s\n")
-    if not (local / "config.json").is_file() or not any(local.glob("*.safetensors")):
-        raise RuntimeError(f"{checkpoint} did not copy completely to {local}")
-    return str(local)
+        local = path
+    else:
+        local = CHECKPOINTS_ROOT / path.relative_to("/outputs")
+        weights_only = [] if training else ["--exclude", "optimizer.pt", "--exclude", "scheduler.pt",
+                                            "--exclude", "rng_state*"]
+        start = time.monotonic()
+        with (output / "checkpoint_copy.log").open("a") as log:
+            subprocess.run(["hf", "buckets", "sync", f"hf://buckets/{bucket}/{path.relative_to('/outputs')}",
+                            str(local), *weights_only], check=True, stdout=log, stderr=subprocess.STDOUT)
+            log.write(f"copied {checkpoint} to {local}{' with its training state' if training else ''} in "
+                      f"{time.monotonic() - start:.0f}s\n")
+        if not (local / "config.json").is_file() or not any(local.glob("*.safetensors")):
+            raise RuntimeError(f"{checkpoint} did not copy completely to {local}")
+    if training and (missing := missing_training_state(local)):
+        raise RuntimeError(f"{checkpoint} has no {', '.join(missing)} state: training cannot continue from it as it "
+                           "stopped (a weights-only checkpoint would restart Adam from zero)")
+    return checkpoint if local == path else str(local)
 
 
 def latest_checkpoint(output: Path) -> Path | None:
@@ -96,13 +127,19 @@ def remote_checkpoint(url: str) -> str | None:
     return None
 
 
+# Written by main() about this Job before restore_run, so a resumed Job must keep its own copies.
+THIS_JOB_FILES = ("dependencies.json", "packages.txt", "services.json", "harbor_logging.json")
+
+
 def restore_run(output: Path) -> Path | None:
     """Continue a run an earlier Job left in the bucket: copy back its state and its latest full checkpoint.
 
     The small files come first (logs, rollouts.jsonl, threads.jsonl, restarts.jsonl, checkpoint_evals.jsonl and the
     Trackio folder), so every log continues where it stopped and the eval launcher does not submit the same
-    checkpoint twice; trials and older checkpoints stay in the bucket (the sync to it never deletes). Returns the local
-    checkpoint to resume from, or None for a new run.
+    checkpoint twice; trials and older checkpoints stay in the bucket (the sync to it never deletes). The files this
+    Job wrote about itself before restoring (THIS_JOB_FILES: its dependencies, packages and service ports) are not
+    copied back, so they describe this Job, not the first one. Returns the local checkpoint to resume from, or None
+    for a new run.
     """
     url = bucket_url(output)
     name = remote_checkpoint(url) if url else None
@@ -110,8 +147,9 @@ def restore_run(output: Path) -> Path | None:
         return None
     start = time.monotonic()
     with (output / "resume_copy.log").open("a") as log:
-        subprocess.run(["hf", "buckets", "sync", url, str(output), "--exclude", "checkpoint-*", "--exclude", "trials/*",
-                        "--exclude", "final/*", "--exclude", "trackio/*.lock", "--format", "quiet"],
+        excludes = [arg for pattern in ("checkpoint-*", "trials/*", "final/*", "trackio/*.lock", *THIS_JOB_FILES)
+                    for arg in ("--exclude", pattern)]
+        subprocess.run(["hf", "buckets", "sync", url, str(output), *excludes, "--format", "quiet"],
                        check=True, stdout=log, stderr=subprocess.STDOUT)
         subprocess.run(["hf", "buckets", "sync", f"{url}/{name}", str(output / name), "--format", "quiet"],
                        check=True, stdout=log, stderr=subprocess.STDOUT)
@@ -222,17 +260,20 @@ def main():
                         help="With --eval-checkpoints: eval checkpoints whose step is a multiple of this, and the last")
     parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
                         help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
-    parser.add_argument("--rounds", type=int, default=int(os.environ.get("FINEPROOF_ROUNDS", "1")),
-                        help="Check-and-rewrite rounds of the FineProof harness (0: one call per proof)")
+    parser.add_argument("--rounds", type=int, default=int(os.environ.get("FINEPROOF_ROUNDS", "0")),
+                        help="Check-and-rewrite rounds of the FineProof harness after its first proof (default 0: one "
+                             "call per proof, as the published run trained)")
     parser.add_argument("--max-tokens", type=int, default=32768, help="Output cap per model call")
     parser.add_argument("--generations", type=int, default=16, help="Train: rollouts per problem (a GRPO group)")
-    parser.add_argument("--grad-accum", type=int, default=128, help="Train: rollouts per update")
+    parser.add_argument("--grad-accum", type=int, default=128,
+                        help="Train: training rows per update (rollouts with --rounds 0; a rewrite round can add rows)")
     parser.add_argument("--inflight", type=int, default=128)
     parser.add_argument("--learning-rate", type=float, default=1e-6, help="Train: AsyncGRPO learning rate")
     parser.add_argument("--truncated-reward", default="zero", choices=["zero", "judge"],
                         help="Train: reward of a proof cut off at the cap (see tasks.py)")
     parser.add_argument("--warmup-steps", type=int, default=0, help="Train: linear learning-rate warm-up")
-    parser.add_argument("--resume-from", help="Train: start from another run's checkpoint (/outputs/<run>/checkpoint-N)")
+    parser.add_argument("--resume-from", help="Train: continue from another run's full checkpoint "
+                        "(/outputs/<run>/checkpoint-N): weights, optimizer, scheduler and RNG state, or fail")
     parser.add_argument("--evals-run", help="With --eval-checkpoints: the Trackio run evals log to (default <name>-evals)")
     parser.add_argument("--max-restarts", type=int, default=3,
                         help="Train: restarts from the latest full checkpoint when training dies")
@@ -295,7 +336,7 @@ def main():
 
     def spawn(command, name, extra=None):
         with (output / (name + ".log")).open("a") as stream:
-            process = subprocess.Popen(command, env={**env, **(extra or {})}, stdout=stream,
+            process = subprocess.Popen(command, env={**child_env(env, name), **(extra or {})}, stdout=stream,
                                        stderr=subprocess.STDOUT, start_new_session=True)
         children.append(process)
         return process
@@ -414,7 +455,8 @@ def main():
             weights = str(restored)
             command += ["--resume"]
         elif args.action == "train" and args.resume_from:
-            weights = origin = local_checkpoint(args.resume_from, output)  # vLLM serves, the trainer loads, these
+            # vLLM serves these weights; the trainer loads them with their optimizer, scheduler and RNG state.
+            weights = origin = local_checkpoint(args.resume_from, output, training=True)
             command += ["--resume-from", weights]
         restarts = 0
         while True:
