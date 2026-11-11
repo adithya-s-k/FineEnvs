@@ -50,10 +50,18 @@ Both hands are in the `video` split, as he played them.
 | `three-digit` | 6 | 100–999 | A step between 24 and the year. |
 | `year` | 8 | 1900–2100 | The play page and a bare `reset()` use the current year, as in the video. |
 | `four-digit` | 9 | 1000–9999 | "Give me your favourite four-digit number". |
-| custom | 4–9 | any up to 1,000,000 | `reset(target=6843)`; card count by size unless `n_cards` is given. |
+| custom | 2–9 | 0–9,999 | `reset(target=6843)`; card count by size (4–9) unless `n_cards` (2–9) is given. |
 
 Cards come from one 52-card deck, so a value appears at most four times. Every generated deal is checked
-with the solver and redealt until it has a solution, so a task is never impossible.
+with the solver and redealt until it has a solution, so a task is never impossible. The server gives the
+solver 1 s per deal and 3 s per reset; a custom target it cannot deal in that time is refused.
+
+The fixed splits come from `scripts/build_tasks.py`. `test` is 50 deals per level (seed 2026). `train` is
+1,000 draws per level (seed 7), minus every draw that repeats a test deal or an earlier train deal in what
+grading sees, the target and the card values: 639 deals remain at level 24, where only 1,362 four-card
+hands can make 24, and 1,000 at each other level. `test` is kept as first built, since the results below
+were computed on it, so it still has two pairs of level-24 deals with the same values (`test-24-0008` and
+`test-24-0023`, `test-24-0011` and `test-24-0013`).
 
 ## Episode
 
@@ -66,12 +74,15 @@ step(CardAction(expression="..."))  ->  reward, result, a reference solution   (
 
 | Argument | Meaning |
 |---|---|
-| `split`, `index` | A fixed task from `train` (4,000), `test` (200) or `video` (2). Without `index`, a random one. |
+| `split`, `index` | A fixed task from `train` (3,639), `test` (200) or `video` (2). Without `index`, a random one. |
 | `level` | A fresh deal at that level. |
 | `target`, `n_cards` | A fresh deal for your own number. |
-| `cards` + `target` | Your own hand, as values 1–13. It may have no solution. |
+| `cards` + `target` | Your own hand of 2–9 cards, as values 1–13. It may have no solution. |
 | `seed` | Makes a fresh deal reproducible. |
 | `reward_mode` | `shaped` (default) or `binary`. |
+
+A reset the server cannot deal (an unknown split or level, an `index` outside the split, a target above
+9,999, more than nine cards) is refused with the reason: HTTP 400 on `/reset`, an error message on `/ws`.
 
 The observation carries `prompt` and `system_prompt`, the exact text a model reads. The answer goes in
 `CardAction.expression`; an empty expression gives up. After the step, the observation adds `result`
@@ -83,14 +94,14 @@ per line), and `elapsed_s`. The reference solution is never shown before the epi
 | Answer | Reward |
 |---|---|
 | Uses every card once and equals the target | 1.0 |
-| Uses every card once, within 10% of the target (shaped mode) | `0.3 × c²`, `c = 1 − |value − target| / (0.1 × target)` |
+| Uses every card once, within 10% of the target (shaped mode) | `0.3 × c²`, `c = 1 − \|value − target\| / max(1, 0.1 × target)` |
 | Anything else: no answer, parse error, division by zero, a missing or extra card | 0 |
 
 The grader parses the expression with Python's `ast`, allows only non-negative integers, + − × ÷ and
 parentheses, compares the multiset of numbers to the cards, and evaluates with exact fractions. × ÷ −
-and the letters A J Q K are accepted; anything after `=` is ignored. Partial credit keeps a GRPO group of
-near misses from all scoring 0, and is capped far below an exact answer, so getting close never pays
-more than getting it right.
+(and look-alikes such as ∗ ／ ＋), no-break spaces and the letters A J Q K are accepted; anything after
+`=` is ignored. Partial credit keeps a GRPO group of near misses from all scoring 0, and is capped far
+below an exact answer, so getting close never pays more than getting it right.
 
 ## Use it
 

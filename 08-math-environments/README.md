@@ -34,7 +34,7 @@ about which.
 <sub>by <a href="https://github.com/adithya-s-k">Adithya S Kolavi</a> (Hugging Face)</sub>
 <p>Make the number from every card once with + − × ÷: the 24 game, then the current year from eight cards, then
 any four-digit number from nine, as Scott Wu plays it in a pub. People and models play the same server.</p>
-<sub>OpenEnv · 4,000 train / 200 test deals · 12 models</sub><br>
+<sub>OpenEnv · 3,639 train / 200 test deals · 12 models</sub><br>
 <a href="https://huggingface.co/spaces/FineEnvs/ScottWuMath">Play</a> ·
 <a href="scott-wu-math/results/eval-v1.json">Eval card</a>
 </td>

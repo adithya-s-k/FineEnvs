@@ -3,6 +3,9 @@
 One model row per model and mode (think, nothink, direct), with the mean reward, a 95% bootstrap
 interval over the 20 deals, and how many answers were solved and valid.
 
+A model with episodes missing from a run (an interrupted or partly failed run) is left out with a
+warning, not averaged over what it has; --keep-incomplete keeps it, marked "complete": false.
+
     python eval/eval_card.py --runs runs --out results/eval-v1.json
 """
 
@@ -11,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -31,6 +35,9 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--runs", type=Path, default=HERE.parent / "runs")
     ap.add_argument("--out", type=Path, default=HERE.parent / "results" / "eval-v1.json")
+    ap.add_argument(
+        "--keep-incomplete", action="store_true", help='keep models with missing episodes, marked "complete": false'
+    )
     args = ap.parse_args()
 
     labels = {m["id"]: m for m in json.loads((HERE / "models.json").read_text())["models"]}
@@ -40,13 +47,24 @@ def main() -> None:
         run = json.loads((run_dir / "run.json").read_text())
         indices = run["indices"]
         date = date or run["started"]
-        by_model: dict[str, list[dict]] = {}
+        expected = {(i, k) for i in indices for k in range(run["samples"])}
+        # Episodes of this run's mode, split and deals, the first one for each (deal, sample), in file order.
+        by_model: dict[str, dict[tuple[int, int], dict]] = {}
         for line in (run_dir / "episodes.jsonl").read_text().splitlines():
             ep = json.loads(line)
-            by_model.setdefault(ep["model"], []).append(ep)
-        for model, eps in by_model.items():
+            if ep["mode"] != mode or ep["split"] != run["split"] or (ep["index"], ep["sample"]) not in expected:
+                continue
+            by_model.setdefault(ep["model"], {}).setdefault((ep["index"], ep["sample"]), ep)
+        for model, found in by_model.items():
+            eps = list(found.values())
+            complete = len(found) == len(expected)
+            if not complete:
+                print(f"{'keeping' if args.keep_incomplete else 'skipping'} {labels[model]['label']} ({mode}): "
+                      f"{len(found)} of {len(expected)} episodes", file=sys.stderr)
+                if not args.keep_incomplete:
+                    continue
             rewards = [ep["reward"] for ep in eps]
-            rows.append({
+            row = {
                 "model": labels[model]["label"],
                 "provider": labels[model]["org"],
                 "mode": mode,
@@ -57,7 +75,10 @@ def main() -> None:
                 "solved": sum(1 for ep in eps if (ep.get("result") or {}).get("exact")),
                 "valid": sum(1 for ep in eps if (ep.get("result") or {}).get("valid")),
                 "mean_output_tokens": round(sum(ep.get("output_tokens") or 0 for ep in eps) / len(eps)),
-            })
+            }
+            if not complete:
+                row["complete"] = False
+            rows.append(row)
     order = list(MODES)
     rows.sort(key=lambda r: (order.index(r["mode"]), -r["mean"], r["model"]))
 

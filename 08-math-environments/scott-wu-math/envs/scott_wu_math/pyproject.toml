@@ -16,7 +16,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0.0", "httpx>=0.27.0", "websockets>=12.0"]
-eval = ["openai>=1.50.0", "python-dotenv>=1.0.0"]
+eval = ["openai>=1.50.0", "anthropic>=2.1.0", "python-dotenv>=1.0.0"]
 
 [project.scripts]
 scott-wu-math-server = "scott_wu_math.server.app:main"

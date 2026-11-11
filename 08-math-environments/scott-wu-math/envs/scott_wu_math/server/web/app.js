@@ -82,7 +82,7 @@
       S.videoIndex = (S.videoIndex + 1) % 2;
     } else if (S.level === "custom") {
       const raw = $("custom-target").value.replace(/[,\s_]/g, "");
-      if (!/^\d{1,6}$/.test(raw)) { setStatus("Type a whole number for the target first.", "warn"); $("custom-target").focus(); return; }
+      if (!/^\d{1,4}$/.test(raw)) { setStatus("Type a whole number up to 9,999 for the target first.", "warn"); $("custom-target").focus(); return; }
       data = { target: Number(raw) };
     } else if (S.level === "year") {
       data = { level: "year", target: new Date().getFullYear() };

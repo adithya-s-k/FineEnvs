@@ -27,7 +27,7 @@
   <nav><a href="/">Play</a><a href="/static/card.html" aria-current="page">Environment card</a><a href="/docs">API</a></nav>
 </header>
 <article class="doc" id="doc">Loading…</article>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js" integrity="sha512-xeUh+KxNyTufZOje++oQHstlMQ8/rpyzPuM+gjMFYK3z5ILJGE7l2NvYL+XfliKURMpBIKKp1XoPN/qswlSMFA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
   fetch("/readme.md").then((r) => r.text()).then((md) => {
     md = md.replace(/^---[\s\S]*?\n---\n/, "");  // drop the Space front matter

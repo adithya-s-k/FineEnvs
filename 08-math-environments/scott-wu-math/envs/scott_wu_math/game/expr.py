@@ -25,7 +25,7 @@ _AST_OPS = {ast.Add: "+", ast.Sub: "-", ast.Mult: "*", ast.Div: "/"}
 _LETTERS = {"A": "1", "J": "11", "Q": "12", "K": "13"}
 MAX_LENGTH = 400
 
-# What people and models type for the four operators.
+# What people and models type for the four operators, brackets and spaces.
 _SYMBOLS = str.maketrans(
     {
         "×": "*",
@@ -33,14 +33,27 @@ _SYMBOLS = str.maketrans(
         "X": "*",
         "·": "*",
         "∙": "*",
+        "⋅": "*",
+        "∗": "*",
+        "＊": "*",
         "÷": "/",
+        "／": "/",
+        "∕": "/",
+        "＋": "+",
         "−": "-",
         "–": "-",
         "—": "-",
+        "－": "-",
         "[": "(",
         "]": ")",
         "{": "(",
         "}": ")",
+        "（": "(",
+        "）": ")",
+        "\u00a0": " ",  # no-break space
+        "\u2009": " ",  # thin space
+        "\u202f": " ",  # narrow no-break space
+        "\u3000": " ",  # ideographic space
     }
 )
 
@@ -137,7 +150,8 @@ def parse(text: str) -> Tree:
         raise ExpressionError("powers are not allowed")
     try:
         node = ast.parse(source, mode="eval").body
-    except SyntaxError as exc:
+    except (SyntaxError, ValueError, RecursionError) as exc:
+        # ValueError: a null byte on some Python versions; RecursionError: nesting too deep to parse.
         raise ExpressionError(f"not an arithmetic expression: {source!r}") from exc
 
     def build(n: ast.AST) -> Tree:

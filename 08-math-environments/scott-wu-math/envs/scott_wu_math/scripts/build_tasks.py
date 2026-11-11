@@ -3,8 +3,14 @@
     python -m scott_wu_math.scripts.build_tasks   # or: python scripts/build_tasks.py from the env dir
 
 test:  50 deals per level (200), seed 2026
-train: 1,000 deals per level (4,000), seed 7, none sharing an id with test
+train: 1,000 draws per level, seed 7, keeping only deals that differ from every test deal and every
+       earlier train deal in what grading sees: the target and the card values (suits do not matter).
+       Ids keep the draw number, so they have gaps where a draw was dropped. Level 24 keeps 639: only
+       1,362 of the 1,820 four-card hands can make 24, so its draws repeat often.
 video: the two hands from the video, 2025 from eight cards and 6,843 from nine
+
+Test is kept exactly as first built, since the published eval card was computed on it. It has two
+pairs of level-24 deals with the same values (test-24-0008 / test-24-0023, test-24-0011 / test-24-0013).
 """
 
 from __future__ import annotations
@@ -12,6 +18,7 @@ from __future__ import annotations
 import json
 import random
 import sys
+from collections import Counter
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1]
@@ -39,7 +46,16 @@ VIDEO = [
 ]
 
 
-def build(seed: int, per_level: int, prefix: str, skip: set[str]) -> list[dict]:
+def deal_key(task: dict) -> tuple[int, tuple[int, ...]]:
+    """What grading depends on: the target and the card values, without suits."""
+    return task["target"], tuple(sorted(c["rank"] for c in task["cards"]))
+
+
+def build(seed: int, per_level: int, prefix: str, skip: set[str], avoid: set | None = None) -> list[dict]:
+    """Draw per_level deals per level whose id (target and cards with suits) is not in `skip`.
+
+    With `avoid`, a draw whose `deal_key` is already there is dropped, and each kept deal's key is added.
+    """
     rng = random.Random(seed)
     tasks: list[dict] = []
     for level in LEVELS:
@@ -50,24 +66,29 @@ def build(seed: int, per_level: int, prefix: str, skip: set[str]) -> list[dict]:
             if key in skip:
                 continue
             skip.add(key)
-            task["id"] = f"{prefix}-{level}-{made:04d}"
+            number, made = made, made + 1
+            if avoid is not None:
+                if deal_key(task) in avoid:
+                    continue
+                avoid.add(deal_key(task))
+            task["id"] = f"{prefix}-{level}-{number:04d}"
             task["key"] = key
             tasks.append(task)
-            made += 1
     return tasks
 
 
 def write(name: str, tasks: list[dict]) -> None:
     path = OUT / f"{name}.jsonl"
     path.write_text("".join(json.dumps(t, ensure_ascii=False) + "\n" for t in tasks))
-    print(f"{path.relative_to(HERE)}: {len(tasks)} tasks")
+    per_level = Counter(t["level"] for t in tasks)
+    print(f"{path.relative_to(HERE)}: {len(tasks)} tasks ({', '.join(f'{k} {v}' for k, v in per_level.items())})")
 
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     seen: set[str] = set()
     test = build(2026, 50, "test", seen)
-    train = build(7, 1000, "train", seen)
+    train = build(7, 1000, "train", seen, avoid={deal_key(t) for t in test})
     video = []
     for v in VIDEO:
         cards = [Card(r, s) for r, s in v["cards"]]

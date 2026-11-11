@@ -9,7 +9,7 @@ observation's prompt, and step submits the extracted answer, so the server's gra
     # a mini board: the first five test tasks of every level
     python eval/rollout.py --split test --per-level 5 --mode nothink --out runs/test20-nothink
 
-Keys come from the nearest .env: OPENAI_API_KEY, ANTHROPIC_API_KEY, HF_TOKEN.
+Keys come from the nearest .env: OPENAI_API_KEY, ANTHROPIC_API_KEY, HF_TOKEN (only those the chosen models use).
 Results: <out>/episodes.jsonl (one line per episode, written as they finish) and <out>/summary.md.
 """
 
@@ -138,17 +138,27 @@ async def call_hf(client, model: dict, setting: dict, system: str, user: str) ->
 CALLS = {"openai": call_openai, "anthropic": call_anthropic, "hf": call_hf}
 
 
-def make_clients() -> dict:
-    from anthropic import AsyncAnthropic
-    from openai import AsyncOpenAI
-
-    return {
-        "openai": AsyncOpenAI(timeout=TIMEOUT_S, max_retries=2),
-        "anthropic": AsyncAnthropic(timeout=TIMEOUT_S, max_retries=2),
-        "hf": AsyncOpenAI(
-            base_url="https://router.huggingface.co/v1", api_key=os.environ["HF_TOKEN"], timeout=TIMEOUT_S, max_retries=2
-        ),
-    }
+def make_clients(apis: set[str]) -> dict:
+    """One client per API the chosen models use, so a run of OpenAI models needs no HF_TOKEN or `anthropic`."""
+    clients: dict = {}
+    if apis & {"openai", "hf"}:
+        from openai import AsyncOpenAI
+    if "openai" in apis:
+        clients["openai"] = AsyncOpenAI(timeout=TIMEOUT_S, max_retries=2)
+    if "anthropic" in apis:
+        try:
+            from anthropic import AsyncAnthropic
+        except ImportError:
+            sys.exit("the Anthropic models need the anthropic package: pip install -e 'envs/scott_wu_math[eval]'")
+        clients["anthropic"] = AsyncAnthropic(timeout=TIMEOUT_S, max_retries=2)
+    if "hf" in apis:
+        token = os.environ.get("HF_TOKEN")
+        if not token:
+            sys.exit("the open models run on Hugging Face Inference Providers and need HF_TOKEN")
+        clients["hf"] = AsyncOpenAI(
+            base_url="https://router.huggingface.co/v1", api_key=token, timeout=TIMEOUT_S, max_retries=2
+        )
+    return clients
 
 
 # ---- one episode -------------------------------------------------------------------------------
@@ -251,7 +261,7 @@ async def main() -> None:
     indices = task_indices(args.server, args.split, args.per_level, args.limit)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    clients = make_clients()
+    clients = make_clients({m["api"] for m in models})
     sems = {k: asyncio.Semaphore(v) for k, v in LIMITS.items()}
     # HF models each get their own limit, so one slow provider does not starve the others.
     hf_sems = {m["id"]: asyncio.Semaphore(LIMITS["hf"]) for m in models if m["api"] == "hf"}
@@ -259,24 +269,26 @@ async def main() -> None:
     def limits(m: dict) -> dict:
         return sems | {"hf": hf_sems[m["id"]]} if m["api"] == "hf" else sems
 
-    # Resume: skip episodes already in episodes.jsonl (failed ones were never written).
+    # Resume: skip episodes already in episodes.jsonl (failed ones were never written). The key has the
+    # mode and split too, so reusing an --out directory for another mode or split runs every episode.
     done_path = out / "episodes.jsonl"
     done = set()
     if done_path.is_file():
         for line in done_path.read_text().splitlines():
             r = json.loads(line)
-            done.add((r["model"], r["index"], r["sample"]))
+            done.add((r["model"], r["mode"], r["split"], r["index"], r["sample"]))
     jobs = [
         episode(args.server, m, args.mode, args.split, i, s, clients, limits(m))
         for m in models
         for i in indices
         for s in range(args.samples)
-        if (m["id"], i, s) not in done
+        if (m["id"], args.mode, args.split, i, s) not in done
     ]
     print(f"{len(jobs)} episodes: {len(models)} models x {len(indices)} tasks x {args.samples} samples, mode {args.mode}")
     meta = {"server": args.server, "split": args.split, "indices": indices, "samples": args.samples, "mode": args.mode, "started": time.time()}
     (out / "run.json").write_text(json.dumps(meta, indent=2))
     records = [json.loads(line) for line in done_path.read_text().splitlines()] if done_path.is_file() else []
+    records = [r for r in records if r["mode"] == args.mode and r["split"] == args.split]
     with done_path.open("a") as f:
         for coro in asyncio.as_completed(jobs):
             try:

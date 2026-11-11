@@ -9,7 +9,8 @@ the search complete for up to nine cards, and in practice it finds an answer in 
 because big targets have many.
 
 A first pass keeps every intermediate value a whole number (the way people play, as in the
-video); a second pass allows fractions. Both stop at a deadline.
+video); a second pass allows fractions. Both stop at a deadline, which is checked at every step of
+the search and while building the values of any group bigger than the cached ones.
 """
 
 from __future__ import annotations
@@ -22,15 +23,31 @@ from itertools import combinations
 from .expr import Tree, evaluate, leaves
 
 LOOKUP_SIZE = 4
+CACHE_SIZE = 8_192  # every group of up to LOOKUP_SIZE values 1-13, for both passes, is 4,758 entries
 
 
 class Timeout(Exception):
     pass
 
 
-@lru_cache(maxsize=200_000)
-def _reach(values: tuple[int, ...], integers: bool) -> dict[Fraction, Tree]:
-    """Every value a sorted group of cards can make, with one tree for each."""
+def _reach(values: tuple[int, ...], integers: bool, deadline: float | None = None) -> dict[Fraction, Tree]:
+    """Every value a sorted group of cards can make, with one tree for each.
+
+    Groups of up to LOOKUP_SIZE cards are cached: with values 1-13 there are 2,379 of them, so the
+    cache holds every one for both passes. A bigger group, which only a hand of more than nine cards
+    needs, is built fresh and stops at the deadline.
+    """
+    if len(values) <= LOOKUP_SIZE:
+        return _reach_small(values, integers)
+    return _combine(values, integers, deadline)
+
+
+@lru_cache(maxsize=CACHE_SIZE)
+def _reach_small(values: tuple[int, ...], integers: bool) -> dict[Fraction, Tree]:
+    return _combine(values, integers, None)
+
+
+def _combine(values: tuple[int, ...], integers: bool, deadline: float | None) -> dict[Fraction, Tree]:
     if len(values) == 1:
         return {Fraction(values[0]): values[0]}
     out: dict[Fraction, Tree] = {}
@@ -45,8 +62,10 @@ def _reach(values: tuple[int, ...], integers: bool) -> dict[Fraction, Tree]:
             right = tuple(v for i, v in enumerate(values) if i not in idx)
             if k * 2 == n and right in seen and right != left:
                 continue
-            lr, rr = _reach(left, integers), _reach(right, integers)
+            lr, rr = _reach(left, integers, deadline), _reach(right, integers, deadline)
             for a, ta in lr.items():
+                if deadline is not None and time.monotonic() > deadline:
+                    raise Timeout
                 for b, tb in rr.items():
                     _add(out, a + b, ("+", ta, tb), integers)
                     _add(out, a * b, ("*", ta, tb), integers)
@@ -70,7 +89,6 @@ class _Search:
         self.integers = integers
         self.deadline = deadline
         self.failed: set[tuple[Fraction, tuple[int, ...]]] = set()
-        self.nodes = 0
 
     def solve(self, target: Fraction, values: tuple[int, ...]) -> Tree | None:
         if len(values) <= LOOKUP_SIZE:
@@ -78,8 +96,7 @@ class _Search:
         key = (target, values)
         if key in self.failed:
             return None
-        self.nodes += 1
-        if self.nodes % 256 == 0 and time.monotonic() > self.deadline:
+        if time.monotonic() > self.deadline:
             raise Timeout
         n = len(values)
         seen: set[tuple[int, ...]] = set()
@@ -90,7 +107,7 @@ class _Search:
                     continue
                 seen.add(group)
                 rest = tuple(v for i, v in enumerate(values) if i not in idx)
-                for v, tv in _reach(group, self.integers).items():
+                for v, tv in _reach(group, self.integers, self.deadline).items():
                     for need, build in self._needs(target, v, tv):
                         if self.integers and (need.denominator != 1 or need < 0):
                             continue

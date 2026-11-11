@@ -36,7 +36,7 @@ scott-wu-math/
 ├── envs/scott_wu_math/      the environment (OpenEnv server, play page, grader, solver, task splits)
 │   ├── game/                cards, expression checker, solver, levels, reward, prompts (no server needed)
 │   ├── server/              OpenEnv app + environment; web/ is the play page
-│   ├── data/tasks/          train (4,000), test (200), video (2): built by scripts/build_tasks.py
+│   ├── data/tasks/          train (3,639), test (200), video (2): built by scripts/build_tasks.py
 │   └── tests/
 └── eval/
     ├── models.json          12 models: OpenAI, Anthropic, open models on HF Inference Providers
@@ -51,7 +51,7 @@ results/eval-v1.json         12 models x 3 modes on 20 test deals
 
 ```bash
 cd envs/scott_wu_math
-uv venv && uv pip install -e ".[dev,eval]" anthropic
+uv venv && uv pip install -e ".[dev,eval]"
 uvicorn scott_wu_math.server.app:app --port 8012      # http://localhost:8012
 pytest
 

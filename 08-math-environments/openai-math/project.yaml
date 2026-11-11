@@ -9,6 +9,7 @@ authors:
 
 hub:
   org: FineEnvs
+  collection: FineEnvs/math-environments-6af40312bf237e3c32912840
   datasets:
     - FineEnvs/openai-math
 

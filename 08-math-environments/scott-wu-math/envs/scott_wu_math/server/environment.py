@@ -26,6 +26,19 @@ TASKS_DIR = Path(__file__).resolve().parents[1] / "data" / "tasks"
 SPLITS = {"train": "train", "test": "test", "video": "test"}
 _TASKS: dict[str, list[dict]] = {}
 
+# A fresh deal is solved while the request waits, so the server caps the solver: DEAL_SECONDS per
+# deal, at most MAX_DEALS deals, DEAL_BUDGET seconds for all of them. Normal deals take milliseconds.
+DEAL_SECONDS = 1.0
+MAX_DEALS = 20
+DEAL_BUDGET = 3.0
+
+
+class InvalidReset(ValueError):
+    """A reset the server cannot deal: unknown split or level, index out of range, bad target or cards.
+
+    The HTTP app answers it with 400 and the message; over /ws the message comes back as an error.
+    """
+
 
 def load_split(split: str) -> list[dict]:
     if split not in SPLITS:
@@ -34,6 +47,29 @@ def load_split(split: str) -> list[dict]:
         path = TASKS_DIR / f"{split}.jsonl"
         _TASKS[split] = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
     return _TASKS[split]
+
+
+def _deal(*, seed, split, index, level, target, n_cards, cards, reward_mode) -> dict:
+    """The task for one reset. Bad arguments raise ValueError (or TypeError), which `reset` reports."""
+    if reward_mode not in ("shaped", "binary"):
+        raise InvalidReset("reward_mode is 'shaped' or 'binary'")
+    rng = random.Random(seed)
+    if split is not None:
+        tasks = load_split(split)
+        if index is None:
+            return tasks[rng.randrange(len(tasks))]
+        i = int(index)
+        if not 0 <= i < len(tasks):
+            raise InvalidReset(f"index {i} is out of range: split {split!r} has tasks 0 to {len(tasks) - 1}")
+        return tasks[i]
+    limits = {"time_limit": DEAL_SECONDS, "max_deals": MAX_DEALS, "budget": DEAL_BUDGET}
+    if cards:
+        if target is None:
+            raise InvalidReset("give a target with your cards")
+        return make_task(rng, level=level, target=target, ranks=[int(c) for c in cards], **limits)
+    if target is not None or level is not None:
+        return make_task(rng, level=level, target=target, n_cards=n_cards, **limits)
+    return make_task(rng, level="year", target=CURRENT_YEAR, **limits)
 
 
 class ScottWuMathEnvironment(Environment[CardAction, CardObservation, CardState]):
@@ -64,25 +100,21 @@ class ScottWuMathEnvironment(Environment[CardAction, CardObservation, CardState]
 
         - `split` + `index`: a fixed task from `train`, `test` or `video` (the two hands from the video).
         - `level`: a fresh deal at `24` (4 cards), `three-digit` (6), `year` (8) or `four-digit` (9).
-        - `target` (and optionally `n_cards`): a fresh deal for your own number, as in the video.
-        - `cards` (values 1-13) with `target`: play a hand you choose; it may have no solution.
+        - `target` (0-9,999, and optionally `n_cards`, 2-9): a fresh deal for your own number, as in the video.
+        - `cards` (2-9 values, 1-13) with `target`: play a hand you choose; it may have no solution.
         - nothing: eight cards for the current year.
+
+        Anything the server cannot deal raises `InvalidReset` (HTTP 400) with the reason.
         """
-        if reward_mode not in ("shaped", "binary"):
-            raise ValueError("reward_mode is 'shaped' or 'binary'")
-        rng = random.Random(seed)
-        if split is not None:
-            tasks = load_split(split)
-            i = rng.randrange(len(tasks)) if index is None else int(index)
-            task = tasks[i]
-        elif cards:
-            if target is None:
-                raise ValueError("give a target with your cards")
-            task = make_task(rng, level=level, target=target, ranks=[int(c) for c in cards])
-        elif target is not None or level is not None:
-            task = make_task(rng, level=level, target=target, n_cards=n_cards)
-        else:
-            task = make_task(rng, level="year", target=CURRENT_YEAR)
+        try:
+            task = _deal(
+                seed=seed, split=split, index=index, level=level, target=target, n_cards=n_cards, cards=cards,
+                reward_mode=reward_mode,
+            )
+        except InvalidReset:
+            raise
+        except (ValueError, TypeError) as exc:
+            raise InvalidReset(str(exc)) from exc
         self._task = task
         self._started = time.monotonic()
         self._state = CardState(
@@ -145,7 +177,11 @@ class ScottWuMathEnvironment(Environment[CardAction, CardObservation, CardState]
         return len(load_split(split))
 
     def get_task(self, split: str, index: int) -> dict:
+        if index < 0:
+            raise IndexError(index)  # OpenEnv answers 400 "Invalid task index", as for one past the end
         return public(load_split(split)[index])
 
     def get_task_range(self, split: str, start: int, stop: int) -> list[dict]:
+        if start < 0 or stop < 0:
+            raise IndexError(start if start < 0 else stop)
         return [public(t) for t in load_split(split)[start:stop]]

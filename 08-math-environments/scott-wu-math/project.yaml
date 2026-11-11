@@ -3,18 +3,19 @@ name: scott-wu-math
 title: "Scott Wu Math: the card game"
 tagline: "Make the target from every card once with + − × ÷: the 24 game, then the current year from eight cards, then any four-digit number from nine."
 order: 8.2
-status: wip
+status: stable   # environment and Space live, 12-model eval card
 authors:
   - {name: Adithya S Kolavi, github: adithya-s-k, affiliation: Hugging Face}
 
 hub:
   org: FineEnvs
+  collection: FineEnvs/math-environments-6af40312bf237e3c32912840
   spaces:
     - FineEnvs/ScottWuMath
 
 envs:
   - name: scott_wu_math
-    summary: "One graded answer per deal, checked exactly with fractions; train 4,000 / test 200 / video 2 deals across four levels, each verified solvable by a complete solver."
+    summary: "One graded answer per deal, checked exactly with fractions; train 3,639 / test 200 / video 2 deals across four levels, each verified solvable by a complete solver."
     tools: 0   # one graded answer per deal
     backend: python-offline
     frameworks:

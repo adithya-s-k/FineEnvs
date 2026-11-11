@@ -2,9 +2,10 @@
 
 - 1.0 for an expression that uses every card exactly once and equals the target.
 - Shaped mode (default) adds partial credit up to 0.3 for an expression that uses every card
-  exactly once but misses: ``0.3 * c**2`` with ``c = max(0, 1 - |value - target| / (0.1 * target))``,
-  so only answers within 10% of the target earn anything. A group of failed attempts still
-  differs, which GRPO needs, and an exact answer is always worth far more than a near one.
+  exactly once but misses: ``0.3 * c**2`` with
+  ``c = max(0, 1 - |value - target| / max(1, 0.1 * target))``, so only answers within 10% of the
+  target (within 1 for targets under 10) earn anything. A group of failed attempts still differs,
+  which GRPO needs, and an exact answer is always worth far more than a near one.
 - 0 for anything else: no answer, a parse error, a division by zero, a missing or extra card.
 
 Binary mode gives 1 or 0.

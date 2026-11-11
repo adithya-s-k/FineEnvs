@@ -8,12 +8,13 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi import Request
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from openenv.core.env_server.http_server import create_app
 
 from ..models import CardAction, CardObservation, CardState
-from .environment import ScottWuMathEnvironment
+from .environment import InvalidReset, ScottWuMathEnvironment
 
 WEB = Path(__file__).resolve().parent / "web"
 README = Path(__file__).resolve().parents[1] / "README.md"
@@ -30,6 +31,12 @@ app = create_app(
     state_cls=CardState,
 )
 app.mount("/static", StaticFiles(directory=WEB), name="static")
+
+
+@app.exception_handler(InvalidReset)
+async def invalid_reset(request: Request, exc: InvalidReset) -> JSONResponse:
+    """A reset the server cannot deal (index out of range, target too big, ...) is the client's error."""
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
 @app.get("/", include_in_schema=False)
