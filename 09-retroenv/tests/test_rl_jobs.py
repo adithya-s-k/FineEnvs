@@ -459,3 +459,12 @@ def test_a_thinking_run_is_evaluated_with_thinking_at_its_effort(monkeypatch, ca
         monkeypatch, capsys, "watch", "--run", "a", "--job", "j1", "--bucket", "o/b", "--source-from", "j2"
     )["command"][-1]  # fmt: skip
     assert later.endswith("--source j2")  # evaluations run the later upload's code
+
+
+def test_training_runs_with_an_allocator_that_does_not_fragment():
+    """Rows vary from 10k to 50k tokens in one step; fixed-size blocks fragment and run out of memory."""
+    source = (ROOT / "train" / "jobs" / "run.py").read_text()
+    # The trainer's own environment, beside the devices it may use.
+    trace = source.split("trace = {", 1)[1].split("}", 1)[0]
+    assert '"PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"' in trace
+    assert '"CUDA_VISIBLE_DEVICES"' in trace

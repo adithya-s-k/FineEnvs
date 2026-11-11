@@ -315,6 +315,13 @@ def main():
                 "CUDA_VISIBLE_DEVICES": ",".join(train_devices),
                 "RETROENV_TRACE_PATH": str(local / "episodes.jsonl"),
                 "RETROENV_VLLM_REPLICAS": str(len(vllm_devices)),  # each episode is pinned to one replica
+                # Every row is a different length (10k-50k tokens in the same step), so the caching
+                # allocator's fixed-size blocks fragment: two runs continued from a trained
+                # checkpoint died with 17-23 GiB "reserved but unallocated" while a 3.5 GiB
+                # activation had nowhere contiguous to go. Expandable segments grow a mapping
+                # instead of reserving a new block per size, which is what PyTorch's own OOM
+                # message recommends for this.
+                "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
             }
             run(command, "train", trace)
         else:
