@@ -391,8 +391,8 @@ def main():
                "--port", str(server_port), "--ws-ping-timeout", "3600", "--log-config", str(logging_config)], "harbor", {
             "OPENENV_DATASETS": ",".join(str(Path("prepared", "datasets", s).resolve()) for s in ("train", "test")),
             "OPENENV_HARBOR_REWARD_KEY": "reward",
-            # OpenEnv (openenv/OpenEnv#1573 from bfe8b9d5) serves a `module:Class` harness only when the operator
-            # allows it, since naming one makes the server import that module. Ignored by older OpenEnv.
+            # OpenEnv (since openenv/OpenEnv#1573) serves a `module:Class` harness only when the operator allows it,
+            # since naming one makes the server import that module. Ignored by older OpenEnv.
             "OPENENV_HARBOR_ALLOW_HARNESS": "fineproof_agent.agent:FineProofAgent",
             "FINEPROOF_ROUNDS": str(args.rounds),
             "FINEPROOF_MAX_TOKENS": str(args.max_tokens),

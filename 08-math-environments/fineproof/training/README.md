@@ -68,9 +68,10 @@ GPU 1: AsyncGRPO trainer                       (in the Harbor server)           
   `JUDGE_MODEL` order: when one rate-limits, the next grades at once, and each grade records which one gave it. The
   default is deepinfra, then groq, then featherless-ai; the published run set groq, then featherless-ai.
 
-Pinned stack: 05's validated one (TRL `52fb144e`, vLLM 0.25.1, Transformers `d6c1e71b`), with OpenEnv at `main` plus
-[openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573) (`a0068bfd`: custom harnesses, allowed per server
-with `OPENENV_HARBOR_ALLOW_HARNESS`, loopback for host-side agents, a harness preflight), and Harbor 0.24 for separate verifiers (the harness accepts 0.24–0.25; the tasks are also checked on 0.25). Models: `Qwen/Qwen3.5-2B`, `-4B` and `-9B`
+Pinned stack: 05's validated one (TRL `52fb144e`, vLLM 0.25.1, Transformers `d6c1e71b`), with OpenEnv `main` at
+`fc2d57a8`, the merge of [openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573) (custom harnesses,
+allowed per server with `OPENENV_HARBOR_ALLOW_HARNESS`, loopback for host-side agents, a harness preflight; the
+published run used the PR branch at `a0068bfd`), and Harbor 0.24 for separate verifiers (the harness accepts 0.24–0.25; the tasks are also checked on 0.25). Models: `Qwen/Qwen3.5-2B`, `-4B` and `-9B`
 in non-thinking mode, at pinned revisions. The two-update smoke (`jobs/smoke.py`) passed on HF Jobs (2× H200) and on
 Slurm (2× H100).
 

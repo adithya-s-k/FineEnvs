@@ -76,9 +76,9 @@ statement exactly; here a natural-language proof earns partial credit for the st
 ## Through OpenEnv
 
 The tasks and the FineProof harness run through stock `openenv harbor serve`, the server training uses, with the harness named
-by import path (`--harness fineproof_agent.agent:FineProofAgent`). That needs
-[openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573), which makes `module:Class` work and gives a
-host-side agent the capture proxy's loopback URL. Before it, a public tunnel cut long proofs with a 502 and the
+by import path (`--harness fineproof_agent.agent:FineProofAgent`). That needs an OpenEnv `main` with
+[openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573) (merged 2026-11-12), which makes `module:Class`
+work and gives a host-side agent the capture proxy's loopback URL. Before it, a public tunnel cut long proofs with a 502 and the
 retries were recorded as extra conversations.
 
 Eval mode, on the 64 validated test tasks: Qwen3.5-9B on deepinfra (thinking off), the FineProof harness, Daytona, judge

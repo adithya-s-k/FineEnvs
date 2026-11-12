@@ -3,12 +3,12 @@
 # with TRL and OpenEnv pinned to the commits 05 validated instead of main.
 set -euo pipefail
 TRL_COMMIT=52fb144e7ece97e26aabd3c025740022838e46b5
-# OpenEnv main (13434b85) + openenv/OpenEnv#1573 and #1578: `--harness module:Class` (allowed per server with
+# OpenEnv main at the merge of openenv/OpenEnv#1573 (fc2d57a8): `--harness module:Class` (allowed per server with
 # OPENENV_HARBOR_ALLOW_HARNESS, which jobs/run.py sets), the capture proxy's loopback URL for host-side agents (the
-# FineProof harness), and the harness preflight. Smoke-tested as fp-smoke-oe1573. Switch to the merge commit on
-# openenv/OpenEnv once it lands. Runs before 2026-11-09 evening used 0bd1a89d.
-OPENENV_REPO=${OPENENV_REPO:-https://github.com/adithya-s-k/OpenEnv.git}
-OPENENV_COMMIT=${OPENENV_COMMIT:-a0068bfda8144831a3ddc59c7d5696da34f592db}
+# FineProof harness), and the harness preflight. The published run used the PR branch: 0bd1a89d until 2026-11-09
+# evening, then a0068bfd (smoke-tested as fp-smoke-oe1573); main adds only optional hooks and allow-list trimming.
+OPENENV_REPO=${OPENENV_REPO:-https://github.com/openenv/OpenEnv.git}
+OPENENV_COMMIT=${OPENENV_COMMIT:-fc2d57a86749a3f4beddc1e8046d3b2db100e7c2}
 python -m pip install -r requirements.txt
 python -m pip install "trl @ git+https://github.com/huggingface/trl.git@${TRL_COMMIT}"
 mkdir -p .deps

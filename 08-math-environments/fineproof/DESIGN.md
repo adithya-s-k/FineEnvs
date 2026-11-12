@@ -114,7 +114,7 @@ would and rewrites it, N times: the move QED-Nano's best scaffolds end in, which
 published run used one call. Every call goes through OpenEnv's capture proxy and is trained
 (with Qwen3.5 in non-thinking mode, as one row per call: see training/README.md), and the reward is the verifier's
 score / 7. The Harbor server is OpenEnv's own; rollouts name the harness by import path
-(`fineproof_agent.agent:FineProofAgent`), which needs [openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573).
+(`fineproof_agent.agent:FineProofAgent`), which OpenEnv supports since [openenv/OpenEnv#1573](https://github.com/openenv/OpenEnv/pull/1573).
 
 ## How we validate it
 
