@@ -109,6 +109,8 @@ def main(argv=None):
     parser.add_argument("--shards", type=int, help="For watch: evaluation jobs per checkpoint, one H200 each")
     parser.add_argument("--eval-concurrency", type=int, help="For watch: episodes at a time per evaluation job")
     parser.add_argument("--step-offset", type=int, help="For watch: steps trained before this run (a continuation)")
+    parser.add_argument("--patience", type=int, help="For watch: stop training after N checkpoints without a new best")
+    parser.add_argument("--stop-below", type=float, help="For watch: stop after two checkpoints below this x the best")
     parser.add_argument("--space-id")
     parser.add_argument("--submit", action="store_true", help="Without this flag, print the job plan")
     args = parser.parse_args(argv)
@@ -131,7 +133,9 @@ def main(argv=None):
     if args.action == "watch":
         # A CPU job with no GPU stack: refresh huggingface_hub, then follow the run.
         watch = (
-            "pip install -q 'huggingface_hub>=1.32,<2' && python /source/train/jobs/eval_watch.py "
+            "pip install -q 'huggingface_hub>=1.32,<2'"
+            + (" 'trackio==0.42.0'" if args.space_id else "")
+            + " && python /source/train/jobs/eval_watch.py "
             f"--run {args.run} --job {args.job} --bucket {args.bucket} --model {args.model} --set {args.set}"
             f" --harness {args.harness or 'board'} --attempts {args.attempts}"
             + (f" --temperature {args.temperature}" if args.temperature is not None else "")
@@ -141,6 +145,9 @@ def main(argv=None):
             + (f" --reasoning-effort {args.reasoning_effort}" if args.thinking and args.reasoning_effort else "")
             + (f" --concurrency {args.eval_concurrency}" if args.eval_concurrency else "")
             + (f" --step-offset {args.step_offset}" if args.step_offset else "")
+            + (f" --patience {args.patience}" if args.patience else "")
+            + (f" --stop-below {args.stop_below}" if args.stop_below else "")
+            + (f" --trackio-space {args.space_id}" if args.space_id else "")
             # A watch mounted on a later upload than the training job's evaluates with that code.
             + (f" --source {args.source_from}" if args.source_from and args.source_from != args.job else "")
         )
@@ -195,7 +202,8 @@ def main(argv=None):
     if args.action in ("smoke", "train"):
         command += ["--vllm-gpus", str(args.vllm_gpus)] if args.vllm_gpus else []
         command += ["--inflight", str(args.inflight)] if args.inflight else []
-    if args.space_id:
+    if args.space_id and args.action != "watch":
+        # The watch is a bash -c line, and takes the Space as --trackio-space inside it.
         command += ["--space-id", args.space_id]
     specification = {
         "image": IMAGE,

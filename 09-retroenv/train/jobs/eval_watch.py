@@ -133,6 +133,19 @@ def main():
     parser.add_argument(
         "--step-offset", type=int, default=0, help="Steps trained before this run (a continuation), added to labels"
     )
+    # An unattended run has to end itself. A run that has stopped improving is spending GPU hours
+    # for nothing, and one that is coming apart (the 200-step thinking run traded grounding for
+    # brevity and halved its score) ends on a checkpoint worse than the one it started from.
+    parser.add_argument(
+        "--patience", type=int, help="Stop training after this many checkpoints without a new best pass@1"
+    )
+    parser.add_argument(
+        "--stop-below",
+        type=float,
+        help="Stop training after two checkpoints whose pass@1 is below this fraction of the best so far",
+    )
+    parser.add_argument("--trackio-space", help="Log the curve to this Trackio Space, beside the training run")
+    parser.add_argument("--trackio-project", default="retroenv-rl")
     args = parser.parse_args()
     namespace = args.bucket.partition("/")[0]
 
@@ -153,7 +166,21 @@ def main():
             hub.batch_bucket_files(args.bucket, add=[(str(path), f"evalshards/{args.run}/{path.name}")])
     names = lambda step: [f"{args.run}-eval-{step}-{k}" for k in range(args.shards)] if slices else [f"{args.run}-eval-{step}"]  # noqa: E731
 
+    tracker = None
+    if args.trackio_space:
+        import trackio
+
+        trackio.init(
+            project=args.trackio_project,
+            name=f"{args.run}-evals",
+            space_id=args.trackio_space,
+            config={"set": args.set, "harness": args.harness, "attempts": args.attempts, "run": args.run},
+        )
+        tracker = trackio
+
     submitted, finished = {}, {}  # step -> {name: job id or None}, step -> score or a failure note
+    best, since_best, below = 0.0, 0, 0  # best pass@1, checkpoints since it, consecutive poor ones
+    stopped = False
     bases = args.base.split(",")
     base = score(args.bucket, bases, tiers, args.attempts, scratch / "base")
     while True:
@@ -211,6 +238,41 @@ def main():
             print(f"step {step}: {row}" + (note if failed and result else ""), flush=True)
             if not base or base["episodes"] < expected:  # the base evaluation may still be running
                 base = score(args.bucket, bases, tiers, args.attempts, scratch / "base")
+            if result:
+                step_label = step + args.step_offset
+                if tracker:
+                    tracker.log(
+                        {
+                            "eval/pass_at_1": result["pass1"],
+                            f"eval/pass_at_{args.attempts}": result["passk"],
+                            "eval/reward": result["reward"],
+                            **{f"eval/{tier}": value for tier, value in result["tiers"].items()},
+                        },
+                        step=step_label,
+                    )
+                if result["pass1"] > best:
+                    best, since_best, below = result["pass1"], 0, 0
+                    print(f"step {step_label}: new best pass@1 {best:.3f}", flush=True)
+                else:
+                    since_best += 1
+                    below = below + 1 if args.stop_below and result["pass1"] < best * args.stop_below else 0
+                    print(
+                        f"step {step_label}: {result['pass1']:.3f} against the best {best:.3f}"
+                        f" ({since_best} checkpoint(s) since it)",
+                        flush=True,
+                    )
+                why = None
+                if args.stop_below and below >= 2:
+                    why = f"two checkpoints below {args.stop_below:.0%} of the best {best:.3f}"
+                elif args.patience and since_best >= args.patience:
+                    why = f"{since_best} checkpoints without beating {best:.3f}"
+                if why and not stopped and training not in DONE:
+                    print(f"stopping training: {why}", flush=True)
+                    try:
+                        hub.cancel_job(job_id=args.job, namespace=namespace)
+                        stopped = True
+                    except Exception as exc:  # the curve still gets written and scored
+                        print(f"could not stop the training job: {exc}", flush=True)
             curve = scratch / "evals.md"
             curve.write_text(
                 f"# {args.run} on {args.set}, {args.harness} harness, {args.attempts} attempts\n\n"

@@ -468,3 +468,26 @@ def test_training_runs_with_an_allocator_that_does_not_fragment():
     trace = source.split("trace = {", 1)[1].split("}", 1)[0]
     assert '"PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"' in trace
     assert '"CUDA_VISIBLE_DEVICES"' in trace
+
+
+def test_an_unattended_watch_stops_a_run_that_stops_improving(monkeypatch, capsys):
+    """Patience and the regression guard: an overnight run should not spend GPUs on a flat curve."""
+    watch = _plan(
+        monkeypatch, capsys, "watch", "--run", "a", "--job", "j1", "--bucket", "o/b",
+        "--patience", "3", "--stop-below", "0.85", "--space-id", "me/board",
+    )["command"][-1]  # fmt: skip
+    assert "--patience 3" in watch and "--stop-below 0.85" in watch
+    assert "--trackio-space me/board" in watch and "trackio==0.42.0" in watch
+    plain = _plan(monkeypatch, capsys, "watch", "--run", "a", "--job", "j1", "--bucket", "o/b")["command"][-1]
+    assert "--patience" not in plain and "--stop-below" not in plain and "trackio" not in plain
+
+
+def test_the_watch_decides_to_stop_from_the_curve_it_has_scored():
+    """The rules the watch applies, read off its own source: two poor checkpoints, or N flat ones."""
+    source = (ROOT / "train" / "jobs" / "eval_watch.py").read_text()
+    assert "hub.cancel_job(job_id=args.job, namespace=namespace)" in source
+    assert 'why = f"two checkpoints below' in source and 'why = f"{since_best} checkpoints without beating' in source
+    # A new best resets both counters, so a dip followed by a recovery does not end the run.
+    assert "best, since_best, below = result[\"pass1\"], 0, 0" in source
+    # The curve is logged beside the training run, on the same Trackio project.
+    assert '"eval/pass_at_1": result["pass1"]' in source
