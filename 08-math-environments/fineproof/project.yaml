@@ -1,0 +1,36 @@
+# Project manifest. `tools/build_index.py` renders the root README table from it.
+name: fineproof
+title: "FineProofEnvs: olympiad proofs with a rubric judge"
+tagline: "Write a natural-language proof of an olympiad problem; an LLM judge grades it 0–7 against the problem's rubric, as in the QED-Nano recipe."
+order: 8.1
+status: trained   # tasks and verifier validated; Qwen3.5-2B trained 500 updates from the base model, every 50th checkpoint evaluated and regraded
+authors:
+  - {name: Adithya S Kolavi, github: adithya-s-k, affiliation: Hugging Face}
+
+hub:
+  org: FineEnvs
+  collection: FineEnvs/math-environments-6af40312bf237e3c32912840
+  models:
+    - FineEnvs/Qwen3.5-2B-FineProof-RL
+  datasets:
+    - FineEnvs/fineproof-envs-train
+    - FineEnvs/fineproof-envs-test
+    - FineEnvs/fineproof-rl-runs
+    - lm-provers/FineProofs-RL
+    - lm-provers/FineProofs-RL-test
+    - lm-provers/IMOProofBench
+    - lm-provers/ProofBench
+  trackio:
+    - FineEnvs/fineproof-rl-trackio
+  buckets:
+    - FineEnvs/fineproof-rl-trackio
+    - AdithyaSK/qed-nano-rl-runs   # every checkpoint, rollout and eval trial of the runs
+
+envs:
+  - name: olympiad_proofs
+    summary: "FineProofs-RL as Harbor tasks (5,099 train, 128 test, Gemini 3 Pro rubrics), IMOProofBench and ProofBench for eval; reward = LLM judge rubric score / 7, gpt-oss-20b by default, the judge QED-Nano trained with."
+    tools: "shell (Python)"
+    backend: "hf-sandbox, daytona"   # the published run used HF Sandboxes; Daytona is the default
+    frameworks:
+      harbor:
+        verified: true

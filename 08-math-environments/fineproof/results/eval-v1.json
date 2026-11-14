@@ -1,0 +1,76 @@
+{
+  "env": "fineproof",
+  "version": "v1",
+  "authors": [
+    {
+      "name": "Adithya S Kolavi",
+      "github": "adithya-s-k",
+      "affiliation": "Hugging Face"
+    }
+  ],
+  "framework": "harbor",
+  "tasks": {
+    "split": "test",
+    "n": 64,
+    "source": "FineEnvs/fineproof-envs-test: FineProofs-RL-test as Harbor tasks; none of the 128 is in train",
+    "selection": "the 64 whose reference proof gpt-oss-120b (high) scores at least 6/7 (training/benchmarks/test-validated-64.txt); 4 attempts each at temperature 0.8"
+  },
+  "harness": {
+    "agent": "the FineProof harness, one call (--rounds 0), host-side through openenv harbor serve",
+    "tools": [],
+    "max_turns": 1,
+    "modes": {
+      "nothink": "Qwen3.5 thinking off, up to 32,768 output tokens"
+    }
+  },
+  "grading": {
+    "reference": "the problem's marking scheme (0-7), written for QED-Nano's release",
+    "reward": "rubric score / 7, mean of 2 gpt-oss-20b grades; a proof cut off at the cap keeps its partial credit (mean_cutoff_zero scores it 0, as training does)",
+    "excused": "nothing; every attempt was graded (256/256)",
+    "judge": true,
+    "judge_model": "openai/gpt-oss-20b (medium reasoning), regraded by openai/gpt-oss-120b (high)"
+  },
+  "baselines": [],
+  "models": [
+    {
+      "model": "Qwen3.5-2B",
+      "provider": "self-hosted vLLM",
+      "mode": "nothink",
+      "lowest_effort": true,
+      "runs": 256,
+      "mean": 0.217,
+      "ci95": [
+        0.144,
+        0.289
+      ],
+      "mean_cutoff_zero": 0.216,
+      "full_marks": 0.121,
+      "pass_at_4_full_marks": 0.266,
+      "regrade_gpt_oss_120b_high": 0.259,
+      "checkpoint": "Qwen/Qwen3.5-2B"
+    },
+    {
+      "model": "Qwen3.5-2B-FineProof-RL",
+      "provider": "self-hosted vLLM",
+      "mode": "nothink",
+      "lowest_effort": true,
+      "runs": 256,
+      "mean": 0.407,
+      "ci95": [
+        0.317,
+        0.496
+      ],
+      "mean_cutoff_zero": 0.395,
+      "full_marks": 0.254,
+      "pass_at_4_full_marks": 0.406,
+      "regrade_gpt_oss_120b_high": 0.464,
+      "checkpoint": "FineEnvs/Qwen3.5-2B-FineProof-RL (update 500)"
+    }
+  ],
+  "links": {
+    "model": "https://huggingface.co/FineEnvs/Qwen3.5-2B-FineProof-RL",
+    "attempts": "https://huggingface.co/datasets/FineEnvs/fineproof-rl-runs",
+    "code": "https://github.com/adithya-s-k/FineEnvs/tree/main/08-math-environments/fineproof"
+  },
+  "date": "2026-11-11"
+}

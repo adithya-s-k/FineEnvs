@@ -1,0 +1,9 @@
+.venv/
+.local/
+__pycache__/
+*.egg-info/
+training/.deps/
+training/.cache/
+training/prepared/
+training/runs/
+.gradio/
