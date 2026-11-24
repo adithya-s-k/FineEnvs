@@ -222,23 +222,23 @@ ${imagesJson}
 }
 
 /**
- * Transform images to Figure components
+ * Transform images to Image components
  * @param {string} content - MDX content
- * @returns {string} - Content with Figure components
+ * @returns {string} - Content with Image components
  */
 /**
- * Create Figure component with import
+ * Create Image component with import
  * @param {string} src - Clean image source
  * @param {string} alt - Alt text  
  * @param {string} id - Element ID
- * @param {string} caption - Figure caption
+ * @param {string} caption - Image caption
  * @param {string} width - Optional width
- * @returns {string} - Figure component markup
+ * @returns {string} - Image component markup
  */
-function createFigureComponent(src, alt = '', id = '', caption = '', width = '') {
+function createImageComponent(src, alt = '', id = '', caption = '', width = '') {
     const varName = generateImageVarName(src);
     imageImports.set(src, varName);
-    usedComponents.add('Figure');
+    usedComponents.add('Image');
 
     const props = [];
     props.push(`src={${varName}}`);
@@ -249,11 +249,11 @@ function createFigureComponent(src, alt = '', id = '', caption = '', width = '')
     if (alt) props.push(`alt="${alt}"`);
     if (caption) props.push(`caption={'${caption}'}`);
 
-    return `<Figure\n  ${props.join('\n  ')}\n/>`;
+    return `<Image\n  ${props.join('\n  ')}\n/>`;
 }
 
 function transformImages(content) {
-    console.log('  🖼️  Transforming images to Figure components with imports...');
+    console.log('  🖼️  Transforming images to Image components with imports...');
 
     let hasImages = false;
 
@@ -297,7 +297,7 @@ function transformImages(content) {
             const altText = cleanAltText(cleanCap);
             hasImages = true;
 
-            return createFigureComponent(cleanSrc, altText, id, cleanCap);
+            return createImageComponent(cleanSrc, altText, id, cleanCap);
         }
     );
 
@@ -309,7 +309,7 @@ function transformImages(content) {
             const cleanAlt = cleanAltText(alt || 'Figure');
             hasImages = true;
 
-            return createFigureComponent(cleanSrc, cleanAlt);
+            return createImageComponent(cleanSrc, cleanAlt);
         }
     );
 
@@ -320,7 +320,7 @@ function transformImages(content) {
             const cleanSrc = cleanSrcPath(src);
             hasImages = true;
 
-            return createFigureComponent(cleanSrc, 'Figure');
+            return createImageComponent(cleanSrc, 'Figure');
         }
     );
 
@@ -333,7 +333,7 @@ function transformImages(content) {
             const altText = cleanAltText(cleanCap);
             hasImages = true;
 
-            return createFigureComponent(cleanSrc, altText, id, cleanCap);
+            return createImageComponent(cleanSrc, altText, id, cleanCap);
         }
     );
 
@@ -346,7 +346,7 @@ function transformImages(content) {
             const altText = cleanAltText(cleanCap);
             hasImages = true;
 
-            return createFigureComponent(cleanSrc, altText, id, cleanCap);
+            return createImageComponent(cleanSrc, altText, id, cleanCap);
         }
     );
 
@@ -364,12 +364,12 @@ function transformImages(content) {
                 if (idMatch) id = idMatch[1];
             }
 
-            return createFigureComponent(cleanSrc, cleanAlt, id);
+            return createImageComponent(cleanSrc, cleanAlt, id);
         }
     );
 
     if (hasImages) {
-        console.log('    ✅ Figure components with imports will be created');
+        console.log('    ✅ Image components with imports will be created');
     }
 
     return content;
