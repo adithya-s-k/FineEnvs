@@ -54,6 +54,7 @@ reward 1 only for a kernel-checked proof of the exact statement.</p>
 <p>Write an olympiad proof in plain language; gpt-oss-20b grades it 0–7 against the problem's rubric, the reward
 QED-Nano was trained with. RL from the base model takes Qwen3.5-2B from 0.22 to 0.41 on held-out proofs.</p>
 <sub>Harbor · 5,073 train / 128 test tasks, IMO-ProofBench, ProofBench</sub><br>
+<a href="https://huggingface.co/blog/FineEnvs/fineproofenvs-rl-2b-prover">Blog</a> ·
 <a href="https://huggingface.co/collections/FineEnvs/fineproofenvs-6b057b65f75cc8afbc1579aa">Collection</a> ·
 <a href="fineproof/training/RESULTS.md">Results</a> ·
 <a href="https://huggingface.co/FineEnvs/Qwen3.5-2B-FineProof-RL">Model</a> ·

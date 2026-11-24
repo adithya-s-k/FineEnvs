@@ -195,7 +195,7 @@ Built a simulation environment? [Add it to the catalog](./07-simulation-environm
 Qwen3.5-2B, trained with RL from the base model on FineProofEnvs, went from 0.217 to 0.407 on held-out proofs in 500
 updates. A gpt-oss-120b regrade sees 0.259 → 0.464. All of it ran on Hugging Face: Jobs, Sandboxes, Inference
 Providers and a bucket. Reading the proofs shows new key ideas, and also that both judges forgive contradictions
-around a correct argument. The model, the tasks, every eval attempt and the training logs are in the
+around a correct argument. The [blog post](https://huggingface.co/blog/FineEnvs/fineproofenvs-rl-2b-prover) tells the story. The model, the tasks, every eval attempt and the training logs are in the
 [Math Environments collection](https://huggingface.co/collections/FineEnvs/math-environments-6af40312bf237e3c32912840).
 
 > **More coming.** Each new project is another end-to-end recipe: an environment, a training run, and
