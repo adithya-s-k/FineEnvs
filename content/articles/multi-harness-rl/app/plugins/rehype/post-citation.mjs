@@ -4,8 +4,15 @@
 // - Appends back-reference links (↩ back: 1, 2, ...) from each reference to in-text citation anchors
 // - Cleans up footnotes block (.footnotes)
 
+import { createHash } from 'node:crypto';
+import { relative, sep } from 'node:path';
+
 export default function rehypeReferencesAndFootnotes() {
-  return (tree) => {
+  return (tree, file) => {
+    // Chapters are transformed separately, then share one page. Keep their generated
+    // citation anchors distinct without depending on the checkout's absolute path.
+    const sourcePath = file?.path ? relative(file.cwd || process.cwd(), file.path).split(sep).join('/') : '';
+    const sourceSuffix = sourcePath ? `-${createHash('sha256').update(sourcePath).digest('hex').slice(0, 12)}` : '';
     const isElement = (n) => n && typeof n === 'object' && n.type === 'element';
     const getChildren = (n) => (Array.isArray(n?.children) ? n.children : []);
 
@@ -46,7 +53,7 @@ export default function rehypeReferencesAndFootnotes() {
         let anchorId = String(getAttr(node, 'id') || '');
         if (!anchorId) {
           const list = idToBacklinks.get(id) || [];
-          anchorId = `${anchorPrefix}-${id}-${list.length + 1}`;
+          anchorId = `${anchorPrefix}${sourceSuffix}-${id}-${list.length + 1}`;
           setAttr(node, 'id', anchorId);
         }
         const list = idToBacklinks.get(id) || [];
