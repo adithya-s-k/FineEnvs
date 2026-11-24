@@ -1,0 +1,242 @@
+{
+ "task_id": "dock-24B-w07x1-busy-0",
+ "quay": "24B",
+ "terminal": "APM Terminals Barcelona",
+ "week_start_utc": "2024-02-12T00:00:00Z",
+ "hours": 168,
+ "freeze_hours": 6,
+ "leads": {
+  "late": 24,
+  "bunching": 24,
+  "extra": 24,
+  "priority": 24,
+  "emergency": 12,
+  "crane_outage": 24,
+  "gale": 24,
+  "tug_outage": 24,
+  "pilot_shortage": 24,
+  "forecast": 6
+ },
+ "watches": [
+  {
+   "index": 0,
+   "hour": 0,
+   "notices": [
+    {
+     "kind": "closure",
+     "from": "Terminal ops",
+     "reveal": 0,
+     "event_hour": 0,
+     "text": "Sections 10-18 are closed from hour 0 to hour 39 (fender repair)."
+    }
+   ]
+  },
+  {
+   "index": 1,
+   "hour": 30,
+   "notices": [
+    {
+     "kind": "extra",
+     "from": "MAERSK NUBA",
+     "reveal": 34,
+     "event_hour": 58,
+     "text": "Unscheduled call: ship 16 MAERSK NUBA (211 m, 5 sections) arrives at hour 58, has 672 moves and asks to sail by hour 74. It has no planned slot, so placing it anywhere costs no move penalty."
+    }
+   ]
+  },
+  {
+   "index": 2,
+   "hour": 42,
+   "notices": [
+    {
+     "kind": "emergency",
+     "from": "Harbour master",
+     "reveal": 42,
+     "event_hour": 54,
+     "text": "Emergency: ship 5 ZIM CHINA reports reefer power failures; its cargo is at risk unless it docks by hour 64. Each hour it docks later costs 60 on top of any delay."
+    }
+   ]
+  },
+  {
+   "index": 3,
+   "hour": 54,
+   "notices": [
+    {
+     "kind": "late",
+     "from": "CARLOTA B",
+     "reveal": 54,
+     "event_hour": 78,
+     "text": "Ship 7 CARLOTA B was delayed leaving Alicante: it now arrives at hour 93 (planned slot hour 78). Its planned departure stays hour 121."
+    }
+   ]
+  },
+  {
+   "index": 4,
+   "hour": 84,
+   "notices": [
+    {
+     "kind": "late",
+     "from": "MAERSK NARMADA",
+     "reveal": 88,
+     "event_hour": 112,
+     "text": "Ship 10 MAERSK NARMADA was delayed leaving Valencia: it now arrives at hour 129 (planned slot hour 112). Its planned departure stays hour 128."
+    },
+    {
+     "kind": "crane_outage",
+     "from": "Terminal ops",
+     "reveal": 84,
+     "event_hour": 108,
+     "text": "2 of the terminal's 9 quay cranes are out of service from hour 108 to hour 155 (gantry repair): 7 cranes in that window."
+    }
+   ]
+  },
+  {
+   "index": 5,
+   "hour": 90,
+   "notices": [
+    {
+     "kind": "gale",
+     "from": "Harbour master",
+     "reveal": 91,
+     "event_hour": 115,
+     "text": "Gale warning. From hour 115 to hour 144 the wind is above 25 kn: under the port's traffic rules ships of 300 m or more may not berth or leave. From hour 117 to hour 126 it is above 30 kn: no ship may berth or leave. Cranes keep working; a ship that finishes inside a window waits alongside until the window ends."
+    }
+   ]
+  },
+  {
+   "index": 6,
+   "hour": 120,
+   "notices": [
+    {
+     "kind": "bunching",
+     "from": "Ship agents",
+     "reveal": 120,
+     "event_hour": 144,
+     "text": "Ships 12, 13, 14 were held up by the Red Sea diversions and now arrive together between hours 156 and 168 (each ship's arrival hour is in the table). Their planned departures stay as published."
+    }
+   ]
+  }
+ ],
+ "ships": [
+  {
+   "id": 0,
+   "name": "ZIM ATLANTIC",
+   "length_m": 262.06,
+   "planned": 0,
+   "arrival": 0
+  },
+  {
+   "id": 1,
+   "name": "NEXOE MAERSK",
+   "length_m": 199.0,
+   "planned": 4,
+   "arrival": 4
+  },
+  {
+   "id": 2,
+   "name": "MELINA",
+   "length_m": 260.05,
+   "planned": 25,
+   "arrival": 25
+  },
+  {
+   "id": 3,
+   "name": "HMM HANBADA",
+   "length_m": 365.16,
+   "planned": 33,
+   "arrival": 33
+  },
+  {
+   "id": 4,
+   "name": "PERSEUS",
+   "length_m": 140.38,
+   "planned": 42,
+   "arrival": 42
+  },
+  {
+   "id": 5,
+   "name": "ZIM CHINA",
+   "length_m": 261.4,
+   "planned": 54,
+   "arrival": 54
+  },
+  {
+   "id": 6,
+   "name": "ANDREA",
+   "length_m": 134.0,
+   "planned": 60,
+   "arrival": 60
+  },
+  {
+   "id": 7,
+   "name": "CARLOTA B",
+   "length_m": 141.0,
+   "planned": 78,
+   "arrival": 93
+  },
+  {
+   "id": 8,
+   "name": "ONE MACKINAC",
+   "length_m": 366.0,
+   "planned": 79,
+   "arrival": 79
+  },
+  {
+   "id": 9,
+   "name": "CINZIA A",
+   "length_m": 200.0,
+   "planned": 89,
+   "arrival": 89
+  },
+  {
+   "id": 10,
+   "name": "MAERSK NARMADA",
+   "length_m": 211.0,
+   "planned": 112,
+   "arrival": 129
+  },
+  {
+   "id": 11,
+   "name": "NJORD",
+   "length_m": 142.0,
+   "planned": 132,
+   "arrival": 132
+  },
+  {
+   "id": 12,
+   "name": "RACHEL BORCHARD",
+   "length_m": 159.0,
+   "planned": 144,
+   "arrival": 164
+  },
+  {
+   "id": 13,
+   "name": "TROUPER",
+   "length_m": 134.44,
+   "planned": 144,
+   "arrival": 164
+  },
+  {
+   "id": 14,
+   "name": "K-RIVER",
+   "length_m": 121.99,
+   "planned": 156,
+   "arrival": 163
+  },
+  {
+   "id": 15,
+   "name": "ZIM PACIFIC",
+   "length_m": 262.0,
+   "planned": 167,
+   "arrival": 167
+  },
+  {
+   "id": 16,
+   "name": "MAERSK NUBA",
+   "length_m": 211.0,
+   "planned": null,
+   "arrival": 58
+  }
+ ],
+ "source": "07-simulation-environments/portsim-live (port_week_core.schedule) on PortSimEnv's dock-v1 week dock-24B-w07x1-busy-0"
+}

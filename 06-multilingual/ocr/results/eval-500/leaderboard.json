@@ -1,0 +1,1396 @@
+{
+  "engine": "vllm==0.30.0",
+  "evalset": "eval-500.json",
+  "evalset_id": "d385937330f20598f7eafcd6022b53b1f582c62a6e269a231b4920d6e3df5012",
+  "snapshot_id": "867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a",
+  "grading": {
+    "descriptive_vqa": {
+      "configured": true,
+      "backend": "hf-inference-providers",
+      "policy": "strict-reference-vqa-v1",
+      "policy_id": "d7169c5ab653515ca9160a3ad1d28025b3a991e63a1cbf135d70f27be0bef899",
+      "model": "google/gemma-4-31B-it",
+      "provider": "deepinfra",
+      "concurrency": 8,
+      "revision_pinned": false,
+      "grounding": "question and dataset reference; no independent image verification",
+      "reward": "binary: all six checks must pass"
+    },
+    "layout_detection": "layout-mean-f1-iou-50-95-v1"
+  },
+  "tasks": 500,
+  "results": [
+    {
+      "label": "google/gemma-4-E4B-it",
+      "model": "google/gemma-4-E4B-it",
+      "model_revision": "ee0ef6023621cff504d758262d4e04895a5af4a2",
+      "macro_reward": 0.4050917734008893,
+      "micro_reward": 0.4107261126443519,
+      "by_script": {
+        "indic": {
+          "samples": 250,
+          "languages": 11,
+          "reward": 0.3494063961177101
+        },
+        "other": {
+          "samples": 250,
+          "languages": 11,
+          "reward": 0.4720458291709936
+        }
+      },
+      "by_family": {
+        "descriptive_vqa": {
+          "samples": 100,
+          "reward": 0.17
+        },
+        "layout_detection": {
+          "samples": 100,
+          "reward": 0.0
+        },
+        "mcq_vqa": {
+          "samples": 100,
+          "reward": 0.66
+        },
+        "page_ocr": {
+          "samples": 100,
+          "reward": 0.558214016923045
+        },
+        "section_ocr": {
+          "samples": 100,
+          "reward": 0.6654165462987142
+        }
+      },
+      "by_language": {
+        "ar": {
+          "samples": 23,
+          "reward": 0.22605923787483578,
+          "indic": false
+        },
+        "bn": {
+          "samples": 23,
+          "reward": 0.3454156669782204,
+          "indic": true
+        },
+        "de": {
+          "samples": 23,
+          "reward": 0.4345937018235344,
+          "indic": false
+        },
+        "en": {
+          "samples": 23,
+          "reward": 0.5535297522511236,
+          "indic": false
+        },
+        "es": {
+          "samples": 23,
+          "reward": 0.6087477052702228,
+          "indic": false
+        },
+        "fr": {
+          "samples": 23,
+          "reward": 0.524098650220406,
+          "indic": false
+        },
+        "gu": {
+          "samples": 23,
+          "reward": 0.4245149280041715,
+          "indic": true
+        },
+        "hi": {
+          "samples": 23,
+          "reward": 0.40498278801537707,
+          "indic": true
+        },
+        "it": {
+          "samples": 23,
+          "reward": 0.6315170075793525,
+          "indic": false
+        },
+        "ja": {
+          "samples": 23,
+          "reward": 0.39760636143219524,
+          "indic": false
+        },
+        "kn": {
+          "samples": 23,
+          "reward": 0.2590755493189221,
+          "indic": true
+        },
+        "ko": {
+          "samples": 23,
+          "reward": 0.5273749516430528,
+          "indic": false
+        },
+        "ml": {
+          "samples": 23,
+          "reward": 0.3536179257128705,
+          "indic": true
+        },
+        "mr": {
+          "samples": 23,
+          "reward": 0.504584540557241,
+          "indic": true
+        },
+        "or": {
+          "samples": 23,
+          "reward": 0.13003780913457355,
+          "indic": true
+        },
+        "pa": {
+          "samples": 23,
+          "reward": 0.25081993104421946,
+          "indic": true
+        },
+        "ru": {
+          "samples": 22,
+          "reward": 0.4862437153191255,
+          "indic": false
+        },
+        "sa": {
+          "samples": 22,
+          "reward": 0.4026228994013096,
+          "indic": true
+        },
+        "ta": {
+          "samples": 22,
+          "reward": 0.28831472448574735,
+          "indic": true
+        },
+        "te": {
+          "samples": 22,
+          "reward": 0.4850382323774353,
+          "indic": true
+        },
+        "th": {
+          "samples": 22,
+          "reward": 0.4375033864012636,
+          "indic": false
+        },
+        "zh": {
+          "samples": 22,
+          "reward": 0.3594496176691454,
+          "indic": false
+        }
+      },
+      "by_language_task": {
+        "ar/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.25
+        },
+        "ar/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "ar/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.6,
+          "exact_match": 0.6
+        },
+        "ar/page_ocr": {
+          "samples": 4,
+          "reward": 0.04608863198458575,
+          "exact_match": 0.0
+        },
+        "ar/section_ocr": {
+          "samples": 5,
+          "reward": 0.20300158863657605,
+          "exact_match": 0.0
+        },
+        "bn/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.0
+        },
+        "bn/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "bn/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.6,
+          "exact_match": 0.6
+        },
+        "bn/page_ocr": {
+          "samples": 4,
+          "reward": 0.4705381397371295,
+          "exact_match": 0.0
+        },
+        "bn/section_ocr": {
+          "samples": 5,
+          "reward": 0.6124815563101103,
+          "exact_match": 0.2
+        },
+        "de/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.0
+        },
+        "de/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "de/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.75,
+          "exact_match": 0.75
+        },
+        "de/page_ocr": {
+          "samples": 5,
+          "reward": 0.8393530963965858,
+          "exact_match": 0.4
+        },
+        "de/section_ocr": {
+          "samples": 5,
+          "reward": 0.5597779319916725,
+          "exact_match": 0.4
+        },
+        "en/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.5
+        },
+        "en/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "en/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.75,
+          "exact_match": 0.75
+        },
+        "en/page_ocr": {
+          "samples": 5,
+          "reward": 0.8355941090735974,
+          "exact_match": 0.2
+        },
+        "en/section_ocr": {
+          "samples": 5,
+          "reward": 0.710642751281571,
+          "exact_match": 0.0
+        },
+        "es/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.6
+        },
+        "es/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "es/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.75,
+          "exact_match": 0.75
+        },
+        "es/page_ocr": {
+          "samples": 5,
+          "reward": 0.8002394442430252,
+          "exact_match": 0.2
+        },
+        "es/section_ocr": {
+          "samples": 5,
+          "reward": 0.8,
+          "exact_match": 0.8
+        },
+        "fr/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.4
+        },
+        "fr/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "fr/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.5,
+          "exact_match": 0.5
+        },
+        "fr/page_ocr": {
+          "samples": 5,
+          "reward": 0.733048995987227,
+          "exact_match": 0.2
+        },
+        "fr/section_ocr": {
+          "samples": 5,
+          "reward": 0.877804795026641,
+          "exact_match": 0.4
+        },
+        "gu/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.2
+        },
+        "gu/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "gu/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.5,
+          "exact_match": 0.5
+        },
+        "gu/page_ocr": {
+          "samples": 5,
+          "reward": 0.5089677056099274,
+          "exact_match": 0.0
+        },
+        "gu/section_ocr": {
+          "samples": 5,
+          "reward": 0.8438009632092613,
+          "exact_match": 0.4
+        },
+        "hi/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.0
+        },
+        "hi/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "hi/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.5,
+          "exact_match": 0.5
+        },
+        "hi/page_ocr": {
+          "samples": 5,
+          "reward": 0.6327907856516377,
+          "exact_match": 0.0
+        },
+        "hi/section_ocr": {
+          "samples": 5,
+          "reward": 0.8301300392190969,
+          "exact_match": 0.2
+        },
+        "it/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.6
+        },
+        "it/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "it/mcq_vqa": {
+          "samples": 4,
+          "reward": 1.0,
+          "exact_match": 1.0
+        },
+        "it/page_ocr": {
+          "samples": 5,
+          "reward": 0.7937325094131402,
+          "exact_match": 0.0
+        },
+        "it/section_ocr": {
+          "samples": 5,
+          "reward": 0.7112457254518808,
+          "exact_match": 0.4
+        },
+        "ja/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.2
+        },
+        "ja/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "ja/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.25,
+          "exact_match": 0.25
+        },
+        "ja/page_ocr": {
+          "samples": 5,
+          "reward": 0.5710557495602455,
+          "exact_match": 0.0
+        },
+        "ja/section_ocr": {
+          "samples": 5,
+          "reward": 0.8579335130278526,
+          "exact_match": 0.4
+        },
+        "kn/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.2
+        },
+        "kn/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "kn/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.25,
+          "exact_match": 0.25
+        },
+        "kn/page_ocr": {
+          "samples": 5,
+          "reward": 0.2752559654125176,
+          "exact_match": 0.0
+        },
+        "kn/section_ocr": {
+          "samples": 5,
+          "reward": 0.5164915614545244,
+          "exact_match": 0.0
+        },
+        "ko/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.2
+        },
+        "ko/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "ko/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.75,
+          "exact_match": 0.75
+        },
+        "ko/page_ocr": {
+          "samples": 5,
+          "reward": 0.7588153824486479,
+          "exact_match": 0.0
+        },
+        "ko/section_ocr": {
+          "samples": 5,
+          "reward": 0.8671093951093951,
+          "exact_match": 0.4
+        },
+        "ml/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.0
+        },
+        "ml/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "ml/mcq_vqa": {
+          "samples": 5,
+          "reward": 1.0,
+          "exact_match": 1.0
+        },
+        "ml/page_ocr": {
+          "samples": 5,
+          "reward": 0.27307013298976346,
+          "exact_match": 0.0
+        },
+        "ml/section_ocr": {
+          "samples": 4,
+          "reward": 0.44196540661180084,
+          "exact_match": 0.25
+        },
+        "mr/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.2
+        },
+        "mr/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "mr/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.8,
+          "exact_match": 0.8
+        },
+        "mr/page_ocr": {
+          "samples": 5,
+          "reward": 0.710332328279743,
+          "exact_match": 0.0
+        },
+        "mr/section_ocr": {
+          "samples": 4,
+          "reward": 0.763445697854457,
+          "exact_match": 0.0
+        },
+        "or/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.0
+        },
+        "or/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "or/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.4,
+          "exact_match": 0.4
+        },
+        "or/page_ocr": {
+          "samples": 4,
+          "reward": 0.12787019057958163,
+          "exact_match": 0.0
+        },
+        "or/section_ocr": {
+          "samples": 4,
+          "reward": 0.11984721194421627,
+          "exact_match": 0.0
+        },
+        "pa/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.0
+        },
+        "pa/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "pa/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.4,
+          "exact_match": 0.4
+        },
+        "pa/page_ocr": {
+          "samples": 4,
+          "reward": 0.3618804144926887,
+          "exact_match": 0.0
+        },
+        "pa/section_ocr": {
+          "samples": 4,
+          "reward": 0.580334189011573,
+          "exact_match": 0.0
+        },
+        "ru/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.0
+        },
+        "ru/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "ru/mcq_vqa": {
+          "samples": 5,
+          "reward": 1.0,
+          "exact_match": 1.0
+        },
+        "ru/page_ocr": {
+          "samples": 4,
+          "reward": 0.7150799886150767,
+          "exact_match": 0.0
+        },
+        "ru/section_ocr": {
+          "samples": 4,
+          "reward": 0.7092604456401137,
+          "exact_match": 0.25
+        },
+        "sa/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.0
+        },
+        "sa/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "sa/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.8,
+          "exact_match": 0.8
+        },
+        "sa/page_ocr": {
+          "samples": 4,
+          "reward": 0.5123620680898859,
+          "exact_match": 0.0
+        },
+        "sa/section_ocr": {
+          "samples": 4,
+          "reward": 0.7020638786173169,
+          "exact_match": 0.0
+        },
+        "ta/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.0
+        },
+        "ta/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "ta/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.4,
+          "exact_match": 0.4
+        },
+        "ta/page_ocr": {
+          "samples": 4,
+          "reward": 0.30396610254593054,
+          "exact_match": 0.0
+        },
+        "ta/section_ocr": {
+          "samples": 4,
+          "reward": 0.7817648821256801,
+          "exact_match": 0.5
+        },
+        "te/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.25
+        },
+        "te/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "te/mcq_vqa": {
+          "samples": 5,
+          "reward": 1.0,
+          "exact_match": 1.0
+        },
+        "te/page_ocr": {
+          "samples": 4,
+          "reward": 0.5181958883022745,
+          "exact_match": 0.0
+        },
+        "te/section_ocr": {
+          "samples": 4,
+          "reward": 0.64951438977362,
+          "exact_match": 0.0
+        },
+        "th/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.0
+        },
+        "th/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "th/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.8,
+          "exact_match": 0.8
+        },
+        "th/page_ocr": {
+          "samples": 4,
+          "reward": 0.6462103339158056,
+          "exact_match": 0.0
+        },
+        "th/section_ocr": {
+          "samples": 4,
+          "reward": 0.7600582912911445,
+          "exact_match": 0.0
+        },
+        "zh/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.0
+        },
+        "zh/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "zh/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.6,
+          "exact_match": 0.6
+        },
+        "zh/page_ocr": {
+          "samples": 4,
+          "reward": 0.5878384084805937,
+          "exact_match": 0.0
+        },
+        "zh/section_ocr": {
+          "samples": 4,
+          "reward": 0.6391344886997061,
+          "exact_match": 0.0
+        }
+      },
+      "failures": [],
+      "elapsed_seconds": 69.5,
+      "source_revision": "50eca14b8d9685b7fad3d68119315caf402806cb"
+    },
+    {
+      "label": "google/gemma-4-E2B-it",
+      "model": "google/gemma-4-E2B-it",
+      "model_revision": "3e22461f65e89153144f8adb70e3b8c2cc9845a7",
+      "macro_reward": 0.34972584065854884,
+      "micro_reward": 0.3537760658496563,
+      "by_script": {
+        "indic": {
+          "samples": 250,
+          "languages": 11,
+          "reward": 0.285982810792016
+        },
+        "other": {
+          "samples": 250,
+          "languages": 11,
+          "reward": 0.4215693209072967
+        }
+      },
+      "by_family": {
+        "descriptive_vqa": {
+          "samples": 100,
+          "reward": 0.1
+        },
+        "layout_detection": {
+          "samples": 100,
+          "reward": 0.0
+        },
+        "mcq_vqa": {
+          "samples": 100,
+          "reward": 0.58
+        },
+        "page_ocr": {
+          "samples": 100,
+          "reward": 0.4586492432156677
+        },
+        "section_ocr": {
+          "samples": 100,
+          "reward": 0.630231086032614
+        }
+      },
+      "by_language": {
+        "ar": {
+          "samples": 23,
+          "reward": 0.22890369348987533,
+          "indic": false
+        },
+        "bn": {
+          "samples": 23,
+          "reward": 0.3796348587291266,
+          "indic": true
+        },
+        "de": {
+          "samples": 23,
+          "reward": 0.44760663892089914,
+          "indic": false
+        },
+        "en": {
+          "samples": 23,
+          "reward": 0.5258126043370908,
+          "indic": false
+        },
+        "es": {
+          "samples": 23,
+          "reward": 0.5232789125052921,
+          "indic": false
+        },
+        "fr": {
+          "samples": 23,
+          "reward": 0.3618039451613803,
+          "indic": false
+        },
+        "gu": {
+          "samples": 23,
+          "reward": 0.3230785266704046,
+          "indic": true
+        },
+        "hi": {
+          "samples": 23,
+          "reward": 0.4037017447383791,
+          "indic": true
+        },
+        "it": {
+          "samples": 23,
+          "reward": 0.5431552442107674,
+          "indic": false
+        },
+        "ja": {
+          "samples": 23,
+          "reward": 0.40434188414155015,
+          "indic": false
+        },
+        "kn": {
+          "samples": 23,
+          "reward": 0.18827068994099672,
+          "indic": true
+        },
+        "ko": {
+          "samples": 23,
+          "reward": 0.4472214103790547,
+          "indic": false
+        },
+        "ml": {
+          "samples": 23,
+          "reward": 0.17434847584146046,
+          "indic": true
+        },
+        "mr": {
+          "samples": 23,
+          "reward": 0.4790780762540135,
+          "indic": true
+        },
+        "or": {
+          "samples": 23,
+          "reward": 0.103165199393704,
+          "indic": true
+        },
+        "pa": {
+          "samples": 23,
+          "reward": 0.15118749792330066,
+          "indic": true
+        },
+        "ru": {
+          "samples": 22,
+          "reward": 0.4476597504079347,
+          "indic": false
+        },
+        "sa": {
+          "samples": 22,
+          "reward": 0.32323610390391805,
+          "indic": true
+        },
+        "ta": {
+          "samples": 22,
+          "reward": 0.25918198032753775,
+          "indic": true
+        },
+        "te": {
+          "samples": 22,
+          "reward": 0.36480946575500467,
+          "indic": true
+        },
+        "th": {
+          "samples": 22,
+          "reward": 0.3064818914759542,
+          "indic": false
+        },
+        "zh": {
+          "samples": 22,
+          "reward": 0.3960161110464855,
+          "indic": false
+        }
+      },
+      "by_language_task": {
+        "ar/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.0
+        },
+        "ar/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "ar/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.6,
+          "exact_match": 0.6
+        },
+        "ar/page_ocr": {
+          "samples": 4,
+          "reward": 0.14903564660603474,
+          "exact_match": 0.0
+        },
+        "ar/section_ocr": {
+          "samples": 5,
+          "reward": 0.3337284727685986,
+          "exact_match": 0.0
+        },
+        "bn/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.0
+        },
+        "bn/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "bn/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.8,
+          "exact_match": 0.8
+        },
+        "bn/page_ocr": {
+          "samples": 4,
+          "reward": 0.3679229391704412,
+          "exact_match": 0.0
+        },
+        "bn/section_ocr": {
+          "samples": 5,
+          "reward": 0.6519819988176294,
+          "exact_match": 0.2
+        },
+        "de/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.25
+        },
+        "de/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "de/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.75,
+          "exact_match": 0.75
+        },
+        "de/page_ocr": {
+          "samples": 5,
+          "reward": 0.7886471897408959,
+          "exact_match": 0.2
+        },
+        "de/section_ocr": {
+          "samples": 5,
+          "reward": 0.4703433492952399,
+          "exact_match": 0.0
+        },
+        "en/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.25
+        },
+        "en/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "en/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.75,
+          "exact_match": 0.75
+        },
+        "en/page_ocr": {
+          "samples": 5,
+          "reward": 0.801993813574707,
+          "exact_match": 0.2
+        },
+        "en/section_ocr": {
+          "samples": 5,
+          "reward": 0.8167441663759106,
+          "exact_match": 0.4
+        },
+        "es/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.4
+        },
+        "es/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "es/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.75,
+          "exact_match": 0.75
+        },
+        "es/page_ocr": {
+          "samples": 5,
+          "reward": 0.6486919360718298,
+          "exact_match": 0.2
+        },
+        "es/section_ocr": {
+          "samples": 5,
+          "reward": 0.758391061452514,
+          "exact_match": 0.6
+        },
+        "fr/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.2
+        },
+        "fr/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "fr/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "fr/page_ocr": {
+          "samples": 5,
+          "reward": 0.5855984981295788,
+          "exact_match": 0.2
+        },
+        "fr/section_ocr": {
+          "samples": 5,
+          "reward": 0.8786996496127706,
+          "exact_match": 0.4
+        },
+        "gu/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.0
+        },
+        "gu/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "gu/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.5,
+          "exact_match": 0.5
+        },
+        "gu/page_ocr": {
+          "samples": 5,
+          "reward": 0.3334296636435932,
+          "exact_match": 0.0
+        },
+        "gu/section_ocr": {
+          "samples": 5,
+          "reward": 0.7527315590402679,
+          "exact_match": 0.2
+        },
+        "hi/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.0
+        },
+        "hi/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "hi/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.75,
+          "exact_match": 0.75
+        },
+        "hi/page_ocr": {
+          "samples": 5,
+          "reward": 0.4393088045958062,
+          "exact_match": 0.0
+        },
+        "hi/section_ocr": {
+          "samples": 5,
+          "reward": 0.8177192212007378,
+          "exact_match": 0.2
+        },
+        "it/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.2
+        },
+        "it/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "it/mcq_vqa": {
+          "samples": 4,
+          "reward": 1.0,
+          "exact_match": 1.0
+        },
+        "it/page_ocr": {
+          "samples": 5,
+          "reward": 0.7844284695672177,
+          "exact_match": 0.0
+        },
+        "it/section_ocr": {
+          "samples": 5,
+          "reward": 0.7140856538023124,
+          "exact_match": 0.4
+        },
+        "ja/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.2
+        },
+        "ja/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "ja/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.5,
+          "exact_match": 0.5
+        },
+        "ja/page_ocr": {
+          "samples": 5,
+          "reward": 0.40965820164232547,
+          "exact_match": 0.0
+        },
+        "ja/section_ocr": {
+          "samples": 5,
+          "reward": 0.8503144654088051,
+          "exact_match": 0.4
+        },
+        "kn/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.0
+        },
+        "kn/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "kn/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.25,
+          "exact_match": 0.25
+        },
+        "kn/page_ocr": {
+          "samples": 5,
+          "reward": 0.2753758148563401,
+          "exact_match": 0.0
+        },
+        "kn/section_ocr": {
+          "samples": 5,
+          "reward": 0.3906693588722447,
+          "exact_match": 0.0
+        },
+        "ko/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.2
+        },
+        "ko/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "ko/mcq_vqa": {
+          "samples": 4,
+          "reward": 0.5,
+          "exact_match": 0.5
+        },
+        "ko/page_ocr": {
+          "samples": 5,
+          "reward": 0.6976921364635108,
+          "exact_match": 0.0
+        },
+        "ko/section_ocr": {
+          "samples": 5,
+          "reward": 0.7595263512801409,
+          "exact_match": 0.0
+        },
+        "ml/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.0
+        },
+        "ml/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "ml/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.4,
+          "exact_match": 0.4
+        },
+        "ml/page_ocr": {
+          "samples": 5,
+          "reward": 0.042865437158469945,
+          "exact_match": 0.0
+        },
+        "ml/section_ocr": {
+          "samples": 4,
+          "reward": 0.4489219396403104,
+          "exact_match": 0.0
+        },
+        "mr/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.0
+        },
+        "mr/layout_detection": {
+          "samples": 4,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "mr/mcq_vqa": {
+          "samples": 5,
+          "reward": 1.0,
+          "exact_match": 1.0
+        },
+        "mr/page_ocr": {
+          "samples": 5,
+          "reward": 0.6060377616952483,
+          "exact_match": 0.0
+        },
+        "mr/section_ocr": {
+          "samples": 4,
+          "reward": 0.7471517363415174,
+          "exact_match": 0.0
+        },
+        "or/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.2
+        },
+        "or/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "or/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.2,
+          "exact_match": 0.2
+        },
+        "or/page_ocr": {
+          "samples": 4,
+          "reward": 0.02814581724360903,
+          "exact_match": 0.0
+        },
+        "or/section_ocr": {
+          "samples": 4,
+          "reward": 0.06505407927018902,
+          "exact_match": 0.0
+        },
+        "pa/descriptive_vqa": {
+          "samples": 5,
+          "reward": 0.0
+        },
+        "pa/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "pa/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.2,
+          "exact_match": 0.2
+        },
+        "pa/page_ocr": {
+          "samples": 4,
+          "reward": 0.20874561919186668,
+          "exact_match": 0.0
+        },
+        "pa/section_ocr": {
+          "samples": 4,
+          "reward": 0.4105824938671121,
+          "exact_match": 0.0
+        },
+        "ru/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.0
+        },
+        "ru/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "ru/mcq_vqa": {
+          "samples": 5,
+          "reward": 1.0,
+          "exact_match": 1.0
+        },
+        "ru/page_ocr": {
+          "samples": 4,
+          "reward": 0.5425688336485777,
+          "exact_match": 0.0
+        },
+        "ru/section_ocr": {
+          "samples": 4,
+          "reward": 0.6695597935950633,
+          "exact_match": 0.25
+        },
+        "sa/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.0
+        },
+        "sa/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "sa/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.4,
+          "exact_match": 0.4
+        },
+        "sa/page_ocr": {
+          "samples": 4,
+          "reward": 0.5931194928405236,
+          "exact_match": 0.0
+        },
+        "sa/section_ocr": {
+          "samples": 4,
+          "reward": 0.6846790786310256,
+          "exact_match": 0.0
+        },
+        "ta/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.0
+        },
+        "ta/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "ta/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.4,
+          "exact_match": 0.4
+        },
+        "ta/page_ocr": {
+          "samples": 4,
+          "reward": 0.24438581087197966,
+          "exact_match": 0.0
+        },
+        "ta/section_ocr": {
+          "samples": 4,
+          "reward": 0.6811150809294783,
+          "exact_match": 0.25
+        },
+        "te/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.25
+        },
+        "te/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "te/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.8,
+          "exact_match": 0.8
+        },
+        "te/page_ocr": {
+          "samples": 4,
+          "reward": 0.3382666728072783,
+          "exact_match": 0.0
+        },
+        "te/section_ocr": {
+          "samples": 4,
+          "reward": 0.4181853888452475,
+          "exact_match": 0.0
+        },
+        "th/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.0
+        },
+        "th/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "th/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.4,
+          "exact_match": 0.4
+        },
+        "th/page_ocr": {
+          "samples": 4,
+          "reward": 0.48167735382537885,
+          "exact_match": 0.0
+        },
+        "th/section_ocr": {
+          "samples": 4,
+          "reward": 0.7039730492923693,
+          "exact_match": 0.0
+        },
+        "zh/descriptive_vqa": {
+          "samples": 4,
+          "reward": 0.0
+        },
+        "zh/layout_detection": {
+          "samples": 5,
+          "reward": 0.0,
+          "exact_match": 0.0
+        },
+        "zh/mcq_vqa": {
+          "samples": 5,
+          "reward": 0.8,
+          "exact_match": 0.8
+        },
+        "zh/page_ocr": {
+          "samples": 4,
+          "reward": 0.49520323526159904,
+          "exact_match": 0.0
+        },
+        "zh/section_ocr": {
+          "samples": 4,
+          "reward": 0.6828853754940711,
+          "exact_match": 0.25
+        }
+      },
+      "failures": [],
+      "elapsed_seconds": 50.0,
+      "source_revision": "50eca14b8d9685b7fad3d68119315caf402806cb"
+    }
+  ]
+}

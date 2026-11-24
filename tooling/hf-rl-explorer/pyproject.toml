@@ -27,7 +27,7 @@ dependencies = [
 package = false
 
 [tool.uv.sources]
-openenv = { git = "https://github.com/huggingface/OpenEnv", rev = "49aa302ba5c67041d11da128139ba3ae15529543" }
+openenv = { git = "https://github.com/openenv/OpenEnv", rev = "49aa302ba5c67041d11da128139ba3ae15529543" }
 
 [dependency-groups]
 dev = [

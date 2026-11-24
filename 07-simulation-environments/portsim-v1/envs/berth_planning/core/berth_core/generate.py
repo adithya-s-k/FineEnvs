@@ -35,8 +35,11 @@ def week_start(week: int, year: int = 2024) -> datetime:
     return datetime.combine(date.fromisocalendar(year, week, 1), datetime.min.time(), tzinfo=timezone.utc)
 
 
-def _hour(t0: datetime, ts: datetime) -> int:
+def hour(t0: datetime, ts: datetime) -> int:
     return int(round((ts - t0).total_seconds() / 3600))
+
+
+_hour = hour  # the name before it was public, kept for code that imports it
 
 
 def real_week(calls: list[Call], quay: str, week: int) -> tuple[list[Ship], list[Block], int]:
@@ -50,7 +53,7 @@ def real_week(calls: list[Call], quay: str, week: int) -> tuple[list[Ship], list
     blocks: list[Block] = []
     for c in rows:
         first, last = max(q.first_section, c.first), min(q.last_section, c.last)
-        a, e = _hour(t0, c.eta), _hour(t0, c.etd)
+        a, e = hour(t0, c.eta), hour(t0, c.etd)
         if e <= 0:
             continue
         if a < 0:
@@ -110,8 +113,8 @@ def disrupt(ships: list[Ship], blocks: list[Block], calls: list[Call], quay: str
         moved = []
         for c in sorted((c for c in calls if c.quay == other and lo <= c.eta < hi), key=lambda c: (c.eta, c.call)):
             n = c.last - c.first + 1
-            a = _hour(t0, c.eta)
-            h = max(1, _hour(t0, c.etd) - a)
+            a = hour(t0, c.eta)
+            h = max(1, hour(t0, c.etd) - a)
             s = Ship(id=len(ships), name=c.ship, imo=c.imo, length_m=c.length_m, sections=min(n, q.last_section - q.first_section + 1),
                      arrival=a, handling=h, planned_hour=None, planned_section=None, due=a + h, from_port=c.from_port,
                      to_port=c.to_port, beam_m=c.beam_m, draught_m=c.draught_m)

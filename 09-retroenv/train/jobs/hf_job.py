@@ -75,7 +75,10 @@ def main(argv=None):
     parser.add_argument("--checkpoint", help="For eval: /outputs/<run>/checkpoint-N; omit for the base model")
     parser.add_argument("--set", default="core30")
     parser.add_argument("--tasks", type=int)
-    parser.add_argument("--task-ids", help="For eval: a task-id file in this project (train/sweeps/<name>-0.txt) or in --bucket (/outputs/<path>)")
+    parser.add_argument(
+        "--task-ids",
+        help="For eval: a task-id file in this project (train/sweeps/<name>-0.txt) or in --bucket (/outputs/<path>)",
+    )
     parser.add_argument("--attempts", type=int, default=1, help="For eval: episodes per task")
     parser.add_argument("--temperature", type=float, help="For eval: sampling temperature (default: the board's 0)")
     parser.add_argument("--harness", choices=("board", "training"), help="For eval: the agent loop (default: board)")
@@ -86,10 +89,14 @@ def main(argv=None):
     parser.add_argument("--context", type=int, help="For train: tokens per episode (default 65536)")
     parser.add_argument("--turn-tokens", type=int, help="For train: tokens per model turn (default 16384)")
     parser.add_argument("--mask-truncated", action="store_true", help="For train: cut-off episodes out of the loss")
-    parser.add_argument("--source-from", help="With --submit: mount this job's uploaded source instead of uploading it again")
+    parser.add_argument(
+        "--source-from", help="With --submit: mount this job's uploaded source instead of uploading it again"
+    )
     parser.add_argument("--task-pool", help="For train: the training pool, e.g. a sweep's learnable.txt (shuffled)")
     parser.add_argument("--round-tasks", type=int, help="For train with --task-pool: task groups per round (default 4)")
-    parser.add_argument("--rows-per-episode", type=float, help="For train: training rows per episode (sizes overfit updates)")
+    parser.add_argument(
+        "--rows-per-episode", type=float, help="For train: training rows per episode (sizes overfit updates)"
+    )
     parser.add_argument("--init-adapter", help="For train: start from this LoRA checkpoint (a /outputs/... path)")
     parser.add_argument("--env-url", help="A running RetroEnv server, e.g. https://fineenvs-retroenv.hf.space")
     parser.add_argument(
@@ -256,7 +263,11 @@ def main(argv=None):
         # which a full private storage quota refuses.
         from huggingface_hub import inspect_job
 
-        mounted = [v for v in inspect_job(job_id=args.source_from, namespace=namespace).volumes or [] if v.mount_path == "/source"]
+        mounted = [
+            v
+            for v in inspect_job(job_id=args.source_from, namespace=namespace).volumes or []
+            if v.mount_path == "/source"
+        ]
         if not mounted:
             parser.error(f"job {args.source_from} has no /source volume")
         source_volume = mounted[0]

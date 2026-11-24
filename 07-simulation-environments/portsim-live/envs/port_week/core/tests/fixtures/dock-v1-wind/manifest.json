@@ -1,0 +1,168 @@
+{
+  "name": "dock-v1-wind",
+  "split": "eval",
+  "tasks": 3,
+  "tiers": {
+    "busy": 2,
+    "standard": 1
+  },
+  "sha256": "ad76783a94759128ba6a86ef6f1a334a423de8c54099c84204ee028966587f8e",
+  "weeks": [
+    7,
+    37
+  ],
+  "quays": {
+    "24B": 2,
+    "36A": 1
+  },
+  "source": "dock-v1-marine's qualified weeks, each moved into a weather week of weather.jsonl: the wind observed at the anemometer and the forecasts as delivered, from the sources under ecmwf, y7 and calibration",
+  "marine": {
+    "pack": "dock-v1-marine",
+    "sha256": "90ec3aa8726b755c36ae98170b83a57a4db16ab5746e5b5b4e1ea44da4918187"
+  },
+  "weather": {
+    "file": "wind/weather.jsonl",
+    "sha256": "ad19b095d078cce279927faf68c0c9628ac248c77669833e93a5384fe61e03e6",
+    "records": 2
+  },
+  "pairs": [
+    {
+      "task_id": "dock-24B-w07x1-busy-0-e00",
+      "schedule": "dock-24B-w07x1-busy-0",
+      "weather": "e00",
+      "kind": "storm",
+      "iso_week": "2000-W02",
+      "added_watches": [
+        72
+      ],
+      "windows": [
+        {
+          "start": 37,
+          "end": 41,
+          "min_length": 300,
+          "unvalidated": 1.0
+        },
+        {
+          "start": 74,
+          "end": 88,
+          "min_length": 300,
+          "unvalidated": 1.0
+        },
+        {
+          "start": 80,
+          "end": 84,
+          "min_length": 0,
+          "unvalidated": 1.0
+        }
+      ]
+    },
+    {
+      "task_id": "dock-24B-w07x1-busy-0-e01",
+      "schedule": "dock-24B-w07x1-busy-0",
+      "weather": "e01",
+      "kind": "bust",
+      "iso_week": "2000-W03",
+      "added_watches": [],
+      "windows": [
+        {
+          "start": 198,
+          "end": 201,
+          "min_length": 300,
+          "unvalidated": 1.0
+        }
+      ]
+    },
+    {
+      "task_id": "dock-36A-w37x1-standard-0-e00",
+      "schedule": "dock-36A-w37x1-standard-0",
+      "weather": "e00",
+      "kind": "storm",
+      "iso_week": "2000-W02",
+      "added_watches": [
+        36,
+        72
+      ],
+      "windows": [
+        {
+          "start": 37,
+          "end": 41,
+          "min_length": 300,
+          "unvalidated": 1.0
+        },
+        {
+          "start": 74,
+          "end": 88,
+          "min_length": 300,
+          "unvalidated": 1.0
+        },
+        {
+          "start": 80,
+          "end": 84,
+          "min_length": 0,
+          "unvalidated": 1.0
+        }
+      ]
+    }
+  ],
+  "ecmwf": {
+    "note": "Synthetic fixture: invented forecasts, no ECMWF data.",
+    "messages": {
+      "file": "wind/weather-sources.json",
+      "sha256": "f56bf4c1eeb0eedaedcbc2e9ae114759b97156a3139a09e745954ec7ae831486",
+      "count": 4
+    }
+  },
+  "y7": {
+    "note": "Synthetic fixture: invented wind, no Meteocat data."
+  },
+  "calibration": {
+    "note": "Synthetic fixture: no calibration."
+  },
+  "wind": {
+    "grounding": {
+      "rule": {
+        "value": "above 25 kn no ship of 300 m or more berths or leaves, above 30 kn no ship does",
+        "basis": "The port's traffic ordinance, BOE-A-2023-6719 (https://www.boe.es/diario_boe/txt.php?id=BOE-A-2023-6719), 4.1 and 4.1.2.1: the thresholds are 25 kn for container ships of 300 m or more and 30 kn for the others, reached or forecast by the official forecasts. They start a review with the pilots; PortSimEnv simplifies them to no-movement windows, as v1 does."
+      },
+      "anemometer": {
+        "value": "Meteocat XEMA station Y7, Port de Barcelona - Bocana Sud",
+        "basis": "BOE-A-2023-6719 (https://www.boe.es/diario_boe/txt.php?id=BOE-A-2023-6719), annex III, measures the wind at the anemometer of the Dique Sur's red light; taking Y7 for it is an assumption. Its readings come from the Generalitat de Catalunya's open data portal, dataset nzvn-apee (https://analisi.transparenciacatalunya.cat/d/nzvn-apee)."
+      },
+      "reading": {
+        "value": "an hour is above T when max(1.045 x the 30-minute mean, 0.664 x the 3-second gust) > T",
+        "basis": "BOE-A-2023-6719 (https://www.boe.es/diario_boe/txt.php?id=BOE-A-2023-6719), annex III, takes the 10-minute mean, or the largest 1-minute mean above 1.25 T. Y7 publishes a 30-minute mean and a 3-second gust; the factors 1.045 (10- over 30-minute mean) and 0.83 (1-minute mean over 3-second gust, so 0.83 / 1.25 = 0.664) are assumptions."
+      },
+      "windows": {
+        "value": "the hours above each threshold, gaps of 2 hours or less merged",
+        "basis": "Assumption."
+      },
+      "forecast": {
+        "value": "the four daily HRES runs of ECMWF open data, to 72 hours, at the nearest sea grid point",
+        "basis": "ECMWF open data (https://www.ecmwf.int/en/forecasts/datasets/open-data), CC BY 4.0; that the port's official forecasts are like it is an assumption."
+      },
+      "published": {
+        "value": "a run is delivered 9 hours after its start time; a run that never came leaves the one before it in force",
+        "basis": "Assumption, after the times the runs appeared in the public bucket (https://registry.opendata.aws/ecmwf-forecasts/)."
+      },
+      "calibration": {
+        "value": "each run's wind mapped to the anemometer by quantiles fitted on another year, in whole knots every 3 hours",
+        "basis": "Assumption."
+      },
+      "watches": {
+        "value": "v3's watches, plus each 12-hourly hour whose delivered run restricts an hour of the next 36 past the freeze line that the last watch's run didn't",
+        "basis": "Assumption."
+      },
+      "wind_tug": {
+        "value": "one more tug per movement inside a window above 25 kn, as in dock-v1-marine",
+        "basis": "BOE-A-2023-6719 (https://www.boe.es/diario_boe/txt.php?id=BOE-A-2023-6719), 4.1.2.2, as dock-v1-marine's manifest sets out under marine.wind."
+      }
+    }
+  },
+  "deal": {
+    "screened": 4,
+    "qualifying": 2,
+    "dealt": 3,
+    "gate": 12
+  },
+  "note": "dock-v1-marine's weeks in the wind of another week: rules.no_moves holds the windows that blew, which the grade uses, and the gale is gone; a forecast disruption at every watch holds the run delivered by then (its 3-hourly knots and windows from the watch on) and the wind observed before it, which the week as known shows instead. The reference cost is the lower of the hindsight optimum, proven by CP-SAT, and the forecast-following re-planner's best net cost; the reference plan is the hindsight optimum's. Each task id ends in its weather week's id."
+}

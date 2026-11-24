@@ -1,9 +1,11 @@
 # Project manifest. `tools/build_index.py` renders the root README table from it.
 name: berth-planning
-title: "PortSimEnv"
+title: "PortSimEnv v1"
 tagline: "Re-plan a broken week of container-ship dockings at the Port of Barcelona, graded against a proven optimum."
 order: 7
 status: wip
+authors:
+  - {name: Adithya S Kolavi, github: adithya-s-k, affiliation: Hugging Face}
 
 hub:
   org: FineEnvs
@@ -25,3 +27,8 @@ envs:
         transport: http-mcp
         space: FineEnvs/PortSimEnv
         verified: true
+      agentenv:
+        transport: http-mcp
+        verified: true
+        authors:
+          - {name: Edgar Arakelyan, github: earakely-scale, affiliation: Scale AI}

@@ -1,0 +1,26 @@
+# Project manifest. `tools/build_index.py` renders the root README table from it.
+name: port-week
+title: "PortSimEnv v2–v5: live, marine, wind and lines"
+tagline: "Run a Port of Barcelona quay through a week as it unfolds, with live news, pilots and tugs, real wind and shipping lines that answer back."
+order: 7.1        # just after portsim-v1 (7), whose berth_core and dock-v1 weeks this part builds on
+status: wip
+authors:
+  - {name: Edgar Arakelyan, github: earakely-scale, affiliation: Scale AI}
+
+hub:
+  org: earakely-scale
+  collection: FineEnvs/simulation-rl-envs
+  spaces:
+    - earakely-scale/PortSimEnv-AgentEnv
+  datasets:
+    - earakely-scale/PortSimEnv-AgentEnv
+
+envs:
+  - name: port_week
+    summary: "One-week dock-v1 weeks played watch by watch on AgentEnv's virtual clock, as four envs: live (news through gateway triggers), marine (+ pilots and tugs shared with the port's 2024 traffic), wind (+ real wind and ECMWF forecasts) and lines (+ each ship's agent as its own A2A agent the planner can message)."
+    backend: python-offline
+    tools: 4   # get_situation check_plan confirm_berths advance (port_notice is the gateway triggers', ship_status and agree_arrival the ships' agents', all hidden from the planner; lines adds message_agent from the peering)
+    frameworks:
+      agentenv:
+        transport: http-mcp
+        verified: true

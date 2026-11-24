@@ -108,7 +108,9 @@ def main():
                 module = key.removeprefix("base_model.model.").removesuffix(".lora_A.weight")
                 pairs[module + ".weight"] = (handle.get_tensor(key), handle.get_tensor(key.replace("lora_A", "lora_B")))
     print(f"{len(pairs)} adapted weights, scale {scale}", flush=True)
-    kind = re.compile(r"(self_attn\.(q|k|v|o)_proj|linear_attn\.(in_proj_qkv|in_proj_z|out_proj)|mlp\.(gate|up|down)_proj)\.weight$")
+    kind = re.compile(
+        r"(self_attn\.(q|k|v|o)_proj|linear_attn\.(in_proj_qkv|in_proj_z|out_proj)|mlp\.(gate|up|down)_proj)\.weight$"
+    )
     moved = {kind.search(key).group(1) for key, (_, lora_b) in pairs.items() if kind.search(key) and bool(lora_b.any())}
     if not moved:
         print("note: every lora_B is zero, so this adapter is the base model", flush=True)

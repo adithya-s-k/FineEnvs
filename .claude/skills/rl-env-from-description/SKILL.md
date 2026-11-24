@@ -118,7 +118,7 @@ When the user wants only one framework variant, trigger the framework-specific s
 
 ## Official documentation
 
-- **OpenEnv:** [huggingface/OpenEnv](https://github.com/huggingface/OpenEnv) · [docs](https://huggingface.co/docs/openenv)
+- **OpenEnv:** [openenv/OpenEnv](https://github.com/openenv/OpenEnv) · [docs](https://huggingface.co/docs/openenv)
 - **OpenReward (ORS):** [openrewardstandard.io](https://openrewardstandard.io) · [docs.openreward.ai](https://docs.openreward.ai) · [openreward on PyPI](https://pypi.org/project/openreward/)
 - **Verifiers:** [PrimeIntellect-ai/verifiers](https://github.com/PrimeIntellect-ai/verifiers) · [docs](https://docs.primeintellect.ai/verifiers/overview)
 - **NeMo Gym:** [NVIDIA-NeMo/Gym](https://github.com/NVIDIA-NeMo/Gym) · [docs](https://docs.nvidia.com/nemo/gym/latest/)

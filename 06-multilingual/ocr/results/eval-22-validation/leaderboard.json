@@ -1,0 +1,106 @@
+{
+  "engine": "vllm==0.30.0",
+  "evalset": "eval-nayana-all-validation.json",
+  "evalset_id": "fc601b8f6d1bc58ad32e8881d62e9b906078511de692e76cf5b2bf32df673cb4",
+  "snapshot_id": "867c992ae9100904cc61c84591adf0f8f863e0387e30f0d0dbc86640e9f50a1a",
+  "grading": {
+    "descriptive_vqa": {
+      "configured": true,
+      "backend": "hf-inference-providers",
+      "policy": "strict-reference-vqa-v1",
+      "policy_id": "d7169c5ab653515ca9160a3ad1d28025b3a991e63a1cbf135d70f27be0bef899",
+      "model": "google/gemma-4-31B-it",
+      "provider": "deepinfra",
+      "concurrency": 16,
+      "revision_pinned": false,
+      "grounding": "question and dataset reference; no independent image verification",
+      "reward": "binary: all six checks must pass"
+    },
+    "layout_detection": "layout-mean-f1-iou-50-95-v1"
+  },
+  "tasks": 1100,
+  "results": [
+    {
+      "label": "google/gemma-4-E4B-it",
+      "tasks": 1100,
+      "macro_reward": 0.41146387360224174,
+      "micro_reward": 0.4114638736022417,
+      "by_script": {
+        "indic": {
+          "samples": 550,
+          "languages": 11,
+          "reward": 0.3483013422812022
+        },
+        "other": {
+          "samples": 550,
+          "languages": 11,
+          "reward": 0.47462640492328134
+        }
+      },
+      "by_family": {
+        "descriptive_vqa": {
+          "samples": 220,
+          "reward": 0.16818181818181818
+        },
+        "layout_detection": {
+          "samples": 220,
+          "reward": 0.0
+        },
+        "mcq_vqa": {
+          "samples": 220,
+          "reward": 0.7318181818181818
+        },
+        "page_ocr": {
+          "samples": 220,
+          "reward": 0.5347154447156524
+        },
+        "section_ocr": {
+          "samples": 220,
+          "reward": 0.6226039232955562
+        }
+      },
+      "elapsed_seconds": 1208.1
+    },
+    {
+      "label": "google/gemma-4-E2B-it",
+      "tasks": 1100,
+      "macro_reward": 0.3564935642937382,
+      "micro_reward": 0.3564935642937382,
+      "by_script": {
+        "indic": {
+          "samples": 550,
+          "languages": 11,
+          "reward": 0.2961622146183232
+        },
+        "other": {
+          "samples": 550,
+          "languages": 11,
+          "reward": 0.41682491396915317
+        }
+      },
+      "by_family": {
+        "descriptive_vqa": {
+          "samples": 220,
+          "reward": 0.11818181818181818
+        },
+        "layout_detection": {
+          "samples": 220,
+          "reward": 0.0
+        },
+        "mcq_vqa": {
+          "samples": 220,
+          "reward": 0.6636363636363637
+        },
+        "page_ocr": {
+          "samples": 220,
+          "reward": 0.45047455050026586
+        },
+        "section_ocr": {
+          "samples": 220,
+          "reward": 0.5501750891502434
+        }
+      },
+      "elapsed_seconds": 1328.9
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+<div class="portsim-live-space"></div>
+<style>
+  .portsim-live-space { font-size: 13px; color: var(--text-color); }
+  .portsim-live-space .pl-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+  .portsim-live-space .pl-lab { font-size: 12px; color: var(--muted-color); min-width: 52px; }
+  .portsim-live-space .pl-chip { appearance: none; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.15; padding: 5px 9px;
+    border-radius: 6px; border: 1px solid var(--border-color); background: transparent; color: var(--muted-color); }
+  .portsim-live-space .pl-chip b { font-weight: 600; color: var(--text-color); }
+  .portsim-live-space .pl-chip[aria-pressed="true"] { color: var(--text-color); border-color: var(--text-color); }
+  .portsim-live-space .pl-chip:focus-visible { outline: 2px solid var(--text-color); outline-offset: 2px; }
+  .portsim-live-space .pl-frame { position: relative; width: 100%; height: 760px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); background: #111; }
+  .portsim-live-space .pl-wait { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #aaa; }
+  .portsim-live-space .pl-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+  .portsim-live-space .pl-foot { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: space-between; margin-top: 8px; font-size: 12.5px; color: var(--muted-color); line-height: 1.5; }
+  .portsim-live-space .pl-foot b { color: var(--text-color); font-weight: 600; }
+  .portsim-live-space .pl-foot a { color: var(--muted-color); white-space: nowrap; }
+  @media (max-width: 760px) { .portsim-live-space .pl-frame { height: 620px; } }
+</style>
+<script>
+  (() => {
+    // Recorded runs replayed in Edgar Arakelyan's Space (earakely-scale/PortSimEnv-AgentEnv): the same week (week 7 at
+    // APM Terminals) in each version, played by three models. Rewards are the published ones.
+    const BASE = 'https://earakely-scale-portsimenv-agentenv.hf.space';
+    const VERSIONS = [
+      { key: 'live', label: 'v2 · live', task: 'dock-24B-w07x1-busy-0' },
+      { key: 'marine', label: 'v3 · marine', task: 'dock-24B-w07x1-busy-0' },
+      { key: 'wind', label: 'v4 · wind', task: 'dock-24B-w07x1-busy-0-e08' },
+      { key: 'lines', label: 'v5 · lines', task: 'dock-24B-w07x1-busy-0-e08' },
+    ];
+    const MODELS = [
+      { key: 'anthropic/claude-opus-5-5', label: 'Claude Opus 5.5' },
+      { key: 'openai/gpt-6-astra', label: 'GPT-6 Astra' },
+      { key: 'groq/qwen/qwen3.8-27b', label: 'Qwen3.8-27B' },
+    ];
+    const RUNS = {
+      live: { 'anthropic/claude-opus-5-5': ['live-opus', 1.0], 'openai/gpt-6-astra': ['live-astra', 1.0], 'groq/qwen/qwen3.8-27b': ['live-qwen27b', 0.071] },
+      marine: { 'anthropic/claude-opus-5-5': ['marine-opus', 0.900], 'openai/gpt-6-astra': ['marine-astra', 1.0], 'groq/qwen/qwen3.8-27b': ['marine-qwen27b', 0.153] },
+      wind: { 'anthropic/claude-opus-5-5': ['wind-opus', 0.950], 'openai/gpt-6-astra': ['wind-astra', 1.0], 'groq/qwen/qwen3.8-27b': ['wind-qwen27b', 0.082] },
+      lines: { 'anthropic/claude-opus-5-5': ['lines-r6-opus', 0.816], 'openai/gpt-6-astra': ['lines-fix6-astra', 1.0], 'groq/qwen/qwen3.8-27b': ['lines-r6-qwen27b', 0.200] },
+    };
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('portsim-live-space'))) {
+        root = [...document.querySelectorAll('.portsim-live-space')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+      let vi = 3;
+      let mi = 1;
+      let live = false;
+      root.innerHTML = `
+        <div class="pl-row pl-v"><span class="pl-lab">Version</span></div>
+        <div class="pl-row pl-m"><span class="pl-lab">Model</span></div>
+        <div class="pl-frame"><div class="pl-wait">Loading the 3D replay from Edgar Arakelyan's Space…</div></div>
+        <div class="pl-foot"><span class="pl-why"></span><a class="pl-open" target="_blank" rel="noopener">Open in the Space ↗</a></div>`;
+      const frame = root.querySelector('.pl-frame');
+      const why = root.querySelector('.pl-why');
+      const open = root.querySelector('.pl-open');
+      const route = () => {
+        const v = VERSIONS[vi];
+        const m = MODELS[mi];
+        const [run] = RUNS[v.key][m.key];
+        return `#/run/${encodeURIComponent(run)}/${encodeURIComponent(m.key)}/${encodeURIComponent(v.task)}`;
+      };
+      const load = () => {
+        if (live) return;
+        live = true;
+        frame.insertAdjacentHTML('beforeend', `<iframe src="${BASE}/viewer/?embed=1${route()}" title="PortSimEnv v2–v5 replay" allow="fullscreen" referrerpolicy="no-referrer"></iframe>`);
+      };
+      const update = () => {
+        const v = VERSIONS[vi];
+        const m = MODELS[mi];
+        const reward = RUNS[v.key][m.key][1];
+        root.querySelectorAll('.pl-row button').forEach((b) => b.remove());
+        VERSIONS.forEach((x, i) => {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'pl-chip'; b.textContent = x.label; b.setAttribute('aria-pressed', String(i === vi));
+          b.onclick = () => { vi = i; update(); };
+          root.querySelector('.pl-v').appendChild(b);
+        });
+        MODELS.forEach((x, i) => {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'pl-chip'; b.innerHTML = `${x.label} <b>${RUNS[v.key][x.key][1].toFixed(2)}</b>`;
+          b.setAttribute('aria-pressed', String(i === mi));
+          b.onclick = () => { mi = i; update(); };
+          root.querySelector('.pl-m').appendChild(b);
+        });
+        why.innerHTML = `<b>${m.label} on ${v.label.replace(' · ', ', ')}</b>, week 7 at APM Terminals: reward ${reward.toFixed(2)}. Step through its watches, or play the week.`;
+        open.href = `${BASE}/viewer/${route()}`;
+        const f = frame.querySelector('iframe');
+        if (f) f.src = `${BASE}/viewer/?embed=1${route()}`;
+      };
+      update();
+      new IntersectionObserver((es, io) => { if (es.some((e) => e.isIntersecting)) { io.disconnect(); load(); } }, { rootMargin: '1200px 0px' }).observe(frame);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+    else boot();
+  })();
+</script>

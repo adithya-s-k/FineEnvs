@@ -1,0 +1,408 @@
+{
+  "status": "passed",
+  "smoke": true,
+  "steps": 4,
+  "training_loss": -0.05089152563596144,
+  "adapter_updated": true,
+  "reward_groups_without_variance": false,
+  "lora_target_count": 122,
+  "evalset_id": "b3d711ce8579d92fcbb9d443220b34dca46a59c54b78f8c0b160f6ef98ca543e",
+  "baseline": {
+    "macro_reward": 0.5950185080619863,
+    "by_language_task": {
+      "ar_eg/language_id": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0
+      },
+      "bn_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.3428571428571429,
+        "wer": 0.5714285714285714,
+        "exact_match": 0.0
+      },
+      "de_de/transcription": {
+        "samples": 1,
+        "reward": 0.7272727272727273,
+        "wer": 0.09090909090909091,
+        "exact_match": 0.0
+      },
+      "es_419/language_id": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0
+      },
+      "fr_fr/verbatim_transcription": {
+        "samples": 1,
+        "reward": 1.0,
+        "wer": 0.0,
+        "exact_match": 1.0
+      },
+      "hi_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.6787878787878788,
+        "wer": 0.15151515151515152,
+        "exact_match": 0.0
+      },
+      "ja_jp/transcription": {
+        "samples": 1,
+        "reward": 0.8,
+        "cer": 0.0,
+        "exact_match": 0.0
+      },
+      "ko_kr/language_id": {
+        "samples": 1,
+        "reward": 1.0,
+        "exact_match": 1.0
+      },
+      "ml_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.591304347826087,
+        "wer": 0.2608695652173913,
+        "exact_match": 0.0
+      },
+      "or_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.0,
+        "wer": 1.0,
+        "exact_match": 0.0
+      },
+      "ru_ru/transcription": {
+        "samples": 1,
+        "reward": 1.0,
+        "wer": 0.0,
+        "exact_match": 1.0
+      },
+      "te_in/language_id": {
+        "samples": 1,
+        "reward": 1.0,
+        "exact_match": 1.0
+      }
+    },
+    "samples": [
+      {
+        "task_id": "fleurs-ar_eg.validation.6d01a24e48a55c4b19174758f7b6632777f87092e48640b94e2b7affc8feeb5c",
+        "language": "ar_eg",
+        "family": "language_id",
+        "prediction": "ar_sa",
+        "reward": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "fleurs-bn_in.validation.d17f9fd24b544645da8da1f3ba10f3e457a9d4017bf04e08676fbf885f9629ae",
+        "language": "bn_in",
+        "family": "verbatim_transcription",
+        "prediction": "রাজ জুড়ে ব্যাপক লুনঠন চলেছে কারণ বিশকেস স্ট্রিটে আইন প্রয়োগকারী কর্মকর্তার উপস্থিত ছিলেন না।",
+        "reward": 0.3428571428571429,
+        "wer": 0.5714285714285714,
+        "exact_match": false,
+        "reference_units": 14.0,
+        "predicted_units": 14.0
+      },
+      {
+        "task_id": "fleurs-de_de.validation.daccb6dd5236de7ea20a00917a8ef474f18bc73da1dee16457c4d0727f8f0cf2",
+        "language": "de_de",
+        "family": "transcription",
+        "prediction": "die ersten fälle der krankheit diese saison wurden ende juli gemeldet",
+        "reward": 0.7272727272727273,
+        "wer": 0.09090909090909091,
+        "exact_match": false,
+        "reference_units": 11.0,
+        "predicted_units": 11.0
+      },
+      {
+        "task_id": "fleurs-es_419.validation.43768d503780e52edc15838baa319e1e4cfbddde132608e6d20a51f4771839a1",
+        "language": "es_419",
+        "family": "language_id",
+        "prediction": "es_es",
+        "reward": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "fleurs-fr_fr.validation.67703768d93023b698965bfca749d86292a762df3865933170e1accc2588e426",
+        "language": "fr_fr",
+        "family": "verbatim_transcription",
+        "prediction": "Les voies navigables intérieures peuvent être un excellent thème pour des vacances.",
+        "reward": 1.0,
+        "wer": 0.0,
+        "exact_match": true,
+        "reference_units": 12.0,
+        "predicted_units": 12.0
+      },
+      {
+        "task_id": "fleurs-hi_in.validation.bb76b2e5bebed4acea398e1c17a265a2da780232fa4fc0f783b93df09b37e400",
+        "language": "hi_in",
+        "family": "verbatim_transcription",
+        "prediction": "मेट्रिक प्रणाली के इस्तेमाल निरपेक्षवाद से गणतंत्रवाद, राष्ट्रवाद में बदलाव और देश का भरोसा लोगों से है किसी एक शासक से नहीं, ऐसी बातों का बहुत ज्यादा सामाजिक और राजनीतिक असर होता है।",
+        "reward": 0.6787878787878788,
+        "wer": 0.15151515151515152,
+        "exact_match": false,
+        "reference_units": 33.0,
+        "predicted_units": 33.0
+      },
+      {
+        "task_id": "fleurs-ja_jp.validation.ba4ed7a368eff35650290bac083b6ca21a0bff58604485b68eea79e8fdba7706",
+        "language": "ja_jp",
+        "family": "transcription",
+        "prediction": "もっと 環境 に 優しい 生活 を 始め て も いい し 環境 運動 に 参加 し て も いい し 将来 の 苦しみ を ある 程度 軽減 する ため に 活動 家 に なっ て も いい の です",
+        "reward": 0.8,
+        "cer": 0.0,
+        "exact_match": false,
+        "reference_units": 63.0,
+        "predicted_units": 63.0
+      },
+      {
+        "task_id": "fleurs-ko_kr.validation.a1576aca6b941783e3a24262a2e392b3d53400aefd6a40eabac41a8a8af0c197",
+        "language": "ko_kr",
+        "family": "language_id",
+        "prediction": "ko_kr",
+        "reward": 1.0,
+        "exact_match": true
+      },
+      {
+        "task_id": "fleurs-ml_in.validation.4261e68075ea92920edf505f84df1525cbf233ec7b42521a65f916d10daf56fb",
+        "language": "ml_in",
+        "family": "verbatim_transcription",
+        "prediction": "സാധനങ്ങൾ വേഗത്തിൽ എത്തിച്ചു കൊടുക്കുന്നതിനാൽ കൊറിയർ കമ്പനികൾക്ക് ആർഹമായ പേയ്മെന്റ് ലഭിക്കുന്നു. ബിസിനസ് രേഖകൾ, കച്ചവട സാധനങ്ങൾ, അടിയന്തരമായി റിപ്പയർ ചെയ്യാനുള്ള സ്പെയർ പാർട്സുകൾ എന്നിവയ്ക്ക് പലപ്പോഴും സമയം വളരെ പ്രദാനപ്പെട്ടതാണ്.",
+        "reward": 0.591304347826087,
+        "wer": 0.2608695652173913,
+        "exact_match": false,
+        "reference_units": 23.0,
+        "predicted_units": 23.0
+      },
+      {
+        "task_id": "fleurs-or_in.validation.144f335e168fc0b2fb344cf09ca7a29962d058cf5250d30a643fb11b1123542c",
+        "language": "or_in",
+        "family": "verbatim_transcription",
+        "prediction": "दुर्घटना कित्ते बडो थिला एबं एया द्वारा पृथ्वी किपई प्रभावित हेबो तहा सेमाने एबे मध्य स्थिर करबाको चेष्टा करूछन्ती।",
+        "reward": 0.0,
+        "wer": 1.0,
+        "exact_match": false,
+        "reference_units": 19.0,
+        "predicted_units": 19.0
+      },
+      {
+        "task_id": "fleurs-ru_ru.validation.48a9ed7dc009c155a7c0b502ce578e2e034b3a8a183a4c9c2d63cd5da42b5728",
+        "language": "ru_ru",
+        "family": "transcription",
+        "prediction": "её всепроникающая сила коснулась каждого от короля до простолюдина",
+        "reward": 1.0,
+        "wer": 0.0,
+        "exact_match": true,
+        "reference_units": 9.0,
+        "predicted_units": 9.0
+      },
+      {
+        "task_id": "fleurs-te_in.validation.69ee3ff72b2bf745e855e137f27fc0d14aca973a6045d1cfd07788c4f992098a",
+        "language": "te_in",
+        "family": "language_id",
+        "prediction": "te_in",
+        "reward": 1.0,
+        "exact_match": true
+      }
+    ]
+  },
+  "trained": {
+    "macro_reward": 0.5950185080619863,
+    "by_language_task": {
+      "ar_eg/language_id": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0
+      },
+      "bn_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.3428571428571429,
+        "wer": 0.5714285714285714,
+        "exact_match": 0.0
+      },
+      "de_de/transcription": {
+        "samples": 1,
+        "reward": 0.7272727272727273,
+        "wer": 0.09090909090909091,
+        "exact_match": 0.0
+      },
+      "es_419/language_id": {
+        "samples": 1,
+        "reward": 0.0,
+        "exact_match": 0.0
+      },
+      "fr_fr/verbatim_transcription": {
+        "samples": 1,
+        "reward": 1.0,
+        "wer": 0.0,
+        "exact_match": 1.0
+      },
+      "hi_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.6787878787878788,
+        "wer": 0.15151515151515152,
+        "exact_match": 0.0
+      },
+      "ja_jp/transcription": {
+        "samples": 1,
+        "reward": 0.8,
+        "cer": 0.0,
+        "exact_match": 0.0
+      },
+      "ko_kr/language_id": {
+        "samples": 1,
+        "reward": 1.0,
+        "exact_match": 1.0
+      },
+      "ml_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.591304347826087,
+        "wer": 0.2608695652173913,
+        "exact_match": 0.0
+      },
+      "or_in/verbatim_transcription": {
+        "samples": 1,
+        "reward": 0.0,
+        "wer": 1.0,
+        "exact_match": 0.0
+      },
+      "ru_ru/transcription": {
+        "samples": 1,
+        "reward": 1.0,
+        "wer": 0.0,
+        "exact_match": 1.0
+      },
+      "te_in/language_id": {
+        "samples": 1,
+        "reward": 1.0,
+        "exact_match": 1.0
+      }
+    },
+    "samples": [
+      {
+        "task_id": "fleurs-ar_eg.validation.6d01a24e48a55c4b19174758f7b6632777f87092e48640b94e2b7affc8feeb5c",
+        "language": "ar_eg",
+        "family": "language_id",
+        "prediction": "ar_sa",
+        "reward": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "fleurs-bn_in.validation.d17f9fd24b544645da8da1f3ba10f3e457a9d4017bf04e08676fbf885f9629ae",
+        "language": "bn_in",
+        "family": "verbatim_transcription",
+        "prediction": "রাজ জুড়ে ব্যাপক লুনঠন চলেছে কারণ বিশকেস স্ট্রিটে আইন প্রয়োগকারী কর্মকর্তার উপস্থিত ছিলেন না।",
+        "reward": 0.3428571428571429,
+        "wer": 0.5714285714285714,
+        "exact_match": false,
+        "reference_units": 14.0,
+        "predicted_units": 14.0
+      },
+      {
+        "task_id": "fleurs-de_de.validation.daccb6dd5236de7ea20a00917a8ef474f18bc73da1dee16457c4d0727f8f0cf2",
+        "language": "de_de",
+        "family": "transcription",
+        "prediction": "die ersten fälle der krankheit diese saison wurden ende juli gemeldet",
+        "reward": 0.7272727272727273,
+        "wer": 0.09090909090909091,
+        "exact_match": false,
+        "reference_units": 11.0,
+        "predicted_units": 11.0
+      },
+      {
+        "task_id": "fleurs-es_419.validation.43768d503780e52edc15838baa319e1e4cfbddde132608e6d20a51f4771839a1",
+        "language": "es_419",
+        "family": "language_id",
+        "prediction": "es_es",
+        "reward": 0.0,
+        "exact_match": false
+      },
+      {
+        "task_id": "fleurs-fr_fr.validation.67703768d93023b698965bfca749d86292a762df3865933170e1accc2588e426",
+        "language": "fr_fr",
+        "family": "verbatim_transcription",
+        "prediction": "Les voies navigables intérieures peuvent être un excellent thème pour des vacances.",
+        "reward": 1.0,
+        "wer": 0.0,
+        "exact_match": true,
+        "reference_units": 12.0,
+        "predicted_units": 12.0
+      },
+      {
+        "task_id": "fleurs-hi_in.validation.bb76b2e5bebed4acea398e1c17a265a2da780232fa4fc0f783b93df09b37e400",
+        "language": "hi_in",
+        "family": "verbatim_transcription",
+        "prediction": "मेट्रिक प्रणाली के इस्तेमाल निरपेक्षवाद से गणतंत्रवाद, राष्ट्रवाद में बदलाव और देश का भरोसा लोगों से है किसी एक शासक से नहीं, ऐसी बातों का बहुत ज्यादा सामाजिक और राजनीतिक असर होता है।",
+        "reward": 0.6787878787878788,
+        "wer": 0.15151515151515152,
+        "exact_match": false,
+        "reference_units": 33.0,
+        "predicted_units": 33.0
+      },
+      {
+        "task_id": "fleurs-ja_jp.validation.ba4ed7a368eff35650290bac083b6ca21a0bff58604485b68eea79e8fdba7706",
+        "language": "ja_jp",
+        "family": "transcription",
+        "prediction": "もっと 環境 に 優しい 生活 を 始め て も いい し 環境 運動 に 参加 し て も いい し 将来 の 苦しみ を ある 程度 軽減 する ため に 活動 家 に なっ て も いい の です",
+        "reward": 0.8,
+        "cer": 0.0,
+        "exact_match": false,
+        "reference_units": 63.0,
+        "predicted_units": 63.0
+      },
+      {
+        "task_id": "fleurs-ko_kr.validation.a1576aca6b941783e3a24262a2e392b3d53400aefd6a40eabac41a8a8af0c197",
+        "language": "ko_kr",
+        "family": "language_id",
+        "prediction": "ko_kr",
+        "reward": 1.0,
+        "exact_match": true
+      },
+      {
+        "task_id": "fleurs-ml_in.validation.4261e68075ea92920edf505f84df1525cbf233ec7b42521a65f916d10daf56fb",
+        "language": "ml_in",
+        "family": "verbatim_transcription",
+        "prediction": "സാധനങ്ങൾ വേഗത്തിൽ എത്തിച്ചു കൊടുക്കുന്നതിനാൽ കൊറിയർ കമ്പനികൾക്ക് ആർഹമായ പേയ്മെന്റ് ലഭിക്കുന്നു. ബിസിനസ് രേഖകൾ, കച്ചവട സാധനങ്ങൾ, അടിയന്തരമായി റിപ്പയർ ചെയ്യാനുള്ള സ്പെയർ പാർട്സുകൾ എന്നിവയ്ക്ക് പലപ്പോഴും സമയം വളരെ പ്രദാനപ്പെട്ടതാണ്.",
+        "reward": 0.591304347826087,
+        "wer": 0.2608695652173913,
+        "exact_match": false,
+        "reference_units": 23.0,
+        "predicted_units": 23.0
+      },
+      {
+        "task_id": "fleurs-or_in.validation.144f335e168fc0b2fb344cf09ca7a29962d058cf5250d30a643fb11b1123542c",
+        "language": "or_in",
+        "family": "verbatim_transcription",
+        "prediction": "दुर्घटना कित्ते बडो थिला एबं एया द्वारा पृथ्वी किपई प्रभावित हेबो तहा सेमाने एबे मध्य स्थिर करबाको चेष्टा करूछन्ती।",
+        "reward": 0.0,
+        "wer": 1.0,
+        "exact_match": false,
+        "reference_units": 19.0,
+        "predicted_units": 19.0
+      },
+      {
+        "task_id": "fleurs-ru_ru.validation.48a9ed7dc009c155a7c0b502ce578e2e034b3a8a183a4c9c2d63cd5da42b5728",
+        "language": "ru_ru",
+        "family": "transcription",
+        "prediction": "её всепроникающая сила коснулась каждого от короля до простолюдина",
+        "reward": 1.0,
+        "wer": 0.0,
+        "exact_match": true,
+        "reference_units": 9.0,
+        "predicted_units": 9.0
+      },
+      {
+        "task_id": "fleurs-te_in.validation.69ee3ff72b2bf745e855e137f27fc0d14aca973a6045d1cfd07788c4f992098a",
+        "language": "te_in",
+        "family": "language_id",
+        "prediction": "te_in",
+        "reward": 1.0,
+        "exact_match": true
+      }
+    ]
+  },
+  "snapshot_id": "6c5e1f3ffdaf2ead41bac4804223786e4edb92f3f70bb2481df133bb817a0278",
+  "source_revision": "b0bf71916c62c1904325fad189f3edc9a7b6b323",
+  "training_languages": [
+    "kn_in",
+    "ta_in",
+    "ml_in",
+    "hi_in"
+  ]
+}

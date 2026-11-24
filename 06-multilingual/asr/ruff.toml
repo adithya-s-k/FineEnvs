@@ -1,0 +1,1 @@
+extend = "envs/multilingual_asr/pyproject.toml"

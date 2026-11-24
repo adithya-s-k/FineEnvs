@@ -1,0 +1,119 @@
+{
+ "env": "portsim",
+ "version": "v1",
+ "authors": [
+  {
+   "name": "Adithya S Kolavi",
+   "github": "adithya-s-k",
+   "affiliation": "Hugging Face"
+  }
+ ],
+ "framework": "openenv",
+ "tasks": {
+  "split": "eval",
+  "n": 50,
+  "source": "the Port of Barcelona's 2024 container calls at quays 24B (APM Terminals Barcelona) and 36A (Terminal Catalunya, BEST), from the port's open data; crane fleets and the traffic ordinance's wind limits from public sources",
+  "selection": "the 50 dock-v1-eval weeks: real 2024 weeks at both quays in four tiers (standard, busy, storm, extreme), each with the disruptions of its tier; no week is shared with the 1,050 train weeks"
+ },
+ "harness": {
+  "agent": "berth_openenv agent harness",
+  "tools": [
+   "get_situation",
+   "check_plan",
+   "submit_plan"
+  ],
+  "max_turns": 12
+ },
+ "grading": {
+  "reference": "the cost of the plan CP-SAT proves optimal for the week",
+  "reward": "a valid plan scores 0.2 + 0.8 exp(-g/0.5), g = max(0, cost - optimum) / (max(0, optimum - floor) + 100), the floor being the cost no plan can avoid; a plan that breaks a rule scores 0.2 times its share of clean ships; no submit_plan scores 0; graded once",
+  "excused": "nothing: the whole week is known up front",
+  "judge": false
+ },
+ "baselines": [
+  {
+   "name": "naive policy",
+   "mean": 0.2012
+  }
+ ],
+ "models": [
+  {
+   "model": "GPT-6.1 Sol",
+   "provider": "OpenAI",
+   "runs": 50,
+   "mean": 0.888,
+   "ci95": [
+    0.8328,
+    0.9369
+   ],
+   "feasible": 50,
+   "usd_per_episode": null
+  },
+  {
+   "model": "Claude Sonnet 5.5",
+   "provider": "Anthropic",
+   "runs": 50,
+   "mean": 0.7817,
+   "ci95": [
+    0.7099,
+    0.8467
+   ],
+   "feasible": 49,
+   "usd_per_episode": null
+  },
+  {
+   "model": "GLM-5.3-Flash",
+   "provider": "HF router (Baseten)",
+   "runs": 50,
+   "mean": 0.4702,
+   "ci95": [
+    0.3554,
+    0.5864
+   ],
+   "feasible": 25,
+   "usd_per_episode": null
+  },
+  {
+   "model": "Qwen3.8-2.4T",
+   "provider": "HF router (Together)",
+   "runs": 50,
+   "mean": 0.3802,
+   "ci95": [
+    0.2751,
+    0.4884
+   ],
+   "feasible": 23,
+   "usd_per_episode": null
+  },
+  {
+   "model": "GLM-5.3",
+   "provider": "HF router (Together)",
+   "runs": 50,
+   "mean": 0.3132,
+   "ci95": [
+    0.1917,
+    0.4437
+   ],
+   "feasible": 16,
+   "usd_per_episode": null
+  },
+  {
+   "model": "Qwen3.8-27B",
+   "provider": "HF router (Cerebras, OVHcloud)",
+   "runs": 50,
+   "mean": 0.2112,
+   "ci95": [
+    0.1143,
+    0.3152
+   ],
+   "feasible": 13,
+   "usd_per_episode": null
+  }
+ ],
+ "links": {
+  "runs": "https://huggingface.co/datasets/FineEnvs/PortSimEnv/viewer/rollouts",
+  "replay": "https://huggingface.co/spaces/FineEnvs/PortSimEnv-Eval",
+  "code": "https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/portsim-v1"
+ },
+ "date": "2026-10-06"
+}

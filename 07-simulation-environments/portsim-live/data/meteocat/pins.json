@@ -1,0 +1,341 @@
+{
+ "about": "Pins of the wind and lines builds (tools/build_wind.py, tools/build_lines.py), not data: each Y7 month of Meteocat readings by row count and sha256 as fetched on 2026-10-08, the committed ECMWF points, the files agentenv-portsim v0.4.5 built and its published wind runs were played on, and the files it built at 83eca5c that its lines runs were played on, with the sha256 of each line by task or week id.",
+ "y7": {
+  "dataset": "nzvn-apee",
+  "station": "Y7",
+  "extracted": "2026-10-08",
+  "sha256": "the month's rows as returned, each as JSON with sorted keys, separators (',', ':') and non-ASCII kept, the lines sorted and joined by newlines, UTF-8",
+  "values_sha256": "the same over each row's data_lectura, codi_variable and valor_lectura only",
+  "months": {
+   "2023-01": {
+    "rows": 2976,
+    "sha256": "70ace27e4663af3a80357642273275d1fe5ea86e7c146f3f336c7269ee6fa1cb",
+    "values_sha256": "7541869d51923aa308bb0eabeb8c3bcbb53e762a67b2946e353367292d0555b2"
+   },
+   "2023-02": {
+    "rows": 2688,
+    "sha256": "9cd0742b8db1ba6b77967adb7ff41bb2c04845455e6b7e22f8f030692b5f144e",
+    "values_sha256": "96a08a519a480c70c8f38c53825e7ec1b43bba484ecf875ee56eba05f63c4a9b"
+   },
+   "2023-03": {
+    "rows": 2976,
+    "sha256": "b23d47d2501d7187655db80dd10c338b15caaaa35e4ec4e6a7087d199a522d9d",
+    "values_sha256": "968f571e2db6bf06517431c5f5b7cadff870c9b67a0d9a39c81f7760988c8b79"
+   },
+   "2023-04": {
+    "rows": 2880,
+    "sha256": "895c44e6842c8a22b6004f6d2d49f51ac74d16a38978ff86ef0012d26387c0d3",
+    "values_sha256": "1216660eb43aeaa72a347548a0f96ddebc292648bd6996fe842d36fa2090bc48"
+   },
+   "2023-05": {
+    "rows": 2970,
+    "sha256": "4c7b4288e124039302e1685adaf74692b66d1b268236ea35226a16b3d83e3490",
+    "values_sha256": "75bb1de40c8d62b6d20d22669c46fe5bf998351d1631cb2d175b853700192524"
+   },
+   "2023-06": {
+    "rows": 2880,
+    "sha256": "32649e6e374f08f78fce265ac5b4d31671bfef1f207318a17273b59120b70522",
+    "values_sha256": "7e6951c4aa22f4b7f8bbbbb1854e00ed3e01070e00876861b22fd5ce44cc23aa"
+   },
+   "2023-07": {
+    "rows": 2972,
+    "sha256": "531df415c0f2ef0f3ae6eba2df9f7d0705a1972b450ea1be72bd35b3624d8f97",
+    "values_sha256": "c3587f6bb8ce6f747fd23cb7a7cdd2d5996be97b43fc555de64237a63001ac11"
+   },
+   "2023-08": {
+    "rows": 2976,
+    "sha256": "99aae0977ce8cfd01c5c2d4355b1393331d86e10d194985676368b93a3e00847",
+    "values_sha256": "1c49061b940f771779c64d6b1fdc824d73ba3f78f8c652e18796b3902745cff3"
+   },
+   "2023-09": {
+    "rows": 2880,
+    "sha256": "731434a7e4ab4daf3876a7edc53ad6fa893502e9873e30c3fc03109e72e2c870",
+    "values_sha256": "e87e85c3b351d6282125966d2d378760886309763ea87fd56d18e92a8a39c266"
+   },
+   "2023-10": {
+    "rows": 2968,
+    "sha256": "74227793bcd06910eec78f4160708c0f725a9a2c8af11e3fc1a878bd204cc2b5",
+    "values_sha256": "b8d43173535a4c37738f9732abeeeed4e0ffa72f6fc7ab313198fd896f345141"
+   },
+   "2023-11": {
+    "rows": 2880,
+    "sha256": "4fc424d894e81606f336bb62b43e785ca7b81070e7b91a4585f6ea8a030ef099",
+    "values_sha256": "7d4f2b3382bf428d0b170c6eee2a014d49045ce3688e4fac8de801fc88eb45ee"
+   },
+   "2023-12": {
+    "rows": 2976,
+    "sha256": "1145685244b0302e9fe99e352bb7955f8342816f2739948604df23ebf2dba38b",
+    "values_sha256": "40b2a55095642d27a9c86ff2f2265571f7cf8b70c9edfef4d2babd5fd1ca817f"
+   },
+   "2024-01": {
+    "rows": 2958,
+    "sha256": "611639fb5f5903d4cb04b83db09607cfe0afad52b762f0ee6c78d3d7c222729e",
+    "values_sha256": "7363c55287fcf13cfb0b0b9b6f41c29c93377bae51e86ba2db63e9579074602c"
+   },
+   "2024-02": {
+    "rows": 2758,
+    "sha256": "795052e4ab431b9d60b825767fd70a96a4137f2600a7436182593c578c51d78c",
+    "values_sha256": "f2fb0176511fef44c433fd1c2ace24408330eb2d41e49018ced4f1b8cea76678"
+   },
+   "2024-03": {
+    "rows": 1852,
+    "sha256": "dc9a2983aaa354ad61406c5f37ee1b8d400f9212ba2fafa00cb9973e7ea28f23",
+    "values_sha256": "a9b08983a903d17f9fd2edae83e9aa1015df4612fe798269765202440bd85544"
+   },
+   "2024-04": {
+    "rows": 2878,
+    "sha256": "035a8fb1d4b2795a516efb72936e7f8a2529de17d75671b92a60caec4d31baf8",
+    "values_sha256": "926da3afd801e14a03b1ee8c1e2626b45630a4259c84f14e3fde30a35d68edb1"
+   },
+   "2024-05": {
+    "rows": 2884,
+    "sha256": "def0d18789cddc7bb2bfa2716d3c5417339dc677c6124a492de9b7ea349248e2",
+    "values_sha256": "7e04f8c79073bbe9d5ecaf50a8e918bf1514aac1c1e5c5bcd8f8cdee5d58d99b"
+   },
+   "2024-06": {
+    "rows": 2800,
+    "sha256": "ec055c8f55d61706b25f5933266ce57fb6bfa0652cbbd9208e419d12654947b8",
+    "values_sha256": "bd8d296e16197f556964f973a71cab8f1dde252bd825ad247106bb61edb99b11"
+   },
+   "2024-07": {
+    "rows": 2976,
+    "sha256": "2962005b53fc4b2f26167a0da4528d7deb51cc647ce7bfa4438e77646092b5af",
+    "values_sha256": "d28118f8cba95b36a08f856224332111e193b695792ac3bc43f571b5acf4a77e"
+   },
+   "2024-08": {
+    "rows": 2976,
+    "sha256": "c15bc4c257d578b61ff9e39e1f34408af89347020440d55c1ed08963ab0f28d7",
+    "values_sha256": "7185b886c5df9623268ae764c4149beda685a631197c43df02bbc67338c4ec20"
+   },
+   "2024-09": {
+    "rows": 2878,
+    "sha256": "e5a16f7317c5299df674426028e532b08e69e3ea33e4342658fdee83fab78b5c",
+    "values_sha256": "9fd14b6885bd9ef4f8e3f00dacb32640318db74498e15fd00312ff56aef578b9"
+   },
+   "2024-10": {
+    "rows": 2951,
+    "sha256": "24cde8a38176cf7f57fcec4246cc022a95e01b7c21ed31c11de3777ebd11d7b8",
+    "values_sha256": "31332badb3dd0df888b7aafd4281a707dd2089b3b9b30a31b3397c3596a90045"
+   },
+   "2024-11": {
+    "rows": 2880,
+    "sha256": "10e3ea5138822d1da9e9571b324e3c7f09856510bb9c7d7f1eb43fca95aa66e7",
+    "values_sha256": "1434fa44544c6a7629376529d61ab5bc3d21f2e0a194c89201bec98dfb38c2f8"
+   },
+   "2024-12": {
+    "rows": 2942,
+    "sha256": "0d6ec89960567d2ac59011770063cafb861164cce43cebd7a48d1662829c8ead",
+    "values_sha256": "920f41d16d28ac0f9e7dd540c57dbb815f3224d1c0de6dbe3d8a813fb23495e9"
+   },
+   "2025-01": {
+    "rows": 2964,
+    "sha256": "280bc4c9cb4090ffc1f4eb99ba3bd9f756d81594d607d2708992e78f59e0f5fa",
+    "values_sha256": "4c46c2f55cbfa566187f5616b0f34c6fccbe0b2d915cfc26b6b0437ab2c79809"
+   },
+   "2025-02": {
+    "rows": 2678,
+    "sha256": "2a143121fb239c87a9b80afc995370c5073dd8792d260911aec439a1e940d4db",
+    "values_sha256": "08d5cf19644df016557576208213b1259082a1544a7941ba127e7e37d16b5921"
+   },
+   "2025-03": {
+    "rows": 2976,
+    "sha256": "b3a6b6855be6261a9321f26669aafac7e4c5a1fc45a1cac6bfa10be3f0ff525a",
+    "values_sha256": "b374131a7734222d6379c7947d568244a240ae9d6584eae0f189d9812c6953b1"
+   },
+   "2025-04": {
+    "rows": 2880,
+    "sha256": "fc5b3b162f9edcc63b1796acf668a5325ba6d8c55bd79cbedac4b1ece737f095",
+    "values_sha256": "c789c9950601422e962bf8fde105cf4d35806d7de1a7759de61512901418decb"
+   },
+   "2025-05": {
+    "rows": 2975,
+    "sha256": "8969719eecfec1d69fb0c1d22d7b255cb66e869e6fef3be8ee493b95cefd6bc4",
+    "values_sha256": "7afbd08385d71432801511c8c232ae307e4e4a7d2ba0fa190da46c4a854d4192"
+   },
+   "2025-06": {
+    "rows": 2870,
+    "sha256": "4035e0b89f0588eed1d5be0e9b7c0977b4088cce6a6da159c45cf8adb8e9f0ab",
+    "values_sha256": "8179d4852dc7e223b9e7b9f9b35e04c9c763fadf22aaccb22a03caa9a7295706"
+   },
+   "2025-07": {
+    "rows": 2960,
+    "sha256": "24a03f873c01830f9d9ef8e73c9138fa349dea93765f120eeb4113319e85c55d",
+    "values_sha256": "14434d305ec5ab5957f03e41c6e2270969bf3c1fb1b0d3b733e406fea85c0e14"
+   },
+   "2025-08": {
+    "rows": 2974,
+    "sha256": "0314263ab65a24cba36e753e70ea562c3f034af321142359e52b6f4e44e60d8f",
+    "values_sha256": "ab3374bc59dd4fab4296e98622a6df7f58e22d8979b2e4e942b9829859cffd34"
+   },
+   "2025-09": {
+    "rows": 2880,
+    "sha256": "23e86212c432b576e044e2571f53994ea74f646e96ffc26501d2d61579e8754f",
+    "values_sha256": "2276aa5f928c26655af5643621c4d2be42011c10ae6654bf509ee7acbfe67272"
+   },
+   "2025-10": {
+    "rows": 2976,
+    "sha256": "10e15609461d584e458877d771656d11b042fbae0fe86511c915d2616fc67dc8",
+    "values_sha256": "c7d368772726f9fc67d037248ae770d6e7871a917e082ab1128af906c5d084d1"
+   },
+   "2025-11": {
+    "rows": 2880,
+    "sha256": "760a6a6685fb878e7fde9cc9e2ad441b2bbd10478529a9da4c8032d220110fbc",
+    "values_sha256": "66c02610a3d612802f8b56cf947131e3b40c366aa88701ef6b4709812bf32b37"
+   },
+   "2025-12": {
+    "rows": 2976,
+    "sha256": "b50755716b013cc953a3cffe3b2ac505a73f8171affdfe96e4bff7a5a150b115",
+    "values_sha256": "5c016245d2cdcf1485d08620f1a4268d9897429ea964e41656e61fc4cfdb3307"
+   },
+   "2026-01": {
+    "rows": 2966,
+    "sha256": "357dba11b0f3075c1d58e0a719c4fcd1cfa247ab424e50ca5877be3ca7a749e5",
+    "values_sha256": "cf5cb7e74d9a5913f97cf6d38e2ca4bb9de9cb7e1c4df2d338061e060e301dda"
+   }
+  }
+ },
+ "ecmwf": {
+  "file": "data/ecmwf/points.jsonl.gz",
+  "sha256": "2f4a214e149420c30eff771f2e5ff2fe6cf958c49c3eb41eb62723d03ef2832c",
+  "body_sha256": "ef4978670231206f0d7ea29cebe4dbf0b6e7892406f79ac5a9820a1ff2b431b2",
+  "messages": 118472,
+  "absent": 4
+ },
+ "outputs": {
+  "dock-v1-wind/tasks.jsonl": {
+   "sha256": "4362816b3657373063afab2f06c97cf76f941cb4e5b2b593b0a754e4ba9da0c9",
+   "lines": {
+    "dock-24B-w06x1-busy-0-e15": "0e545e5642a963d5c8fe7d77c610f090deec9398cb7287b4c50c35fd3050dd65",
+    "dock-24B-w07x1-busy-0-e04": "96c4d90fa0935ac5eced4757dad771a81d78dab52c6840986103dc5bdf00e963",
+    "dock-24B-w07x1-busy-0-e08": "4bbcf6ba7d5095547884beb44d0ddf656c5f66dc84329a0a5f4d6033477d5965",
+    "dock-24B-w07x1-busy-0-e09": "e3cddfa96842cf1ac60d8985e28186212a7fabb7858e33d3738aa1ee33a3fead",
+    "dock-24B-w16x1-busy-0-e12": "7face44f3f045afa78ab50e14c14c7ea07960c9f22ba35ba406006348fb67d31",
+    "dock-24B-w35x1-busy-0-e00": "11b94ded103b7c27aaade83576663c20560414aa8ed5a84d8d929fb96d51fdd8",
+    "dock-36A-w05x1-busy-0-e09": "494b3b090b1335b0fddfaa7bdb89403627c8094a3caf9c70ff46eb5b43b329d2",
+    "dock-36A-w05x1-busy-0-e14": "c852ec7aa891ea705dd56d58cb2ec7760b7aaf196a8e6f0540278ea30b326a8b",
+    "dock-36A-w06x1-busy-0-e07": "bc3f881fc92f43714583534b8c106985e57caf0bd18dc4af0da9d3a0b4b138a4",
+    "dock-36A-w06x1-busy-0-e12": "a05e3141ac91796bde4cf34f258a8407fec834e040b72ef2cfc0add16ecf0bc4",
+    "dock-36A-w17x1-busy-0-e12": "875099625a42a30d1b11767504c5cd7598498b7e9ba95e786d3245012519ad9a",
+    "dock-36A-w37x1-busy-0-e12": "aabf911e88c7a81f705fd56922c67c49998cca60ff038273b8a4d2ebfd5ba9d6",
+    "dock-24B-w37x1-standard-0-e01": "7cc139f80a084a4ee8bcfaaddc5c32a3062951d70974e3179ebbac75f1a10165",
+    "dock-36A-w06x1-standard-0-e07": "284fba1a20b5aeb162aae5f7dade4b727d4574ddbead19a304ee4958afac5ffb",
+    "dock-36A-w35x1-standard-0-e03": "30d8535290fd0c6ca332faeb6c5e73b692dea92da3eb25d04f3ae3412990d083"
+   }
+  },
+  "wind/references.jsonl": {
+   "sha256": "0bb7929eecd5f0e70c291f0596b6a5df4c5c5f81da8209e79acc19271c7e0e13",
+   "lines": {
+    "dock-24B-w06x1-busy-0-e15": "9229d69d528e40674e334fbbd989709a257cf5618a456b51c4e7c18ba3f96010",
+    "dock-24B-w07x1-busy-0-e04": "29fcc96e7a38db8fcc455566a131bc992766d5ae5025220898c46bc9ff8c20cd",
+    "dock-24B-w07x1-busy-0-e08": "f4a849415e923f4d81eb11fe3220eb1a5454ba5f97ed620f31d804d02acf8089",
+    "dock-24B-w07x1-busy-0-e09": "85f1a69cc71b615f33457814c599dd4cff7bea239cbb745472bfd448fa8c5404",
+    "dock-24B-w16x1-busy-0-e12": "7681017061cba1f05b1fb712cf20a68b9d5915490820d02b08bdb015b87d30a9",
+    "dock-24B-w35x1-busy-0-e00": "e207222b7538137fef3967f2ea22f8ebf6266aff5535b3859b86fc1b1fbc819e",
+    "dock-36A-w05x1-busy-0-e09": "966dbacf9263955c161929cd7a8ccf11f6ae6e7c5e1bd2ad6a0ab426aa935a25",
+    "dock-36A-w05x1-busy-0-e14": "533aea3bfb1fc8fc63f07430a1a56f2894ef9e88ba3761e4c68cc5956c20a664",
+    "dock-36A-w06x1-busy-0-e07": "2856761a56499db6c1ba4fcaf4c50b3baf0aa2cb64cb672536e8514686daa0a8",
+    "dock-36A-w06x1-busy-0-e12": "22bbf850c093fea48a081ac2fb6afd36ec7d95132e5dfe29bc9dd507deb0367e",
+    "dock-36A-w17x1-busy-0-e12": "a1bee32274df3b7d1ae50411ac6ef0cda5c3fa317f65b5f3ba7c64c687c4c332",
+    "dock-36A-w37x1-busy-0-e12": "0b89f40ed725b6365c99cc25aea32c76a00aa47d62a40d0abd350ed5531a48f3",
+    "dock-24B-w37x1-standard-0-e01": "3cce764b178fa890abbdbf1a8d31c2c242fea0245fe2f3a1842ba451b72f5db6",
+    "dock-36A-w06x1-standard-0-e07": "02fc0bd149b35ee12437b78dc799885ad0c8e6337ff2eab1f31b6e0833fffca2",
+    "dock-36A-w35x1-standard-0-e03": "a5f7a87545e7e1403a91085c35f90ff2b5e177a3460779b6c93cab54a158582a"
+   }
+  },
+  "wind/weather.jsonl": {
+   "sha256": "c445b6cd791710374ebeab3bf4b257213c875c8ef73cb53bf67964fa287c239b",
+   "informational": true,
+   "lines": {
+    "e00": "f03623352a018c1d0180933b9dcc5f4cb27d5bfce2c8afc05f1fe4ee835df9fa",
+    "e01": "b67ad5a1f4427f855eaf3d1f47386c56ebaecae94b71468c4deb61b21f0707b3",
+    "e02": "3ea7c61f51a635b490f2c68953f23c4c203ad5330032252b6624cb2e8cd80643",
+    "e03": "16c3a8158c609e52c6194fd244f1e37da64e35b50fd923970311c724e31e861f",
+    "e04": "4e2313ebe194e93c166f5b0954a2eead079e7a86fb4459a591679bd885ecf84f",
+    "e05": "1eddb1d6fc1e8647f0be22e738738ba61026c0a862b711521857cb720f7a61b2",
+    "e06": "81dce1ce51a43d3616653244adb7b730fc4eaf55c4205d66eaae353a3e2a15b0",
+    "e07": "d67e1c9029acdc991605f48e1807a6665deaffdab57375d77be524e11041c3ee",
+    "e08": "a8eb0aa1aecbfd903558dcdaeae4e6dc36b55fa87df28cf836f69958e5ee86ad",
+    "e09": "04bed448feea393b34e69cba14153d826373c42c92683e53fd48e07ce4342bf9",
+    "e10": "d9806ddaf10df4a7ecafa61e89c02c22a480aab29bc9bf8892c98a0362665ddf",
+    "e11": "022cf1207870498e3cc266cd3d2cebc63aa92ee6fcff0c52ff09f4497b352cf9",
+    "e12": "7f3c4bf9707af59c01c3cb5eab658832fb7e923806a5c5bd02507d340cb77dc3",
+    "e13": "8b2bab7e213d47ae53af151551dc9347531a3e8a0f2298442892adba804582fa",
+    "e14": "691a781fdc0f3bad7038572bd6d007a41a23a3c1dfd09469c2bde99638d08795",
+    "e15": "249d76cf9313256e2e3c01011ef4541aa8999de36dabf7aed897c99350c02e66"
+   }
+  },
+  "dock-v1-lines/tasks.jsonl": {
+   "sha256": "d3fe06b74a8dff25b0611171d380a06b47b2bc367ba0f06e0360e33a3e09b654",
+   "lines": {
+    "dock-24B-w06x1-busy-0-e15": "5eea6a9201e38d4580ee36d6645a00f9e92971c7e533544beb9a003266270bab",
+    "dock-24B-w07x1-busy-0-e04": "c9c795770d021276ab1ed5834fa41b4d84558d36d087d49b40fc8b9075e10b60",
+    "dock-24B-w07x1-busy-0-e08": "b3994d2dc6e7bd0a5031b8f9c6e8d6382ce53f4863b55e4a6744508ae61a9127",
+    "dock-24B-w07x1-busy-0-e09": "81dc34efc0274c5b217aca279983bc2f12450bfb0acc75e61f4417200cb5322e",
+    "dock-24B-w16x1-busy-0-e12": "f26c759b2d12bfb116817bac11e844cdb8c37e72434b56ff24acba543af14f6f",
+    "dock-24B-w35x1-busy-0-e00": "b4ee98d094f642f821d29d503e535e853e0f4c366a04f06244faf8a5e510d9ef",
+    "dock-36A-w05x1-busy-0-e09": "b4bdcb4534fd2a28d3fe0b8c37534823331804569bd731f625fe788c7fa2ba79",
+    "dock-36A-w05x1-busy-0-e14": "3fc8f40c7a28e571afaab87e2124564583485a14259c99a274cc555c7f8c5736",
+    "dock-36A-w06x1-busy-0-e07": "aef931c8a6a1fd0dcefa71baadebe343c84afe9d54e3d18b4b833170cd8beace",
+    "dock-36A-w06x1-busy-0-e12": "952179aa662b2f43c920a92d439582d26db72042a06308c6b1f9573d40faa4b6",
+    "dock-36A-w17x1-busy-0-e12": "54b600c09dfc03e4cdcc997c6375f9afe83806e647e81ebb62774b540215d373",
+    "dock-36A-w37x1-busy-0-e12": "62898acdc7b266393793a8fb2187fdff0d16fb43264207d080556456a984c86f",
+    "dock-24B-w37x1-standard-0-e01": "3be5f207b7b6e76f7f222aefe1b6d26be526fa70a70024c005800eff58039da3",
+    "dock-36A-w06x1-standard-0-e07": "13dbe8431a83db0dbfb54dde59b66908e4434f50fbf02d88efb614261ec94fb1",
+    "dock-36A-w35x1-standard-0-e03": "4bc8cce52e1978e060ef5b8e589752bb88aac580d16c0e48cf9e2c5d271a8ad5"
+   }
+  },
+  "dock-v1-lines/manifest.json": {
+   "sha256": "5a7f595ffd8de76db33ea74c853160d9c85ca3b2025c47068772142d652a4359"
+  },
+  "lines/references.jsonl": {
+   "sha256": "1bc4e74a23b4b7d78ee55f57d25cea6f3d7997015324d7ebfde776584afd32a6",
+   "lines": {
+    "dock-24B-w06x1-busy-0-e15": "3c4a240f22eb391a4ec136f4174d2886f8db154771b9c171874a862a892f89b8",
+    "dock-24B-w07x1-busy-0-e04": "3518e7086345f61589010c1dbaf01f6a9629d257c4bd9c7450ebcc7a35d15e09",
+    "dock-24B-w07x1-busy-0-e08": "4bcf143699923f3a27c75962bbf71c851d62dd3d6271b23a822952f2398b813a",
+    "dock-24B-w07x1-busy-0-e09": "4eaf008a8efda7851d9e0cbf85c9737602003b46bcc1e60f682a923462b39ab5",
+    "dock-24B-w16x1-busy-0-e12": "122232317e41e833faf8c659b4cf588f0586ed44de2c05e75b9487c6b0e54f38",
+    "dock-24B-w35x1-busy-0-e00": "bf3a27a239bb10d4a00d1fcae4e69f2633a97c67adf628b5d7d6bebe3f5e0fc8",
+    "dock-36A-w05x1-busy-0-e09": "644aea8e332089b05741791056228b97fe24ede2bf94102ffdbd9669557e99d3",
+    "dock-36A-w05x1-busy-0-e14": "baff513517e748e215f50d7247af7fa4b91cef4f970f34013f824074a23cd0fd",
+    "dock-36A-w06x1-busy-0-e07": "5caffdb5ab1bc1a8a1262b396facc6158750ef596e0c9bc8455b4d1dd109d855",
+    "dock-36A-w06x1-busy-0-e12": "9887e8253b522e43a18f2bfb9e92387c96c8032f93f09b5e1d2ad810afb2f586",
+    "dock-36A-w17x1-busy-0-e12": "c1a80227c8e71d890a395816da77e26758e41d6c3268ed30486acc37eec2ff59",
+    "dock-36A-w37x1-busy-0-e12": "8666fb20d14cb00e73a5d56a35d01661d24fd2000449803019b6461c988cff3d",
+    "dock-24B-w37x1-standard-0-e01": "c7536cdd9268de75b6dc99d1c8902e5c9fc81706bb12d0c3bf438cbc8883f365",
+    "dock-36A-w06x1-standard-0-e07": "a0ef7943eda5b3232b9f773e85b790878c66932d02ff53e009666c7b606aa0b9",
+    "dock-36A-w35x1-standard-0-e03": "54b117d880781ee3b32af89835aeacc766e915a9d2ec8dd9c5c6434a04710573"
+   },
+   "note": "the plugin's rows without their seconds, each week's solve time, which the build leaves out; reproducible_lines leave out the summaries of the 8-worker follower and silent follower without the tie-break too, which CP-SAT doesn't reproduce from run to run",
+   "reproducible_lines": {
+    "dock-24B-w06x1-busy-0-e15": "ff874134025b2758ea4cb78039219a764eaef9b7af8defca06b759eb94ed0d2b",
+    "dock-24B-w07x1-busy-0-e04": "2c5122ec4c901d36b32f8f4c30f99fc2bdbcfab90862403d2e482ec1e9a0609f",
+    "dock-24B-w07x1-busy-0-e08": "0d6634ea2439249b9090a6493c24f4b2fdcdd35f0268054e39ffe1b4aa94b2bb",
+    "dock-24B-w07x1-busy-0-e09": "0c9b08efbb209d51d142ba471375cd529d64e7435bfe2f16ca995f575709df2a",
+    "dock-24B-w16x1-busy-0-e12": "9d471277ec45234060c89961d28e749bf4221672ff3ccdf96197d672adc71a4b",
+    "dock-24B-w35x1-busy-0-e00": "3e53dd60a3c3c36b417d7d46921ef7431a780458b4e5e9e3706357e6a88eb95f",
+    "dock-36A-w05x1-busy-0-e09": "53bdb628652c7cfbf8c3ce1eacedc277f1477e71b307193769406874f6222f29",
+    "dock-36A-w05x1-busy-0-e14": "4f36a6ced5bce043f3b42b173240493dd1e9c972a0087bd4e0977e87f5a8de16",
+    "dock-36A-w06x1-busy-0-e07": "ee4263b94312169f834b7d793f1f8fdbf833a634b4e77d75a42c6eb8f50345a2",
+    "dock-36A-w06x1-busy-0-e12": "1b8b2809b1bae7d5ad4cc80663001546baa80ab7a5c6787c5a23e66069ce5362",
+    "dock-36A-w17x1-busy-0-e12": "d223e32ce2eae9368ca279ecbc9b647f21e7ddcf17e1665358707edfdf37ef91",
+    "dock-36A-w37x1-busy-0-e12": "d82d07f85d02b0597ca8972f74dfa60ade4259fa4adda2ada2f266ed47c18225",
+    "dock-24B-w37x1-standard-0-e01": "2716e0ea825bf11f5b9c9b8760e5937c992d1f558bebedd5523a2fe0dd435ee9",
+    "dock-36A-w06x1-standard-0-e07": "f8c5e822376e0d4848abb241ff6052d26fba0613dbe878bd7c0cbee300e011f1",
+    "dock-36A-w35x1-standard-0-e03": "447ea73480a2773a062d5ffdfaf7c25829df7270506e52a34b27bb1cd1f3596a"
+   }
+  }
+ },
+ "provenance": {
+  "agentenv-portsim": "v0.4.5 (01fd377)",
+  "weather-sources.json": {
+   "sha256": "c948aa38cf0dd904e99cba431156125b1326aac8cecdaea83a6d4c5a85e76dc3",
+   "messages": 33550
+  },
+  "dock-v1-marine": "90ec3aa8726b755c36ae98170b83a57a4db16ab5746e5b5b4e1ea44da4918187",
+  "ortools": "9.15.6755",
+  "python": "3.12",
+  "agentenv-portsim lines": "83eca5c",
+  "dock-v1-wind": "4362816b3657373063afab2f06c97cf76f941cb4e5b2b593b0a754e4ba9da0c9"
+ }
+}

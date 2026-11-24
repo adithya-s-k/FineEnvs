@@ -1,0 +1,258 @@
+"""CPU-testable TRL adapter. Only immutable task IDs go through the sampler."""
+
+import hashlib
+import io
+import math
+import random
+import re
+import threading
+import time
+from collections import OrderedDict, defaultdict
+
+import requests
+from PIL import Image
+
+from .client import connect
+from .models import RETRYABLE_GRADING_SIGNALS, NayanaAction
+
+
+class AssetCache:
+    def __init__(self, url, max_bytes=32_000_000):
+        if max_bytes < 1:
+            raise ValueError("Asset cache budget must be positive")
+        self.url = url.rstrip("/")
+        self.max_bytes = max_bytes
+        self._bytes = 0
+        self._items = OrderedDict()
+        self._lock = threading.Lock()
+        self.downloads = 0
+
+    def image(self, observation):
+        sha = observation.asset_sha256
+        if not re.fullmatch(r"[0-9a-f]{64}", sha):
+            raise ValueError("Invalid asset hash")
+        with self._lock:
+            raw = self._items.pop(sha, None)
+            if raw is None:
+                # Do not follow an arbitrary observation URL or cache unverified content.
+                with requests.get(
+                    f"{self.url}/assets/{sha}",
+                    params={"task_id": observation.task_id},
+                    timeout=120,
+                    stream=True,
+                ) as response:
+                    response.raise_for_status()
+                    content = bytearray()
+                    for chunk in response.iter_content(65536):
+                        content.extend(chunk)
+                        if len(content) > self.max_bytes:
+                            raise ValueError(
+                                "Single asset exceeds the trainer byte budget"
+                            )
+                raw = bytes(content)
+                if hashlib.sha256(raw).hexdigest() != sha:
+                    raise ValueError("Asset hash mismatch")
+                while self._items and self._bytes + len(raw) > self.max_bytes:
+                    _, old = self._items.popitem(last=False)
+                    self._bytes -= len(old)
+                self._bytes += len(raw)
+                self.downloads += 1
+            self._items[sha] = raw
+        with Image.open(io.BytesIO(raw)) as image:
+            if image.width * image.height > 50_000_000:
+                raise ValueError("Image exceeds the trainer pixel budget")
+            return image.convert("RGB")
+
+
+# A handful of corpus pages decode far above the pixel guard -- 7016x9934 and
+# 14044x9934 are both real. The evalset builder already draws spares and replaces
+# them; the training stream had no such guard, so one such page reaching a rollout
+# raised out of reset and killed a run at step 45 with no checkpoint written.
+UNRENDERABLE_PAGE_SIGNALS = ("exceeds max_pixels", "trainer pixel budget")
+
+
+def unrenderable_page(error):
+    text = str(error)
+    return any(signal in text for signal in UNRENDERABLE_PAGE_SIGNALS)
+
+
+class TrainingEnvironment:
+    # TRL exposes public methods as tools; only reset is needed for this one-step task.
+    def __init__(self, url, cache, snapshot_id):
+        self.client = connect(url)
+        self.cache = cache
+        self.snapshot_id = snapshot_id
+        self.task_id = None
+        # What the sampler asked for, which is what the reward must be routed against
+        # even when the page behind it could not be rendered and a spare stood in.
+        self.requested_task_id = None
+        self.substitutions = 0
+
+    def reset(self, task_id, spare_task_ids=(), **kwargs):
+        candidates = [task_id, *(spare_task_ids or ())]
+        for index, candidate in enumerate(candidates):
+            try:
+                observation = self.client.reset(task_id=candidate).observation
+                if (
+                    observation.task_id != candidate
+                    or observation.snapshot_id != self.snapshot_id
+                ):
+                    raise RuntimeError("Rollout task or snapshot changed")
+                image = self.cache.image(observation)
+            except Exception as error:
+                # Only an unrenderable page is substitutable. Anything else is a real
+                # failure and must abort the step rather than silently pick another task.
+                if not unrenderable_page(error) or index == len(candidates) - 1:
+                    raise
+                continue
+            self.requested_task_id = task_id
+            self.task_id = candidate
+            self.substitutions += index > 0
+            return [
+                {"type": "image", "image": image},
+                {"type": "text", "text": observation.prompt},
+            ]
+        raise RuntimeError(f"No renderable page among {len(candidates)} candidates")
+
+    def _close(self):
+        self.client.close()
+
+
+def completion_text(completion):
+    if isinstance(completion, str):
+        return completion
+    content = completion[-1]["content"]
+    return (
+        content
+        if isinstance(content, str)
+        else "".join(b.get("text", "") for b in content if b.get("type") == "text")
+    )
+
+
+# The environment raises on a judge transport failure or a malformed verdict *without
+# consuming the episode*, and asks the caller to retry the step without resetting. Measured
+# at 16 concurrent sessions, 9 of 100 descriptive-VQA gradings failed this way and all 9
+# passed on a serial retry. Unretried, the same failure inside env_reward aborts a GRPO
+# step rather than degrading a metric, so every grading path goes through this helper.
+JUDGE_ATTEMPTS = 4
+JUDGE_BACKOFF = 2.0
+
+
+def transient_judge_failure(error):
+    text = str(error)
+    return any(signal in text for signal in RETRYABLE_GRADING_SIGNALS)
+
+
+def step_with_judge_retry(
+    client, answer, *, attempts=JUDGE_ATTEMPTS, backoff=JUDGE_BACKOFF, sleep=time.sleep
+):
+    """Step, retrying only gradings the environment marked retryable."""
+    if attempts < 1:
+        raise ValueError("Use at least one grading attempt")
+    for attempt in range(attempts):
+        try:
+            return client.step(NayanaAction(answer=answer))
+        except Exception as error:
+            if not transient_judge_failure(error) or attempt == attempts - 1:
+                raise
+            sleep(backoff * (2**attempt))
+    raise AssertionError("unreachable")
+
+
+def env_reward(completions, environments, task_id, **kwargs):
+    scores = []
+    metrics = defaultdict(list)
+    for completion, environment, expected in zip(
+        completions, environments, task_id, strict=True
+    ):
+        if environment.requested_task_id != expected:
+            raise RuntimeError("Reward was routed to the wrong rollout task")
+        result = step_with_judge_retry(environment.client, completion_text(completion))
+        if (
+            not result.done
+            or result.reward is None
+            or not math.isfinite(float(result.reward))
+        ):
+            raise RuntimeError("Invalid terminal reward")
+        scores.append(float(result.reward))
+        observation = result.observation
+        prefix = f"nayana/{observation.language}/{observation.family}"
+        for key, value in {"reward": result.reward, **observation.metrics}.items():
+            metrics[f"{prefix}/{key}"].append(float(value))
+    if kwargs.get("log_metric") is not None:
+        for name, values in metrics.items():
+            kwargs["log_metric"](name, sum(values) / len(values))
+    return scores
+
+
+def task_rows(url, split, languages=None, families=None):
+    with connect(url) as client:
+        count = client.num_tasks(split)
+        for start in range(0, count, 256):
+            stop = min(start + 256, count)
+            for task in client.get_task_range(split, start, stop):
+                if languages and task["language"] not in languages:
+                    continue
+                if families and task["family"] not in families:
+                    continue
+                yield {
+                    "task_id": task["task_id"],
+                    "language": task["language"],
+                    "family": task["family"],
+                }
+
+
+def balanced_rows(rows, languages, families, seed=42, per_group=64):
+    """Downsample to the smallest available language/family group, then interleave."""
+    groups = defaultdict(list)
+    for row in rows:
+        groups[(row["language"], row["family"])].append(row)
+    keys = [(language, family) for language in languages for family in families]
+    missing = [key for key in keys if not groups[key]]
+    if missing:
+        raise ValueError(
+            f"Missing language/task groups: {missing}. Prepare more documents for this split"
+        )
+    count = min(per_group, *(len(groups[key]) for key in keys))
+    if count < 1:
+        raise ValueError("per_group must be positive")
+    rng = random.Random(seed)
+    for key in keys:
+        groups[key].sort(key=lambda row: row["task_id"])
+        rng.shuffle(groups[key])
+    return [groups[key][i] for i in range(count) for key in keys]
+
+
+ADAPTER_FILES = ("adapter_config.json", "adapter_model.safetensors")
+READY = "ready.json"
+
+
+def mark_checkpoint_ready(directory, step):
+    """Record a saved checkpoint's adapter by size and hash, for a watcher to verify."""
+    import json
+    from pathlib import Path
+
+    directory = Path(directory)
+    files = {}
+    for name in ADAPTER_FILES:
+        digest = hashlib.sha256()
+        with (directory / name).open("rb") as handle:
+            for block in iter(lambda: handle.read(1 << 20), b""):
+                digest.update(block)
+        files[name] = {"size": (directory / name).stat().st_size, "sha256": digest.hexdigest()}
+    (directory / READY).write_text(json.dumps({"step": step, "files": files}) + "\n")
+    return files
+
+
+def checkpoint_complete(directory, ready):
+    """True when every adapter file in `directory` matches its ready.json record."""
+    from pathlib import Path
+
+    directory = Path(directory)
+    for name, expected in ready["files"].items():
+        path = directory / name
+        if not path.is_file() or path.stat().st_size != expected["size"]:
+            return False
+        if hashlib.sha256(path.read_bytes()).hexdigest() != expected["sha256"]:
+            return False
+    return True

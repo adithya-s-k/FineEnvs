@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "berth-agentenv"
+version = "0.1.0"
+description = "AgentEnv environment for berth planning at the Port of Barcelona: the same MCP tools, limits and reward, an A2A agent and a rollout"
+requires-python = ">=3.11.4"
+# fastmcp, mcp and pydantic are pinned exactly: the goldens embed their error text.
+dependencies = [
+    "berth-core",
+    "agentenv-framework==0.9.1308",
+    "agentenv-framework-protocol==0.1.323",
+    "fastmcp==3.4.8",
+    "mcp==1.30.0",
+    "pydantic==2.13.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<10",
+    "anyio>=4.5",
+    "httpx>=0.28",
+    "uvicorn>=0.30",
+    "huggingface_hub>=0.30",
+    "pyarrow>=18",
+    "anthropic==1.11.0",
+    "openai==2.54.0",
+    "berth-core[solve]",
+]
+
+[tool.uv.sources]
+berth-core = { path = "../core", editable = true }
+
+[tool.setuptools.packages.find]
+include = ["berth_agentenv*"]
+
+[tool.pytest.ini_options]
+markers = ["network: downloads the published rollouts from the Hugging Face Hub"]
+addopts = "-m 'not network'"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "I"]

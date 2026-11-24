@@ -1,0 +1,201 @@
+{
+  "env": "portsim-lines",
+  "version": "v5",
+  "authors": [
+    {
+      "name": "Edgar Arakelyan",
+      "github": "earakely-scale",
+      "affiliation": "Scale AI"
+    }
+  ],
+  "framework": "agentenv",
+  "tasks": {
+    "split": "eval",
+    "n": 15,
+    "source": "the Port of Barcelona's 2024 container calls at quays 24B (APM Terminals Barcelona) and 36A (Terminal Catalunya, BEST), as PortSimEnv's dock-v1-eval one-week standard and busy weeks, with the port's 2024 pilot and tug traffic; the wind that blew at Meteocat's XEMA station Y7 and the ECMWF open-data forecasts as issued, in real Barcelona weather weeks of 2023 to 2025; each ship's agent is the firm the 2024 record names for the call",
+    "selection": "the 15 wind weeks, all qualifying: (a) at least 3 of the follower's 4 configurations finish feasible, (b) the silent follower, which never asks the ships' agents, scores at most 0.9 in at least 3 of 4, so asking matters, and (c) the week has at most 10 watches"
+  },
+  "harness": {
+    "agent": "portsim-llm",
+    "tools": [
+      "get_situation",
+      "check_plan",
+      "confirm_berths",
+      "advance",
+      "message_agent"
+    ],
+    "max_turns": 72
+  },
+  "grading": {
+    "reference": "min(the hindsight optimum, which knows every arrival and asks each ship at the first watch its agent could commit, the best cost of the follower re-planner, which asks the ships' agents, over its 4 solver configurations)",
+    "reward": "a feasible week scores 0.2 + 0.8 exp(-g/0.5), g = max(0, cost - reference) / (max(0, reference - floor) + 100), the floor being the cost no plan can avoid; a week that breaks a rule scores 0.2 times its share of clean ships, below 0.2, and a ship left without a window breaks a rule; graded once, on the windows confirmed and the week as it really happened",
+    "excused": "cost or rule breaks that news, or wind the forecast didn't show at that ship's last chance, brings to a window after its last chance to change, per ship; wind the forecast showed then is charged; an ETA that proves wrong is not news: a late ship's lateness and an early one's hours at anchor are charged, and a ship whose arrival was agreed arrives at that hour",
+    "judge": false
+  },
+  "baselines": [
+    {
+      "name": "follower re-planner, asking the ships' agents",
+      "mean": 0.5476
+    },
+    {
+      "name": "silent follower, never asking",
+      "mean": 0.2421
+    },
+    {
+      "name": "naive policy",
+      "mean": 0.1838
+    }
+  ],
+  "models": [
+    {
+      "model": "Claude Opus 5.5",
+      "provider": "Anthropic",
+      "runs": 15,
+      "mean": 0.5934,
+      "ci95": [
+        0.4532,
+        0.7251
+      ],
+      "feasible": 14,
+      "usd_per_episode": 2.4167
+    },
+    {
+      "model": "GPT-6 Astra",
+      "provider": "Azure OpenAI",
+      "runs": 15,
+      "mean": 0.5681,
+      "ci95": [
+        0.4196,
+        0.7224
+      ],
+      "feasible": 14,
+      "usd_per_episode": 2.1568
+    },
+    {
+      "model": "GPT-6.1 Sol",
+      "provider": "Azure OpenAI",
+      "runs": 15,
+      "mean": 0.5356,
+      "ci95": [
+        0.3924,
+        0.6931
+      ],
+      "feasible": 14,
+      "usd_per_episode": 0.3233
+    },
+    {
+      "model": "Claude Sonnet 5.5",
+      "provider": "Anthropic",
+      "runs": 15,
+      "mean": 0.3869,
+      "ci95": [
+        0.2685,
+        0.5167
+      ],
+      "feasible": 15,
+      "usd_per_episode": 1.5549
+    },
+    {
+      "model": "Qwen3.8-2.4T",
+      "provider": "Fireworks",
+      "runs": 15,
+      "mean": 0.2906,
+      "ci95": [
+        0.1708,
+        0.4229
+      ],
+      "feasible": 8,
+      "usd_per_episode": 2.2646
+    },
+    {
+      "model": "GLM-5.3-Flash",
+      "provider": "Fireworks",
+      "runs": 15,
+      "mean": 0.261,
+      "ci95": [
+        0.1712,
+        0.3675
+      ],
+      "feasible": 6,
+      "usd_per_episode": 0.1844
+    },
+    {
+      "model": "Claude Haiku 5.5",
+      "provider": "Anthropic",
+      "runs": 15,
+      "mean": 0.2576,
+      "ci95": [
+        0.203,
+        0.3219
+      ],
+      "feasible": 13,
+      "usd_per_episode": 0.1
+    },
+    {
+      "model": "GPT-6 Luna",
+      "provider": "Azure OpenAI",
+      "runs": 15,
+      "mean": 0.2341,
+      "ci95": [
+        0.1993,
+        0.2841
+      ],
+      "feasible": 13,
+      "usd_per_episode": 0.0551
+    },
+    {
+      "model": "Kimi K3",
+      "provider": "Fireworks",
+      "runs": 15,
+      "mean": 0.2314,
+      "ci95": [
+        0.1725,
+        0.3084
+      ],
+      "feasible": 5,
+      "usd_per_episode": 2.0224
+    },
+    {
+      "model": "DeepSeek V4.1 Flash",
+      "provider": "Fireworks",
+      "runs": 15,
+      "mean": 0.1675,
+      "ci95": [
+        0.0886,
+        0.2693
+      ],
+      "feasible": 6,
+      "usd_per_episode": 0.3027
+    },
+    {
+      "model": "GLM-5.3",
+      "provider": "Fireworks",
+      "runs": 15,
+      "mean": 0.1527,
+      "ci95": [
+        0.029,
+        0.3075
+      ],
+      "feasible": 3,
+      "usd_per_episode": 0.7457
+    },
+    {
+      "model": "Qwen3.8-27B",
+      "provider": "Groq",
+      "runs": 15,
+      "mean": 0.1431,
+      "ci95": [
+        0.118,
+        0.1642
+      ],
+      "feasible": 1,
+      "usd_per_episode": 1.6281
+    }
+  ],
+  "links": {
+    "runs": "https://huggingface.co/datasets/earakely-scale/PortSimEnv-AgentEnv/viewer/v5_episodes",
+    "replay": "https://huggingface.co/spaces/earakely-scale/PortSimEnv-AgentEnv",
+    "code": "https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/portsim-live"
+  },
+  "date": "2026-10-12"
+}

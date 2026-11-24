@@ -1,0 +1,62 @@
+name: Multilingual
+on:
+  pull_request:
+    paths: ['06-multilingual/**', '.github/workflows/multilingual.yml']
+  push:
+    branches: [main]
+    paths: ['06-multilingual/**', '.github/workflows/multilingual.yml']
+permissions:
+  contents: read
+jobs:
+  # The two environments are separate uv projects with their own lockfiles, so each
+  # half is tested in its own job against its own environment.
+  ocr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: 06-multilingual/ocr
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Regression tests
+        run: uv run --frozen --project envs/nayana_ocr --extra dev pytest envs/nayana_ocr/tests -q --junitxml=artifacts/ci/pytest.xml
+      - name: HTTP, media, WebSocket, and adapter smoke
+        run: uv run --frozen --project envs/nayana_ocr nayana-smoke --output artifacts/ci/smoke.json
+      - name: Validate source formatting
+        run: uv run --frozen --project envs/nayana_ocr --extra dev ruff check .
+      - name: Upload verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: multilingual-ocr-checks
+          path: 06-multilingual/ocr/artifacts/ci/
+          if-no-files-found: ignore
+          retention-days: 14
+  asr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: 06-multilingual/asr
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Regression tests
+        run: uv run --frozen --project envs/multilingual_asr --extra dev pytest envs/multilingual_asr/tests -q --junitxml=artifacts/ci/pytest.xml
+      - name: HTTP, audio, WebSocket, and reward smoke
+        run: uv run --frozen --project envs/multilingual_asr asr-smoke --output artifacts/ci/smoke.json
+      - name: Validate source formatting
+        run: uv run --frozen --project envs/multilingual_asr --extra dev ruff check .
+      - name: Upload verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: multilingual-asr-checks
+          path: 06-multilingual/asr/artifacts/ci/
+          if-no-files-found: ignore
+          retention-days: 14

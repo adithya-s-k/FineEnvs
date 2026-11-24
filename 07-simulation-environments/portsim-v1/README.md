@@ -12,7 +12,7 @@
 <a href="https://huggingface.co/spaces/FineEnvs/PortSimEnv-Eval"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Eval-Rollouts%20in%203D-F97316?style=for-the-badge&labelColor=1a1a1a" alt="Eval rollouts in 3D" height="32"></a>
 <a href="https://huggingface.co/datasets/FineEnvs/PortSimEnv"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Tasks%20%26%20rollouts-4F46E5?style=for-the-badge&labelColor=1a1a1a" alt="Dataset" height="32"></a>
 <a href="https://huggingface.co/spaces/FineEnvs/simulation-rl-environments"><img src="https://img.shields.io/badge/%F0%9F%93%84%20Article-Read%20the%20write--up-10B981?style=for-the-badge&labelColor=1a1a1a" alt="Read the article" height="32"></a>
-<a href="https://github.com/huggingface/OpenEnv"><img src="https://img.shields.io/badge/framework-OpenEnv-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="OpenEnv" height="32"></a>
+<a href="https://github.com/openenv/OpenEnv"><img src="https://img.shields.io/badge/framework-OpenEnv-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="OpenEnv" height="32"></a>
 <a href="https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/portsim-v1"><img src="https://img.shields.io/badge/GitHub-07--simulation--environments%2Fportsim--v1-181717?style=for-the-badge&logo=github&labelColor=1a1a1a" alt="Code on GitHub" height="32"></a>
 
 </div>
@@ -62,6 +62,7 @@ score by never calling `submit_plan`. They spend their output budget reasoning a
 | Train or evaluate on the tasks | [datasets/FineEnvs/PortSimEnv](https://huggingface.co/datasets/FineEnvs/PortSimEnv) |
 | Understand the idea and the results | [Simulation RL Environments, part 1](https://huggingface.co/spaces/FineEnvs/simulation-rl-environments) |
 | Read how the tasks, rules, reward and 3D view work | [DESIGN.md](DESIGN.md) |
+| Run the same env on AgentEnv, or play the week as it unfolds | [envs/berth_planning/agentenv](envs/berth_planning/agentenv/) · [PortSimEnv live](../portsim-live/) |
 | Read or edit the article's source | [content/articles/simulation-rl-environments](https://github.com/adithya-s-k/FineEnvs/tree/main/content/articles/simulation-rl-environments) |
 | Share ideas for v2 and beyond | [GitHub discussion #36](https://github.com/adithya-s-k/FineEnvs/discussions/36) |
 
@@ -88,6 +89,9 @@ uv venv -p 3.12 && uv pip install -e '.[agents,dev]'
 .venv/bin/python -m pytest tests -q
 ```
 
+The same env runs on AgentEnv too: `uv run python rollout.py --smoke` in
+[envs/berth_planning/agentenv](envs/berth_planning/agentenv/) needs no model or key, and its README has the rest.
+
 Run the eval yourself (this is how `dock-eval50` was produced):
 
 ```bash
@@ -112,7 +116,8 @@ collection, article) and takes a step number to resume.
 │   ├── tasks/dock-v1-train/ 1,050 train tasks (tasks.jsonl.gz)
 │   ├── tasks/berth-v1/      the first 100-task pack
 │   ├── tools/               twin/ (the 3D digital twin from open data), build_dataset.py, deploy_space.py, publish_all.sh
-│   └── openenv/             berth_openenv: environment, rubric, server, viewer (web/), agent harness, rollout.py
+│   ├── openenv/             berth_openenv: environment, rubric, server, viewer (web/), agent harness, rollout.py
+│   └── agentenv/            berth_agentenv: the same env on AgentEnv, the portsim-llm agent, verifier, rollout.py
 ├── eval/                    run_eval.py (rollouts through the server), report.py, rescore.py
 └── results/rollouts/        one directory per run: index.json, board.md, one JSON per episode
 ```

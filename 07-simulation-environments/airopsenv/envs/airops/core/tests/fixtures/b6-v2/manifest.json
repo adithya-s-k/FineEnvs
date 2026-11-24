@@ -1,0 +1,32 @@
+{
+ "pack": "b6-v2",
+ "built_at_commit": "41d8f7239fcd49f1a8386a0a4e51d052abc8e40c",
+ "assembled_at_commit": "451949580ab1d4d1ea50fb7340ad36d1c09b3eea",
+ "framework": "0.9.1323",
+ "crew_params_sha256": "5dd4636fc072ff4a700c48759e9515e1e4096f807b9b924850bce0146d6fa908",
+ "tasks": {
+  "b6-20240703-0400": {
+   "date": "2024-07-03",
+   "split": "control",
+   "best_from": "run"
+  },
+  "b6-20250111-0400": {
+   "date": "2025-01-11",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20250115-0400": {
+   "date": "2025-01-15",
+   "split": "control",
+   "best_from": "run"
+  }
+ },
+ "skipped": {
+  "2023-06-02": "its joint search crashed in the crew run; outside the pool by rule"
+ },
+ "files": {
+  "dates/2024-07-03.json.gz": "0bb2dd872df2a792e0e223529728a89f787710fb31cac445c57d327ffafd59f1",
+  "dates/2025-01-11.json.gz": "bb0cbc91b6ad2ab85538dce5aaefa68b5bbea5e129aef630d80573a7c5b1e5e1",
+  "dates/2025-01-15.json.gz": "9690f6eae1cea19e5335b45a53644f72ab80c96e320e6a295f4c8b67b97c6e73"
+ }
+}

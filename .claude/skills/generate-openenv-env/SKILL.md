@@ -176,7 +176,7 @@ Before declaring done, all four must pass:
 
 ## Official documentation
 
-- [huggingface/OpenEnv](https://github.com/huggingface/OpenEnv) — source repo
+- [openenv/OpenEnv](https://github.com/openenv/OpenEnv) — source repo
 - [OpenEnv docs](https://huggingface.co/docs/openenv) — environment-builder + Core API
 - [Build your first environment](https://huggingface.co/docs/openenv/guides/first-environment)
 - [HF org](https://huggingface.co/openenv) — example deployments

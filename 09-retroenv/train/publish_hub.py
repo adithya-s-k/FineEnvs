@@ -76,30 +76,30 @@ datasets: [{DATASET}]
 
 # RetroEnv · Qwen3.8-27B · GRPO ({mode})
 
-The base model with the LoRA adapter from **step {row['step']}** of `{row['run']}` merged into its
+The base model with the LoRA adapter from **step {row["step"]}** of `{row["run"]}` merged into its
 weights, so it serves like any ordinary checkpoint. Trained with GRPO against
-[RetroEnv]({f'https://huggingface.co/spaces/{ENV_SPACE}'}), a retrosynthesis environment: the model is
+[RetroEnv]({f"https://huggingface.co/spaces/{ENV_SPACE}"}), a retrosynthesis environment: the model is
 given a target molecule, searches for stock and precedent through tools, and submits one or more
 synthesis trees, which a deterministic verifier grades against a frozen reaction library.
 
 ## What it scores
 
-On `{ev['set']}` in the {ev['harness']} harness, {ev['attempts']} attempts per task at temperature
-{ev['temperature']}:
+On `{ev["set"]}` in the {ev["harness"]} harness, {ev["attempts"]} attempts per task at temperature
+{ev["temperature"]}:
 
 | | pass@1 | pass@4 |
 |---|---:|---:|
-| `{BASE_MODEL}` ({mode}) | {data['baseline'][mode]['pass_at_1']:.3f} | {data['baseline'][mode]['pass_at_4']:.3f} |
-| **this checkpoint** | **{row['pass_at_1']:.3f}** | **{row['pass_at_4']:.3f}** |
+| `{BASE_MODEL}` ({mode}) | {data["baseline"][mode]["pass_at_1"]:.3f} | {data["baseline"][mode]["pass_at_4"]:.3f} |
+| **this checkpoint** | **{row["pass_at_1"]:.3f}** | **{row["pass_at_4"]:.3f}** |
 
-First-attempt pass rate by difficulty tier: easy {tiers.get('easy', float('nan')):.2f}, medium
-{tiers.get('medium', float('nan')):.2f}, hard {tiers.get('hard', float('nan')):.2f}. Those three average to the
-first-attempt rate ({row['pass_at_1_first_attempt']:.3f}), not to the pass@1 above, which is the
+First-attempt pass rate by difficulty tier: easy {tiers.get("easy", float("nan")):.2f}, medium
+{tiers.get("medium", float("nan")):.2f}, hard {tiers.get("hard", float("nan")):.2f}. Those three average to the
+first-attempt rate ({row["pass_at_1_first_attempt"]:.3f}), not to the pass@1 above, which is the
 unbiased estimate over all four attempts.
 
 Every {mode} checkpoint that was evaluated completely:
 
-{table(peers, highlight=row['id'])}
+{table(peers, highlight=row["id"])}
 
 ## How it was trained
 
@@ -129,7 +129,7 @@ just the base model with a nudge toward route trees. Run it the way it was train
 `09-retroenv/eval/run_eval.py --harness training`, or the way the public board is scored with the
 default board harness.
 
-{'It was trained with thinking on at low reasoning effort; serve it with the thinking template or it will behave unlike the numbers above.' if row['thinking'] else 'It was trained with thinking off. The thinking checkpoint scores considerably higher — see the collection.'}
+{"It was trained with thinking on at low reasoning effort; serve it with the thinking template or it will behave unlike the numbers above." if row["thinking"] else "It was trained with thinking off. The thinking checkpoint scores considerably higher — see the collection."}
 
 ## What the numbers do not say
 
@@ -153,7 +153,7 @@ datasets: [{DATASET}]
 
 # RetroEnv · every GRPO LoRA checkpoint
 
-{len(data['checkpoints'])} adapters from the {len({r['run'] for r in data['checkpoints']})} GRPO runs
+{len(data["checkpoints"])} adapters from the {len({r["run"] for r in data["checkpoints"]})} GRPO runs
 trained against [RetroEnv](https://huggingface.co/spaces/{ENV_SPACE}), one folder each, so the whole
 training curve can be replayed rather than just its peak. The two best are also published merged, as
 ordinary models — see the collection.
@@ -177,13 +177,13 @@ model = PeftModel.from_pretrained(base, "{repo}", subfolder="think-mixed-r4/step
 
 {table(plain)}
 
-{(lambda inc: "## Not comparable" + chr(10) + chr(10) + "These two lost evaluation shards to job timeouts, so their folders are here but their scores are not on the curve: " + ", ".join(f"`{r['id']}` (step {r['step']}, {r['tasks']} of 150 tasks)" for r in inc) + "." if inc else "")([r for r in data['checkpoints'] if not r['complete']])}
+{(lambda inc: "## Not comparable" + chr(10) + chr(10) + "These two lost evaluation shards to job timeouts, so their folders are here but their scores are not on the curve: " + ", ".join(f"`{r['id']}` (step {r['step']}, {r['tasks']} of 150 tasks)" for r in inc) + "." if inc else "")([r for r in data["checkpoints"] if not r["complete"]])}
 
-Scored on `{data['eval']['set']}` in the {data['eval']['harness']} harness at {data['eval']['attempts']}
-attempts, temperature {data['eval']['temperature']}. `checkpoints.json` in this repo carries every
+Scored on `{data["eval"]["set"]}` in the {data["eval"]["harness"]} harness at {data["eval"]["attempts"]}
+attempts, temperature {data["eval"]["temperature"]}. `checkpoints.json` in this repo carries every
 number, including per-tier rates and how many episodes each evaluation graded.
 
-{data['note']}
+{data["note"]}
 """
 
 
@@ -207,9 +207,18 @@ def publish_model(args, data):
         print(f"reusing the merge already at {merged}", flush=True)
     else:
         subprocess.run(
-            [sys.executable, str(ROOT / "train" / "jobs" / "merge_lora.py"),
-             "--model", BASE_MODEL, "--revision", data["base_model_revision"],
-             "--adapter", str(adapter), "--output", str(merged)],
+            [
+                sys.executable,
+                str(ROOT / "train" / "jobs" / "merge_lora.py"),
+                "--model",
+                BASE_MODEL,
+                "--revision",
+                data["base_model_revision"],
+                "--adapter",
+                str(adapter),
+                "--output",
+                str(merged),
+            ],
             check=True,
         )
     (merged / "README.md").write_text(model_card(data, row, args.repo))

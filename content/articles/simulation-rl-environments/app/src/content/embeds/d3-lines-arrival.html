@@ -1,0 +1,107 @@
+<div class="d3-lines-arrival"></div>
+<style>
+  .d3-lines-arrival { font-size: 13px; color: var(--text-color); }
+  .d3-lines-arrival svg { display: block; overflow: visible; }
+  .d3-lines-arrival .la-lane { margin-bottom: 6px; }
+  .d3-lines-arrival .la-t { font-size: 12.5px; font-weight: 600; }
+  .d3-lines-arrival .la-d { font-size: 12px; color: var(--muted-color); line-height: 1.4; }
+  .d3-lines-arrival .lane-t { fill: var(--text-color); font-size: 12px; font-weight: 600; }
+  .d3-lines-arrival .lane-d { fill: var(--muted-color); font-size: 11.5px; }
+  .d3-lines-arrival .track { stroke: color-mix(in srgb, var(--border-color) 90%, transparent); stroke-width: 1; }
+  .d3-lines-arrival .rep { fill: var(--page-bg); stroke: var(--primary-color); stroke-width: 1.5; }
+  .d3-lines-arrival .rep-l { fill: var(--primary-color); font-size: 11px; }
+  .d3-lines-arrival .arr { fill: var(--text-color); }
+  .d3-lines-arrival .arr-l { fill: var(--text-color); font-size: 11px; }
+  .d3-lines-arrival .win { fill: color-mix(in srgb, var(--primary-color) 70%, transparent); }
+  .d3-lines-arrival .bad { fill: color-mix(in srgb, var(--danger-color) 30%, transparent); stroke: var(--danger-color); stroke-width: 1; stroke-dasharray: 3 2; }
+  .d3-lines-arrival .bad-l { fill: var(--danger-color); font-size: 11px; }
+  .d3-lines-arrival .ok-l { fill: var(--primary-color); font-size: 11px; font-weight: 600; }
+  .d3-lines-arrival .ask { stroke: var(--primary-color); stroke-width: 1.2; fill: none; marker-end: url(#la-head); }
+  .d3-lines-arrival .ax { fill: var(--muted-color); font-size: 11px; }
+  .d3-lines-arrival .sched { stroke: var(--muted-color); stroke-width: 1; stroke-dasharray: 3 3; }
+  .d3-lines-arrival .sched-l { fill: var(--muted-color); font-size: 11px; }
+  .d3-lines-arrival .la-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font-size: 12px; color: var(--muted-color); }
+  .d3-lines-arrival .la-legend i { display: inline-block; vertical-align: middle; margin-right: 6px; }
+  .d3-lines-arrival .l-rep { width: 9px; height: 9px; transform: rotate(45deg); border: 1.5px solid var(--primary-color); box-sizing: border-box; }
+  .d3-lines-arrival .l-arr { width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 9px solid var(--text-color); }
+  .d3-lines-arrival .l-win { width: 12px; height: 10px; border-radius: 2px; background: color-mix(in srgb, var(--primary-color) 70%, transparent); }
+  .d3-lines-arrival .l-bad { width: 12px; height: 10px; border-radius: 2px; background: color-mix(in srgb, var(--danger-color) 30%, transparent); border: 1px dashed var(--danger-color); box-sizing: border-box; }
+  .d3-lines-arrival .la-note { margin-top: 6px; font-size: 11.5px; color: var(--muted-color); }
+</style>
+<script>
+  (() => {
+    // One ship in a lines week (PortSimEnv v5, portsim-lines): its agent's ETAs firm up as it nears, and the
+    // planner can ask for an arrival hour instead. Illustrative hours; the rules are the env's.
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('d3-lines-arrival'))) {
+        root = [...document.querySelectorAll('.d3-lines-arrival')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+      const H0 = 0, H1 = 84, L = 8, R = 12;
+      const SCHED = 60, REAL = 68;
+      const lanes = [
+        { t: 'Book on the ETAs', d: 'The window starts at the 48 h ETA. The ship gets in 6 hours after it.',
+          win: [62, 74], arrive: REAL, bad: [62, 68], badL: '6 h late', reports: true },
+        { t: 'Book late and wait', d: 'The window is kept clear of the ETAs\' error. The ship gets in first and waits at anchor.',
+          win: [74, 86], arrive: REAL, bad: [68, 74], badL: '6 h at anchor', reports: true },
+        { t: 'Ask the ship\'s agent', d: 'Once the ship has sailed, the planner asks for hour 70. The agent agrees: the ship can make it by slowing.',
+          win: [70, 82], arrive: 70, ask: 14, okL: 'arrives on the agreed hour', reports: false },
+      ];
+      const diamond = (x, y) => `<rect class="rep" x="${x - 4.5}" y="${y - 4.5}" width="9" height="9" transform="rotate(45 ${x} ${y})"></rect>`;
+      const tri = (x, y) => `<path class="arr" d="M${x - 5},${y - 10} L${x + 5},${y - 10} L${x},${y - 1} Z"></path>`;
+      const laneSvg = (ln, W, first) => {
+        const narrow = W < 520;
+        const xs = (h) => L + ((W - L - R) * (h - H0)) / (H1 - H0);
+        const ty = first ? 34 : 26;
+        const Hh = ty + 34;
+        let g = '';
+        if (first) g += `<line class="sched" x1="${xs(SCHED)}" x2="${xs(SCHED)}" y1="4" y2="${Hh}"></line><text class="sched-l" x="${xs(SCHED) - 4}" y="12" text-anchor="end">${narrow ? 'schedule: h 60' : 'the line\'s schedule: hour 60'}</text>`;
+        else g += `<line class="sched" x1="${xs(SCHED)}" x2="${xs(SCHED)}" y1="0" y2="${Hh}"></line>`;
+        g += `<line class="track" x1="${xs(H0)}" x2="${xs(H1)}" y1="${ty}" y2="${ty}"></line>`;
+        if (ln.reports) {
+          g += diamond(xs(20), ty) + `<text class="rep-l" x="${xs(20)}" y="${ty + 18}" text-anchor="middle">${narrow ? 'ETA 62' : '48 h out: ETA 62'}</text>`;
+          g += diamond(xs(44), ty) + `<text class="rep-l" x="${xs(44)}" y="${ty + 18}" text-anchor="middle">${narrow ? 'ETA 65' : '24 h out: ETA 65'}</text>`;
+          g += diamond(xs(67), ty) + (narrow ? '' : `<text class="rep-l" x="${xs(66)}" y="${ty - 8}" text-anchor="end">the call, 1 h out</text>`);
+        }
+        if (ln.ask != null) {
+          g += `<path class="ask" d="M${xs(ln.ask)},${ty} C${xs(ln.ask + 20)},${ty - 22} ${xs(ln.arrive - 20)},${ty - 22} ${xs(ln.arrive) - 2},${ty - 4}"></path>`;
+          g += diamond(xs(ln.ask), ty) + `<text class="rep-l" x="${xs(ln.ask)}" y="${ty + 18}" text-anchor="${narrow ? 'start' : 'middle'}">ask: arrive at 70?</text>`;
+          g += `<text class="rep-l" x="${xs(42)}" y="${ty - 18}" text-anchor="middle">agreed</text>`;
+        }
+        g += `<rect class="win" x="${xs(ln.win[0])}" y="${ty + 4}" width="${Math.min(xs(ln.win[1]), xs(H1)) - xs(ln.win[0])}" height="10" rx="2"></rect>`;
+        if (ln.bad) {
+          g += `<rect class="bad" x="${xs(ln.bad[0])}" y="${ty - 7}" width="${xs(ln.bad[1]) - xs(ln.bad[0])}" height="10" rx="2"></rect>`;
+          g += `<text class="bad-l" x="${Math.min((xs(ln.bad[0]) + xs(ln.bad[1])) / 2, W - 40)}" y="${ty + 28}" text-anchor="middle">${ln.badL}</text>`;
+        }
+        g += tri(xs(ln.arrive), ty) + `<text class="arr-l" x="${Math.min(xs(ln.arrive) + 7, W - 58)}" y="${ty - 12}">arrives ${ln.arrive}</text>`;
+        if (ln.okL) g += `<text class="ok-l" x="${narrow ? W - R : xs(ln.win[0])}" y="${ty + 28}" text-anchor="${narrow ? 'end' : 'start'}">${narrow ? 'on the agreed hour' : ln.okL}</text>`;
+        return `<svg viewBox="0 0 ${W} ${Hh}" width="${W}" height="${Hh}" role="img" aria-label="${ln.t}">${g}</svg>`;
+      };
+      const axis = (W) => {
+        const xs = (h) => L + ((W - L - R) * (h - H0)) / (H1 - H0);
+        const ticks = W < 520 ? [0, 24, 48, 72] : [0, 12, 24, 36, 48, 60, 72, 84];
+        return `<svg viewBox="0 0 ${W} 16" width="${W}" height="16" aria-hidden="true">${ticks.map((h) => `<text class="ax" x="${xs(h)}" y="12" text-anchor="middle">h ${h}</text>`).join('')}<defs><marker id="la-head" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--primary-color)"></path></marker></defs></svg>`;
+      };
+      const draw = () => {
+        const W = Math.max(300, Math.round(root.clientWidth || 660));
+        root.innerHTML = `${lanes.map((ln, i) => `<div class="la-lane"><div class="la-t">${ln.t}</div><div class="la-d">${ln.d}</div>${laneSvg(ln, W, i === 0)}</div>`).join('')}
+        ${axis(W)}
+        <div class="la-legend">
+          <span><i class="l-rep"></i>a report from the ship's agent</span>
+          <span><i class="l-arr"></i>the ship gets in</span>
+          <span><i class="l-win"></i>its berth window</span>
+          <span><i class="l-bad"></i>cost: hours late or at anchor, each charged at the ship's sections</span>
+        </div>
+        <div class="la-note">Illustrative hours. In the env, ETAs miss by about 20% of the hours left and 4 in 5 ships arrive later than their ETA. An agent agrees an hour only once its ship has sailed or is due within 48 hours, and only one the ship can make at cruising speed (17 kn) or by slowing (to 10 kn).</div>`;
+      };
+      draw();
+      let lastW = Math.round(root.clientWidth);
+      if (window.ResizeObserver) new ResizeObserver(() => { const w = Math.round(root.clientWidth); if (Math.abs(w - lastW) > 8) { lastW = w; draw(); } }).observe(root);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+    else boot();
+  })();
+</script>

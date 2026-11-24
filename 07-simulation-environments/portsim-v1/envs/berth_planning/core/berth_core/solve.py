@@ -8,7 +8,7 @@ from __future__ import annotations
 from .model import MOVE_PENALTY, Plan, Task
 
 
-class _Ledger:
+class Ledger:
     """Occupied rectangles, cranes in use per hour and movements per hour, for greedy placement."""
 
     def __init__(self, task: Task):
@@ -52,11 +52,14 @@ class _Ledger:
             self.moves[dep] = self.moves.get(dep, 0) + 1
 
 
+_Ledger = Ledger  # the name before it was public, kept for code that imports it
+
+
 def naive_replan(task: Task) -> Plan:
     """Keep each ship's published slot if it still works; otherwise give it the earliest hour, then the section
     closest to its planned one, that is free. Ships are taken in published order (unscheduled calls by arrival).
     On crane-rule tasks every ship keeps its standard crane count."""
-    led = _Ledger(task)
+    led = Ledger(task)
     plan: Plan = {}
     order = sorted(task.ships, key=lambda s: (s.planned_hour if s.planned_hour is not None else s.arrival, s.id))
     for s in order:

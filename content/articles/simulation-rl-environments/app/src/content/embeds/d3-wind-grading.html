@@ -1,0 +1,105 @@
+<div class="d3-wind-grading"></div>
+<style>
+  .d3-wind-grading { font-size: 13px; color: var(--text-color); }
+  .d3-wind-grading .wg-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .d3-wind-grading .wg-tab { appearance: none; cursor: pointer; font: inherit; font-size: 12.5px; line-height: 1.15; padding: 5px 10px;
+    border-radius: 6px; border: 1px solid var(--border-color); background: transparent; color: var(--muted-color); }
+  .d3-wind-grading .wg-tab[aria-pressed="true"] { color: var(--text-color); border-color: var(--text-color); }
+  .d3-wind-grading .wg-tab:focus-visible { outline: 2px solid var(--text-color); outline-offset: 2px; }
+  .d3-wind-grading svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .d3-wind-grading .grid { stroke: color-mix(in srgb, var(--border-color) 80%, transparent); stroke-width: 1; }
+  .d3-wind-grading .thr { stroke: var(--danger-color); stroke-width: 1; stroke-dasharray: 4 3; opacity: .8; }
+  .d3-wind-grading .thr-l { fill: var(--danger-color); font-size: 11px; opacity: .9; }
+  .d3-wind-grading .ax { fill: var(--muted-color); font-size: 11px; }
+  .d3-wind-grading .fc { fill: none; stroke: var(--primary-color); stroke-width: 2; stroke-dasharray: 6 4; }
+  .d3-wind-grading .ob { fill: none; stroke: var(--text-color); stroke-width: 2; }
+  .d3-wind-grading .lc { stroke: var(--text-color); stroke-width: 1; }
+  .d3-wind-grading .lc-l { fill: var(--text-color); font-size: 11px; font-weight: 600; }
+  .d3-wind-grading .frz { fill: color-mix(in srgb, var(--primary-color) 12%, transparent); }
+  .d3-wind-grading .win { fill: color-mix(in srgb, var(--primary-color) 70%, transparent); }
+  .d3-wind-grading .win-old { fill: none; stroke: var(--muted-color); stroke-dasharray: 3 3; }
+  .d3-wind-grading .win-l { fill: var(--text-color); font-size: 11px; }
+  .d3-wind-grading .wg-verdict { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 12.5px; line-height: 1.5; }
+  .d3-wind-grading .wg-verdict b { font-weight: 600; }
+  .d3-wind-grading .wg-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; font-size: 12px; color: var(--muted-color); }
+  .d3-wind-grading .wg-legend i { display: inline-block; vertical-align: middle; margin-right: 6px; width: 16px; }
+  .d3-wind-grading .wg-legend .l-fc { border-top: 2px dashed var(--primary-color); }
+  .d3-wind-grading .wg-legend .l-ob { border-top: 2px solid var(--text-color); }
+  .d3-wind-grading .wg-legend .l-win { height: 10px; width: 12px; border-radius: 2px; background: color-mix(in srgb, var(--primary-color) 70%, transparent); }
+  .d3-wind-grading .wg-legend .l-thr { border-top: 1px dashed var(--danger-color); }
+  .d3-wind-grading .wg-note { margin-top: 6px; font-size: 11.5px; color: var(--muted-color); }
+</style>
+<script>
+  (() => {
+    // How a wind week grades one ship (PortSimEnv v4, portsim-wind): the forecast in force at the ship's last chance to
+    // change, the wind that blew, and the verdict. Illustrative curves; the rules are the env's.
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    const T = [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48];
+    const CALM = [11, 12, 12, 13, 13, 14, 14, 13, 13, 12, 12, 11, 11, 12, 12, 11, 11];
+    const GALE = [11, 12, 13, 15, 18, 23, 29, 33, 32, 27, 21, 16, 13, 12, 12, 11, 11];
+    const CASES = [
+      { key: 'warned', label: 'Forecast showed it, and it blew', fc: GALE, ob: GALE.map((v, i) => v + [0, 1, 0, -1, 0, 1, 1, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0][i]), win: [18, 24],
+        verdict: '<b>Charged.</b> At the ship\'s last chance the forecast already showed wind above 30 kn over its window, and the wind blew. Berthing into it breaks the rule, and the grade counts it as an ignored warning.' },
+      { key: 'surprise', label: 'It blew, but no forecast showed it', fc: CALM, ob: GALE, win: [18, 24],
+        verdict: '<b>Waived for this ship.</b> The forecast in force at its last chance was calm. Wind that no forecast had shown by the time the window froze is not the agent\'s fault, so the break is excused.' },
+      { key: 'false', label: 'Forecast showed it, and it didn\'t blow', fc: GALE, ob: CALM, win: [30, 36], old: [18, 24],
+        verdict: '<b>No waiver: the delay is charged.</b> The agent moved the ship clear of a forecast gale that never came. The plan in hindsight didn\'t need to, so the hold costs reward. The weeks are picked so that re-planning on each new forecast still reaches 1.0, while holding every forecast window scores 0.9 or less.' },
+    ];
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('d3-wind-grading'))) {
+        root = [...document.querySelectorAll('.d3-wind-grading')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+      let W = 640;
+      const Hh = 230, L = 34, R = 10, TOP = 12, BOT = 52;
+      const xs = (h) => L + ((W - L - R) * h) / 48;
+      const ys = (k) => TOP + (Hh - TOP - BOT) * (1 - k / 40);
+      const path = (vals) => vals.map((v, i) => `${i ? 'L' : 'M'}${xs(T[i]).toFixed(1)},${ys(v).toFixed(1)}`).join(' ');
+      const LAST = 10;
+      let ci = 0;
+      const draw = () => {
+        W = Math.max(300, Math.round(root.clientWidth || 640));
+        const narrow = W < 480;
+        const c = CASES[ci];
+        const winY = Hh - BOT + 18;
+        root.innerHTML = `
+          <div class="wg-tabs" role="group" aria-label="Case">
+            ${CASES.map((k, i) => `<button type="button" class="wg-tab" data-i="${i}" aria-pressed="${i === ci}">${esc(k.label)}</button>`).join('')}
+          </div>
+          <svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="${esc(c.label)}: forecast at the last chance, wind that blew, and the ship's window">
+            ${[0, 10, 20, 30].map((k) => `<line class="grid" x1="${L}" x2="${W - R}" y1="${ys(k)}" y2="${ys(k)}"></line><text class="ax" x="${L - 6}" y="${ys(k) + 4}" text-anchor="end">${k}</text>`).join('')}
+            <text class="ax" x="${L - 6}" y="${TOP - 2}" text-anchor="end">kn</text>
+            <line class="thr" x1="${L}" x2="${W - R}" y1="${ys(25)}" y2="${ys(25)}"></line>
+            <text class="thr-l" x="${W - R}" y="${ys(25) - 4}" text-anchor="end">${narrow ? '25 kn: big ships stop' : '25 kn: ships of 300 m+ stop, +1 tug'}</text>
+            <line class="thr" x1="${L}" x2="${W - R}" y1="${ys(30)}" y2="${ys(30)}"></line>
+            <text class="thr-l" x="${W - R}" y="${ys(30) - 4}" text-anchor="end">30 kn: nothing moves</text>
+            <path class="fc" d="${path(c.fc)}"></path>
+            <path class="ob" d="${path(c.ob)}"></path>
+            <line class="lc" x1="${xs(LAST)}" x2="${xs(LAST)}" y1="${TOP}" y2="${winY + 10}"></line>
+            <text class="lc-l" x="${xs(LAST) + 5}" y="${TOP + 10}">last chance to change</text>
+            ${c.old ? `<rect class="win-old" x="${xs(c.old[0])}" y="${winY}" width="${xs(c.old[1]) - xs(c.old[0])}" height="12" rx="2"></rect>` : ''}
+            <rect class="win" x="${xs(c.win[0])}" y="${winY}" width="${xs(c.win[1]) - xs(c.win[0])}" height="12" rx="2"></rect>
+            <text class="win-l" x="${xs(c.win[1]) + 6}" y="${winY + 10}">${c.old ? 'the ship, moved' : 'the ship\'s berthing'}</text>
+            ${(narrow ? [0, 24, 48] : [0, 12, 24, 36, 48]).map((h) => `<text class="ax" x="${xs(h)}" y="${Hh - 4}" text-anchor="middle">+${h} h</text>`).join('')}
+          </svg>
+          <div class="wg-verdict" aria-live="polite">${c.verdict}</div>
+          <div class="wg-legend">
+            <span><i class="l-fc"></i>forecast in force at the last chance</span>
+            <span><i class="l-ob"></i>wind that blew</span>
+            <span><i class="l-win"></i>the ship's window</span>
+            <span><i class="l-thr"></i>the port's limits</span>
+          </div>
+          <div class="wg-note">Illustrative curves, not real readings. In the env, forecasts are ECMWF runs as issued, adjusted to the port's anemometer, and the wind is what that anemometer measured.</div>`;
+        root.querySelectorAll('.wg-tab').forEach((b) => b.addEventListener('click', () => { ci = +b.dataset.i; draw(); }));
+      };
+      draw();
+      let lastW = W;
+      if (window.ResizeObserver) new ResizeObserver(() => { const w = Math.round(root.clientWidth); if (Math.abs(w - lastW) > 8) { lastW = w; draw(); } }).observe(root);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+    else boot();
+  })();
+</script>

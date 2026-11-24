@@ -1,0 +1,48 @@
+{
+  "ecmwf": {
+    "note": "Synthetic fixture: invented forecasts, no ECMWF data.",
+    "fields": [
+      "key",
+      "offset",
+      "length",
+      "sha256",
+      "last_modified"
+    ],
+    "messages": [
+      [
+        "synthetic/e00/10u.grib2",
+        0,
+        64,
+        "b10c3b0e538eed5174ef6fed80e10007d7bb9d4b711ab279fec01ea14d06dec3",
+        "2024-01-01T00:00:00Z"
+      ],
+      [
+        "synthetic/e00/10v.grib2",
+        0,
+        64,
+        "acdc04e5ea3963baa95b0175790cb7f8c36072b5ba059720929b5667836691d5",
+        "2024-01-01T00:00:00Z"
+      ],
+      [
+        "synthetic/e01/10u.grib2",
+        0,
+        64,
+        "a6a0c42cb26954b93999729ad76804c65fea2ace363853cfc556c451de362ced",
+        "2024-01-01T00:00:00Z"
+      ],
+      [
+        "synthetic/e01/10v.grib2",
+        0,
+        64,
+        "d51cea427ed13909ed87dc25ddfd292c8c0efbb0f8d05dce788dd104c66b460e",
+        "2024-01-01T00:00:00Z"
+      ]
+    ]
+  },
+  "y7": {
+    "note": "Synthetic fixture: invented wind, no Meteocat data."
+  },
+  "calibration": {
+    "note": "Synthetic fixture: no calibration."
+  }
+}

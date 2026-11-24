@@ -118,6 +118,7 @@ def test_a_task_pool_trains_every_pool_task_in_a_fresh_order_each_pass(monkeypat
     pytest.importorskip("transformers")
     sys.path.insert(0, str(ROOT))
     from retroenv_openenv import client
+
     from train.sync_grpo import task_dataset
 
     split = [
@@ -166,6 +167,7 @@ def test_mask_truncated_leaves_only_a_cut_off_unsubmitted_episode_out_of_the_los
     pytest.importorskip("transformers")
     sys.path.insert(0, str(ROOT))
     from retroenv_openenv import client
+
     from train.sync_grpo import TrainingEnv
 
     monkeypatch.setattr(client, "RetroEnvClient", _LiveClient)
@@ -188,6 +190,7 @@ def test_the_shaped_reward_reaches_the_trainer_but_not_the_model(monkeypatch):
     pytest.importorskip("transformers")
     sys.path.insert(0, str(ROOT))
     from retroenv_openenv import client
+
     from train.sync_grpo import TrainingEnv
 
     class Shaped(_LiveClient):

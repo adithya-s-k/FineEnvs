@@ -61,6 +61,27 @@ def unregistered(projects: list[dict]) -> list[str]:
     )
 
 
+def render_people(authors: list[dict]) -> str:
+    """`authors:` entries ({name, github, affiliation}) as "Name (Affiliation)", linked to GitHub."""
+    people = []
+    for a in authors:
+        name = f"[{a['name']}](https://github.com/{a['github']})" if a.get("github") else a["name"]
+        people.append(f"{name} ({a['affiliation']})" if a.get("affiliation") else name)
+    return ", ".join(people)
+
+
+def render_credits(project: dict) -> str:
+    """Credit lines under a project's title: its authors, then the authors of any framework port."""
+    lines = []
+    if project.get("authors"):
+        lines.append(f"by {render_people(project['authors'])}")
+    for env in project.get("envs") or []:
+        for fw, spec in (env.get("frameworks") or {}).items():
+            if spec.get("authors"):
+                lines.append(f"`{fw}` port by {render_people(spec['authors'])}")
+    return "".join(f"<br><sub>{line}</sub>" for line in lines)
+
+
 def render_projects_table(projects: list[dict]) -> str:
     rows = [
         "| # | Project | What you get | Envs | Frameworks | Deployed | Status |",
@@ -79,7 +100,7 @@ def render_projects_table(projects: list[dict]) -> str:
         }
         status = STATUS_ICON.get(p.get("status", ""), p.get("status", ""))
         rows.append(
-            f"| **{num}** | **[{p['title']}](./{folder}/)** | {p['tagline']} "
+            f"| **{num}** | **[{p['title']}](./{folder}/)**{render_credits(p)} | {p['tagline']} "
             f"| {len(envs)} | {len(frameworks)} | {len(spaces)} | {status} |"
         )
     return "\n".join(rows)

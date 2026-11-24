@@ -41,7 +41,7 @@ demos on **[🤗 huggingface.co/FineEnvs](https://huggingface.co/FineEnvs)**.
 Each numbered folder is a **self-contained, end-to-end project** — its own environments, notebooks,
 results and README, plus the Hub repos it owns. They read in order but stand alone.
 
-
+<!-- BEGIN:projects -->
 | # | Project | What you get | Envs | Frameworks | Deployed | Status |
 |---|---|---|:--:|:--:|:--:|---|
 | **00** | **[RL Environments 101](./00-environments-101/)** | Three environments, six frameworks, side by side. | 3 | 6 | 8 | ✅ stable |
@@ -50,8 +50,12 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **03** | **[GeoGuesser](./03-geoguesser/)** | Drop a VLM at a random street corner on Earth and score it on kilometres of error. | 1 | 1 | 1 | ✅ stable |
 | **04** | **[SmolDataEnvs](./04-smoldataenvs/)** | Data-analysis tasks, verified SFT traces and a single-turn GRPO tutorial on HF Jobs. | 1 | 1 | 0 | 🚧 wip |
 | **05** | **[SmolDataEnvs: multi-harness RL](./05-multi-harness-rl/)** | Train on SmolDataEnvs with SETA, native OpenCode or Harbor, using HF Jobs or Slurm. | 3 | 1 | 0 | 🚧 wip |
-| **09** | **[RetroEnv](./09-retroenv/)** | Plan retrosyntheses back to purchasable molecules, scored step by step against a frozen reaction library. | 1 | 1 | 1 | 🚧 wip |
-| **07** | **[PortSimEnv](./07-simulation-environments/portsim-v1/)** | Re-plan a broken week of container-ship dockings at the Port of Barcelona, graded against a proven optimum. | 1 | 1 | 1 | 🚧 wip |
+| **06** | **[Multilingual](./06-multilingual/)** | Document OCR over a million pages in 22 languages and speech recognition over 102, each behind one OpenEnv server, and Gemma 4 trained to read and hear Kannada. | 2 | 1 | 2 | ✅ trained |
+| **07** | **[PortSimEnv v1](./07-simulation-environments/portsim-v1/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub><br><sub>`agentenv` port by [Edgar Arakelyan](https://github.com/earakely-scale) (Scale AI)</sub> | Re-plan a broken week of container-ship dockings at the Port of Barcelona, graded against a proven optimum. | 1 | 2 | 1 | 🚧 wip |
+| **07** | **[PortSimEnv v2–v5: live, marine, wind and lines](./07-simulation-environments/portsim-live/)**<br><sub>by [Edgar Arakelyan](https://github.com/earakely-scale) (Scale AI)</sub> | Run a Port of Barcelona quay through a week as it unfolds, with live news, pilots and tugs, real wind and shipping lines that answer back. | 1 | 1 | 0 | 🚧 wip |
+| **07** | **[AirOpsEnv v1–v3: the storm day, the ops control center and its passengers](./07-simulation-environments/airopsenv/)**<br><sub>by [Edgar Arakelyan](https://github.com/earakely-scale) (Scale AI)</sub> | Run JetBlue through a real storm day, from one hub's desk to the whole network's control center, where two desks talk, then three with the passengers on board. | 1 | 1 | 0 | 🚧 wip |
+| **09** | **[RetroEnv](./09-retroenv/)**<br><sub>by [Anindyadeep Sannigrahi](https://github.com/Anindyadeep), [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | Plan retrosyntheses back to purchasable molecules, scored step by step against a frozen reaction library, and Qwen3.8-27B trained to do it. | 1 | 1 | 1 | ✅ trained |
+<!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
 editing that manifest, not this table.</sub>
@@ -139,18 +143,43 @@ walks through the experiments, and the
 [collection](https://huggingface.co/collections/FineEnvs/smoldataenvs-multi-harness-rl-6abdfaaa8d74dacd481d5212)
 holds the Spaces, datasets and trained models.
 
-### [07 · Simulation environments](./07-simulation-environments/portsim-v1/) &nbsp;<sub>part 1: PortSimEnv v1</sub>
+### [06 · Multilingual](./06-multilingual/) &nbsp;<sub>reading and hearing many languages, two servers</sub>
 
-**Real-world work as an environment.** The agent re-plans a broken week of container-ship dockings at
-the Port of Barcelona, built from the port's real 2024 records: late ships, closed quay sections, crane
-breakdowns, gales. It has three tools, and its plan is graded once, deterministically, against the
-optimum CP-SAT proves.
+**Two corpora as environments.** [`ocr/`](./06-multilingual/ocr/) serves a million scanned pages in
+22 languages from a bucket as 11 million tasks, with Sarvam Indic OCR Bench beside them as evaluation
+splits. [`asr/`](./06-multilingual/asr/) serves all of FLEURS, 102 languages of read speech. Both play
+in the browser.
 
-Six models were evaluated on the 50 eval tasks. GPT-6.1 Sol leads at 0.888, and the open models lose
-most of their score by never submitting a plan. Play an episode in the
-[Space](https://huggingface.co/spaces/FineEnvs/PortSimEnv), watch every eval rollout
-[in 3D](https://huggingface.co/spaces/FineEnvs/PortSimEnv-Eval), and read
-[the article](https://huggingface.co/spaces/FineEnvs/simulation-rl-environments).
+Gemma 4 E4B was trained on Kannada in each. Reading, it makes 16% fewer character errors on the
+benchmark's Kannada slice, mostly by learning to stay in the script. Hearing, it makes 45% fewer on
+clips it never saw, but only once the trainer actually fed it the audio: TRL drops audio from the
+forward pass its loss comes from, and the project shows the fix and the numbers. Part of the
+[Multilingual Multimodal Envs](https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4) collection.
+
+### [07 · Simulation environments](./07-simulation-environments/) &nbsp;<sub>a catalog of simulation environments and their evals</sub>
+
+**Real-world work as an environment.** Each environment rebuilds one real job from the records it leaves
+behind and grades the agent once, deterministically, against an answer that can be proven best. The
+[catalog](./07-simulation-environments/) credits every author and gives each environment an eval card in
+the same format.
+
+- **[PortSimEnv v1](./07-simulation-environments/portsim-v1/).** The agent re-plans a broken week of
+  container-ship dockings at the Port of Barcelona, built from the port's real 2024 records. It has
+  three tools, and its plan is graded against the optimum CP-SAT proves. GPT-6.1 Sol leads the six-model
+  eval at 0.888. Play it in the [Space](https://huggingface.co/spaces/FineEnvs/PortSimEnv), watch every
+  eval rollout [in 3D](https://huggingface.co/spaces/FineEnvs/PortSimEnv-Eval), or run it on
+  [AgentEnv](./07-simulation-environments/portsim-v1/envs/berth_planning/agentenv/).
+- **[PortSimEnv v2–v5](./07-simulation-environments/portsim-live/)**, by Edgar Arakelyan (Scale AI), on
+  [AgentEnv](https://github.com/scaleapi/agentenv-framework). The same weeks play out watch by watch: live
+  news and freezes (v2), pilots and tugs (v3), real wind and forecasts (v4), and shipping lines that
+  answer back (v5). Over 60 weeks Claude Opus 5.5 and GPT-6 Astra lead at 0.857 and 0.851, and
+  Qwen3.8-27B finds a valid plan in 1 of 60. Every run replays in the
+  [Space](https://huggingface.co/spaces/earakely-scale/PortSimEnv-AgentEnv), and
+  [the article's chapter](https://fineenvs-simulation-rl-environments.hf.space/#the-live-port-portsimenv-v2v5) walks through each version.
+
+Everything is in the [Simulation RL Envs collection](https://huggingface.co/collections/FineEnvs/simulation-rl-envs-6ac4eca150bd4b91790e2540),
+and [the article](https://huggingface.co/spaces/FineEnvs/simulation-rl-environments) covers all of it.
+Built a simulation environment? [Add it to the catalog](./07-simulation-environments/#add-your-environment).
 
 > **More coming.** Each new project is another end-to-end recipe: an environment, a training run, and
 > the artifacts on the Hub. [Proposals and contributions welcome →](./CONTRIBUTING.md)
@@ -270,9 +299,9 @@ tools, native OpenCode and Harbor, and evaluated in each.
 ![Article](https://img.shields.io/badge/-article-4F46E5) ![Live](https://img.shields.io/badge/-live%20space-FFD21E)
 
 Turning real-world work into RL environments. Part 1 builds PortSimEnv from the Port of Barcelona's
-2024 records and grades every plan against a proven optimum.
+2024 records; the community has since added v2–v5 and RailSimEnv.
 
-<sub>📂 [`content/articles/simulation-rl-environments/`](./content/articles/simulation-rl-environments/) · project [`07-simulation-environments/`](./07-simulation-environments/portsim-v1/)</sub>
+<sub>📂 [`content/articles/simulation-rl-environments/`](./content/articles/simulation-rl-environments/) · project [`07-simulation-environments/`](./07-simulation-environments/)</sub>
 
 </td>
 <td width="25%" valign="top">
@@ -331,7 +360,7 @@ npx skills add adithya-s-k/FineEnvs
 | Skill | What it builds |
 |---|---|
 | **`rl-env-from-description`** | Orchestrator — interviews you, then ports across all four frameworks |
-| `generate-openenv-env` | [OpenEnv](https://github.com/meta-pytorch/OpenEnv) (Hugging Face / Meta) — HTTP + MCP |
+| `generate-openenv-env` | [OpenEnv](https://github.com/openenv/OpenEnv) (Hugging Face / Meta) — HTTP + MCP |
 | `generate-ors-env` | [OpenReward](https://openreward.ai) (ORS) — per-tool-call rewards |
 | `generate-verifiers-env` | [Verifiers](https://github.com/PrimeIntellect-ai/verifiers) (Prime Intellect) — in-process + rubrics |
 | `generate-nemo-gym-env` | [NeMo Gym](https://github.com/NVIDIA-NeMo/Gym) (NVIDIA) — HTTP + post-episode `/verify` |
@@ -350,7 +379,8 @@ FineEnvs/
 ├── 03-geoguesser/           a multi-turn game as an environment
 ├── 04-smoldataenvs/         5.5K+ verified data-analysis tasks
 ├── 05-multi-harness-rl/     the same tasks trained through TRL, OpenCode and Harbor
-├── 07-simulation-environments/  real-world simulations, part 1: PortSimEnv
+├── 06-multilingual/         OCR over 22 languages and ASR over 102, two OpenEnv servers
+├── 07-simulation-environments/  a catalog of simulation environments: PortSimEnv v1–v5 and more
 ├── content/
 │   ├── articles/            long-form sources (Astro → Docker Space)
 │   └── slides/              talk decks (Vite → static Space)

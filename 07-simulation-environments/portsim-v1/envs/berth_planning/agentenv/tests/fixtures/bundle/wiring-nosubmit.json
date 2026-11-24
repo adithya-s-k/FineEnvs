@@ -1,0 +1,8 @@
+[
+  {"id": "deploy", "type": "deploy_env", "env_id": "portsim"},
+  {"id": "load-task", "type": "apply_server_config", "env_id": "portsim",
+   "directives": [{"service": "portsim", "uri": "urn:portsim:load-task/v1",
+                   "args": {"task_id": "dock-24B-w07x1-busy-0"}}]},
+  {"id": "grade", "type": "env_outcome_verifier", "env_id": "portsim", "file_artifact_id": "portsim-verifier",
+   "verifier_id": "portsim", "score_aggregator": "weighted_average"}
+]

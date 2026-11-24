@@ -24,7 +24,7 @@ from datetime import timedelta
 from .check import evaluate
 from .data import QUAYS, Call
 from .generate import (BASE_MOVES_PER_HOUR, CLOSURE_REASONS, CRANE_POOL, CRANE_RATE, _published_peaks, _with_cranes,
-                       crane_class, real_week, week_start, _hour)
+                       crane_class, real_week, week_start, hour)
 from .model import Block, Ship, Task, plan_to_list
 from .solve import naive_replan, optimal_plan
 
@@ -114,8 +114,8 @@ def build_dock_task(calls: list[Call], quay: str, week: int, n_weeks: int, tier:
         lo, hi = t0 + timedelta(days=d0), t0 + timedelta(days=d0 + days)
         moved = []
         for c in sorted((c for c in calls if c.quay == other and lo <= c.eta < hi), key=lambda c: (c.eta, c.call)):
-            a = _hour(t0, c.eta)
-            h = max(1, _hour(t0, c.etd) - a)
+            a = hour(t0, c.eta)
+            h = max(1, hour(t0, c.etd) - a)
             lo_c, hi_c, std = crane_class(c.length_m)
             s = Ship(id=len(ships), name=c.ship, imo=c.imo, length_m=c.length_m,
                      sections=min(c.last - c.first + 1, q.last_section - q.first_section + 1), arrival=a, handling=h,

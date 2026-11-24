@@ -1,0 +1,154 @@
+<div class="d3-live-week"></div>
+<style>
+  .d3-live-week { font-size: 13px; color: var(--text-color); }
+  .d3-live-week .lw-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 12px; }
+  .d3-live-week .lw-btn { appearance: none; cursor: pointer; font: inherit; font-size: 12.5px; line-height: 1.15; padding: 5px 10px;
+    border-radius: 6px; border: 1px solid var(--border-color); background: transparent; color: var(--muted-color); }
+  .d3-live-week .lw-btn[aria-pressed="true"] { color: var(--text-color); border-color: var(--text-color); }
+  .d3-live-week .lw-btn:focus-visible { outline: 2px solid var(--text-color); outline-offset: 2px; }
+  .d3-live-week .lw-play { color: var(--text-color); min-width: 64px; }
+  .d3-live-week .lw-chart { position: relative; padding-left: 112px; }
+  .d3-live-week .lw-row { position: relative; height: 50px; border-top: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent); }
+  .d3-live-week .lw-row:last-of-type { border-bottom: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent); }
+  .d3-live-week .lw-lab { position: absolute; left: -112px; width: 104px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 12px; color: var(--muted-color); }
+  .d3-live-week .lw-lead { position: absolute; top: 24px; height: 0; border-top: 2px solid var(--primary-color); }
+  .d3-live-week .lw-dot { position: absolute; top: 19px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--primary-color); border: 2px solid var(--primary-color); box-sizing: border-box; }
+  .d3-live-week .lw-name { position: absolute; top: 3px; transform: translateX(-50%); font-size: 11px; white-space: nowrap; color: var(--text-color); }
+  .d3-live-week .lw-name.below { top: 32px; }
+  .d3-live-week .unknown .lw-lead { border-top: 2px dashed color-mix(in srgb, var(--muted-color) 55%, transparent); }
+  .d3-live-week .unknown .lw-dot { background: var(--page-bg); border-color: color-mix(in srgb, var(--muted-color) 70%, transparent); }
+  .d3-live-week .unknown .lw-name { color: var(--muted-color); }
+  .d3-live-week .new .lw-dot { box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary-color) 28%, transparent); }
+  .d3-live-week .lw-over { position: absolute; top: 0; bottom: 0; left: 112px; right: 0; pointer-events: none; }
+  .d3-live-week .lw-freeze { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+    border-left: 2px solid var(--text-color); }
+  .d3-live-week .lw-past { position: absolute; top: 0; bottom: 0; left: 0; background: color-mix(in srgb, var(--muted-color) 7%, transparent); }
+  .d3-live-week .lw-axis { position: relative; height: 34px; margin-left: 112px; font-size: 11px; color: var(--muted-color); font-variant-numeric: tabular-nums; }
+  .d3-live-week .lw-axis span { position: absolute; top: 4px; transform: translateX(-50%); white-space: nowrap; }
+  .d3-live-week .lw-axis .wk { top: 19px; color: var(--text-color); font-weight: 600; }
+  .d3-live-week .lw-axis .wk.off { color: var(--muted-color); font-weight: 400; }
+  .d3-live-week .lw-msgs { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; min-height: 64px; }
+  .d3-live-week .lw-msgs h4 { margin: 0 0 6px; font-size: 12.5px; font-weight: 600; }
+  .d3-live-week .lw-msgs p { margin: 4px 0 0; font-size: 12.5px; line-height: 1.45; }
+  .d3-live-week .lw-msgs b { font-weight: 600; }
+  .d3-live-week .lw-msgs .muted { color: var(--muted-color); }
+  .d3-live-week .lw-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; font-size: 12px; color: var(--muted-color); }
+  .d3-live-week .lw-legend i { display: inline-block; vertical-align: middle; margin-right: 6px; }
+  .d3-live-week .sw-known { width: 10px; height: 10px; border-radius: 50%; background: var(--primary-color); }
+  .d3-live-week .sw-unknown { width: 10px; height: 10px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--muted-color) 70%, transparent); box-sizing: border-box; }
+  .d3-live-week .sw-lead { width: 16px; border-top: 2px solid var(--primary-color); }
+  .d3-live-week .sw-freeze { width: 14px; height: 10px; background: color-mix(in srgb, var(--primary-color) 14%, transparent); border-left: 2px solid var(--text-color); }
+  @media (max-width: 640px) {
+    .d3-live-week .lw-chart { padding-left: 0; }
+    .d3-live-week .lw-lab { position: static; width: auto; height: 14px; font-size: 11px; }
+    .d3-live-week .lw-row { height: 64px; padding-top: 14px; }
+    .d3-live-week .lw-lead { top: 38px; }
+    .d3-live-week .lw-dot { top: 33px; }
+    .d3-live-week .lw-name { top: 17px; font-size: 10px; }
+    .d3-live-week .lw-name.below { top: 46px; }
+    .d3-live-week .lw-over { left: 0; }
+    .d3-live-week .lw-axis { margin-left: 0; }
+    .d3-live-week .lw-axis .day { font-size: 10px; }
+    .d3-live-week .lw-axis .wk.off { display: none; }
+  }
+</style>
+<script>
+  (() => {
+    // One real live week (port_week_core.schedule on a dock-v1 week), stepped watch by watch: what the agent knows,
+    // what it doesn't yet, and the six hours that are frozen.
+    const fetchJson = async (f) => {
+      for (const u of ['/data/' + f, 'assets/data/' + f, '../assets/data/' + f]) {
+        try { const r = await fetch(u, { cache: 'no-cache' }); if (r.ok) return await r.json(); } catch (e) {}
+      }
+      throw new Error(f + ' not found');
+    };
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const when = (h) => `${DAYS[Math.floor(h / 24) % 7]} ${String(h % 24).padStart(2, '0')}:00`;
+    const ROWS = [
+      { key: 'ships', label: 'Ships', kinds: ['late', 'extra', 'bunching'] },
+      { key: 'hm', label: 'Harbour master', kinds: ['gale', 'emergency'] },
+      { key: 'ops', label: 'Terminal ops', kinds: ['closure', 'crane_outage'] },
+      { key: 'desk', label: 'Line desk', kinds: ['priority'] },
+    ];
+    const NAME = { late: 'late ship', extra: 'unscheduled call', bunching: 'ships bunched', gale: 'gale', emergency: 'emergency',
+      closure: 'closure', crane_outage: 'crane outage', priority: 'priority cargo' };
+
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('d3-live-week'))) {
+        root = [...document.querySelectorAll('.d3-live-week')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+
+      fetchJson('live-week.json').then((d) => {
+        const H = d.hours;
+        const x = (h) => `${(100 * Math.min(Math.max(h, 0), H)) / H}%`;
+        // The agent learns a notice at its bulletin, the watch it belongs to.
+        const notices = d.watches.flatMap((w) => w.notices.map((n) => ({ ...n, reveal: w.hour, watch: w.index })));
+        const rows = ROWS.filter((r) => notices.some((n) => r.kinds.includes(n.kind)));
+        let k = 0;
+        let timer = null;
+
+        const draw = () => {
+          const w = d.watches[k];
+          const now = w.hour;
+          const known = notices.filter((n) => n.reveal <= now).length;
+          const freezeEnd = k === 0 ? now : now + d.freeze_hours;
+          root.innerHTML = `
+            <div class="lw-bar" role="group" aria-label="Watch">
+              <button type="button" class="lw-btn lw-play" aria-label="Play the week">${timer ? 'Pause' : 'Play'}</button>
+              ${d.watches.map((v, i) => `<button type="button" class="lw-btn lw-w" data-i="${i}" aria-pressed="${i === k}">Watch ${v.index} · ${when(v.hour)}</button>`).join('')}
+            </div>
+            <div class="lw-chart">
+              ${rows.map((r) => `
+                <div class="lw-row"><span class="lw-lab">${r.label}</span>
+                  ${notices.filter((n) => r.kinds.includes(n.kind)).sort((a, b) => a.event_hour - b.event_hour).map((n, i, arr) => {
+                    const cls = n.reveal > now ? 'unknown' : n.watch === k ? 'new' : '';
+                    const below = i > 0 && n.event_hour - arr[i - 1].event_hour < 32 && !arr[i - 1]._below;
+                    n._below = below;
+                    return `<span class="${cls}">
+                      <span class="lw-lead" style="left:${x(n.reveal)};width:calc(${x(n.event_hour)} - ${x(n.reveal)})"></span>
+                      <span class="lw-dot" style="left:${x(n.event_hour)}" title="${esc(n.text)}"></span>
+                      <span class="lw-name${below ? ' below' : ''}" style="left:${x(n.event_hour)}">${NAME[n.kind] || n.kind}</span></span>`;
+                  }).join('')}
+                </div>`).join('')}
+              <div class="lw-over">
+                <div class="lw-past" style="width:${x(now)}"></div>
+                <div class="lw-freeze" style="left:${x(now)};width:calc(${x(freezeEnd)} - ${x(now)})"></div>
+              </div>
+            </div>
+            <div class="lw-axis">
+              ${DAYS.map((dd, i) => `<span class="day" style="left:${x(i * 24 + 12)}">${dd}</span>`).join('')}
+              ${d.watches.map((v, i) => `<span class="wk${i === k ? '' : ' off'}" style="left:${x(v.hour)}">W${v.index}</span>`).join('')}
+            </div>
+            <div class="lw-msgs" aria-live="polite">
+              <h4>Watch ${w.index}, ${when(now)}: the bulletin</h4>
+              ${w.notices.map((n) => `<p><b>${esc(n.from)}</b> · ${esc(n.text)}</p>`).join('')}
+              <p class="muted">The agent knows ${known} of the week's ${notices.length} notices${k === 0 ? '' : `; every window starting before ${when(freezeEnd)} is frozen`}. Next it confirms windows, at most 3 planning calls, then calls <code>advance</code>.</p>
+            </div>
+            <div class="lw-legend">
+              <span><i class="sw-known"></i>news the agent has</span>
+              <span><i class="sw-unknown"></i>still to come</span>
+              <span><i class="sw-lead"></i>from the bulletin to the hour it's about</span>
+              <span><i class="sw-freeze"></i>now, and the next ${d.freeze_hours} h, frozen</span>
+            </div>`;
+          root.querySelector('.lw-play').addEventListener('click', toggle);
+          root.querySelectorAll('.lw-w').forEach((b) => b.addEventListener('click', () => { stop(); k = +b.dataset.i; draw(); }));
+        };
+        const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+        const toggle = () => {
+          if (timer) { stop(); draw(); return; }
+          if (k === d.watches.length - 1) k = 0;
+          timer = setInterval(() => { if (k >= d.watches.length - 1) { stop(); } else { k += 1; } draw(); }, 2200);
+          draw();
+        };
+        draw();
+      }).catch((e) => { root.innerHTML = `<pre style="color:var(--danger-color)">${esc(e.message)}</pre>`; });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+    else boot();
+  })();
+</script>

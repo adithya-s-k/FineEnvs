@@ -10,7 +10,7 @@ does not pay for laziness: every task should give these low rewards.
 from __future__ import annotations
 
 from .model import Plan, Task
-from .solve import _Ledger, naive_replan
+from .solve import Ledger, naive_replan
 
 
 def published(task: Task) -> Plan:
@@ -22,7 +22,7 @@ def published(task: Task) -> Plan:
 
 
 def greedy(task: Task) -> Plan:
-    led = _Ledger(task)
+    led = Ledger(task)
     plan: Plan = {}
     for s in sorted(task.ships, key=lambda s: (s.arrival, s.id)):
         anchor = s.planned_section if s.planned_section is not None else task.first_section
@@ -46,7 +46,7 @@ def greedy(task: Task) -> Plan:
 
 def serial(task: Task) -> Plan:
     """Ships one at a time in arrival order on the first sections: valid by construction, very late."""
-    led = _Ledger(task)
+    led = Ledger(task)
     plan: Plan = {}
     t = 0
     for s in sorted(task.ships, key=lambda s: (s.arrival, s.id)):

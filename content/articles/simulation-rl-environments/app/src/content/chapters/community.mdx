@@ -1,0 +1,45 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## What the community built
+
+Within a week of part 1, two people had built on it. Edgar Arakelyan's live port is the previous chapter. Bhavish
+Pahwa took the same recipe to a different job. Both are in the
+[FineEnvs catalog](https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments), credited by name,
+each with its own eval.
+
+### RailSimEnv, by Bhavish Pahwa
+
+In [RailSimEnv](https://huggingface.co/spaces/bpHigh/RailSimEnv) the agent dispatches Arriva's trains on the
+single-track Groningen–Leeuwarden line in the Netherlands after a real 2025 breakdown, collision, or signal or points
+failure. On a single track, trains in opposite directions can only pass where the line doubles, so one closed section backs up
+the whole line. The
+agent holds, short-turns and cancels trains so they cross safely, and every plan is graded against a CP-SAT-proven
+optimum. It is built from Rijden de Treinen's open train archive and OpenStreetMap, and it runs on OpenEnv with a 3D
+replay.
+
+<HtmlEmbed
+  src="railsim-gallery.html"
+  wide
+  frameless
+  title="RailSimEnv: one closure on a single-track line"
+  desc="The proven-optimal plan for a broken-down train on 1 May 2025, in RailSimEnv's 3D replay and its train graph."
+/>
+
+On 45 hard eval tasks, as reported by the author:
+
+| Model | Reward | Legal plans | At the optimum |
+|---|---:|---:|---:|
+| Qwen3.8-2.4T-A95B | 0.556 | 39 of 45 | 12 |
+| DeepSeek V4.1 Flash | 0.534 | 33 of 45 | 12 |
+| Claude Sonnet 5.5 | 0.467 | 45 of 45 | 4 |
+| GLM-5.3-Flash | 0.360 | 24 of 45 | 6 |
+
+An open model leads here. The one closed model keeps every plan legal but rarely finds the best one. The code is in
+[bp-high/RLSimEnvs](https://github.com/bp-high/RLSimEnvs).
+
+### Add yours
+
+The catalog takes environments whose code lives in FineEnvs and ones that stay in their authors' own repos. Every
+entry has a manifest that credits its authors, a short card, and an eval card in a shared format. That shared format
+is what lets this article draw each environment's eval the same way, like the PortSimEnv v2–v5 chart above.
+[Here is how to add one](https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments#add-your-environment).

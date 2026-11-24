@@ -1,0 +1,144 @@
+<div class="d3-community-evals"></div>
+<style>
+  .d3-community-evals { font-size: 13px; color: var(--text-color); }
+  .d3-community-evals .ce-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .d3-community-evals .ce-tab { appearance: none; cursor: pointer; font: inherit; font-size: 12.5px; line-height: 1.15; padding: 5px 10px;
+    border-radius: 6px; border: 1px solid var(--border-color); background: transparent; color: var(--muted-color); }
+  .d3-community-evals .ce-tab[aria-pressed="true"] { color: var(--text-color); border-color: var(--text-color); }
+  .d3-community-evals .ce-tab:focus-visible { outline: 2px solid var(--text-color); outline-offset: 2px; }
+  .d3-community-evals .ce-grid { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content max-content; gap: 8px 12px; align-items: center; }
+  .d3-community-evals .ce-head { font-size: 12px; color: var(--muted-color); }
+  .d3-community-evals .ce-name { white-space: nowrap; }
+  .d3-community-evals .ce-track { position: relative; height: 18px; border-radius: 3px; background: color-mix(in srgb, var(--muted-color) 8%, transparent); }
+  .d3-community-evals .ce-bar { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: color-mix(in srgb, var(--primary-color) 70%, transparent); }
+  .d3-community-evals .ce-ci { position: absolute; top: 50%; height: 0; border-top: 1.5px solid var(--text-color); }
+  .d3-community-evals .ce-ci::before, .d3-community-evals .ce-ci::after { content: ''; position: absolute; top: -5px; height: 8px; border-left: 1.5px solid var(--text-color); }
+  .d3-community-evals .ce-ci::before { left: 0; }
+  .d3-community-evals .ce-ci::after { right: 0; }
+  .d3-community-evals .ce-base { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 1.5px solid var(--muted-color); }
+  .d3-community-evals .ce-base.s1 { border-left-style: dashed; }
+  .d3-community-evals .ce-base.s2 { border-left-style: dotted; }
+  .d3-community-evals .ce-mean { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+  .d3-community-evals .ce-ok { font-variant-numeric: tabular-nums; color: var(--muted-color); text-align: right; }
+  .d3-community-evals .ce-axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted-color); font-variant-numeric: tabular-nums; }
+  .d3-community-evals .ce-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 12px; font-size: 12px; color: var(--muted-color); }
+  .d3-community-evals .ce-legend i { display: inline-block; vertical-align: middle; margin-right: 6px; }
+  .d3-community-evals .ce-legend .sw-bar { width: 12px; height: 10px; border-radius: 2px; background: color-mix(in srgb, var(--primary-color) 70%, transparent); }
+  .d3-community-evals .ce-legend .sw-ci { width: 14px; border-top: 1.5px solid var(--text-color); }
+  .d3-community-evals .ce-legend .sw-base { height: 12px; border-left: 1.5px solid var(--muted-color); }
+  .d3-community-evals .ce-legend .sw-base.s1 { border-left-style: dashed; }
+  .d3-community-evals .ce-legend .sw-base.s2 { border-left-style: dotted; }
+  .d3-community-evals .ce-how { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-color); font-size: 12.5px; line-height: 1.5; }
+  .d3-community-evals .ce-how summary { cursor: pointer; color: var(--text-color); }
+  .d3-community-evals .ce-how dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 10px 0 0; }
+  .d3-community-evals .ce-how dt { color: var(--muted-color); }
+  .d3-community-evals .ce-how dd { margin: 0; }
+  .d3-community-evals .ce-how code { font-size: 12px; }
+  .d3-community-evals .ce-links { margin-top: 8px; font-size: 12.5px; color: var(--muted-color); }
+  .d3-community-evals .ce-links a { color: var(--muted-color); }
+  .d3-community-evals .ce-tip { position: fixed; pointer-events: none; z-index: 20; background: var(--page-bg); color: var(--text-color);
+    border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 8px; font-size: 12px; line-height: 1.4; opacity: 0; transition: opacity .1s; }
+  @media (max-width: 560px) {
+    .d3-community-evals .ce-grid { grid-template-columns: max-content minmax(0, 1fr) max-content; }
+    .d3-community-evals .ce-ok { display: none; }
+    .d3-community-evals .ce-how dl { grid-template-columns: 1fr; gap: 2px; }
+    .d3-community-evals .ce-how dd { margin-bottom: 6px; }
+  }
+</style>
+<script>
+  (() => {
+    // Renders FineEnvs eval cards (results/eval-*.json): every model's mean reward with its 95% interval, the card's
+    // baselines as vertical rules, and how the eval works. One tab per card.
+    const fetchJson = async (f) => {
+      for (const u of ['/data/' + f, 'assets/data/' + f, '../assets/data/' + f]) {
+        try { const r = await fetch(u, { cache: 'no-cache' }); if (r.ok) return await r.json(); } catch (e) {}
+      }
+      throw new Error(f + ' not found');
+    };
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    const pct = (v) => `${Math.max(0, Math.min(1, v)) * 100}%`;
+    const STYLES = ['s0', 's1', 's2'];
+
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('d3-community-evals'))) {
+        root = [...document.querySelectorAll('.d3-community-evals')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+      let cfg = {};
+      try { cfg = JSON.parse(root.closest('[data-config]')?.dataset.config || '{}'); } catch (e) {}
+      const tip = document.createElement('div');
+      tip.className = 'ce-tip';
+      document.body.appendChild(tip);
+
+      fetchJson(cfg.data || 'community-evals.json').then((d) => {
+        const cards = d.cards;
+        let ci = Math.min(Math.max(cfg.start ?? cards.length - 1, 0), cards.length - 1);
+
+        const draw = () => {
+          const c = cards[ci];
+          const rows = c.models.slice().sort((a, b) => b.mean - a.mean);
+          const bases = c.baselines.slice(0, 3);
+          const n = c.tasks.n;
+          const unit = c.tasks.unit || 'weeks';
+          root.innerHTML = `
+            <div class="ce-tabs" role="group" aria-label="Environment version">
+              ${cards.map((k, i) => `<button type="button" class="ce-tab" data-i="${i}" aria-pressed="${i === ci}">${esc(k.label || k.env)}</button>`).join('')}
+            </div>
+            <div class="ce-grid">
+              <span></span><span class="ce-head">mean reward over ${n} eval ${unit}, with its 95% interval</span>
+              <span class="ce-head">mean</span><span class="ce-head ce-ok">valid</span>
+              ${rows.map((m) => `
+                <span class="ce-name">${esc(m.model)}</span>
+                <span class="ce-track" role="img" data-tip="${esc(`${m.model} (${m.provider}): ${m.mean.toFixed(3)}, 95% interval ${m.ci95[0].toFixed(3)} to ${m.ci95[1].toFixed(3)}; a valid plan in ${m.feasible} of ${m.runs} ${unit}; $${m.usd_per_episode.toFixed(2)} an episode`)}"
+                  aria-label="${esc(`${m.model}: mean ${m.mean.toFixed(3)}, ${m.feasible} of ${m.runs} valid`)}">
+                  <span class="ce-bar" style="width:${pct(m.mean)}"></span>
+                  <span class="ce-ci" style="left:${pct(m.ci95[0])};width:calc(${pct(m.ci95[1])} - ${pct(m.ci95[0])})"></span>
+                  ${bases.map((b, i) => `<span class="ce-base ${STYLES[i]}" style="left:${pct(b.mean)}"></span>`).join('')}
+                </span>
+                <span class="ce-mean">${m.mean.toFixed(2)}</span>
+                <span class="ce-ok">${m.feasible}/${m.runs}</span>`).join('')}
+              <span></span><span class="ce-axis"><span>0</span><span>0.5</span><span>1.0</span></span><span></span><span class="ce-ok"></span>
+            </div>
+            <div class="ce-legend">
+              <span><i class="sw-bar"></i>mean reward</span>
+              <span><i class="sw-ci"></i>95% interval</span>
+              ${bases.map((b, i) => `<span><i class="sw-base ${STYLES[i]}"></i>${esc(b.name)} ${b.mean.toFixed(2)}</span>`).join('')}
+            </div>
+            <details class="ce-how">
+              <summary>How this eval works: ${n} ${unit}, ${c.harness.tools.length} tools, up to ${c.harness.max_turns} turns, graded once${c.grading.judge ? '' : ', no LLM judge'}</summary>
+              <dl>
+                <dt>Tasks</dt><dd>${esc(c.tasks.selection)}</dd>
+                <dt>Tools</dt><dd>${c.harness.tools.map((t) => `<code>${esc(t)}</code>`).join(', ')}</dd>
+                <dt>1.0 means</dt><dd>${esc(c.grading.reference)}</dd>
+                <dt>Reward</dt><dd>${esc(c.grading.reward)}</dd>
+                <dt>Excused</dt><dd>${esc(c.grading.excused)}</dd>
+              </dl>
+            </details>
+            <div class="ce-links">
+              ${(c.authors || []).map((a) => esc(a.name) + (a.affiliation ? ` (${esc(a.affiliation)})` : '')).join(', ')}
+              · <a href="${esc(c.links.runs)}" target="_blank" rel="noopener">every run</a>
+              · <a href="${esc(c.links.replay)}" target="_blank" rel="noopener">3D replays</a>
+              · <a href="${esc(c.links.code)}" target="_blank" rel="noopener">code</a>
+            </div>`;
+          root.querySelectorAll('.ce-tab').forEach((b) => b.addEventListener('click', () => { ci = +b.dataset.i; draw(); }));
+        };
+        draw();
+
+        root.addEventListener('mousemove', (e) => {
+          const s = e.target.closest('[data-tip]');
+          if (!s) { tip.style.opacity = 0; return; }
+          tip.textContent = s.dataset.tip;
+          tip.style.left = Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8) + 'px';
+          tip.style.top = e.clientY + 14 + 'px';
+          tip.style.opacity = 1;
+        });
+        root.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
+      }).catch((e) => { root.innerHTML = `<pre style="color:var(--danger-color)">${esc(e.message)}</pre>`; });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+    else boot();
+  })();
+</script>

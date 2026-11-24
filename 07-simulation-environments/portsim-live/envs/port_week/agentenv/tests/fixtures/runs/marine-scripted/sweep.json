@@ -1,0 +1,14 @@
+{
+  "name": "marine-scripted",
+  "models": [
+    "scripted/naive",
+    "scripted/rolling"
+  ],
+  "tasks": [
+    "dock-24B-w07x1-busy-0"
+  ],
+  "k": 1,
+  "episode_cap_usd": 5.0,
+  "live": true,
+  "marine": true
+}

@@ -1,0 +1,281 @@
+[
+  {
+    "id": "deploy",
+    "type": "deploy_env",
+    "env_id": "portsim-marine"
+  },
+  {
+    "id": "load-task",
+    "type": "apply_server_config",
+    "env_id": "portsim-marine",
+    "directives": [
+      {
+        "service": "portsim-marine",
+        "uri": "urn:portsim:live-load/v1",
+        "args": {
+          "task_id": "dock-24B-w07x1-busy-0"
+        }
+      }
+    ]
+  },
+  {
+    "id": "hide-port-notice",
+    "type": "modify_env_tool_access",
+    "env_id": "portsim-marine",
+    "action": "disable",
+    "role": "default",
+    "tools": [
+      "port_notice"
+    ]
+  },
+  {
+    "id": "watches",
+    "type": "register_env_triggers",
+    "env_id": "portsim-marine",
+    "watch_roles": [
+      "default"
+    ],
+    "triggers": [
+      {
+        "id": "watch-1",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 1
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "extra-1",
+              "name": "MAERSK NUBA",
+              "text": "Unscheduled call: ship 16 MAERSK NUBA (211 m, 5 sections) arrives at hour 58, has 672 moves and asks to sail by hour 74. It has no planned slot, so placing it anywhere costs no move penalty."
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "tug_outage-8",
+              "name": "Tug company",
+              "text": "2 of the port's 8 tugs are out of service from hour 54 to hour 78: 6 tugs in that window."
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "pilot_shortage-9",
+              "name": "Pilot station",
+              "text": "2 of the port's 7 pilots on duty are unavailable from hour 54 to hour 66: 5 pilots in that window."
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-2",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 2
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "emergency-7",
+              "name": "Harbour master",
+              "text": "Emergency: ship 5 ZIM CHINA reports reefer power failures; its cargo is at risk unless it docks by hour 64. Each hour it docks later costs 60 on top of any delay."
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-3",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 3
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "late-3",
+              "name": "CARLOTA B",
+              "text": "Ship 7 CARLOTA B was delayed leaving Alicante: it now arrives at hour 93 (planned slot hour 78). Its planned departure stays hour 121."
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-4",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 4
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "late-4",
+              "name": "MAERSK NARMADA",
+              "text": "Ship 10 MAERSK NARMADA was delayed leaving Valencia: it now arrives at hour 129 (planned slot hour 112). Its planned departure stays hour 128."
+            }
+          },
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "crane_outage-6",
+              "name": "Terminal ops",
+              "text": "2 of the terminal's 9 quay cranes are out of service from hour 108 to hour 155 (gantry repair): 7 cranes in that window."
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-5",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 5
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "gale-0",
+              "name": "Harbour master",
+              "text": "Gale warning. From hour 115 to hour 144 the wind is above 25 kn: under the port's traffic rules ships of 300 m or more may not berth or leave. From hour 117 to hour 126 it is above 30 kn: no ship may berth or leave. Cranes keep working; a ship that finishes inside a window waits alongside until the window ends. Ships that berth or leave from hour 115 to hour 144 take one more tug."
+            }
+          }
+        ]
+      },
+      {
+        "id": "watch-6",
+        "when": {
+          "type": "action",
+          "tool": "advance",
+          "where": {
+            "result.watch": {
+              "equals": 6
+            }
+          }
+        },
+        "barrier": {
+          "at": "provoking_call",
+          "timeout_seconds": 60
+        },
+        "actions": [
+          {
+            "type": "tool",
+            "tool": "port_notice",
+            "args": {
+              "event_id": "bunching-5",
+              "name": "Ship agents",
+              "text": "Ships 12, 13, 14 were held up by the Red Sea diversions and now arrive together between hours 156 and 168 (each ship's arrival hour is in the table). Their planned departures stay as published."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "deploy-agent",
+    "type": "deploy_agent",
+    "a2a_agent_id": "portsim-llm",
+    "env_ids": [
+      "portsim-marine"
+    ],
+    "env_vars": {
+      "PORTSIM_MAX_COST_USD": "5"
+    }
+  },
+  {
+    "id": "clock",
+    "type": "sync_env_clock",
+    "env_id": "portsim-marine",
+    "virtual_time": "2024-02-12T00:00:00Z",
+    "virtual_seconds_per_real_second": 0,
+    "tolerate_missing_sync_time": false
+  },
+  {
+    "id": "play",
+    "type": "prompt_agent",
+    "prompt_id": "dock-24B-w07x1-busy-0",
+    "system_prompt": "You are the berth planner for this quay. The published plan no longer works. Make a new berth plan for every ship in the table: when it berths, where, and how many quay cranes work it.\n\nRules (a plan that breaks any of them is infeasible):\n- A ship berths at or after its arrival hour.\n- It gets between its min and max cranes. Hours alongside = ceil(moves / (28 x cranes)); it departs when the work is done, unless that hour is inside a no-movement window for that ship, in which case it waits alongside (still occupying its sections, cranes free) until the window ends.\n- No ship may berth inside a no-movement window that applies to it.\n- It occupies `sections` consecutive sections starting at the section you give, all within 2-22.\n- No two ships may use the same section in the same hour. Ships already alongside and closed sections are off limits for the hours listed.\n  A ship that leaves at hour h frees its sections for a ship berthing at hour h.\n- In every hour, the cranes of all ships alongside (including ships already alongside) may not exceed the cranes available that hour.\n- At most 2 movements per hour: a ship berthing at hour h and a ship leaving at hour h each count as one movement in hour h.\n\nCost (lower is better):\n- Delay: for each ship, (its sections) x (hours it departs after its planned departure). Leaving early earns nothing.\n- Moves: 5 for each scheduled ship you put on a different starting section than planned. Changing the hour or the cranes costs nothing beyond delay. Unscheduled calls have no planned section.\n- Priority ships (notes column): their delay counts that many times. Emergency ships (notes column): each hour they dock after their deadline adds the stated amount.\n\nPlan format - one entry per ship, using the ids from the table:\n[{\"ship\": 0, \"berth_hour\": 36, \"section\": 22, \"cranes\": 3}, {\"ship\": 1, \"berth_hour\": 163, \"section\": 24, \"cranes\": 2}, ...]\n\nHow the week runs:\n- The week is played in watches, starting at watch 0 on Monday 00:00 (hour 0). The table shows the week as the port knows it now. News reaches you as messages in tool results: ships report delays and unscheduled calls, the harbour master issues gale warnings and emergencies, terminal ops announce closures and crane outages, and the line desk flags priority cargo.\n- Time only passes when you call advance: the port moves to the next bulletin, ships berth and sail on their confirmed windows, and the bulletin's messages arrive with your next tool result. Call advance and get_situation together in one turn.\n- From watch 1 on, a window that starts before the freeze line (6 hours after the current hour) is frozen: it can't be changed, and new or changed windows must start at or after the freeze line. At watch 0 every window is open.\n- You have 3 planning calls (check_plan or confirm_berths) per watch.\n\nTools:\n- get_situation(): the hour, the week as known now, your confirmed windows (departed, berthed, frozen or open), the ships still without a window, and new messages.\n- check_plan(plan): your entries over your confirmed windows, checked on the week as known now: the ships with a problem or a cost, the plan's cost, and the entries confirm_berths would refuse. Problems and cost that news brought to a frozen window are listed as excused and not counted. It confirms nothing.\n- confirm_berths(plan): confirms windows with the ships; ships you leave out keep their windows.\n- advance(): ends the watch. After the last watch it returns \"done\": the rest of the week runs on your confirmed windows.\n\nThe week is graded once, on the windows you confirmed and the week as it really happened: an infeasible week scores low, a feasible one higher the closer its cost is to the best possible in hindsight. Cost or rule breaks that news brings to a window that was already frozen are not charged to you. Every ship needs a confirmed window before the week ends; if you stop before the last watch, the rest of the week runs on the windows you confirmed.",
+    "prompt": "# APM Terminals Barcelona, Port of Barcelona - quay 24B, week 7 of 2024\nHour 0 is Monday 12 February 2024 00:00 UTC. Times are whole hours from then.\nThe quay is sections 2-22 (about 42 m each). A ship needs its number of consecutive sections for its hours alongside.\n\n## Notices\n- Sections 10-18 are closed from hour 0 to hour 39 (fender repair).\n\n## Already alongside at hour 0 (cannot move)\n- RUTH BORCHARD: sections 4-7 until hour 1\n\n## Closed sections\n- sections 10-18, hours 0-39 (fender repair)\n\n## Quay cranes and movements\n- The terminal has 9 quay cranes.\n- At most 2 ships may berth or leave in any one hour (pilots and tugs).\n- A crane handles 28 container moves per hour: hours alongside = ceil(moves / (28 x cranes)).\n- Each ship already alongside keeps 2 cranes until it leaves.\n\n## Ships to berth\n\n| id | ship | length m | sections | arrives (hour) | workload (moves) | cranes min-max | planned berth (hour @ section, cranes) | planned departure (hour) | notes |\n|---|---|---|---|---|---|---|---|---|---|\n| 0 | ZIM ATLANTIC | 262 | 6 | 0 | 1932 | 1-5 | 0 @ 9, 3 cranes | 23 |  |\n| 1 | NEXOE MAERSK | 199 | 5 | 4 | 952 | 1-3 | 4 @ 4, 2 cranes | 21 |  |\n| 2 | MELINA | 260 | 6 | 25 | 1260 | 1-5 | 25 @ 9, 3 cranes | 40 |  |\n| 3 | HMM HANBADA | 365 | 8 | 33 | 4816 | 2-7 | 33 @ 15, 4 cranes | 76 |  |\n| 4 | PERSEUS | 140 | 4 | 42 | 392 | 1-2 | 42 @ 11, 1 cranes | 56 |  |\n| 5 | ZIM CHINA | 261 | 6 | 54 | 840 | 1-5 | 54 @ 4, 3 cranes | 64 |  |\n| 6 | ANDREA | 134 | 4 | 60 | 364 | 1-2 | 60 @ 11, 1 cranes | 73 |  |\n| 7 | CARLOTA B | 141 | 4 | 78 | 1204 | 1-2 | 78 @ 4, 1 cranes | 121 |  |\n| 8 | ONE MACKINAC | 366 | 8 | 79 | 3360 | 2-7 | 79 @ 14, 4 cranes | 109 |  |\n| 9 | CINZIA A | 200 | 5 | 89 | 1008 | 1-4 | 89 @ 9, 2 cranes | 107 |  |\n| 10 | MAERSK NARMADA | 211 | 5 | 112 | 896 | 1-4 | 112 @ 9, 2 cranes | 128 |  |\n| 11 | NJORD | 142 | 4 | 132 | 252 | 1-2 | 132 @ 9, 1 cranes | 141 |  |\n| 12 | RACHEL BORCHARD | 159 | 4 | 144 | 280 | 1-3 | 144 @ 8, 1 cranes | 154 |  |\n| 13 | TROUPER | 134 | 4 | 144 | 308 | 1-2 | 144 @ 4, 1 cranes | 155 |  |\n| 14 | K-RIVER | 122 | 4 | 156 | 168 | 1-2 | 156 @ 4, 1 cranes | 162 |  |\n| 15 | ZIM PACIFIC | 262 | 6 | 167 | 1260 | 1-5 | 167 @ 8, 3 cranes | 182 |  |\n\n## Pilots and tugs\n- Each berthing and each departure takes a pilot and tugs in its hour, from the port's 7 pilots and 8 tugs on duty, shared with the port's other traffic. In any hour your ships may need no more pilots or tugs than are free for them; each ship moving in an hour short of either breaks this rule.\n- Tugs per movement: 0 under 120 m, 1 under 200 m, 2 under 300 m, 3 from 300 m.\n- Your ships take 3 tugs: ships 3, 8; 2 tugs: ships 0, 2, 5, 9, 10, 15; 1 tug: ships 1, 4, 6, 7, 11, 12, 13, 14.\n- Free for your ships after the other traffic, the cuts and the wind, pilots | tugs, each hour from 00:00 in blocks of 6 hours:\n- Mon: 745565 266666 764766 354136 | 867675 286888 867888 854765\n- Tue: 475667 644667 565657 166235 | 385668 858668 577778 885865\n- Wed: 746646 467574 475735 155345 | 837667 468786 384857 773867\n- Thu: 767656 655664 767565 257166 | 868547 788684 888688 848787\n- Fri: 675765 544444 676772 367235 | 884876 665657 687886 888585\n- Sat: 565777 566757 567666 347567 | 667888 687868 468768 768858\n- Sun: 767755 567757 765776 465164 | 888856 488868 887886 677787\n- +7d: 556757 545474 475444 264256 | 566868 765685 487678 784887\n- +8d: 664666 754746 566757 245256 | 776777 845856 478848 838588\n- +9d: 657756 646466 646556 236255 | 868868 826467 658777 757688\n- +10d: 766655 756645 677745 247166 | 867746 888744 688868 848787\n- From hour 264: 7 pilots and 8 tugs free.\n\nIt is watch 0, Monday 00:00. Confirm berth windows with confirm_berths, then call advance.",
+    "max_turns": 47,
+    "model_params": {
+      "max_tokens": 32000
+    },
+    "timeout_seconds": 7200
+  },
+  {
+    "id": "end-week",
+    "type": "apply_server_config",
+    "env_id": "portsim-marine",
+    "directives": [
+      {
+        "service": "portsim-marine",
+        "uri": "urn:portsim:end-week/v1",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "id": "grade",
+    "type": "env_outcome_verifier",
+    "env_id": "portsim-marine",
+    "file_artifact_id": "portsim-live-verifier",
+    "verifier_id": "portsim",
+    "score_aggregator": "weighted_average"
+  }
+]

@@ -1,0 +1,133 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+
+## The live port: PortSimEnv v2–v5
+
+Edgar Arakelyan at Scale AI took PortSimEnv and made the week happen in order. In v1 the agent sees the whole broken
+week up front and submits one plan. In his versions it starts on Monday at 00:00 knowing only what the port knows
+then, and the rest of the week reaches it the way it would reach a real planner. He built four versions on
+[AgentEnv](https://github.com/scaleapi/agentenv-framework), Scale's framework for agent environments, each adding
+another part of the real port. All four keep v1's quay, weeks, rules checker and reward, so a plan means the same thing
+in every version. The code is in
+[07-simulation-environments/portsim-live](https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/portsim-live).
+
+### A week in watches
+
+At hour 0 the agent knows the published arrivals and the planned closures. Every other disruption reaches it as a
+message from whoever would send it: the ship, the harbour master, terminal ops or the line desk. Each message arrives
+24 hours before the hour it is about, or 12 hours for an emergency. Messages come in 6-hour bulletins, and each
+bulletin with news is a watch, between 2 and 9 in a week.
+
+<HtmlEmbed
+  src="d3-live-week.html"
+  wide
+  frameless
+  title="One live week, watch by watch"
+  desc="Week 7 at APM Terminals, the week the v1 Space opens on. Step through the watches or press Play. Filled dots are news the agent has, hollow ones are still to come, and the shaded band is the next six hours, which are frozen."
+/>
+
+At each watch the agent has four tools:
+
+| tool | what it does |
+|---|---|
+| `get_situation()` | the watch, its time, the week as known now, the confirmed windows and the ships without one |
+| `check_plan(plan)` | rule breaks and cost of a draft, merged over the confirmed windows; confirms nothing |
+| `confirm_berths(plan)` | sets or changes windows; each refusal gives the harbour master's reason |
+| `advance()` | ends the watch; after the last one the rest of the week runs and is graded |
+
+- **The freeze.** A window that starts within 6 hours of the current watch can't change, so late news can land on a
+  decision that is already locked in.
+- **A budget.** `check_plan` and `confirm_berths` share 3 calls a watch.
+- **No time passes while the model thinks.** AgentEnv's gateway keeps a virtual clock. Each `advance` moves it to the
+  next bulletin, and one trigger per watch delivers that bulletin through a tool the agent can't see.
+- **One grade, at the end.** The confirmed windows run against the week as it really happened, scored with v1's
+  reward. News that lands on an already frozen window is excused. A ship the agent moves into trouble afterwards is
+  not.
+
+### v3: pilots and tugs
+
+Every berthing and departure needs a pilot, and bigger ships need tugs. In v3 both come from port-wide pools that the
+quay shares with the rest of the port's real 2024 traffic: ferries, tankers, car carriers, cruise ships and container
+ships at other quays. Edgar set the pools at 7 pilots and 8 tugs, calibrated against that traffic, and the tug company
+and the pilot station announce cuts.
+
+<HtmlEmbed
+  src="d3-marine-pools.html"
+  wide
+  frameless
+  title="Pilots and tugs over the same week"
+  desc="Hour by hour over 11 days: what the rest of the port takes, what is left for the quay's own ships, and the two announced cuts. Hover for any hour."
+/>
+
+A plan that worked in v2 can now break. Two ships moving in the same hour may need more tugs than are free,
+especially inside a wind window, where every move takes one more tug.
+
+### v4: real wind, real forecasts
+
+v1 and v2 simulate their gales. v4 uses real weather instead. Each week is moved into a real Barcelona weather week
+from 2023 to 2025, picked for its storms or for forecast gales that never came. At every watch Port Control sends the
+latest ECMWF forecast as it was actually issued, adjusted to the port's anemometer. The agent plans on the forecast,
+and the grade uses the wind that really blew.
+
+<HtmlEmbed
+  src="d3-wind-grading.html"
+  frameless
+  title="How a wind week grades one ship"
+  desc="Three cases for the same ship. What counts is the forecast in force at its last chance to change, and the wind that then blew."
+/>
+
+The agent can only know the forecast, so a wind week scores 1.0 at its anchor: the cheaper of the plan in hindsight
+and a re-planner that follows each forecast as it comes. The 15 weeks are picked so that this re-planner reaches the
+anchor, while one that ignores the wind scores 0.9 or less. Reading the forecast is what scores.
+
+### v5: the shipping lines answer back
+
+In v5 the schedule is only an estimate. Each ship has its agent, the firm the port's 2024 records name for that call,
+running as an AI agent of its own. It reports an ETA 48 and 24 hours out and calls an hour before the ship arrives,
+and its ETAs are optimistic. The planner gets a fifth tool, `message_agent`, to ask a ship for its latest ETA or agree
+an arrival hour. Ships with an agreed arrival berth first come, first served. The port berths a late ship wherever
+there's room, and every hour at anchor costs as much as an hour late.
+
+<HtmlEmbed
+  src="d3-lines-arrival.html"
+  frameless
+  title="One ship, three ways to plan it"
+  desc="Booking on the ETAs leaves the ship late, booking with a margin leaves it waiting at anchor, and agreeing an hour with its agent gets it in on time."
+/>
+
+The ships' agents have no model of their own. They answer from the environment, so the same request always gets the
+same answer and a week replays exactly.
+
+### The eval
+
+Twelve models played 15 weeks of each version, 720 runs in all, graded by the same code.
+
+<HtmlEmbed
+  src="d3-community-evals.html"
+  title="PortSimEnv v2–v5: twelve models, 15 weeks per version"
+  desc="Pick a version. Bars are mean reward with the 95% interval, and vertical rules are the eval card's baselines. Open 'How this eval works' to see how the weeks were picked and what 1.0 means."
+/>
+
+- **Each version is harder.** Eight of the twelve models score lower at each step from live to marine to wind, and
+  11 of 12 score lower on the lines weeks than on the same weeks without the ships' agents.
+- **On v5, talking to the ships is what scores.** A re-planner that agrees arrival times with the ships' agents
+  reaches 0.55, and the same planner without asking reaches 0.24. Claude Opus 5.5, GPT-6 Astra and GPT-6.1 Sol agree
+  an arrival for 86% to 90% of a week's ships.
+- **Claude Opus 5.5 and GPT-6 Astra lead** over all 60 weeks, at 0.857 and 0.851. Qwen3.8-27B, the one model small
+  enough to fine-tune cheaply, finds a valid plan in 1 of 60.
+
+### Watch a run
+
+Every run replays in Edgar's Space on the same 3D quay as v1. Here is week 7 at APM Terminals in each version.
+
+<HtmlEmbed
+  src="portsim-live-space.html"
+  wide
+  frameless
+  title="Week 7 at APM Terminals, in all four versions"
+  desc="Pick a version and a model. Each replay is the published run: step through its watches or play the week, with the dock chart, the grade and the transcript below."
+/>
+
+Every run is in the dataset
+[earakely-scale/PortSimEnv-AgentEnv](https://huggingface.co/datasets/earakely-scale/PortSimEnv-AgentEnv), and the
+[agentenv-portsim plugin](https://github.com/earakely-scale/agentenv-portsim-plugin) has the command line, the sweeps
+and the Hub tooling.

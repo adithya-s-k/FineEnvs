@@ -1,0 +1,129 @@
+<div class="d3-marine-pools"></div>
+<style>
+  .d3-marine-pools { font-size: 13px; color: var(--text-color); position: relative; }
+  .d3-marine-pools .mp-strip { margin-bottom: 14px; }
+  .d3-marine-pools .mp-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; font-size: 12.5px; margin-bottom: 4px; }
+  .d3-marine-pools .mp-head b { font-weight: 600; }
+  .d3-marine-pools .mp-head span { color: var(--muted-color); }
+  .d3-marine-pools svg { display: block; width: 100%; height: 96px; overflow: visible; margin-top: 14px; }
+  .d3-marine-pools .used { fill: color-mix(in srgb, var(--muted-color) 50%, transparent); }
+  .d3-marine-pools .free { fill: color-mix(in srgb, var(--primary-color) 38%, transparent); }
+  .d3-marine-pools .cut { fill: color-mix(in srgb, var(--danger-color) 16%, transparent); }
+  .d3-marine-pools .mp-cutlab { position: absolute; top: -1px; font-size: 10.5px; color: var(--danger-color); white-space: nowrap; transform: translateX(-50%); }
+  .d3-marine-pools .mp-plot { position: relative; }
+  .d3-marine-pools .wind { fill: color-mix(in srgb, var(--muted-color) 14%, transparent); }
+  .d3-marine-pools .pool { stroke: var(--text-color); stroke-width: 1.2; fill: none; vector-effect: non-scaling-stroke; }
+  .d3-marine-pools .hov { stroke: var(--text-color); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .d3-marine-pools .mp-axis { position: relative; height: 16px; font-size: 11px; color: var(--muted-color); }
+  .d3-marine-pools .mp-axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  .d3-marine-pools .mp-ships { position: relative; height: 14px; margin-top: 2px; }
+  .d3-marine-pools .mp-ships i { position: absolute; top: 2px; width: 2px; height: 10px; margin-left: -1px; background: var(--text-color); }
+  .d3-marine-pools .mp-shiplab { font-size: 11.5px; color: var(--muted-color); margin-bottom: 2px; }
+  .d3-marine-pools .mp-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 12px; font-size: 12px; color: var(--muted-color); }
+  .d3-marine-pools .mp-legend i { display: inline-block; vertical-align: middle; margin-right: 6px; width: 12px; height: 10px; border-radius: 2px; }
+  .d3-marine-pools .mp-legend .l-pool { height: 0; border-top: 1.5px solid var(--text-color); border-radius: 0; }
+  .d3-marine-pools .mp-legend .l-ship { width: 2px; height: 10px; background: var(--text-color); border-radius: 0; }
+  .d3-marine-pools .mp-types { margin-top: 8px; font-size: 12px; line-height: 1.5; color: var(--muted-color); }
+  .d3-marine-pools .mp-tip { position: fixed; pointer-events: none; z-index: 20; background: var(--page-bg); color: var(--text-color);
+    border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 8px; font-size: 12px; line-height: 1.4; opacity: 0; transition: opacity .1s; }
+</style>
+<script>
+  (() => {
+    // The port's pilots and tugs, hour by hour, on one marine week: what the rest of the port's real 2024 traffic
+    // takes, what is left for the quay's own ships, and the announced cuts.
+    const fetchJson = async (f) => {
+      for (const u of ['/data/' + f, 'assets/data/' + f, '../assets/data/' + f]) {
+        try { const r = await fetch(u, { cache: 'no-cache' }); if (r.ok) return await r.json(); } catch (e) {}
+      }
+      throw new Error(f + ' not found');
+    };
+    const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const when = (h) => `${DAYS[Math.floor(h / 24) % 7]} ${String(h % 24).padStart(2, '0')}:00`;
+    const TYPE = { Transbordadors: 'ferries', Portacontenidors: 'container ships at other quays', Tancs: 'tankers', 'Ro-Ro': 'ro-ro ships',
+      'Car-carrier': 'car carriers', 'Càrrega (Lo-Lo)': 'general cargo', Passatge: 'cruise and passenger ships', Iot: 'yachts' };
+
+    const boot = () => {
+      const scriptEl = document.currentScript;
+      let root = scriptEl ? scriptEl.previousElementSibling : null;
+      if (!(root && root.classList && root.classList.contains('d3-marine-pools'))) {
+        root = [...document.querySelectorAll('.d3-marine-pools')].filter((e) => e.dataset.mounted !== 'true').pop();
+      }
+      if (!root || root.dataset.mounted === 'true') return;
+      root.dataset.mounted = 'true';
+      const tip = document.createElement('div');
+      tip.className = 'mp-tip';
+      document.body.appendChild(tip);
+
+      fetchJson('marine-pools.json').then((d) => {
+        const H = d.hours;
+        const pct = (h) => `${(100 * h) / H}%`;
+        const strip = (pool, label) => {
+          const P = d.pools[pool];
+          const used = d.used[pool];
+          const free = d.free[pool];
+          const cap = Array.from({ length: H }, (_, h) => used[h] + free[h]);
+          const cuts = d.cuts.filter((c) => c.pool === pool);
+          // Stepped areas, one step per hour: what the rest of the port takes, and above it what is free.
+          const step = (vals) => vals.map((v, h) => `${h === 0 ? 'M' : 'L'}${h},${P - v} L${h + 1},${P - v}`).join(' ');
+          const usedArea = `M0,${P} ${step(used).replace(/^M/, 'L')} L${H},${P} Z`;
+          const freeTop = used.map((u, h) => u + free[h]);
+          const back = used.map((u, h) => [h, P - u]).reverse().map(([h, y]) => `L${h + 1},${y} L${h},${y}`).join(' ');
+          const freeArea = `${step(freeTop)} ${back} Z`;
+          const capLine = step(cap);
+          const peak = Math.max(...used);
+          const tight = free.filter((f) => f <= 1).length;
+          return `<div class="mp-strip" data-pool="${pool}">
+            <div class="mp-head"><b>${label}: ${P} on duty</b><span>the rest of the port takes up to ${peak} in an hour; ${tight} hours leave your quay 1 or none</span></div>
+            <div class="mp-plot">
+            ${cuts.map((c) => `<span class="mp-cutlab" style="left:${pct((c.start + c.end) / 2)}">${c.kind === 'tug_outage' ? 'tug outage' : 'pilot shortage'}: −${c.n}</span>`).join('')}
+            <svg viewBox="0 0 ${H} ${P}" preserveAspectRatio="none" role="img" aria-label="${label} per hour over ${H} hours">
+              ${d.wind.map((w) => `<rect class="wind" x="${w.start}" y="0" width="${w.end - w.start}" height="${P}"></rect>`).join('')}
+              ${cuts.map((c) => `<rect class="cut" x="${c.start}" y="0" width="${c.end - c.start}" height="${P}"></rect>`).join('')}
+              <path class="free" d="${freeArea}"></path>
+              <path class="used" d="${usedArea}"></path>
+              <path class="pool" d="${capLine}"></path>
+              <line class="hov" x1="-10" x2="-10" y1="0" y2="${P}"></line>
+            </svg>
+            </div>
+          </div>`;
+        };
+        const types = d.by_type.map(([t, n]) => `${n} ${TYPE[t] || t}`).join(', ');
+        root.innerHTML = `
+          ${strip('pilots', 'Pilots')}
+          ${strip('tugs', 'Tugs')}
+          <div class="mp-shiplab">Your quay's ${d.quay_ships.length} ships, at their arrival hour: each needs a pilot and up to 3 tugs to berth, and again to sail</div>
+          <div class="mp-ships">${d.quay_ships.map((s) => `<i style="left:${pct(s.arrival)}" title="ship ${s.id}, ${Math.round(s.length_m)} m"></i>`).join('')}</div>
+          <div class="mp-axis">${Array.from({ length: Math.floor(H / 24) }, (_, i) => `<span style="left:${pct(i * 24 + 12)}">${DAYS[i % 7]}</span>`).join('')}</div>
+          <div class="mp-legend">
+            <span><i class="used"></i>taken by the rest of the port</span>
+            <span><i class="free"></i>free for your ships</span>
+            <span><i class="l-pool"></i>on duty, after cuts</span>
+            <span><i class="cut"></i>announced cut</span>
+            <span><i class="wind"></i>wind above 25 kn: one more tug a move</span>
+          </div>
+          <div class="mp-types">The rest of the port: ${d.movements} real 2024 movements in these ${H} hours (${types}).</div>`;
+        root.querySelectorAll('.mp-legend .used').forEach((e) => { e.style.background = 'color-mix(in srgb, var(--muted-color) 45%, transparent)'; });
+        root.querySelectorAll('.mp-legend .free').forEach((e) => { e.style.background = 'color-mix(in srgb, var(--primary-color) 55%, transparent)'; });
+        root.querySelectorAll('.mp-legend .cut').forEach((e) => { e.style.background = 'color-mix(in srgb, var(--danger-color) 22%, transparent)'; });
+        root.querySelectorAll('.mp-legend .wind').forEach((e) => { e.style.background = 'color-mix(in srgb, var(--muted-color) 14%, transparent)'; });
+
+        const svgs = [...root.querySelectorAll('svg')];
+        const onMove = (e) => {
+          const r = svgs[0].getBoundingClientRect();
+          const h = Math.floor(((e.clientX - r.left) / r.width) * H);
+          if (h < 0 || h >= H) { leave(); return; }
+          svgs.forEach((s) => { const l = s.querySelector('.hov'); l.setAttribute('x1', h + 0.43); l.setAttribute('x2', h + 0.43); });
+          const cut = d.cuts.filter((c) => h >= c.start && h < c.end).map((c) => `${c.n} ${c.pool} cut`).join(', ');
+          tip.textContent = `${when(h)}${h >= 168 ? ' (next week)' : ''}: the rest of the port takes ${d.used.pilots[h]} pilots and ${d.used.tugs[h]} tugs; free for your ships: ${d.free.pilots[h]} pilots, ${d.free.tugs[h]} tugs${cut ? ` (${cut})` : ''}`;
+          tip.style.left = Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8) + 'px';
+          tip.style.top = e.clientY + 14 + 'px';
+          tip.style.opacity = 1;
+        };
+        const leave = () => { tip.style.opacity = 0; svgs.forEach((s) => { const l = s.querySelector('.hov'); l.setAttribute('x1', -10); l.setAttribute('x2', -10); }); };
+        svgs.forEach((s) => { s.addEventListener('mousemove', onMove); s.addEventListener('mouseleave', leave); });
+      }).catch((e) => { root.innerHTML = `<pre style="color:var(--danger-color)">${e.message}</pre>`; });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+    else boot();
+  })();
+</script>

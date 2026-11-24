@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "port-week-core"
+version = "0.1.0"
+description = "One week at a Port of Barcelona quay played live in watches: the schedule, the week as known, marine pools, wind forecasts, the grade"
+requires-python = ">=3.11"
+dependencies = ["berth-core"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "berth-core[solve]"]
+
+[tool.uv.sources]
+berth-core = { path = "../../../../portsim-v1/envs/berth_planning/core", editable = true }
+
+[tool.setuptools.packages.find]
+include = ["port_week_core*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["network: downloads the Barcelona 2024 traffic file from GitHub"]
+addopts = "-m 'not network'"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "I"]

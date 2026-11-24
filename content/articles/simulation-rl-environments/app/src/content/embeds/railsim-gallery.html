@@ -1,0 +1,25 @@
+<div class="railsim-gallery">
+  <figure>
+    <img src="https://raw.githubusercontent.com/bp-high/RLSimEnvs/252f575eb0977a165a9ba5036aaf5a6d0e043da4/railsim-v1/assets/twin_overview.webp" loading="lazy" alt="RailSimEnv's 3D replay of the Leeuwarden–Groningen line: the closed section between De Westereen and Grijpskerk in red, the CP-SAT optimum's plan scoring 1.0, and the trains with their holds.">
+    <figcaption><b>The line, 1 May 2025</b>: a broken-down train closes De Westereen–Grijpskerk; the plan shown is the proven optimum, reward 1.0.</figcaption>
+  </figure>
+  <figure>
+    <img src="https://raw.githubusercontent.com/bp-high/RLSimEnvs/252f575eb0977a165a9ba5036aaf5a6d0e043da4/railsim-v1/assets/train_graph.png" loading="lazy" alt="Train graph of 30 trains between 08:00 and 11:00: blue stopping trains and orange fast trains, the closure hatched in red, holds and short-turns marked.">
+    <figcaption><b>The train graph</b>: 30 trains in three hours. The optimal plan holds trains and turns six short around the closure.</figcaption>
+  </figure>
+  <figure>
+    <img src="https://raw.githubusercontent.com/bp-high/RLSimEnvs/252f575eb0977a165a9ba5036aaf5a6d0e043da4/railsim-v1/assets/twin_cab.webp" loading="lazy" alt="Cab view down the single track towards Zuidhorn, with the day's trains and their delays listed beside it.">
+    <figcaption><b>Cab view</b>: down the single track towards Zuidhorn, with each train's delay under the plan.</figcaption>
+  </figure>
+</div>
+<div class="railsim-credit">Screenshots from <a href="https://github.com/bp-high/RLSimEnvs" target="_blank" rel="noopener">bp-high/RLSimEnvs</a> · map © OpenStreetMap contributors (<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">ODbL</a>) · trains: Rijden de Treinen (CC BY 4.0)</div>
+<style>
+  .railsim-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .railsim-gallery figure { margin: 0; min-width: 0; }
+  .railsim-gallery img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; object-position: top; border-radius: 6px; border: 1px solid var(--border-color); }
+  .railsim-gallery figcaption { margin-top: 5px; font-size: 12px; line-height: 1.4; color: var(--muted-color); }
+  .railsim-gallery figcaption b { color: var(--text-color); font-weight: 600; }
+  .railsim-credit { margin-top: 6px; font-size: 11.5px; color: var(--muted-color); }
+  .railsim-credit a { color: var(--muted-color); }
+  @media (max-width: 760px) { .railsim-gallery { grid-template-columns: minmax(0, 1fr); } }
+</style>

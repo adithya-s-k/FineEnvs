@@ -1,0 +1,28 @@
+[
+  {"id": "deploy", "type": "deploy_env", "env_id": "portsim"},
+  {"id": "load-task", "type": "apply_server_config", "env_id": "portsim",
+   "directives": [{"service": "portsim", "uri": "urn:portsim:load-task/v1",
+                   "args": {"task_id": "dock-24B-w07x1-busy-0"}}]},
+  {"id": "submit", "type": "apply_server_config", "env_id": "portsim",
+   "directives": [{"service": "portsim", "uri": "urn:portsim:submit-plan/v1", "args": {"plan": [
+     {"ship": 0, "berth_hour": 1, "section": 2, "cranes": 5},
+     {"ship": 1, "berth_hour": 15, "section": 4, "cranes": 3},
+     {"ship": 2, "berth_hour": 27, "section": 2, "cranes": 5},
+     {"ship": 3, "berth_hour": 39, "section": 15, "cranes": 5},
+     {"ship": 4, "berth_hour": 47, "section": 11, "cranes": 2},
+     {"ship": 5, "berth_hour": 54, "section": 4, "cranes": 3},
+     {"ship": 6, "berth_hour": 60, "section": 11, "cranes": 1},
+     {"ship": 7, "berth_hour": 93, "section": 4, "cranes": 2},
+     {"ship": 8, "berth_hour": 79, "section": 14, "cranes": 7},
+     {"ship": 9, "berth_hour": 97, "section": 9, "cranes": 4},
+     {"ship": 10, "berth_hour": 129, "section": 9, "cranes": 4},
+     {"ship": 11, "berth_hour": 137, "section": 9, "cranes": 2},
+     {"ship": 12, "berth_hour": 164, "section": 8, "cranes": 3},
+     {"ship": 13, "berth_hour": 164, "section": 4, "cranes": 2},
+     {"ship": 14, "berth_hour": 163, "section": 12, "cranes": 2},
+     {"ship": 15, "berth_hour": 168, "section": 8, "cranes": 5},
+     {"ship": 16, "berth_hour": 66, "section": 3, "cranes": 3}
+   ]}}]},
+  {"id": "grade", "type": "env_outcome_verifier", "env_id": "portsim", "file_artifact_id": "portsim-verifier",
+   "verifier_id": "portsim", "score_aggregator": "weighted_average"}
+]

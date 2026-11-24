@@ -1,0 +1,118 @@
+{
+ "anthropic:claude-sonnet-5-5|dock-36A-w15x2-storm-0": {
+  "requests": [
+   {
+    "path": "/v1/messages",
+    "sha256": "17465d2731d16ac1ba3f147b23632a4d83782cd76137a17d13203857f74d877e"
+   },
+   {
+    "path": "/v1/messages",
+    "sha256": "4a4791518d3e54b044443f99d066f0314c4f049d09b0e84fc75575d0cf4493d0"
+   },
+   {
+    "path": "/v1/messages",
+    "sha256": "ac83384c3bc652c8bcb5a1c185c5176e5da734cc6b484c25810ca9b876bb38a1"
+   },
+   {
+    "path": "/v1/messages",
+    "sha256": "058dc15227dda20a6f32a0805f8f5bfbe716a033198b44e10f7e19e2afdd7a72"
+   },
+   {
+    "path": "/v1/messages",
+    "sha256": "cb937ed715cb8073ef50938217b01e7e3bf936489aab757d33f2ec35fcae28e1"
+   },
+   {
+    "path": "/v1/messages",
+    "sha256": "e1b6b5a9779e3ddd732e0d76e40e30e7996d7e80e950c6b5646c2737848265fd"
+   },
+   {
+    "path": "/v1/messages",
+    "sha256": "902c0ec8f85b44716e42c2a74d3705e42b3cc6a728044b5ba411ce0bffb8da99"
+   },
+   {
+    "path": "/v1/messages",
+    "sha256": "81c44a622bc3be4774858f6a77a5d9c0dfe720cc1bd43d9069c4bc9ceba74b07"
+   }
+  ]
+ },
+ "anthropic:claude-sonnet-5-5|dock-36A-w05x2-storm-0": {
+  "requests": [
+   {
+    "path": "/v1/messages",
+    "sha256": "f4a24395b2e2352170ad6da9829991bc74a2b2db41092ba9d528c6aa2c3c9e08"
+   },
+   {
+    "path": "/v1/messages",
+    "sha256": "dba33e0b297703be5ac541dd7ec52d79b3249e029ed85ad9a68f155faa3d2bb9"
+   }
+  ]
+ },
+ "openai:gpt-6.1-sol|dock-24B-w35x3-extreme-1": {
+  "requests": [
+   {
+    "path": "/v1/responses",
+    "sha256": "82e7c452da5116e28f060350628a2759ed24eb5c8c516fb7f66bbfad1c91a29a"
+   },
+   {
+    "path": "/v1/responses",
+    "sha256": "8373aaa3d3d4c000ed20ffc2848bdc4e4043b225b0683ee483c41ef2095b874b"
+   },
+   {
+    "path": "/v1/responses",
+    "sha256": "0d487ac0f958e4055a6b691b13b758c5194fa3cdf251e234a5b9fabf8a08b5ad"
+   },
+   {
+    "path": "/v1/responses",
+    "sha256": "2760d2a4272577238b7673576377d5b4da61924ceea80bddfb61dcc813b067e5"
+   },
+   {
+    "path": "/v1/responses",
+    "sha256": "17ca912d29099db69b22a0a3d1cf51f58de75de601e4a0a24a2c5f0e33631fb0"
+   }
+  ]
+ },
+ "hf:zai-org/GLM-5.3-Flash:baseten|dock-24B-w16x2-extreme-0": {
+  "requests": [
+   {
+    "path": "/v1/chat/completions",
+    "sha256": "cddaea5c76bb3211c11a88f1be8ba982cf0aca32c8d22f5f95769ce432562018"
+   },
+   {
+    "path": "/v1/chat/completions",
+    "sha256": "36bcc29df037cc2b50bcc03c029322651150d4697ceeb82404dd177266c29415"
+   },
+   {
+    "path": "/v1/chat/completions",
+    "sha256": "27d5f2326242392de4e7b81c2b7db99eb2ccd3fa3053f83dfb3ab20a52d7ebd4"
+   },
+   {
+    "path": "/v1/chat/completions",
+    "sha256": "745e816b02cf92246749093b865b9bc8c4c303687d756279e63aafbb25e9308e"
+   },
+   {
+    "path": "/v1/chat/completions",
+    "sha256": "f6fd20d070c13534cb0f75bc7e35d0822ab107e05e7d91b6e57e282967e44c16"
+   },
+   {
+    "path": "/v1/chat/completions",
+    "sha256": "7c34a83ce829ed489dfc2db11ba170287b7809a64e55148cd036a706ad4d6d8b"
+   }
+  ]
+ },
+ "hf:zai-org/GLM-5.3-Flash:baseten|dock-24B-w35x2-extreme-0": {
+  "requests": [
+   {
+    "path": "/v1/chat/completions",
+    "sha256": "6b2b70cc2c0b0321b35316260d7fe09177175cbd933cae7d6dff579925be3e51"
+   },
+   {
+    "path": "/v1/chat/completions",
+    "sha256": "9c407dbf1bbf570472cd0ed6a3bc800d0fd69b95ccb3e284f3fdf58158771a89"
+   },
+   {
+    "path": "/v1/chat/completions",
+    "sha256": "02b9c06db5f8dac4e0441e25727354b7cb80e8f37c873a6202f93660f068bf01"
+   }
+  ]
+ }
+}

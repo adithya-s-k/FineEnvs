@@ -1,0 +1,20 @@
+Environment code: HuggingEnvs contributors, Apache License 2.0.
+
+Data source: CognitiveLab, Cognitive-Lab/NayanaOCR_Corpus_2025.
+https://huggingface.co/datasets/Cognitive-Lab/NayanaOCR_Corpus_2025
+Pinned source revision is recorded in each prepared snapshot's manifest.json.
+
+Original images and annotations are licensed CC BY-NC 4.0:
+https://creativecommons.org/licenses/by-nc/4.0/
+Derived section crops retain that license. This code's Apache license does not
+replace the data license. Modifications: section crops, task derivation,
+document-level partitions, and normalization for scoring.
+
+Evaluation benchmark: Sarvam AI, Sarvam Indic OCR Bench (sarvamai/indic-ocr-bench).
+https://huggingface.co/datasets/sarvamai/indic-ocr-bench
+Pinned revision 84ce7ce447456a92bcbf25f3c0a55d6a5a44a24b. Licensed Apache License 2.0:
+https://www.apache.org/licenses/LICENSE-2.0
+Benchmark images and ground truth are served unmodified, for evaluation only, from a
+serving copy in the bucket FineEnvs/indic-ocr-bench-bucket. Its scorer,
+server/indic_ocr_bench_metrics.py, is copied unmodified from that revision's metrics.py
+(Copyright Sarvam AI, Apache-2.0); only an attribution header was added above it.
