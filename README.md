@@ -54,6 +54,9 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **07** | **[PortSimEnv v1](./07-simulation-environments/portsim-v1/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub><br><sub>`agentenv` port by [Edgar Arakelyan](https://github.com/earakely-scale) (Scale AI)</sub> | Re-plan a broken week of container-ship dockings at the Port of Barcelona, graded against a proven optimum. | 1 | 2 | 1 | 🚧 wip |
 | **07** | **[PortSimEnv v2–v5: live, marine, wind and lines](./07-simulation-environments/portsim-live/)**<br><sub>by [Edgar Arakelyan](https://github.com/earakely-scale) (Scale AI)</sub> | Run a Port of Barcelona quay through a week as it unfolds, with live news, pilots and tugs, real wind and shipping lines that answer back. | 1 | 1 | 0 | 🚧 wip |
 | **07** | **[AirOpsEnv v1–v3: the storm day, the ops control center and its passengers](./07-simulation-environments/airopsenv/)**<br><sub>by [Edgar Arakelyan](https://github.com/earakely-scale) (Scale AI)</sub> | Run JetBlue through a real storm day, from one hub's desk to the whole network's control center, where two desks talk, then three with the passengers on board. | 1 | 1 | 0 | 🚧 wip |
+| **08** | **[openai/math: research-level Lean proofs](./08-math-environments/openai-math/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | OpenAI's Comparator challenges as Harbor tasks: prove a research result in Lean 4, graded by Comparator in a separate sandbox. | 1 | 1 | 0 | 🚧 wip |
+| **08** | **[FineProofEnvs: olympiad proofs with a rubric judge](./08-math-environments/fineproof/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | Write a natural-language proof of an olympiad problem; an LLM judge grades it 0–7 against the problem's rubric, as in the QED-Nano recipe. | 1 | 1 | 0 | ✅ trained |
+| **08** | **[Scott Wu Math: the card game](./08-math-environments/scott-wu-math/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | Make the target from every card once with + − × ÷: the 24 game, then the current year from eight cards, then any four-digit number from nine. | 1 | 1 | 1 | ✅ stable |
 <!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
@@ -179,6 +182,21 @@ the same format.
 Everything is in the [Simulation RL Envs collection](https://huggingface.co/collections/FineEnvs/simulation-rl-envs-6ac4eca150bd4b91790e2540),
 and [the article](https://huggingface.co/spaces/FineEnvs/simulation-rl-environments) covers all of it.
 Built a simulation environment? [Add it to the catalog](./07-simulation-environments/#add-your-environment).
+
+### [08 · Math environments](./08-math-environments/) &nbsp;<sub>from mental arithmetic to research-level proofs</sub>
+
+**Three ways to grade maths.** A catalog of math environments, each explicit about how it grades:
+- [Scott Wu Math](./08-math-environments/scott-wu-math/) checks one arithmetic expression exactly.
+- [openai/math](./08-math-environments/openai-math/) accepts only a Lean 4 proof that the kernel checks against the
+  exact statement.
+- [FineProofEnvs](./08-math-environments/fineproof/) has gpt-oss-20b grade a plain-language olympiad proof 0–7
+  against its rubric, the reward QED-Nano trained with.
+
+Qwen3.5-2B, trained with RL from the base model on FineProofEnvs, went from 0.217 to 0.407 on held-out proofs in 500
+updates. A gpt-oss-120b regrade sees 0.259 → 0.464. All of it ran on Hugging Face: Jobs, Sandboxes, Inference
+Providers and a bucket. Reading the proofs shows new key ideas, and also that both judges forgive contradictions
+around a correct argument. The model, the tasks, every eval attempt and the training logs are in the
+[Math Environments collection](https://huggingface.co/collections/FineEnvs/math-environments-6af40312bf237e3c32912840).
 
 > **More coming.** Each new project is another end-to-end recipe: an environment, a training run, and
 > the artifacts on the Hub. [Proposals and contributions welcome →](./CONTRIBUTING.md)
@@ -380,6 +398,7 @@ FineEnvs/
 ├── 05-multi-harness-rl/     the same tasks trained through TRL, OpenCode and Harbor
 ├── 06-multilingual/         OCR over 22 languages and ASR over 102, two OpenEnv servers
 ├── 07-simulation-environments/  a catalog of simulation environments: PortSimEnv v1–v5 and more
+├── 08-math-environments/    math environments graded exactly, by Lean, or by a rubric judge
 ├── content/
 │   ├── articles/            long-form sources (Astro → Docker Space)
 │   └── slides/              talk decks (Vite → static Space)

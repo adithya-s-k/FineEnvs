@@ -1,0 +1,19 @@
+# The stack 05-multi-harness-rl validated on GPUs (see its VALIDATION.md), with Harbor 0.24 for separate verifiers.
+# TRL and OpenEnv are pinned to commits by jobs/install.sh.
+vllm==0.25.1
+transformers @ git+https://github.com/huggingface/transformers.git@d6c1e71bd717bf092f8293f0c3c9bd4a5ac5401a
+datasets
+accelerate
+bitsandbytes
+flash-linear-attention==0.6.0  # Qwen3.5's linear attention: without it the PyTorch fallback is slow and ignores packed-sequence boundaries
+kernels>=0.17,<0.18  # the pinned Transformers loads its attention kernel through kernels 0.17.x
+trackio==0.45.0
+harbor[daytona]==0.24.0
+daytona>=0.203.0
+huggingface_hub>=1.29.0
+pyarrow
+httpx
+pytest
+# Compatible with Harbor's websocket dependencies and vLLM's Numba.
+websockets>=15,<16
+numpy>=2.2,<2.4
