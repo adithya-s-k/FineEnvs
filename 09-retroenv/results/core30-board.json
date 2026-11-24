@@ -1,0 +1,2272 @@
+[
+  {
+    "by_max_depth": {
+      "10": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5833,
+        "mean_tool_calls": 12.0,
+        "pass_at_1": 0.0,
+        "tasks": 1
+      },
+      "4": {
+        "exact_route_rate": 0.3333,
+        "mean_reward": 0.9167,
+        "mean_tool_calls": 9.8333,
+        "pass_at_1": 1.0,
+        "tasks": 6
+      },
+      "5": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.7421,
+        "mean_tool_calls": 13.2857,
+        "pass_at_1": 0.5714,
+        "tasks": 7
+      },
+      "6": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.8692,
+        "mean_tool_calls": 12.5,
+        "pass_at_1": 1.0,
+        "tasks": 4
+      },
+      "7": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.6531,
+        "mean_tool_calls": 13.75,
+        "pass_at_1": 0.25,
+        "tasks": 4
+      },
+      "8": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.6359,
+        "mean_tool_calls": 14.0,
+        "pass_at_1": 0.25,
+        "tasks": 4
+      },
+      "9": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.6257,
+        "mean_tool_calls": 13.75,
+        "pass_at_1": 0.25,
+        "tasks": 4
+      }
+    },
+    "by_tier": {
+      "easy": {
+        "exact_route_rate": 0.2,
+        "mean_reward": 0.8075,
+        "mean_tool_calls": 12.1,
+        "pass_at_1": 0.7,
+        "tasks": 10
+      },
+      "hard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.7256,
+        "mean_tool_calls": 13.6,
+        "pass_at_1": 0.5,
+        "tasks": 10
+      },
+      "medium": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.7083,
+        "mean_tool_calls": 12.3,
+        "pass_at_1": 0.5,
+        "tasks": 10
+      }
+    },
+    "by_variant": {
+      "standard": {
+        "exact_route_rate": 0.0667,
+        "mean_reward": 0.7471,
+        "mean_tool_calls": 12.6667,
+        "pass_at_1": 0.5667,
+        "tasks": 30
+      }
+    },
+    "coerced_submission_rate": 0.0,
+    "completion_tokens": 41289,
+    "components": {
+      "constraints": 1.0,
+      "diversity": 0.5667,
+      "efficiency": 0.5667,
+      "parse": 1.0,
+      "reference_match": 0.0667,
+      "reference_similarity": 0.151,
+      "steps": 0.8772,
+      "stock": 0.9111,
+      "structure": 1.0
+    },
+    "cost_usd": 5.1772,
+    "coverage": 1.0,
+    "episodes_expected": 30,
+    "episodes_graded": 30,
+    "exact_route_rate": 0.0667,
+    "identity": {
+      "agent_code_sha256": "731c057c7a0f4e78a1e05a5933b09d777a39a5f31c0cbffb6cd897183c3e37a6",
+      "attempts": 1,
+      "benchmark_public_sha256": "d27d442ce7327ce37ffdc38b4fe6e59a3cf6ce508e76256b5c4841fcc07c3b25",
+      "endpoint": "https://api.openai.com/v1",
+      "label": "gpt-6-astra",
+      "max_tool_calls": 32,
+      "max_turns": 16,
+      "model": "gpt-6-astra",
+      "provider": "openai",
+      "repair": false,
+      "sampling": {
+        "max_output_tokens": 16000,
+        "reasoning_effort": "low",
+        "thinking": "off",
+        "tool_choice": "required"
+      },
+      "schema_version": "retro-eval-run-v2",
+      "server": "http://127.0.0.1:8010",
+      "split": "final_eval",
+      "task_ids": [
+        "retro_1ba7b351bd23db0e",
+        "retro_eb581bcb2aaacf66",
+        "retro_66953a5ef0520b19",
+        "retro_83e0303eb34232da",
+        "retro_2c3155ee731884b1",
+        "retro_f6b703ccf57008da",
+        "retro_d24f2932c2fbcc9b",
+        "retro_14602f5f96554500",
+        "retro_e507ee9a9fc68a9a",
+        "retro_17031e7672333731",
+        "retro_25a7bbebb9a0e096",
+        "retro_4b3deba41c5578d0",
+        "retro_f9a506c7c77b3484",
+        "retro_b8e31cdf9cbf6c75",
+        "retro_9acf6323e734c848",
+        "retro_86ccb9e83e3e9e9e",
+        "retro_34e025851a243d29",
+        "retro_7710f159dfe6f6ca",
+        "retro_ef76e1f83b9ea580",
+        "retro_b4e2535f3749bf6f",
+        "retro_eb2098decfe08d9a",
+        "retro_8f6b26c4af726398",
+        "retro_e1c9685c02611279",
+        "retro_965813554d7d7f96",
+        "retro_f8e680ee09d05bc8",
+        "retro_f295968af0e2f27f",
+        "retro_01583f4ac0522fd0",
+        "retro_753dd86c90eba25d",
+        "retro_436e955405feb310",
+        "retro_d735e87a4090c05e"
+      ],
+      "tool_schema_sha256": "e42542b2fb71cea88846c7190d6c4b84bbf82f7f57f42fdff429d3ea3090c459",
+      "toolset": "full"
+    },
+    "label": "gpt-6-astra",
+    "mean_latency_seconds": 59.0315,
+    "mean_reward": 0.7471,
+    "mean_tool_calls": 12.6667,
+    "mean_turns": 12.6667,
+    "model": "gpt-6-astra",
+    "no_emit_rate": 0.0,
+    "pass_at_1": 0.5667,
+    "pass_at_1_ci95": [
+      0.392,
+      0.7262
+    ],
+    "prompt_tokens": 1182332,
+    "refusal_rate": 0.0,
+    "tasks": 30,
+    "toolset": "full"
+  },
+  {
+    "by_max_depth": {
+      "10": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5833,
+        "mean_tool_calls": 13.0,
+        "pass_at_1": 0.0,
+        "tasks": 1
+      },
+      "4": {
+        "exact_route_rate": 0.1667,
+        "mean_reward": 0.8847,
+        "mean_tool_calls": 10.1667,
+        "pass_at_1": 1.0,
+        "tasks": 6
+      },
+      "5": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.724,
+        "mean_tool_calls": 13.5714,
+        "pass_at_1": 0.5714,
+        "tasks": 7
+      },
+      "6": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.7771,
+        "mean_tool_calls": 13.5,
+        "pass_at_1": 0.75,
+        "tasks": 4
+      },
+      "7": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.7125,
+        "mean_tool_calls": 14.25,
+        "pass_at_1": 0.5,
+        "tasks": 4
+      },
+      "8": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.6342,
+        "mean_tool_calls": 15.0,
+        "pass_at_1": 0.25,
+        "tasks": 4
+      },
+      "9": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.6252,
+        "mean_tool_calls": 14.75,
+        "pass_at_1": 0.25,
+        "tasks": 4
+      }
+    },
+    "by_tier": {
+      "easy": {
+        "exact_route_rate": 0.1,
+        "mean_reward": 0.8157,
+        "mean_tool_calls": 12.1,
+        "pass_at_1": 0.8,
+        "tasks": 10
+      },
+      "hard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.7079,
+        "mean_tool_calls": 14.6,
+        "pass_at_1": 0.5,
+        "tasks": 10
+      },
+      "medium": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.672,
+        "mean_tool_calls": 13.2,
+        "pass_at_1": 0.4,
+        "tasks": 10
+      }
+    },
+    "by_variant": {
+      "standard": {
+        "exact_route_rate": 0.0333,
+        "mean_reward": 0.7319,
+        "mean_tool_calls": 13.3,
+        "pass_at_1": 0.5667,
+        "tasks": 30
+      }
+    },
+    "coerced_submission_rate": 0.0,
+    "completion_tokens": 43308,
+    "components": {
+      "constraints": 1.0,
+      "diversity": 0.5667,
+      "efficiency": 0.5472,
+      "parse": 1.0,
+      "reference_match": 0.0333,
+      "reference_similarity": 0.1076,
+      "steps": 0.8444,
+      "stock": 0.9389,
+      "structure": 1.0
+    },
+    "cost_usd": 1.0167,
+    "coverage": 1.0,
+    "episodes_expected": 30,
+    "episodes_graded": 30,
+    "exact_route_rate": 0.0333,
+    "identity": {
+      "agent_code_sha256": "731c057c7a0f4e78a1e05a5933b09d777a39a5f31c0cbffb6cd897183c3e37a6",
+      "attempts": 1,
+      "benchmark_public_sha256": "d27d442ce7327ce37ffdc38b4fe6e59a3cf6ce508e76256b5c4841fcc07c3b25",
+      "endpoint": "https://api.openai.com/v1",
+      "label": "gpt-6.1-sol",
+      "max_tool_calls": 32,
+      "max_turns": 16,
+      "model": "gpt-6.1-sol",
+      "provider": "openai",
+      "repair": false,
+      "sampling": {
+        "max_output_tokens": 16000,
+        "reasoning_effort": "low",
+        "thinking": "off",
+        "tool_choice": "required"
+      },
+      "schema_version": "retro-eval-run-v2",
+      "server": "http://127.0.0.1:8010",
+      "split": "final_eval",
+      "task_ids": [
+        "retro_1ba7b351bd23db0e",
+        "retro_eb581bcb2aaacf66",
+        "retro_66953a5ef0520b19",
+        "retro_83e0303eb34232da",
+        "retro_2c3155ee731884b1",
+        "retro_f6b703ccf57008da",
+        "retro_d24f2932c2fbcc9b",
+        "retro_14602f5f96554500",
+        "retro_e507ee9a9fc68a9a",
+        "retro_17031e7672333731",
+        "retro_25a7bbebb9a0e096",
+        "retro_4b3deba41c5578d0",
+        "retro_f9a506c7c77b3484",
+        "retro_b8e31cdf9cbf6c75",
+        "retro_9acf6323e734c848",
+        "retro_86ccb9e83e3e9e9e",
+        "retro_34e025851a243d29",
+        "retro_7710f159dfe6f6ca",
+        "retro_ef76e1f83b9ea580",
+        "retro_b4e2535f3749bf6f",
+        "retro_eb2098decfe08d9a",
+        "retro_8f6b26c4af726398",
+        "retro_e1c9685c02611279",
+        "retro_965813554d7d7f96",
+        "retro_f8e680ee09d05bc8",
+        "retro_f295968af0e2f27f",
+        "retro_01583f4ac0522fd0",
+        "retro_753dd86c90eba25d",
+        "retro_436e955405feb310",
+        "retro_d735e87a4090c05e"
+      ],
+      "tool_schema_sha256": "e42542b2fb71cea88846c7190d6c4b84bbf82f7f57f42fdff429d3ea3090c459",
+      "toolset": "full"
+    },
+    "label": "gpt-6.1-sol",
+    "mean_latency_seconds": 50.7085,
+    "mean_reward": 0.7319,
+    "mean_tool_calls": 13.3,
+    "mean_turns": 13.3,
+    "model": "gpt-6.1-sol",
+    "no_emit_rate": 0.0,
+    "pass_at_1": 0.5667,
+    "pass_at_1_ci95": [
+      0.392,
+      0.7262
+    ],
+    "prompt_tokens": 1292312,
+    "refusal_rate": 0.0,
+    "tasks": 30,
+    "toolset": "full"
+  },
+  {
+    "by_max_depth": {
+      "10": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.65,
+        "mean_tool_calls": 14.0,
+        "pass_at_1": 0.0,
+        "tasks": 1
+      },
+      "4": {
+        "exact_route_rate": 0.3333,
+        "mean_reward": 0.9111,
+        "mean_tool_calls": 6.8333,
+        "pass_at_1": 1.0,
+        "tasks": 6
+      },
+      "5": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5693,
+        "mean_tool_calls": 8.7143,
+        "pass_at_1": 0.5714,
+        "tasks": 7
+      },
+      "6": {
+        "exact_route_rate": 0.25,
+        "mean_reward": 0.68,
+        "mean_tool_calls": 7.25,
+        "pass_at_1": 0.75,
+        "tasks": 4
+      },
+      "7": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5358,
+        "mean_tool_calls": 9.75,
+        "pass_at_1": 0.25,
+        "tasks": 4
+      },
+      "8": {
+        "exact_route_rate": 0.25,
+        "mean_reward": 0.5417,
+        "mean_tool_calls": 9.75,
+        "pass_at_1": 0.25,
+        "tasks": 4
+      },
+      "9": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.325,
+        "mean_tool_calls": 11.25,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      }
+    },
+    "by_tier": {
+      "easy": {
+        "exact_route_rate": 0.2,
+        "mean_reward": 0.7123,
+        "mean_tool_calls": 7.2,
+        "pass_at_1": 0.8,
+        "tasks": 10
+      },
+      "hard": {
+        "exact_route_rate": 0.2,
+        "mean_reward": 0.7472,
+        "mean_tool_calls": 12.5,
+        "pass_at_1": 0.4,
+        "tasks": 10
+      },
+      "medium": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3837,
+        "mean_tool_calls": 7.1,
+        "pass_at_1": 0.3,
+        "tasks": 10
+      }
+    },
+    "by_variant": {
+      "standard": {
+        "exact_route_rate": 0.1333,
+        "mean_reward": 0.6144,
+        "mean_tool_calls": 8.9333,
+        "pass_at_1": 0.5,
+        "tasks": 30
+      }
+    },
+    "coerced_submission_rate": 0.0,
+    "completion_tokens": 55884,
+    "components": {
+      "constraints": 0.7667,
+      "diversity": 0.5,
+      "efficiency": 0.4833,
+      "parse": 0.7667,
+      "reference_match": 0.1333,
+      "reference_similarity": 0.1933,
+      "steps": 0.7228,
+      "stock": 0.725,
+      "structure": 0.7667
+    },
+    "cost_usd": 2.2925,
+    "coverage": 1.0,
+    "episodes_expected": 30,
+    "episodes_graded": 30,
+    "exact_route_rate": 0.1333,
+    "identity": {
+      "agent_code_sha256": "731c057c7a0f4e78a1e05a5933b09d777a39a5f31c0cbffb6cd897183c3e37a6",
+      "attempts": 1,
+      "benchmark_public_sha256": "d27d442ce7327ce37ffdc38b4fe6e59a3cf6ce508e76256b5c4841fcc07c3b25",
+      "endpoint": null,
+      "label": "claude-opus-5-5",
+      "max_tool_calls": 32,
+      "max_turns": 16,
+      "model": "claude-opus-5-5",
+      "provider": "anthropic",
+      "repair": false,
+      "sampling": {
+        "effort": "low",
+        "max_tokens": 16000,
+        "thinking": "off",
+        "thinking_fully_off": false,
+        "tool_choice": "auto"
+      },
+      "schema_version": "retro-eval-run-v2",
+      "server": "http://127.0.0.1:8010",
+      "split": "final_eval",
+      "task_ids": [
+        "retro_1ba7b351bd23db0e",
+        "retro_eb581bcb2aaacf66",
+        "retro_66953a5ef0520b19",
+        "retro_83e0303eb34232da",
+        "retro_2c3155ee731884b1",
+        "retro_f6b703ccf57008da",
+        "retro_d24f2932c2fbcc9b",
+        "retro_14602f5f96554500",
+        "retro_e507ee9a9fc68a9a",
+        "retro_17031e7672333731",
+        "retro_25a7bbebb9a0e096",
+        "retro_4b3deba41c5578d0",
+        "retro_f9a506c7c77b3484",
+        "retro_b8e31cdf9cbf6c75",
+        "retro_9acf6323e734c848",
+        "retro_86ccb9e83e3e9e9e",
+        "retro_34e025851a243d29",
+        "retro_7710f159dfe6f6ca",
+        "retro_ef76e1f83b9ea580",
+        "retro_b4e2535f3749bf6f",
+        "retro_eb2098decfe08d9a",
+        "retro_8f6b26c4af726398",
+        "retro_e1c9685c02611279",
+        "retro_965813554d7d7f96",
+        "retro_f8e680ee09d05bc8",
+        "retro_f295968af0e2f27f",
+        "retro_01583f4ac0522fd0",
+        "retro_753dd86c90eba25d",
+        "retro_436e955405feb310",
+        "retro_d735e87a4090c05e"
+      ],
+      "tool_schema_sha256": "e42542b2fb71cea88846c7190d6c4b84bbf82f7f57f42fdff429d3ea3090c459",
+      "toolset": "full"
+    },
+    "label": "claude-opus-5-5",
+    "mean_latency_seconds": 32.1996,
+    "mean_reward": 0.6144,
+    "mean_tool_calls": 8.9333,
+    "mean_turns": 9.1333,
+    "model": "claude-opus-5-5",
+    "no_emit_rate": 0.2,
+    "pass_at_1": 0.5,
+    "pass_at_1_ci95": [
+      0.3315,
+      0.6685
+    ],
+    "prompt_tokens": 1430090,
+    "refusal_rate": 0.2,
+    "tasks": 30,
+    "toolset": "full"
+  },
+  {
+    "by_max_depth": {
+      "10": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 1
+      },
+      "4": {
+        "exact_route_rate": 0.3333,
+        "mean_reward": 0.9049,
+        "mean_tool_calls": 10.1667,
+        "pass_at_1": 1.0,
+        "tasks": 6
+      },
+      "5": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2259,
+        "mean_tool_calls": 14.1429,
+        "pass_at_1": 0.1429,
+        "tasks": 7
+      },
+      "6": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.4336,
+        "mean_tool_calls": 12.25,
+        "pass_at_1": 0.5,
+        "tasks": 4
+      },
+      "7": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5792,
+        "mean_tool_calls": 15.0,
+        "pass_at_1": 0.5,
+        "tasks": 4
+      },
+      "8": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3719,
+        "mean_tool_calls": 14.75,
+        "pass_at_1": 0.25,
+        "tasks": 4
+      },
+      "9": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3075,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      }
+    },
+    "by_tier": {
+      "easy": {
+        "exact_route_rate": 0.2,
+        "mean_reward": 0.589,
+        "mean_tool_calls": 11.7,
+        "pass_at_1": 0.6,
+        "tasks": 10
+      },
+      "hard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.4156,
+        "mean_tool_calls": 14.4,
+        "pass_at_1": 0.3,
+        "tasks": 10
+      },
+      "medium": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3733,
+        "mean_tool_calls": 14.7,
+        "pass_at_1": 0.3,
+        "tasks": 10
+      }
+    },
+    "by_variant": {
+      "standard": {
+        "exact_route_rate": 0.0667,
+        "mean_reward": 0.4593,
+        "mean_tool_calls": 13.6,
+        "pass_at_1": 0.4,
+        "tasks": 30
+      }
+    },
+    "coerced_submission_rate": 0.0,
+    "completion_tokens": 103649,
+    "components": {
+      "constraints": 0.6,
+      "diversity": 0.4,
+      "efficiency": 0.3833,
+      "parse": 0.6,
+      "reference_match": 0.0667,
+      "reference_similarity": 0.1239,
+      "steps": 0.5306,
+      "stock": 0.5303,
+      "structure": 0.6
+    },
+    "cost_usd": 2.169,
+    "coverage": 1.0,
+    "episodes_expected": 30,
+    "episodes_graded": 30,
+    "exact_route_rate": 0.0667,
+    "identity": {
+      "agent_code_sha256": "731c057c7a0f4e78a1e05a5933b09d777a39a5f31c0cbffb6cd897183c3e37a6",
+      "attempts": 1,
+      "benchmark_public_sha256": "d27d442ce7327ce37ffdc38b4fe6e59a3cf6ce508e76256b5c4841fcc07c3b25",
+      "endpoint": null,
+      "label": "claude-sonnet-5-5",
+      "max_tool_calls": 32,
+      "max_turns": 16,
+      "model": "claude-sonnet-5-5",
+      "provider": "anthropic",
+      "repair": false,
+      "sampling": {
+        "effort": null,
+        "max_tokens": 16000,
+        "thinking": {
+          "type": "between_tools"
+        },
+        "thinking_fully_off": true,
+        "tool_choice": "auto"
+      },
+      "schema_version": "retro-eval-run-v2",
+      "server": "http://127.0.0.1:8010",
+      "split": "final_eval",
+      "task_ids": [
+        "retro_1ba7b351bd23db0e",
+        "retro_eb581bcb2aaacf66",
+        "retro_66953a5ef0520b19",
+        "retro_83e0303eb34232da",
+        "retro_2c3155ee731884b1",
+        "retro_f6b703ccf57008da",
+        "retro_d24f2932c2fbcc9b",
+        "retro_14602f5f96554500",
+        "retro_e507ee9a9fc68a9a",
+        "retro_17031e7672333731",
+        "retro_25a7bbebb9a0e096",
+        "retro_4b3deba41c5578d0",
+        "retro_f9a506c7c77b3484",
+        "retro_b8e31cdf9cbf6c75",
+        "retro_9acf6323e734c848",
+        "retro_86ccb9e83e3e9e9e",
+        "retro_34e025851a243d29",
+        "retro_7710f159dfe6f6ca",
+        "retro_ef76e1f83b9ea580",
+        "retro_b4e2535f3749bf6f",
+        "retro_eb2098decfe08d9a",
+        "retro_8f6b26c4af726398",
+        "retro_e1c9685c02611279",
+        "retro_965813554d7d7f96",
+        "retro_f8e680ee09d05bc8",
+        "retro_f295968af0e2f27f",
+        "retro_01583f4ac0522fd0",
+        "retro_753dd86c90eba25d",
+        "retro_436e955405feb310",
+        "retro_d735e87a4090c05e"
+      ],
+      "tool_schema_sha256": "e42542b2fb71cea88846c7190d6c4b84bbf82f7f57f42fdff429d3ea3090c459",
+      "toolset": "full"
+    },
+    "label": "claude-sonnet-5-5",
+    "mean_latency_seconds": 36.279,
+    "mean_reward": 0.4593,
+    "mean_tool_calls": 13.6,
+    "mean_turns": 13.6,
+    "model": "claude-sonnet-5-5",
+    "no_emit_rate": 0.0,
+    "pass_at_1": 0.4,
+    "pass_at_1_ci95": [
+      0.2459,
+      0.5768
+    ],
+    "prompt_tokens": 2651403,
+    "refusal_rate": 0.0,
+    "tasks": 30,
+    "toolset": "full"
+  },
+  {
+    "by_max_depth": {
+      "10": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0,
+        "mean_tool_calls": 34.0,
+        "pass_at_1": 0.0,
+        "tasks": 1
+      },
+      "4": {
+        "exact_route_rate": 0.3333,
+        "mean_reward": 0.8796,
+        "mean_tool_calls": 28.3333,
+        "pass_at_1": 1.0,
+        "tasks": 6
+      },
+      "5": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3759,
+        "mean_tool_calls": 35.7143,
+        "pass_at_1": 0.1429,
+        "tasks": 7
+      },
+      "6": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5753,
+        "mean_tool_calls": 33.5,
+        "pass_at_1": 0.25,
+        "tasks": 4
+      },
+      "7": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.4747,
+        "mean_tool_calls": 35.75,
+        "pass_at_1": 0.25,
+        "tasks": 4
+      },
+      "8": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3937,
+        "mean_tool_calls": 37.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "9": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.1458,
+        "mean_tool_calls": 35.5,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      }
+    },
+    "by_tier": {
+      "easy": {
+        "exact_route_rate": 0.2,
+        "mean_reward": 0.647,
+        "mean_tool_calls": 31.8,
+        "pass_at_1": 0.6,
+        "tasks": 10
+      },
+      "hard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.4009,
+        "mean_tool_calls": 34.7,
+        "pass_at_1": 0.1,
+        "tasks": 10
+      },
+      "medium": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3788,
+        "mean_tool_calls": 35.6,
+        "pass_at_1": 0.2,
+        "tasks": 10
+      }
+    },
+    "by_variant": {
+      "standard": {
+        "exact_route_rate": 0.0667,
+        "mean_reward": 0.4756,
+        "mean_tool_calls": 34.0333,
+        "pass_at_1": 0.3,
+        "tasks": 30
+      }
+    },
+    "coerced_submission_rate": 0.0,
+    "completion_tokens": 238259,
+    "components": {
+      "constraints": 0.7667,
+      "diversity": 0.3,
+      "efficiency": 0.2593,
+      "parse": 0.7667,
+      "reference_match": 0.0667,
+      "reference_similarity": 0.0889,
+      "steps": 0.4938,
+      "stock": 0.7125,
+      "structure": 0.7433
+    },
+    "cost_usd": 1.4853,
+    "coverage": 1.0,
+    "episodes_expected": 30,
+    "episodes_graded": 30,
+    "exact_route_rate": 0.0667,
+    "identity": {
+      "agent_code_sha256": "731c057c7a0f4e78a1e05a5933b09d777a39a5f31c0cbffb6cd897183c3e37a6",
+      "attempts": 1,
+      "benchmark_public_sha256": "d27d442ce7327ce37ffdc38b4fe6e59a3cf6ce508e76256b5c4841fcc07c3b25",
+      "endpoint": "https://router.huggingface.co/v1",
+      "label": "deepseek-ai/DeepSeek-V4.1-Flash:novita",
+      "max_tool_calls": 32,
+      "max_turns": 16,
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash:novita",
+      "provider": "hf",
+      "repair": false,
+      "sampling": {
+        "max_tokens": 16000,
+        "reasoning_effort": null,
+        "temperature": 0.0,
+        "thinking": "off",
+        "tool_choice": "auto"
+      },
+      "schema_version": "retro-eval-run-v2",
+      "server": "http://127.0.0.1:8010",
+      "split": "final_eval",
+      "task_ids": [
+        "retro_1ba7b351bd23db0e",
+        "retro_eb581bcb2aaacf66",
+        "retro_66953a5ef0520b19",
+        "retro_83e0303eb34232da",
+        "retro_2c3155ee731884b1",
+        "retro_f6b703ccf57008da",
+        "retro_d24f2932c2fbcc9b",
+        "retro_14602f5f96554500",
+        "retro_e507ee9a9fc68a9a",
+        "retro_17031e7672333731",
+        "retro_25a7bbebb9a0e096",
+        "retro_4b3deba41c5578d0",
+        "retro_f9a506c7c77b3484",
+        "retro_b8e31cdf9cbf6c75",
+        "retro_9acf6323e734c848",
+        "retro_86ccb9e83e3e9e9e",
+        "retro_34e025851a243d29",
+        "retro_7710f159dfe6f6ca",
+        "retro_ef76e1f83b9ea580",
+        "retro_b4e2535f3749bf6f",
+        "retro_eb2098decfe08d9a",
+        "retro_8f6b26c4af726398",
+        "retro_e1c9685c02611279",
+        "retro_965813554d7d7f96",
+        "retro_f8e680ee09d05bc8",
+        "retro_f295968af0e2f27f",
+        "retro_01583f4ac0522fd0",
+        "retro_753dd86c90eba25d",
+        "retro_436e955405feb310",
+        "retro_d735e87a4090c05e"
+      ],
+      "tool_schema_sha256": "e42542b2fb71cea88846c7190d6c4b84bbf82f7f57f42fdff429d3ea3090c459",
+      "toolset": "full"
+    },
+    "label": "deepseek-ai/DeepSeek-V4.1-Flash:novita",
+    "mean_latency_seconds": 95.8525,
+    "mean_reward": 0.4756,
+    "mean_tool_calls": 34.0333,
+    "mean_turns": 12.8333,
+    "model": "deepseek-ai/DeepSeek-V4.1-Flash:novita",
+    "no_emit_rate": 0.2333,
+    "pass_at_1": 0.3,
+    "pass_at_1_ci95": [
+      0.1666,
+      0.4788
+    ],
+    "prompt_tokens": 3997897,
+    "refusal_rate": 0.0,
+    "tasks": 30,
+    "toolset": "full"
+  },
+  {
+    "by_max_depth": {
+      "10": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5673,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 1
+      },
+      "4": {
+        "exact_route_rate": 0.3333,
+        "mean_reward": 0.855,
+        "mean_tool_calls": 15.8333,
+        "pass_at_1": 0.8333,
+        "tasks": 6
+      },
+      "5": {
+        "exact_route_rate": 0.1429,
+        "mean_reward": 0.6321,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.2857,
+        "tasks": 7
+      },
+      "6": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5481,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "7": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5272,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "8": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5121,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "9": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5866,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      }
+    },
+    "by_tier": {
+      "easy": {
+        "exact_route_rate": 0.2,
+        "mean_reward": 0.7088,
+        "mean_tool_calls": 15.9,
+        "pass_at_1": 0.5,
+        "tasks": 10
+      },
+      "hard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5165,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 10
+      },
+      "medium": {
+        "exact_route_rate": 0.1,
+        "mean_reward": 0.6565,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.2,
+        "tasks": 10
+      }
+    },
+    "by_variant": {
+      "standard": {
+        "exact_route_rate": 0.1,
+        "mean_reward": 0.6273,
+        "mean_tool_calls": 15.9667,
+        "pass_at_1": 0.2333,
+        "tasks": 30
+      }
+    },
+    "coerced_submission_rate": 0.0,
+    "completion_tokens": 49349,
+    "components": {
+      "constraints": 0.9833,
+      "diversity": 0.2333,
+      "efficiency": 0.2222,
+      "parse": 1.0,
+      "reference_match": 0.1,
+      "reference_similarity": 0.1222,
+      "steps": 0.8211,
+      "stock": 0.6385,
+      "structure": 0.9333
+    },
+    "cost_usd": 2.0896,
+    "coverage": 1.0,
+    "episodes_expected": 30,
+    "episodes_graded": 30,
+    "exact_route_rate": 0.1,
+    "identity": {
+      "agent_code_sha256": "731c057c7a0f4e78a1e05a5933b09d777a39a5f31c0cbffb6cd897183c3e37a6",
+      "attempts": 1,
+      "benchmark_public_sha256": "d27d442ce7327ce37ffdc38b4fe6e59a3cf6ce508e76256b5c4841fcc07c3b25",
+      "endpoint": "https://router.huggingface.co/v1",
+      "label": "moonshotai/Kimi-K2.6:deepinfra",
+      "max_tool_calls": 32,
+      "max_turns": 16,
+      "model": "moonshotai/Kimi-K2.6:deepinfra",
+      "provider": "hf",
+      "repair": false,
+      "sampling": {
+        "max_tokens": 16000,
+        "reasoning_effort": null,
+        "temperature": 0.0,
+        "thinking": "off",
+        "tool_choice": "auto"
+      },
+      "schema_version": "retro-eval-run-v2",
+      "server": "http://127.0.0.1:8010",
+      "split": "final_eval",
+      "task_ids": [
+        "retro_1ba7b351bd23db0e",
+        "retro_eb581bcb2aaacf66",
+        "retro_66953a5ef0520b19",
+        "retro_83e0303eb34232da",
+        "retro_2c3155ee731884b1",
+        "retro_f6b703ccf57008da",
+        "retro_d24f2932c2fbcc9b",
+        "retro_14602f5f96554500",
+        "retro_e507ee9a9fc68a9a",
+        "retro_17031e7672333731",
+        "retro_25a7bbebb9a0e096",
+        "retro_4b3deba41c5578d0",
+        "retro_f9a506c7c77b3484",
+        "retro_b8e31cdf9cbf6c75",
+        "retro_9acf6323e734c848",
+        "retro_86ccb9e83e3e9e9e",
+        "retro_34e025851a243d29",
+        "retro_7710f159dfe6f6ca",
+        "retro_ef76e1f83b9ea580",
+        "retro_b4e2535f3749bf6f",
+        "retro_eb2098decfe08d9a",
+        "retro_8f6b26c4af726398",
+        "retro_e1c9685c02611279",
+        "retro_965813554d7d7f96",
+        "retro_f8e680ee09d05bc8",
+        "retro_f295968af0e2f27f",
+        "retro_01583f4ac0522fd0",
+        "retro_753dd86c90eba25d",
+        "retro_436e955405feb310",
+        "retro_d735e87a4090c05e"
+      ],
+      "tool_schema_sha256": "e42542b2fb71cea88846c7190d6c4b84bbf82f7f57f42fdff429d3ea3090c459",
+      "toolset": "full"
+    },
+    "label": "moonshotai/Kimi-K2.6:deepinfra",
+    "mean_latency_seconds": 96.2582,
+    "mean_reward": 0.6273,
+    "mean_tool_calls": 15.9667,
+    "mean_turns": 15.9667,
+    "model": "moonshotai/Kimi-K2.6:deepinfra",
+    "no_emit_rate": 0.0,
+    "pass_at_1": 0.2333,
+    "pass_at_1_ci95": [
+      0.1179,
+      0.4093
+    ],
+    "prompt_tokens": 2555830,
+    "refusal_rate": 0.0,
+    "tasks": 30,
+    "toolset": "full"
+  },
+  {
+    "by_max_depth": {
+      "10": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 1
+      },
+      "4": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3806,
+        "mean_tool_calls": 15.5,
+        "pass_at_1": 0.3333,
+        "tasks": 6
+      },
+      "5": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.1083,
+        "mean_tool_calls": 15.8571,
+        "pass_at_1": 0.1429,
+        "tasks": 7
+      },
+      "6": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.1656,
+        "mean_tool_calls": 15.75,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "7": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3583,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.25,
+        "tasks": 4
+      },
+      "8": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.1458,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "9": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      }
+    },
+    "by_tier": {
+      "easy": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3042,
+        "mean_tool_calls": 15.6,
+        "pass_at_1": 0.3,
+        "tasks": 10
+      },
+      "hard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.1246,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 10
+      },
+      "medium": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.1433,
+        "mean_tool_calls": 15.9,
+        "pass_at_1": 0.1,
+        "tasks": 10
+      }
+    },
+    "by_variant": {
+      "standard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.1907,
+        "mean_tool_calls": 15.8333,
+        "pass_at_1": 0.1333,
+        "tasks": 30
+      }
+    },
+    "coerced_submission_rate": 0.0,
+    "completion_tokens": 122440,
+    "components": {
+      "constraints": 0.2667,
+      "diversity": 0.1333,
+      "efficiency": 0.1222,
+      "parse": 0.2667,
+      "reference_match": 0.0,
+      "reference_similarity": 0.0,
+      "steps": 0.2278,
+      "stock": 0.2583,
+      "structure": 0.2667
+    },
+    "cost_usd": 4.5261,
+    "coverage": 1.0,
+    "episodes_expected": 30,
+    "episodes_graded": 30,
+    "exact_route_rate": 0.0,
+    "identity": {
+      "agent_code_sha256": "731c057c7a0f4e78a1e05a5933b09d777a39a5f31c0cbffb6cd897183c3e37a6",
+      "attempts": 1,
+      "benchmark_public_sha256": "d27d442ce7327ce37ffdc38b4fe6e59a3cf6ce508e76256b5c4841fcc07c3b25",
+      "endpoint": "https://router.huggingface.co/v1",
+      "label": "deepseek-ai/DeepSeek-V4-Pro-0813:together",
+      "max_tool_calls": 32,
+      "max_turns": 16,
+      "model": "deepseek-ai/DeepSeek-V4-Pro-0813:together",
+      "provider": "hf",
+      "repair": false,
+      "sampling": {
+        "max_tokens": 16000,
+        "reasoning_effort": null,
+        "temperature": 0.0,
+        "thinking": "off",
+        "tool_choice": "auto"
+      },
+      "schema_version": "retro-eval-run-v2",
+      "server": "http://127.0.0.1:8010",
+      "split": "final_eval",
+      "task_ids": [
+        "retro_1ba7b351bd23db0e",
+        "retro_eb581bcb2aaacf66",
+        "retro_66953a5ef0520b19",
+        "retro_83e0303eb34232da",
+        "retro_2c3155ee731884b1",
+        "retro_f6b703ccf57008da",
+        "retro_d24f2932c2fbcc9b",
+        "retro_14602f5f96554500",
+        "retro_e507ee9a9fc68a9a",
+        "retro_17031e7672333731",
+        "retro_25a7bbebb9a0e096",
+        "retro_4b3deba41c5578d0",
+        "retro_f9a506c7c77b3484",
+        "retro_b8e31cdf9cbf6c75",
+        "retro_9acf6323e734c848",
+        "retro_86ccb9e83e3e9e9e",
+        "retro_34e025851a243d29",
+        "retro_7710f159dfe6f6ca",
+        "retro_ef76e1f83b9ea580",
+        "retro_b4e2535f3749bf6f",
+        "retro_eb2098decfe08d9a",
+        "retro_8f6b26c4af726398",
+        "retro_e1c9685c02611279",
+        "retro_965813554d7d7f96",
+        "retro_f8e680ee09d05bc8",
+        "retro_f295968af0e2f27f",
+        "retro_01583f4ac0522fd0",
+        "retro_753dd86c90eba25d",
+        "retro_436e955405feb310",
+        "retro_d735e87a4090c05e"
+      ],
+      "tool_schema_sha256": "e42542b2fb71cea88846c7190d6c4b84bbf82f7f57f42fdff429d3ea3090c459",
+      "toolset": "full"
+    },
+    "label": "deepseek-ai/DeepSeek-V4-Pro-0813:together",
+    "mean_latency_seconds": 74.0227,
+    "mean_reward": 0.1907,
+    "mean_tool_calls": 15.8333,
+    "mean_turns": 15.8333,
+    "model": "deepseek-ai/DeepSeek-V4-Pro-0813:together",
+    "no_emit_rate": 0.3333,
+    "pass_at_1": 0.1333,
+    "pass_at_1_ci95": [
+      0.0531,
+      0.2968
+    ],
+    "prompt_tokens": 3061531,
+    "refusal_rate": 0.0,
+    "tasks": 30,
+    "toolset": "full"
+  },
+  {
+    "by_max_depth": {
+      "10": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2562,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 1
+      },
+      "4": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.4851,
+        "mean_tool_calls": 14.5,
+        "pass_at_1": 0.5,
+        "tasks": 6
+      },
+      "5": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2044,
+        "mean_tool_calls": 15.5714,
+        "pass_at_1": 0.0,
+        "tasks": 7
+      },
+      "6": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0858,
+        "mean_tool_calls": 15.5,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "7": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3045,
+        "mean_tool_calls": 15.75,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "8": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5026,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "9": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2625,
+        "mean_tool_calls": 15.75,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      }
+    },
+    "by_tier": {
+      "easy": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.4257,
+        "mean_tool_calls": 15.0,
+        "pass_at_1": 0.3,
+        "tasks": 10
+      },
+      "hard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2344,
+        "mean_tool_calls": 15.7,
+        "pass_at_1": 0.0,
+        "tasks": 10
+      },
+      "medium": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2617,
+        "mean_tool_calls": 15.7,
+        "pass_at_1": 0.0,
+        "tasks": 10
+      }
+    },
+    "by_variant": {
+      "standard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3073,
+        "mean_tool_calls": 15.4667,
+        "pass_at_1": 0.1,
+        "tasks": 30
+      }
+    },
+    "coerced_submission_rate": 0.0,
+    "completion_tokens": 57347,
+    "components": {
+      "constraints": 0.6667,
+      "diversity": 0.1,
+      "efficiency": 0.1,
+      "parse": 0.7667,
+      "reference_match": 0.0,
+      "reference_similarity": 0.0111,
+      "steps": 0.2611,
+      "stock": 0.4083,
+      "structure": 0.7067
+    },
+    "cost_usd": 1.3654,
+    "coverage": 1.0,
+    "episodes_expected": 30,
+    "episodes_graded": 30,
+    "exact_route_rate": 0.0,
+    "identity": {
+      "agent_code_sha256": "731c057c7a0f4e78a1e05a5933b09d777a39a5f31c0cbffb6cd897183c3e37a6",
+      "attempts": 1,
+      "benchmark_public_sha256": "d27d442ce7327ce37ffdc38b4fe6e59a3cf6ce508e76256b5c4841fcc07c3b25",
+      "endpoint": "https://router.huggingface.co/v1",
+      "label": "Qwen/Qwen3.8-27B:novita",
+      "max_tool_calls": 32,
+      "max_turns": 16,
+      "model": "Qwen/Qwen3.8-27B:novita",
+      "provider": "hf",
+      "repair": false,
+      "sampling": {
+        "max_tokens": 16000,
+        "reasoning_effort": null,
+        "temperature": 0.0,
+        "thinking": "off",
+        "tool_choice": "auto"
+      },
+      "schema_version": "retro-eval-run-v2",
+      "server": "http://127.0.0.1:8010",
+      "split": "final_eval",
+      "task_ids": [
+        "retro_1ba7b351bd23db0e",
+        "retro_eb581bcb2aaacf66",
+        "retro_66953a5ef0520b19",
+        "retro_83e0303eb34232da",
+        "retro_2c3155ee731884b1",
+        "retro_f6b703ccf57008da",
+        "retro_d24f2932c2fbcc9b",
+        "retro_14602f5f96554500",
+        "retro_e507ee9a9fc68a9a",
+        "retro_17031e7672333731",
+        "retro_25a7bbebb9a0e096",
+        "retro_4b3deba41c5578d0",
+        "retro_f9a506c7c77b3484",
+        "retro_b8e31cdf9cbf6c75",
+        "retro_9acf6323e734c848",
+        "retro_86ccb9e83e3e9e9e",
+        "retro_34e025851a243d29",
+        "retro_7710f159dfe6f6ca",
+        "retro_ef76e1f83b9ea580",
+        "retro_b4e2535f3749bf6f",
+        "retro_eb2098decfe08d9a",
+        "retro_8f6b26c4af726398",
+        "retro_e1c9685c02611279",
+        "retro_965813554d7d7f96",
+        "retro_f8e680ee09d05bc8",
+        "retro_f295968af0e2f27f",
+        "retro_01583f4ac0522fd0",
+        "retro_753dd86c90eba25d",
+        "retro_436e955405feb310",
+        "retro_d735e87a4090c05e"
+      ],
+      "tool_schema_sha256": "e42542b2fb71cea88846c7190d6c4b84bbf82f7f57f42fdff429d3ea3090c459",
+      "toolset": "full"
+    },
+    "label": "Qwen/Qwen3.8-27B:novita",
+    "mean_latency_seconds": 88.3621,
+    "mean_reward": 0.3073,
+    "mean_tool_calls": 15.4667,
+    "mean_turns": 15.8,
+    "model": "Qwen/Qwen3.8-27B:novita",
+    "no_emit_rate": 0.2333,
+    "pass_at_1": 0.1,
+    "pass_at_1_ci95": [
+      0.0346,
+      0.2562
+    ],
+    "prompt_tokens": 2841256,
+    "refusal_rate": 0.0,
+    "tasks": 30,
+    "toolset": "full"
+  },
+  {
+    "by_max_depth": {
+      "10": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.275,
+        "mean_tool_calls": 15.0,
+        "pass_at_1": 0.0,
+        "tasks": 1
+      },
+      "4": {
+        "exact_route_rate": 0.1667,
+        "mean_reward": 0.3083,
+        "mean_tool_calls": 15.3333,
+        "pass_at_1": 0.3333,
+        "tasks": 6
+      },
+      "5": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2571,
+        "mean_tool_calls": 15.5714,
+        "pass_at_1": 0.0,
+        "tasks": 7
+      },
+      "6": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3558,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.25,
+        "tasks": 4
+      },
+      "7": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2062,
+        "mean_tool_calls": 15.75,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "8": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3772,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "9": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.1906,
+        "mean_tool_calls": 15.5,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      }
+    },
+    "by_tier": {
+      "easy": {
+        "exact_route_rate": 0.1,
+        "mean_reward": 0.3,
+        "mean_tool_calls": 15.4,
+        "pass_at_1": 0.2,
+        "tasks": 10
+      },
+      "hard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3445,
+        "mean_tool_calls": 15.6,
+        "pass_at_1": 0.1,
+        "tasks": 10
+      },
+      "medium": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2,
+        "mean_tool_calls": 15.9,
+        "pass_at_1": 0.0,
+        "tasks": 10
+      }
+    },
+    "by_variant": {
+      "standard": {
+        "exact_route_rate": 0.0333,
+        "mean_reward": 0.2815,
+        "mean_tool_calls": 15.6333,
+        "pass_at_1": 0.1,
+        "tasks": 30
+      }
+    },
+    "coerced_submission_rate": 0.0,
+    "completion_tokens": 97287,
+    "components": {
+      "constraints": 0.5667,
+      "diversity": 0.1,
+      "efficiency": 0.0933,
+      "parse": 0.5667,
+      "reference_match": 0.0333,
+      "reference_similarity": 0.0333,
+      "steps": 0.3167,
+      "stock": 0.2806,
+      "structure": 0.5467
+    },
+    "cost_usd": 6.0187,
+    "coverage": 1.0,
+    "episodes_expected": 30,
+    "episodes_graded": 30,
+    "exact_route_rate": 0.0333,
+    "identity": {
+      "agent_code_sha256": "731c057c7a0f4e78a1e05a5933b09d777a39a5f31c0cbffb6cd897183c3e37a6",
+      "attempts": 1,
+      "benchmark_public_sha256": "d27d442ce7327ce37ffdc38b4fe6e59a3cf6ce508e76256b5c4841fcc07c3b25",
+      "endpoint": "https://router.huggingface.co/v1",
+      "label": "Qwen/Qwen3.8-2.4T-A95B:together",
+      "max_tool_calls": 32,
+      "max_turns": 16,
+      "model": "Qwen/Qwen3.8-2.4T-A95B:together",
+      "provider": "hf",
+      "repair": false,
+      "sampling": {
+        "max_tokens": 16000,
+        "reasoning_effort": null,
+        "temperature": 0.0,
+        "thinking": "off",
+        "tool_choice": "auto"
+      },
+      "schema_version": "retro-eval-run-v2",
+      "server": "http://127.0.0.1:8010",
+      "split": "final_eval",
+      "task_ids": [
+        "retro_1ba7b351bd23db0e",
+        "retro_eb581bcb2aaacf66",
+        "retro_66953a5ef0520b19",
+        "retro_83e0303eb34232da",
+        "retro_2c3155ee731884b1",
+        "retro_f6b703ccf57008da",
+        "retro_d24f2932c2fbcc9b",
+        "retro_14602f5f96554500",
+        "retro_e507ee9a9fc68a9a",
+        "retro_17031e7672333731",
+        "retro_25a7bbebb9a0e096",
+        "retro_4b3deba41c5578d0",
+        "retro_f9a506c7c77b3484",
+        "retro_b8e31cdf9cbf6c75",
+        "retro_9acf6323e734c848",
+        "retro_86ccb9e83e3e9e9e",
+        "retro_34e025851a243d29",
+        "retro_7710f159dfe6f6ca",
+        "retro_ef76e1f83b9ea580",
+        "retro_b4e2535f3749bf6f",
+        "retro_eb2098decfe08d9a",
+        "retro_8f6b26c4af726398",
+        "retro_e1c9685c02611279",
+        "retro_965813554d7d7f96",
+        "retro_f8e680ee09d05bc8",
+        "retro_f295968af0e2f27f",
+        "retro_01583f4ac0522fd0",
+        "retro_753dd86c90eba25d",
+        "retro_436e955405feb310",
+        "retro_d735e87a4090c05e"
+      ],
+      "tool_schema_sha256": "e42542b2fb71cea88846c7190d6c4b84bbf82f7f57f42fdff429d3ea3090c459",
+      "toolset": "full"
+    },
+    "label": "Qwen/Qwen3.8-2.4T-A95B:together",
+    "mean_latency_seconds": 69.9232,
+    "mean_reward": 0.2815,
+    "mean_tool_calls": 15.6333,
+    "mean_turns": 15.6667,
+    "model": "Qwen/Qwen3.8-2.4T-A95B:together",
+    "no_emit_rate": 0.0333,
+    "pass_at_1": 0.1,
+    "pass_at_1_ci95": [
+      0.0346,
+      0.2562
+    ],
+    "prompt_tokens": 2717493,
+    "refusal_rate": 0.0,
+    "tasks": 30,
+    "toolset": "full"
+  },
+  {
+    "by_max_depth": {
+      "10": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 1
+      },
+      "4": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.4196,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.3333,
+        "tasks": 6
+      },
+      "5": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.1518,
+        "mean_tool_calls": 15.8571,
+        "pass_at_1": 0.0,
+        "tasks": 7
+      },
+      "6": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.175,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "7": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2437,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "8": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3253,
+        "mean_tool_calls": 15.75,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "9": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      }
+    },
+    "by_tier": {
+      "easy": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2396,
+        "mean_tool_calls": 15.9,
+        "pass_at_1": 0.1,
+        "tasks": 10
+      },
+      "hard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.1315,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 10
+      },
+      "medium": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2846,
+        "mean_tool_calls": 15.9,
+        "pass_at_1": 0.1,
+        "tasks": 10
+      }
+    },
+    "by_variant": {
+      "standard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2185,
+        "mean_tool_calls": 15.9333,
+        "pass_at_1": 0.0667,
+        "tasks": 30
+      }
+    },
+    "coerced_submission_rate": 0.0,
+    "completion_tokens": 158560,
+    "components": {
+      "constraints": 0.4667,
+      "diversity": 0.0667,
+      "efficiency": 0.0667,
+      "parse": 0.5,
+      "reference_match": 0.0,
+      "reference_similarity": 0.0111,
+      "steps": 0.1689,
+      "stock": 0.3931,
+      "structure": 0.44
+    },
+    "cost_usd": 0.45,
+    "coverage": 1.0,
+    "episodes_expected": 30,
+    "episodes_graded": 30,
+    "exact_route_rate": 0.0,
+    "identity": {
+      "agent_code_sha256": "731c057c7a0f4e78a1e05a5933b09d777a39a5f31c0cbffb6cd897183c3e37a6",
+      "attempts": 1,
+      "benchmark_public_sha256": "d27d442ce7327ce37ffdc38b4fe6e59a3cf6ce508e76256b5c4841fcc07c3b25",
+      "endpoint": "https://router.huggingface.co/v1",
+      "label": "Qwen/Qwen3.6-35B-A3B:deepinfra",
+      "max_tool_calls": 32,
+      "max_turns": 16,
+      "model": "Qwen/Qwen3.6-35B-A3B:deepinfra",
+      "provider": "hf",
+      "repair": false,
+      "sampling": {
+        "max_tokens": 16000,
+        "reasoning_effort": null,
+        "temperature": 0.0,
+        "thinking": "off",
+        "tool_choice": "auto"
+      },
+      "schema_version": "retro-eval-run-v2",
+      "server": "http://127.0.0.1:8010",
+      "split": "final_eval",
+      "task_ids": [
+        "retro_1ba7b351bd23db0e",
+        "retro_eb581bcb2aaacf66",
+        "retro_66953a5ef0520b19",
+        "retro_83e0303eb34232da",
+        "retro_2c3155ee731884b1",
+        "retro_f6b703ccf57008da",
+        "retro_d24f2932c2fbcc9b",
+        "retro_14602f5f96554500",
+        "retro_e507ee9a9fc68a9a",
+        "retro_17031e7672333731",
+        "retro_25a7bbebb9a0e096",
+        "retro_4b3deba41c5578d0",
+        "retro_f9a506c7c77b3484",
+        "retro_b8e31cdf9cbf6c75",
+        "retro_9acf6323e734c848",
+        "retro_86ccb9e83e3e9e9e",
+        "retro_34e025851a243d29",
+        "retro_7710f159dfe6f6ca",
+        "retro_ef76e1f83b9ea580",
+        "retro_b4e2535f3749bf6f",
+        "retro_eb2098decfe08d9a",
+        "retro_8f6b26c4af726398",
+        "retro_e1c9685c02611279",
+        "retro_965813554d7d7f96",
+        "retro_f8e680ee09d05bc8",
+        "retro_f295968af0e2f27f",
+        "retro_01583f4ac0522fd0",
+        "retro_753dd86c90eba25d",
+        "retro_436e955405feb310",
+        "retro_d735e87a4090c05e"
+      ],
+      "tool_schema_sha256": "e42542b2fb71cea88846c7190d6c4b84bbf82f7f57f42fdff429d3ea3090c459",
+      "toolset": "full"
+    },
+    "label": "Qwen/Qwen3.6-35B-A3B:deepinfra",
+    "mean_latency_seconds": 168.67,
+    "mean_reward": 0.2185,
+    "mean_tool_calls": 15.9333,
+    "mean_turns": 15.9667,
+    "model": "Qwen/Qwen3.6-35B-A3B:deepinfra",
+    "no_emit_rate": 0.0,
+    "pass_at_1": 0.0667,
+    "pass_at_1_ci95": [
+      0.0185,
+      0.2132
+    ],
+    "prompt_tokens": 2993495,
+    "refusal_rate": 0.0,
+    "tasks": 30,
+    "toolset": "full"
+  },
+  {
+    "by_max_depth": {
+      "10": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0,
+        "mean_tool_calls": 11.0,
+        "pass_at_1": 0.0,
+        "tasks": 1
+      },
+      "4": {
+        "exact_route_rate": 0.1667,
+        "mean_reward": 0.3931,
+        "mean_tool_calls": 9.5,
+        "pass_at_1": 0.3333,
+        "tasks": 6
+      },
+      "5": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0893,
+        "mean_tool_calls": 11.5714,
+        "pass_at_1": 0.0,
+        "tasks": 7
+      },
+      "6": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0,
+        "mean_tool_calls": 9.25,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "7": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0,
+        "mean_tool_calls": 11.5,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "8": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0938,
+        "mean_tool_calls": 11.75,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "9": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0,
+        "mean_tool_calls": 10.75,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      }
+    },
+    "by_tier": {
+      "easy": {
+        "exact_route_rate": 0.1,
+        "mean_reward": 0.2983,
+        "mean_tool_calls": 10.4,
+        "pass_at_1": 0.2,
+        "tasks": 10
+      },
+      "hard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0375,
+        "mean_tool_calls": 10.9,
+        "pass_at_1": 0.0,
+        "tasks": 10
+      },
+      "medium": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0,
+        "mean_tool_calls": 10.9,
+        "pass_at_1": 0.0,
+        "tasks": 10
+      }
+    },
+    "by_variant": {
+      "standard": {
+        "exact_route_rate": 0.0333,
+        "mean_reward": 0.1119,
+        "mean_tool_calls": 10.7333,
+        "pass_at_1": 0.0667,
+        "tasks": 30
+      }
+    },
+    "coerced_submission_rate": 0.0,
+    "completion_tokens": 83546,
+    "components": {
+      "constraints": 0.1667,
+      "diversity": 0.0667,
+      "efficiency": 0.05,
+      "parse": 0.1667,
+      "reference_match": 0.0333,
+      "reference_similarity": 0.0444,
+      "steps": 0.1417,
+      "stock": 0.0972,
+      "structure": 0.1667
+    },
+    "cost_usd": 0.0843,
+    "coverage": 1.0,
+    "episodes_expected": 30,
+    "episodes_graded": 30,
+    "exact_route_rate": 0.0333,
+    "identity": {
+      "agent_code_sha256": "731c057c7a0f4e78a1e05a5933b09d777a39a5f31c0cbffb6cd897183c3e37a6",
+      "attempts": 1,
+      "benchmark_public_sha256": "d27d442ce7327ce37ffdc38b4fe6e59a3cf6ce508e76256b5c4841fcc07c3b25",
+      "endpoint": null,
+      "label": "claude-haiku-5-5",
+      "max_tool_calls": 32,
+      "max_turns": 16,
+      "model": "claude-haiku-5-5",
+      "provider": "anthropic",
+      "repair": false,
+      "sampling": {
+        "effort": null,
+        "max_tokens": 16000,
+        "thinking": {
+          "type": "disabled"
+        },
+        "thinking_fully_off": true,
+        "tool_choice": "auto"
+      },
+      "schema_version": "retro-eval-run-v2",
+      "server": "http://127.0.0.1:8010",
+      "split": "final_eval",
+      "task_ids": [
+        "retro_1ba7b351bd23db0e",
+        "retro_eb581bcb2aaacf66",
+        "retro_66953a5ef0520b19",
+        "retro_83e0303eb34232da",
+        "retro_2c3155ee731884b1",
+        "retro_f6b703ccf57008da",
+        "retro_d24f2932c2fbcc9b",
+        "retro_14602f5f96554500",
+        "retro_e507ee9a9fc68a9a",
+        "retro_17031e7672333731",
+        "retro_25a7bbebb9a0e096",
+        "retro_4b3deba41c5578d0",
+        "retro_f9a506c7c77b3484",
+        "retro_b8e31cdf9cbf6c75",
+        "retro_9acf6323e734c848",
+        "retro_86ccb9e83e3e9e9e",
+        "retro_34e025851a243d29",
+        "retro_7710f159dfe6f6ca",
+        "retro_ef76e1f83b9ea580",
+        "retro_b4e2535f3749bf6f",
+        "retro_eb2098decfe08d9a",
+        "retro_8f6b26c4af726398",
+        "retro_e1c9685c02611279",
+        "retro_965813554d7d7f96",
+        "retro_f8e680ee09d05bc8",
+        "retro_f295968af0e2f27f",
+        "retro_01583f4ac0522fd0",
+        "retro_753dd86c90eba25d",
+        "retro_436e955405feb310",
+        "retro_d735e87a4090c05e"
+      ],
+      "tool_schema_sha256": "e42542b2fb71cea88846c7190d6c4b84bbf82f7f57f42fdff429d3ea3090c459",
+      "toolset": "full"
+    },
+    "label": "claude-haiku-5-5",
+    "mean_latency_seconds": 17.9665,
+    "mean_reward": 0.1119,
+    "mean_tool_calls": 10.7333,
+    "mean_turns": 10.7333,
+    "model": "claude-haiku-5-5",
+    "no_emit_rate": 0.0,
+    "pass_at_1": 0.0667,
+    "pass_at_1_ci95": [
+      0.0185,
+      0.2132
+    ],
+    "prompt_tokens": 1706116,
+    "refusal_rate": 0.0,
+    "tasks": 30,
+    "toolset": "full"
+  },
+  {
+    "by_max_depth": {
+      "10": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.1288,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 1
+      },
+      "4": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5557,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.1667,
+        "tasks": 6
+      },
+      "5": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.375,
+        "mean_tool_calls": 20.2857,
+        "pass_at_1": 0.0,
+        "tasks": 7
+      },
+      "6": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2898,
+        "mean_tool_calls": 23.25,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "7": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0355,
+        "mean_tool_calls": 15.75,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "8": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3942,
+        "mean_tool_calls": 20.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "9": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3271,
+        "mean_tool_calls": 19.75,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      }
+    },
+    "by_tier": {
+      "easy": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.5,
+        "mean_tool_calls": 19.2,
+        "pass_at_1": 0.1,
+        "tasks": 10
+      },
+      "hard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3186,
+        "mean_tool_calls": 19.3,
+        "pass_at_1": 0.0,
+        "tasks": 10
+      },
+      "medium": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.2088,
+        "mean_tool_calls": 18.4,
+        "pass_at_1": 0.0,
+        "tasks": 10
+      }
+    },
+    "by_variant": {
+      "standard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.3425,
+        "mean_tool_calls": 18.9667,
+        "pass_at_1": 0.0333,
+        "tasks": 30
+      }
+    },
+    "coerced_submission_rate": 0.0,
+    "completion_tokens": 76061,
+    "components": {
+      "constraints": 0.6778,
+      "diversity": 0.0333,
+      "efficiency": 0.0167,
+      "parse": 0.7333,
+      "reference_match": 0.0,
+      "reference_similarity": 0.0,
+      "steps": 0.4778,
+      "stock": 0.2806,
+      "structure": 0.6222
+    },
+    "cost_usd": 3.5472,
+    "coverage": 1.0,
+    "episodes_expected": 30,
+    "episodes_graded": 30,
+    "exact_route_rate": 0.0,
+    "identity": {
+      "agent_code_sha256": "731c057c7a0f4e78a1e05a5933b09d777a39a5f31c0cbffb6cd897183c3e37a6",
+      "attempts": 1,
+      "benchmark_public_sha256": "d27d442ce7327ce37ffdc38b4fe6e59a3cf6ce508e76256b5c4841fcc07c3b25",
+      "endpoint": "https://router.huggingface.co/v1",
+      "label": "zai-org/GLM-5.3:novita",
+      "max_tool_calls": 32,
+      "max_turns": 16,
+      "model": "zai-org/GLM-5.3:novita",
+      "provider": "hf",
+      "repair": false,
+      "sampling": {
+        "max_tokens": 16000,
+        "reasoning_effort": null,
+        "temperature": 0.0,
+        "thinking": "off",
+        "tool_choice": "auto"
+      },
+      "schema_version": "retro-eval-run-v2",
+      "server": "http://127.0.0.1:8010",
+      "split": "final_eval",
+      "task_ids": [
+        "retro_1ba7b351bd23db0e",
+        "retro_eb581bcb2aaacf66",
+        "retro_66953a5ef0520b19",
+        "retro_83e0303eb34232da",
+        "retro_2c3155ee731884b1",
+        "retro_f6b703ccf57008da",
+        "retro_d24f2932c2fbcc9b",
+        "retro_14602f5f96554500",
+        "retro_e507ee9a9fc68a9a",
+        "retro_17031e7672333731",
+        "retro_25a7bbebb9a0e096",
+        "retro_4b3deba41c5578d0",
+        "retro_f9a506c7c77b3484",
+        "retro_b8e31cdf9cbf6c75",
+        "retro_9acf6323e734c848",
+        "retro_86ccb9e83e3e9e9e",
+        "retro_34e025851a243d29",
+        "retro_7710f159dfe6f6ca",
+        "retro_ef76e1f83b9ea580",
+        "retro_b4e2535f3749bf6f",
+        "retro_eb2098decfe08d9a",
+        "retro_8f6b26c4af726398",
+        "retro_e1c9685c02611279",
+        "retro_965813554d7d7f96",
+        "retro_f8e680ee09d05bc8",
+        "retro_f295968af0e2f27f",
+        "retro_01583f4ac0522fd0",
+        "retro_753dd86c90eba25d",
+        "retro_436e955405feb310",
+        "retro_d735e87a4090c05e"
+      ],
+      "tool_schema_sha256": "e42542b2fb71cea88846c7190d6c4b84bbf82f7f57f42fdff429d3ea3090c459",
+      "toolset": "full"
+    },
+    "label": "zai-org/GLM-5.3:novita",
+    "mean_latency_seconds": 92.9604,
+    "mean_reward": 0.3425,
+    "mean_tool_calls": 18.9667,
+    "mean_turns": 15.4667,
+    "model": "zai-org/GLM-5.3:novita",
+    "no_emit_rate": 0.0,
+    "pass_at_1": 0.0333,
+    "pass_at_1_ci95": [
+      0.0059,
+      0.1667
+    ],
+    "prompt_tokens": 2294650,
+    "refusal_rate": 0.0,
+    "tasks": 30,
+    "toolset": "full"
+  },
+  {
+    "by_max_depth": {
+      "4": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.1395,
+        "mean_tool_calls": 13.5,
+        "pass_at_1": 0.0,
+        "tasks": 6
+      },
+      "5": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0451,
+        "mean_tool_calls": 15.1429,
+        "pass_at_1": 0.0,
+        "tasks": 7
+      },
+      "6": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.04,
+        "mean_tool_calls": 13.75,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "7": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.014,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "8": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.044,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 4
+      },
+      "9": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.028,
+        "mean_tool_calls": 16.0,
+        "pass_at_1": 0.0,
+        "tasks": 2
+      }
+    },
+    "by_tier": {
+      "easy": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.1013,
+        "mean_tool_calls": 14.5,
+        "pass_at_1": 0.0,
+        "tasks": 10
+      },
+      "hard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.032,
+        "mean_tool_calls": 15.8889,
+        "pass_at_1": 0.0,
+        "tasks": 9
+      },
+      "medium": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0375,
+        "mean_tool_calls": 14.25,
+        "pass_at_1": 0.0,
+        "tasks": 8
+      }
+    },
+    "by_variant": {
+      "standard": {
+        "exact_route_rate": 0.0,
+        "mean_reward": 0.0593,
+        "mean_tool_calls": 14.8889,
+        "pass_at_1": 0.0,
+        "tasks": 27
+      }
+    },
+    "coerced_submission_rate": 0.0,
+    "completion_tokens": 36425,
+    "components": {
+      "constraints": 0.037,
+      "diversity": 0.0,
+      "efficiency": 0.0,
+      "parse": 0.9259,
+      "reference_match": 0.0,
+      "reference_similarity": 0.0,
+      "steps": 0.037,
+      "stock": 0.0185,
+      "structure": 0.2667
+    },
+    "cost_usd": 0.275,
+    "coverage": 0.9,
+    "episodes_expected": 30,
+    "episodes_graded": 27,
+    "exact_route_rate": 0.0,
+    "identity": {
+      "agent_code_sha256": "731c057c7a0f4e78a1e05a5933b09d777a39a5f31c0cbffb6cd897183c3e37a6",
+      "attempts": 1,
+      "benchmark_public_sha256": "d27d442ce7327ce37ffdc38b4fe6e59a3cf6ce508e76256b5c4841fcc07c3b25",
+      "endpoint": "https://router.huggingface.co/v1",
+      "label": "google/gemma-4-31B-it:novita",
+      "max_tool_calls": 32,
+      "max_turns": 16,
+      "model": "google/gemma-4-31B-it:novita",
+      "provider": "hf",
+      "repair": false,
+      "sampling": {
+        "max_tokens": 16000,
+        "reasoning_effort": null,
+        "temperature": 0.0,
+        "thinking": "off",
+        "tool_choice": "auto"
+      },
+      "schema_version": "retro-eval-run-v2",
+      "server": "http://127.0.0.1:8010",
+      "split": "final_eval",
+      "task_ids": [
+        "retro_1ba7b351bd23db0e",
+        "retro_eb581bcb2aaacf66",
+        "retro_66953a5ef0520b19",
+        "retro_83e0303eb34232da",
+        "retro_2c3155ee731884b1",
+        "retro_f6b703ccf57008da",
+        "retro_d24f2932c2fbcc9b",
+        "retro_14602f5f96554500",
+        "retro_e507ee9a9fc68a9a",
+        "retro_17031e7672333731",
+        "retro_25a7bbebb9a0e096",
+        "retro_4b3deba41c5578d0",
+        "retro_f9a506c7c77b3484",
+        "retro_b8e31cdf9cbf6c75",
+        "retro_9acf6323e734c848",
+        "retro_86ccb9e83e3e9e9e",
+        "retro_34e025851a243d29",
+        "retro_7710f159dfe6f6ca",
+        "retro_ef76e1f83b9ea580",
+        "retro_b4e2535f3749bf6f",
+        "retro_eb2098decfe08d9a",
+        "retro_8f6b26c4af726398",
+        "retro_e1c9685c02611279",
+        "retro_965813554d7d7f96",
+        "retro_f8e680ee09d05bc8",
+        "retro_f295968af0e2f27f",
+        "retro_01583f4ac0522fd0",
+        "retro_753dd86c90eba25d",
+        "retro_436e955405feb310",
+        "retro_d735e87a4090c05e"
+      ],
+      "tool_schema_sha256": "e42542b2fb71cea88846c7190d6c4b84bbf82f7f57f42fdff429d3ea3090c459",
+      "toolset": "full"
+    },
+    "label": "google/gemma-4-31B-it:novita",
+    "mean_latency_seconds": 576.8073,
+    "mean_reward": 0.0593,
+    "mean_tool_calls": 14.8889,
+    "mean_turns": 14.8889,
+    "model": "google/gemma-4-31B-it:novita",
+    "no_emit_rate": 0.037,
+    "pass_at_1": 0.0,
+    "pass_at_1_ci95": [
+      0.0,
+      0.1246
+    ],
+    "prompt_tokens": 1860305,
+    "refusal_rate": 0.0,
+    "tasks": 27,
+    "toolset": "full"
+  }
+]

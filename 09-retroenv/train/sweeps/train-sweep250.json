@@ -1,0 +1,2524 @@
+{
+  "evalset_version": 1,
+  "name": "train-sweep250",
+  "seed": "retroenv-train-sweep-v1",
+  "design": {
+    "source_splits": [
+      "train"
+    ],
+    "variant": "standard",
+    "quotas": {
+      "easy": 84,
+      "medium": 83,
+      "hard": 83
+    },
+    "tier": "the release's difficulty.tier",
+    "strata": "source split x shortest-route depth, visited round-robin from shallow to deep",
+    "within_stratum": "sha256(seed:task_id); a first-reaction class the tier has not used is preferred",
+    "purpose": "difficulty labels and warm-start transcripts for RL, not an evaluation set"
+  },
+  "tasks": [
+    {
+      "task_id": "retro_546c1e3b2ba81ce2",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 33,
+      "target_smiles": "Cc1ncc2n1C(=O)N(CCC1CCN(C(=O)[C@H](NC(=O)OC(C)(C)C)C(C)(C)C)CC1)C2"
+    },
+    {
+      "task_id": "retro_78ce5c7d7194ebc1",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 35,
+      "target_smiles": "CCCC(Oc1ccc(-n2cc(C(F)(F)F)cn2)cc1C)c1ccc(C(=O)NCCC(=O)O)cc1"
+    },
+    {
+      "task_id": "retro_739b3e8c55ac79b0",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "O-/S-alkylation",
+      "heavy_atoms": 28,
+      "target_smiles": "Fc1ccc(OC[C@H]2CC[C@H]([C@H]3CC[C@H](CCC4OCCO4)CC3)CC2)cc1"
+    },
+    {
+      "task_id": "retro_a005474e41c2d477",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "enolate/Michael chemistry",
+      "heavy_atoms": 33,
+      "target_smiles": "CN(C)CCS(=O)(=O)N1CCC(NC(=O)c2n[nH]cc2NC(=O)c2c(Cl)cccc2Cl)CC1"
+    },
+    {
+      "task_id": "retro_689dc82fa46c9d0e",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "nitro reduction",
+      "heavy_atoms": 12,
+      "target_smiles": "Nc1cc(F)cc2cccnc12"
+    },
+    {
+      "task_id": "retro_fd31731b43738fd8",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "reductive amination",
+      "heavy_atoms": 37,
+      "target_smiles": "COCCCOc1cc(O[C@@H](C[C@@H]2CN(C(=O)OC(C)(C)C)C[C@H]2CNC2CC2)C(C)C)ccc1OC"
+    },
+    {
+      "task_id": "retro_506d0f8c009cc551",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "O-sulfonylation (mesylate/tosylate/triflate)",
+      "heavy_atoms": 30,
+      "target_smiles": "CC1(C)C=C(n2ccc(CCCCOS(C)(=O)=O)cc2=O)c2cc(C#N)ccc2O1"
+    },
+    {
+      "task_id": "retro_e7ed44988e7d7d2f",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "carbonyl/nitrile/azide reduction",
+      "heavy_atoms": 13,
+      "target_smiles": "COc1cc(CN)cc([N+](=O)[O-])c1"
+    },
+    {
+      "task_id": "retro_7ab0d24070fb78b2",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "N-alkylation",
+      "heavy_atoms": 39,
+      "target_smiles": "CC1(C)OCc2cc([C@@H](O)CNCCCCCCOCCCCc3ccc4c(c3)S(=O)(=O)CCC4)ccc2O1"
+    },
+    {
+      "task_id": "retro_7110a9c8bcc85e3c",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "other",
+      "heavy_atoms": 31,
+      "target_smiles": "Cc1oc(-c2ccc3ccccc3c2)nc1COc1ccc(CCCCCC#N)cc1"
+    },
+    {
+      "task_id": "retro_db15787ab94b2a46",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "Mitsunobu / dehydrative alkylation",
+      "heavy_atoms": 28,
+      "target_smiles": "CCCCCCCCCCCCSCCOc1ccc(CCC(=O)OC)cc1"
+    },
+    {
+      "task_id": "retro_25a229a119041db9",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "Suzuki coupling",
+      "heavy_atoms": 39,
+      "target_smiles": "CCCCCCCCCCc1ccc(-c2ccc(-c3ccc4c(c3)CC(CCCCCCCC)C4)cc2)cc1"
+    },
+    {
+      "task_id": "retro_6f2b738be9b40edb",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 21,
+      "target_smiles": "COCCNc1c(S(C)(=O)=O)ccc(C(=O)O)c1CSC"
+    },
+    {
+      "task_id": "retro_a247b7faed49375a",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "halogenation/nitration",
+      "heavy_atoms": 15,
+      "target_smiles": "ClCc1c(Cl)nc2ccc(Br)cc2c1Cl"
+    },
+    {
+      "task_id": "retro_712ace2bb0d6de47",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "other cross-coupling (Heck/Stille/Negishi/cyanation/borylation)",
+      "heavy_atoms": 16,
+      "target_smiles": "CC(C)(C)COc1ccc(B(O)O)cc1F"
+    },
+    {
+      "task_id": "retro_1cb4209d85ed1ee1",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "benzyl deprotection",
+      "heavy_atoms": 13,
+      "target_smiles": "CNS(=O)(=O)c1ccc(C=O)cc1"
+    },
+    {
+      "task_id": "retro_768ae02b76c07dff",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "oxidation",
+      "heavy_atoms": 17,
+      "target_smiles": "CCCCCCCOCCCCCCCC=O"
+    },
+    {
+      "task_id": "retro_c840e7618d3da2d0",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "amide/nitrile hydrolysis",
+      "heavy_atoms": 20,
+      "target_smiles": "CC(C)(C)OC(=O)NCC(N)COc1ccc(F)cc1"
+    },
+    {
+      "task_id": "retro_16ef31dd18985cfe",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "sulfonamide formation",
+      "heavy_atoms": 14,
+      "target_smiles": "Cc1ccc(NS(N)(=O)=O)c(C#N)c1"
+    },
+    {
+      "task_id": "retro_618f9350bbf682ce",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "other deprotection (Cbz/Fmoc/silyl/acetal/sulfonyl)",
+      "heavy_atoms": 15,
+      "target_smiles": "COc1ccc2cnn(CC(C)N)c2c1"
+    },
+    {
+      "task_id": "retro_204bc2d178a8aeec",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "cyclisation (non-aromatic ring)",
+      "heavy_atoms": 26,
+      "target_smiles": "O=S(=O)(Nc1ccccc1)c1cc(Cl)cc2c1OC[C@H](N1CCCC1)C2"
+    },
+    {
+      "task_id": "retro_c414ed508d6d608b",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "heteroaromatic ring formation",
+      "heavy_atoms": 43,
+      "target_smiles": "CC(C)C(=O)Nc1cccc(C2CCN(CCCc3c(-c4cccc(I)c4)n(-c4ccccc4)c4ccccc34)CC2)c1"
+    },
+    {
+      "task_id": "retro_665010375e27764a",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "hydrogenation (C=C/C#C/arene)",
+      "heavy_atoms": 18,
+      "target_smiles": "CN1CCN(C(=O)CCc2cccc(O)c2)CC1"
+    },
+    {
+      "task_id": "retro_313076ea6081be1a",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "urea/carbamate formation",
+      "heavy_atoms": 24,
+      "target_smiles": "C#CCN1C(=O)C(F)(F)Oc2cc(F)c(NC(=S)NCCC)cc21"
+    },
+    {
+      "task_id": "retro_f8fb5ff18c9d8b6a",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "ether cleavage (O-dealkylation)",
+      "heavy_atoms": 22,
+      "target_smiles": "N#CC(=Cc1cc(O)c(O)c(Cl)c1)C(=O)Nc1ccccc1"
+    },
+    {
+      "task_id": "retro_1c5cdadf8a1e432e",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "esterification",
+      "heavy_atoms": 31,
+      "target_smiles": "C=CCOC(=O)c1ccc(C(C)OC(=O)c2ccc3c(c2)C(C)(C)CCC3(C)C)cc1"
+    },
+    {
+      "task_id": "retro_4915f94e42f6738b",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "Boc deprotection",
+      "heavy_atoms": 34,
+      "target_smiles": "Nc1ccc(-c2ccccc2)nc1NC(=O)c1ccc(CNC(=O)OCc2ccccc2)cc1"
+    },
+    {
+      "task_id": "retro_9570ac78d85fa12e",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "Grignard/organolithium addition",
+      "heavy_atoms": 29,
+      "target_smiles": "O=C(/C=C/c1ccc([N+](=O)[O-])cc1)c1ccc(OCCOCCOCCF)cc1"
+    },
+    {
+      "task_id": "retro_cf7b25ebca0cba89",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "condensation (imine/oxime/amidine/guanidine)",
+      "heavy_atoms": 28,
+      "target_smiles": "CC(=NOCCOc1ccc(CC2SC(=O)NC2=O)cc1)c1cccc(O)c1"
+    },
+    {
+      "task_id": "retro_f6fc21eb755ea1ab",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "other reduction (dehalogenation/deoxygenation)",
+      "heavy_atoms": 16,
+      "target_smiles": "CN(C)CCCOc1ccc(C(=O)Cl)cc1"
+    },
+    {
+      "task_id": "retro_43eefb2f5d9341c7",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "Buchwald-Hartwig/Ullmann/Chan-Lam coupling",
+      "heavy_atoms": 28,
+      "target_smiles": "CCOc1cc(C)cc(-n2nc(C(F)(F)F)cc2CNC(=O)OC(C)(C)C)c1"
+    },
+    {
+      "task_id": "retro_7129cdd0eb75afd9",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "other protection (Cbz/Fmoc/silyl/acetal)",
+      "heavy_atoms": 17,
+      "target_smiles": "Oc1cnccc1CCCOC1CCCCO1"
+    },
+    {
+      "task_id": "retro_b5b16ba2b1a95f71",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "Sonogashira coupling",
+      "heavy_atoms": 29,
+      "target_smiles": "COC(=O)CN(C)Cc1nc2ccccn2c1C#Cc1cccc(C(F)(F)F)c1"
+    },
+    {
+      "task_id": "retro_26cfa8831a46e8f4",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "other FGI (dehydration/thionation/Curtius)",
+      "heavy_atoms": 13,
+      "target_smiles": "N#Cc1c([N+](=O)[O-])ccc(F)c1Br"
+    },
+    {
+      "task_id": "retro_49582f2d0e5bb9a4",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "Friedel-Crafts acylation/formylation",
+      "heavy_atoms": 24,
+      "target_smiles": "CC(C)(C)OC(=O)Nc1cc(O[Si](C)(C)C(C)(C)C)ccc1C=O"
+    },
+    {
+      "task_id": "retro_792671833b7b4159",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "Boc protection",
+      "heavy_atoms": 20,
+      "target_smiles": "CC(C)(C)OC(=O)N[C@H](CC(=O)O)c1cccc(F)c1"
+    },
+    {
+      "task_id": "retro_a72ad154963a20c2",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "Wittig/HWE olefination",
+      "heavy_atoms": 24,
+      "target_smiles": "CC(C)(C)OC(=O)N1CCC(=Cc2ccc([N+](=O)[O-])c(Cl)c2)CC1"
+    },
+    {
+      "task_id": "retro_a0418971d6fbddd4",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 36,
+      "target_smiles": "COCC(=O)N1CCC(C(=O)N2C[C@@H](N(C)C(=O)Oc3ccc(F)cc3)[C@H](c3ccc(Cl)cc3)C2)C1"
+    },
+    {
+      "task_id": "retro_f68e3a1cd6f48673",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 33,
+      "target_smiles": "C[C@]12CC[C@@H]3c4ccc(C(=O)NCCS(N)(=O)=O)cc4CC[C@H]3[C@@H]1CC=C2c1cncnc1"
+    },
+    {
+      "task_id": "retro_c1c7b7f2cf16ab08",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 39,
+      "target_smiles": "CCOC(=O)c1cccc(Sc2c(C3CC3)n(CC(=O)N3CCc4ccccc43)c3c(F)c(Cl)ccc23)c1F"
+    },
+    {
+      "task_id": "retro_9752d70100166298",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "nitro reduction",
+      "heavy_atoms": 27,
+      "target_smiles": "Cc1ccc(NC(=O)c2ccc(N3CCOCC3)c(C(F)(F)F)c2)cc1N"
+    },
+    {
+      "task_id": "retro_3a8b11ea15540fa0",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 21,
+      "target_smiles": "CN(C(=O)CC#N)[C@@H]1CCN(c2ncnc3[nH]ccc23)C1"
+    },
+    {
+      "task_id": "retro_1635daba0d7103c2",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 43,
+      "target_smiles": "CN(c1cc2oc(-c3ccc(F)cc3)c(C(N)=O)c2cc1-c1ccc2c(n1)-c1cc3c(F)cccc3n1CO2)S(C)(=O)=O"
+    },
+    {
+      "task_id": "retro_d0f30c066e763ce1",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 39,
+      "target_smiles": "Cc1cccc(-c2sc(C)nc2C(=O)N2C[C@@H]3CC(F)(F)C[C@@H]3[C@H]2CNC(=O)c2cccc3c2OCCO3)c1"
+    },
+    {
+      "task_id": "retro_765aad045815b945",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 27,
+      "target_smiles": "CCCCNC(=O)C(C)Oc1ccc(Oc2ccc(C(F)(F)F)cn2)cc1"
+    },
+    {
+      "task_id": "retro_a1ca1f998c592097",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 33,
+      "target_smiles": "COc1ccccc1N1CCN(C[C@@H](Cc2cccnc2)NC(=O)C2(C)CCCCC2)CC1"
+    },
+    {
+      "task_id": "retro_03b3ec86e5f4038b",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "Mitsunobu / dehydrative alkylation",
+      "heavy_atoms": 30,
+      "target_smiles": "CC1(C)c2cc(OCCn3ccnc3)ccc2C(=O)c2c1[nH]c1cc(C#N)ccc21"
+    },
+    {
+      "task_id": "retro_3ca219fb1d4f5930",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "O-/S-alkylation",
+      "heavy_atoms": 16,
+      "target_smiles": "CCOC(=O)c1cc(OCC)c(Br)cc1F"
+    },
+    {
+      "task_id": "retro_ce6fe8575e037de6",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 37,
+      "target_smiles": "COc1cccc(Oc2c(NS(=O)(=O)CCc3ccccc3)nc(N3CCOCC3)nc2OCCO)c1"
+    },
+    {
+      "task_id": "retro_dd291481e04f42a8",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 18,
+      "target_smiles": "O=Cc1ccc(OCCCC(=O)O)c([N+](=O)[O-])c1"
+    },
+    {
+      "task_id": "retro_35666ea75678aa61",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "reductive amination",
+      "heavy_atoms": 41,
+      "target_smiles": "COC(=O)c1ccc(CNC[C@H](O[Si](C)(C)C(C)(C)C)c2ccc(OCc3ccccc3)c3[nH]c(=O)ccc23)cc1"
+    },
+    {
+      "task_id": "retro_82787080d275769c",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 25,
+      "target_smiles": "CC(=O)Nc1ccc2c(c1)N(CCCN1CCOCC1)C(=O)C2(C)C"
+    },
+    {
+      "task_id": "retro_d874b0f0f74bd5a0",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 32,
+      "target_smiles": "CCOC(=O)C1CCN(c2nc(NCc3ccc4c(c3)OCO4)c3cc(C)sc3n2)CC1"
+    },
+    {
+      "task_id": "retro_8b916ebf9bb446fb",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 36,
+      "target_smiles": "Cc1ncc2n1C(=O)N(C1CCN(C(=O)[C@H](CC(=O)Nc3ccc(Cl)cc3)C3CCCCC3)CC1)C2"
+    },
+    {
+      "task_id": "retro_7c31237209360141",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "O-/S-alkylation",
+      "heavy_atoms": 17,
+      "target_smiles": "CCCCC(C)(C#N)COc1ccc(O)cc1"
+    },
+    {
+      "task_id": "retro_d0b2621b37dac75c",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 33,
+      "target_smiles": "Cc1ccc(C(=O)Nc2ccon2)cc1-n1cnc2ccc(CN3CCOCC3)cc2c1=O"
+    },
+    {
+      "task_id": "retro_55294732bd950e67",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 22,
+      "target_smiles": "CCCC(=O)NC(C)(C)COc1cccc([N+](=O)[O-])c1C#N"
+    },
+    {
+      "task_id": "retro_963ef6c9c0595636",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "N-alkylation",
+      "heavy_atoms": 35,
+      "target_smiles": "Cc1ncc2c(OCCN3CCC(Cc4ccc(F)c(N5CCN(C)CC5)c4)CC3)cccc2n1"
+    },
+    {
+      "task_id": "retro_34784286760eae34",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "Suzuki coupling",
+      "heavy_atoms": 35,
+      "target_smiles": "CC(C)(C)OC(=O)NCCOc1ccc(-c2c(Cl)cc(Nc3n[nH]c(N)n3)cc2C(F)(F)F)cc1"
+    },
+    {
+      "task_id": "retro_44e12654d8485b27",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "Suzuki coupling",
+      "heavy_atoms": 35,
+      "target_smiles": "Cc1c(-c2ccnc(C(F)(F)F)c2)c(=O)c(C(=O)NCc2ccc(S(C)(=O)=O)cc2)cn1C(C)C"
+    },
+    {
+      "task_id": "retro_0731c94c34423307",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "O-/S-alkylation",
+      "heavy_atoms": 30,
+      "target_smiles": "Cc1nc(-c2ccc(OCc3ccc4ccccc4n3)cc2)c(-c2ccncc2)o1"
+    },
+    {
+      "task_id": "retro_d372d7ed9214911b",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "N-alkylation",
+      "heavy_atoms": 38,
+      "target_smiles": "CCOC(=O)C1(c2ccc(-c3ccc(-c4onc(C)c4CC(O)CNCc4ccccc4)cc3)cc2)CC1"
+    },
+    {
+      "task_id": "retro_51cbfac718e9d037",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "Suzuki coupling",
+      "heavy_atoms": 32,
+      "target_smiles": "Cc1c(-c2ccccn2)nc2cc(F)cc(F)c2c1Nc1cncc(C2=CCOCC2)c1"
+    },
+    {
+      "task_id": "retro_29c86b9dd5d48ced",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "reductive amination",
+      "heavy_atoms": 28,
+      "target_smiles": "NC(=O)c1ccc(Oc2ccc3c(c2)CCCC3NCc2ccccc2)cc1"
+    },
+    {
+      "task_id": "retro_af24b395d6c50888",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "nitro reduction",
+      "heavy_atoms": 27,
+      "target_smiles": "CN1C(=O)CC[C@]2(C)c3ccc(NC(=O)c4cccc(N)c4)cc3CC[C@@H]12"
+    },
+    {
+      "task_id": "retro_117285142e9bd564",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 35,
+      "target_smiles": "N#Cc1cc(N2CCCS2(=O)=O)ccc1C(=O)N1CCN(c2ncc(C3CC3)cc2C2CC2)CC1"
+    },
+    {
+      "task_id": "retro_1584fa73a28404bc",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 29,
+      "target_smiles": "CN1CCCN(C(=O)c2cccc(-c3ccc(C=C4SC(=O)NC4=O)o3)c2)CC1"
+    },
+    {
+      "task_id": "retro_783a6897fe4685be",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "N-alkylation",
+      "heavy_atoms": 36,
+      "target_smiles": "COc1ccc2ncc(F)c(C(O)CN3CCN(NC(=O)c4ccc5c(n4)NC(=O)CS5)CC3)c2n1"
+    },
+    {
+      "task_id": "retro_1f5a630ee5e33159",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 23,
+      "target_smiles": "Cc1ccc(C(CCCCl)C(=O)NNC(=O)OC(C)(C)C)cc1"
+    },
+    {
+      "task_id": "retro_4829af4bf47c0c9d",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "sulfonamide formation",
+      "heavy_atoms": 40,
+      "target_smiles": "Cc1c(C(=O)N2CCC(NS(C)(=O)=O)(c3ccccc3)CC2)nn(-c2ccc(Cl)cc2Cl)c1-c1ccc(Cl)cc1"
+    },
+    {
+      "task_id": "retro_52031de911da05ee",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 30,
+      "target_smiles": "CC(C)CC(C(=O)Nc1ccn(C)n1)n1ccc(Oc2cccc(F)c2F)cc1=O"
+    },
+    {
+      "task_id": "retro_2986e948c80f68fd",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 22,
+      "target_smiles": "O=C(N[C@@H](CCc1nnn[nH]1)C(=O)O)OCc1ccccc1"
+    },
+    {
+      "task_id": "retro_385f1e463f93028e",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "Suzuki coupling",
+      "heavy_atoms": 30,
+      "target_smiles": "CC(C)C1(CCCO)CCN([C@@H](C)c2ccc(-c3ccn(C)c(=O)c3)cc2)C(=O)O1"
+    },
+    {
+      "task_id": "retro_76dc07dd24e14fde",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "sulfonamide formation",
+      "heavy_atoms": 31,
+      "target_smiles": "COc1ccc(NS(=O)(=O)c2cccc3c(NC(=O)c4ccccc4)cccc23)cc1"
+    },
+    {
+      "task_id": "retro_076d7ba779be339c",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 34,
+      "target_smiles": "CC(=O)Nc1cc(C(=O)NNC(=O)c2occ(-c3ccccc3)c2-c2ccccc2)ccc1O"
+    },
+    {
+      "task_id": "retro_a2439675bb0fd2c2",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "N-alkylation",
+      "heavy_atoms": 28,
+      "target_smiles": "COc1ccc(I)c(Sc2nc3c(N)ncnc3n2CCCNC(C)(C)C)c1"
+    },
+    {
+      "task_id": "retro_78513c51fe21e963",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "other",
+      "heavy_atoms": 27,
+      "target_smiles": "CN(C(=O)Oc1ccc(C(=O)NCC2CCCCC2)cc1)c1ccccc1"
+    },
+    {
+      "task_id": "retro_0273b2a87e7e80e0",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "heteroaromatic ring formation",
+      "heavy_atoms": 40,
+      "target_smiles": "Cc1ccc2[nH]c(-c3ccc([N+](=O)[O-])cc3)c(CCCN3CCC(c4cccc(NC(=O)C(C)C)c4)CC3)c2c1"
+    },
+    {
+      "task_id": "retro_a0b84136992eafe6",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "heteroaromatic ring formation",
+      "heavy_atoms": 30,
+      "target_smiles": "CC(C)(c1ccccc1)c1ccc2nc(-c3ccc(C(F)(F)F)cc3)oc(=O)c2c1"
+    },
+    {
+      "task_id": "retro_91f773eaf4a5e825",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "O-/S-alkylation",
+      "heavy_atoms": 24,
+      "target_smiles": "Cc1cc(N2CCCC2)c2ccc(OCc3ccccn3)cc2n1"
+    },
+    {
+      "task_id": "retro_c45989ac234a6b39",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "O-/S-alkylation",
+      "heavy_atoms": 23,
+      "target_smiles": "COC1CCCN(CCCC(C)(C)S(=O)(=O)c2ccccc2)C1"
+    },
+    {
+      "task_id": "retro_db1ae4b78490c6fc",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "N-alkylation",
+      "heavy_atoms": 32,
+      "target_smiles": "COc1cc(OC2CCN(CC(C)=O)CC2)c2c(Nc3ccc(F)c(Cl)c3)ncnc2c1"
+    },
+    {
+      "task_id": "retro_4170ef8adb74f299",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "other",
+      "heavy_atoms": 31,
+      "target_smiles": "Cc1cc(-c2ccc(CN3CCN(C(=O)ON4C(=O)CCC4=O)CC3)c(C)c2)ccn1"
+    },
+    {
+      "task_id": "retro_8f07edb3a8667aab",
+      "source_split": "train",
+      "tier": "easy",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 35,
+      "target_smiles": "CC(C)(C)c1ccc([C@H](O)CCCN2CCC(C(O)(c3ccccc3)c3ccccc3)CC2)cc1"
+    },
+    {
+      "task_id": "retro_b15e4c69c751b000",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 20,
+      "target_smiles": "O=C(O)CCCCCc1nc2c(F)c(F)cc(F)c2s1"
+    },
+    {
+      "task_id": "retro_9df9ac8a0c50debf",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "N-alkylation",
+      "heavy_atoms": 30,
+      "target_smiles": "CCOC(=O)C(c1ccccc1)N1CCOC(CNC(=O)Nc2ccc(Cl)cc2)C1"
+    },
+    {
+      "task_id": "retro_6f5e46ab9557c959",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 39,
+      "target_smiles": "Cc1c(N2CCN(C(=O)c3ncc[nH]3)CC2)nc2cc(F)cc(F)c2c1Nc1cncc(N2CCOCC2)c1"
+    },
+    {
+      "task_id": "retro_295eb6802d5666ea",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "carbonyl/nitrile/azide reduction",
+      "heavy_atoms": 26,
+      "target_smiles": "COc1ccc(Br)c(CC2CCN(CCC[C@H]3CC[C@H](N)CC3)CC2)c1"
+    },
+    {
+      "task_id": "retro_ad577496f0c557cb",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "oxidation",
+      "heavy_atoms": 25,
+      "target_smiles": "COc1ccc2nc(S(=O)Cc3cccc4c3N(C)CCC4)[nH]c2c1"
+    },
+    {
+      "task_id": "retro_c1aed0dc45859d35",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "cyclisation (non-aromatic ring)",
+      "heavy_atoms": 31,
+      "target_smiles": "CCc1cnc(N2CCN(C(=O)c3cnc(N4CCCS4(=O)=O)cc3C)CC2)c(C)c1"
+    },
+    {
+      "task_id": "retro_c371fb2b92aa678b",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 8,
+      "max_depth": 10,
+      "first_reaction": "reductive amination",
+      "heavy_atoms": 34,
+      "target_smiles": "COc1cc(Nc2nc3c(s2)CC(N(C)C)CC3c2ccc(F)cc2)ccc1-n1cnc(Cl)c1"
+    },
+    {
+      "task_id": "retro_c0cf9a1a0c0c62a2",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "other",
+      "heavy_atoms": 26,
+      "target_smiles": "O=C(c1cccnc1NCc1ccncc1)c1c[nH]c2cc(Cl)ccc12"
+    },
+    {
+      "task_id": "retro_a4ac997b509717f4",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "heteroaromatic ring formation",
+      "heavy_atoms": 34,
+      "target_smiles": "CCCCc1nc2ccc(C)cc2c(=O)n1Cc1ccc(-c2cccnc2-c2nnn[nH]2)cc1"
+    },
+    {
+      "task_id": "retro_1188b59f60f21f2b",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "halogenation/nitration",
+      "heavy_atoms": 12,
+      "target_smiles": "COc1c(Cl)c(F)cc(Br)c1Cl"
+    },
+    {
+      "task_id": "retro_5aaf1cd5debb20b6",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "benzyl deprotection",
+      "heavy_atoms": 31,
+      "target_smiles": "Cc1cnc(N2CCN(C(=O)c3ccc(N4C(=O)NCC4(C)C)cc3F)CC2)c(C)c1"
+    },
+    {
+      "task_id": "retro_50c135bd865c9c8a",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 33,
+      "target_smiles": "Cc1nc(-c2nn3c(NC4CCCC4)cccc3c2-c2ccnc(NC3CCCC3)c2)cs1"
+    },
+    {
+      "task_id": "retro_ae3e1fb1c1a1974a",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "Buchwald-Hartwig/Ullmann/Chan-Lam coupling",
+      "heavy_atoms": 29,
+      "target_smiles": "Nc1cncc(C(=O)c2cn(C3(COC4CCCCO4)CC3)c3ncncc23)c1"
+    },
+    {
+      "task_id": "retro_cf0ba0ca05189ee8",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "other protection (Cbz/Fmoc/silyl/acetal)",
+      "heavy_atoms": 17,
+      "target_smiles": "Clc1ccc(-n2cnc(C3OCCO3)c2)cc1"
+    },
+    {
+      "task_id": "retro_3cc582499baf72a9",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "O-sulfonylation (mesylate/tosylate/triflate)",
+      "heavy_atoms": 31,
+      "target_smiles": "CC(C)(C)OC(=O)N1CCC(c2ncnc3cc(OCCOS(C)(=O)=O)ccc23)CC1"
+    },
+    {
+      "task_id": "retro_4c917cc7dc54b13f",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "Suzuki coupling",
+      "heavy_atoms": 31,
+      "target_smiles": "Cc1nc(-c2ccc(-c3ccc(F)cc3)cc2)n(CC2CCN(C(=O)C3CC3)C2)c1C"
+    },
+    {
+      "task_id": "retro_35ab5b9468ac533c",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "nitro reduction",
+      "heavy_atoms": 29,
+      "target_smiles": "CCCCCCCCCNC(=O)c1cc(Oc2c(Cl)cc(N)cc2Cl)ccc1O"
+    },
+    {
+      "task_id": "retro_3687ce3473d9d991",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "Wittig/HWE olefination",
+      "heavy_atoms": 41,
+      "target_smiles": "COC(=O)/C=C/c1cccc(S(=O)(=O)c2ccc(CCN(C[C@H](O)c3cccc(Cl)c3)C(=O)OC(C)(C)C)cc2)c1"
+    },
+    {
+      "task_id": "retro_9e34551f39779d18",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "O-/S-alkylation",
+      "heavy_atoms": 28,
+      "target_smiles": "CCOC(=O)CCCOc1cc(C(C)C)ccc1CCNC(=O)OC(C)(C)C"
+    },
+    {
+      "task_id": "retro_2e6dcaff33438c09",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "condensation (imine/oxime/amidine/guanidine)",
+      "heavy_atoms": 24,
+      "target_smiles": "Cc1ccc2nc(C(=N)NO)c(OCc3ccccc3)c(=O)n2c1"
+    },
+    {
+      "task_id": "retro_f953244f97ddf50a",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "urea/carbamate formation",
+      "heavy_atoms": 40,
+      "target_smiles": "Cc1cnc(NC(=O)N[C@@H]2CCCN(c3cc(Nc4ccc(C(=O)N5CCOCC5)cc4)c(C(N)=O)cn3)C2)s1"
+    },
+    {
+      "task_id": "retro_6da51b0db9a1bc3c",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "other FGI (dehydration/thionation/Curtius)",
+      "heavy_atoms": 15,
+      "target_smiles": "CC(C)(C)c1cc(C#N)c(O)c(Br)c1Cl"
+    },
+    {
+      "task_id": "retro_2931c7a3d62cc27d",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "enolate/Michael chemistry",
+      "heavy_atoms": 36,
+      "target_smiles": "COC(=O)Oc1ccc(-c2ccc3c(c2CNc2ccccc2OC)C(C)=CC(C)(C)N3)c(OC)c1"
+    },
+    {
+      "task_id": "retro_dd280e5ce7ea6506",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "Boc deprotection",
+      "heavy_atoms": 32,
+      "target_smiles": "CN(C)CCC(NC(=O)C1(N)CCN(c2ncnc3[nH]ccc23)CC1)c1ccc(Cl)cc1"
+    },
+    {
+      "task_id": "retro_632e93b341a1603c",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "ether cleavage (O-dealkylation)",
+      "heavy_atoms": 13,
+      "target_smiles": "COc1cc(I)cc(O)c1C(C)C"
+    },
+    {
+      "task_id": "retro_294b468e9ada52b1",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "esterification",
+      "heavy_atoms": 22,
+      "target_smiles": "CC(CCOC(=O)c1cn(-c2ccccc2)nc1C)=C(F)F"
+    },
+    {
+      "task_id": "retro_939ae0b0fd63e167",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "Mitsunobu / dehydrative alkylation",
+      "heavy_atoms": 36,
+      "target_smiles": "CNCCSc1ccccc1C(C)(C)Nc1nccn(-c2cc(C(=O)NC3CC3)cc(F)c2C)c1=O"
+    },
+    {
+      "task_id": "retro_305cf9c3b8b07657",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "other deprotection (Cbz/Fmoc/silyl/acetal/sulfonyl)",
+      "heavy_atoms": 31,
+      "target_smiles": "O=S(=O)(Cc1ccccc1)N1CCC(Cn2ncc3cc(-c4cn[nH]c4)ccc32)CC1"
+    },
+    {
+      "task_id": "retro_cb5871d61b8183a9",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "sulfonamide formation",
+      "heavy_atoms": 37,
+      "target_smiles": "CS(=O)(=O)N1CC[C@@H](COc2nc(N[C@H]3CC[C@@H](C)CC3)ncc2-c2ccc(N3CCOCC3)cc2)C1"
+    },
+    {
+      "task_id": "retro_2327ed87eb2604eb",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "amide/nitrile hydrolysis",
+      "heavy_atoms": 24,
+      "target_smiles": "C[C@H](N)[C@H](O)c1ccc(OCc2ccccc2)c(NS(C)(=O)=O)c1"
+    },
+    {
+      "task_id": "retro_37c49608c93ba494",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "Grignard/organolithium addition",
+      "heavy_atoms": 28,
+      "target_smiles": "COCc1cc(C(C)(C)O)nc(Nc2ccc(-n3cnc(C)c3)c(OC)c2)n1"
+    },
+    {
+      "task_id": "retro_abaac16416f6dee5",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "Sonogashira coupling",
+      "heavy_atoms": 33,
+      "target_smiles": "CC(C)(C)OC(=O)n1c(-c2ccc(N)c3c2C(=O)NC3=O)c(C#CCCO)c2ccccc21"
+    },
+    {
+      "task_id": "retro_b13c76a7e9969550",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "other cross-coupling (Heck/Stille/Negishi/cyanation/borylation)",
+      "heavy_atoms": 23,
+      "target_smiles": "CC1CC(C)CN(c2ccc(B3OCC(C)(C)CO3)cc2N)C1"
+    },
+    {
+      "task_id": "retro_4ff0385324ae6202",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "hydrogenation (C=C/C#C/arene)",
+      "heavy_atoms": 35,
+      "target_smiles": "COc1ccc(-c2sc3cc(OC)ccc3c2Oc2ccc(CCC(=O)OC(C)(C)C)cc2)cc1"
+    },
+    {
+      "task_id": "retro_600bc0c6244f3be8",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "other reduction (dehalogenation/deoxygenation)",
+      "heavy_atoms": 13,
+      "target_smiles": "CCCCCC#Cc1ccccc1"
+    },
+    {
+      "task_id": "retro_2fe546ef4d7ba022",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "Boc protection",
+      "heavy_atoms": 26,
+      "target_smiles": "CCOC(=O)COc1ccc(NC(=O)OC(C)(C)C)cc1CCCOC"
+    },
+    {
+      "task_id": "retro_ba1d24b56c632cec",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "Suzuki coupling",
+      "heavy_atoms": 32,
+      "target_smiles": "Cn1cc(-c2cc3c(cn2)[nH]c2ncc(-c4ccc(CN5CCOCC5)cc4)cc23)cn1"
+    },
+    {
+      "task_id": "retro_1f9cdce561e80a85",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "Friedel-Crafts acylation/formylation",
+      "heavy_atoms": 11,
+      "target_smiles": "COCCc1ncc(C=O)[nH]1"
+    },
+    {
+      "task_id": "retro_061cc21237812b44",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 26,
+      "target_smiles": "NNC(=O)c1cc(NC(=O)c2cc(-n3cnc(C4CC4)c3)ccn2)cs1"
+    },
+    {
+      "task_id": "retro_4aca55b496c093ee",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 37,
+      "target_smiles": "N#Cc1cc2c(cc1Oc1ccc(C(=O)Nc3cccc(-c4ccccc4)c3)cc1)OCCC2C(=O)O"
+    },
+    {
+      "task_id": "retro_f0f3d5d386c21baf",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "oxidation",
+      "heavy_atoms": 19,
+      "target_smiles": "CS(=O)(=O)OC(CCC=O)COCc1ccccc1"
+    },
+    {
+      "task_id": "retro_3f9148c9ae29b589",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "reductive amination",
+      "heavy_atoms": 24,
+      "target_smiles": "CCC1(CCN2CCC(Nc3ccc(C)cn3)CC2)CCCCC1"
+    },
+    {
+      "task_id": "retro_fe4604ec0e005ffb",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "cyclisation (non-aromatic ring)",
+      "heavy_atoms": 42,
+      "target_smiles": "COc1cc(C(C)(C)C)c(/C=C/C2=NCCc3cc(OCc4ccccc4)c(OC)cc32)cc1OCc1ccccc1"
+    },
+    {
+      "task_id": "retro_0e2b519f44a9d50b",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 19,
+      "target_smiles": "CN(C)c1cccc(-c2ccc(Cl)c(C(N)=O)c2)n1"
+    },
+    {
+      "task_id": "retro_86d3b1569fe79c5a",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "oxidation",
+      "heavy_atoms": 21,
+      "target_smiles": "CN(C[C@@]1(c2ccccc2)C[C@H]1C=O)C(=O)OC(C)(C)C"
+    },
+    {
+      "task_id": "retro_7166b712e7c1870a",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 34,
+      "target_smiles": "CCCOc1ccc(C#Cc2ccccc2)cc1C(=O)N[C@@H](CO)Cc1c[nH]c2ccccc12"
+    },
+    {
+      "task_id": "retro_f9cdf6a8966049a6",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "halogenation/nitration",
+      "heavy_atoms": 21,
+      "target_smiles": "COCCNCCOc1cc2ncnc(Cl)c2cc1OC"
+    },
+    {
+      "task_id": "retro_ceebd354d123feaa",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 28,
+      "target_smiles": "OC[C@@H]1CCCC[C@H]1Nc1nc2ccc(Cn3cnc4cccnc43)cc2s1"
+    },
+    {
+      "task_id": "retro_c19cb99ed7b22229",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 30,
+      "target_smiles": "CC(C)(C)OC(=O)C(C)(C)Oc1cccc(CCCNc2nc3ccccc3o2)c1"
+    },
+    {
+      "task_id": "retro_fe95e34bd69d58a4",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 41,
+      "target_smiles": "Cc1cc(C)nc(C=Cc2nn(C3CCCCO3)c3cc(Nc4ccccc4C(=O)NCC#CC4CC4)ccc23)c1"
+    },
+    {
+      "task_id": "retro_e31fc42710ce0d99",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "nitro reduction",
+      "heavy_atoms": 41,
+      "target_smiles": "CC(C)(C)c1ccc(-c2nc3c(N4CCN(Cc5ccc(N)c(NCc6cccnc6)c5)CC4)cccc3[nH]2)cc1"
+    },
+    {
+      "task_id": "retro_c16094a9b51ef6fe",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "benzyl deprotection",
+      "heavy_atoms": 32,
+      "target_smiles": "CCNc1nccc(-c2c[nH]nc2-c2cccc(NS(=O)(=O)c3cc(F)ccc3F)c2)n1"
+    },
+    {
+      "task_id": "retro_46ee88534da60094",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "carbonyl/nitrile/azide reduction",
+      "heavy_atoms": 30,
+      "target_smiles": "COC(=O)c1ccc(Cn2c(C)cc(OCc3ccccc3CN)c(Br)c2=O)cc1"
+    },
+    {
+      "task_id": "retro_2d33dd8262b9f314",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 25,
+      "target_smiles": "CNC(=O)COc1c(C)ccc2cnc(N[C@H]3CC[C@H](O)CC3)nc12"
+    },
+    {
+      "task_id": "retro_c46011bd728af273",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "other",
+      "heavy_atoms": 18,
+      "target_smiles": "CCc1cc(-c2cccc(N)n2)c(OC)cc1O"
+    },
+    {
+      "task_id": "retro_4a015c8c40b5faae",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 34,
+      "target_smiles": "CCCC1=NNC(=O)/C1=C1/C=C(Sc2ccc(NC(=O)c3cccs3)cc2)c2ccccc2N1"
+    },
+    {
+      "task_id": "retro_28bbf255e19bf34b",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 25,
+      "target_smiles": "CCNc1cc2ncnc(NCc3ccccc3N)c2cc1[N+](=O)[O-]"
+    },
+    {
+      "task_id": "retro_b177beec1a75ed6f",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "heteroaromatic ring formation",
+      "heavy_atoms": 27,
+      "target_smiles": "CNc1nnc(CNC(=O)c2cncc3c2cnn3-c2ccc(F)cc2)s1"
+    },
+    {
+      "task_id": "retro_9509125030e35a7b",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 30,
+      "target_smiles": "CC(C)(CCN1CCN(C(=O)C2CSC(c3cccnc3)N2)CC1)c1ccccc1"
+    },
+    {
+      "task_id": "retro_276dbc562ae57a5b",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 29,
+      "target_smiles": "COc1ccc(Cc2ccc(Nc3nccs3)cc2)c(F)c1-c1cccc(Cl)c1"
+    },
+    {
+      "task_id": "retro_777d394d62e6bf10",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "halogenation/nitration",
+      "heavy_atoms": 35,
+      "target_smiles": "COC(=O)COc1nc(Cl)ccc1Oc1cc(-n2c(=O)cc(C(F)(F)F)n(C)c2=O)c(F)cc1Cl"
+    },
+    {
+      "task_id": "retro_4c9c59d63bc9c9cc",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 22,
+      "target_smiles": "Brc1cnc(Nc2ccc(-n3ccnc3)cc2)c2nccn12"
+    },
+    {
+      "task_id": "retro_2565d21c96cca509",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "Boc deprotection",
+      "heavy_atoms": 32,
+      "target_smiles": "N#Cc1ccc(Oc2ccc(C(=O)N3CCNCC3)c(Oc3ccc(C#N)cc3)n2)cc1"
+    },
+    {
+      "task_id": "retro_be5b358c5de523dd",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 31,
+      "target_smiles": "Cc1c(C(=O)N2CCC(F)(F)CC2)oc2cc(OC3CCN(C(C)C)CC3)c(Cl)cc12"
+    },
+    {
+      "task_id": "retro_9935b01a0cc0f061",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "cyclisation (non-aromatic ring)",
+      "heavy_atoms": 27,
+      "target_smiles": "CCN1C(=O)Cc2cc(N3C[C@H](CNC(=O)OC(C)(C)C)OC3=O)ccc21"
+    },
+    {
+      "task_id": "retro_cadc3cae915374fb",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "Boc deprotection",
+      "heavy_atoms": 28,
+      "target_smiles": "CCCN(CCC)C(=O)C1=Cc2ccc(-c3ccc(O)cc3)cc2N=C(N)C1"
+    },
+    {
+      "task_id": "retro_330dce287c4e03aa",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 39,
+      "target_smiles": "CC(C)[Si](OC[C@@]1(c2nnc3ccc(O[C@@H]4CC[C@H](N)c5ccccc54)cn23)CCCN1C)(C(C)C)C(C)C"
+    },
+    {
+      "task_id": "retro_fcfc35d4bbf960fd",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 20,
+      "target_smiles": "CN(C)C(=O)c1sc(-c2cccnc2)nc1C(F)(F)F"
+    },
+    {
+      "task_id": "retro_2f81a398f9fc5de4",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 32,
+      "target_smiles": "COc1cccc(N2CCN(C(=O)c3c(-c4cccc(C(F)(F)F)c4)noc3C)CC2)c1"
+    },
+    {
+      "task_id": "retro_57b7488a98d248bb",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 31,
+      "target_smiles": "CC(C(=O)O)n1ccc2ccc(OCCCC#Cc3ccc(OC(F)(F)F)cc3)cc21"
+    },
+    {
+      "task_id": "retro_f01ad71f5bf196ba",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 30,
+      "target_smiles": "CC(C)(C)OC(=O)N[C@@H]1CCCN(c2c(Cl)cnc3[nH]cc(NC(=O)C4CC4)c23)C1"
+    },
+    {
+      "task_id": "retro_d42767b06f4fefb2",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "O-sulfonylation (mesylate/tosylate/triflate)",
+      "heavy_atoms": 35,
+      "target_smiles": "Cc1ccc(S(=O)(=O)OCc2c(SCc3ccc(C(C)(C)C)cc3)cnn(C(C)(C)C)c2=O)cc1"
+    },
+    {
+      "task_id": "retro_ab12cbb8fe17e8a7",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "Boc deprotection",
+      "heavy_atoms": 31,
+      "target_smiles": "CN[C@H](Cc1ccc2ccccc2c1)C(=O)N(C)CCc1ccccc1NS(C)(=O)=O"
+    },
+    {
+      "task_id": "retro_a58d49551ca80de3",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "heteroaromatic ring formation",
+      "heavy_atoms": 18,
+      "target_smiles": "O=c1[nH]c2c3ncccc3c(Br)cc2n(O)c1=O"
+    },
+    {
+      "task_id": "retro_4648616b2f7a8e32",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "O-/S-alkylation",
+      "heavy_atoms": 35,
+      "target_smiles": "NC(=O)COc1ccc2c(c1)S(=O)(=O)N=C(c1c(O)c3sccc3n(NC3CCCCC3)c1=O)N2"
+    },
+    {
+      "task_id": "retro_2593ba7a316ecb70",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 20,
+      "target_smiles": "O=C(OCc1ccccc1)N1CC(C2(C(=O)O)CC2)C1"
+    },
+    {
+      "task_id": "retro_93a5d89de4ad73be",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 39,
+      "target_smiles": "O=C(NCCc1cccc(Oc2ccccc2)c1)c1ccc(Oc2cc3c(cc2Cl)C(C(=O)O)CCO3)cc1"
+    },
+    {
+      "task_id": "retro_2c0a40e3dcfee277",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "Boc deprotection",
+      "heavy_atoms": 29,
+      "target_smiles": "COc1nc(Nc2cc(N[C@@H]3CCOC[C@@H]3N)nnc2C(N)=O)ccc1C(C)C"
+    },
+    {
+      "task_id": "retro_97fcbcb5d75cfcc9",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "carbonyl/nitrile/azide reduction",
+      "heavy_atoms": 27,
+      "target_smiles": "CCn1ncc2c(NC3CCCCC3)c(C3=NOC(CO)(CBr)C3)cnc21"
+    },
+    {
+      "task_id": "retro_df14678a5f386807",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "Suzuki coupling",
+      "heavy_atoms": 24,
+      "target_smiles": "O=C1O[C@]2(CN3CCC2CC3)CN1c1ccc(-c2ccccc2)s1"
+    },
+    {
+      "task_id": "retro_03892a6a88a3744c",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "other cross-coupling (Heck/Stille/Negishi/cyanation/borylation)",
+      "heavy_atoms": 29,
+      "target_smiles": "NS(=O)(=O)c1ccc(-c2sc(N3CCCCC3=O)nc2-c2ccc(Cl)cc2)cc1"
+    },
+    {
+      "task_id": "retro_facb38fadd68630d",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "nitro reduction",
+      "heavy_atoms": 33,
+      "target_smiles": "CN(C)c1ccc(N)c(C(=O)NCC2CCN(C(c3ccccc3)c3ccccc3)CC2)c1"
+    },
+    {
+      "task_id": "retro_99dabfb9738c2667",
+      "source_split": "train",
+      "tier": "medium",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 40,
+      "target_smiles": "Cc1c(Cn2c(=O)c(C(=O)NCCC(=O)O)cn(-c3ccc(N4CCNC4=O)cc3)c2=O)cccc1C(F)(F)F"
+    },
+    {
+      "task_id": "retro_607b0b381fbefa7a",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 37,
+      "target_smiles": "O=C1COC2(CCN(c3ccc(Nc4ncc5c6ccncc6n(C6CCCC6)c5n4)nn3)CC2)CN1"
+    },
+    {
+      "task_id": "retro_5aeae4da7bc4944a",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 43,
+      "target_smiles": "CN(CCCc1ccccc1)C(=O)[C@@H](Cc1ccc2ccccc2c1)N(C)C(=O)/C=C/CC(C)(C)NC(=O)OC(C)(C)C"
+    },
+    {
+      "task_id": "retro_60877fb69a58730a",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "nitro reduction",
+      "heavy_atoms": 25,
+      "target_smiles": "Cc1ccc2oc(-c3ccc4cc5n(c4c3)CCNC5=O)nc2c1N"
+    },
+    {
+      "task_id": "retro_25554b49a8fb4cbc",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "sulfonamide formation",
+      "heavy_atoms": 22,
+      "target_smiles": "O=S(=O)(Nc1ccc(COCC2CC2)cn1)N1CCCCC1"
+    },
+    {
+      "task_id": "retro_eab8d8b78b920324",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "O-/S-alkylation",
+      "heavy_atoms": 33,
+      "target_smiles": "CCOC(=O)C(Cc1ccccc1)c1c(SC)c2cc(OCc3ccccn3)ccc2n1C"
+    },
+    {
+      "task_id": "retro_b0ec0f9eeb5e3c68",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "halogenation/nitration",
+      "heavy_atoms": 17,
+      "target_smiles": "ClCc1cccc(CCCN2CCOCC2)n1"
+    },
+    {
+      "task_id": "retro_5416e000bb1e5f1d",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 8,
+      "max_depth": 10,
+      "first_reaction": "reductive amination",
+      "heavy_atoms": 43,
+      "target_smiles": "CN(CCC#N)C1CCN(C(=O)Cn2cc(NC(=O)c3cnn4cccnc34)c(-c3cc(Cl)ccc3OC(F)F)n2)CC1"
+    },
+    {
+      "task_id": "retro_fc6b8d23e78274fd",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "N-alkylation",
+      "heavy_atoms": 31,
+      "target_smiles": "Cc1nc(C)c(-c2nnc(SCCCN3CCC4(CCc5cc(Cl)ccc54)C3)n2C)s1"
+    },
+    {
+      "task_id": "retro_16fc00116784aa09",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "esterification",
+      "heavy_atoms": 38,
+      "target_smiles": "Cc1c(C(=O)OCC2CCN(Cc3cnc(-c4ccccn4)s3)CC2)sc(NC(=O)OC(C)(C)C)c1C#N"
+    },
+    {
+      "task_id": "retro_f5f9660268efdbde",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "other cross-coupling (Heck/Stille/Negishi/cyanation/borylation)",
+      "heavy_atoms": 26,
+      "target_smiles": "CCCc1ccc2c(c1)CCc1cc(-c3cc(F)c(F)c(F)c3)ccc1-2"
+    },
+    {
+      "task_id": "retro_0cbb0fcc1948001b",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 40,
+      "target_smiles": "Cc1c(CNc2ccc3c(c2)OC[C@H]3CC(=O)O)cccc1-n1c([C@H]2CCCO2)nc2cc(C(F)(F)F)ccc21"
+    },
+    {
+      "task_id": "retro_d752214f82d00b2a",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "carbonyl/nitrile/azide reduction",
+      "heavy_atoms": 18,
+      "target_smiles": "C/C(=C\\CO)c1ccc2c(c1)CCCN2C(C)C"
+    },
+    {
+      "task_id": "retro_a7758249d90f9b72",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "Suzuki coupling",
+      "heavy_atoms": 34,
+      "target_smiles": "C[C@@H]1CCC[C@H](C)N1Cc1ccc(-c2cnc3[nH]c4cnc(-c5cnn(C)c5)cc4c3c2)cc1"
+    },
+    {
+      "task_id": "retro_48f583fa5d90f7f4",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 8,
+      "max_depth": 10,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 31,
+      "target_smiles": "O[C@@H]1CCCC[C@H]1Nc1nc2ccc(Cn3cnc4cc(C(F)(F)F)cnc43)cc2s1"
+    },
+    {
+      "task_id": "retro_493475c3412284dc",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "Sonogashira coupling",
+      "heavy_atoms": 38,
+      "target_smiles": "COC(=O)COc1ccc(C#CC2(c3ccc(OC)c(OC4CCCC4)c3)CCC3(CC2)OCCO3)cc1"
+    },
+    {
+      "task_id": "retro_352e746fa13d1cf5",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "urea/carbamate formation",
+      "heavy_atoms": 38,
+      "target_smiles": "CCC1=NC(NC(=O)Nc2cccc(C)c2)C(=O)N(CC(=O)N2CC3CCC(CC3)C2)c2c(C)cccc21"
+    },
+    {
+      "task_id": "retro_bab0bfb76960d3cb",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "heteroaromatic ring formation",
+      "heavy_atoms": 34,
+      "target_smiles": "Fc1ccc(Oc2cc(Sc3ccccn3)cnc2Nc2ccc(-c3nnn[nH]3)cn2)c(F)c1"
+    },
+    {
+      "task_id": "retro_e2b92cf7fd478e21",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "Boc deprotection",
+      "heavy_atoms": 28,
+      "target_smiles": "CNC(=O)c1cn2cc(-c3cnc(NC(C)C)s3)cc(-c3ccccc3)c2n1"
+    },
+    {
+      "task_id": "retro_9618c383fca67279",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "ether cleavage (O-dealkylation)",
+      "heavy_atoms": 34,
+      "target_smiles": "O=C(NCCc1ccc(Cl)cc1O)c1ccc(Oc2cc3c(cc2Cl)C(C(=O)O)CCO3)cc1"
+    },
+    {
+      "task_id": "retro_9efdc8630c0db854",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "benzyl deprotection",
+      "heavy_atoms": 22,
+      "target_smiles": "CCNC(=O)[C@@H](NC(=O)c1ccc([N+](=O)[O-])cc1O)[C@@H](C)O"
+    },
+    {
+      "task_id": "retro_08171f61d92843b9",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "other cross-coupling (Heck/Stille/Negishi/cyanation/borylation)",
+      "heavy_atoms": 36,
+      "target_smiles": "CCN1CC2(CCN(C(C(N)=O)c3ccc(-c4ccc5cccnc5c4F)cc3F)CC2)OCC1=O"
+    },
+    {
+      "task_id": "retro_6d2573c852b903a8",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "Mitsunobu / dehydrative alkylation",
+      "heavy_atoms": 41,
+      "target_smiles": "CCC(CC)(c1ccc(CCC(O)C(C)(C)C)c(C)c1)c1ccc(OC[C@H]2CC(=O)N2[Si](C)(C)C(C)(C)C)c(C)c1"
+    },
+    {
+      "task_id": "retro_5bfb268b580593a3",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "Buchwald-Hartwig/Ullmann/Chan-Lam coupling",
+      "heavy_atoms": 32,
+      "target_smiles": "CCOC(=O)N1c2ccc(OC)nc2[C@@H](Nc2ncc(N3CCOCC3)cn2)C[C@H]1CC"
+    },
+    {
+      "task_id": "retro_45eb21b809c77dec",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "other deprotection (Cbz/Fmoc/silyl/acetal/sulfonyl)",
+      "heavy_atoms": 32,
+      "target_smiles": "O=C1CCC(C(O)CN2CCc3c(n(S(=O)(=O)c4ccccc4)c4ccccc34)C2)CC1"
+    },
+    {
+      "task_id": "retro_088b62c115f5bac7",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "enolate/Michael chemistry",
+      "heavy_atoms": 33,
+      "target_smiles": "CC(C)(C(c1ccccc1)c1ccc2c(cnn2-c2ccc(F)cc2)c1)C(C)(O)C(F)(F)F"
+    },
+    {
+      "task_id": "retro_71ded43910a027bb",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "O-sulfonylation (mesylate/tosylate/triflate)",
+      "heavy_atoms": 32,
+      "target_smiles": "CS(=O)(=O)O[C@H]1CCCC[C@H]1Nc1nc2ccc(Cn3cnc4cc(F)cnc43)cc2s1"
+    },
+    {
+      "task_id": "retro_f36a1bb19d06a0f7",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 2,
+      "max_depth": 4,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 33,
+      "target_smiles": "CCn1c(-c2cnc(C)nc2)nc2c(OC3CC4CCC3N4C(=O)OC(C)(C)C)ncnc21"
+    },
+    {
+      "task_id": "retro_0033e670195fc824",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "oxidation",
+      "heavy_atoms": 17,
+      "target_smiles": "O=CC1CCCCCCCCCCCCCC1"
+    },
+    {
+      "task_id": "retro_ddec37315c3c9fac",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "other",
+      "heavy_atoms": 22,
+      "target_smiles": "NC=C1C(=O)N(c2nc3ccccc3s2)N=C1c1cccs1"
+    },
+    {
+      "task_id": "retro_05e098f473f9ec8e",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "amide/nitrile hydrolysis",
+      "heavy_atoms": 18,
+      "target_smiles": "CCNc1c(OC)nc2c(c1Cl)C(C)CNCC2"
+    },
+    {
+      "task_id": "retro_bdb43b4878f0070a",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "cyclisation (non-aromatic ring)",
+      "heavy_atoms": 27,
+      "target_smiles": "CCn1ncc2c(NC3CCCCC3)c(C3=NOC4(CCCC4)C3)cnc21"
+    },
+    {
+      "task_id": "retro_40c77d2ca2497ba2",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 31,
+      "target_smiles": "COC(=O)c1cccc(NC(=O)c2cc3cnc(N4CCN(C)CC4)cc3[nH]c2=O)c1"
+    },
+    {
+      "task_id": "retro_fbeb74fc37f16572",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "other reduction (dehalogenation/deoxygenation)",
+      "heavy_atoms": 32,
+      "target_smiles": "O=C(c1cc(-c2cc(Br)cc(OC(F)(F)F)c2)n(-c2ccc(Cl)nc2)n1)N1CCS(=O)C1"
+    },
+    {
+      "task_id": "retro_b1be40d8ff3f5b7c",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "Wittig/HWE olefination",
+      "heavy_atoms": 15,
+      "target_smiles": "C=Cc1c(Cl)cccc1-c1ccccc1"
+    },
+    {
+      "task_id": "retro_d59dfb520de3a9ca",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "hydrogenation (C=C/C#C/arene)",
+      "heavy_atoms": 21,
+      "target_smiles": "CCn1nc2c(N)nc3c(c2c1CCCCN)CCCC3"
+    },
+    {
+      "task_id": "retro_88eec88cc55ef80a",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "Grignard/organolithium addition",
+      "heavy_atoms": 30,
+      "target_smiles": "CCOC(C)OC(COc1ccccc1)C1CCC(c2ccccc2)(N(C)C)CC1"
+    },
+    {
+      "task_id": "retro_9f63c79278249526",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "Suzuki coupling",
+      "heavy_atoms": 34,
+      "target_smiles": "COC1CCN(Cc2ccc(-c3cnc4[nH]c5cnc(-c6cnn(C)c6)cc5c4c3)cc2)CC1"
+    },
+    {
+      "task_id": "retro_90603c948f216b7c",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "other protection (Cbz/Fmoc/silyl/acetal)",
+      "heavy_atoms": 35,
+      "target_smiles": "CC1(COc2cnc3c(c2)C2(COC(N)=N2)c2cc(-c4cc(Cl)ccc4F)ccc2O3)OCCO1"
+    },
+    {
+      "task_id": "retro_9166c886a08b5908",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "condensation (imine/oxime/amidine/guanidine)",
+      "heavy_atoms": 27,
+      "target_smiles": "CCCc1c(C(C)=NO)c2ccc(C(N)=O)cc2n1Cc1ccccc1Cl"
+    },
+    {
+      "task_id": "retro_186fc1ba6d97c3af",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 32,
+      "target_smiles": "O=C(N[C@H]1C[C@@H](C(=O)N2CCC2)N(CC2CCCCC2)C1)c1ccc2ccccc2c1O"
+    },
+    {
+      "task_id": "retro_f62eb4d4c2315033",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "other FGI (dehydration/thionation/Curtius)",
+      "heavy_atoms": 18,
+      "target_smiles": "CC(C)C(C#N)n1cc(Br)c2[nH]nc(N)c2c1=O"
+    },
+    {
+      "task_id": "retro_de763f2a77cb767c",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 26,
+      "target_smiles": "CCNc1cccnc1N(CC)CC1CCN(C(=O)c2ccc[nH]2)CC1"
+    },
+    {
+      "task_id": "retro_8f414e45944629f5",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "Boc protection",
+      "heavy_atoms": 30,
+      "target_smiles": "CC(=O)OC1CC2CC(N(CC(=O)N3CCCC3C#N)C(=O)OC(C)(C)C)CC2C1"
+    },
+    {
+      "task_id": "retro_19b3bae1bbbb1e10",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "Friedel-Crafts acylation/formylation",
+      "heavy_atoms": 25,
+      "target_smiles": "O=Cc1cnc(SCc2c(F)ccc(F)c2F)n1-c1ccc(F)cc1"
+    },
+    {
+      "task_id": "retro_5b13163dd22abbbd",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "nitro reduction",
+      "heavy_atoms": 28,
+      "target_smiles": "CON=C(COc1cccc(C(F)(F)F)c1)Cn1nnc2cc(N)c(C)cc21"
+    },
+    {
+      "task_id": "retro_0cb679575e5f2932",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 31,
+      "target_smiles": "O[C@@H]1Cc2ccccc2[C@H]1Nc1nc2ccc(Cn3cnc4cc(F)cnc43)cc2s1"
+    },
+    {
+      "task_id": "retro_d160751c99049ac3",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 25,
+      "target_smiles": "Cc1ccc(C(F)(F)CNc2ccc(C#N)c(CC(=O)O)c2F)nc1"
+    },
+    {
+      "task_id": "retro_ae0bc733971b0a0c",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 32,
+      "target_smiles": "CC1(C)Oc2ncnc(N)c2N=C1c1ccc(C23CCCC(CC(=O)O)(CC2)CC3)cc1"
+    },
+    {
+      "task_id": "retro_326efc3c9e9d2ada",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 37,
+      "target_smiles": "Cc1ccc([C@@H](NC(=O)Cc2ccc3oc(C(C)(O)c4ccncn4)cc3n2)c2ccccc2)c(C)c1"
+    },
+    {
+      "task_id": "retro_4db8b312447b98b8",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "heteroaromatic ring formation",
+      "heavy_atoms": 29,
+      "target_smiles": "CN1CCN(c2cc(F)c3c(=O)oc(Cc4ccc5c(c4)OCO5)nc3c2)CC1"
+    },
+    {
+      "task_id": "retro_73e66d7afaff9072",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 28,
+      "target_smiles": "O[C@@H]1CCCC[C@H]1Nc1nc2ccc(Cn3cnc4cc(F)cnc43)cc2s1"
+    },
+    {
+      "task_id": "retro_5658b32b3bc60a8c",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 28,
+      "target_smiles": "CCCON=C(CNC(=O)c1ccccc1C(F)(F)F)c1ncc(Cl)cc1Cl"
+    },
+    {
+      "task_id": "retro_13779a02a1873fbf",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "Suzuki coupling",
+      "heavy_atoms": 19,
+      "target_smiles": "CN1C(=O)C2(CC2)c2cnc(-c3cccnc3)cc21"
+    },
+    {
+      "task_id": "retro_f85074cb525e0e1e",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "Suzuki coupling",
+      "heavy_atoms": 28,
+      "target_smiles": "CCC(CC)c1cc(C)nn2c(-c3scc(-c4cccnc4)c3C)c(C)nc12"
+    },
+    {
+      "task_id": "retro_50f1bd02ce50b781",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 36,
+      "target_smiles": "C[C@H]1CN(c2ccn(-c3cnnc(C#N)c3)n2)C(=O)[C@@H]([C@@H](O)C(=O)Nc2ccc3c(N)noc3c2)O1"
+    },
+    {
+      "task_id": "retro_78c205994ea54906",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "carbonyl/nitrile/azide reduction",
+      "heavy_atoms": 25,
+      "target_smiles": "CC(=O)N1CCN(c2ccc(CCc3ccc(CN)cc3)nc2)CC1"
+    },
+    {
+      "task_id": "retro_ef95436db94b53d0",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "Boc deprotection",
+      "heavy_atoms": 33,
+      "target_smiles": "COCCOc1ccn2c(-c3ccc4cccc(OCC5(F)CCNCC5)c4n3)cnc2c1"
+    },
+    {
+      "task_id": "retro_134a3e52859444f4",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 42,
+      "target_smiles": "COc1cc(-c2nc(NC(=O)c3c(C)c4cc(C)ccc4n3CC(=O)O)sc2CCC2CCCCC2)c(OC)cc1Cl"
+    },
+    {
+      "task_id": "retro_ab7feed208495383",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "other cross-coupling (Heck/Stille/Negishi/cyanation/borylation)",
+      "heavy_atoms": 36,
+      "target_smiles": "CC(=O)OCc1c(B2OC(C)(C)C(C)(C)O2)cccc1N1CCOc2cc(C3CC3)cc(F)c2C1=O"
+    },
+    {
+      "task_id": "retro_7539e970969692e6",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 37,
+      "target_smiles": "C[C@@H](Nc1nc(-c2noc(=O)[nH]2)nc2nc(N3CCC[C@H]3CF)n(C[C@H]3CC[C@H](C)CC3)c12)C1CCC1"
+    },
+    {
+      "task_id": "retro_14e3220033dcd747",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 42,
+      "target_smiles": "CCOC(=O)COc1cccc(CCCN(CCC(c2ccccc2)c2ccccc2)C(=O)/C=C/c2ccncc2)c1"
+    },
+    {
+      "task_id": "retro_dc98e2c279f22b3f",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 32,
+      "target_smiles": "CC(=O)Nc1cccc(N2CCN(CCc3nn(C)c(=O)n3CC3CCCCC3)CC2)c1"
+    },
+    {
+      "task_id": "retro_726988c0b1dfec54",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "N-alkylation",
+      "heavy_atoms": 34,
+      "target_smiles": "COC(=O)c1c(CNc2ccc3ccn(CC(=O)OC(C)(C)C)c3c2)n(C)c2cccc(Cl)c12"
+    },
+    {
+      "task_id": "retro_999fff2f038887aa",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "N-alkylation",
+      "heavy_atoms": 29,
+      "target_smiles": "CC1(C)[C@H]2CC[C@]1(C)c1c2c(=O)n(-c2ccc(F)cc2Cl)n1Cc1ccccc1"
+    },
+    {
+      "task_id": "retro_39010f627ce3b713",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 25,
+      "target_smiles": "COc1cc(Cn2cc(C(=O)O)c(C3CC3)n2)cnc1N1CCCC1"
+    },
+    {
+      "task_id": "retro_298b34065347691a",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "N-alkylation",
+      "heavy_atoms": 31,
+      "target_smiles": "Cc1cnc(N2CCN(C(=O)c3ccc(N4C(=O)N(C)C(=O)C4C)cc3)CC2)c(C)c1"
+    },
+    {
+      "task_id": "retro_970326508db25e45",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 34,
+      "target_smiles": "Cn1c(=O)n([C@H]2CC[C@H](O)CC2)c2nc(-n3cnc4ccc(F)cc43)nc(N3CC[C@H](F)C3)c21"
+    },
+    {
+      "task_id": "retro_21a8ca7f1602887b",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "urea/carbamate formation",
+      "heavy_atoms": 21,
+      "target_smiles": "COc1ccc(NC(=O)N(O)C2CCCCCCC2)cc1"
+    },
+    {
+      "task_id": "retro_28905eb6a93fcc98",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 22,
+      "target_smiles": "CCCCc1ccc(C2CC2C(=O)N2CC(C)OC(C)C2)s1"
+    },
+    {
+      "task_id": "retro_aad230abb21bfb9f",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "Boc deprotection",
+      "heavy_atoms": 29,
+      "target_smiles": "COCCOc1ccc(Nc2ncc3[nH]c(=O)n(-c4cccc(N)c4)c3n2)cc1"
+    },
+    {
+      "task_id": "retro_74b6a7207fce5e03",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "ester hydrolysis",
+      "heavy_atoms": 33,
+      "target_smiles": "O=C(O)c1ccc(CCCN2[C@@H](/C=C/C(O)Cc3cccc(C(F)(F)F)c3)CCS2(=O)=O)s1"
+    },
+    {
+      "task_id": "retro_24179bfd1ca987cb",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 34,
+      "target_smiles": "O=C(Nc1ccc(Nc2nc(Cl)nc(Cl)n2)cc1OCc1ccccc1)c1ccc(F)cc1O"
+    },
+    {
+      "task_id": "retro_50fd0129b0f3a431",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "other cross-coupling (Heck/Stille/Negishi/cyanation/borylation)",
+      "heavy_atoms": 39,
+      "target_smiles": "COc1nc(N2CCOCC2)nc(N[C@@H]2CCCN(C(=O)OC(C)(C)C)C2)c1-c1nc2cc(C#N)ccc2s1"
+    },
+    {
+      "task_id": "retro_01adb22c22267a76",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "carbonyl/nitrile/azide reduction",
+      "heavy_atoms": 17,
+      "target_smiles": "CCCNC1CCc2c(ccc(OC)c2N)C1"
+    },
+    {
+      "task_id": "retro_1cdd2d26a72a8cd6",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "sulfonamide formation",
+      "heavy_atoms": 27,
+      "target_smiles": "CCS(=O)(=O)Nc1cccc(OCCCCN2CCc3ccccc3C2)n1"
+    },
+    {
+      "task_id": "retro_18a7947d714f056b",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "heteroaromatic ring formation",
+      "heavy_atoms": 23,
+      "target_smiles": "COc1ccc2ncn(Cc3ccc4nc(SC)sc4c3)c2n1"
+    },
+    {
+      "task_id": "retro_debb9bc6f88fd6fe",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 33,
+      "target_smiles": "C=CC(=O)N(CCn1nc(-c2cc(O)cc(F)c2)c2c(N)ncnc21)Cc1ccccc1F"
+    },
+    {
+      "task_id": "retro_2df14c4be8cbe771",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 41,
+      "target_smiles": "Cc1cc(C(=O)N2Cc3cnn(C)c3Nc3ccccc32)ccc1CCCC(=O)N1CCN(CCC(C)(C)C)CC1"
+    },
+    {
+      "task_id": "retro_46227d00a54bf675",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 4,
+      "max_depth": 6,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 31,
+      "target_smiles": "CCn1ccnc1C(=O)CNC(=O)C1CC1c1cc(F)c(C(C)(C)C(F)(F)F)c(F)c1"
+    },
+    {
+      "task_id": "retro_a23f7f6c4e124dc0",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 5,
+      "max_depth": 7,
+      "first_reaction": "halogenation/nitration",
+      "heavy_atoms": 31,
+      "target_smiles": "CC(C)(F)CN1CCC(c2cc3cc(-c4ccc(S(C)(=O)=O)cc4F)ncc3o2)CC1"
+    },
+    {
+      "task_id": "retro_6843d3631759a92b",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 6,
+      "max_depth": 8,
+      "first_reaction": "SNAr",
+      "heavy_atoms": 31,
+      "target_smiles": "O[C@@H]1Cc2ccccc2[C@H]1Nc1nc2ccc(Cn3cnc4ccc(Br)nc43)cc2s1"
+    },
+    {
+      "task_id": "retro_92f1595a91eb304b",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 7,
+      "max_depth": 9,
+      "first_reaction": "Boc deprotection",
+      "heavy_atoms": 33,
+      "target_smiles": "COC(=O)[C@H](CCCCCCCNC(=O)C(O)C(N)CC1CCC1)NC(=O)OC1CCCC1"
+    },
+    {
+      "task_id": "retro_1d936ec2801b29c9",
+      "source_split": "train",
+      "tier": "hard",
+      "min_depth": 3,
+      "max_depth": 5,
+      "first_reaction": "amide coupling",
+      "heavy_atoms": 30,
+      "target_smiles": "CCCn1ccc(NC(=O)/C(=N/OC2CCCC2)c2ccc(S(C)(=O)=O)c(Cl)c2)n1"
+    }
+  ],
+  "size": 250,
+  "evalset_id": "4afaf775b62693004ac4ae35b05c249c87bc8b4f7339a76320ea4ecc94c4e688"
+}

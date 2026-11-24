@@ -57,6 +57,7 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **08** | **[openai/math: research-level Lean proofs](./08-math-environments/openai-math/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | OpenAI's Comparator challenges as Harbor tasks: prove a research result in Lean 4, graded by Comparator in a separate sandbox. | 1 | 1 | 0 | 🚧 wip |
 | **08** | **[FineProofEnvs: olympiad proofs with a rubric judge](./08-math-environments/fineproof/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | Write a natural-language proof of an olympiad problem; an LLM judge grades it 0–7 against the problem's rubric, as in the QED-Nano recipe. | 1 | 1 | 0 | ✅ trained |
 | **08** | **[Scott Wu Math: the card game](./08-math-environments/scott-wu-math/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | Make the target from every card once with + − × ÷: the 24 game, then the current year from eight cards, then any four-digit number from nine. | 1 | 1 | 1 | ✅ stable |
+| **09** | **[RetroEnv](./09-retroenv/)**<br><sub>by [Anindyadeep Sannigrahi](https://github.com/Anindyadeep), [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | Plan retrosyntheses back to purchasable molecules, scored step by step against a frozen reaction library, and Qwen3.8-27B trained to do it. | 1 | 1 | 1 | ✅ trained |
 <!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
@@ -197,6 +198,24 @@ updates. A gpt-oss-120b regrade sees 0.259 → 0.464. All of it ran on Hugging F
 Providers and a bucket. Reading the proofs shows new key ideas, and also that both judges forgive contradictions
 around a correct argument. The [blog post](https://huggingface.co/blog/FineEnvs/fineproofenvs-rl-2b-prover) tells the story. The model, the tasks, every eval attempt and the training logs are in the
 [Math Environments collection](https://huggingface.co/collections/FineEnvs/math-environments-6af40312bf237e3c32912840).
+
+### [09 · RetroEnv](./09-retroenv/) &nbsp;<sub>plan a synthesis back to molecules you can buy</sub>
+
+**A verifier that does not hold the answer.** Given a target molecule, the agent works backwards
+through nine tools until every leaf is something a supplier sells. Each proposed reaction is checked
+against a frozen library of real reactions and templates, and each leaf against a 102,915-item stock
+list — so any route that holds up chemically counts, including one no chemist has published.
+Matching the patent route only adds a bonus.
+
+Qwen3.8-27B trained on it with GRPO went from 0.118 to **0.338 pass@1** on the held-out set, hard
+tier 0.035 → 0.18. On the thirty tasks the [13-model board](./09-retroenv/results/core30-board.md)
+uses — where Sonnet 5.5 scores 0.400 and the untrained Qwen 0.100 — it solves 14 on first attempt
+against the base model's 4. Both mixed-pool runs peak and then decline, and
+[`results/`](./09-retroenv/results) says so. Every rollout is readable in
+[retroenv-rollouts](https://huggingface.co/spaces/FineEnvs/retroenv-rollouts): the route trees drawn
+with RDKit, the reward breakdown, and all fifteen models side by side on the same molecule. Models,
+adapters, datasets and 174 GB of runs are in the
+[RetroEnv collection](https://huggingface.co/collections/FineEnvs/retroenv-6b0584ffc015c651084dc6ea).
 
 > **More coming.** Each new project is another end-to-end recipe: an environment, a training run, and
 > the artifacts on the Hub. [Proposals and contributions welcome →](./CONTRIBUTING.md)
@@ -415,6 +434,7 @@ FineEnvs/
 ├── 06-multilingual/         OCR over 22 languages and ASR over 102, two OpenEnv servers
 ├── 07-simulation-environments/  a catalog of simulation environments: PortSimEnv v1–v5 and more
 ├── 08-math-environments/    math environments graded exactly, by Lean, or by a rubric judge
+├── 09-retroenv/             retrosynthesis graded against a frozen reaction library
 ├── content/
 │   ├── articles/            long-form sources (Astro → Docker Space)
 │   └── slides/              talk decks (Vite → static Space)

@@ -1,0 +1,21 @@
+{
+  "name": "core30-nothink",
+  "description": "13 models on core30 (10 easy, 10 medium, 10 hard; nested in final_eval), thinking off where the model allows it, no submission repair, the environment's default budget (16 turns, 32 tool calls).",
+  "set": "core30",
+  "thinking": "off",
+  "models": [
+    "Qwen/Qwen3.8-27B:novita",
+    "Qwen/Qwen3.6-35B-A3B:deepinfra",
+    "Qwen/Qwen3.8-2.4T-A95B:together",
+    "zai-org/GLM-5.3:novita",
+    "deepseek-ai/DeepSeek-V4-Pro-0813:together",
+    "deepseek-ai/DeepSeek-V4.1-Flash:novita",
+    {"model": "moonshotai/Kimi-K2.6:deepinfra", "note": "novita rejects the recursive emit_routes schema with a bare 400"},
+    "google/gemma-4-31B-it:novita",
+    "claude-sonnet-5-5",
+    "claude-haiku-5-5",
+    {"model": "claude-opus-5-5", "note": "cannot disable thinking; runs at low effort"},
+    {"model": "gpt-6.1-sol", "note": "rejects effort none; runs at low"},
+    {"model": "gpt-6-astra", "note": "rejects effort none; runs at low", "max_cost": 40}
+  ]
+}

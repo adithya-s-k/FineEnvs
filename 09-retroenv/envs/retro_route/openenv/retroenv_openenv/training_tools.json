@@ -1,0 +1,247 @@
+[
+ {
+  "type": "function",
+  "function": {
+   "name": "emit_routes",
+   "description": "Submit the final route trees and end the episode. Call it exactly once.\n\nEach item of submission.routes is a root molecule node for the target itself, never\nwrapped in route, root or tree keys, and its smiles is the target exactly as given. A\nmolecule node is {\"type\": \"mol\", \"smiles\": \"...\", \"in_stock\": false, \"children\": [...]}:\nan expanded molecule has in_stock false and exactly one reaction child; a leaf has no\nchildren and in_stock true only if stock_retrieve confirmed it. A reaction node is\n{\"type\": \"reaction\", \"is_reaction\": true, \"metadata\": {...}, \"children\": [...]}, whose\nchildren are its precursor molecule nodes and whose metadata holds explanation,\nreaction_class, confidence (0 to 1), literature (a list) and precursor_roles (an object).",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "submission": {
+      "type": "object",
+      "description": "{\"routes\": [root molecule nodes]}, as described above; an object, not a string."
+     }
+    },
+    "required": [
+     "submission"
+    ]
+   },
+   "return": {
+    "type": "string"
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "inspect_molecule",
+   "description": "Inspect a molecule with RDKit: formula, scaffold, rings, charge and stereo.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "smiles": {
+      "type": "string",
+      "description": "The molecule as SMILES."
+     }
+    },
+    "required": [
+     "smiles"
+    ]
+   },
+   "return": {
+    "type": "string"
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "pubchem_lookup",
+   "description": "Canonicalize a SMILES or look up the frozen molecule cache.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "query": {
+      "type": "string",
+      "description": "A SMILES, or a name or CAS number present in the cache."
+     }
+    },
+    "required": [
+     "query"
+    ]
+   },
+   "return": {
+    "type": "string"
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "reaction_class_lookup",
+   "description": "Name the reaction class of a proposed cut.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "product_smiles": {
+      "type": "string",
+      "description": "The product of the step."
+     },
+     "reactants": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "description": "The proposed reactant SMILES."
+     }
+    },
+    "required": [
+     "product_smiles",
+     "reactants"
+    ]
+   },
+   "return": {
+    "type": "string"
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "reaction_conditions_search",
+   "description": "Find reported conditions for a cut or close precedents.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "product_smiles": {
+      "type": "string",
+      "description": "The product of the step."
+     },
+     "reactants": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "nullable": true,
+      "description": "The proposed reactant SMILES."
+     },
+     "reaction_class": {
+      "type": "string",
+      "description": "Optional reaction class."
+     },
+     "limit": {
+      "type": "integer",
+      "description": "Maximum results, at most 20."
+     }
+    }
+   },
+   "return": {
+    "type": "string"
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "reaction_precedent_search",
+   "description": "Find analogous reactions from training-split records.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "product_smiles": {
+      "type": "string",
+      "description": "Product to find analogues for."
+     },
+     "reaction_class": {
+      "type": "string",
+      "description": "Optional reaction class filter."
+     },
+     "limit": {
+      "type": "integer",
+      "description": "Maximum results, at most 20."
+     }
+    }
+   },
+   "return": {
+    "type": "string"
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "search_literature",
+   "description": "Search frozen citation metadata attached to training precedents.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "product_smiles": {
+      "type": "string",
+      "description": "Product to search for."
+     },
+     "reaction_class": {
+      "type": "string",
+      "description": "Optional reaction class filter."
+     },
+     "limit": {
+      "type": "integer",
+      "description": "Maximum results, at most 20."
+     }
+    }
+   },
+   "return": {
+    "type": "string"
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "stock_retrieve",
+   "description": "Search the purchasable stock: exact, inchikey, class, substructure or similarity.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "query": {
+      "type": "string",
+      "description": "SMILES, InChIKey, class name or SMARTS."
+     },
+     "mode": {
+      "type": "string",
+      "description": "One of auto, exact, inchikey, class, substructure, similarity."
+     },
+     "limit": {
+      "type": "integer",
+      "description": "Maximum results, at most 20."
+     }
+    },
+    "required": [
+     "query"
+    ]
+   },
+   "return": {
+    "type": "string"
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "validate_disconnection",
+   "description": "Check one proposed cut against train-visible reactions and frequent templates.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "product_smiles": {
+      "type": "string",
+      "description": "The product of the step."
+     },
+     "reactants": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "description": "The proposed reactant SMILES."
+     }
+    },
+    "required": [
+     "product_smiles",
+     "reactants"
+    ]
+   },
+   "return": {
+    "type": "string"
+   }
+  }
+ }
+]
