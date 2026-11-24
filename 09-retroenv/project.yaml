@@ -14,7 +14,7 @@ authors:
 
 hub:
   org: FineEnvs
-  collection: FineEnvs/retroenv
+  collection: FineEnvs/retroenv-6b0584ffc015c651084dc6ea
   spaces:
     - FineEnvs/retroenv              # OpenEnv server and playground, serving the bucket snapshot
     - FineEnvs/retroenv-rollouts     # training rollouts, curves and the model board

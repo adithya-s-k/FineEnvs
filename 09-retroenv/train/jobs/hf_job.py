@@ -31,7 +31,9 @@ SOURCE_SUFFIXES = {".py", ".sh", ".json", ".toml", ".txt", ".jinja", ".js", ".md
 FLAVORS = {
     "check": ("cpu-upgrade",),
     "watch": ("cpu-basic",),
-    "publish": ("cpu-upgrade",),
+    # Merging needs room for the base snapshot and the merged copy side by side: 112 GB for the
+    # 27B, where cpu-upgrade gives 50. The adapter archive is small enough for either.
+    "publish": ("cpu-xl", "cpu-upgrade", "cpu-performance"),
     "eval": ("h200", "h200x2"),
     "smoke": ("h200x2", "h200x4", "h200x8"),
     "train": ("h200x2", "h200x4", "h200x8"),
