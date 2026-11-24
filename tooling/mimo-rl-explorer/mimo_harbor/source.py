@@ -7,7 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 
 DATASET = "XiaomiMiMo/MiMo-V2.6-RL-oss"
-REVISION = "639865fd3374018d6cb29b9fb82dd531406fcf5f"
+REVISION = "e8e81e4945270b6212204bad99de1e598f7fb077"
 IMAGE_REPO = "docker.io/xiaomimimo/mimo-v2.6-rl-oss"
 PARQUETS = {"code": "code.parquet", "cyber": "cyber.parquet", "general": "general/train.parquet",
             "webdev": "webdev.parquet", "music": "music.parquet"}
