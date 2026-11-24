@@ -69,4 +69,5 @@ episodes that are missing. Keys come from the nearest `.env` (`OPENAI_API_KEY`, 
 
 See the environment card and [results/eval-v1.json](results/eval-v1.json). Short version: with reasoning, every model makes 6,843 from the video's nine
 cards on the first try; answering at once in 300 tokens, only GPT-6.1 Sol and Claude Opus 5.5 do. On 20
-test deals at once, GPT-6.1 Sol solves 14, Opus 5.5 8, the other ten models 1 to 5.
+test deals at once, GPT-6.1 Sol solves 14, Opus 5.5 8, the other ten models 1 to 5. Those two still reason briefly
+at once (`effort: low`, the lowest their APIs allow), so their rows are not pure mental arithmetic.
