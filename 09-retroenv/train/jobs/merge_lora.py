@@ -13,7 +13,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from train.sync_grpo import MODEL_REVISIONS
+try:
+    from train.sync_grpo import MODEL_REVISIONS
+except ImportError:  # publishing merges in a job without the trainer's environment; --revision pins it there
+    MODEL_REVISIONS = {}
 
 
 def check_saved(output, model, revision, moved):
@@ -82,13 +85,16 @@ def main():
     parser.add_argument("--model", required=True, help="Base model the adapter was trained on")
     parser.add_argument("--adapter", required=True, help="A checkpoint-N or final directory")
     parser.add_argument("--output", required=True)
+    parser.add_argument("--revision", help="Base model revision; defaults to the pin in train/sync_grpo.py")
     args = parser.parse_args()
 
     from huggingface_hub import snapshot_download
     from safetensors import safe_open
     from safetensors.torch import save_file
 
-    revision = MODEL_REVISIONS[args.model]
+    revision = args.revision or MODEL_REVISIONS.get(args.model)
+    if not revision:
+        raise SystemExit(f"no pinned revision for {args.model}; pass --revision")
     adapter_dir, output = Path(args.adapter), Path(args.output)
     config = json.loads((adapter_dir / "adapter_config.json").read_text())
     if config.get("use_rslora") or config.get("use_dora") or config.get("fan_in_fan_out"):

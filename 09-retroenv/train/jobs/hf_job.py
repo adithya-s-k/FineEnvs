@@ -18,6 +18,7 @@ bucket at /data, from which the server's serving snapshot is prepared and checke
 
 import argparse
 import json
+import re
 import shutil
 import tempfile
 from pathlib import Path
@@ -30,6 +31,7 @@ SOURCE_SUFFIXES = {".py", ".sh", ".json", ".toml", ".txt", ".jinja", ".js", ".md
 FLAVORS = {
     "check": ("cpu-upgrade",),
     "watch": ("cpu-basic",),
+    "publish": ("cpu-upgrade",),
     "eval": ("h200", "h200x2"),
     "smoke": ("h200x2", "h200x4", "h200x8"),
     "train": ("h200x2", "h200x4", "h200x8"),
@@ -112,12 +114,23 @@ def main(argv=None):
     parser.add_argument("--patience", type=int, help="For watch: stop training after N checkpoints without a new best")
     parser.add_argument("--stop-below", type=float, help="For watch: stop after two checkpoints below this x the best")
     parser.add_argument("--space-id")
+    parser.add_argument("--publish-mode", choices=("model", "adapters"), help="For publish: see train/publish_hub.py")
+    parser.add_argument("--repo", help="For publish: the Hub model repo to write")
+    parser.add_argument("--non-thinking", action="store_true", help="For publish model: the best non-thinking one")
     parser.add_argument("--submit", action="store_true", help="Without this flag, print the job plan")
     args = parser.parse_args(argv)
     if args.action == "watch":
         if not args.run or not args.job:
             parser.error("watch needs --run and --job")
         args.name = args.name or f"{args.run}-evals"
+    if args.action == "publish":
+        if not args.publish_mode or not args.repo:
+            parser.error("publish needs --publish-mode and --repo")
+        if "/" not in args.repo:
+            parser.error("--repo takes owner/name")
+        # Job names take only letters, digits, hyphen and underscore, and a model id has dots in it.
+        slug = re.sub(r"[^A-Za-z0-9_-]+", "-", args.repo.split("/")[-1]).strip("-")
+        args.name = args.name or f"publish-{args.publish_mode}-{slug}"[:96]
     if not args.name:
         parser.error("--name is required")
     if Path(args.name).name != args.name or args.name in {".", ".."}:
@@ -152,6 +165,18 @@ def main(argv=None):
             + (f" --source {args.source_from}" if args.source_from and args.source_from != args.job else "")
         )
         command = ["bash", "-c", watch]
+    elif args.action == "publish":
+        # Publishing needs neither vLLM nor the environment, so it skips entrypoint.sh and
+        # installs only what the merge and the upload use. The CPU torch wheel keeps it small.
+        publish = (
+            "pip install -q 'huggingface_hub>=1.32,<2' safetensors"
+            " && pip install -q --index-url https://download.pytorch.org/whl/cpu torch"
+            " && HF_HUB_ENABLE_HF_TRANSFER=0 python /source/train/publish_hub.py"
+            f" {args.publish_mode} --repo {args.repo} --outputs /outputs --workdir /workspace/publish"
+            + (f" --checkpoint {args.checkpoint}" if args.checkpoint else "")
+            + (" --non-thinking" if args.non_thinking else "")
+        )
+        command = ["bash", "-c", publish]
     elif args.action != "check":
         command += ["--model", args.model, "--output", f"/outputs/{args.name}"]
     if args.action in ("smoke", "train"):
