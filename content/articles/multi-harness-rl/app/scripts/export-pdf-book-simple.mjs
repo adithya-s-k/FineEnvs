@@ -304,8 +304,8 @@ async function main() {
 
       console.log('📄 Loading page…');
       await page.goto(baseUrl, { waitUntil: 'load', timeout: 60_000 });
-      try { await page.waitForFunction(() => !!window.d3, { timeout: 8_000 }); } catch {}
-      try { await page.waitForFunction(() => !!window.Plotly, { timeout: 5_000 }); } catch {}
+      try { await page.waitForFunction(() => !!window.d3, undefined, { timeout: 8_000 }); } catch {}
+      try { await page.waitForFunction(() => !!window.Plotly, undefined, { timeout: 5_000 }); } catch {}
 
       if (!outFileBase) {
         const fromBtn = await page.evaluate(() => {

@@ -329,8 +329,8 @@ async function main() {
       await page.goto(baseUrl, { waitUntil: 'load', timeout: 60000 });
       // Wait for CDN scripts (Plotly/D3) in parallel to halve the timeout cost
       await Promise.allSettled([
-        page.waitForFunction(() => !!window.Plotly, { timeout: 8000 }),
-        page.waitForFunction(() => !!window.d3, { timeout: 8000 })
+        page.waitForFunction(() => !!window.Plotly, undefined, { timeout: 8000 }),
+        page.waitForFunction(() => !!window.d3, undefined, { timeout: 8000 })
       ]);
       // Prefer explicit filename from the download button if present
       if (!args.filename) {
