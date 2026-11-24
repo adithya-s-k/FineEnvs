@@ -336,6 +336,22 @@ The multi-harness RL talk: one small model trained with GRPO inside four unmodif
 
 </td>
 </tr>
+<tr>
+<td width="25%" valign="top">
+
+<a href="https://huggingface.co/blog/FineEnvs/fineproofenvs-rl-2b-prover"><img src="./assets/content/fineproofenvs-blog.png" alt="FineProofEnvs: RL training a 2B math prover with a custom harness"></a>
+
+#### [FineProofEnvs: RL Training a 2B Math Prover with a Custom Harness](https://huggingface.co/blog/FineEnvs/fineproofenvs-rl-2b-prover)
+
+![Article](https://img.shields.io/badge/-article-4F46E5) ![HF blog](https://img.shields.io/badge/-hf%20blog-FFD21E)
+
+Qwen3.5-2B trained with RL from the base model to write olympiad proofs, through a ~280-line Harbor
+harness and all on Hugging Face: 0.22 → 0.41 on held-out proofs.
+
+<sub>📝 [the blog post](https://huggingface.co/blog/FineEnvs/fineproofenvs-rl-2b-prover) · project [`08-math-environments/fineproof/`](./08-math-environments/fineproof/)</sub>
+
+</td>
+</tr>
 </table>
 
 ---
