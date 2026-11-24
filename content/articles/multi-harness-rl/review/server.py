@@ -406,7 +406,8 @@ def export_threads(request: Request) -> list[dict[str, Any]]:
 @app.post("/api/review/import")
 async def import_threads(request: Request) -> dict[str, Any]:
     """Add threads from an export or another source. Existing ids are kept unless replace is true."""
-    _require_owner(request)
+    # Bearer verification may contact the Hub; keep that network wait off the event loop.
+    await run_in_threadpool(_require_owner, request)
     payload = await request.json()
     items = payload.get("threads") or []
     replace = bool(payload.get("replace"))
