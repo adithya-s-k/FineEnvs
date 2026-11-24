@@ -26,7 +26,7 @@ hub:
     - LiteFold/RetroEnv-Curated      # the four curated splits: train, validation, test, heldout
     - LiteFold/RetroEnv              # the full release: tasks, known routes, stock, reaction library
   trackio:
-    - FineEnvs/retroenv-trackio      # trainer and checkpoint-eval curves for the mixed-pool runs
+    - AdithyaSK/retroenv-rl          # trainer and checkpoint-eval curves for the mixed-pool runs
   buckets:
     - FineEnvs/retroenv-bucket       # serving copy: the pinned release, its index and final_eval
     - AdithyaSK/retroenv-rl-runs     # every run: checkpoints, episodes, logs and eval boards
