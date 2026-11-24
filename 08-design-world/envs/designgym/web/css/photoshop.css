@@ -1,0 +1,176 @@
+/* Photoshop-like skin: menu bar, options bar, tool column, document tabs, docked panels. */
+
+html[data-skin="photoshop"] {
+  --font-ui: "Adobe Clean", "Source Sans 3", "Source Sans Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fs-ui: 12px;
+  --ui-bg: #323232; --ui-bg2: #282828; --ui-fg: #d6d6d6; --ui-muted: #9a9a9a; --ui-border: #1f1f1f;
+  --ui-hover: #3e3e3e; --ui-active: #1473e6; --accent: #1473e6; --canvas-bg: #1e1e1e;
+  --sel: #1473e6; --guide: #ff38c8; --handle-bg: #ffffff; --handle-border: #1f1f1f;
+  --input-bg: #1f1f1f; --input-hover: #242424; --input-border: #414141; --radius: 2px;
+  --pop-bg: #323232; --menu-bg: #3a3a3a; --menu-fg: #e8e8e8; --menu-hover: #1473e6;
+  --checker: repeating-conic-gradient(#3a3a3a 0 25%, #2a2a2a 0 50%) 0 0 / 10px 10px;
+  --pop-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+html[data-skin="photoshop"][data-theme="light"] {
+  --ui-bg: #f0f0f0; --ui-bg2: #e4e4e4; --ui-fg: #2b2b2b; --ui-muted: #6e6e6e; --ui-border: #c8c8c8;
+  --ui-hover: #dcdcdc; --canvas-bg: #d2d2d2; --input-bg: #ffffff; --input-hover: #ffffff; --input-border: #b8b8b8;
+  --pop-bg: #f0f0f0; --menu-bg: #f5f5f5; --menu-fg: #2b2b2b; --checker: repeating-conic-gradient(#ddd 0 25%, #fff 0 50%) 0 0 / 10px 10px;
+}
+html[data-skin="photoshop"] .popover { border-color: #1a1a1a; border-radius: 4px; }
+html[data-skin="photoshop"] .pop-menu { border-radius: 3px; padding: 4px 0; min-width: 240px; border: 1px solid #1a1a1a; }
+html[data-skin="photoshop"] .menu-item { border-radius: 0; height: 24px; padding: 0 16px 0 10px; }
+html[data-skin="photoshop"] .menu-sep { background: #555; margin: 4px 0; }
+html[data-skin="photoshop"] .icon-btn { border-radius: 3px; }
+html[data-skin="photoshop"] .icon-btn.on { background: #505050; color: #fff; }
+html[data-skin="photoshop"] .btn { border-radius: 3px; background: #454545; border-color: #1f1f1f; color: var(--ui-fg); height: 26px; }
+html[data-skin="photoshop"][data-theme="light"] .btn { background: #fafafa; border-color: #b8b8b8; }
+html[data-skin="photoshop"] .btn-primary,
+html[data-skin="photoshop"][data-theme="light"] .btn-primary,
+html[data-skin="photoshop"][data-theme="light"] .ps-share { background: #1473e6; color: #fff; border-color: transparent; }
+html[data-skin="photoshop"] .font-row.on { background: #1473e6; color: #fff; }
+html[data-skin="photoshop"] .num-field { border: 1px solid var(--input-border); height: 24px; }
+html[data-skin="photoshop"] .font-btn { height: 24px; border-radius: 2px; background: var(--input-bg); border-color: var(--input-border); }
+html[data-skin="photoshop"] .segmented { background: transparent; }
+html[data-skin="photoshop"] .segmented .icon-btn.on { background: #505050; color: #fff; box-shadow: none; }
+
+.skin-photoshop { flex-direction: column; background: var(--ui-bg); }
+.ps-menubar { height: 30px; flex: none; display: flex; align-items: center; gap: 0; padding: 0 6px 0 4px; background: #2b2b2b; border-bottom: 1px solid #1a1a1a; }
+html[data-theme="light"] .ps-menubar { background: #e6e6e6; border-color: #c4c4c4; }
+.ps-logo { margin: 0 8px 0 4px; }
+.mark-pixel { background: #4a4a4a; color: #e8e8e8; border-radius: 4px; }
+.ps-menu { height: 26px; border: 0; background: transparent; padding: 0 9px; cursor: default; border-radius: 3px; }
+.ps-menu:hover { background: var(--ui-hover); }
+.ps-share { height: 22px; background: #1473e6; color: #fff; border: 0; border-radius: 11px; padding: 0 12px; font-weight: 600; font-size: 12px; margin-left: 6px; }
+.ps-share:hover:not(:disabled) { background: #0d66d0; }
+.ps-mini { height: 24px; min-width: 24px; padding: 0 3px; }
+
+.ps-options { height: 38px; flex: none; display: flex; align-items: center; padding: 0 8px; background: var(--ui-bg); border-bottom: 1px solid var(--ui-border); overflow-x: auto; }
+.ps-optgroup { display: flex; align-items: center; gap: 8px; flex: none; }
+.ps-tool-ic { display: inline-flex; padding: 4px 8px 4px 2px; border-right: 1px solid #444; margin-right: 2px; }
+.ps-optlabel { color: var(--ui-muted); white-space: nowrap; }
+.ps-font { width: 180px; }
+.ps-select { height: 24px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 2px; padding: 0 4px; color: var(--ui-fg); }
+.ps-num { width: 96px; flex: none; }
+.ps-color .color-chip { width: 26px; height: 20px; border-radius: 1px; border: 1px solid #111; }
+.ps-color .field-label { min-width: 0; }
+.ps-btn { height: 24px; }
+
+.ps-body { flex: 1; display: flex; min-height: 0; }
+html[data-layout="swap"] .ps-body { flex-direction: row-reverse; }
+.ps-tools { width: 40px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; background: var(--ui-bg); border-right: 1px solid var(--ui-border); }
+.ps-tool { width: 30px; height: 30px; min-width: 30px; padding: 0; }
+.ps-tool.on { background: #505050 !important; color: #fff; }
+.ps-tsep { width: 24px; height: 1px; background: #4a4a4a; margin: 4px 0; }
+.ps-swatches { position: relative; width: 30px; height: 30px; margin-top: 4px; }
+.ps-fg { position: absolute; left: 1px; top: 1px; width: 18px; height: 18px; border: 1px solid #ddd; outline: 1px solid #111; z-index: 2; padding: 0; cursor: pointer; }
+.ps-bgc { position: absolute; right: 1px; bottom: 1px; width: 18px; height: 18px; background: #fff; border: 1px solid #ddd; outline: 1px solid #111; }
+
+.ps-docarea { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--canvas-bg); }
+.ps-doctabs { height: 28px; flex: none; display: flex; align-items: flex-end; background: #282828; border-bottom: 1px solid #1a1a1a; }
+html[data-theme="light"] .ps-doctabs { background: #dcdcdc; border-color: #c4c4c4; }
+.ps-doctab { display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 6px 0 12px; background: #3a3a3a; color: #e8e8e8; font-size: 12px; border-right: 1px solid #1a1a1a; }
+html[data-theme="light"] .ps-doctab { background: #f0f0f0; color: #2b2b2b; }
+.ps-doctab-x { height: 18px; min-width: 18px; }
+.ps-stage { flex: 1; }
+.ps-status { height: 22px; flex: none; display: flex; align-items: center; padding: 0 10px; font-size: 11px; color: var(--ui-muted); background: var(--ui-bg); border-top: 1px solid var(--ui-border); font-variant-numeric: tabular-nums; white-space: pre; }
+
+.ps-dock { width: 316px; flex: none; display: flex; flex-direction: column; gap: 2px; background: #262626; border-left: 1px solid var(--ui-border); min-height: 0; }
+html[data-theme="light"] .ps-dock { background: #d6d6d6; }
+html[data-layout="swap"] .ps-dock { border-left: 0; border-right: 1px solid var(--ui-border); }
+.ps-group { background: var(--ui-bg); display: flex; flex-direction: column; min-height: 0; max-height: 52%; }
+.ps-group.grow { flex: 1; max-height: none; }
+.ps-tabs { height: 28px; flex: none; display: flex; align-items: flex-end; background: #2b2b2b; border-bottom: 1px solid #1f1f1f; padding-left: 2px; }
+html[data-theme="light"] .ps-tabs { background: #e0e0e0; border-color: #c4c4c4; }
+.ps-tabs .tab { height: 25px; border: 0; padding: 0 12px; background: transparent; color: var(--ui-muted); cursor: pointer; font-weight: 600; font-size: 12px; border-radius: 0; }
+.ps-tabs .tab.on { background: var(--ui-bg); color: var(--ui-fg); }
+.ps-dock-body { overflow: auto; min-height: 0; display: flex; flex-direction: column; }
+.ps-layers { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.ps-layer-head { padding: 6px 8px; display: flex; flex-direction: column; gap: 6px; border-bottom: 1px solid var(--ui-border); flex: none; }
+.ps-row { display: flex; align-items: center; gap: 6px; }
+.ps-layer-head .ps-num { width: 118px; }
+.ps-layer-foot { display: flex; justify-content: flex-end; align-items: center; gap: 2px; padding: 3px 6px; border-top: 1px solid var(--ui-border); flex: none; }
+.skin-photoshop .layers { flex: 1; padding: 0; }
+.skin-photoshop .layer-row { height: 38px; border-bottom: 1px solid #262626; padding: 0 6px 0 2px; }
+.skin-photoshop .layer-row.selected { background: #4b4b4b; }
+html[data-theme="light"][data-skin="photoshop"] .layer-row.selected { background: #c8d9f2; }
+.skin-photoshop .layer-row .layer-eye { opacity: 1; }
+.skin-photoshop .layer-thumb { width: 30px; height: 30px; border-radius: 0; border: 1px solid #1a1a1a; }
+.skin-photoshop .text-thumb { background: #505050; color: #fff; font-family: inherit; }
+.skin-photoshop .inspector .insp-section { border-bottom: 1px solid #262626; padding: 8px 10px; }
+.skin-photoshop .inspector .insp-title { text-transform: none; font-weight: 700; }
+
+.skin-photoshop .overlay .sel-box { border: 1px solid #1473e6; }
+.skin-photoshop .handle { width: 7px; height: 7px; border-radius: 0; border: 1px solid #000; background: #fff; }
+.skin-photoshop .handle.side { opacity: 1; }
+.skin-photoshop .size-badge { background: rgba(40, 40, 40, 0.92); color: #e8e8e8; border: 1px solid #111; border-radius: 2px; }
+.skin-photoshop .artboard { box-shadow: 0 0 0 1px #111, 0 4px 18px rgba(0,0,0,.45); }
+.skin-photoshop .presence { background: #1473e6; }
+html[data-skin="photoshop"] .ps-share { background: #1473e6; color: #fff; border: 0; height: 22px; border-radius: 11px; }
+html[data-skin="photoshop"] .ps-share:hover:not(:disabled) { background: #0d66d0; }
+
+/* Toolbar: Photoshop's single tall column of small tools; two columns when the window is short. */
+.ps-tools { gap: 0; padding: 4px 0; overflow: hidden; }
+.ps-tool { width: 30px; height: 27px; min-width: 30px; }
+.ps-tsep { margin: 3px 0; }
+@media (max-height: 420px) {
+  .ps-tools { width: 62px; flex-direction: row; flex-wrap: wrap; align-content: flex-start; justify-content: center; }
+  .ps-tools .ps-tsep { width: 52px; }
+}
+.ps-home { width: 28px; height: 26px; margin-right: 4px; }
+
+/* Dock groups: Color | Swatches (fixed height), Properties | Adjustments | Libraries, Layers | Channels | Paths. */
+.ps-group-color { flex: none; }
+.ps-group-color .ps-dock-body { height: 132px; overflow: hidden; }
+.ps-colorpanel { padding: 6px 8px; }
+.ps-colorpanel .color-picker { width: 100%; }
+.ps-colorpanel .cp-sv { height: 74px; }
+.ps-colorpanel .cp-swatches, .ps-colorpanel .cp-section { display: none; }
+.ps-swatch-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; padding: 8px; }
+.ps-swatch { aspect-ratio: 1; border: 1px solid #1a1a1a; border-radius: 1px; padding: 0; cursor: pointer; min-width: 0; }
+@media (max-height: 700px) { .ps-group-color .ps-dock-body { display: none; } }
+/* Panel tabs stay on one row at any dock width, as Photoshop's do. */
+.ps-tabs { overflow: hidden; }
+.ps-tabs .tab { padding: 0 9px; flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1100px) { .ps-tabs .tab { padding: 0 6px; font-size: 11px; } }
+
+/* Photoshop details: corner triangles on grouped tools */
+.ps-tool { position: relative; }
+.ps-tools .ps-tool:not([data-command="toolHand"]):not([title^="Edit Toolbar"])::after { content: ""; position: absolute; right: 3px; bottom: 3px; border-left: 3px solid transparent; border-bottom: 3px solid currentColor; opacity: 0.55; }
+
+/* ------------------------------------------------------------ Color Picker dialog (Photoshop / Photopea) */
+.ps-colordialog { padding: 0 !important; border-radius: 4px !important; background: #535353 !important; border: 1px solid #262626 !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,.6) !important; color: #e8e8e8; font-size: 12px; }
+html[data-theme="light"] .ps-colordialog { background: #f0f0f0 !important; border-color: #9a9a9a !important; color: #1b1b1b; }
+.pcp { width: 560px; display: flex; flex-direction: column; }
+.pcp-head { display: flex; align-items: center; justify-content: space-between; height: 28px; padding: 0 6px 0 10px; font-weight: 600; background: rgba(0,0,0,.18); cursor: default; }
+.pcp-x { border: 0; background: transparent; color: inherit; font-size: 18px; line-height: 1; cursor: default; }
+.pcp-main { display: flex; gap: 10px; padding: 12px; }
+.pcp-field { position: relative; width: 256px; height: 256px; flex: none; cursor: crosshair; outline: 1px solid rgba(0,0,0,.5); }
+.pcp-knob { position: absolute; width: 11px; height: 11px; border-radius: 50%; border: 1px solid #fff; box-shadow: 0 0 0 1px #000; transform: translate(-50%, -50%); pointer-events: none; }
+.pcp-strip { position: relative; width: 20px; height: 256px; flex: none; cursor: pointer; outline: 1px solid rgba(0,0,0,.5);
+  background: linear-gradient(to bottom, #f00, #f0f, #00f, #0ff, #0f0, #ff0, #f00); }
+.pcp-arrow { position: absolute; left: -6px; right: -6px; height: 0; border-top: 2px solid #fff; box-shadow: 0 0 0 1px #000; transform: translateY(-1px); pointer-events: none; }
+.pcp-side { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pcp-top { display: flex; gap: 10px; }
+.pcp-swatch { width: 64px; display: flex; flex-direction: column; align-items: center; }
+.pcp-cap { font-size: 11px; opacity: .8; }
+.pcp-new, .pcp-cur { width: 64px; height: 32px; outline: 1px solid rgba(0,0,0,.5); }
+.pcp-cur { cursor: pointer; }
+.pcp-btns { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.pcp-btns .btn { height: 24px; border-radius: 3px; font-size: 12px; }
+.pcp-grid { display: flex; gap: 12px; }
+.pcp-col { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.pcp-gap { height: 6px; }
+.pcp-f { display: flex; align-items: center; gap: 4px; height: 22px; }
+.pcp-l { width: 18px; text-align: right; }
+.pcp-u { width: 14px; opacity: .8; }
+.pcp-in, .pcp-hex { width: 52px; height: 20px; padding: 0 4px; border: 1px solid #262626; border-radius: 2px; background: #3a3a3a; color: inherit; font: inherit; }
+html[data-theme="light"] .pcp-in, html[data-theme="light"] .pcp-hex { background: #fff; border-color: #9a9a9a; }
+.pcp-hexrow .pcp-hex { width: 80px; }
+.ps-editbtns { display: inline-flex; gap: 4px; }
+.ps-editbtns[hidden] { display: none; }
+.ps-edit-x, .ps-edit-ok { height: 26px; min-width: 26px; }
+.ps-checklabel { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; padding: 0 4px; }
+.ps-check { margin: 0; accent-color: #1473e6; }
+.ps-optgroup:has(.ps-editbtns:not([hidden])) { flex: 1; }
+.pcp-hexrow { align-self: flex-start; }

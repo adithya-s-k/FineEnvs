@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# `ray` shim (first on PATH via raylimits.sh): `ray start` gets --num-cpus ${RAY_CPU_CAP:-32}. Miles starts Ray
+# without --num-cpus, so on a 192-CPU node Ray prestarts ~192 workers with dozens of threads each.
+here=$(cd "$(dirname "$0")" && pwd)
+real=$(PATH=$(echo "$PATH" | tr ':' '\n' | grep -v -x "$here" | paste -sd: -) command -v ray)
+if [ "${1:-}" = start ]; then exec "$real" "$@" --num-cpus "${RAY_CPU_CAP:-32}"; fi
+exec "$real" "$@"
