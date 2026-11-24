@@ -17,6 +17,22 @@ only adds a small bonus.
 One honest caveat: "the library supports this step" means a real reaction like it is on record,
 not that the reaction will work in a lab. No yield, no selectivity, no safety claim.
 
+## The result
+
+**Qwen3.8-27B trained on it with GRPO goes from 0.118 to 0.338 pass@1** on the held-out `core150`
+set, with the hard tier going 0.035 to 0.18. Non-thinking, the same recipe goes 0.015 to 0.200.
+
+![pass@1 on core150 by training step](results/training-curve.svg)
+
+Restricted to the thirty tasks the [13-model board](results/core30-board.md) is scored on, the
+trained model solves 14 on first attempt against the base model's 4 — ten tasks fixed, none broken.
+That is not a like-for-like comparison with the board, which runs greedy with thinking off while
+ours samples and thinks; the two base-model measurements, 0.100 on the board and 0.133 in our
+harness, put that difference at about one task in thirty.
+
+Both mixed-pool runs climb to a peak and then decline, and there is no reference-KL penalty in this
+setup. [`results/`](results) has the four runs, the board, and the honest version of all of it.
+
 ## Quick start
 
 ```bash
@@ -32,9 +48,16 @@ uv run bash envs/retro_route/openenv/start.sh      # http://localhost:8000/web/
 uv run python explorer/server.py                   # http://127.0.0.1:8050
 ```
 
+Everything below is in the [RetroEnv collection](https://huggingface.co/collections/FineEnvs/retroenv-6b0584ffc015c651084dc6ea).
+
 | Hosted | Where |
 |---|---|
 | The environment server and playground | [FineEnvs/retroenv](https://huggingface.co/spaces/FineEnvs/retroenv) |
+| Real rollouts for all 15 models, drawn | [FineEnvs/retroenv-rollouts](https://huggingface.co/spaces/FineEnvs/retroenv-rollouts) |
+| Best checkpoint, merged (thinking) | [retroenv-qwen3.8-27b-grpo](https://huggingface.co/FineEnvs/retroenv-qwen3.8-27b-grpo) |
+| Best checkpoint, merged (non-thinking) | [retroenv-qwen3.8-27b-grpo-nothink](https://huggingface.co/FineEnvs/retroenv-qwen3.8-27b-grpo-nothink) |
+| All 42 LoRA adapters, one folder each | [retroenv-qwen3.8-27b-grpo-checkpoints](https://huggingface.co/FineEnvs/retroenv-qwen3.8-27b-grpo-checkpoints) |
+| Every run: checkpoints, episodes, logs | [AdithyaSK/retroenv-rl-runs](https://huggingface.co/buckets/AdithyaSK/retroenv-rl-runs) |
 | The pinned serving copy and its prebuilt index | [FineEnvs/retroenv-bucket](https://huggingface.co/buckets/FineEnvs/retroenv-bucket) |
 
 ## The data
@@ -199,6 +222,7 @@ was done.
 | [`eval/`](eval) | `run_eval.py` through the server, boards and summaries |
 | [`train/`](train) | SFT and GRPO recipes, HF Jobs launchers, the difficulty sweep |
 | [`research/reward/`](research/reward) | The reward study: evidence cache, candidate rewards, hack probes, ablation |
+| [`results/`](results) | The four training runs, the 13-model board, and the curve |
 | [`explorer/`](explorer) | Local browser for a release, with route graphs and live play |
 | [`tests/`](tests) | Unit and integration tests, and the committed mini-release fixture |
 
