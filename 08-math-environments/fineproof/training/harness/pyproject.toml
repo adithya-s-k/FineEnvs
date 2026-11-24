@@ -1,0 +1,14 @@
+[project]
+name = "fineproof-agent"
+version = "1.0.0"
+description = "The FineProof harness as a Harbor agent: write an olympiad proof in one call, optionally check and rewrite it."
+requires-python = ">=3.12"
+# Tested with Harbor 0.24 (the training run, requirements.txt) and 0.25 (the published task datasets).
+dependencies = ["harbor>=0.24,<0.26", "httpx>=0.27"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["fineproof_agent"]

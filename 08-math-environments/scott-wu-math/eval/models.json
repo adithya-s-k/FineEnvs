@@ -1,0 +1,29 @@
+{
+  "_comment": "Each model has a 'think' setting (its own reasoning, effort high) and a 'nothink' setting (reasoning off, or the lowest the model allows; floor=true marks that). HF models go through Inference Providers at router.huggingface.co.",
+  "models": [
+    {"id": "gpt-6.1-sol", "label": "GPT-6.1 Sol", "org": "OpenAI", "open": false, "api": "openai",
+     "think": {"effort": "high"}, "nothink": {"effort": "low", "floor": true}},
+    {"id": "gpt-6-luna", "label": "GPT-6 Luna", "org": "OpenAI", "open": false, "api": "openai",
+     "think": {"effort": "high"}, "nothink": {"effort": "none"}},
+    {"id": "claude-opus-5-5", "label": "Claude Opus 5.5", "org": "Anthropic", "open": false, "api": "anthropic",
+     "think": {"effort": "high"}, "nothink": {"effort": "low", "floor": true}},
+    {"id": "claude-sonnet-5-5", "label": "Claude Sonnet 5.5", "org": "Anthropic", "open": false, "api": "anthropic",
+     "think": {"effort": "high"}, "nothink": {"thinking": "between_tools", "effort": "high"}},
+    {"id": "claude-haiku-5-5", "label": "Claude Haiku 5.5", "org": "Anthropic", "open": false, "api": "anthropic",
+     "think": {"effort": "high"}, "nothink": {"thinking": "disabled", "effort": "high"}},
+    {"id": "Qwen/Qwen3.8-2.4T-A95B:deepinfra", "label": "Qwen3.8 2.4T", "org": "Qwen", "open": true, "api": "hf",
+     "think": {}, "nothink": {"enable_thinking": false}},
+    {"id": "deepseek-ai/DeepSeek-V4-Pro-0813:novita", "label": "DeepSeek V4 Pro", "org": "DeepSeek", "open": true, "api": "hf",
+     "think": {}, "nothink": {"enable_thinking": false}},
+    {"id": "moonshotai/Kimi-K2.6:deepinfra", "label": "Kimi K2.6", "org": "Moonshot AI", "open": true, "api": "hf",
+     "think": {}, "nothink": {"enable_thinking": false}},
+    {"id": "zai-org/GLM-5.3:novita", "label": "GLM-5.3", "org": "Z.ai", "open": true, "api": "hf",
+     "think": {}, "nothink": {"enable_thinking": false}},
+    {"id": "Qwen/Qwen3.8-27B:novita", "label": "Qwen3.8 27B", "org": "Qwen", "open": true, "api": "hf",
+     "think": {}, "nothink": {"enable_thinking": false}},
+    {"id": "openai/gpt-oss-120b:cerebras", "label": "gpt-oss-120b", "org": "OpenAI", "open": true, "api": "hf",
+     "think": {"reasoning_effort": "high"}, "nothink": {"reasoning_effort": "low", "floor": true}},
+    {"id": "google/gemma-4-31B-it:deepinfra", "label": "Gemma 4 31B", "org": "Google", "open": true, "api": "hf",
+     "think": {}, "nothink": {"enable_thinking": false}}
+  ]
+}
