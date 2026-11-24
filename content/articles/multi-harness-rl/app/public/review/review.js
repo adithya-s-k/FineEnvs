@@ -304,7 +304,7 @@
 
   const renderPanel = () => {
     panel.hidden = !(me.reviewer && (historyOpen || (!geo.margin && active)));
-    if (panel.hidden) return;
+    if (panel.hidden) { panelList.innerHTML = ''; return; }
     const counts = { open: threads.filter((t) => t.status !== 'resolved').length, resolved: threads.filter((t) => t.status === 'resolved').length, all: threads.length };
     tabs.innerHTML = ['open', 'resolved', 'all'].map((f) => `<button type="button" class="rv-tab${filter === f ? ' is-on' : ''}" data-filter="${f}">${f[0].toUpperCase() + f.slice(1)} ${counts[f]}</button>`).join('');
     const list = threads.filter((t) => filter === 'all' || (filter === 'resolved' ? t.status === 'resolved' : t.status !== 'resolved'));
@@ -355,7 +355,39 @@
     if (note) { note.style.top = `${window.scrollY + 64}px`; note.style.left = `${geo.left}px`; note.style.width = `${geo.width}px`; }
   };
 
+  // Cards are rebuilt for errors, refreshes and layout changes. Keep unsent text
+  // keyed by its thread/message and field, including when it moves into the panel.
+  const preserveDrafts = () => {
+    const key = (ta) => JSON.stringify([ta.closest('.rv-card')?.dataset.thread,
+      ta.closest('.rv-msg')?.dataset.mid, ta.dataset.role || (ta.classList.contains('rv-edit') ? 'edit' : 'reply')]);
+    const drafts = new Map();
+    ui.querySelectorAll('textarea').forEach((ta) => {
+      const version = Number(ta.dataset.draftVersion || 0);
+      if ((drafts.get(key(ta))?.version ?? -1) > version) return;
+      drafts.set(key(ta), {
+        value: ta.value, rows: ta.rows, start: ta.selectionStart, end: ta.selectionEnd,
+        focused: document.activeElement === ta, version,
+        replyActionsHidden: ta.closest('.rv-reply')?.querySelector('.rv-reply-actions')?.hidden,
+      });
+    });
+    return () => ui.querySelectorAll('textarea').forEach((ta) => {
+      const draft = drafts.get(key(ta)); if (!draft) return;
+      ta.value = draft.value; ta.rows = draft.rows;
+      ta.dataset.draftVersion = draft.version;
+      const actions = ta.closest('.rv-reply')?.querySelector('.rv-reply-actions');
+      if (actions && draft.replyActionsHidden !== undefined) actions.hidden = draft.replyActionsHidden;
+      if (draft.focused) ta.focus({ preventScroll: true });
+      ta.setSelectionRange(draft.start, draft.end);
+    });
+  };
+
+  let draftVersion = 0;
+  ui.addEventListener('input', (event) => {
+    if (event.target.matches('textarea')) event.target.dataset.draftVersion = ++draftVersion;
+  });
+
   const render = () => {
+    const restore = preserveDrafts();
     measure();
     anchors = anchorAll();
     markActive();
@@ -364,6 +396,7 @@
     renderPanel();
     const ta = ui.querySelector('textarea[data-role="replace"]') || ui.querySelector('textarea[data-role="new"]') || ui.querySelector('textarea.rv-edit');
     if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+    restore();
   };
 
   const activate = (tid, { scroll = false } = {}) => {
@@ -524,7 +557,7 @@
       if (act === 'send-reply') {
         const ta = card.querySelector('.rv-reply textarea'); const body = ta.value.trim(); if (!body) return;
         btn.disabled = true;
-        replace(await call('POST', `/threads/${tid}/replies`, { body })); activate(tid);
+        replace(await call('POST', `/threads/${tid}/replies`, { body })); ta.value = ''; activate(tid);
       }
       if (act === 'cancel-reply') { const ta = card.querySelector('.rv-reply textarea'); ta.value = ''; ta.rows = 1; ta.blur(); card.querySelector('.rv-reply-actions').hidden = true; layout(); }
       if (act === 'menu') {
@@ -580,7 +613,9 @@
 
   // Figures render after the page loads and change height, which moves every anchor below them.
   let raf = 0;
-  const relayout = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { measure(); renderMargin(); }); };
+  const relayout = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => {
+    const restore = preserveDrafts(); measure(); renderMargin(); renderPanel(); restore();
+  }); };
   if ('ResizeObserver' in window) new ResizeObserver(relayout).observe(main);
   window.addEventListener('resize', relayout);
 
