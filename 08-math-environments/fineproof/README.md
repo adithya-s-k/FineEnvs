@@ -8,7 +8,7 @@
 
 <a href="https://huggingface.co/FineEnvs/Qwen3.5-2B-FineProof-RL"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Model-Qwen3.5--2B--FineProof--RL-4F46E5?style=for-the-badge&labelColor=1a1a1a" alt="The trained model" height="32"></a>
 <a href="https://huggingface.co/spaces/FineEnvs/fineproof-rl-trackio"><img src="https://img.shields.io/badge/%F0%9F%93%88%20Trackio-Training%20logs%20%26%20evals-FFD21E?style=for-the-badge&labelColor=1a1a1a" alt="The Trackio dashboard" height="32"></a>
-<a href="https://huggingface.co/collections/FineEnvs/math-environments-6af40312bf237e3c32912840"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Collection-Math%20Environments-10B981?style=for-the-badge&labelColor=1a1a1a" alt="The collection" height="32"></a>
+<a href="https://huggingface.co/collections/FineEnvs/fineproofenvs-6b057b65f75cc8afbc1579aa"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Collection-FineProofEnvs-10B981?style=for-the-badge&labelColor=1a1a1a" alt="The FineProofEnvs collection" height="32"></a>
 <a href="https://github.com/harbor-framework/harbor"><img src="https://img.shields.io/badge/framework-Harbor-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="Harbor" height="32"></a>
 <a href="https://huggingface.co/spaces/lm-provers/qed-nano-blogpost"><img src="https://img.shields.io/badge/%F0%9F%93%84%20Source-QED--Nano%20blog%20post-10B981?style=for-the-badge&labelColor=1a1a1a" alt="The QED-Nano blog post" height="32"></a>
 

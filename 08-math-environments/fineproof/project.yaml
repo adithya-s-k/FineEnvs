@@ -9,7 +9,7 @@ authors:
 
 hub:
   org: FineEnvs
-  collection: FineEnvs/math-environments-6af40312bf237e3c32912840
+  collection: FineEnvs/fineproofenvs-6b057b65f75cc8afbc1579aa
   models:
     - FineEnvs/Qwen3.5-2B-FineProof-RL
   datasets:
