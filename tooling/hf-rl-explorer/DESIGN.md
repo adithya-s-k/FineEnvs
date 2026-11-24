@@ -242,3 +242,38 @@ This public tooling directory contains only the Explorer. The dashboard applicat
 its assets, membership checks, tests and deployment tooling are maintained separately
 in the private `FineEnvs/RL-Explorer-admin` Space. The Explorer reads shared settings
 and moderation requests from the data bucket without importing the admin app.
+
+## Search indexing and social previews
+
+The Space card uses the committed `web/social/rl-explorer.png` thumbnail, so a
+sharing crawler does not have to start the application. HTML pages also publish
+Open Graph and Twitter metadata with 1200×630 previews. Page-specific images fit
+long names into the card; public task links retain their own canonical address
+both in the initial HTML and after browser navigation.
+
+`/sitemap.xml` links to shards of up to 10,000 public task URLs. Dataset tasks come
+from local indexes or the immutable catalog snapshot, with MiMo entries deduplicated.
+OpenEnv task coordinates come from advertised split counts on checked public
+Spaces. Their sitemaps expand ranges one shard at a time, without downloading tasks
+or creating millions of URLs in memory. These counts describe published entries,
+not individually tested episodes or Google-indexed pages.
+
+Space-check inventory refreshes outside request threads and never holds the reader
+lock during bucket I/O. Writes update the cached record immediately; concurrent
+refreshes preserve newer evidence. A cold process temporarily has no verified
+Spaces, and cached evidence still expires according to its original check time.
+
+Task HTML includes public task text or structured input facts. Public row datasets
+and OpenEnv Task API records can be read anonymously on demand, with four concurrent
+reads and bounded caches. These reads do not build an index, wake a Space, run an
+episode, or forward a visitor's token. The existing answer-withholding rules apply.
+Invalid tasks return 404; temporary upstream failures return 503 with Retry-After.
+Private, gated and hidden content is excluded from sitemap generation.
+
+Public read APIs may be fetched to render the interactive pages, but API responses
+carry X-Robots-Tag: noindex. Rollouts, account pages and comparisons remain excluded.
+Submit `https://fineenvs-rl-explorer.hf.space/sitemap.xml` for the matching URL-prefix
+property in Google Search Console to monitor discovery and indexing. Robots.txt
+also advertises it. Google chooses which pages to index; no application setting
+can guarantee indexing or rankings. See Google's sitemap guidance:
+https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap
