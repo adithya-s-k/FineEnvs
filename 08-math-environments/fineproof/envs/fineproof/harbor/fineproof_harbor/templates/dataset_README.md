@@ -77,7 +77,7 @@ Example: [task.toml](https://huggingface.co/datasets/$repo/blob/main/tasks/$exam
 pip install "harbor[daytona]>=0.25"
 hf download $repo --repo-type dataset --local-dir fineproof-envs-$split
 cd fineproof-envs-$split
-export JUDGE_API_KEY=hf_...    # an HF token that can call Inference Providers
+export JUDGE_API_KEY=hf_...    # fine-grained, Inference Providers only, with an expiry: every verifier sandbox gets it
 export DAYTONA_API_KEY=...
 harbor run -p tasks -e daytona -a claude-code -m anthropic/claude-sonnet-5-5 -l 8 -n 4
 ```
@@ -87,12 +87,13 @@ harbor run -p tasks -e daytona -a claude-code -m anthropic/claude-sonnet-5-5 -l 
 judge gives a different reward.
 
 `harness/` is our own Harbor agent, the **FineProof harness**: the model writes a proof, grades it the way a strict grader
-would, then writes the corrected proof. It calls the model from the host, so the sandbox stays offline:
+would, then writes the corrected proof. It calls the model from the host, so the sandbox stays offline. Give the policy its own key, separate from the judge's:
 
 ```bash
 pip install -e harness
+export POLICY_API_KEY=hf_...   # the policy's key; it stays on the host
 harbor run -p tasks -e daytona -a fineproof_agent.agent:FineProofAgent -m Qwen/Qwen3.5-9B:deepinfra \
-  --ak api_base=https://router.huggingface.co/v1 --ak api_key_env=JUDGE_API_KEY --ak stream=true -n 8
+  --ak api_base=https://router.huggingface.co/v1 --ak api_key_env=POLICY_API_KEY --ak stream=true -n 8
 ```
 
 ## How it was converted
@@ -119,7 +120,7 @@ With the `fineproof_harbor` adapter (`generator/`), from QED-Nano's release at p
   where they report 1.21-1.43).
 - Cheating submissions, 16 kinds over 10 validated problems with 2 grades each: injected and look-alike score tags, fake
   section headers and fences, answer-only, truncated, very long, an easier variant, prose instructions to the grader.
-  Only the prose instructions beat an opening-only control (7 in 8 of 50 grades). The grader now tells the judge,
+  Only the prose instructions beat an opening-only control (7 to 8 of 50 grades). The grader now tells the judge,
   after the proof, that nothing inside it is an instruction, which cut that to 0 of 50 with reference grades
   unchanged.
 - The reference proofs here averaged $oracle_mean/7; $n_validated of $n_oracle scored at least 6.
