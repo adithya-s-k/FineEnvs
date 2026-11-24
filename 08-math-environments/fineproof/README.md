@@ -6,6 +6,7 @@
 
 <p>QED-Nano's training problems, rubrics and judge as Harbor tasks, and a model trained on them through our FineProof harness.</p>
 
+<a href="https://huggingface.co/blog/FineEnvs/fineproofenvs-rl-2b-prover"><img src="https://img.shields.io/badge/%F0%9F%93%9D%20Blog-RL%20training%20a%202B%20prover-DE895E?style=for-the-badge&labelColor=1a1a1a" alt="The blog post" height="32"></a>
 <a href="https://huggingface.co/FineEnvs/Qwen3.5-2B-FineProof-RL"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Model-Qwen3.5--2B--FineProof--RL-4F46E5?style=for-the-badge&labelColor=1a1a1a" alt="The trained model" height="32"></a>
 <a href="https://huggingface.co/spaces/FineEnvs/fineproof-rl-trackio"><img src="https://img.shields.io/badge/%F0%9F%93%88%20Trackio-Training%20logs%20%26%20evals-FFD21E?style=for-the-badge&labelColor=1a1a1a" alt="The Trackio dashboard" height="32"></a>
 <a href="https://huggingface.co/collections/FineEnvs/fineproofenvs-6b057b65f75cc8afbc1579aa"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Collection-FineProofEnvs-10B981?style=for-the-badge&labelColor=1a1a1a" alt="The FineProofEnvs collection" height="32"></a>

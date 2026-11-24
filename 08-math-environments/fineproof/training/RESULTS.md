@@ -4,6 +4,7 @@ Qwen3.5-2B, non-thinking mode, trained with AsyncGRPO through the FineProof harn
 gpt-oss-20b's rubric score / 7. Everything ran on Hugging Face: HF Jobs for the trainer, the policy engine and the
 evals; HF Sandboxes for the task containers; Inference Providers for the judge; a bucket for checkpoints and logs.
 
+- **Blog post:** [FineProofEnvs: RL Training a 2B Math Prover with a Custom Harness](https://huggingface.co/blog/FineEnvs/fineproofenvs-rl-2b-prover), the short version.
 - **Model:** [`FineEnvs/Qwen3.5-2B-FineProof-RL`](https://huggingface.co/FineEnvs/Qwen3.5-2B-FineProof-RL), the
   step-500 checkpoint in bf16.
 - **Logs:** the [Trackio dashboard](https://huggingface.co/spaces/FineEnvs/fineproof-rl-trackio) has every update and
