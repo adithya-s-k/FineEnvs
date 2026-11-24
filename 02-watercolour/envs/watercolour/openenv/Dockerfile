@@ -8,7 +8,7 @@ FROM mcr.microsoft.com/playwright/python:v1.62.0-noble
 
 WORKDIR /app/env
 
-# Build context is envs/watercolour_env/, not server/ and not the repo root.
+# Build context is envs/watercolour/ so both core/ and openenv/ are included.
 COPY . /app/env
 
 RUN pip install --no-cache-dir uv

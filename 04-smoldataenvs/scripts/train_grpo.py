@@ -139,7 +139,7 @@ def reward_correct(completions, **columns) -> list[float | None]:
     return [r["reward"] for r in _results(completions, **columns)]
 
 
-def reward_ran(completions, **columns) -> list[float]:
+def reward_ran(completions, **columns) -> list[float | None]:
     """Diagnostic only: did the program run and print anything?
 
     Carried at weight 0 (see reward_weights below) so it shows up in the logs
@@ -150,7 +150,9 @@ def reward_ran(completions, **columns) -> list[float]:
     900 tokens in five steps with a quarter of them hitting the cap. Correctness
     alone gives a usable signal -- the first step of every run scores around 0.3.
     """
-    return [r["ran"] for r in _results(completions, **columns)]
+    # TRL marks a completion unscorable only when ALL reward functions return None.
+    # Even a zero-weight diagnostic returning 0 would put a dead sandbox in the baseline.
+    return [r["ran"] if r["reward"] is not None else None for r in _results(completions, **columns)]
 
 
 def main() -> None:
@@ -253,7 +255,9 @@ def _dry_run(ds) -> None:
     print(batch[0]["prompt"][-1]["content"][:600])
     print("-" * 70)
     for i in range(n):
-        print(f"  completion {i}: correct={correct[i]:.1f} ran={ran[i]:.1f} (ran is logged, weight 0) gold={columns['answer'][i]!r}")
+        score = "ungraded" if correct[i] is None else f"{correct[i]:.1f}"
+        diagnostic = "ungraded" if ran[i] is None else f"{ran[i]:.1f}"
+        print(f"  completion {i}: correct={score} ran={diagnostic} (ran is logged, weight 0) gold={columns['answer'][i]!r}")
     assert correct[0] == 1.0 and ran[0] == 1.0, "a correct program should score 1.0 and run"
     assert correct[1] == 0.0, "a crashing program should score 0.0"
     print("\ndry run ok: rewards line up, sandbox torn down")
