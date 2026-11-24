@@ -836,7 +836,7 @@ function processMdxContent(content, latexContent = '') {
     return processedContent;
 }
 
-function convertToMdx(inputFile, outputFile) {
+function convertToMdx(inputFile, outputFile, sourceLatexFile = null) {
     console.log('📝 Modular Markdown to Astro MDX Converter');
     console.log(`📁 Input:  ${inputFile}`);
     console.log(`📁 Output: ${outputFile}`);
@@ -855,7 +855,7 @@ function convertToMdx(inputFile, outputFile) {
         let latexContent = '';
         try {
             const inputDir = dirname(inputFile);
-            const latexFile = join(inputDir, '..', 'input', 'main.tex');
+            const latexFile = sourceLatexFile || join(inputDir, '..', 'input', 'main.tex');
             if (existsSync(latexFile)) {
                 latexContent = readFileSync(latexFile, 'utf8');
             }
