@@ -1,0 +1,43 @@
+# Project manifest. `tools/build_index.py` renders the root README table from it.
+name: retroenv
+title: "RetroEnv"
+tagline: "Plan retrosyntheses back to purchasable molecules, scored step by step against a frozen reaction library, and Qwen3.8-27B trained to do it."
+order: 9
+status: trained
+
+authors:
+  - name: Anindyadeep Sannigrahi
+    github: Anindyadeep
+  - name: Adithya S Kolavi
+    github: adithya-s-k
+    affiliation: Hugging Face
+
+hub:
+  org: FineEnvs
+  collection: FineEnvs/retroenv-6b0584ffc015c651084dc6ea
+  spaces:
+    - FineEnvs/retroenv              # OpenEnv server and playground, serving the bucket snapshot
+    - FineEnvs/retroenv-rollouts     # training rollouts, curves and the model board
+  models:
+    - FineEnvs/retroenv-qwen3.8-27b-grpo              # best thinking checkpoint, merged
+    - FineEnvs/retroenv-qwen3.8-27b-grpo-nothink      # best non-thinking checkpoint, merged
+    - FineEnvs/retroenv-qwen3.8-27b-grpo-checkpoints  # every LoRA adapter, one folder each
+  datasets:
+    - LiteFold/RetroEnv-Curated      # the four curated splits: train, validation, test, heldout
+    - LiteFold/RetroEnv              # the full release: tasks, known routes, stock, reaction library
+  trackio:
+    - AdithyaSK/retroenv-rl          # trainer and checkpoint-eval curves for the mixed-pool runs
+  buckets:
+    - FineEnvs/retroenv-bucket       # serving copy: the pinned release, its index and final_eval
+    - AdithyaSK/retroenv-rl-runs     # every run: checkpoints, episodes, logs and eval boards
+
+envs:
+  - name: retro_route
+    summary: "Multi-turn retrosynthesis: stock and precedent search, disconnection checks, route-tree submission, dense verifier reward."
+    backend: rdkit-offline
+    tools: 9
+    frameworks:
+      openenv:
+        transport: http-mcp
+        verified: true
+        space: FineEnvs/retroenv

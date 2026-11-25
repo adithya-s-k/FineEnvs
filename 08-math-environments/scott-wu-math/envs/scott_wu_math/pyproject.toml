@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scott-wu-math"
+version = "0.1.0"
+description = "OpenEnv environment: make a target number from playing cards with + - * /, every card once"
+requires-python = ">=3.11"
+dependencies = [
+    "openenv>=0.10.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.24.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0", "httpx>=0.27.0", "websockets>=12.0"]
+eval = ["openai>=1.50.0", "anthropic>=2.1.0", "python-dotenv>=1.0.0"]
+
+[project.scripts]
+scott-wu-math-server = "scott_wu_math.server.app:main"
+
+[tool.setuptools]
+include-package-data = true
+packages = ["scott_wu_math", "scott_wu_math.server", "scott_wu_math.game"]
+package-dir = { "scott_wu_math" = ".", "scott_wu_math.server" = "server", "scott_wu_math.game" = "game" }
+
+[tool.setuptools.package-data]
+scott_wu_math = ["data/tasks/*.jsonl", "README.md", "openenv.yaml"]
+"scott_wu_math.server" = ["web/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

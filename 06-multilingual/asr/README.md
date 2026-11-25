@@ -11,7 +11,7 @@
 <a href="https://huggingface.co/spaces/FineEnvs/fleurs-asr-env"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Space-Try%20it%20now-FFD21E?style=for-the-badge&labelColor=1a1a1a" alt="Try the environment" height="32"></a>
 <a href="https://huggingface.co/FineEnvs/gemma-4-E4B-it-kannada-asr-grpo"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Model-Kannada%20ASR-4F46E5?style=for-the-badge&labelColor=1a1a1a" alt="The trained model" height="32"></a>
 <a href="https://huggingface.co/collections/FineEnvs/multilingual-multimodal-envs-6ac0c27c137f93e0799603e4"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Collection-Multilingual%20Multimodal%20Envs-10B981?style=for-the-badge&labelColor=1a1a1a" alt="The collection" height="32"></a>
-<a href="https://github.com/huggingface/OpenEnv"><img src="https://img.shields.io/badge/framework-OpenEnv-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="OpenEnv" height="32"></a>
+<a href="https://github.com/openenv/OpenEnv"><img src="https://img.shields.io/badge/framework-OpenEnv-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="OpenEnv" height="32"></a>
 
 </div>
 
@@ -44,7 +44,7 @@ You hear fifteen seconds of someone reading a sentence aloud. You write down wha
 server compares your transcript with the reference and pays you for every character you got right.
 
 That is [FLEURS](https://huggingface.co/datasets/google/fleurs), Google's read-speech benchmark,
-built as an [OpenEnv](https://github.com/huggingface/OpenEnv) environment: 102 languages and
+built as an [OpenEnv](https://github.com/openenv/OpenEnv) environment: 102 languages and
 1,151,940 tasks. A task is a plain transcript, a verbatim one with case and punctuation, or the
 name of the language being spoken. The audio stays in a
 [bucket](https://huggingface.co/buckets/FineEnvs/fleurs-bucket) and is fetched one clip at a time,

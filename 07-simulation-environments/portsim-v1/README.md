@@ -12,7 +12,7 @@
 <a href="https://huggingface.co/spaces/FineEnvs/PortSimEnv-Eval"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Eval-Rollouts%20in%203D-F97316?style=for-the-badge&labelColor=1a1a1a" alt="Eval rollouts in 3D" height="32"></a>
 <a href="https://huggingface.co/datasets/FineEnvs/PortSimEnv"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Tasks%20%26%20rollouts-4F46E5?style=for-the-badge&labelColor=1a1a1a" alt="Dataset" height="32"></a>
 <a href="https://huggingface.co/spaces/FineEnvs/simulation-rl-environments"><img src="https://img.shields.io/badge/%F0%9F%93%84%20Article-Read%20the%20write--up-10B981?style=for-the-badge&labelColor=1a1a1a" alt="Read the article" height="32"></a>
-<a href="https://github.com/huggingface/OpenEnv"><img src="https://img.shields.io/badge/framework-OpenEnv-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="OpenEnv" height="32"></a>
+<a href="https://github.com/openenv/OpenEnv"><img src="https://img.shields.io/badge/framework-OpenEnv-3B82F6?style=for-the-badge&labelColor=1a1a1a" alt="OpenEnv" height="32"></a>
 <a href="https://github.com/adithya-s-k/FineEnvs/tree/main/07-simulation-environments/portsim-v1"><img src="https://img.shields.io/badge/GitHub-07--simulation--environments%2Fportsim--v1-181717?style=for-the-badge&logo=github&labelColor=1a1a1a" alt="Code on GitHub" height="32"></a>
 
 </div>

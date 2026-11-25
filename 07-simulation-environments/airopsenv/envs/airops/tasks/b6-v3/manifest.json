@@ -1,0 +1,514 @@
+{
+ "pack": "b6-v3",
+ "base": "b6-v2",
+ "base_manifest_sha256": "5576545931b62dd6bd9274a966016648a51f014b54aa452367983ad401bf13b8",
+ "assembled_at_commit": "f1aaed43eef2bda52bce6eb74e2da47574289414",
+ "framework": "0.9.1336",
+ "crew_params_sha256": "5dd4636fc072ff4a700c48759e9515e1e4096f807b9b924850bce0146d6fa908",
+ "pax_sha256": {
+  "b6-transfers.csv": "098d8c5cd497549e4950e1d32e53dda04e31c174a735a112cb34ce38a22c1051",
+  "b6-dwell.csv": "88ee571369eff4015f17b9c0165871a9500a7e0caf5ad4ecc1eaa97ecca83d2b",
+  "b6-fares.csv": "3655f81f71b3b347f8a0d9e0cec13a63981e15bb906ec95cdb44e6466f5a5b81"
+ },
+ "tasks": {
+  "b6-20221207-0400": {
+   "date": "2022-12-07",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20230606-0400": {
+   "date": "2023-06-06",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20230616-0400": {
+   "date": "2023-06-16",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20230624-0400": {
+   "date": "2023-06-24",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20230627-0400": {
+   "date": "2023-06-27",
+   "split": "train",
+   "best_from": "rerun",
+   "best_from_p": "repair"
+  },
+  "b6-20230701-0400": {
+   "date": "2023-07-01",
+   "split": "train",
+   "best_from": "rerun",
+   "best_from_p": "v2_best"
+  },
+  "b6-20230702-0400": {
+   "date": "2023-07-02",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "B0"
+  },
+  "b6-20230708-0400": {
+   "date": "2023-07-08",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20230709-0400": {
+   "date": "2023-07-09",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20230713-0400": {
+   "date": "2023-07-13",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20230729-0400": {
+   "date": "2023-07-29",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20230807-0400": {
+   "date": "2023-08-07",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20230808-0400": {
+   "date": "2023-08-08",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20230810-0400": {
+   "date": "2023-08-10",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20230812-0400": {
+   "date": "2023-08-12",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20230814-0400": {
+   "date": "2023-08-14",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20230815-0400": {
+   "date": "2023-08-15",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20230817-0400": {
+   "date": "2023-08-17",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20230818-0400": {
+   "date": "2023-08-18",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20230820-0400": {
+   "date": "2023-08-20",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20230825-0400": {
+   "date": "2023-08-25",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20230829-0400": {
+   "date": "2023-08-29",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20231210-0400": {
+   "date": "2023-12-10",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20231218-0400": {
+   "date": "2023-12-18",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20231226-0400": {
+   "date": "2023-12-26",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240106-0400": {
+   "date": "2024-01-06",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240116-0400": {
+   "date": "2024-01-16",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240228-0400": {
+   "date": "2024-02-28",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240607-0400": {
+   "date": "2024-06-07",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240609-0400": {
+   "date": "2024-06-09",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240614-0400": {
+   "date": "2024-06-14",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240623-0400": {
+   "date": "2024-06-23",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "B0"
+  },
+  "b6-20240626-0400": {
+   "date": "2024-06-26",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240629-0400": {
+   "date": "2024-06-29",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20240630-0400": {
+   "date": "2024-06-30",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20240703-0400": {
+   "date": "2024-07-03",
+   "split": "control",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240713-0400": {
+   "date": "2024-07-13",
+   "split": "eval",
+   "best_from": "rerun",
+   "best_from_p": "repair"
+  },
+  "b6-20240715-0400": {
+   "date": "2024-07-15",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240722-0400": {
+   "date": "2024-07-22",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240728-0400": {
+   "date": "2024-07-28",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240729-0400": {
+   "date": "2024-07-29",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20240730-0400": {
+   "date": "2024-07-30",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240731-0400": {
+   "date": "2024-07-31",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240803-0400": {
+   "date": "2024-08-03",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240809-0400": {
+   "date": "2024-08-09",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20240816-0400": {
+   "date": "2024-08-16",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "B0"
+  },
+  "b6-20240817-0400": {
+   "date": "2024-08-17",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20240818-0400": {
+   "date": "2024-08-18",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20250111-0400": {
+   "date": "2025-01-11",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20250115-0400": {
+   "date": "2025-01-15",
+   "split": "control",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20250119-0400": {
+   "date": "2025-01-19",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20250206-0400": {
+   "date": "2025-02-06",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20250218-0400": {
+   "date": "2025-02-18",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20250708-0400": {
+   "date": "2025-07-08",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20250712-0400": {
+   "date": "2025-07-12",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20250813-0400": {
+   "date": "2025-08-13",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20251202-0400": {
+   "date": "2025-12-02",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20251211-0400": {
+   "date": "2025-12-11",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20251214-0400": {
+   "date": "2025-12-14",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20251219-0400": {
+   "date": "2025-12-19",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20251230-0400": {
+   "date": "2025-12-30",
+   "split": "eval",
+   "best_from": "rerun",
+   "best_from_p": "repair"
+  },
+  "b6-20260119-0400": {
+   "date": "2026-01-19",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20260220-0400": {
+   "date": "2026-02-20",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20260614-0400": {
+   "date": "2026-06-14",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20260701-0400": {
+   "date": "2026-07-01",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20260709-0400": {
+   "date": "2026-07-09",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20260715-0400": {
+   "date": "2026-07-15",
+   "split": "eval",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  },
+  "b6-20260727-0400": {
+   "date": "2026-07-27",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20260729-0400": {
+   "date": "2026-07-29",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "repair"
+  },
+  "b6-20260730-0400": {
+   "date": "2026-07-30",
+   "split": "train",
+   "best_from": "run",
+   "best_from_p": "v2_best"
+  }
+ },
+ "skipped": {
+  "2023-06-02": "its joint search crashed in the crew run; outside the pool by rule"
+ },
+ "files": {
+  "dates/2022-12-07.json.gz": "cbbfab597a22aa107d1ef6ac25cb04dc3211a6e1b115da07cd021c7da6af1304",
+  "dates/2023-06-06.json.gz": "371051b0c8c4aa7d5391589549667a0b5a1cb36e2a7ceaaaf4639d655f4213fa",
+  "dates/2023-06-16.json.gz": "053c279921e81a401bd1b3367608fd35a1daa9f989d1508e706a83c2ff651084",
+  "dates/2023-06-24.json.gz": "c767683e379f1d7697c4e7947c4664615016c3b80ae778c44444476acd54548d",
+  "dates/2023-06-27.json.gz": "27e18708475c9c790603a92954fcfc9cf17fd9761fbed705c425ac7b7fdf8d36",
+  "dates/2023-07-01.json.gz": "78dfd4cc709c98a016a075a4a63c8df26771e2250d7f80313a02c8774c239cd0",
+  "dates/2023-07-02.json.gz": "548aabe0999ca49d7486d19ecbc09e1473c07e037b0126f5d3fc0ac769c0a26a",
+  "dates/2023-07-08.json.gz": "93ae5c1dfe9adf704892669b6dd0eab9763888069cf67bc20450722393865fdc",
+  "dates/2023-07-09.json.gz": "2b2e36ef7f98526aa5b4b1cf16065c58df9ad19eff4e548dc6f3fb1a3697f67a",
+  "dates/2023-07-13.json.gz": "aaada4ff0319984553fa84233651f92250f3f34e03da51af3112b4df04017199",
+  "dates/2023-07-29.json.gz": "fad1a2b07d2a221a9b6781b0e28f10b25150769c0c3e98de435f481f4c222e71",
+  "dates/2023-08-07.json.gz": "9ae30be44d8659e1cffbc7c12faaa1da4fec83829df8bb45cb523885d008b222",
+  "dates/2023-08-08.json.gz": "3bac92ca24ad8085cc63c7e54c9ec04b4936b0d03b21ba649a92e8c5ae0aa88e",
+  "dates/2023-08-10.json.gz": "e959a02de21ffcf4665220316bb748cfe46dba1a676a328479e05c9ae59b9202",
+  "dates/2023-08-12.json.gz": "a23eff65149291ad5ea264c1ae62f43af846b3e8e3f3a5b51392ddf50c25fcad",
+  "dates/2023-08-14.json.gz": "8fe1aa0f246ac2153d7aef4dee20531fd4564d4ec86e1815b10d5eb8f47f0ba2",
+  "dates/2023-08-15.json.gz": "7e563ffb3ad1b90f0c8d2669ba75e428db1ee91f2344219bc0048c1004f15bd9",
+  "dates/2023-08-17.json.gz": "85b79745912b931327a6643bd52b78f1e76c2db950e3e7feb6df83ac09037729",
+  "dates/2023-08-18.json.gz": "bba570dead67a145969eb57816859f11964daf99870fd7cf7f0d5aa160dcff16",
+  "dates/2023-08-20.json.gz": "a47fa32a3301caa54448d763d0060c26875337cd504b1bfbf7850901512b8440",
+  "dates/2023-08-25.json.gz": "bf8c15352d5e49beb92077e6c499a4e8f8e0da4e3664ae55f27bf877c99d58c8",
+  "dates/2023-08-29.json.gz": "d99ef1453a710bdb659009c1471b6563acc8e424ee20f374f9e6b8e2153d133f",
+  "dates/2023-12-10.json.gz": "517053181ec992c458a09e3cd05129b1a75206885c9709ffdfed761f10f7bc79",
+  "dates/2023-12-18.json.gz": "b2e12b8e9813a22a8ff7d7bd9cde42b7e2f38d0e033ae54644985362f802709b",
+  "dates/2023-12-26.json.gz": "dfd395d48c36ac6141aecac97c8387f55f7e94bbd3f828a186007c7104fb26e0",
+  "dates/2024-01-06.json.gz": "01c488fc2836e2ef9de3be45d6c6511eef5510b3bfdfeefe43c2642cc2080329",
+  "dates/2024-01-16.json.gz": "b867dd4eb70a4546edf719a5a7b1d7a5df83ee506104c2dd91c89c30c5ea1bd3",
+  "dates/2024-02-28.json.gz": "cc4aea753f0481158cbfa9b04181b7f71aff656ce8398e09f52efdd5589149de",
+  "dates/2024-06-07.json.gz": "19bf7e42ae20554acad187d57d4f55b8e23f83ec4a8ca8e523cb963bab93dffd",
+  "dates/2024-06-09.json.gz": "0fad85bf0ef55ef1964ed3002a5cd19bf57a3e4e6b4149fd9f1304c7ac7bd1f0",
+  "dates/2024-06-14.json.gz": "4e4ca3a45305acf9fd18a324e98d76949b64c09f496092be961996b86179a37e",
+  "dates/2024-06-23.json.gz": "8563c98285ae3d47f7e3075fb1081f950ddc174e552a0fabf520b44bbe83ad57",
+  "dates/2024-06-26.json.gz": "74f9c25a65b0adabab70b24a1b88ec92c9b5d268bf759a39e970f19a0888ac3a",
+  "dates/2024-06-29.json.gz": "38cc86ed7a6f50f500e8e65a7a090cb865fc37c7a15fb5dcb03d43739204054e",
+  "dates/2024-06-30.json.gz": "475ae6ccb4232c98c50e7dc6a493877740582b81adbfcc01571fa61895b454d3",
+  "dates/2024-07-03.json.gz": "19fcb69bad845807efa41eb594ecb0baadf05a7da8bee38855bf21975a16616e",
+  "dates/2024-07-13.json.gz": "ac7a64097bf80c4735ffa2188188eb279bd02b445b04ed14d388d623022e9768",
+  "dates/2024-07-15.json.gz": "7b1365122eb0ef7e2f1d8dfc8a3a6e814fb19ce79fad005fc35b57b3f6bea8c7",
+  "dates/2024-07-22.json.gz": "b574f62a73fc8a56347136aaf54a44f93ef58c8a4fa0a7273dc66acb8ea8cab2",
+  "dates/2024-07-28.json.gz": "e5d7b2f587f8161bc8012ef2c64c21c219368e09d09f2968625e93fb011076db",
+  "dates/2024-07-29.json.gz": "9a8b6df8a15ea7c3c48ecd74897e3ebe48313b73d0c4100322b7374109a8a795",
+  "dates/2024-07-30.json.gz": "c804be5789a89e49a870c24ca5c72258cb2f625e550d740b4b734c4439eeb68e",
+  "dates/2024-07-31.json.gz": "96b5948c17e9f12bccda30d55fc8e304c676646fe4ddee03eb8e2fb187ea77c0",
+  "dates/2024-08-03.json.gz": "cb1c28e09053c837bb61966d837229b8224a02fc94d7efc4a39b17eed1b28c94",
+  "dates/2024-08-09.json.gz": "88deae296bdb5c680591bacec6677d99e1041baf010cd6fa2c81146a2e43aad3",
+  "dates/2024-08-16.json.gz": "2445b150a5484d05812b23e8bf20d16bee18a2722a0849b0a5a7ca6015beabcc",
+  "dates/2024-08-17.json.gz": "dcfa34e5054d41259b5364928c3a9b688dd6bf423d9824208b166ecbfd59aac4",
+  "dates/2024-08-18.json.gz": "a0a76af0c9908ec650989f7974b78e3d64c87c722475c60fcb5de12583dce349",
+  "dates/2025-01-11.json.gz": "44039837cd99b06ac651fc7f3546d91af0fc1fe5d6f4236a1d1bdcd03067cfbd",
+  "dates/2025-01-15.json.gz": "2c8906c7cacba2a6002365f4fdf94c6a64e66f5929d33ecd98338941afdc26dc",
+  "dates/2025-01-19.json.gz": "6c0dbd14c74134f1e4f5fa8206f971f9609820bcbc60fc2e3e0e8992c1fa0891",
+  "dates/2025-02-06.json.gz": "ef380b0310754c4d18268c9832812cd6bcb39ad92946cc3deb096c8aaeb19b46",
+  "dates/2025-02-18.json.gz": "dc4b5f919c8d53c5a0039496a563d0184b39c125ad0fab9b8e5f0de126fc9152",
+  "dates/2025-07-08.json.gz": "f5f9976ea243424dc4ee92f06ac4d444e092622a516d21dfb6785cb997e7b8f9",
+  "dates/2025-07-12.json.gz": "1a6989d3f528591170b6f10e8790dd448def4a64646d0df13f53e6cd8282fe0d",
+  "dates/2025-08-13.json.gz": "c28b9f1b1fbae3a96db2941ce89423ed08e30d654c6350fb25756f5eedc6cdda",
+  "dates/2025-12-02.json.gz": "0b8b99c1ab8706f119bc8c54e5b854e269bd7f9526d2180a6aa8a98bf85024b8",
+  "dates/2025-12-11.json.gz": "4cb3be647db3ed439026b35929f1d7e16e565cc977a78ec26cc5af05651c8aa5",
+  "dates/2025-12-14.json.gz": "caa444c5606b564d34cf0d2dfa869786c82891f10a84815b55ef9c90041a90d1",
+  "dates/2025-12-19.json.gz": "ac6a4830d7b012a3049715732a8de9c4ad115a373dfcace115f00771624df455",
+  "dates/2025-12-30.json.gz": "670c6d39fbc9452361b80c30abac9ea7a5097be4636ed8b09307debeb891ca80",
+  "dates/2026-01-19.json.gz": "8eb77da71a53097403ac3bdca3cff8031cdad53b537d9782382dab3024853e69",
+  "dates/2026-02-20.json.gz": "70ed880b996f5bf3c6a5d15c558c07b8fdf8b2b4665f99e9ad74ece96ce3cf07",
+  "dates/2026-06-14.json.gz": "8e659586a27708fc59ec25420c51084364e7a36e4e14535b2f62f6d89d7a4a27",
+  "dates/2026-07-01.json.gz": "db44ed411354c2f721d05634de97c7ad0be4600709da579c27b26bdf268952f2",
+  "dates/2026-07-09.json.gz": "92eabae1f19b1b9814fb2feb9b62d77232691ed270d6f419d96b06162fa3e717",
+  "dates/2026-07-15.json.gz": "a90f12439068aeff1a47fe53ed76067058da74eaa6d9f0735ae5cbe48a67c3da",
+  "dates/2026-07-27.json.gz": "2d2396c9a2214b95ae52ab94f6f8d1c5530162d3c6616284da97058115e5d991",
+  "dates/2026-07-29.json.gz": "fde64f85b5b9f8fb9af8c9aedf2447959d926eade4bc6e73a4cf0c1274309031",
+  "dates/2026-07-30.json.gz": "d2a3b5853dd47533ac8b8c4d1cad23c1853a15c2b79e2b1fc8b257a9a9f0e68e"
+ },
+ "bound_run": {
+  "name": "bound",
+  "dates": 70
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "sha256": {
+  "library/reactions.jsonl.gz": "5d59c4f16c09640b3b172b5b73b9cbf7b7ce46a5b06deb57a575931601062b3a",
+  "library/reagents.json": "c9cf7cb30bda7dad0e69718b375b4ab07a5f1ed6e95fc7b7034130525ca2bfbc",
+  "library/templates-visible.json": "e0557addb1db9b42656aee6c01a472f51eec80da8643f6412d020f1345b7e42d",
+  "library/templates.json": "80a7d1ad5f15df05fda81d7c1dffc95ed73bec9b883d93469e3afe9ae87ada14",
+  "manifest.json": "0a060cabfb9c29219afdca3a0bc808830ae39e60a32d67fe5366f9d73a82261d",
+  "stocks/paroutes-archive-leaves.smi": "d643ef630fcc8b05ab05db65d2b1121c84f96b980681e57ad108ba42b7da2892",
+  "tasks-private/dev.jsonl": "ab9c708c2a2678309e2faee14062601a70cf458c1ab1517249f799180b1ca3ab",
+  "tasks-private/test_hard.jsonl": "8bedd6101b2c8ffb949e4b0bcd9f42d0c09e64cce15d42dd8212051e52e6c93e",
+  "tasks-private/test_id.jsonl": "b3b648aafcca72ea3eec7690cff7ed84c3413f491bc9e287a1606aad3f25991c",
+  "tasks-private/train.jsonl": "3dc748f873e31669597511dd8b5bbcca21474ce50bbfe1f234d289d2880fcf51",
+  "tasks-public/dev.jsonl": "145f18953e709f0a1f0b2b4e3ebb5ad46101d477ff4bffb79d7b6c8f504f7625",
+  "tasks-public/test_hard.jsonl": "8a924541488c4946a1d208eb0ee52ec9509bc494e360829ed8235b554bc2bc24",
+  "tasks-public/test_id.jsonl": "595e52fe28fac2f7e0c777ac6ff1d478e73b7920763fd952b7c31436adc4140b",
+  "tasks-public/train.jsonl": "0e7effb7d6cf44fe8c043cd0559c53a4484f13d89306aa7b2e90993aa66d97ee"
+ }
+}

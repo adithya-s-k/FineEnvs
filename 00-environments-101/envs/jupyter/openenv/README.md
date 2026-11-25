@@ -1,6 +1,6 @@
 # Jupyter Agent — OpenEnv
 
-A multi-turn Jupyter notebook agent environment, packaged using **[OpenEnv](https://github.com/huggingface/OpenEnv)** (Hugging Face's HTTP-server / MCP-protocol framework for RL environments). The environment is a real Jupyter kernel running inside an [E2B](https://e2b.dev) cloud sandbox, exposed over MCP.
+A multi-turn Jupyter notebook agent environment, packaged using **[OpenEnv](https://github.com/openenv/OpenEnv)** (Hugging Face's HTTP-server / MCP-protocol framework for RL environments). The environment is a real Jupyter kernel running inside an [E2B](https://e2b.dev) cloud sandbox, exposed over MCP.
 
 **Deployed:** [`AdithyaSK/jupyter-agent-openenv`](https://huggingface.co/spaces/AdithyaSK/jupyter-agent-openenv)
 
@@ -83,7 +83,7 @@ docker run -it -p 8000:8000 -e E2B_API_KEY=$E2B_API_KEY \
     registry.hf.space/adithyask-jupyter-agent-openenv:latest
 ```
 
-> Reference: [OpenEnv deployment tutorial](https://github.com/huggingface/OpenEnv/blob/main/tutorial/02-deployment.md).
+> Reference: [OpenEnv deployment tutorial](https://github.com/openenv/OpenEnv/blob/main/tutorial/02-deployment.md).
 
 ## Run the rollout
 
@@ -172,7 +172,7 @@ Requires `E2B_API_KEY` set as a Space secret.
 
 ## References
 
-- [OpenEnv getting started](https://github.com/huggingface/OpenEnv/blob/main/tutorial/01-environments.md)
-- [OpenEnv deployment guide](https://github.com/huggingface/OpenEnv/blob/main/tutorial/02-deployment.md)
+- [OpenEnv getting started](https://github.com/openenv/OpenEnv/blob/main/tutorial/01-environments.md)
+- [OpenEnv deployment guide](https://github.com/openenv/OpenEnv/blob/main/tutorial/02-deployment.md)
 - [HF Inference Providers — Chat Completion API](https://huggingface.co/docs/inference-providers/en/tasks/chat-completion)
 - [E2B Code Interpreter](https://e2b.dev)

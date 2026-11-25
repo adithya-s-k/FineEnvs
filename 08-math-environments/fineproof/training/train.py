@@ -1,0 +1,238 @@
+"""Train a small model to write olympiad proofs through our Harbor harness, with AsyncGRPO.
+
+Adapted from 05-multi-harness-rl/train/multi_harness.py. What changes: one harness, ours (the FineProof harness: by
+default one call that writes the proof, as the published run trained; the Harbor server's FINEPROOF_ROUNDS, set by
+`jobs/run.py --rounds N`, adds optional check-and-rewrite turns); the reward is the rubric judge's score / 7 from the
+task's verifier, and 0 for a proof cut off at the output cap; and the objective is mean-centred advantages with a
+constant loss normaliser (objective.py). Read the numbered sections in order.
+"""
+
+# %% 1. Choose the model and run settings.
+import argparse
+import json
+import os
+from functools import partial
+from pathlib import Path
+
+from datasets import Dataset
+from transformers import AutoTokenizer
+
+from tasks import TaskFactory, dataset_dir, load_tasks
+
+# The pinned revision 05-multi-harness-rl validated. LFM2.5 needs 05's packed-convolution fix, not ported here.
+MODEL_REVISIONS = {
+    "Qwen/Qwen3.5-2B": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+    "Qwen/Qwen3.5-4B": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "Qwen/Qwen3.5-9B": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+}
+
+
+def arguments():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", default="Qwen/Qwen3.5-2B")
+    parser.add_argument("--data", default="prepared")
+    parser.add_argument("--vllm-url", default="http://127.0.0.1:8000")
+    parser.add_argument("--env-llm-url", help="Inference URL reachable by a remote environment server")
+    parser.add_argument("--server", default="http://127.0.0.1:8200")
+    parser.add_argument("--trials", default="runs/trials")
+    parser.add_argument("--output", default="runs/train")
+    parser.add_argument("--smoke", action="store_true", help="Updates of one group of four rollouts, saved each step")
+    parser.add_argument("--steps", type=int, default=100)
+    parser.add_argument("--save-steps", type=int, default=10)
+    parser.add_argument("--inflight", type=int, default=128)
+    parser.add_argument("--generations", type=int, default=16, help="Rollouts per problem (a GRPO group)")
+    parser.add_argument("--grad-accum", type=int, default=128,
+                        help="Training rows per update: rollouts with one call per proof (8 groups of 16); a rewrite "
+                             "round can give a rollout a second row")
+    parser.add_argument("--max-tokens", type=int, default=32768,
+                        help="Output cap per model call, and the loss normaliser (objective.py)")
+    parser.add_argument("--truncated-reward", default="zero", choices=["zero", "judge"],
+                        help="A proof cut off at the cap: reward 0 (default), or the judge's grade of what was written")
+    parser.add_argument("--learning-rate", type=float, default=1e-6)
+    parser.add_argument("--warmup-steps", type=int, default=0,
+                        help="Linear warm-up from 0 (damps a fresh optimizer's first, full-size Adam steps)")
+    parser.add_argument("--resume", action="store_true", help="Continue from the latest checkpoint in --output")
+    parser.add_argument("--resume-from", help="Continue another run from this full checkpoint folder: weights, "
+                        "optimizer, scheduler, RNG, step and prompt position (refused without that state)")
+    parser.add_argument("--space-id", default=None, help="Optional Trackio Space; local logs are always kept")
+    parser.add_argument("--trackio-bucket", default=None, help="Bucket the Trackio Space keeps its data in")
+    parser.add_argument("--sandbox", default="daytona", choices=["daytona", "hf-sandbox"],
+                        help="Where Harbor runs each task's sandboxes (hf-sandbox: HF Jobs, needs a docker_image task)")
+    return parser.parse_args()
+
+
+# %% 2. Load the tokenizer in non-thinking mode (the same template vLLM serves, see jobs/serve_model.py).
+def tokenizer_for(model):
+    from copy import deepcopy
+
+    from trl.chat_template_utils import qwen3_5_template
+
+    tokenizer = AutoTokenizer.from_pretrained(model, revision=MODEL_REVISIONS[model])
+    tokenizer.chat_template = "{%- set enable_thinking = false -%}\n" + tokenizer.chat_template
+    tokenizer.response_template = deepcopy(qwen3_5_template)
+    return tokenizer
+
+
+# %% 3. The reward is the verifier's: rubric score / 7. A missing grade (judge unreachable, sandbox failure) is
+# excluded from the group rather than counted as a wrong proof.
+def reward(outcome):
+    return None if outcome.env_reward is None else float(outcome.env_reward)
+
+
+def missing_training_state(checkpoint):
+    """What a checkpoint lacks to continue training as it stopped: Trainer's optimizer, scheduler and RNG files."""
+    return [part for part in ("optimizer", "scheduler", "rng_state") if not any(Path(checkpoint).glob(part + "*"))]
+
+
+def latest_checkpoint(output):
+    """The newest full checkpoint (trainer_state.json is written last, after the optimizer)."""
+    for path in sorted(Path(output).glob("checkpoint-*"), key=lambda p: int(p.name.split("-")[-1]), reverse=True):
+        if (path / "trainer_state.json").is_file() and any(path.glob("optimizer*")):
+            return path
+    return None
+
+
+def keep_intervals(save_steps, logging_steps):
+    """Keep this run's save and logging intervals when it resumes from a checkpoint.
+
+    Transformers reloads them from the checkpoint's trainer_state.json and lets those win over the arguments, so
+    fp-rl2-2b, resumed with --save-steps 25, went on saving every 10 updates as its first Job had.
+    """
+    from transformers import TrainerCallback
+
+    class KeepIntervals(TrainerCallback):
+        def on_step_begin(self, args, state, control, **kwargs):
+            state.save_steps, state.logging_steps = save_steps, logging_steps
+
+    return KeepIntervals()
+
+
+def crash_after(step):
+    """A test hook (FINEPROOF_CRASH_AFTER_STEP): die right after checkpoint `step` is saved, as a leak would."""
+    from transformers import TrainerCallback
+
+    class CrashAfter(TrainerCallback):
+        def on_save(self, args, state, control, **kwargs):
+            if state.global_step == step:
+                print(f"FINEPROOF_CRASH_AFTER_STEP: exiting after checkpoint-{step}", flush=True)
+                os._exit(3)
+
+    return CrashAfter()
+
+
+# %% 4. Configure AsyncGRPO. These are the experiment's hyperparameters.
+def main():
+    args = arguments()
+    if args.resume_from and not args.resume and (missing := missing_training_state(args.resume_from)):
+        # Transformers would load the weights and step and silently start a fresh Adam.
+        raise RuntimeError(f"--resume-from {args.resume_from} has no {', '.join(missing)} state")
+    output = Path(args.output)
+    output.mkdir(parents=True, exist_ok=True)
+    os.environ["TRACKIO_DIR"] = str(output.resolve() / "trackio")
+    from trl.experimental.async_grpo import AsyncGRPOConfig
+
+    from objective import ConstantNormTrainer, MeanCenteredHarnessWorker
+
+    tasks = load_tasks(dataset_dir(args.data, "train"))
+    dataset = Dataset.from_list(
+        [{"prompt": [{"role": "user", "content": task["instruction"]}]} for task in tasks]).shuffle(seed=0)
+    tokenizer = tokenizer_for(args.model)
+    # The smoke's groups are 4 rollouts (2 tied too often to give a gradient); one group per update.
+    generations = 4 if args.smoke else args.generations
+    inflight = min(args.inflight, 8) if args.smoke else args.inflight
+    config = AsyncGRPOConfig(
+        output_dir=str(output),
+        learning_rate=args.learning_rate,
+        lr_scheduler_type="constant_with_warmup" if args.warmup_steps else "constant",
+        warmup_steps=args.warmup_steps,
+        max_steps=args.steps,
+        # One rollout per row, never packed: TRL marks packed samples only by position_ids resets, which reach the
+        # attention layers but not Qwen3.5's linear-attention (gated delta rule) layers, so their recurrent state would
+        # run from one sample into the next. An update is then gradient_accumulation_steps rollouts.
+        per_device_train_batch_size=1,
+        gradient_accumulation_steps=4 if args.smoke else args.grad_accum,
+        num_generations=generations,
+        max_completion_length=args.max_tokens,
+        temperature=0.8,
+        top_p=1.0,
+        top_k=-1,
+        max_inflight_tasks=inflight,
+        max_staleness=4,
+        token_budget=0,
+        fork_threshold_tokens=0,
+        optim="paged_adamw_8bit",
+        # Weights and Adam state stay in fp32 (TRL's default dtype): in bf16 an update of about lr rounds away on most
+        # weights. bf16 is the compute precision.
+        bf16=True,
+        model_init_kwargs={"revision": MODEL_REVISIONS[args.model]},
+        gradient_checkpointing=True,
+        gradient_checkpointing_kwargs={"use_reentrant": False},
+        vllm_server_base_url=args.vllm_url,
+        heartbeat_stale_after_s=3600,  # a 32k-token rollout can take most of an hour on a loaded engine
+        save_strategy="steps",
+        # Full checkpoints (weights, optimizer, scheduler, RNG and rollout state), so jobs/run.py can resume a run that
+        # dies: a 4B one is about 30 GB. Evals copy only the weights.
+        save_only_model=False,
+        save_steps=1 if args.smoke else args.save_steps,
+        save_total_limit=None,
+        logging_steps=1,
+        report_to="trackio",
+        project="fineproof-rl",
+        run_name=output.parent.name if output.name == "train" else output.name,
+        trackio_space_id=args.space_id,
+        trackio_bucket_id=args.trackio_bucket,
+        hub_private_repo=False if args.space_id else None,  # the dashboard Space is public
+        trackio_static_space_id=False,  # no extra snapshot Space at the end; the live one stays
+        seed=0,
+    )
+    worker = MeanCenteredHarnessWorker(
+        harness_session_factory=partial(TaskFactory, args, tasks, split="train"),
+        harness_adapter=None,  # our Harbor agent owns the conversation; OpenEnv captures its model calls
+        rollout_reward_fn=reward,
+        lossless_capture=True,
+        model_name=args.model,
+        processing_class=tokenizer,
+        dataset=dataset,
+        reward_funcs=[],
+        num_generations=generations,
+        max_inflight_tasks=inflight,
+        vllm_server_url=args.vllm_url,
+        max_tokens=args.max_tokens,
+        temperature=0.8,
+        top_p=1.0,
+        top_k=-1,
+        chat_template_kwargs={"enable_thinking": False},
+    )
+    trainer = ConstantNormTrainer(
+        model=args.model, args=config, processing_class=tokenizer, train_dataset=dataset, rollout_worker=worker,
+        loss_norm_tokens=args.max_tokens)
+    # Per-rollout records from OpenEnv and the judge (rollouts.jsonl next to the trials folder): their metrics join
+    # the trainer's own Trackio row (so the callback goes before Trackio's), then each rollout is logged as a trace.
+    import rollout_log
+
+    metrics_callback, traces_callback = rollout_log.make_callbacks(
+        Path(args.trials).parent / "rollouts.jsonl", Path(args.trials), args.model)
+    trainer.callback_handler.callbacks.insert(0, metrics_callback)
+    trainer.add_callback(traces_callback)
+    trainer.add_callback(keep_intervals(config.save_steps, config.logging_steps))
+    if os.environ.get("FINEPROOF_CRASH_AFTER_STEP") and not (args.resume or args.resume_from):
+        trainer.add_callback(crash_after(int(os.environ["FINEPROOF_CRASH_AFTER_STEP"])))
+
+    # %% 5. Train, then save weights and tokenizer for evaluation.
+    objective = {"advantage": "reward - group mean (no std division)", "loss_norm_tokens": args.max_tokens,
+                 "truncated_reward": args.truncated_reward, "generations": generations,
+                 "judge_samples": os.environ.get("JUDGE_SAMPLES", "1")}
+    (output / "training_config.json").write_text(json.dumps({**config.to_dict(), "objective": objective}, indent=2))
+    (output / "task_names.json").write_text(json.dumps([t["name"] for t in tasks]))
+    # --resume (a restart inside this run) wins over --resume-from (where this run started).
+    resume = latest_checkpoint(output) if args.resume else (Path(args.resume_from) if args.resume_from else None)
+    if args.resume and resume is None:
+        raise RuntimeError(f"--resume found no full checkpoint in {output}")
+    trainer.train(resume_from_checkpoint=str(resume) if resume else None)
+    trainer.save_model(str(output / "final"))
+    tokenizer.save_pretrained(output / "final")
+    trainer.save_state()
+
+
+if __name__ == "__main__":
+    main()

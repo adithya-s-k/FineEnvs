@@ -1,0 +1,296 @@
+[
+  {
+    "evidence_kind": "text_mined_patent_and_literature",
+    "fetch": {
+      "article_id": 28230053,
+      "type": "figshare"
+    },
+    "fetched_at": "2026-09-22T09:19:28.229116+00:00",
+    "homepage": "https://doi.org/10.6084/m9.figshare.28230053.v1",
+    "license": "CC-BY-4.0",
+    "result": {
+      "article_id": 28230053,
+      "doi": "10.6084/m9.figshare.28230053.v1",
+      "files": [
+        {
+          "md5": "e86c0a4e187763ce23477162d5422c2c",
+          "name": "reactionSmilesFigShare2024.txt.zip",
+          "size": 27849362,
+          "status": "downloaded"
+        }
+      ],
+      "license": "CC BY 4.0"
+    },
+    "source_id": "crd-1976-2024",
+    "status": "approved",
+    "title": "Reaction SMILES CRD 1.37M dataset"
+  },
+  {
+    "evidence_kind": "generated",
+    "fetch": {
+      "repo_id": "insilicomedicine/CREED",
+      "revision": "dc0c080876a27e1f27087987f41f973c65db55dc",
+      "type": "huggingface_dataset"
+    },
+    "fetched_at": "2026-09-22T09:20:02.061279+00:00",
+    "homepage": "https://huggingface.co/datasets/insilicomedicine/CREED",
+    "license": "CC-BY-NC-4.0",
+    "result": {
+      "path": "/workspace/RetroSynthEnv/FineEnvs/04-retroenv/data/raw/creed",
+      "revision": "dc0c080876a27e1f27087987f41f973c65db55dc"
+    },
+    "source_id": "creed",
+    "status": "approved_noncommercial",
+    "title": "Comprehensive Reactant Exhaustive Enumeration Dataset"
+  },
+  {
+    "evidence_kind": "observed_positive_and_generated_negative",
+    "fetch": {
+      "revision": "c069cad99e00986225a38e7f7e8ac169a4c62ee9",
+      "type": "git",
+      "url": "https://github.com/OSU-NLP-Group/FREA.git"
+    },
+    "fetched_at": "2026-09-22T09:20:10.850922+00:00",
+    "homepage": "https://github.com/OSU-NLP-Group/FREA",
+    "license": "CC-BY-4.0",
+    "result": {
+      "path": "/workspace/RetroSynthEnv/FineEnvs/04-retroenv/data/raw/frea-rxnverif",
+      "revision": "c069cad99e00986225a38e7f7e8ac169a4c62ee9"
+    },
+    "source_id": "frea-rxnverif",
+    "status": "approved",
+    "title": "FREA / RxnVerif reaction feasibility data"
+  },
+  {
+    "evidence_kind": "observed_and_reported",
+    "fetch": {
+      "revision": "83f971f586f6ad18f358ae4ae99d045e94ed2066",
+      "type": "git",
+      "url": "https://github.com/open-reaction-database/ord-data.git"
+    },
+    "fetched_at": "2026-09-22T09:18:25.833698+00:00",
+    "homepage": "https://github.com/open-reaction-database/ord-data",
+    "license": "CC-BY-SA-4.0",
+    "result": {
+      "path": "/workspace/RetroSynthEnv/FineEnvs/04-retroenv/data/raw/ord-data",
+      "revision": "83f971f586f6ad18f358ae4ae99d045e94ed2066"
+    },
+    "source_id": "ord-data",
+    "status": "approved",
+    "title": "Open Reaction Database"
+  },
+  {
+    "evidence_kind": "benchmark_routes",
+    "fetch": {
+      "revision": "bc5e69568092246f7c7bb5405216f8a3a334adbc",
+      "type": "git",
+      "url": "https://github.com/MolecularAI/PaRoutes.git"
+    },
+    "fetched_at": "2026-09-22T09:20:16.246322+00:00",
+    "homepage": "https://github.com/MolecularAI/PaRoutes",
+    "license": "REVIEW-DATA-LINEAGE",
+    "result": {
+      "path": "/workspace/RetroSynthEnv/FineEnvs/04-retroenv/data/raw/paroutes",
+      "revision": "bc5e69568092246f7c7bb5405216f8a3a334adbc"
+    },
+    "source_id": "paroutes",
+    "status": "research_only",
+    "title": "PaRoutes benchmark"
+  },
+  {
+    "evidence_kind": "benchmark_routes_derived_from_uspto",
+    "fetch": {
+      "files": [
+        "all_loaded_routes.json.gz",
+        "ref_routes_reaction_hashes.txt",
+        "ref_routes_n1.json",
+        "ref_routes_n5.json",
+        "stock_n1.txt",
+        "stock_n5.txt",
+        "targets_n1.txt",
+        "targets_n5.txt",
+        "uspto_lookup.json"
+      ],
+      "record_id": 7341155,
+      "type": "zenodo"
+    },
+    "fetched_at": "2026-09-22T09:46:08.592357+00:00",
+    "homepage": "https://zenodo.org/records/7341155",
+    "license": "CC-BY-4.0",
+    "result": {
+      "doi": "10.5281/zenodo.7341155",
+      "files": [
+        {
+          "md5": "7a403ac400c4e875945337dc10a787bd",
+          "name": "all_loaded_routes.json.gz",
+          "size": 123662325,
+          "status": "already_present"
+        },
+        {
+          "md5": "ead05b84040fd8d594b936fb4cc5501a",
+          "name": "ref_routes_reaction_hashes.txt",
+          "size": 4403965,
+          "status": "already_present"
+        },
+        {
+          "md5": "8f11ca81d6d184539fa4d2c5bde215af",
+          "name": "ref_routes_n1.json",
+          "size": 64187987,
+          "status": "already_present"
+        },
+        {
+          "md5": "1da36cbada13175668c66546db6fd952",
+          "name": "ref_routes_n5.json",
+          "size": 82120928,
+          "status": "already_present"
+        },
+        {
+          "md5": "cfa7e97b0398c7e88e46c02ae5876edf",
+          "name": "stock_n1.txt",
+          "size": 368802,
+          "status": "already_present"
+        },
+        {
+          "md5": "741a804816fd0484a683b58846e142bb",
+          "name": "stock_n5.txt",
+          "size": 360970,
+          "status": "already_present"
+        },
+        {
+          "md5": "29425c56cd51cdb55047f9a65f088f89",
+          "name": "targets_n1.txt",
+          "size": 459136,
+          "status": "already_present"
+        },
+        {
+          "md5": "9ef17bb2b615259f0a2899e300e88882",
+          "name": "targets_n5.txt",
+          "size": 487792,
+          "status": "already_present"
+        },
+        {
+          "md5": "7c4fd9cef02eec1f883c71f69493284a",
+          "name": "uspto_lookup.json",
+          "size": 86066275,
+          "status": "already_present"
+        }
+      ],
+      "license": "cc-by-4.0",
+      "record_id": 7341155
+    },
+    "source_id": "paroutes-v2-benchmark",
+    "status": "approved",
+    "title": "PaRoutes v2 benchmark routes, stocks, targets, hashes, and lookup"
+  },
+  {
+    "evidence_kind": "mixed_per_artifact",
+    "fetch": {
+      "revision": "e7c03766bd6a405da468e281d922cf1beccdd56a",
+      "type": "git",
+      "url": "https://github.com/TieuLongPhan/SynRXN.git"
+    },
+    "fetched_at": "2026-09-22T09:21:02.696877+00:00",
+    "homepage": "https://github.com/TieuLongPhan/SynRXN",
+    "license": "PER-FILE",
+    "result": {
+      "path": "/workspace/RetroSynthEnv/FineEnvs/04-retroenv/data/raw/synrxn",
+      "revision": "e7c03766bd6a405da468e281d922cf1beccdd56a"
+    },
+    "source_id": "synrxn",
+    "status": "research_only",
+    "title": "SynRXN reaction benchmark collection"
+  },
+  {
+    "evidence_kind": "llm_extracted_patent_reactions",
+    "fetch": {
+      "files": [
+        "README.md",
+        "multi_step.zip",
+        "single_step.zip"
+      ],
+      "record_id": 14396156,
+      "type": "zenodo"
+    },
+    "fetched_at": "2026-09-22T09:49:56.012927+00:00",
+    "homepage": "https://zenodo.org/records/14396156",
+    "license": "CC-BY-4.0",
+    "result": {
+      "doi": "10.5281/zenodo.14396156",
+      "files": [
+        {
+          "md5": "c2d3e395e0ca283d880e1987beb0f8ad",
+          "name": "README.md",
+          "size": 2262,
+          "status": "downloaded"
+        },
+        {
+          "md5": "4c151f3375aeb80f3f1f3ec7abc72cde",
+          "name": "multi_step.zip",
+          "size": 13602264,
+          "status": "downloaded"
+        },
+        {
+          "md5": "8027c066fd65d35b454049c78e6ccbc7",
+          "name": "single_step.zip",
+          "size": 688544401,
+          "status": "downloaded"
+        }
+      ],
+      "license": "cc-by-4.0",
+      "record_id": 14396156
+    },
+    "source_id": "uspto-llm",
+    "status": "approved",
+    "title": "USPTO-LLM"
+  },
+  {
+    "evidence_kind": "text_mined_patent",
+    "fetch": {
+      "article_id": 5104873,
+      "type": "figshare"
+    },
+    "fetched_at": "2026-09-22T09:19:27.378489+00:00",
+    "homepage": "https://doi.org/10.6084/m9.figshare.5104873.v1",
+    "license": "CC0-1.0",
+    "result": {
+      "article_id": 5104873,
+      "doi": "10.6084/m9.figshare.5104873.v1",
+      "files": [
+        {
+          "md5": "d9f5602a2d656d1bc964f77165500ce0",
+          "name": "1976_Sep2016_USPTOgrants_cml.7z",
+          "size": 640780116,
+          "status": "downloaded"
+        },
+        {
+          "md5": "28da557ce6403eca7bb58d8fa8afafac",
+          "name": "2001_Sep2016_USPTOapplications_cml.7z",
+          "size": 691094961,
+          "status": "downloaded"
+        },
+        {
+          "md5": "9c35a32067329abf2bdbdac5f4820286",
+          "name": "2001_Sep2016_USPTOapplications_smiles.7z",
+          "size": 87597379,
+          "status": "downloaded"
+        },
+        {
+          "md5": "b0d94806fe7479fad6db9b894cff858e",
+          "name": "1976_Sep2016_USPTOgrants_smiles.7z",
+          "size": 75191394,
+          "status": "downloaded"
+        },
+        {
+          "md5": "e8958277ad438aecce43a9a8859c79cf",
+          "name": "cml_xsd.zip",
+          "size": 2043,
+          "status": "downloaded"
+        }
+      ],
+      "license": "CC0"
+    },
+    "source_id": "uspto-lowe-1976-2016",
+    "status": "approved",
+    "title": "Chemical reactions from US patents (1976-Sep2016)"
+  }
+]

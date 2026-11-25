@@ -1,0 +1,159 @@
+{
+  "schema_version": "retro-source-manifest-v1",
+  "reviewed_at": "2026-09-22",
+  "sources": [
+    {
+      "id": "ord-data",
+      "title": "Open Reaction Database",
+      "status": "approved",
+      "evidence_kind": "observed_and_reported",
+      "license": "CC-BY-SA-4.0",
+      "license_scope": "data/ directory; repository code has a separate Apache-2.0 license",
+      "homepage": "https://github.com/open-reaction-database/ord-data",
+      "fetch": {
+        "type": "git",
+        "url": "https://github.com/open-reaction-database/ord-data.git",
+        "revision": "83f971f586f6ad18f358ae4ae99d045e94ed2066"
+      }
+    },
+    {
+      "id": "uspto-lowe-1976-2016",
+      "title": "Chemical reactions from US patents (1976-Sep2016)",
+      "status": "approved",
+      "evidence_kind": "text_mined_patent",
+      "license": "CC0-1.0",
+      "homepage": "https://doi.org/10.6084/m9.figshare.5104873.v1",
+      "fetch": {"type": "figshare", "article_id": 5104873}
+    },
+    {
+      "id": "crd-1976-2024",
+      "title": "Reaction SMILES CRD 1.37M dataset",
+      "status": "approved",
+      "evidence_kind": "text_mined_patent_and_literature",
+      "license": "CC-BY-4.0",
+      "homepage": "https://doi.org/10.6084/m9.figshare.28230053.v1",
+      "fetch": {"type": "figshare", "article_id": 28230053}
+    },
+    {
+      "id": "creed",
+      "title": "Comprehensive Reactant Exhaustive Enumeration Dataset",
+      "status": "approved_noncommercial",
+      "evidence_kind": "generated",
+      "license": "CC-BY-NC-4.0",
+      "license_scope": "non-commercial dataset release; keep separate from unrestricted release configs",
+      "homepage": "https://huggingface.co/datasets/insilicomedicine/CREED",
+      "fetch": {
+        "type": "huggingface_dataset",
+        "repo_id": "insilicomedicine/CREED",
+        "revision": "dc0c080876a27e1f27087987f41f973c65db55dc"
+      }
+    },
+    {
+      "id": "frea-rxnverif",
+      "title": "FREA / RxnVerif reaction feasibility data",
+      "status": "approved",
+      "evidence_kind": "observed_positive_and_generated_negative",
+      "license": "CC-BY-4.0",
+      "homepage": "https://github.com/OSU-NLP-Group/FREA",
+      "fetch": {
+        "type": "git",
+        "url": "https://github.com/OSU-NLP-Group/FREA.git",
+        "revision": "c069cad99e00986225a38e7f7e8ac169a4c62ee9"
+      }
+    },
+    {
+      "id": "paroutes",
+      "title": "PaRoutes software repository",
+      "status": "research_only",
+      "evidence_kind": "software_and_download_scripts",
+      "license": "Apache-2.0",
+      "license_scope": "software repository only; the Zenodo benchmark data is a separate source entry",
+      "homepage": "https://github.com/MolecularAI/PaRoutes",
+      "fetch": {
+        "type": "git",
+        "url": "https://github.com/MolecularAI/PaRoutes.git",
+        "revision": "bc5e69568092246f7c7bb5405216f8a3a334adbc"
+      }
+    },
+    {
+      "id": "paroutes-v2-benchmark",
+      "title": "PaRoutes v2 benchmark routes, stocks, targets, hashes, and lookup",
+      "status": "approved",
+      "evidence_kind": "benchmark_routes_derived_from_uspto",
+      "license": "CC-BY-4.0",
+      "license_scope": "Zenodo record 7341155; models and multi-gigabyte duplicate USPTO tables are not selected by this intake entry",
+      "homepage": "https://zenodo.org/records/7341155",
+      "fetch": {
+        "type": "zenodo",
+        "record_id": 7341155,
+        "files": [
+          "all_loaded_routes.json.gz",
+          "ref_routes_reaction_hashes.txt",
+          "ref_routes_n1.json",
+          "ref_routes_n5.json",
+          "stock_n1.txt",
+          "stock_n5.txt",
+          "targets_n1.txt",
+          "targets_n5.txt",
+          "uspto_lookup.json"
+        ]
+      }
+    },
+    {
+      "id": "paroutes-v2-large-uspto-derivatives",
+      "title": "PaRoutes v2 selected USPTO reaction tables",
+      "status": "covered_by_upstream",
+      "evidence_kind": "derived_uspto_reactions",
+      "license": "CC-BY-4.0",
+      "license_scope": "Zenodo record 7341155; exact tables total 3.84 GB and derive from the downloaded Lowe USPTO source",
+      "homepage": "https://zenodo.org/records/7341155",
+      "reason": "not duplicated locally under the workspace quota; Lowe USPTO raw data is present and the omitted filenames/checksums remain pinned",
+      "artifacts": [
+        {"name": "selected_reactions_all.csv", "size": 3255344764, "md5": "cbe9d69502fe3e64121ad995bf6a1e09"},
+        {"name": "selected_reactions.csv", "size": 582648364, "md5": "0e77ccbfd0ff650afe09148d13cb04ee"}
+      ]
+    },
+    {
+      "id": "synrxn",
+      "title": "SynRXN reaction benchmark collection",
+      "status": "research_only",
+      "evidence_kind": "mixed_per_artifact",
+      "license": "PER-FILE",
+      "license_scope": "use manifest.json and Data/LICENSE for each artifact; do not flatten licenses",
+      "homepage": "https://github.com/TieuLongPhan/SynRXN",
+      "fetch": {
+        "type": "git",
+        "url": "https://github.com/TieuLongPhan/SynRXN.git",
+        "revision": "e7c03766bd6a405da468e281d922cf1beccdd56a"
+      }
+    },
+    {
+      "id": "rxngraphormer-real",
+      "title": "RXNGraphormer real reactions",
+      "status": "pending_review",
+      "license": "UNKNOWN-ARTIFACT",
+      "reason": "the official MIT code repository describes 13M pretraining reactions but its dataset directory contains no released reaction artifact"
+    },
+    {
+      "id": "uspto-llm",
+      "title": "USPTO-LLM",
+      "status": "approved",
+      "evidence_kind": "llm_extracted_patent_reactions",
+      "license": "CC-BY-4.0",
+      "license_scope": "Zenodo record 14396156",
+      "homepage": "https://zenodo.org/records/14396156",
+      "fetch": {
+        "type": "zenodo",
+        "record_id": 14396156,
+        "files": ["README.md", "multi_step.zip", "single_step.zip"]
+      }
+    },
+    {
+      "id": "absynth",
+      "title": "AbSynth",
+      "status": "pending_review",
+      "license": "CC-BY-NC-ND-4.0",
+      "reason": "the route collection requires a verified institutional email and forbids derivatives; Zenodo record 21838008 contains only the Corey-rules checker, not the route corpus"
+    }
+  ]
+}

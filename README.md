@@ -53,7 +53,12 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **06** | **[Multilingual](./06-multilingual/)** | Document OCR over a million pages in 22 languages and speech recognition over 102, each behind one OpenEnv server, and Gemma 4 trained to read and hear Kannada. | 2 | 1 | 2 | ✅ trained |
 | **07** | **[PortSimEnv v1](./07-simulation-environments/portsim-v1/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub><br><sub>`agentenv` port by [Edgar Arakelyan](https://github.com/earakely-scale) (Scale AI)</sub> | Re-plan a broken week of container-ship dockings at the Port of Barcelona, graded against a proven optimum. | 1 | 2 | 1 | 🚧 wip |
 | **07** | **[PortSimEnv v2–v5: live, marine, wind and lines](./07-simulation-environments/portsim-live/)**<br><sub>by [Edgar Arakelyan](https://github.com/earakely-scale) (Scale AI)</sub> | Run a Port of Barcelona quay through a week as it unfolds, with live news, pilots and tugs, real wind and shipping lines that answer back. | 1 | 1 | 0 | 🚧 wip |
-| **08** | **[TraceAudit](./08-traceaudit/)**<br><sub>by Rahul Badhan</sub> | Judge failures in recorded agent traces with verified outcome labels. | 1 | 1 | 0 | 🚧 wip |
+| **07** | **[AirOpsEnv v1–v3: the storm day, the ops control center and its passengers](./07-simulation-environments/airopsenv/)**<br><sub>by [Edgar Arakelyan](https://github.com/earakely-scale) (Scale AI)</sub> | Run JetBlue through a real storm day, from one hub's desk to the whole network's control center, where two desks talk, then three with the passengers on board. | 1 | 1 | 0 | 🚧 wip |
+| **08** | **[openai/math: research-level Lean proofs](./08-math-environments/openai-math/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | OpenAI's Comparator challenges as Harbor tasks: prove a research result in Lean 4, graded by Comparator in a separate sandbox. | 1 | 1 | 0 | 🚧 wip |
+| **08** | **[FineProofEnvs: olympiad proofs with a rubric judge](./08-math-environments/fineproof/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | Write a natural-language proof of an olympiad problem; an LLM judge grades it 0–7 against the problem's rubric, as in the QED-Nano recipe. | 1 | 1 | 0 | ✅ trained |
+| **08** | **[Scott Wu Math: the card game](./08-math-environments/scott-wu-math/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | Make the target from every card once with + − × ÷: the 24 game, then the current year from eight cards, then any four-digit number from nine. | 1 | 1 | 1 | ✅ stable |
+| **09** | **[RetroEnv](./09-retroenv/)**<br><sub>by [Anindyadeep Sannigrahi](https://github.com/Anindyadeep), [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | Plan retrosyntheses back to purchasable molecules, scored step by step against a frozen reaction library, and Qwen3.8-27B trained to do it. | 1 | 1 | 1 | ✅ trained |
+| **10** | **[TraceAudit](./10-traceaudit/)**<br><sub>by Rahul Badhan</sub> | Judge failures in recorded agent traces with verified outcome labels. | 1 | 1 | 0 | 🚧 wip |
 <!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
@@ -180,7 +185,40 @@ Everything is in the [Simulation RL Envs collection](https://huggingface.co/coll
 and [the article](https://huggingface.co/spaces/FineEnvs/simulation-rl-environments) covers all of it.
 Built a simulation environment? [Add it to the catalog](./07-simulation-environments/#add-your-environment).
 
-### [08 · TraceAudit](./08-traceaudit/)
+### [08 · Math environments](./08-math-environments/) &nbsp;<sub>from mental arithmetic to research-level proofs</sub>
+
+**Three ways to grade maths.** A catalog of math environments, each explicit about how it grades:
+- [Scott Wu Math](./08-math-environments/scott-wu-math/) checks one arithmetic expression exactly.
+- [openai/math](./08-math-environments/openai-math/) accepts only a Lean 4 proof that the kernel checks against the
+  exact statement.
+- [FineProofEnvs](./08-math-environments/fineproof/) has gpt-oss-20b grade a plain-language olympiad proof 0–7
+  against its rubric, the reward QED-Nano trained with.
+
+Qwen3.5-2B, trained with RL from the base model on FineProofEnvs, went from 0.217 to 0.407 on held-out proofs in 500
+updates. A gpt-oss-120b regrade sees 0.259 → 0.464. All of it ran on Hugging Face: Jobs, Sandboxes, Inference
+Providers and a bucket. Reading the proofs shows new key ideas, and also that both judges forgive contradictions
+around a correct argument. The [blog post](https://huggingface.co/blog/FineEnvs/fineproofenvs-rl-2b-prover) tells the story. The model, the tasks, every eval attempt and the training logs are in the
+[Math Environments collection](https://huggingface.co/collections/FineEnvs/math-environments-6af40312bf237e3c32912840).
+
+### [09 · RetroEnv](./09-retroenv/) &nbsp;<sub>plan a synthesis back to molecules you can buy</sub>
+
+**A verifier that does not hold the answer.** Given a target molecule, the agent works backwards
+through nine tools until every leaf is something a supplier sells. Each proposed reaction is checked
+against a frozen library of real reactions and templates, and each leaf against a 102,915-item stock
+list — so any route that holds up chemically counts, including one no chemist has published.
+Matching the patent route only adds a bonus.
+
+Qwen3.8-27B trained on it with GRPO went from 0.118 to **0.338 pass@1** on the held-out set, hard
+tier 0.035 → 0.18. On the thirty tasks the [13-model board](./09-retroenv/results/core30-board.md)
+uses — where Sonnet 5.5 scores 0.400 and the untrained Qwen 0.100 — it solves 14 on first attempt
+against the base model's 4. Both mixed-pool runs peak and then decline, and
+[`results/`](./09-retroenv/results) says so. Every rollout is readable in
+[retroenv-rollouts](https://huggingface.co/spaces/FineEnvs/retroenv-rollouts): the route trees drawn
+with RDKit, the reward breakdown, and all fifteen models side by side on the same molecule. Models,
+adapters, datasets and 174 GB of runs are in the
+[RetroEnv collection](https://huggingface.co/collections/FineEnvs/retroenv-6b0584ffc015c651084dc6ea).
+
+### [10 · TraceAudit](./10-traceaudit/)
 
 A single-turn auditor reads recorded agent traces and predicts failure probability with a verified
 outcome reward. Offline core, source adapters, human-review queues and a Verifiers port are implemented.
@@ -324,6 +362,22 @@ The multi-harness RL talk: one small model trained with GRPO inside four unmodif
 
 </td>
 </tr>
+<tr>
+<td width="25%" valign="top">
+
+<a href="https://huggingface.co/blog/FineEnvs/fineproofenvs-rl-2b-prover"><img src="./assets/content/fineproofenvs-blog.png" alt="FineProofEnvs: RL training a 2B math prover with a custom harness"></a>
+
+#### [FineProofEnvs: RL Training a 2B Math Prover with a Custom Harness](https://huggingface.co/blog/FineEnvs/fineproofenvs-rl-2b-prover)
+
+![Article](https://img.shields.io/badge/-article-4F46E5) ![HF blog](https://img.shields.io/badge/-hf%20blog-FFD21E)
+
+Qwen3.5-2B trained with RL from the base model to write olympiad proofs, through a ~280-line Harbor
+harness and all on Hugging Face: 0.22 → 0.41 on held-out proofs.
+
+<sub>📝 [the blog post](https://huggingface.co/blog/FineEnvs/fineproofenvs-rl-2b-prover) · project [`08-math-environments/fineproof/`](./08-math-environments/fineproof/)</sub>
+
+</td>
+</tr>
 </table>
 
 ---
@@ -365,7 +419,7 @@ npx skills add adithya-s-k/FineEnvs
 | Skill | What it builds |
 |---|---|
 | **`rl-env-from-description`** | Orchestrator — interviews you, then ports across all four frameworks |
-| `generate-openenv-env` | [OpenEnv](https://github.com/huggingface/OpenEnv) (Hugging Face / Meta) — HTTP + MCP |
+| `generate-openenv-env` | [OpenEnv](https://github.com/openenv/OpenEnv) (Hugging Face / Meta) — HTTP + MCP |
 | `generate-ors-env` | [OpenReward](https://openreward.ai) (ORS) — per-tool-call rewards |
 | `generate-verifiers-env` | [Verifiers](https://github.com/PrimeIntellect-ai/verifiers) (Prime Intellect) — in-process + rubrics |
 | `generate-nemo-gym-env` | [NeMo Gym](https://github.com/NVIDIA-NeMo/Gym) (NVIDIA) — HTTP + post-episode `/verify` |
@@ -386,7 +440,9 @@ FineEnvs/
 ├── 05-multi-harness-rl/     the same tasks trained through TRL, OpenCode and Harbor
 ├── 06-multilingual/         OCR over 22 languages and ASR over 102, two OpenEnv servers
 ├── 07-simulation-environments/  a catalog of simulation environments: PortSimEnv v1–v5 and more
-├── 08-traceaudit/           failure-probability auditing of recorded agent traces
+├── 08-math-environments/    math environments graded exactly, by Lean, or by a rubric judge
+├── 09-retroenv/             retrosynthesis graded against a frozen reaction library
+├── 10-traceaudit/           failure-probability auditing of recorded agent traces
 ├── content/
 │   ├── articles/            long-form sources (Astro → Docker Space)
 │   └── slides/              talk decks (Vite → static Space)

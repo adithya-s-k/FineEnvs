@@ -1,0 +1,434 @@
+{
+ "pack": "b6-v2",
+ "built_at_commit": "41d8f7239fcd49f1a8386a0a4e51d052abc8e40c",
+ "assembled_at_commit": "451949580ab1d4d1ea50fb7340ad36d1c09b3eea",
+ "framework": "0.9.1323",
+ "crew_params_sha256": "5dd4636fc072ff4a700c48759e9515e1e4096f807b9b924850bce0146d6fa908",
+ "tasks": {
+  "b6-20221207-0400": {
+   "date": "2022-12-07",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20230606-0400": {
+   "date": "2023-06-06",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20230616-0400": {
+   "date": "2023-06-16",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20230624-0400": {
+   "date": "2023-06-24",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20230627-0400": {
+   "date": "2023-06-27",
+   "split": "train",
+   "best_from": "rerun"
+  },
+  "b6-20230701-0400": {
+   "date": "2023-07-01",
+   "split": "train",
+   "best_from": "rerun"
+  },
+  "b6-20230702-0400": {
+   "date": "2023-07-02",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20230708-0400": {
+   "date": "2023-07-08",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20230709-0400": {
+   "date": "2023-07-09",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20230713-0400": {
+   "date": "2023-07-13",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20230729-0400": {
+   "date": "2023-07-29",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20230807-0400": {
+   "date": "2023-08-07",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20230808-0400": {
+   "date": "2023-08-08",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20230810-0400": {
+   "date": "2023-08-10",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20230812-0400": {
+   "date": "2023-08-12",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20230814-0400": {
+   "date": "2023-08-14",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20230815-0400": {
+   "date": "2023-08-15",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20230817-0400": {
+   "date": "2023-08-17",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20230818-0400": {
+   "date": "2023-08-18",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20230820-0400": {
+   "date": "2023-08-20",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20230825-0400": {
+   "date": "2023-08-25",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20230829-0400": {
+   "date": "2023-08-29",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20231210-0400": {
+   "date": "2023-12-10",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20231218-0400": {
+   "date": "2023-12-18",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20231226-0400": {
+   "date": "2023-12-26",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240106-0400": {
+   "date": "2024-01-06",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240116-0400": {
+   "date": "2024-01-16",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240228-0400": {
+   "date": "2024-02-28",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240607-0400": {
+   "date": "2024-06-07",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240609-0400": {
+   "date": "2024-06-09",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240614-0400": {
+   "date": "2024-06-14",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240623-0400": {
+   "date": "2024-06-23",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20240626-0400": {
+   "date": "2024-06-26",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240629-0400": {
+   "date": "2024-06-29",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240630-0400": {
+   "date": "2024-06-30",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240703-0400": {
+   "date": "2024-07-03",
+   "split": "control",
+   "best_from": "run"
+  },
+  "b6-20240713-0400": {
+   "date": "2024-07-13",
+   "split": "eval",
+   "best_from": "rerun"
+  },
+  "b6-20240715-0400": {
+   "date": "2024-07-15",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20240722-0400": {
+   "date": "2024-07-22",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20240728-0400": {
+   "date": "2024-07-28",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240729-0400": {
+   "date": "2024-07-29",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240730-0400": {
+   "date": "2024-07-30",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240731-0400": {
+   "date": "2024-07-31",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240803-0400": {
+   "date": "2024-08-03",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240809-0400": {
+   "date": "2024-08-09",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240816-0400": {
+   "date": "2024-08-16",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240817-0400": {
+   "date": "2024-08-17",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20240818-0400": {
+   "date": "2024-08-18",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20250111-0400": {
+   "date": "2025-01-11",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20250115-0400": {
+   "date": "2025-01-15",
+   "split": "control",
+   "best_from": "run"
+  },
+  "b6-20250119-0400": {
+   "date": "2025-01-19",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20250206-0400": {
+   "date": "2025-02-06",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20250218-0400": {
+   "date": "2025-02-18",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20250708-0400": {
+   "date": "2025-07-08",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20250712-0400": {
+   "date": "2025-07-12",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20250813-0400": {
+   "date": "2025-08-13",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20251202-0400": {
+   "date": "2025-12-02",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20251211-0400": {
+   "date": "2025-12-11",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20251214-0400": {
+   "date": "2025-12-14",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20251219-0400": {
+   "date": "2025-12-19",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20251230-0400": {
+   "date": "2025-12-30",
+   "split": "eval",
+   "best_from": "rerun"
+  },
+  "b6-20260119-0400": {
+   "date": "2026-01-19",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20260220-0400": {
+   "date": "2026-02-20",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20260614-0400": {
+   "date": "2026-06-14",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20260701-0400": {
+   "date": "2026-07-01",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20260709-0400": {
+   "date": "2026-07-09",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20260715-0400": {
+   "date": "2026-07-15",
+   "split": "eval",
+   "best_from": "run"
+  },
+  "b6-20260727-0400": {
+   "date": "2026-07-27",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20260729-0400": {
+   "date": "2026-07-29",
+   "split": "train",
+   "best_from": "run"
+  },
+  "b6-20260730-0400": {
+   "date": "2026-07-30",
+   "split": "train",
+   "best_from": "run"
+  }
+ },
+ "skipped": {
+  "2023-06-02": "its joint search crashed in the crew run; outside the pool by rule"
+ },
+ "files": {
+  "dates/2022-12-07.json.gz": "65c8698eff1c54a82e1db346ae3c0095c4179fe58ce4489245fc681efe808f55",
+  "dates/2023-06-06.json.gz": "7b03f862c5e150b2ac0e03aabafafc5c62b69b782111910c8e90642077bf55c8",
+  "dates/2023-06-16.json.gz": "6b37c1fd022c2e600e36b4974afa222f90e05d2697322390e052d13a4166cb8c",
+  "dates/2023-06-24.json.gz": "8b66483af4e40f3802dbfa09ae16b2a08190a3050c127c0cbc782e0e83294544",
+  "dates/2023-06-27.json.gz": "369a763a3108595cd8f3ff2c243d37006ced45d4b972088f5c73b0d0caab82d2",
+  "dates/2023-07-01.json.gz": "cb709425d1be64a10eac059e15d654cb080e8dabe2cd21cd9c9e9a9010a6c2c8",
+  "dates/2023-07-02.json.gz": "337fb2ae19c69ddea8b31a4197f4d796861d2c1176324bb8fc8361c38f97468b",
+  "dates/2023-07-08.json.gz": "dfbe9f339200240985705e9a3ce1d160a52ad4520a4b4ef2d3327a9151a5d990",
+  "dates/2023-07-09.json.gz": "00518afa26ec5e3f7971865475a5667b48a3f231bfafc70e9d9b68c6ee60674b",
+  "dates/2023-07-13.json.gz": "1c94799e15188c8ab79c5e42bc3a5aa58c1e2ca2748c24c4e79c30d7c1fcc90d",
+  "dates/2023-07-29.json.gz": "871432927536ca44553073156247da3f7db22a50dd9568b003c044ffe9a3ce12",
+  "dates/2023-08-07.json.gz": "320a684214d01a2d29d4d9c4caca87172a1cf12ba4dd2eaac19eba4fe666d98d",
+  "dates/2023-08-08.json.gz": "3c7cf6189723dcd2a5e0d16d538e7f32c4f68e86c1fbd39d7f5010dd8264b002",
+  "dates/2023-08-10.json.gz": "9f332d333c81abcfb4bdcbacc612d64f87c655aea1463305bea48bff2041ab8b",
+  "dates/2023-08-12.json.gz": "06d962e5b404c4382c8b56d0ca1e2965bfc01cdc6c382d004052ad5f5a54c193",
+  "dates/2023-08-14.json.gz": "f11392cb1aacef028d80071f8f790dde374f58401639b5b8b8c4e56761e75fc0",
+  "dates/2023-08-15.json.gz": "ea013e1eabde910d4ecfb233e2551f50c11468d8346416c9d948b37725349dc0",
+  "dates/2023-08-17.json.gz": "b796ba95ea831c254aba9bfea37e2735bc13454e1668c11a0d8f19d372e351b1",
+  "dates/2023-08-18.json.gz": "5f4d608f3da4c50e3fd9aa97576a034ba95974c82f02d66a3eac5d2c49773329",
+  "dates/2023-08-20.json.gz": "4ab021af82f5a6fbe5248c3014df28ee888063aec3e91afac8c1efe7cbc1d54c",
+  "dates/2023-08-25.json.gz": "2569bd8dd1434bd54bed9a48b4f3ff586333672886a05c229ee630f98ac843ad",
+  "dates/2023-08-29.json.gz": "715f2aca62ccedf72850c0340d48760aa5cccd1d3ed6dd41a0f4a6010ce8db7a",
+  "dates/2023-12-10.json.gz": "30c5603f7bbd3cb30659dfdebe4ebab751c0d46fa18e5f57313d42279642014f",
+  "dates/2023-12-18.json.gz": "099dccf4e9c0a076aa2e1ce4249967282c54c8b84f9bbd2c88368e75ee0b0e89",
+  "dates/2023-12-26.json.gz": "df789176a3c9a5f76399626ea03a91e5117d858434c1fe70c9ea5c8164beb71e",
+  "dates/2024-01-06.json.gz": "817d71ee85e63364532a0f3d197b3840cd407c5d22df2a0fd462604f670c1c17",
+  "dates/2024-01-16.json.gz": "392c439b89e04983f6375c66ce531f101762fca778af7e5f9fcec35f1a47b645",
+  "dates/2024-02-28.json.gz": "3843dbfaac568e951904325545f1c76a61655ffdbff18e1561cfab36161eda5c",
+  "dates/2024-06-07.json.gz": "dda0b528e422dc277e1bdffba77aed245ed3ab410abf16d025bf9df83cbbd005",
+  "dates/2024-06-09.json.gz": "038382a8cfc58b4f2b519eff187a641a5e57f25320b9ebd76aebfe6624be0536",
+  "dates/2024-06-14.json.gz": "43d30b787d7d2b7c7263b44ab4d5c84ca1066a26359ace7f4feb04493f877f53",
+  "dates/2024-06-23.json.gz": "9669cb293eba5231b85540648599b92ab130411c3f6ba9eb7cf1432add503ce6",
+  "dates/2024-06-26.json.gz": "1861b599408e5f1b296fedb6d6d7a377a6eb15a284e3de3ede8ae80c8486d366",
+  "dates/2024-06-29.json.gz": "9a0413ff8ce0c6822e2743db688c1f827488bc1536c91a33ee255a99a566e204",
+  "dates/2024-06-30.json.gz": "3f64054e270b5381ba1bcd9d040a3423d24f12bb46071da9ed11ab4bcb302a8c",
+  "dates/2024-07-03.json.gz": "0bb2dd872df2a792e0e223529728a89f787710fb31cac445c57d327ffafd59f1",
+  "dates/2024-07-13.json.gz": "b1db143db6f68c640a3f394582783fda0e7fad55b28f89bf79b95fa7af8027e1",
+  "dates/2024-07-15.json.gz": "9de0a854ae7fdc3d955fc6cb8a7c14fe38724112aa986ef7a5908fae2fad3f6f",
+  "dates/2024-07-22.json.gz": "d7d921ad1a61aeb313d6c8f9eb0dd60ee67111b9b5a8fe0ce46d917faf3eb664",
+  "dates/2024-07-28.json.gz": "d8f7252113d6275ef4d31ad5d0926a68b892bc0b9756cf5704847bc0de3cf388",
+  "dates/2024-07-29.json.gz": "52fd55b5700d7630552c73700f0854404f0c72b0339ae1f100cb405909a619d3",
+  "dates/2024-07-30.json.gz": "8c3f909dde04bd7e5c3c676aa48d557f90ce7b029b277808556b8cf408162556",
+  "dates/2024-07-31.json.gz": "f769a571ca997fcd66c7f7724c9b2b40471881549a10b6996dc1d013cc58e8e0",
+  "dates/2024-08-03.json.gz": "9ce52ec19cbbaa48a96c385b8b06646a0854eff0f3bca48d3bd840d966c1c122",
+  "dates/2024-08-09.json.gz": "dce513026cd52bfc51a2a648912ac4220173b030a7247a3df3cbef9550513af6",
+  "dates/2024-08-16.json.gz": "89b037eaadadceaca1a68a4f2089a6260da2b3cc3cd038193f21baac32e5e833",
+  "dates/2024-08-17.json.gz": "26229122667a2c34a740b5eef54166bbfd5d1eb3375d957678ee98f46e9d1a90",
+  "dates/2024-08-18.json.gz": "b053b0282a642a8c635c88b8071874949a9a5c280fb436eb88951646f9c8d1db",
+  "dates/2025-01-11.json.gz": "bb0cbc91b6ad2ab85538dce5aaefa68b5bbea5e129aef630d80573a7c5b1e5e1",
+  "dates/2025-01-15.json.gz": "9690f6eae1cea19e5335b45a53644f72ab80c96e320e6a295f4c8b67b97c6e73",
+  "dates/2025-01-19.json.gz": "13e9484ace204fdb2f7bce47e7edae2c2c7f41637b46a28aa772b47e46b559c7",
+  "dates/2025-02-06.json.gz": "db40b7834b7c9df4dab98335dfe9541aeb07754c958073154f186da419942d59",
+  "dates/2025-02-18.json.gz": "6d3c7a52c61fa3c1c964864eb64700b5a8cf583e7041f7483916c75378384162",
+  "dates/2025-07-08.json.gz": "a3dfa46985d2693b747459a8e236dfd77e3bd0123f1b0cec16071c238b4d702b",
+  "dates/2025-07-12.json.gz": "180611d8b50e893e902b8df2c38fdca8e9441c07bb63655308aa760491529b84",
+  "dates/2025-08-13.json.gz": "6563e6302f34948e6b1e3249811100141270d97af5273f4280260fb6eb47f2ea",
+  "dates/2025-12-02.json.gz": "bbdda46cfaa66217c2e93c17661f16415a94d37f035350f49b2470117edd66b4",
+  "dates/2025-12-11.json.gz": "cb04bece7ff51fce42780d62ecf8c75eaf6a4cf95e9f5ad43f48729a4b9c4bb3",
+  "dates/2025-12-14.json.gz": "8e803ff9e798576b8fd9bba3af138b12daf68fb9cec16770471459bb13c38c8e",
+  "dates/2025-12-19.json.gz": "767c6bc774bb0d542a989e6e1a0c8a3e7b5943600c1c565fc1ca6825a6cfe1b0",
+  "dates/2025-12-30.json.gz": "c52f15c26a959007a83154c8bc85a9e72769f82453ab2e7afb5a90aeb05200d8",
+  "dates/2026-01-19.json.gz": "f87932856cb33122c676972513d161a515e642929a7d9ac9d3509340d17498d8",
+  "dates/2026-02-20.json.gz": "cfe491eeb692ebf21d7673314856239064694d9ca5ad425f8c04206bc083a8fb",
+  "dates/2026-06-14.json.gz": "96f19c54fac744801861bcebb33f1b60160ac2899d27a9dc7704c9a63945cc94",
+  "dates/2026-07-01.json.gz": "75beed33c7d6a7569ba5c221ea433e37c31ee0a8b384c1df160423d94cb43950",
+  "dates/2026-07-09.json.gz": "75cf19f175a2f5a738fab58fbb81f4b275c127d13f0c0ac1a7a42ca8a72bfa54",
+  "dates/2026-07-15.json.gz": "6ccf77319ddbb5091264f65dadb085bfbcd16261cfd7d7e143eae25ae7062ae8",
+  "dates/2026-07-27.json.gz": "9b4623ee03912064d256d900f34d9eaae12aa062615672d33093164df18c5aea",
+  "dates/2026-07-29.json.gz": "e993857b487196b7a23f6afbab48bed2c2f12917239c658d275eac769f2a78f2",
+  "dates/2026-07-30.json.gz": "7974867550bb964d7ea623c325e04d3d89fc5b8b73a1588dd58f17e48e2a3949"
+ }
+}

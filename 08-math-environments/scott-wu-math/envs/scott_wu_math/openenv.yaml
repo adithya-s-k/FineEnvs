@@ -1,0 +1,6 @@
+spec_version: 1
+name: scott_wu_math
+type: space
+runtime: fastapi
+app: scott_wu_math.server.app:app
+port: 8000

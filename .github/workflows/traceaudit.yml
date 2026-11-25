@@ -1,10 +1,10 @@
 name: TraceAudit
 on:
   pull_request:
-    paths: ['08-traceaudit/**', '.github/workflows/traceaudit.yml']
+    paths: ['10-traceaudit/**', '.github/workflows/traceaudit.yml']
   push:
     branches: [main]
-    paths: ['08-traceaudit/**', '.github/workflows/traceaudit.yml']
+    paths: ['10-traceaudit/**', '.github/workflows/traceaudit.yml']
 permissions:
   contents: read
 jobs:
@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: 08-traceaudit/envs/trace_audit/verifiers
+        working-directory: 10-traceaudit/envs/trace_audit/verifiers
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6

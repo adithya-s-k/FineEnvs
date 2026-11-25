@@ -1,5 +1,5 @@
 [
-  { "name": "OpenEnv",       "tier": 2, "transport": "http",       "creator": "Meta",                  "included": true,  "category": "tier2", "repo": "https://github.com/meta-pytorch/OpenEnv" },
+  { "name": "OpenEnv",       "tier": 2, "transport": "http",       "creator": "Meta",                  "included": true,  "category": "tier2", "repo": "https://github.com/openenv/OpenEnv" },
   { "name": "ORS",           "tier": 2, "transport": "http",       "creator": "General Reasoning",     "included": true,  "category": "tier2", "repo": "https://openrewardstandard.io/" },
   { "name": "NeMo Gym",      "tier": 2, "transport": "http",       "creator": "NVIDIA",                "included": true,  "category": "tier2", "repo": "https://github.com/NVIDIA-NeMo/Gym" },
   { "name": "Verifiers",     "tier": 3, "transport": "in-process", "creator": "PrimeIntellect",        "included": true,  "category": "tier3", "repo": "https://github.com/PrimeIntellect-ai/verifiers" },

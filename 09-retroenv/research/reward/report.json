@@ -1,0 +1,2700 @@
+{
+  "episodes": 889,
+  "models": [
+    "Claude Opus 5.5",
+    "Claude Sonnet 5.5",
+    "GPT-5.6 Luna",
+    "GPT-5.6 Sol",
+    "GPT-5.6 Terra",
+    "Intern-S2 Preview 35B",
+    "Qwen3.8 27B",
+    "Qwen3.8 27B (high)",
+    "openai/gpt-4.1",
+    "openai/gpt-4.1-mini",
+    "openai/gpt-4.1-nano",
+    "openai/gpt-4o",
+    "openai/gpt-4o-mini",
+    "openai/gpt-5",
+    "openai/gpt-5-mini",
+    "openai/gpt-5-nano"
+  ],
+  "pass_rate_shipped": 0.2205,
+  "pass_rate_strict": 0.198,
+  "per_model": {
+    "Claude Opus 5.5": {
+      "anchored-a0-base": 0.7462,
+      "anchored-a1-progress-leaf": 0.7468,
+      "anchored-a1-progress-worst": 0.744,
+      "anchored-a2-precision-floor-0.0": 0.7384,
+      "anchored-a2-precision-floor-0.25": 0.7423,
+      "anchored-a2-precision-floor-1.0": 0.754,
+      "anchored-a3-structure-share-0.0": 0.7399,
+      "anchored-a3-structure-share-0.5": 0.7525,
+      "anchored-a4-bands-0.5/0.4": 0.7356,
+      "anchored-a4-bands-0.7/0.2": 0.7568,
+      "anchored-a5-support-any@25": 0.7283,
+      "anchored-a5-support-major@5": 0.7389,
+      "anchored-a5-support-sole@10": 0.7365,
+      "anchored-a5-support-sole@25": 0.721,
+      "anchored-a6-frontier-mass-0.1": 0.7436,
+      "anchored-a6-frontier-mass-0.2": 0.7435,
+      "anchored-a6-frontier-mass-0.35": 0.7434,
+      "anchored-a6-frontier-proximity-0.1": 0.7435,
+      "anchored-a6-frontier-proximity-0.2": 0.7433,
+      "anchored-a6-frontier-proximity-0.35": 0.743,
+      "n": 60,
+      "pass_shipped": 0.8,
+      "pass_strict": 0.8,
+      "v0-shipped": 0.7857,
+      "v0b-partial-credit-0.5": 0.7613,
+      "v1-no-free-components": 0.757,
+      "v2-progress-gated-steps": 0.7095,
+      "v3-failure-cap-0.30": 0.7677,
+      "v4-gated+cap": 0.705,
+      "v8-FINAL": 0.7473
+    },
+    "Claude Sonnet 5.5": {
+      "anchored-a0-base": 0.704,
+      "anchored-a1-progress-leaf": 0.7064,
+      "anchored-a1-progress-worst": 0.7008,
+      "anchored-a2-precision-floor-0.0": 0.704,
+      "anchored-a2-precision-floor-0.25": 0.704,
+      "anchored-a2-precision-floor-1.0": 0.704,
+      "anchored-a3-structure-share-0.0": 0.6956,
+      "anchored-a3-structure-share-0.5": 0.7124,
+      "anchored-a4-bands-0.5/0.4": 0.6936,
+      "anchored-a4-bands-0.7/0.2": 0.7144,
+      "anchored-a5-support-any@25": 0.6865,
+      "anchored-a5-support-major@5": 0.6923,
+      "anchored-a5-support-sole@10": 0.6851,
+      "anchored-a5-support-sole@25": 0.6748,
+      "anchored-a6-frontier-mass-0.1": 0.7006,
+      "anchored-a6-frontier-mass-0.2": 0.7006,
+      "anchored-a6-frontier-mass-0.35": 0.7005,
+      "anchored-a6-frontier-proximity-0.1": 0.7007,
+      "anchored-a6-frontier-proximity-0.2": 0.7008,
+      "anchored-a6-frontier-proximity-0.35": 0.701,
+      "n": 60,
+      "pass_shipped": 0.75,
+      "pass_strict": 0.7167,
+      "v0-shipped": 0.7633,
+      "v0b-partial-credit-0.5": 0.7274,
+      "v1-no-free-components": 0.7339,
+      "v2-progress-gated-steps": 0.6672,
+      "v3-failure-cap-0.30": 0.7314,
+      "v4-gated+cap": 0.659,
+      "v8-FINAL": 0.6988
+    },
+    "GPT-5.6 Luna": {
+      "anchored-a0-base": 0.4337,
+      "anchored-a1-progress-leaf": 0.4416,
+      "anchored-a1-progress-worst": 0.421,
+      "anchored-a2-precision-floor-0.0": 0.4254,
+      "anchored-a2-precision-floor-0.25": 0.4295,
+      "anchored-a2-precision-floor-1.0": 0.442,
+      "anchored-a3-structure-share-0.0": 0.3963,
+      "anchored-a3-structure-share-0.5": 0.4711,
+      "anchored-a4-bands-0.5/0.4": 0.4404,
+      "anchored-a4-bands-0.7/0.2": 0.427,
+      "anchored-a5-support-any@25": 0.3943,
+      "anchored-a5-support-major@5": 0.4206,
+      "anchored-a5-support-sole@10": 0.3922,
+      "anchored-a5-support-sole@25": 0.3659,
+      "anchored-a6-frontier-mass-0.1": 0.4183,
+      "anchored-a6-frontier-mass-0.2": 0.4179,
+      "anchored-a6-frontier-mass-0.35": 0.4173,
+      "anchored-a6-frontier-proximity-0.1": 0.4181,
+      "anchored-a6-frontier-proximity-0.2": 0.4174,
+      "anchored-a6-frontier-proximity-0.35": 0.4164,
+      "n": 60,
+      "pass_shipped": 0.4333,
+      "pass_strict": 0.35,
+      "v0-shipped": 0.6335,
+      "v0b-partial-credit-0.5": 0.5072,
+      "v1-no-free-components": 0.5539,
+      "v2-progress-gated-steps": 0.5357,
+      "v3-failure-cap-0.30": 0.5414,
+      "v4-gated+cap": 0.502,
+      "v8-FINAL": 0.3857
+    },
+    "GPT-5.6 Sol": {
+      "anchored-a0-base": 0.7081,
+      "anchored-a1-progress-leaf": 0.7103,
+      "anchored-a1-progress-worst": 0.7028,
+      "anchored-a2-precision-floor-0.0": 0.701,
+      "anchored-a2-precision-floor-0.25": 0.7045,
+      "anchored-a2-precision-floor-1.0": 0.7153,
+      "anchored-a3-structure-share-0.0": 0.6954,
+      "anchored-a3-structure-share-0.5": 0.7209,
+      "anchored-a4-bands-0.5/0.4": 0.6976,
+      "anchored-a4-bands-0.7/0.2": 0.7186,
+      "anchored-a5-support-any@25": 0.6545,
+      "anchored-a5-support-major@5": 0.7081,
+      "anchored-a5-support-sole@10": 0.6926,
+      "anchored-a5-support-sole@25": 0.639,
+      "anchored-a6-frontier-mass-0.1": 0.703,
+      "anchored-a6-frontier-mass-0.2": 0.7029,
+      "anchored-a6-frontier-mass-0.35": 0.7029,
+      "anchored-a6-frontier-proximity-0.1": 0.7031,
+      "anchored-a6-frontier-proximity-0.2": 0.7031,
+      "anchored-a6-frontier-proximity-0.35": 0.7031,
+      "n": 30,
+      "pass_shipped": 0.7667,
+      "pass_strict": 0.7,
+      "v0-shipped": 0.7972,
+      "v0b-partial-credit-0.5": 0.74,
+      "v1-no-free-components": 0.7513,
+      "v2-progress-gated-steps": 0.6713,
+      "v3-failure-cap-0.30": 0.7523,
+      "v4-gated+cap": 0.6582,
+      "v8-FINAL": 0.6995
+    },
+    "GPT-5.6 Terra": {
+      "anchored-a0-base": 0.5377,
+      "anchored-a1-progress-leaf": 0.5464,
+      "anchored-a1-progress-worst": 0.5229,
+      "anchored-a2-precision-floor-0.0": 0.5143,
+      "anchored-a2-precision-floor-0.25": 0.526,
+      "anchored-a2-precision-floor-1.0": 0.5611,
+      "anchored-a3-structure-share-0.0": 0.5111,
+      "anchored-a3-structure-share-0.5": 0.5643,
+      "anchored-a4-bands-0.5/0.4": 0.5406,
+      "anchored-a4-bands-0.7/0.2": 0.5348,
+      "anchored-a5-support-any@25": 0.529,
+      "anchored-a5-support-major@5": 0.5143,
+      "anchored-a5-support-sole@10": 0.4981,
+      "anchored-a5-support-sole@25": 0.4894,
+      "anchored-a6-frontier-mass-0.1": 0.5266,
+      "anchored-a6-frontier-mass-0.2": 0.5262,
+      "anchored-a6-frontier-mass-0.35": 0.5256,
+      "anchored-a6-frontier-proximity-0.1": 0.5254,
+      "anchored-a6-frontier-proximity-0.2": 0.5238,
+      "anchored-a6-frontier-proximity-0.35": 0.5213,
+      "n": 30,
+      "pass_shipped": 0.5667,
+      "pass_strict": 0.5,
+      "v0-shipped": 0.7036,
+      "v0b-partial-credit-0.5": 0.5991,
+      "v1-no-free-components": 0.6411,
+      "v2-progress-gated-steps": 0.6055,
+      "v3-failure-cap-0.30": 0.6188,
+      "v4-gated+cap": 0.5779,
+      "v8-FINAL": 0.48
+    },
+    "Intern-S2 Preview 35B": {
+      "anchored-a0-base": 0.2797,
+      "anchored-a1-progress-leaf": 0.2825,
+      "anchored-a1-progress-worst": 0.2619,
+      "anchored-a2-precision-floor-0.0": 0.2642,
+      "anchored-a2-precision-floor-0.25": 0.272,
+      "anchored-a2-precision-floor-1.0": 0.2952,
+      "anchored-a3-structure-share-0.0": 0.2571,
+      "anchored-a3-structure-share-0.5": 0.3023,
+      "anchored-a4-bands-0.5/0.4": 0.291,
+      "anchored-a4-bands-0.7/0.2": 0.2684,
+      "anchored-a5-support-any@25": 0.2714,
+      "anchored-a5-support-major@5": 0.2797,
+      "anchored-a5-support-sole@10": 0.2784,
+      "anchored-a5-support-sole@25": 0.2701,
+      "anchored-a6-frontier-mass-0.1": 0.2704,
+      "anchored-a6-frontier-mass-0.2": 0.27,
+      "anchored-a6-frontier-mass-0.35": 0.2695,
+      "anchored-a6-frontier-proximity-0.1": 0.2692,
+      "anchored-a6-frontier-proximity-0.2": 0.2677,
+      "anchored-a6-frontier-proximity-0.35": 0.2655,
+      "n": 30,
+      "pass_shipped": 0.2667,
+      "pass_strict": 0.2667,
+      "v0-shipped": 0.4269,
+      "v0b-partial-credit-0.5": 0.3329,
+      "v1-no-free-components": 0.3706,
+      "v2-progress-gated-steps": 0.3399,
+      "v3-failure-cap-0.30": 0.3559,
+      "v4-gated+cap": 0.3136,
+      "v8-FINAL": 0.2592
+    },
+    "Qwen3.8 27B": {
+      "anchored-a0-base": 0.0254,
+      "anchored-a1-progress-leaf": 0.0279,
+      "anchored-a1-progress-worst": 0.0217,
+      "anchored-a2-precision-floor-0.0": 0.0254,
+      "anchored-a2-precision-floor-0.25": 0.0254,
+      "anchored-a2-precision-floor-1.0": 0.0254,
+      "anchored-a3-structure-share-0.0": 0.0049,
+      "anchored-a3-structure-share-0.5": 0.0458,
+      "anchored-a4-bands-0.5/0.4": 0.0338,
+      "anchored-a4-bands-0.7/0.2": 0.0169,
+      "anchored-a5-support-any@25": 0.0254,
+      "anchored-a5-support-major@5": 0.0254,
+      "anchored-a5-support-sole@10": 0.0254,
+      "anchored-a5-support-sole@25": 0.0254,
+      "anchored-a6-frontier-mass-0.1": 0.0172,
+      "anchored-a6-frontier-mass-0.2": 0.0171,
+      "anchored-a6-frontier-mass-0.35": 0.017,
+      "anchored-a6-frontier-proximity-0.1": 0.0167,
+      "anchored-a6-frontier-proximity-0.2": 0.0162,
+      "anchored-a6-frontier-proximity-0.35": 0.0155,
+      "n": 9,
+      "pass_shipped": 0.0,
+      "pass_strict": 0.0,
+      "v0-shipped": 0.1145,
+      "v0b-partial-credit-0.5": 0.0572,
+      "v1-no-free-components": 0.0781,
+      "v2-progress-gated-steps": 0.0882,
+      "v3-failure-cap-0.30": 0.0742,
+      "v4-gated+cap": 0.0742,
+      "v8-FINAL": 0.0108
+    },
+    "Qwen3.8 27B (high)": {
+      "anchored-a0-base": 0.2298,
+      "anchored-a1-progress-leaf": 0.2356,
+      "anchored-a1-progress-worst": 0.2169,
+      "anchored-a2-precision-floor-0.0": 0.2261,
+      "anchored-a2-precision-floor-0.25": 0.228,
+      "anchored-a2-precision-floor-1.0": 0.2336,
+      "anchored-a3-structure-share-0.0": 0.1917,
+      "anchored-a3-structure-share-0.5": 0.268,
+      "anchored-a4-bands-0.5/0.4": 0.248,
+      "anchored-a4-bands-0.7/0.2": 0.2117,
+      "anchored-a5-support-any@25": 0.2167,
+      "anchored-a5-support-major@5": 0.2298,
+      "anchored-a5-support-sole@10": 0.1923,
+      "anchored-a5-support-sole@25": 0.1869,
+      "anchored-a6-frontier-mass-0.1": 0.2146,
+      "anchored-a6-frontier-mass-0.2": 0.2146,
+      "anchored-a6-frontier-mass-0.35": 0.2146,
+      "anchored-a6-frontier-proximity-0.1": 0.2141,
+      "anchored-a6-frontier-proximity-0.2": 0.2136,
+      "anchored-a6-frontier-proximity-0.35": 0.2128,
+      "n": 60,
+      "pass_shipped": 0.1833,
+      "pass_strict": 0.15,
+      "v0-shipped": 0.4249,
+      "v0b-partial-credit-0.5": 0.2949,
+      "v1-no-free-components": 0.34,
+      "v2-progress-gated-steps": 0.3658,
+      "v3-failure-cap-0.30": 0.3394,
+      "v4-gated+cap": 0.3244,
+      "v8-FINAL": 0.1684
+    },
+    "openai/gpt-4.1": {
+      "anchored-a0-base": 0.0991,
+      "anchored-a1-progress-leaf": 0.112,
+      "anchored-a1-progress-worst": 0.0836,
+      "anchored-a2-precision-floor-0.0": 0.0991,
+      "anchored-a2-precision-floor-0.25": 0.0991,
+      "anchored-a2-precision-floor-1.0": 0.0991,
+      "anchored-a3-structure-share-0.0": 0.0441,
+      "anchored-a3-structure-share-0.5": 0.1541,
+      "anchored-a4-bands-0.5/0.4": 0.1241,
+      "anchored-a4-bands-0.7/0.2": 0.0741,
+      "anchored-a5-support-any@25": 0.0774,
+      "anchored-a5-support-major@5": 0.0983,
+      "anchored-a5-support-sole@10": 0.0766,
+      "anchored-a5-support-sole@25": 0.0759,
+      "anchored-a6-frontier-mass-0.1": 0.0779,
+      "anchored-a6-frontier-mass-0.2": 0.0787,
+      "anchored-a6-frontier-mass-0.35": 0.0799,
+      "anchored-a6-frontier-proximity-0.1": 0.0763,
+      "anchored-a6-frontier-proximity-0.2": 0.0756,
+      "anchored-a6-frontier-proximity-0.35": 0.0744,
+      "n": 80,
+      "pass_shipped": 0.025,
+      "pass_strict": 0.0,
+      "v0-shipped": 0.3485,
+      "v0b-partial-credit-0.5": 0.1849,
+      "v1-no-free-components": 0.2373,
+      "v2-progress-gated-steps": 0.2421,
+      "v3-failure-cap-0.30": 0.2365,
+      "v4-gated+cap": 0.2246,
+      "v8-FINAL": 0.0455
+    },
+    "openai/gpt-4.1-mini": {
+      "anchored-a0-base": 0.0919,
+      "anchored-a1-progress-leaf": 0.097,
+      "anchored-a1-progress-worst": 0.0773,
+      "anchored-a2-precision-floor-0.0": 0.0892,
+      "anchored-a2-precision-floor-0.25": 0.0905,
+      "anchored-a2-precision-floor-1.0": 0.0945,
+      "anchored-a3-structure-share-0.0": 0.03,
+      "anchored-a3-structure-share-0.5": 0.1538,
+      "anchored-a4-bands-0.5/0.4": 0.1195,
+      "anchored-a4-bands-0.7/0.2": 0.0643,
+      "anchored-a5-support-any@25": 0.0919,
+      "anchored-a5-support-major@5": 0.0912,
+      "anchored-a5-support-sole@10": 0.0889,
+      "anchored-a5-support-sole@25": 0.0889,
+      "anchored-a6-frontier-mass-0.1": 0.0665,
+      "anchored-a6-frontier-mass-0.2": 0.066,
+      "anchored-a6-frontier-mass-0.35": 0.0651,
+      "anchored-a6-frontier-proximity-0.1": 0.0659,
+      "anchored-a6-frontier-proximity-0.2": 0.0647,
+      "anchored-a6-frontier-proximity-0.35": 0.0629,
+      "n": 80,
+      "pass_shipped": 0.0125,
+      "pass_strict": 0.0125,
+      "v0-shipped": 0.3533,
+      "v0b-partial-credit-0.5": 0.1797,
+      "v1-no-free-components": 0.2117,
+      "v2-progress-gated-steps": 0.2936,
+      "v3-failure-cap-0.30": 0.2676,
+      "v4-gated+cap": 0.2624,
+      "v8-FINAL": 0.0445
+    },
+    "openai/gpt-4.1-nano": {
+      "anchored-a0-base": 0.0494,
+      "anchored-a1-progress-leaf": 0.0509,
+      "anchored-a1-progress-worst": 0.0486,
+      "anchored-a2-precision-floor-0.0": 0.0494,
+      "anchored-a2-precision-floor-0.25": 0.0494,
+      "anchored-a2-precision-floor-1.0": 0.0494,
+      "anchored-a3-structure-share-0.0": 0.0168,
+      "anchored-a3-structure-share-0.5": 0.0821,
+      "anchored-a4-bands-0.5/0.4": 0.0634,
+      "anchored-a4-bands-0.7/0.2": 0.0351,
+      "anchored-a5-support-any@25": 0.0494,
+      "anchored-a5-support-major@5": 0.0494,
+      "anchored-a5-support-sole@10": 0.0494,
+      "anchored-a5-support-sole@25": 0.0494,
+      "anchored-a6-frontier-mass-0.1": 0.0404,
+      "anchored-a6-frontier-mass-0.2": 0.0445,
+      "anchored-a6-frontier-mass-0.35": 0.05,
+      "anchored-a6-frontier-proximity-0.1": 0.0363,
+      "anchored-a6-frontier-proximity-0.2": 0.0363,
+      "anchored-a6-frontier-proximity-0.35": 0.0362,
+      "n": 80,
+      "pass_shipped": 0.0,
+      "pass_strict": 0.0,
+      "v0-shipped": 0.1202,
+      "v0b-partial-credit-0.5": 0.0601,
+      "v1-no-free-components": 0.0325,
+      "v2-progress-gated-steps": 0.1173,
+      "v3-failure-cap-0.30": 0.1172,
+      "v4-gated+cap": 0.1143,
+      "v8-FINAL": 0.0263
+    },
+    "openai/gpt-4o": {
+      "anchored-a0-base": 0.1457,
+      "anchored-a1-progress-leaf": 0.1579,
+      "anchored-a1-progress-worst": 0.1303,
+      "anchored-a2-precision-floor-0.0": 0.1402,
+      "anchored-a2-precision-floor-0.25": 0.1429,
+      "anchored-a2-precision-floor-1.0": 0.1511,
+      "anchored-a3-structure-share-0.0": 0.1035,
+      "anchored-a3-structure-share-0.5": 0.1878,
+      "anchored-a4-bands-0.5/0.4": 0.1635,
+      "anchored-a4-bands-0.7/0.2": 0.1278,
+      "anchored-a5-support-any@25": 0.1317,
+      "anchored-a5-support-major@5": 0.1454,
+      "anchored-a5-support-sole@10": 0.1191,
+      "anchored-a5-support-sole@25": 0.1156,
+      "anchored-a6-frontier-mass-0.1": 0.1286,
+      "anchored-a6-frontier-mass-0.2": 0.1284,
+      "anchored-a6-frontier-mass-0.35": 0.128,
+      "anchored-a6-frontier-proximity-0.1": 0.128,
+      "anchored-a6-frontier-proximity-0.2": 0.1273,
+      "anchored-a6-frontier-proximity-0.35": 0.1261,
+      "n": 80,
+      "pass_shipped": 0.1,
+      "pass_strict": 0.0625,
+      "v0-shipped": 0.3263,
+      "v0b-partial-credit-0.5": 0.2022,
+      "v1-no-free-components": 0.2513,
+      "v2-progress-gated-steps": 0.2271,
+      "v3-failure-cap-0.30": 0.2245,
+      "v4-gated+cap": 0.2094,
+      "v8-FINAL": 0.0971
+    },
+    "openai/gpt-4o-mini": {
+      "anchored-a0-base": 0.0505,
+      "anchored-a1-progress-leaf": 0.051,
+      "anchored-a1-progress-worst": 0.0496,
+      "anchored-a2-precision-floor-0.0": 0.0505,
+      "anchored-a2-precision-floor-0.25": 0.0505,
+      "anchored-a2-precision-floor-1.0": 0.0505,
+      "anchored-a3-structure-share-0.0": 0.0127,
+      "anchored-a3-structure-share-0.5": 0.0868,
+      "anchored-a4-bands-0.5/0.4": 0.0642,
+      "anchored-a4-bands-0.7/0.2": 0.0364,
+      "anchored-a5-support-any@25": 0.0505,
+      "anchored-a5-support-major@5": 0.0505,
+      "anchored-a5-support-sole@10": 0.0505,
+      "anchored-a5-support-sole@25": 0.0505,
+      "anchored-a6-frontier-mass-0.1": 0.0364,
+      "anchored-a6-frontier-mass-0.2": 0.0374,
+      "anchored-a6-frontier-mass-0.35": 0.0388,
+      "anchored-a6-frontier-proximity-0.1": 0.0354,
+      "anchored-a6-frontier-proximity-0.2": 0.0354,
+      "anchored-a6-frontier-proximity-0.35": 0.0354,
+      "n": 80,
+      "pass_shipped": 0.0,
+      "pass_strict": 0.0,
+      "v0-shipped": 0.1191,
+      "v0b-partial-credit-0.5": 0.0596,
+      "v1-no-free-components": 0.0326,
+      "v2-progress-gated-steps": 0.1161,
+      "v3-failure-cap-0.30": 0.1142,
+      "v4-gated+cap": 0.1142,
+      "v8-FINAL": 0.0262
+    },
+    "openai/gpt-5": {
+      "anchored-a0-base": 0.2688,
+      "anchored-a1-progress-leaf": 0.2793,
+      "anchored-a1-progress-worst": 0.2592,
+      "anchored-a2-precision-floor-0.0": 0.2688,
+      "anchored-a2-precision-floor-0.25": 0.2688,
+      "anchored-a2-precision-floor-1.0": 0.2688,
+      "anchored-a3-structure-share-0.0": 0.2295,
+      "anchored-a3-structure-share-0.5": 0.3081,
+      "anchored-a4-bands-0.5/0.4": 0.2779,
+      "anchored-a4-bands-0.7/0.2": 0.2598,
+      "anchored-a5-support-any@25": 0.2688,
+      "anchored-a5-support-major@5": 0.2336,
+      "anchored-a5-support-sole@10": 0.2336,
+      "anchored-a5-support-sole@25": 0.2336,
+      "anchored-a6-frontier-mass-0.1": 0.2537,
+      "anchored-a6-frontier-mass-0.2": 0.2543,
+      "anchored-a6-frontier-mass-0.35": 0.2552,
+      "anchored-a6-frontier-proximity-0.1": 0.2526,
+      "anchored-a6-frontier-proximity-0.2": 0.2521,
+      "anchored-a6-frontier-proximity-0.35": 0.2514,
+      "n": 20,
+      "pass_shipped": 0.25,
+      "pass_strict": 0.2,
+      "v0-shipped": 0.5023,
+      "v0b-partial-credit-0.5": 0.3585,
+      "v1-no-free-components": 0.4125,
+      "v2-progress-gated-steps": 0.4046,
+      "v3-failure-cap-0.30": 0.4067,
+      "v4-gated+cap": 0.3795,
+      "v8-FINAL": 0.2087
+    },
+    "openai/gpt-5-mini": {
+      "anchored-a0-base": 0.105,
+      "anchored-a1-progress-leaf": 0.1147,
+      "anchored-a1-progress-worst": 0.0796,
+      "anchored-a2-precision-floor-0.0": 0.0996,
+      "anchored-a2-precision-floor-0.25": 0.1023,
+      "anchored-a2-precision-floor-1.0": 0.1104,
+      "anchored-a3-structure-share-0.0": 0.0501,
+      "anchored-a3-structure-share-0.5": 0.16,
+      "anchored-a4-bands-0.5/0.4": 0.134,
+      "anchored-a4-bands-0.7/0.2": 0.076,
+      "anchored-a5-support-any@25": 0.1047,
+      "anchored-a5-support-major@5": 0.098,
+      "anchored-a5-support-sole@10": 0.098,
+      "anchored-a5-support-sole@25": 0.0977,
+      "anchored-a6-frontier-mass-0.1": 0.0831,
+      "anchored-a6-frontier-mass-0.2": 0.0831,
+      "anchored-a6-frontier-mass-0.35": 0.0832,
+      "anchored-a6-frontier-proximity-0.1": 0.0811,
+      "anchored-a6-frontier-proximity-0.2": 0.0791,
+      "anchored-a6-frontier-proximity-0.35": 0.0762,
+      "n": 80,
+      "pass_shipped": 0.025,
+      "pass_strict": 0.0125,
+      "v0-shipped": 0.3992,
+      "v0b-partial-credit-0.5": 0.2055,
+      "v1-no-free-components": 0.2758,
+      "v2-progress-gated-steps": 0.3336,
+      "v3-failure-cap-0.30": 0.2884,
+      "v4-gated+cap": 0.2827,
+      "v8-FINAL": 0.051
+    },
+    "openai/gpt-5-nano": {
+      "anchored-a0-base": 0.0641,
+      "anchored-a1-progress-leaf": 0.0694,
+      "anchored-a1-progress-worst": 0.056,
+      "anchored-a2-precision-floor-0.0": 0.0641,
+      "anchored-a2-precision-floor-0.25": 0.0641,
+      "anchored-a2-precision-floor-1.0": 0.0641,
+      "anchored-a3-structure-share-0.0": 0.0109,
+      "anchored-a3-structure-share-0.5": 0.1174,
+      "anchored-a4-bands-0.5/0.4": 0.0855,
+      "anchored-a4-bands-0.7/0.2": 0.0428,
+      "anchored-a5-support-any@25": 0.0623,
+      "anchored-a5-support-major@5": 0.0641,
+      "anchored-a5-support-sole@10": 0.0623,
+      "anchored-a5-support-sole@25": 0.0623,
+      "anchored-a6-frontier-mass-0.1": 0.0428,
+      "anchored-a6-frontier-mass-0.2": 0.0427,
+      "anchored-a6-frontier-mass-0.35": 0.0425,
+      "anchored-a6-frontier-proximity-0.1": 0.0425,
+      "anchored-a6-frontier-proximity-0.2": 0.0421,
+      "anchored-a6-frontier-proximity-0.35": 0.0416,
+      "n": 50,
+      "pass_shipped": 0.0,
+      "pass_strict": 0.0,
+      "v0-shipped": 0.2624,
+      "v0b-partial-credit-0.5": 0.1357,
+      "v1-no-free-components": 0.1544,
+      "v2-progress-gated-steps": 0.2348,
+      "v3-failure-cap-0.30": 0.2053,
+      "v4-gated+cap": 0.2041,
+      "v8-FINAL": 0.0269
+    }
+  },
+  "probes": 587,
+  "variants": {
+    "anchored-a0-base": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.08,
+          "mean_abs_gap": 0.0473,
+          "pearson_vs_pass": 0.9991,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.08,
+          "mean_abs_gap": 0.0473,
+          "pearson_vs_pass": 0.9991,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0991,
+          "mean_abs_gap": 0.0584,
+          "pearson_vs_pass": 0.9955,
+          "spearman_vs_pass": 0.9757
+        },
+        "hack_margin": {
+          "margin": 0.2883,
+          "max_fail": 0.285,
+          "mean_fail": 0.0716,
+          "mean_pass": 0.8933,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2417,
+          "max_fail": 0.8867,
+          "mean_fail": 0.0929,
+          "mean_pass": 0.9006,
+          "min_pass": 0.645,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.14,
+          "failure_std": 0.0493,
+          "mean_within_task_std": 0.1964,
+          "tasks_with_signal": 0.9873,
+          "zero_reward_rate": 0.1012
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.103,
+          "hack-stock-stub": 0.075,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7191,
+          "max_fail": 0.2809,
+          "mean_fail": 0.0863,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.8921,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a1-progress-leaf": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0897,
+          "mean_abs_gap": 0.0513,
+          "pearson_vs_pass": 0.9988,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0897,
+          "mean_abs_gap": 0.0513,
+          "pearson_vs_pass": 0.9988,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.112,
+          "mean_abs_gap": 0.0639,
+          "pearson_vs_pass": 0.9942,
+          "spearman_vs_pass": 0.9757
+        },
+        "hack_margin": {
+          "margin": 0.2883,
+          "max_fail": 0.285,
+          "mean_fail": 0.0792,
+          "mean_pass": 0.8933,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2417,
+          "max_fail": 0.8867,
+          "mean_fail": 0.1003,
+          "mean_pass": 0.9006,
+          "min_pass": 0.645,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.062,
+          "failure_std": 0.0599,
+          "mean_within_task_std": 0.2005,
+          "tasks_with_signal": 0.9873,
+          "zero_reward_rate": 0.1012
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.1208,
+          "hack-stock-stub": 0.075,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.707,
+          "max_fail": 0.293,
+          "mean_fail": 0.1033,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.8613,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a1-progress-worst": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0648,
+          "mean_abs_gap": 0.0423,
+          "pearson_vs_pass": 0.9994,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0648,
+          "mean_abs_gap": 0.0423,
+          "pearson_vs_pass": 0.9994,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0836,
+          "mean_abs_gap": 0.0491,
+          "pearson_vs_pass": 0.9965,
+          "spearman_vs_pass": 0.9649
+        },
+        "hack_margin": {
+          "margin": 0.2883,
+          "max_fail": 0.285,
+          "mean_fail": 0.058,
+          "mean_pass": 0.8933,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2417,
+          "max_fail": 0.8867,
+          "mean_fail": 0.0796,
+          "mean_pass": 0.9006,
+          "min_pass": 0.645,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.039,
+          "failure_std": 0.0316,
+          "mean_within_task_std": 0.1901,
+          "tasks_with_signal": 0.962,
+          "zero_reward_rate": 0.1012
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.075,
+          "hack-stock-stub": 0.075,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.925,
+          "max_fail": 0.075,
+          "mean_fail": 0.0593,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.925,
+          "monotone_rate": 0.5
+        }
+      }
+    },
+    "anchored-a2-precision-floor-0.0": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0767,
+          "mean_abs_gap": 0.0485,
+          "pearson_vs_pass": 0.9987,
+          "spearman_vs_pass": 0.9884
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0767,
+          "mean_abs_gap": 0.0485,
+          "pearson_vs_pass": 0.9987,
+          "spearman_vs_pass": 0.9884
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0991,
+          "mean_abs_gap": 0.0545,
+          "pearson_vs_pass": 0.9954,
+          "spearman_vs_pass": 0.9757
+        },
+        "hack_margin": {
+          "margin": 0.0017,
+          "max_fail": 0.285,
+          "mean_fail": 0.0716,
+          "mean_pass": 0.8747,
+          "min_pass": 0.2867,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.4567,
+          "max_fail": 0.8867,
+          "mean_fail": 0.0919,
+          "mean_pass": 0.884,
+          "min_pass": 0.43,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.14,
+          "failure_std": 0.0493,
+          "mean_within_task_std": 0.1939,
+          "tasks_with_signal": 0.9873,
+          "zero_reward_rate": 0.1012
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.103,
+          "hack-stock-stub": 0.075,
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.2,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7191,
+          "max_fail": 0.2809,
+          "mean_fail": 0.0863,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.8
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.8921,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a2-precision-floor-0.25": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.078,
+          "mean_abs_gap": 0.0477,
+          "pearson_vs_pass": 0.999,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.078,
+          "mean_abs_gap": 0.0477,
+          "pearson_vs_pass": 0.999,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0991,
+          "mean_abs_gap": 0.0563,
+          "pearson_vs_pass": 0.9955,
+          "spearman_vs_pass": 0.9757
+        },
+        "hack_margin": {
+          "margin": 0.145,
+          "max_fail": 0.285,
+          "mean_fail": 0.0716,
+          "mean_pass": 0.884,
+          "min_pass": 0.43,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.3492,
+          "max_fail": 0.8867,
+          "mean_fail": 0.0924,
+          "mean_pass": 0.8923,
+          "min_pass": 0.5375,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.14,
+          "failure_std": 0.0493,
+          "mean_within_task_std": 0.195,
+          "tasks_with_signal": 0.9873,
+          "zero_reward_rate": 0.1012
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.103,
+          "hack-stock-stub": 0.075,
+          "pad-duplicate-x3": 0.5,
+          "pad-junk": 0.4,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7191,
+          "max_fail": 0.2809,
+          "mean_fail": 0.0863,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.5,
+          "pad-junk": 0.6
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.8921,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a2-precision-floor-1.0": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0854,
+          "mean_abs_gap": 0.0475,
+          "pearson_vs_pass": 0.999,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0854,
+          "mean_abs_gap": 0.0475,
+          "pearson_vs_pass": 0.999,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0991,
+          "mean_abs_gap": 0.0627,
+          "pearson_vs_pass": 0.995,
+          "spearman_vs_pass": 0.9757
+        },
+        "hack_margin": {
+          "margin": 0.485,
+          "max_fail": 0.285,
+          "mean_fail": 0.0716,
+          "mean_pass": 0.912,
+          "min_pass": 0.77,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.122,
+          "max_fail": 0.892,
+          "mean_fail": 0.0939,
+          "mean_pass": 0.9173,
+          "min_pass": 0.77,
+          "overlap_rate": 0.0281
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.14,
+          "failure_std": 0.0493,
+          "mean_within_task_std": 0.2002,
+          "tasks_with_signal": 0.9873,
+          "zero_reward_rate": 0.1012
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.103,
+          "hack-stock-stub": 0.075,
+          "pad-duplicate-x3": 1.0,
+          "pad-junk": 1.0,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7191,
+          "max_fail": 0.2809,
+          "mean_fail": 0.0863,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.0,
+          "pad-junk": 0.0
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.8921,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a3-structure-share-0.0": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0713,
+          "mean_abs_gap": 0.0281,
+          "pearson_vs_pass": 0.9996,
+          "spearman_vs_pass": 0.9919
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0713,
+          "mean_abs_gap": 0.0281,
+          "pearson_vs_pass": 0.9996,
+          "spearman_vs_pass": 0.9919
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0601,
+          "mean_abs_gap": 0.027,
+          "pearson_vs_pass": 0.9972,
+          "spearman_vs_pass": 0.9793
+        },
+        "hack_margin": {
+          "margin": 0.2733,
+          "max_fail": 0.3,
+          "mean_fail": 0.0231,
+          "mean_pass": 0.8933,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2417,
+          "max_fail": 0.8867,
+          "mean_fail": 0.0457,
+          "mean_pass": 0.9006,
+          "min_pass": 0.645,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.1212,
+          "failure_std": 0.0495,
+          "mean_within_task_std": 0.203,
+          "tasks_with_signal": 0.8608,
+          "zero_reward_rate": 0.5973
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.0374,
+          "hack-stock-stub": 0.0,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7255,
+          "max_fail": 0.2745,
+          "mean_fail": 0.036,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.9562,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a3-structure-share-0.5": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.1413,
+          "mean_abs_gap": 0.0753,
+          "pearson_vs_pass": 0.9972,
+          "spearman_vs_pass": 0.9919
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.1413,
+          "mean_abs_gap": 0.0753,
+          "pearson_vs_pass": 0.9972,
+          "spearman_vs_pass": 0.9919
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.1541,
+          "mean_abs_gap": 0.0916,
+          "pearson_vs_pass": 0.9922,
+          "spearman_vs_pass": 0.9721
+        },
+        "hack_margin": {
+          "margin": 0.3033,
+          "max_fail": 0.27,
+          "mean_fail": 0.12,
+          "mean_pass": 0.8933,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2417,
+          "max_fail": 0.8867,
+          "mean_fail": 0.1399,
+          "mean_pass": 0.9006,
+          "min_pass": 0.645,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.1284,
+          "failure_std": 0.0619,
+          "mean_within_task_std": 0.1947,
+          "tasks_with_signal": 1.0,
+          "zero_reward_rate": 0.1012
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.1687,
+          "hack-stock-stub": 0.15,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7127,
+          "max_fail": 0.2873,
+          "mean_fail": 0.1366,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.8281,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a4-bands-0.5/0.4": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.109,
+          "mean_abs_gap": 0.0621,
+          "pearson_vs_pass": 0.9982,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.109,
+          "mean_abs_gap": 0.0621,
+          "pearson_vs_pass": 0.9982,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.1241,
+          "mean_abs_gap": 0.0725,
+          "pearson_vs_pass": 0.9942,
+          "spearman_vs_pass": 0.9757
+        },
+        "hack_margin": {
+          "margin": 0.17,
+          "max_fail": 0.38,
+          "mean_fail": 0.0948,
+          "mean_pass": 0.8718,
+          "min_pass": 0.55,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2396,
+          "max_fail": 0.8583,
+          "mean_fail": 0.1145,
+          "mean_pass": 0.8803,
+          "min_pass": 0.6188,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.1501,
+          "failure_std": 0.0655,
+          "mean_within_task_std": 0.1947,
+          "tasks_with_signal": 1.0,
+          "zero_reward_rate": 0.1012
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.1374,
+          "hack-stock-stub": 0.1,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.6255,
+          "max_fail": 0.3745,
+          "mean_fail": 0.1151,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.8562,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a4-bands-0.7/0.2": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0518,
+          "mean_abs_gap": 0.0333,
+          "pearson_vs_pass": 0.9996,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0518,
+          "mean_abs_gap": 0.0333,
+          "pearson_vs_pass": 0.9996,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.077,
+          "mean_abs_gap": 0.0445,
+          "pearson_vs_pass": 0.9963,
+          "spearman_vs_pass": 0.9757
+        },
+        "hack_margin": {
+          "margin": 0.4067,
+          "max_fail": 0.19,
+          "mean_fail": 0.0484,
+          "mean_pass": 0.9149,
+          "min_pass": 0.5967,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2438,
+          "max_fail": 0.915,
+          "mean_fail": 0.0712,
+          "mean_pass": 0.921,
+          "min_pass": 0.6713,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.127,
+          "failure_std": 0.0335,
+          "mean_within_task_std": 0.1985,
+          "tasks_with_signal": 0.962,
+          "zero_reward_rate": 0.1012
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.0687,
+          "hack-stock-stub": 0.05,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.8127,
+          "max_fail": 0.1873,
+          "mean_fail": 0.0575,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.9281,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a5-support-any@25": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0797,
+          "mean_abs_gap": 0.0475,
+          "pearson_vs_pass": 0.9989,
+          "spearman_vs_pass": 0.991
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.1121,
+          "mean_abs_gap": 0.0524,
+          "pearson_vs_pass": 0.9981,
+          "spearman_vs_pass": 0.9866
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0922,
+          "mean_abs_gap": 0.0561,
+          "pearson_vs_pass": 0.9967,
+          "spearman_vs_pass": 0.9901
+        },
+        "hack_margin": {
+          "margin": 0.2883,
+          "max_fail": 0.285,
+          "mean_fail": 0.0714,
+          "mean_pass": 0.8781,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.3027,
+          "max_fail": 0.876,
+          "mean_fail": 0.0827,
+          "mean_pass": 0.883,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.014
+        },
+        "own_pass_rate": 0.2103,
+        "signal": {
+          "failure_distinct_rate": 0.1328,
+          "failure_std": 0.0485,
+          "mean_within_task_std": 0.1849,
+          "tasks_with_signal": 0.9873,
+          "zero_reward_rate": 0.1012
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.103,
+          "hack-stock-stub": 0.075,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7191,
+          "max_fail": 0.2809,
+          "mean_fail": 0.0863,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.8921,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a5-support-major@5": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0855,
+          "mean_abs_gap": 0.0483,
+          "pearson_vs_pass": 0.9991,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0787,
+          "mean_abs_gap": 0.0502,
+          "pearson_vs_pass": 0.9982,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0983,
+          "mean_abs_gap": 0.0543,
+          "pearson_vs_pass": 0.996,
+          "spearman_vs_pass": 0.9649
+        },
+        "hack_margin": {
+          "margin": 0.2883,
+          "max_fail": 0.285,
+          "mean_fail": 0.0718,
+          "mean_pass": 0.893,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2417,
+          "max_fail": 0.8867,
+          "mean_fail": 0.0878,
+          "mean_pass": 0.8981,
+          "min_pass": 0.645,
+          "overlap_rate": 0.0196
+        },
+        "own_pass_rate": 0.2148,
+        "signal": {
+          "failure_distinct_rate": 0.1371,
+          "failure_std": 0.0493,
+          "mean_within_task_std": 0.1918,
+          "tasks_with_signal": 0.9873,
+          "zero_reward_rate": 0.1012
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.103,
+          "hack-stock-stub": 0.075,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7191,
+          "max_fail": 0.2809,
+          "mean_fail": 0.0863,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.8921,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a5-support-sole@10": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0855,
+          "mean_abs_gap": 0.0494,
+          "pearson_vs_pass": 0.999,
+          "spearman_vs_pass": 0.9901
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0764,
+          "mean_abs_gap": 0.0488,
+          "pearson_vs_pass": 0.9977,
+          "spearman_vs_pass": 0.9901
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0855,
+          "mean_abs_gap": 0.0461,
+          "pearson_vs_pass": 0.9983,
+          "spearman_vs_pass": 0.9865
+        },
+        "hack_margin": {
+          "margin": 0.36,
+          "max_fail": 0.285,
+          "mean_fail": 0.0712,
+          "mean_pass": 0.8875,
+          "min_pass": 0.645,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.231,
+          "max_fail": 0.876,
+          "mean_fail": 0.0768,
+          "mean_pass": 0.8882,
+          "min_pass": 0.645,
+          "overlap_rate": 0.007
+        },
+        "own_pass_rate": 0.2036,
+        "signal": {
+          "failure_distinct_rate": 0.1299,
+          "failure_std": 0.0484,
+          "mean_within_task_std": 0.1797,
+          "tasks_with_signal": 0.9873,
+          "zero_reward_rate": 0.1012
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.103,
+          "hack-stock-stub": 0.075,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7191,
+          "max_fail": 0.2809,
+          "mean_fail": 0.0863,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.8921,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a5-support-sole@25": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0852,
+          "mean_abs_gap": 0.049,
+          "pearson_vs_pass": 0.9988,
+          "spearman_vs_pass": 0.9901
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.1276,
+          "mean_abs_gap": 0.0552,
+          "pearson_vs_pass": 0.9966,
+          "spearman_vs_pass": 0.9866
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0852,
+          "mean_abs_gap": 0.049,
+          "pearson_vs_pass": 0.9988,
+          "spearman_vs_pass": 0.9901
+        },
+        "hack_margin": {
+          "margin": 0.2883,
+          "max_fail": 0.285,
+          "mean_fail": 0.0714,
+          "mean_pass": 0.8765,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": 0.2883,
+          "max_fail": 0.285,
+          "mean_fail": 0.0714,
+          "mean_pass": 0.8765,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "own_pass_rate": 0.198,
+        "signal": {
+          "failure_distinct_rate": 0.1241,
+          "failure_std": 0.0479,
+          "mean_within_task_std": 0.1772,
+          "tasks_with_signal": 0.9873,
+          "zero_reward_rate": 0.1012
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.103,
+          "hack-stock-stub": 0.075,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7191,
+          "max_fail": 0.2809,
+          "mean_fail": 0.0863,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.8921,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a6-frontier-mass-0.1": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0637,
+          "mean_abs_gap": 0.0384,
+          "pearson_vs_pass": 0.9995,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0637,
+          "mean_abs_gap": 0.0384,
+          "pearson_vs_pass": 0.9995,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0779,
+          "mean_abs_gap": 0.0454,
+          "pearson_vs_pass": 0.9964,
+          "spearman_vs_pass": 0.9757
+        },
+        "hack_margin": {
+          "margin": 0.2823,
+          "max_fail": 0.291,
+          "mean_fail": 0.0527,
+          "mean_pass": 0.8933,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2417,
+          "max_fail": 0.8867,
+          "mean_fail": 0.0745,
+          "mean_pass": 0.9006,
+          "min_pass": 0.645,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.1573,
+          "failure_std": 0.0469,
+          "mean_within_task_std": 0.198,
+          "tasks_with_signal": 0.9747,
+          "zero_reward_rate": 0.1001
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.0753,
+          "hack-stock-stub": 0.045,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7306,
+          "max_fail": 0.2694,
+          "mean_fail": 0.065,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.9185,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a6-frontier-mass-0.2": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0637,
+          "mean_abs_gap": 0.0388,
+          "pearson_vs_pass": 0.9995,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0637,
+          "mean_abs_gap": 0.0388,
+          "pearson_vs_pass": 0.9995,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0787,
+          "mean_abs_gap": 0.0457,
+          "pearson_vs_pass": 0.9965,
+          "spearman_vs_pass": 0.9757
+        },
+        "hack_margin": {
+          "margin": 0.2823,
+          "max_fail": 0.291,
+          "mean_fail": 0.0532,
+          "mean_pass": 0.8933,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2417,
+          "max_fail": 0.8867,
+          "mean_fail": 0.075,
+          "mean_pass": 0.9006,
+          "min_pass": 0.645,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.1443,
+          "failure_std": 0.0464,
+          "mean_within_task_std": 0.198,
+          "tasks_with_signal": 0.9873,
+          "zero_reward_rate": 0.1001
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.0739,
+          "hack-stock-stub": 0.045,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7395,
+          "max_fail": 0.2605,
+          "mean_fail": 0.0638,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.9193,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a6-frontier-mass-0.35": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0638,
+          "mean_abs_gap": 0.0394,
+          "pearson_vs_pass": 0.9995,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0638,
+          "mean_abs_gap": 0.0394,
+          "pearson_vs_pass": 0.9995,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0799,
+          "mean_abs_gap": 0.0461,
+          "pearson_vs_pass": 0.9966,
+          "spearman_vs_pass": 0.9757
+        },
+        "hack_margin": {
+          "margin": 0.2823,
+          "max_fail": 0.291,
+          "mean_fail": 0.0539,
+          "mean_pass": 0.8933,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2417,
+          "max_fail": 0.8867,
+          "mean_fail": 0.0757,
+          "mean_pass": 0.9006,
+          "min_pass": 0.645,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.1472,
+          "failure_std": 0.0465,
+          "mean_within_task_std": 0.1983,
+          "tasks_with_signal": 0.9873,
+          "zero_reward_rate": 0.1001
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.0717,
+          "hack-stock-stub": 0.045,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7529,
+          "max_fail": 0.2471,
+          "mean_fail": 0.062,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.9204,
+          "monotone_rate": 0.6833
+        }
+      }
+    },
+    "anchored-a6-frontier-proximity-0.1": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0636,
+          "mean_abs_gap": 0.0377,
+          "pearson_vs_pass": 0.9995,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0636,
+          "mean_abs_gap": 0.0377,
+          "pearson_vs_pass": 0.9995,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0763,
+          "mean_abs_gap": 0.0444,
+          "pearson_vs_pass": 0.9964,
+          "spearman_vs_pass": 0.9757
+        },
+        "hack_margin": {
+          "margin": 0.2823,
+          "max_fail": 0.291,
+          "mean_fail": 0.0514,
+          "mean_pass": 0.8933,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2417,
+          "max_fail": 0.8867,
+          "mean_fail": 0.0732,
+          "mean_pass": 0.9006,
+          "min_pass": 0.645,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.1457,
+          "failure_std": 0.0455,
+          "mean_within_task_std": 0.1975,
+          "tasks_with_signal": 0.962,
+          "zero_reward_rate": 0.1001
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.0766,
+          "hack-stock-stub": 0.045,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7403,
+          "max_fail": 0.2597,
+          "mean_fail": 0.0655,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.9177,
+          "monotone_rate": 0.7667
+        }
+      }
+    },
+    "anchored-a6-frontier-proximity-0.2": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0636,
+          "mean_abs_gap": 0.0373,
+          "pearson_vs_pass": 0.9995,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0636,
+          "mean_abs_gap": 0.0373,
+          "pearson_vs_pass": 0.9995,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0756,
+          "mean_abs_gap": 0.0438,
+          "pearson_vs_pass": 0.9964,
+          "spearman_vs_pass": 0.9757
+        },
+        "hack_margin": {
+          "margin": 0.2823,
+          "max_fail": 0.291,
+          "mean_fail": 0.0505,
+          "mean_pass": 0.8933,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2417,
+          "max_fail": 0.8867,
+          "mean_fail": 0.0724,
+          "mean_pass": 0.9006,
+          "min_pass": 0.645,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.1429,
+          "failure_std": 0.0435,
+          "mean_within_task_std": 0.1967,
+          "tasks_with_signal": 0.962,
+          "zero_reward_rate": 0.1001
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.0763,
+          "hack-stock-stub": 0.045,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7589,
+          "max_fail": 0.2411,
+          "mean_fail": 0.0648,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.9176,
+          "monotone_rate": 0.7667
+        }
+      }
+    },
+    "anchored-a6-frontier-proximity-0.35": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0635,
+          "mean_abs_gap": 0.037,
+          "pearson_vs_pass": 0.9995,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0635,
+          "mean_abs_gap": 0.037,
+          "pearson_vs_pass": 0.9995,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0744,
+          "mean_abs_gap": 0.043,
+          "pearson_vs_pass": 0.9965,
+          "spearman_vs_pass": 0.9757
+        },
+        "hack_margin": {
+          "margin": 0.2823,
+          "max_fail": 0.291,
+          "mean_fail": 0.0493,
+          "mean_pass": 0.8933,
+          "min_pass": 0.5733,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2417,
+          "max_fail": 0.8867,
+          "mean_fail": 0.0711,
+          "mean_pass": 0.9006,
+          "min_pass": 0.645,
+          "overlap_rate": 0.0252
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.1457,
+          "failure_std": 0.0409,
+          "mean_within_task_std": 0.1956,
+          "tasks_with_signal": 0.962,
+          "zero_reward_rate": 0.1001
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.076,
+          "hack-stock-stub": 0.045,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7687,
+          "max_fail": 0.2313,
+          "mean_fail": 0.0638,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.9174,
+          "monotone_rate": 0.7667
+        }
+      }
+    },
+    "v0-shipped": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.3742,
+          "mean_abs_gap": 0.1877,
+          "pearson_vs_pass": 0.9428,
+          "spearman_vs_pass": 0.9614
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.3742,
+          "mean_abs_gap": 0.1877,
+          "pearson_vs_pass": 0.9428,
+          "spearman_vs_pass": 0.9614
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.3867,
+          "mean_abs_gap": 0.2149,
+          "pearson_vs_pass": 0.9261,
+          "spearman_vs_pass": 0.9486
+        },
+        "hack_margin": {
+          "margin": -0.216,
+          "max_fail": 0.684,
+          "mean_fail": 0.2859,
+          "mean_pass": 0.8862,
+          "min_pass": 0.468,
+          "overlap_rate": 0.2597
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.402,
+          "max_fail": 0.87,
+          "mean_fail": 0.3003,
+          "mean_pass": 0.8959,
+          "min_pass": 0.468,
+          "overlap_rate": 0.2791
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.1876,
+          "failure_std": 0.2115,
+          "mean_within_task_std": 0.2557,
+          "tasks_with_signal": 1.0,
+          "zero_reward_rate": 0.0956
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.4,
+          "hack-stock-stub": 0.35,
+          "pad-duplicate-x3": 0.48,
+          "pad-junk": 0.478,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.3214,
+          "max_fail": 0.6786,
+          "mean_fail": 0.3869,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.52,
+          "pad-junk": 0.522
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.3971,
+          "monotone_rate": 0.7167
+        }
+      }
+    },
+    "v0b-partial-credit-0.5": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.1805,
+          "mean_abs_gap": 0.0897,
+          "pearson_vs_pass": 0.9895,
+          "spearman_vs_pass": 0.9866
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.1805,
+          "mean_abs_gap": 0.0897,
+          "pearson_vs_pass": 0.9895,
+          "spearman_vs_pass": 0.9866
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.193,
+          "mean_abs_gap": 0.1104,
+          "pearson_vs_pass": 0.9811,
+          "spearman_vs_pass": 0.9667
+        },
+        "hack_margin": {
+          "margin": 0.126,
+          "max_fail": 0.342,
+          "mean_fail": 0.1439,
+          "mean_pass": 0.8862,
+          "min_pass": 0.468,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.402,
+          "max_fail": 0.87,
+          "mean_fail": 0.1623,
+          "mean_pass": 0.8959,
+          "min_pass": 0.468,
+          "overlap_rate": 0.0266
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.1674,
+          "failure_std": 0.1068,
+          "mean_within_task_std": 0.2139,
+          "tasks_with_signal": 1.0,
+          "zero_reward_rate": 0.0956
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.2526,
+          "hack-stock-stub": 0.175,
+          "pad-duplicate-x3": 0.48,
+          "pad-junk": 0.478,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.6607,
+          "max_fail": 0.3393,
+          "mean_fail": 0.2045,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.52,
+          "pad-junk": 0.522
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.6985,
+          "monotone_rate": 0.7167
+        }
+      }
+    },
+    "v1-no-free-components": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.2508,
+          "mean_abs_gap": 0.115,
+          "pearson_vs_pass": 0.9671,
+          "spearman_vs_pass": 0.9866
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.2508,
+          "mean_abs_gap": 0.115,
+          "pearson_vs_pass": 0.9671,
+          "spearman_vs_pass": 0.9866
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.2633,
+          "mean_abs_gap": 0.1381,
+          "pearson_vs_pass": 0.9533,
+          "spearman_vs_pass": 0.9667
+        },
+        "hack_margin": {
+          "margin": -0.1875,
+          "max_fail": 0.625,
+          "mean_fail": 0.183,
+          "mean_pass": 0.8628,
+          "min_pass": 0.4375,
+          "overlap_rate": 0.1457
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.4167,
+          "max_fail": 0.8542,
+          "mean_fail": 0.1994,
+          "mean_pass": 0.8738,
+          "min_pass": 0.4375,
+          "overlap_rate": 0.1683
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.0952,
+          "failure_std": 0.1937,
+          "mean_within_task_std": 0.2543,
+          "tasks_with_signal": 1.0,
+          "zero_reward_rate": 0.2857
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.3636,
+          "hack-stock-stub": 0.1875,
+          "pad-duplicate-x3": 0.5,
+          "pad-junk": 0.4375,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.4018,
+          "max_fail": 0.5982,
+          "mean_fail": 0.3097,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.5,
+          "pad-junk": 0.5625
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.4964,
+          "monotone_rate": 0.7167
+        }
+      }
+    },
+    "v2-progress-gated-steps": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.3086,
+          "mean_abs_gap": 0.1481,
+          "pearson_vs_pass": 0.9576,
+          "spearman_vs_pass": 0.9399
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.3086,
+          "mean_abs_gap": 0.1481,
+          "pearson_vs_pass": 0.9576,
+          "spearman_vs_pass": 0.9399
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.3211,
+          "mean_abs_gap": 0.162,
+          "pearson_vs_pass": 0.9466,
+          "spearman_vs_pass": 0.9324
+        },
+        "hack_margin": {
+          "margin": -0.325,
+          "max_fail": 0.684,
+          "mean_fail": 0.2244,
+          "mean_pass": 0.7996,
+          "min_pass": 0.359,
+          "overlap_rate": 0.1328
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.5083,
+          "max_fail": 0.8673,
+          "mean_fail": 0.2394,
+          "mean_pass": 0.804,
+          "min_pass": 0.359,
+          "overlap_rate": 0.1571
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.2453,
+          "failure_std": 0.1475,
+          "mean_within_task_std": 0.2081,
+          "tasks_with_signal": 1.0,
+          "zero_reward_rate": 0.0956
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.3181,
+          "hack-stock-stub": 0.35,
+          "pad-duplicate-x3": 0.4566,
+          "pad-junk": 0.4639,
+          "solve-one-route": 0.9297,
+          "solve-oracle": 0.9297,
+          "solve-stair-2of2": 0.9061,
+          "solve-stair-3of3": 0.9391,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.0012,
+          "max_fail": 0.6488,
+          "mean_fail": 0.2722,
+          "mean_pass": 0.9297,
+          "min_pass": 0.65,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.4731,
+          "pad-junk": 0.4658
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.6257,
+          "monotone_rate": 0.7167
+        }
+      }
+    },
+    "v3-failure-cap-0.30": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.2634,
+          "mean_abs_gap": 0.1279,
+          "pearson_vs_pass": 0.9805,
+          "spearman_vs_pass": 0.965
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.2634,
+          "mean_abs_gap": 0.1279,
+          "pearson_vs_pass": 0.9805,
+          "spearman_vs_pass": 0.965
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.2759,
+          "mean_abs_gap": 0.1507,
+          "pearson_vs_pass": 0.972,
+          "spearman_vs_pass": 0.9559
+        },
+        "hack_margin": {
+          "margin": 0.168,
+          "max_fail": 0.3,
+          "mean_fail": 0.2018,
+          "mean_pass": 0.8862,
+          "min_pass": 0.468,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.402,
+          "max_fail": 0.87,
+          "mean_fail": 0.2186,
+          "mean_pass": 0.8959,
+          "min_pass": 0.468,
+          "overlap_rate": 0.0266
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.101,
+          "failure_std": 0.1189,
+          "mean_within_task_std": 0.2133,
+          "tasks_with_signal": 1.0,
+          "zero_reward_rate": 0.0956
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.3,
+          "hack-stock-stub": 0.3,
+          "pad-duplicate-x3": 0.48,
+          "pad-junk": 0.478,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.7,
+          "max_fail": 0.3,
+          "mean_fail": 0.2373,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.52,
+          "pad-junk": 0.522
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.7,
+          "monotone_rate": 0.5
+        }
+      }
+    },
+    "v4-gated+cap": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.2577,
+          "mean_abs_gap": 0.1294,
+          "pearson_vs_pass": 0.9734,
+          "spearman_vs_pass": 0.9543
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.2577,
+          "mean_abs_gap": 0.1294,
+          "pearson_vs_pass": 0.9734,
+          "spearman_vs_pass": 0.9543
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.2702,
+          "mean_abs_gap": 0.1433,
+          "pearson_vs_pass": 0.9646,
+          "spearman_vs_pass": 0.9523
+        },
+        "hack_margin": {
+          "margin": 0.059,
+          "max_fail": 0.3,
+          "mean_fail": 0.1966,
+          "mean_pass": 0.7996,
+          "min_pass": 0.359,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.5083,
+          "max_fail": 0.8673,
+          "mean_fail": 0.2124,
+          "mean_pass": 0.804,
+          "min_pass": 0.359,
+          "overlap_rate": 0.0281
+        },
+        "own_pass_rate": 0.2205,
+        "signal": {
+          "failure_distinct_rate": 0.1198,
+          "failure_std": 0.1168,
+          "mean_within_task_std": 0.1965,
+          "tasks_with_signal": 1.0,
+          "zero_reward_rate": 0.0956
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.2938,
+          "hack-stock-stub": 0.3,
+          "pad-duplicate-x3": 0.4566,
+          "pad-junk": 0.4639,
+          "solve-one-route": 0.9297,
+          "solve-oracle": 0.9297,
+          "solve-stair-2of2": 0.9061,
+          "solve-stair-3of3": 0.9391,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.35,
+          "max_fail": 0.3,
+          "mean_fail": 0.2281,
+          "mean_pass": 0.9297,
+          "min_pass": 0.65,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.4731,
+          "pad-junk": 0.4658
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.6626,
+          "monotone_rate": 0.6
+        }
+      }
+    },
+    "v8-FINAL": {
+      "episodes": {
+        "grounding_own": {
+          "max_abs_gap": 0.0672,
+          "mean_abs_gap": 0.0285,
+          "pearson_vs_pass": 0.9997,
+          "spearman_vs_pass": 0.9928
+        },
+        "grounding_shipped": {
+          "max_abs_gap": 0.0867,
+          "mean_abs_gap": 0.0353,
+          "pearson_vs_pass": 0.9979,
+          "spearman_vs_pass": 0.9955
+        },
+        "grounding_strict": {
+          "max_abs_gap": 0.0527,
+          "mean_abs_gap": 0.0261,
+          "pearson_vs_pass": 0.9986,
+          "spearman_vs_pass": 0.9757
+        },
+        "hack_margin": {
+          "margin": 0.4773,
+          "max_fail": 0.194,
+          "mean_fail": 0.0339,
+          "mean_pass": 0.9136,
+          "min_pass": 0.6713,
+          "overlap_rate": 0.0
+        },
+        "hack_margin_vs_strict_pass": {
+          "margin": -0.2438,
+          "max_fail": 0.915,
+          "mean_fail": 0.0436,
+          "mean_pass": 0.9143,
+          "min_pass": 0.6713,
+          "overlap_rate": 0.0112
+        },
+        "own_pass_rate": 0.207,
+        "signal": {
+          "failure_distinct_rate": 0.127,
+          "failure_std": 0.0294,
+          "mean_within_task_std": 0.1867,
+          "tasks_with_signal": 0.9367,
+          "zero_reward_rate": 0.1001
+        }
+      },
+      "probes": {
+        "by_probe": {
+          "hack-empty": 0.0,
+          "hack-false-stock": 0.0509,
+          "hack-stock-stub": 0.03,
+          "pad-duplicate-x3": 0.6667,
+          "pad-junk": 0.6,
+          "solve-one-route": 1.0,
+          "solve-oracle": 1.0,
+          "solve-stair-2of2": 1.0,
+          "solve-stair-3of3": 1.0,
+          "solve-stair-4of4": 1.0,
+          "solve-stair-5of5": 1.0,
+          "solve-stair-6of6": 1.0,
+          "solve-stair-7of7": 1.0,
+          "solve-stair-8of8": 1.0
+        },
+        "hack_margin": {
+          "margin": 0.8393,
+          "max_fail": 0.1607,
+          "mean_fail": 0.0432,
+          "mean_pass": 1.0,
+          "min_pass": 1.0,
+          "overlap_rate": 0.0
+        },
+        "padding_penalty": {
+          "pad-duplicate-x3": 0.3333,
+          "pad-junk": 0.4
+        },
+        "staircase": {
+          "mean_lift_first_to_full": 0.945,
+          "monotone_rate": 0.7667
+        }
+      }
+    }
+  }
+}

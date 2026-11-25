@@ -1,0 +1,60 @@
+name: RetroEnv
+on:
+  pull_request:
+    paths: ['09-retroenv/**', '.github/workflows/retroenv.yml']
+  push:
+    branches: [main]
+    paths: ['09-retroenv/**', '.github/workflows/retroenv.yml']
+permissions:
+  contents: read
+jobs:
+  # Everything here runs offline against tests/fixtures/mini-release, the committed
+  # cut of the release: chemistry, the reaction library, the verifier, the server and
+  # the job launchers. Nothing downloads a dataset or talks to the Hub.
+  env:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: 09-retroenv
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Regression tests
+        run: uv run --frozen --extra dev --extra eval pytest -q --junitxml=artifacts/ci/pytest.xml
+      - name: Validate source formatting
+        run: uv run --frozen --with ruff ruff check .
+      - name: The published checkpoint manifest parses and agrees with itself
+        run: |
+          uv run --frozen python - <<'PY'
+          import json, pathlib
+          data = json.loads(pathlib.Path("train/checkpoints.json").read_text())
+          rows = data["checkpoints"]
+          assert rows, "no checkpoints"
+          for row in rows:
+              assert 0 <= row["pass_at_1"] <= row["pass_at_4"] <= 1, row["run"]
+              assert row["complete"] == (row["tasks"] == 150), row["run"]
+              if not row["complete"]:
+                  continue  # shards were lost, so the set is not three equal tiers
+              # core150 is equal thirds, so the tiers average to the first-attempt rate.
+              tiers = row["tiers_first_attempt"]
+              mean = sum(tiers.values()) / len(tiers)
+              assert abs(mean - row["pass_at_1_first_attempt"]) < 0.01, (row["run"], row["step"], mean)
+          best = max((r for r in rows if r["complete"]), key=lambda r: r["pass_at_1"])
+          print(f"{len(rows)} checkpoints; best {best['run']} step {best['step']} at {best['pass_at_1']}")
+          PY
+      - name: The job launcher plans every action without submitting
+        run: |
+          uv run --frozen python train/jobs/hf_job.py eval --name ci --bucket owner/bucket > /dev/null
+          uv run --frozen python train/jobs/hf_job.py publish --publish-mode adapters \
+            --repo owner/name --bucket owner/bucket > /dev/null
+      - name: Upload verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retroenv-checks
+          path: 09-retroenv/artifacts/ci/
+          if-no-files-found: ignore
+          retention-days: 14
