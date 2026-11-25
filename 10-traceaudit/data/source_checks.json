@@ -1,0 +1,197 @@
+{
+  "checked_date": "2026-10-22",
+  "datasets": {
+    "Kevin355/Who_and_When": {
+      "card": {
+        "sha256": "377fe597ae179e4757fecfc739bdcf2aa5407057a017ed6d835fe0ae40855a76",
+        "url": "https://huggingface.co/datasets/Kevin355/Who_and_When/raw/59b9fcba1aaed7bbf206b5f4d3c68b8face2f49c/README.md"
+      },
+      "downloaded_by_metadata_check": 0,
+      "gated": false,
+      "license": null,
+      "metadata": {
+        "sha256": "d82e31c2892cc0d78a4bfc5553e5c95cb5dabc5ad880823e72a8bb63450370a3",
+        "url": "https://huggingface.co/api/datasets/Kevin355/Who_and_When/revision/59b9fcba1aaed7bbf206b5f4d3c68b8face2f49c"
+      },
+      "published_split_metadata": null,
+      "revision": "59b9fcba1aaed7bbf206b5f4d3c68b8face2f49c"
+    },
+    "PatronusAI/TRAIL": {
+      "card": {
+        "http_status": 401,
+        "status": "access gate; not accepted"
+      },
+      "downloaded_by_metadata_check": 0,
+      "gated": "auto",
+      "license": "mit",
+      "metadata": {
+        "sha256": "8ceb1fdb92c19ec9f607071ed59014d09a3290e0be60643934941083a49efd7f",
+        "url": "https://huggingface.co/api/datasets/PatronusAI/TRAIL/revision/b424ce63d5973d5dcd7169b1bc3c07ccdee276d1"
+      },
+      "published_split_metadata": [
+        {
+          "name": "gaia",
+          "num_bytes": 111823308,
+          "num_examples": 117
+        },
+        {
+          "name": "swe_bench",
+          "num_bytes": 74599554,
+          "num_examples": 31
+        }
+      ],
+      "revision": "b424ce63d5973d5dcd7169b1bc3c07ccdee276d1"
+    },
+    "mcemri/MAST-Data": {
+      "card": {
+        "sha256": "1fd0504053da469b0af9f8b2e17180ee1a517be7e68f7e48f3a0756a3e5fe115",
+        "url": "https://huggingface.co/datasets/mcemri/MAST-Data/raw/95118ac951421753cf1deb87ddea3b01e693c41b/README.md"
+      },
+      "downloaded_by_metadata_check": 0,
+      "gated": false,
+      "license": "cc-by-4.0",
+      "metadata": {
+        "sha256": "1ecaa2afb398ce3c1bdb4d7d18ef02978a806aed3d70f00bebb81ec8adf93547",
+        "url": "https://huggingface.co/api/datasets/mcemri/MAST-Data/revision/95118ac951421753cf1deb87ddea3b01e693c41b"
+      },
+      "published_split_metadata": null,
+      "revision": "95118ac951421753cf1deb87ddea3b01e693c41b"
+    },
+    "microsoft/AgentRx": {
+      "card": {
+        "http_status": 401,
+        "status": "access gate; not accepted"
+      },
+      "downloaded_by_metadata_check": 0,
+      "gated": "auto",
+      "license": "cc-by-4.0",
+      "metadata": {
+        "sha256": "8bd2c82309c466b20f36fbe11f7e1a78e131217499d9f791195908cd0d67afba",
+        "url": "https://huggingface.co/api/datasets/microsoft/AgentRx/revision/88e871fecb58b2d090449f37ec80b8865594e0b5"
+      },
+      "published_split_metadata": null,
+      "revision": "88e871fecb58b2d090449f37ec80b8865594e0b5"
+    },
+    "nebius/SWE-rebench-openhands-trajectories": {
+      "card": {
+        "sha256": "90fa586c747d9ed1022c28847439489576049cde7de1fdfb80d24b2a0ae77b32",
+        "url": "https://huggingface.co/datasets/nebius/SWE-rebench-openhands-trajectories/raw/35455389ab51bf5e2306bfd436ef72d0f98bf882/README.md"
+      },
+      "downloaded_by_metadata_check": 0,
+      "gated": false,
+      "license": "cc-by-4.0",
+      "metadata": {
+        "sha256": "290dcc9ba15937006dcf264b3f446e6be4ff014eb8ff41c7564666afbde94e34",
+        "url": "https://huggingface.co/api/datasets/nebius/SWE-rebench-openhands-trajectories/revision/35455389ab51bf5e2306bfd436ef72d0f98bf882"
+      },
+      "published_split_metadata": null,
+      "revision": "35455389ab51bf5e2306bfd436ef72d0f98bf882"
+    }
+  },
+  "tau_domains": {
+    "airline": {
+      "db_change_eligible": 21,
+      "db_change_task_ids": [
+        "8",
+        "12",
+        "15",
+        "16",
+        "17",
+        "19",
+        "20",
+        "21",
+        "22",
+        "24",
+        "25",
+        "29",
+        "30",
+        "32",
+        "33",
+        "35",
+        "37",
+        "39",
+        "40",
+        "42",
+        "44"
+      ],
+      "db_only_eligible": 44,
+      "db_only_without_required_write": 23,
+      "eligible_task_ids": [
+        "0",
+        "1",
+        "2",
+        "4",
+        "5",
+        "6",
+        "8",
+        "9",
+        "10",
+        "12",
+        "13",
+        "15",
+        "16",
+        "17",
+        "19",
+        "20",
+        "21",
+        "22",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33",
+        "34",
+        "35",
+        "36",
+        "37",
+        "38",
+        "39",
+        "40",
+        "41",
+        "42",
+        "43",
+        "44",
+        "45",
+        "46",
+        "47",
+        "48",
+        "49"
+      ],
+      "sha256": "ccd8ba737b4cc371415af70151187788f728d6108d0916e73bb4317b40542052",
+      "tasks": 50,
+      "url": "https://raw.githubusercontent.com/sierra-research/tau2-bench/05736c27219b769d0be507574dd3135010916644/data/tau2/domains/airline/tasks.json"
+    },
+    "retail": {
+      "db_change_eligible": 2,
+      "db_change_task_ids": [
+        "33",
+        "34"
+      ],
+      "db_only_eligible": 2,
+      "db_only_without_required_write": 0,
+      "eligible_task_ids": [
+        "33",
+        "34"
+      ],
+      "sha256": "8e03ebce7901bd6218e7a7dc3105faa9324091a68058f7fe61c65262868812e8",
+      "tasks": 114,
+      "url": "https://raw.githubusercontent.com/sierra-research/tau2-bench/05736c27219b769d0be507574dd3135010916644/data/tau2/domains/retail/tasks.json"
+    },
+    "telecom": {
+      "db_change_eligible": 0,
+      "db_change_task_ids": [],
+      "db_only_eligible": 0,
+      "db_only_without_required_write": 0,
+      "eligible_task_ids": [],
+      "sha256": "37e562e1ae3242577407e1303b1548bc64e7ea68e37d36173e6747990ceaf8a4",
+      "tasks": 2285,
+      "url": "https://raw.githubusercontent.com/sierra-research/tau2-bench/05736c27219b769d0be507574dd3135010916644/data/tau2/domains/telecom/tasks.json"
+    }
+  },
+  "tau_revision": "05736c27219b769d0be507574dd3135010916644"
+}

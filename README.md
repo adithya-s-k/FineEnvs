@@ -58,6 +58,7 @@ results and README, plus the Hub repos it owns. They read in order but stand alo
 | **08** | **[FineProofEnvs: olympiad proofs with a rubric judge](./08-math-environments/fineproof/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | Write a natural-language proof of an olympiad problem; an LLM judge grades it 0–7 against the problem's rubric, as in the QED-Nano recipe. | 1 | 1 | 0 | ✅ trained |
 | **08** | **[Scott Wu Math: the card game](./08-math-environments/scott-wu-math/)**<br><sub>by [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | Make the target from every card once with + − × ÷: the 24 game, then the current year from eight cards, then any four-digit number from nine. | 1 | 1 | 1 | ✅ stable |
 | **09** | **[RetroEnv](./09-retroenv/)**<br><sub>by [Anindyadeep Sannigrahi](https://github.com/Anindyadeep), [Adithya S Kolavi](https://github.com/adithya-s-k) (Hugging Face)</sub> | Plan retrosyntheses back to purchasable molecules, scored step by step against a frozen reaction library, and Qwen3.8-27B trained to do it. | 1 | 1 | 1 | ✅ trained |
+| **10** | **[TraceAudit](./10-traceaudit/)**<br><sub>by Rahul Badhan</sub> | Judge failures in recorded agent traces with verified outcome labels. | 1 | 1 | 0 | 🚧 wip |
 <!-- END:projects -->
 
 <sub>Generated from each project's `project.yaml` by `tools/build_index.py`. Adding a project means
@@ -216,6 +217,12 @@ against the base model's 4. Both mixed-pool runs peak and then decline, and
 with RDKit, the reward breakdown, and all fifteen models side by side on the same molecule. Models,
 adapters, datasets and 174 GB of runs are in the
 [RetroEnv collection](https://huggingface.co/collections/FineEnvs/retroenv-6b0584ffc015c651084dc6ea).
+
+### [10 · TraceAudit](./10-traceaudit/)
+
+A single-turn auditor reads recorded agent traces and predicts failure probability with a verified
+outcome reward. Offline core, source adapters, human-review queues and a Verifiers port are implemented.
+Production data audits and collection are pending; no model has been trained.
 
 > **More coming.** Each new project is another end-to-end recipe: an environment, a training run, and
 > the artifacts on the Hub. [Proposals and contributions welcome →](./CONTRIBUTING.md)
@@ -435,6 +442,7 @@ FineEnvs/
 ├── 07-simulation-environments/  a catalog of simulation environments: PortSimEnv v1–v5 and more
 ├── 08-math-environments/    math environments graded exactly, by Lean, or by a rubric judge
 ├── 09-retroenv/             retrosynthesis graded against a frozen reaction library
+├── 10-traceaudit/           failure-probability auditing of recorded agent traces
 ├── content/
 │   ├── articles/            long-form sources (Astro → Docker Space)
 │   └── slides/              talk decks (Vite → static Space)
