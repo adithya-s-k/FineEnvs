@@ -35,7 +35,7 @@ if _ENV_ROOT not in sys.path:
     sys.path.insert(0, _ENV_ROOT)
 from core.e2b_sandbox import E2BSandbox, CellResult  # noqa: E402
 from core.notebook_tracker import NotebookTracker  # noqa: E402
-from core.tasks import TASKS  # noqa: E402
+from core.tasks import TASKS, matches_expected  # noqa: E402
 
 load_dotenv()
 
@@ -265,12 +265,19 @@ def create_verifiers_env():
         for t in TASKS
     ])
 
-    # Reward rubric: check if expected output appears in last message
+    # Reward rubric: verify expected output in successful tool execution outputs
+    # rather than ungrounded assistant text (prevents guessing without running code)
     async def correctness(completion, answer, **kwargs) -> float:
         if not completion:
             return 0.0
-        last_content = completion[-1].get("content", "") if isinstance(completion[-1], dict) else str(completion[-1])
-        return 1.0 if answer.strip() in last_content.strip() else 0.0
+        if isinstance(completion, list):
+            for msg in completion:
+                if isinstance(msg, dict) and msg.get("role") == "tool":
+                    content = str(msg.get("content", ""))
+                    if not content.startswith("ERROR:") and matches_expected(answer, content):
+                        return 1.0
+            return 0.0
+        return 1.0 if matches_expected(answer, str(completion)) else 0.0
 
     rubric = vf.Rubric(funcs=[correctness])
 

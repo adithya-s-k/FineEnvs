@@ -46,7 +46,7 @@ if _ENV_ROOT not in sys.path:
     sys.path.insert(0, _ENV_ROOT)
 from core.e2b_sandbox import E2BSandbox, CellResult  # noqa: E402
 from core.notebook_tracker import NotebookTracker  # noqa: E402
-from core.tasks import TASKS  # noqa: E402
+from core.tasks import TASKS, matches_expected  # noqa: E402
 
 load_dotenv()
 
@@ -219,22 +219,19 @@ class JupyterAgentResourcesServer(SimpleResourcesServer):
             if hasattr(params, "metadata") and params.metadata:
                 expected = params.metadata.get("expected_output", "")
 
-        # Scan all outputs for the expected string
+        # Scan executed tool outputs for the expected string using boundary matching
+        # (do not reward ungrounded assistant message text without sandbox execution)
         reward = 0.0
         for item in body.response.output:
-            # function_call_output has .output field
             if hasattr(item, "type") and item.type == "function_call_output":
                 output_text = getattr(item, "output", "")
-                if isinstance(output_text, str) and expected and expected.strip() in output_text.strip():
+                if (
+                    isinstance(output_text, str)
+                    and not output_text.startswith("ERROR:")
+                    and matches_expected(expected, output_text)
+                ):
                     reward = 1.0
                     break
-            # message has .content list with output_text items
-            elif hasattr(item, "type") and item.type == "message":
-                for c in getattr(item, "content", []):
-                    text = getattr(c, "text", "")
-                    if isinstance(text, str) and expected and expected.strip() in text.strip():
-                        reward = 1.0
-                        break
 
         return BaseVerifyResponse(**body.model_dump(), reward=reward)
 

@@ -51,7 +51,7 @@ if _ENV_ROOT not in sys.path:
     sys.path.insert(0, _ENV_ROOT)
 from core.e2b_sandbox import E2BSandbox, CellResult  # noqa: E402
 from core.notebook_tracker import NotebookTracker  # noqa: E402
-from core.tasks import TASKS  # noqa: E402
+from core.tasks import TASKS, matches_expected  # noqa: E402
 
 load_dotenv()
 
@@ -82,6 +82,7 @@ class JupyterGemEnv(Env):
         self._sandbox: Optional[E2BSandbox] = None
         self._tracker = NotebookTracker()
         self.last_output = ""
+        self._last_code_success = False
         self.step_count = 0
         self.error_count = 0
 
@@ -95,6 +96,7 @@ class JupyterGemEnv(Env):
 
         self._tracker = NotebookTracker()
         self.last_output = ""
+        self._last_code_success = False
         self.step_count = 0
         self.error_count = 0
 
@@ -144,6 +146,7 @@ class JupyterGemEnv(Env):
             self._tracker.add_code_cell(code.strip(), result)
             text = _format_for_llm(result)
             self.last_output = text
+            self._last_code_success = result.success
             if not result.success:
                 self.error_count += 1
             results.append(f"[Code output]: {text}")
@@ -153,7 +156,6 @@ class JupyterGemEnv(Env):
             result = self._sandbox.run_shell(cmd.strip())
             self._tracker.add_shell_cell(cmd.strip(), result)
             text = _format_for_llm(result)
-            self.last_output = text
             results.append(f"[Shell output]: {text}")
             executed = True
 
@@ -162,6 +164,7 @@ class JupyterGemEnv(Env):
             self._tracker.update_last_code_cell(code.strip(), result)
             text = _format_for_llm(result)
             self.last_output = text
+            self._last_code_success = result.success
             if not result.success:
                 self.error_count += 1
             results.append(f"[Edit output]: {text}")
@@ -185,6 +188,7 @@ class JupyterGemEnv(Env):
                 self._tracker.add_code_cell(code, result)
                 text = _format_for_llm(result)
                 self.last_output = text
+                self._last_code_success = result.success
                 if not result.success:
                     self.error_count += 1
                 results.append(f"[Code output]: {text}")
@@ -222,9 +226,9 @@ class JupyterGemEnv(Env):
             self._sandbox = None
 
     def _compute_reward(self) -> float:
-        if not self._expected_output:
+        if not self._expected_output or not self._last_code_success:
             return 0.0
-        if self._expected_output.strip() in self.last_output.strip():
+        if matches_expected(self._expected_output, self.last_output):
             r = 1.0
             r += max(0.0, 0.2 * (1.0 - self.step_count / 10.0))
             r -= 0.05 * self.error_count
