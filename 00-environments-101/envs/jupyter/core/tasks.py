@@ -5,6 +5,17 @@ Same 46 tasks as openenv/dataset.py. Kept in a separate file so
 dataset.py can import without pulling in ORS server dependencies.
 """
 
+import re
+
+
+def matches_expected(expected: str, output: str) -> bool:
+    """Match expected_output on token boundaries to avoid substring false positives."""
+    expected = (expected or "").strip()
+    output = (output or "").strip()
+    if not expected or not output:
+        return False
+    return bool(re.search(rf"(?<![\w.]){re.escape(expected)}(?!\w|\.\d)", output))
+
 TASKS = [
     {"task": "Install the 'sympy' library using pip, then use sympy.isprime to count how many numbers between 900 and 1000 are prime. Print the count.", "expected_output": "14"},
     {"task": "Install 'scipy' using pip. Generate 500 random numbers from a normal distribution (mean=100, std=15) using numpy seed 0. Use scipy.stats.describe to get the variance. Print the variance rounded to 1 decimal place.", "expected_output": "224.6"},

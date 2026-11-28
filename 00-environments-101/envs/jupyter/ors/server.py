@@ -34,7 +34,7 @@ if _ENV_ROOT not in sys.path:
     sys.path.insert(0, _ENV_ROOT)
 from core.e2b_sandbox import E2BSandbox, CellResult  # noqa: E402
 from core.notebook_tracker import NotebookTracker  # noqa: E402
-from core.tasks import TASKS  # noqa: E402
+from core.tasks import TASKS, matches_expected  # noqa: E402
 
 
 
@@ -83,6 +83,7 @@ class JupyterAgentORS(Environment):
         self._step_count = 0
         self._error_count = 0
         self._last_output = ""
+        self._code_executed_ok = False
 
     # ── ORS lifecycle ──────────────────────────────────────────────────────
 
@@ -94,6 +95,7 @@ class JupyterAgentORS(Environment):
         self._error_count = 0
         self._last_output = ""
         self._submitted_answer = None
+        self._code_executed_ok = False
 
     def teardown(self):
         """Called on session delete — kill sandbox."""
@@ -139,7 +141,10 @@ class JupyterAgentORS(Environment):
         self._last_output = text
         if not result.success:
             self._error_count += 1
-        reward = self._compute_reward(text)
+            reward = 0.0
+        else:
+            self._code_executed_ok = True
+            reward = self._compute_reward(text)
         return ToolOutput(
             blocks=[TextBlock(text=text)],
             reward=reward,
@@ -166,7 +171,10 @@ class JupyterAgentORS(Environment):
         self._last_output = text
         if not result.success:
             self._error_count += 1
-        reward = self._compute_reward(text)
+            reward = 0.0
+        else:
+            self._code_executed_ok = True
+            reward = self._compute_reward(text)
         return ToolOutput(
             blocks=[TextBlock(text=text)],
             reward=reward,
@@ -191,11 +199,10 @@ class JupyterAgentORS(Environment):
         self._tracker.add_shell_cell(params.command, result)
         text = _format_for_llm(result)
         self._last_output = text
-        reward = self._compute_reward(text)
         return ToolOutput(
             blocks=[TextBlock(text=text)],
-            reward=reward,
-            finished=reward > 0,
+            reward=0.0,
+            finished=False,
         )
 
     @tool
@@ -219,9 +226,11 @@ class JupyterAgentORS(Environment):
         This ends the current task.
         """
         self._submitted_answer = params.answer
+        # Require at least one successful code execution so agents cannot guess on Turn 1
+        reward = self._compute_reward(params.answer) if self._code_executed_ok else 0.0
         return ToolOutput(
             blocks=[TextBlock(text=f"Answer submitted: {params.answer}")],
-            reward=self._compute_reward(params.answer),
+            reward=reward,
             finished=True,
         )
 
@@ -239,7 +248,7 @@ class JupyterAgentORS(Environment):
         if not expected:
             return 0.0
 
-        if expected in output.strip():
+        if matches_expected(expected, output):
             r = 1.0
             r += max(0.0, 0.2 * (1.0 - self._step_count / 10.0))
             r -= 0.05 * self._error_count
